@@ -1,0 +1,43 @@
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+
+# Web related
+.web_assets_cache/
+
+# Coverage related
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Secrets & Environment (OWASP A02:2025 Mitigation)
+.env*
+.env
+.dev.env
+*.secret
+*.jks
+*.keystore
+*.key
+*.pem
+
+# IDEs
+.idea/
+.vscode/launch.json
+.vscode/settings.json
+*.iml
+
+# OS related
+.DS_Store
+Thumbs.db
+
