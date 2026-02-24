@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/intelligence/situation_engine.dart';
 import '../../application/operational_control_service.dart';
 import '../../application/simulation_control_service.dart';
 import '../../data/services/fleet_simulation_service.dart';
@@ -7,17 +8,20 @@ import '../../domain/entities/trip_event.dart';
 import '../../domain/entities/vehicle_position.dart';
 import '../../domain/enums/trip_status.dart';
 
-// ── Core Service Provider ──────────────────────────────
+// ── Core Services ──────────────────────────────────────
 
 final fleetSimulationProvider = Provider<FleetSimulationService>((ref) {
   return FleetSimulationService();
 });
 
-// ── Operational Control Service ────────────────────────
-
 final operationalControlProvider = Provider<OperationalControlService>((ref) {
   final simulation = ref.read(fleetSimulationProvider);
   return SimulationControlService(simulation);
+});
+
+// Sprint 3: The Intelligence Engine
+final situationEngineProvider = Provider<SituationEngine>((ref) {
+  return SituationEngine();
 });
 
 // ── UI Refresh Counter ─────────────────────────────────
@@ -31,20 +35,32 @@ void triggerUIRefresh(WidgetRef ref) {
 
 // ── Trip Stream ────────────────────────────────────────
 
-/// Stream of all operational trips, updated every 15 seconds.
+/// Stream of all raw operational trips, updated every 15 seconds.
 final tripStreamProvider = StreamProvider<List<OperationalTrip>>((ref) {
   final simulation = ref.read(fleetSimulationProvider);
   return simulation.tripStream(interval: const Duration(seconds: 15));
 });
 
-/// All active trips (non-terminal)
-final activeTripsProvider = Provider<List<OperationalTrip>>((ref) {
+/// Intelligent stream of trips enriched by the SituationEngine
+final enrichedTripsProvider = Provider<List<OperationalTrip>>((ref) {
   ref.watch(uiRefreshTrigger);
   final tripsAsync = ref.watch(tripStreamProvider);
+  final engine = ref.watch(situationEngineProvider);
+  final control = ref.read(operationalControlProvider);
+
   return tripsAsync.maybeWhen(
-    data: (trips) => trips.where((t) => t.isActive).toList(),
+    data: (rawTrips) {
+      // Pass raw trips through the intelligence engine
+      return engine.analyze(rawTrips, control);
+    },
     orElse: () => [],
   );
+});
+
+/// All active, enriched trips (non-terminal)
+final activeTripsProvider = Provider<List<OperationalTrip>>((ref) {
+  final enrichedTrips = ref.watch(enrichedTripsProvider);
+  return enrichedTrips.where((t) => t.isActive).toList();
 });
 
 // ── Position Stream ────────────────────────────────────
@@ -60,23 +76,17 @@ final positionStreamProvider = StreamProvider<List<VehiclePosition>>((ref) {
 /// Currently selected trip in the Command Center.
 final selectedTripIdProvider = StateProvider<String?>((ref) => null);
 
-/// The selected operational trip object.
+/// The selected, enriched operational trip object.
 final selectedTripProvider = Provider<OperationalTrip?>((ref) {
   final selectedId = ref.watch(selectedTripIdProvider);
   if (selectedId == null) return null;
 
-  ref.watch(uiRefreshTrigger);
-  final tripsAsync = ref.watch(tripStreamProvider);
-  return tripsAsync.maybeWhen(
-    data: (trips) {
-      try {
-        return trips.firstWhere((t) => t.id == selectedId);
-      } catch (_) {
-        return null;
-      }
-    },
-    orElse: () => null,
-  );
+  final enrichedTrips = ref.watch(enrichedTripsProvider);
+  try {
+    return enrichedTrips.firstWhere((t) => t.id == selectedId);
+  } catch (_) {
+    return null;
+  }
 });
 
 // ── Trip Events ────────────────────────────────────────
@@ -112,39 +122,32 @@ class FleetSummary {
 }
 
 final fleetSummaryProvider = Provider<FleetSummary>((ref) {
-  ref.watch(uiRefreshTrigger);
-  final tripsAsync = ref.watch(tripStreamProvider);
+  final enrichedTrips = ref.watch(enrichedTripsProvider);
+  final active = enrichedTrips.where((t) => t.isActive).toList();
 
-  return tripsAsync.maybeWhen(
-    data: (trips) {
-      final active = trips.where((t) => t.isActive).toList();
-      final onTime = active
-          .where(
-            (t) =>
-                t.status == TripStatus.enRoute || t.status == TripStatus.atStop,
-          )
-          .length;
-      final delayed = active
-          .where((t) => t.status == TripStatus.delayed)
-          .length;
-      final alerts = active.where((t) => t.status.requiresAttention).length;
-      final atStop = active.where((t) => t.status == TripStatus.atStop).length;
+  if (active.isEmpty) return const FleetSummary();
 
-      final totalDelay = active.fold<int>(0, (sum, t) => sum + t.delaySeconds);
-      final avgDelay = active.isEmpty
-          ? 0
-          : (totalDelay / active.length / 60).round();
+  final onTime = active
+      .where(
+        (t) => t.status == TripStatus.enRoute || t.status == TripStatus.atStop,
+      )
+      .length;
+  final delayed = active.where((t) => t.status == TripStatus.delayed).length;
+  final alerts = active.where((t) => t.status.requiresAttention).length;
+  final atStop = active.where((t) => t.status == TripStatus.atStop).length;
 
-      return FleetSummary(
-        totalActive: active.length,
-        onTime: onTime,
-        delayed: delayed,
-        alerts: alerts,
-        atStop: atStop,
-        avgDelayMinutes: avgDelay,
-      );
-    },
-    orElse: () => const FleetSummary(),
+  final totalDelay = active.fold<int>(0, (sum, t) => sum + t.delaySeconds);
+  final avgDelay = active.isEmpty
+      ? 0
+      : (totalDelay / active.length / 60).round();
+
+  return FleetSummary(
+    totalActive: active.length,
+    onTime: onTime,
+    delayed: delayed,
+    alerts: alerts,
+    atStop: atStop,
+    avgDelayMinutes: avgDelay,
   );
 });
 
@@ -152,24 +155,27 @@ final fleetSummaryProvider = Provider<FleetSummary>((ref) {
 
 final tripStatusFilterProvider = StateProvider<TripStatus?>((ref) => null);
 
+/// Filtered trips sorted intelligently (Severity Score > Attention > Delay)
 final filteredTripsProvider = Provider<List<OperationalTrip>>((ref) {
-  ref.watch(uiRefreshTrigger);
-  final tripsAsync = ref.watch(tripStreamProvider);
-  final statusFilter = ref.watch(tripStatusFilterProvider);
+  final enrichedTrips = ref.watch(enrichedTripsProvider);
+  var active = enrichedTrips.where((t) => t.isActive).toList();
 
-  return tripsAsync.maybeWhen(
-    data: (trips) {
-      var filtered = trips.where((t) => t.isActive).toList();
-      if (statusFilter != null) {
-        filtered = filtered.where((t) => t.status == statusFilter).toList();
-      }
-      filtered.sort((a, b) {
-        if (a.requiresAttention && !b.requiresAttention) return -1;
-        if (!a.requiresAttention && b.requiresAttention) return 1;
-        return b.delaySeconds.compareTo(a.delaySeconds);
-      });
-      return filtered;
-    },
-    orElse: () => [],
-  );
+  final statusFilter = ref.watch(tripStatusFilterProvider);
+  if (statusFilter != null) {
+    active = active.where((t) => t.status == statusFilter).toList();
+  }
+
+  active.sort((a, b) {
+    // 1. Highest severity score first (Sprint 3)
+    if (a.severityScore != b.severityScore) {
+      return b.severityScore.compareTo(a.severityScore);
+    }
+    // 2. Requires attention fallback
+    if (a.requiresAttention && !b.requiresAttention) return -1;
+    if (!a.requiresAttention && b.requiresAttention) return 1;
+    // 3. Largest delay fallback
+    return b.delaySeconds.compareTo(a.delaySeconds);
+  });
+
+  return active;
 });

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../enums/trip_status.dart';
+import 'operational_warning.dart';
 
 /// The central domain entity of BusFlow.
 ///
@@ -21,6 +22,10 @@ class OperationalTrip extends Equatable {
   final double completionPct;
   final String sourceType; // 'manual', 'gtfs_static', 'gtfs_realtime'
   final String? externalTripId;
+
+  // Intelligence / Engine Fields
+  final int severityScore; // 0-100 indicating operational risk
+  final List<OperationalWarning> warnings;
 
   // Denormalized display fields (populated from joins)
   final String? driverName;
@@ -44,6 +49,8 @@ class OperationalTrip extends Equatable {
     this.completionPct = 0.0,
     this.sourceType = 'manual',
     this.externalTripId,
+    this.severityScore = 0,
+    this.warnings = const [],
     this.driverName,
     this.vehiclePlate,
     this.routeShortName,
@@ -55,7 +62,7 @@ class OperationalTrip extends Equatable {
   bool get isActive => status.isActive;
 
   /// Whether this trip needs operator attention
-  bool get requiresAttention => status.requiresAttention;
+  bool get requiresAttention => status.requiresAttention || severityScore > 29;
 
   /// Whether this trip is finished
   bool get isTerminal => status.isTerminal;
@@ -94,6 +101,8 @@ class OperationalTrip extends Equatable {
     double? completionPct,
     String? sourceType,
     String? externalTripId,
+    int? severityScore,
+    List<OperationalWarning>? warnings,
     String? driverName,
     String? vehiclePlate,
     String? routeShortName,
@@ -115,6 +124,8 @@ class OperationalTrip extends Equatable {
       completionPct: completionPct ?? this.completionPct,
       sourceType: sourceType ?? this.sourceType,
       externalTripId: externalTripId ?? this.externalTripId,
+      severityScore: severityScore ?? this.severityScore,
+      warnings: warnings ?? this.warnings,
       driverName: driverName ?? this.driverName,
       vehiclePlate: vehiclePlate ?? this.vehiclePlate,
       routeShortName: routeShortName ?? this.routeShortName,
@@ -145,6 +156,8 @@ class OperationalTrip extends Equatable {
       completionPct: (json['completion_pct'] as num?)?.toDouble() ?? 0.0,
       sourceType: json['source_type'] as String? ?? 'manual',
       externalTripId: json['external_trip_id'] as String?,
+      severityScore: json['severity_score'] as int? ?? 0,
+      warnings: [], // Warnings are ephemeral, not persisted directly yet
       // Denormalized fields from joins
       driverName:
           json['driver_name'] as String? ??
@@ -179,6 +192,7 @@ class OperationalTrip extends Equatable {
       'completion_pct': completionPct,
       'source_type': sourceType,
       'external_trip_id': externalTripId,
+      'severity_score': severityScore,
     };
   }
 
@@ -198,5 +212,7 @@ class OperationalTrip extends Equatable {
     completionPct,
     sourceType,
     externalTripId,
+    severityScore,
+    warnings,
   ];
 }

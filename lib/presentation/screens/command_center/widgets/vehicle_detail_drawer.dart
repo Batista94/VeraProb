@@ -5,6 +5,8 @@ import '../../../../domain/entities/operational_trip.dart';
 import '../../../../domain/entities/trip_event.dart';
 import '../../../../domain/enums/event_type.dart';
 import '../../../../domain/enums/trip_status.dart';
+import '../../../../domain/entities/operational_suggestion.dart';
+import '../../../../application/intelligence/suggestion_engine.dart';
 import '../../../../state/providers/fleet_providers.dart';
 import '../../../shared/widgets/status_badge.dart';
 import 'occurrence_modal.dart';
@@ -28,6 +30,11 @@ class VehicleDetailDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final events = ref.watch(selectedTripEventsProvider);
+    final suggestion = SuggestionEngine().generateSuggestion(
+      ref: ref,
+      context: context,
+      trip: trip,
+    );
 
     return Container(
       width: 340,
@@ -57,6 +64,12 @@ class VehicleDetailDrawer extends ConsumerWidget {
                   _InfoSection(trip: trip),
 
                   const Divider(height: 1, color: BusFlowColors.border),
+
+                  // Intelligent Suggestion
+                  if (suggestion != null) ...[
+                    _SuggestionSection(suggestion: suggestion),
+                    const Divider(height: 1, color: BusFlowColors.border),
+                  ],
 
                   // Action Buttons
                   _ActionsSection(trip: trip),
@@ -219,6 +232,64 @@ class _InfoRow extends StatelessWidget {
               value,
               style: BusFlowTypography.bodyMedium,
               overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Suggestion Section ────────────────────────────────
+
+class _SuggestionSection extends StatelessWidget {
+  final OperationalSuggestion suggestion;
+
+  const _SuggestionSection({required this.suggestion});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      color: BusFlowColors.primary.withValues(alpha: 0.05),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb, color: BusFlowColors.primary, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'SUGESTÃO DO SISTEMA',
+                style: BusFlowTypography.caption.copyWith(
+                  color: BusFlowColors.primary,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            suggestion.title,
+            style: BusFlowTypography.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(suggestion.description, style: BusFlowTypography.caption),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: suggestion.onExecute,
+              icon: Icon(suggestion.actionIcon, size: 16),
+              label: Text(suggestion.actionLabel),
+              style: FilledButton.styleFrom(
+                backgroundColor: BusFlowColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
             ),
           ),
         ],
@@ -533,17 +604,30 @@ class _EventTile extends StatelessWidget {
           Column(
             children: [
               Container(
-                width: 8,
-                height: 8,
+                width: 12,
+                height: 12,
+                margin: const EdgeInsets.only(top: 2),
                 decoration: BoxDecoration(
                   color: _eventColor(event),
                   shape: BoxShape.circle,
+                  border: Border.all(color: BusFlowColors.surface, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _eventColor(event).withValues(alpha: 0.5),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
               ),
-              Container(width: 1, height: 20, color: BusFlowColors.border),
+              Container(
+                width: 2,
+                height: 24, // Fixed height instead of Expanded
+                color: BusFlowColors.border,
+                margin: const EdgeInsets.symmetric(vertical: 4),
+              ),
             ],
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

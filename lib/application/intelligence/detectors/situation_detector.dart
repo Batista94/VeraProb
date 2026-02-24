@@ -1,0 +1,20 @@
+import '../../../domain/entities/operational_trip.dart';
+import '../../../domain/entities/operational_warning.dart';
+import '../../../domain/entities/trip_event.dart';
+
+/// Base interface for all situation detectors.
+///
+/// A detector is a pure function that analyzes a trip and its history
+/// to emit an [OperationalWarning] if an anomaly is detected.
+abstract class SituationDetector {
+  final String id;
+  final String name;
+
+  const SituationDetector({required this.id, required this.name});
+
+  /// Check if this detector applies to the current trip state.
+  bool canDetect(OperationalTrip trip);
+
+  /// Evaluate the trip and return a warning if an issue is found.
+  OperationalWarning? evaluate(OperationalTrip trip, List<TripEvent> history);
+}
