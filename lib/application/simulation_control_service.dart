@@ -3,6 +3,7 @@ import '../domain/entities/trip_event.dart';
 import '../domain/enums/event_type.dart';
 import '../domain/enums/trip_status.dart';
 import '../data/services/fleet_simulation_service.dart';
+import 'audit/audit_service.dart';
 import 'operational_control_service.dart';
 
 /// Concrete implementation of [OperationalControlService] backed by
@@ -12,8 +13,9 @@ import 'operational_control_service.dart';
 /// When migrating to Supabase, replace this with [SupabaseControlService].
 class SimulationControlService implements OperationalControlService {
   final FleetSimulationService _simulation;
+  final AuditService _auditService;
 
-  SimulationControlService(this._simulation);
+  SimulationControlService(this._simulation, this._auditService);
 
   @override
   Future<TripEvent> updateTripStatus(
@@ -22,6 +24,15 @@ class SimulationControlService implements OperationalControlService {
     String? reason,
   }) async {
     final oldStatus = _simulation.updateTripStatus(tripId, newStatus);
+
+    await _auditService.logAction(
+      operatorId: 'operator_local_mock', // TODO: Get from auth session
+      actionType: 'TRIP_STATUS_CHANGE',
+      entityId: tripId,
+      oldValue: oldStatus?.name,
+      newValue: newStatus.name,
+      reason: reason ?? 'Mudança de status via painel',
+    );
 
     final event = _simulation.addEvent(
       tripId: tripId,
@@ -47,6 +58,15 @@ class SimulationControlService implements OperationalControlService {
     String? notes,
   }) async {
     final trip = _simulation.getTripById(tripId);
+
+    await _auditService.logAction(
+      operatorId: 'operator_local_mock', // TODO: Get from auth session
+      actionType: 'CREATE_INCIDENT_${eventType.name.toUpperCase()}',
+      entityId: tripId,
+      oldValue: trip?.status.name,
+      newValue: trip?.status.name, // Status might not change directly here
+      reason: notes ?? 'Incidente reportado manualmente',
+    );
 
     final event = _simulation.addEvent(
       tripId: tripId,

@@ -42,17 +42,21 @@ class DashboardScreen extends StatelessWidget {
             children: [
               const Icon(Icons.dashboard, size: 32, color: Colors.blueGrey),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'Visão Geral',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  Text('Monitoramento de frota e métricas'),
-                ],
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Visão Geral',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text('Monitoramento de frota e métricas', softWrap: true),
+                  ],
+                ),
               ),
-              const Spacer(),
               ElevatedButton.icon(
                 onPressed: () => _seedData(context),
                 icon: const Icon(Icons.cloud_upload),

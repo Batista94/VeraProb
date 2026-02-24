@@ -5,9 +5,12 @@ import 'package:busflow/data/services/fleet_simulation_service.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
 import 'package:busflow/domain/enums/event_type.dart';
 import 'package:busflow/domain/entities/trip_event.dart';
+import 'package:busflow/application/audit/audit_service.dart';
 
 class MockFleetSimulationService extends Mock
     implements FleetSimulationService {}
+
+class MockAuditService extends Mock implements AuditService {}
 
 void main() {
   setUpAll(() {
@@ -18,10 +21,24 @@ void main() {
   group('SimulationControlService Actions', () {
     late SimulationControlService service;
     late MockFleetSimulationService mockSimulation;
+    late MockAuditService mockAudit;
 
     setUp(() {
       mockSimulation = MockFleetSimulationService();
-      service = SimulationControlService(mockSimulation);
+      mockAudit = MockAuditService();
+
+      when(
+        () => mockAudit.logAction(
+          operatorId: any(named: 'operatorId'),
+          actionType: any(named: 'actionType'),
+          entityId: any(named: 'entityId'),
+          oldValue: any(named: 'oldValue'),
+          newValue: any(named: 'newValue'),
+          reason: any(named: 'reason'),
+        ),
+      ).thenAnswer((_) async {});
+
+      service = SimulationControlService(mockSimulation, mockAudit);
     });
 
     test(

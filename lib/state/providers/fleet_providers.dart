@@ -6,6 +6,7 @@ import '../../data/services/fleet_simulation_service.dart';
 import '../../domain/entities/operational_trip.dart';
 import '../../domain/entities/trip_event.dart';
 import '../../domain/entities/vehicle_position.dart';
+import '../../application/audit/audit_service.dart';
 import '../../domain/enums/trip_status.dart';
 
 // ── Core Services ──────────────────────────────────────
@@ -16,7 +17,8 @@ final fleetSimulationProvider = Provider<FleetSimulationService>((ref) {
 
 final operationalControlProvider = Provider<OperationalControlService>((ref) {
   final simulation = ref.read(fleetSimulationProvider);
-  return SimulationControlService(simulation);
+  final audit = ref.read(auditServiceProvider);
+  return SimulationControlService(simulation, audit);
 });
 
 // Sprint 3: The Intelligence Engine

@@ -84,21 +84,21 @@ void main() {
       await tester.pumpWidget(buildDriverScreen());
       await tester.pump();
       expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
-      expect(find.text('Selecione a Linha/Viagem'), findsOneWidget);
+      expect(find.text('Selecione a Linha'), findsOneWidget);
     });
 
     testWidgets('renders route icon', (tester) async {
       setViewport(tester);
       await tester.pumpWidget(buildDriverScreen());
       await tester.pump();
-      expect(find.byIcon(Icons.route), findsOneWidget);
+      expect(find.byIcon(Icons.directions_bus), findsWidgets);
     });
 
-    testWidgets('renders play icon', (tester) async {
+    testWidgets('renders location off icon initially', (tester) async {
       setViewport(tester);
       await tester.pumpWidget(buildDriverScreen());
       await tester.pump();
-      expect(find.byIcon(Icons.play_circle_filled), findsOneWidget);
+      expect(find.byIcon(Icons.location_off), findsOneWidget);
     });
   });
 
@@ -112,7 +112,7 @@ void main() {
       );
       await tester.pumpWidget(buildDriverScreen(driver: driver));
       await tester.pump();
-      expect(find.text('Olá, João Silva!'), findsOneWidget);
+      expect(find.text('João Silva'), findsOneWidget);
       expect(find.text('CNH: 12345678900'), findsOneWidget);
       expect(find.byIcon(Icons.person), findsOneWidget);
     });
@@ -121,7 +121,7 @@ void main() {
       setViewport(tester);
       await tester.pumpWidget(buildDriverScreen());
       await tester.pump();
-      expect(find.textContaining('Olá,'), findsNothing);
+      expect(find.byType(CircleAvatar), findsNothing);
     });
 
     testWidgets('shows CircleAvatar for driver', (tester) async {
@@ -183,8 +183,8 @@ void main() {
       expect(find.text('ENCERRAR VIAGEM'), findsOneWidget);
 
       // Tracking status card should appear
-      expect(find.textContaining('TRANSMITINDO'), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.textContaining('EM VIAGEM'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       // Verify startTracking was called
       verify(() => mockTrackingService.startTracking(any(), any())).called(1);

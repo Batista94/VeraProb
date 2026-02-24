@@ -31,7 +31,16 @@ enum TripStatus {
   cancelled,
 
   /// Scheduled trip never started
-  noShow;
+  noShow,
+
+  /// Signals lost from the vehicle for more than threshold
+  offline,
+
+  /// Vehicle suffered a mechanical failure
+  maintenance,
+
+  /// Vehicle is manually overridden into an alternative active route
+  detour;
 
   /// Display label in Portuguese for operators
   String get label {
@@ -54,6 +63,12 @@ enum TripStatus {
         return 'Cancelada';
       case TripStatus.noShow:
         return 'Não Iniciada';
+      case TripStatus.offline:
+        return 'Sem Sinal';
+      case TripStatus.maintenance:
+        return 'Fora de Serviço';
+      case TripStatus.detour:
+        return 'Desvio Ativo';
     }
   }
 
@@ -78,6 +93,12 @@ enum TripStatus {
         return const Color(0xFF37474F); // Dark gray
       case TripStatus.noShow:
         return const Color(0xFFB71C1C); // Dark red
+      case TripStatus.offline:
+        return const Color(0xFF9E9E9E); // Grey
+      case TripStatus.maintenance:
+        return const Color(0xFF212121); // Almost Black
+      case TripStatus.detour:
+        return const Color(0xFFFF6D00); // Deep Orange
     }
   }
 
@@ -102,6 +123,12 @@ enum TripStatus {
         return Icons.cancel;
       case TripStatus.noShow:
         return Icons.remove_circle;
+      case TripStatus.offline:
+        return Icons.portable_wifi_off;
+      case TripStatus.maintenance:
+        return Icons.build;
+      case TripStatus.detour:
+        return Icons.alt_route;
     }
   }
 
@@ -112,6 +139,8 @@ enum TripStatus {
       case TripStatus.atStop:
       case TripStatus.delayed:
       case TripStatus.interrupted:
+      case TripStatus.detour:
+      case TripStatus.offline: // it's active but bleeding
         return true;
       default:
         return false;
@@ -124,6 +153,8 @@ enum TripStatus {
       case TripStatus.delayed:
       case TripStatus.interrupted:
       case TripStatus.noShow:
+      case TripStatus.offline:
+      case TripStatus.maintenance:
         return true;
       default:
         return false;
@@ -136,6 +167,7 @@ enum TripStatus {
       case TripStatus.completed:
       case TripStatus.cancelled:
       case TripStatus.noShow:
+      case TripStatus.maintenance:
         return true;
       default:
         return false;

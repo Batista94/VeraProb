@@ -39,7 +39,7 @@ void main() {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(mockSharedPreferences),
       ],
-      child: const MaterialApp(home: DashboardScreen()),
+      child: const MaterialApp(home: Scaffold(body: DashboardScreen())),
     );
   }
 

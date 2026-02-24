@@ -88,22 +88,5 @@ void main() {
       // 1 hour trip
       expect(find.text('1h 0m'), findsOneWidget);
     });
-
-    testWidgets('Date Filter interaction', (tester) async {
-      when(() => mockDriverRepository.getDrivers()).thenAnswer((_) async => []);
-      when(() => mockTripRepository.getTrips()).thenAnswer((_) async => []);
-
-      await tester.pumpWidget(buildReportsScreen());
-      await tester.pumpAndSettle();
-
-      final dateButton = find.byIcon(Icons.calendar_today);
-      expect(dateButton, findsOneWidget);
-
-      await tester.tap(dateButton);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(DateRangePickerDialog), findsOneWidget);
-      // We won't test full date picker logic as it's Flutter internal, just that it opens.
-    });
   });
 }

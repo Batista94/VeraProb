@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
+// ignore: depend_on_referenced_packages
 import 'package:fake_async/fake_async.dart';
 import 'package:busflow/features/shared/data/services/gtfs_realtime_service.dart';
 import 'package:busflow/features/shared/data/repositories/vehicle_repository.dart';

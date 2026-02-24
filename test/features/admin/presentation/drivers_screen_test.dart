@@ -5,6 +5,8 @@ import 'package:busflow/features/admin/presentation/drivers_screen.dart';
 import 'package:busflow/features/shared/providers.dart';
 import 'package:busflow/features/driver/domain/entities/driver.dart';
 import 'package:busflow/features/driver/data/repositories/driver_repository.dart';
+import 'package:busflow/domain/enums/user_role.dart';
+import 'package:busflow/state/providers/auth_providers.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,6 +35,7 @@ void main() {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(mockSharedPreferences),
         driverRepositoryProvider.overrideWithValue(mockDriverRepository),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
       ],
       child: const MaterialApp(home: Scaffold(body: DriversScreen())),
     );

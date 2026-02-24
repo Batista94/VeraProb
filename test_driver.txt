@@ -1,0 +1,141 @@
+00:00 +0: loading C:/Projects/MVP - Bus/test/features/driver/presentation/driver_screen_test.dart
+00:00 +0: DriverScreen - Rendering renders AppBar with correct title
+00:00 +1: DriverScreen - Rendering renders logout icon
+00:00 +2: DriverScreen - Rendering renders INICIAR VIAGEM button
+00:00 +3: DriverScreen - Rendering renders bus icon
+00:00 +4: DriverScreen - Rendering renders line dropdown
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Selecione a Linha/Viagem": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///C:/Projects/MVP%20-%20Bus/test/features/driver/presentation/driver_screen_test.dart:87:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///C:/Projects/MVP%20-%20Bus/test/features/driver/presentation/driver_screen_test.dart line 87
+The test description was:
+  renders line dropdown
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +4 -1: DriverScreen - Rendering renders line dropdown [E]
+  Test failed. See exception logs above.
+  The test description was: renders line dropdown
+  
+00:00 +4 -1: DriverScreen - Rendering renders route icon
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _IconWidgetFinder:<Found 0 widgets with icon "IconData(U+F0561)": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///C:/Projects/MVP%20-%20Bus/test/features/driver/presentation/driver_screen_test.dart:94:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///C:/Projects/MVP%20-%20Bus/test/features/driver/presentation/driver_screen_test.dart line 94
+The test description was:
+  renders route icon
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +4 -2: DriverScreen - Rendering renders route icon [E]
+  Test failed. See exception logs above.
+  The test description was: renders route icon
+  
+00:00 +4 -2: DriverScreen - Rendering renders play icon
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _IconWidgetFinder:<Found 0 widgets with icon "IconData(U+0E4CD)": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///C:/Projects/MVP%20-%20Bus/test/features/driver/presentation/driver_screen_test.dart:101:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///C:/Projects/MVP%20-%20Bus/test/features/driver/presentation/driver_screen_test.dart line 101
+The test description was:
+  renders play icon
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +4 -3: DriverScreen - Rendering renders play icon [E]
+  Test failed. See exception logs above.
+  The test description was: renders play icon
+  
+00:01 +4 -3: DriverScreen - Driver Info shows driver name and CNH when set
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Olá, João Silva!": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///C:/Projects/MVP%20-%20Bus/test/features/driver/presentation/driver_screen_test.dart:115:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///C:/Projects/MVP%20-%20Bus/test/features/driver/presentation/driver_screen_test.dart line 115
+The test description was:
+  shows driver name and CNH when set
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +4 -4: DriverScreen - Driver Info shows driver name and CNH when set [E]
+  Test failed. See exception logs above.
+  The test description was: shows driver name and CNH when set
+  
+00:01 +4 -4: DriverScreen - Driver Info hides driver info when no driver set
+00:01 +5 -4: DriverScreen - Driver Info shows CircleAvatar for driver
+00:01 +6 -4: DriverScreen - Tracking shows warning snackbar without selecting a line
+00:01 +7 -4: DriverScreen - Tracking dropdown opens and shows line items
+00:01 +8 -4: DriverScreen - Tracking selecting a line updates dropdown and enables tracking
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextContainingWidgetFinder:<Found 0 widgets with text containing TRANSMITINDO: []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///C:/Projects/MVP%20-%20Bus/test/features/driver/presentation/driver_screen_test.dart:186:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///C:/Projects/MVP%20-%20Bus/test/features/driver/presentation/driver_screen_test.dart line 186
+The test description was:
+  selecting a line updates dropdown and enables tracking
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +8 -5: DriverScreen - Tracking selecting a line updates dropdown and enables tracking [E]
+  Test failed. See exception logs above.
+  The test description was: selecting a line updates dropdown and enables tracking
+  
+00:01 +8 -5: DriverScreen - Tracking starting tracking shows viagem iniciada snackbar
+00:01 +9 -5: Some tests failed.

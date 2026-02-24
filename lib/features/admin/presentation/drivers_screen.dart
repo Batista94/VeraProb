@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/logger_service.dart';
 import '../../driver/domain/entities/driver.dart';
 import '../../shared/providers.dart';
+import '../../../domain/enums/user_role.dart';
+import '../../../state/providers/auth_providers.dart';
 import '../providers/drivers_provider.dart';
 
 class DriversScreen extends ConsumerStatefulWidget {
@@ -42,6 +44,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredAsync = ref.watch(filteredDriversProvider);
+    final userRole = ref.watch(currentUserRoleProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Stack(
@@ -53,7 +56,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
-              _buildHeader(context, colorScheme),
+              _buildHeader(context, colorScheme, userRole),
               const SizedBox(height: 24),
               // Search bar
               _buildSearchBar(context),
@@ -63,7 +66,12 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                 child: filteredAsync.when(
                   data: (drivers) => drivers.isEmpty
                       ? _buildEmptyState(context)
-                      : _buildDriversTable(context, drivers, colorScheme),
+                      : _buildDriversTable(
+                          context,
+                          drivers,
+                          colorScheme,
+                          userRole,
+                        ),
                   loading: () => _buildSkeletonLoading(),
                   error: (err, stack) {
                     LoggerService().error(
@@ -104,7 +112,11 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildHeader(
+    BuildContext context,
+    ColorScheme colorScheme,
+    UserRole userRole,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -139,18 +151,19 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
           ),
         ),
         const SizedBox(width: 16),
-        FilledButton.icon(
-          onPressed: _openDrawer,
-          icon: const Icon(Icons.person_add_alt_1, size: 20),
-          label: const Text('Cadastrar motorista'),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            textStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+        if (userRole.hasPermission(UserRole.admin))
+          FilledButton.icon(
+            onPressed: _openDrawer,
+            icon: const Icon(Icons.person_add_alt_1, size: 20),
+            label: const Text('Cadastrar motorista'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              textStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -306,6 +319,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
     BuildContext context,
     List<Driver> drivers,
     ColorScheme colorScheme,
+    UserRole userRole,
   ) {
     return Card(
       child: Column(
@@ -376,7 +390,9 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                 return _DriverRow(
                   driver: driver,
                   isHighlighted: isHighlighted,
-                  onDelete: () => _confirmDelete(context, driver),
+                  onDelete: userRole.hasPermission(UserRole.admin)
+                      ? () => _confirmDelete(context, driver)
+                      : null,
                 );
               },
             ),
@@ -442,7 +458,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
 class _DriverRow extends StatefulWidget {
   final Driver driver;
   final bool isHighlighted;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
 
   const _DriverRow({
     required this.driver,
@@ -524,15 +540,16 @@ class _DriverRowState extends State<_DriverRow> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline,
-                      size: 20,
-                      color: Colors.red.shade400,
+                  if (widget.onDelete != null)
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: Colors.red.shade400,
+                      ),
+                      tooltip: 'Remover motorista',
+                      onPressed: widget.onDelete,
                     ),
-                    tooltip: 'Remover motorista',
-                    onPressed: widget.onDelete,
-                  ),
                 ],
               ),
             ),

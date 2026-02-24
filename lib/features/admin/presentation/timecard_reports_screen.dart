@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/logger_service.dart';
 import '../providers/trips_provider.dart';
+import '../../../presentation/widgets/skeleton_list_loader.dart';
 
 class TimecardReportsScreen extends ConsumerWidget {
   const TimecardReportsScreen({super.key});
@@ -126,7 +127,7 @@ class TimecardReportsScreen extends ConsumerWidget {
                     ],
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const SkeletonListLoader(),
                 error: (err, stack) {
                   LoggerService().error(
                     'Falha ao carregar relatórios',
