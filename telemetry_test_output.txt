@@ -1,0 +1,11 @@
+00:00 +0: loading C:/Projects/MVP - Bus/test/application/intelligence/telemetry_normalizer_test.dart
+00:00 +0 -1: loading C:/Projects/MVP - Bus/test/application/intelligence/telemetry_normalizer_test.dart [E]
+  Failed to load "C:/Projects/MVP - Bus/test/application/intelligence/telemetry_normalizer_test.dart":
+  Compilation failed for testPath=C:/Projects/MVP - Bus/test/application/intelligence/telemetry_normalizer_test.dart: lib/application/intelligence/telemetry_normalizer.dart:62:7: Error: No named parameter with the name 'vehicleId'.
+        vehicleId: ping.vehicleId,
+        ^^^^^^^^^
+  lib/domain/entities/vehicle_position.dart:18:9: Context: Found this candidate, but the arguments don't match.
+    const VehiclePosition({
+          ^^^^^^^^^^^^^^^
+  .
+00:00 +0 -1: Some tests failed.
