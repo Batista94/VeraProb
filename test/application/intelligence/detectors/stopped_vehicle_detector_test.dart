@@ -12,17 +12,19 @@ void main() {
     });
 
     test('canDetect is true only for active trips', () {
-      final activeTrip = const OperationalTrip(
+      final activeTrip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
+        scheduledStart: DateTime.now(),
       );
-      final completedTrip = const OperationalTrip(
+      final completedTrip = OperationalTrip(
         id: '2',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.cancelled,
+        scheduledStart: DateTime.now(),
       );
 
       expect(detector.canDetect(activeTrip), isTrue);
@@ -30,11 +32,12 @@ void main() {
     });
 
     test('evaluate returns severe warning for interrupted trips', () {
-      final trip = const OperationalTrip(
+      final trip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.interrupted, // Triggers stoppage currently
+        scheduledStart: DateTime.now(),
       );
 
       final warning = detector.evaluate(trip, []);
@@ -44,11 +47,12 @@ void main() {
     });
 
     test('evaluate returns null for normally flowing trips', () {
-      final trip = const OperationalTrip(
+      final trip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
+        scheduledStart: DateTime.now(),
       );
 
       final warning = detector.evaluate(trip, []);

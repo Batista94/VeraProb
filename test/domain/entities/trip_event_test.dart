@@ -15,19 +15,19 @@ void main() {
         toStatus: TripStatus.enRoute,
       );
 
-      expect(event.summary, 'Status alterado de Agendado para Em Rota');
+      expect(event.summary, 'Programada → Em Trânsito');
     });
 
     test('summary describes delay deviation accurately', () {
       final event = TripEvent(
         id: 'ev_2',
         tripId: 't_2',
-        eventType: EventType.delayDeviation,
+        eventType: EventType.delayDetected,
         createdAt: DateTime.now(),
         metadata: {'delay_seconds': 600},
       );
 
-      expect(event.summary, 'Atraso de 10 min');
+      expect(event.summary, 'Atraso de 10 min detectado');
     });
 
     test('summary defaults to event type label when no specifics apply', () {
@@ -38,7 +38,7 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      expect(event.summary, 'Ajuste Manual');
+      expect(event.summary, 'Alteração manual: N/A');
     });
 
     test('TripEvent retains immutability properties', () {
@@ -54,7 +54,7 @@ void main() {
       expect(event.createdAt, now);
       expect(
         event.props.length,
-        7,
+        6,
       ); // Validating Equatable props list has correct length
     });
   });

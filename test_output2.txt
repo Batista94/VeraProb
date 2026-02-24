@@ -1,0 +1,29 @@
+00:00 +0: loading C:/Projects/MVP - Bus/test/application/intelligence/suggestion_engine_test.dart
+00:00 +0 -1: loading C:/Projects/MVP - Bus/test/application/intelligence/suggestion_engine_test.dart [E]
+  Failed to load "C:/Projects/MVP - Bus/test/application/intelligence/suggestion_engine_test.dart":
+  Compilation failed for testPath=C:/Projects/MVP - Bus/test/application/intelligence/suggestion_engine_test.dart: test/application/intelligence/suggestion_engine_test.dart:28:41: Error: Required named parameter 'scheduledStart' must be provided.
+        final trip = const OperationalTrip(
+                                          ^
+  lib/domain/entities/operational_trip.dart:37:9: Context: Found this candidate, but the arguments don't match.
+    const OperationalTrip({
+          ^^^^^^^^^^^^^^^
+  test/application/intelligence/suggestion_engine_test.dart:47:35: Error: Required named parameter 'scheduledStart' must be provided.
+        final trip = OperationalTrip(
+                                    ^
+  lib/domain/entities/operational_trip.dart:37:9: Context: Found this candidate, but the arguments don't match.
+    const OperationalTrip({
+          ^^^^^^^^^^^^^^^
+  test/application/intelligence/suggestion_engine_test.dart:76:35: Error: Required named parameter 'scheduledStart' must be provided.
+        final trip = OperationalTrip(
+                                    ^
+  lib/domain/entities/operational_trip.dart:37:9: Context: Found this candidate, but the arguments don't match.
+    const OperationalTrip({
+          ^^^^^^^^^^^^^^^
+  test/application/intelligence/suggestion_engine_test.dart:105:41: Error: Required named parameter 'scheduledStart' must be provided.
+        final trip = const OperationalTrip(
+                                          ^
+  lib/domain/entities/operational_trip.dart:37:9: Context: Found this candidate, but the arguments don't match.
+    const OperationalTrip({
+          ^^^^^^^^^^^^^^^
+  .
+00:00 +0 -1: Some tests failed.

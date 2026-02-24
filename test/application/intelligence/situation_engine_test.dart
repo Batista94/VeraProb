@@ -23,13 +23,14 @@ void main() {
     });
 
     test('Trip with multiple problems sums severity up to a cap (100)', () {
-      final trip = const OperationalTrip(
+      final trip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status:
             TripStatus.interrupted, // Severity 50 from StoppedVehicleDetector
         delaySeconds: 1500, // 25 min -> Severity 40 from DelayDetector
+        scheduledStart: DateTime.now(),
       );
 
       final enrichedTrips = engine.analyze([trip], mockControl);
@@ -44,31 +45,27 @@ void main() {
     });
 
     test('Severity is capped at 100 even with extreme anomalies', () {
-      final trip = const OperationalTrip(
+      final trip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.interrupted, // Severity 50
         delaySeconds: 5000,
-        // DelayDetector logic caps at 40 in current sprint, but let's assume we
-        // artificially forced a scenario or added more detectors to breach 100.
-        // For now, testing the behavior is what matters. We can inject a mock detector if needed, or rely on future complexity.
+        scheduledStart: DateTime.now(),
       );
 
-      // Simulating a scenario where severity would exceed 100 by adding a dummy warning if possible.
-      // Easiest is to just test the pure function with the known detectors. Here max is 90 right now.
-      // But we wrote caps in SituationEngine. We will test it strictly later by injecting detectors.
       final enrichedTrips = engine.analyze([trip], mockControl);
       expect(enrichedTrips.first.severityScore, lessThanOrEqualTo(100));
     });
 
     test('Normal trips have 0 severity and no warnings', () {
-      final trip = const OperationalTrip(
+      final trip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 0,
+        scheduledStart: DateTime.now(),
       );
 
       final enrichedTrips = engine.analyze([trip], mockControl);
@@ -79,24 +76,26 @@ void main() {
     });
 
     test('If problem is resolved, severity resets to 0', () {
-      final badTrip = const OperationalTrip(
+      final badTrip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 1200, // Critical delay
+        scheduledStart: DateTime.now(),
       );
 
       final enrichedBad = engine.analyze([badTrip], mockControl).first;
       expect(enrichedBad.severityScore, 40);
 
       // Operator acts: new pulse comes in fixed
-      final fixedTrip = const OperationalTrip(
+      final fixedTrip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 0, // Delay removed
+        scheduledStart: DateTime.now(),
       );
 
       final enrichedFixed = engine.analyze([fixedTrip], mockControl).first;

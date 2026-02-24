@@ -12,23 +12,26 @@ void main() {
     });
 
     test('canDetect is true for active or scheduled trips', () {
-      final activeTrip = const OperationalTrip(
+      final activeTrip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
+        scheduledStart: DateTime.now(),
       );
-      final scheduledTrip = const OperationalTrip(
+      final scheduledTrip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.scheduled,
+        scheduledStart: DateTime.now(),
       );
-      final completedTrip = const OperationalTrip(
+      final completedTrip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.completed,
+        scheduledStart: DateTime.now(),
       );
 
       expect(detector.canDetect(activeTrip), isTrue);
@@ -37,12 +40,13 @@ void main() {
     });
 
     test('evaluate returns null for delay < 3 minutes', () {
-      final trip = const OperationalTrip(
+      final trip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 120, // 2 minutes
+        scheduledStart: DateTime.now(),
       );
 
       final warning = detector.evaluate(trip, []);
@@ -50,12 +54,13 @@ void main() {
     });
 
     test('evaluate returns risk warning for delay between 3 and 9 minutes', () {
-      final trip = const OperationalTrip(
+      final trip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 300, // 5 minutes
+        scheduledStart: DateTime.now(),
       );
 
       final warning = detector.evaluate(trip, []);
@@ -66,12 +71,13 @@ void main() {
     });
 
     test('evaluate returns critical warning for delay >= 10 minutes', () {
-      final trip = const OperationalTrip(
+      final trip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 720, // 12 minutes
+        scheduledStart: DateTime.now(),
       );
 
       final warning = detector.evaluate(trip, []);

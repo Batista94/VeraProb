@@ -1,0 +1,19 @@
+00:00 +0: loading C:/Projects/MVP - Bus/test/domain/entities/trip_event_test.dart
+00:00 +0: TripEvent Domain Rules summary describes status change accurately
+00:00 +0 -1: TripEvent Domain Rules summary describes status change accurately [E]
+  Expected: 'Agendado → Em Rota'
+    Actual: 'Programada → Em Trânsito'
+     Which: is different.
+            Expected: Agendado → ...
+              Actual: Programada ...
+                      ^
+             Differ at offset 0
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test\domain\entities\trip_event_test.dart 18:7      main.<fn>.<fn>
+  
+00:00 +0 -1: TripEvent Domain Rules summary describes delay deviation accurately
+00:00 +1 -1: TripEvent Domain Rules summary defaults to event type label when no specifics apply
+00:00 +2 -1: TripEvent Domain Rules TripEvent retains immutability properties
+00:00 +3 -1: Some tests failed.
