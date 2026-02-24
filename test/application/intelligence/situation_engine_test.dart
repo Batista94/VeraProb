@@ -33,7 +33,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final enrichedTrips = engine.analyze([trip], mockControl);
+      final enrichedTrips = engine.analyze([trip], {}, mockControl);
       final enriched = enrichedTrips.first;
 
       expect(enriched.warnings.length, 2);
@@ -54,7 +54,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final enrichedTrips = engine.analyze([trip], mockControl);
+      final enrichedTrips = engine.analyze([trip], {}, mockControl);
       expect(enrichedTrips.first.severityScore, lessThanOrEqualTo(100));
     });
 
@@ -68,7 +68,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final enrichedTrips = engine.analyze([trip], mockControl);
+      final enrichedTrips = engine.analyze([trip], {}, mockControl);
       final enriched = enrichedTrips.first;
 
       expect(enriched.warnings, isEmpty);
@@ -85,7 +85,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final enrichedBad = engine.analyze([badTrip], mockControl).first;
+      final enrichedBad = engine.analyze([badTrip], {}, mockControl).first;
       expect(enrichedBad.severityScore, 40);
 
       // Operator acts: new pulse comes in fixed
@@ -98,7 +98,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final enrichedFixed = engine.analyze([fixedTrip], mockControl).first;
+      final enrichedFixed = engine.analyze([fixedTrip], {}, mockControl).first;
       expect(enrichedFixed.severityScore, 0);
       expect(enrichedFixed.warnings, isEmpty);
     });

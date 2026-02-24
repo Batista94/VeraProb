@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/enums/event_type.dart';
-import '../../../../state/providers/fleet_providers.dart';
+import 'package:busflow/core/theme/app_theme.dart';
+import 'package:busflow/domain/enums/event_type.dart';
+import 'package:busflow/state/providers/fleet_providers.dart';
 
 /// Modal for registering an operational occurrence on a trip.
 ///

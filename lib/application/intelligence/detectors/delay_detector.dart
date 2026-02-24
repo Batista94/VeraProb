@@ -2,6 +2,7 @@ import '../../../domain/entities/operational_trip.dart';
 import '../../../domain/entities/operational_warning.dart';
 import '../../../domain/entities/trip_event.dart';
 import '../../../domain/enums/trip_status.dart';
+import '../../../domain/entities/vehicle_operational_state.dart';
 import 'situation_detector.dart';
 
 /// Detects if a trip is delayed beyond acceptable thresholds.
@@ -20,7 +21,11 @@ class DelayDetector extends SituationDetector {
   }
 
   @override
-  OperationalWarning? evaluate(OperationalTrip trip, List<TripEvent> history) {
+  OperationalWarning? evaluate(
+    OperationalTrip trip,
+    VehicleOperationalState? state,
+    List<TripEvent> history,
+  ) {
     final delayMinutes = trip.delaySeconds ~/ 60;
 
     if (delayMinutes >= 10) {

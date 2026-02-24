@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../../core/config/constants.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/fleet_providers.dart';
-import '../map_widgets/vehicle_marker.dart';
+import 'package:busflow/core/config/constants.dart';
+import 'package:busflow/core/theme/app_theme.dart';
+import 'package:busflow/state/providers/fleet_providers.dart';
+import 'package:busflow/domain/entities/vehicle_operational_state.dart';
+import '../map_widgets/animated_vehicle_marker.dart';
 
 /// The main fleet map for the Command Center.
 ///
@@ -23,7 +24,7 @@ class _FleetMapState extends ConsumerState<FleetMap> {
 
   @override
   Widget build(BuildContext context) {
-    final positionsAsync = ref.watch(positionStreamProvider);
+    final positionsAsync = ref.watch(normalizedStateProvider);
     final tripsAsync = ref.watch(tripStreamProvider);
     final selectedId = ref.watch(selectedTripIdProvider);
 
@@ -53,9 +54,15 @@ class _FleetMapState extends ConsumerState<FleetMap> {
               tileBuilder: _darkTileBuilder,
             ),
 
-            // Vehicle markers
-            MarkerLayer(
-              markers: _buildMarkers(positionsAsync, tripsAsync, selectedId),
+            // Animated Vehicle markers
+            AnimatedFleetMarkerLayer(
+              states: (positionsAsync.valueOrNull ?? [])
+                  .cast<VehicleOperationalState>(),
+              trips: tripsAsync.valueOrNull ?? [],
+              selectedId: selectedId,
+              onMarkerTap: (tripId) {
+                ref.read(selectedTripIdProvider.notifier).state = tripId;
+              },
             ),
           ],
         ),
@@ -164,62 +171,6 @@ class _FleetMapState extends ConsumerState<FleetMap> {
       child: tileWidget,
     );
   }
-
-  List<Marker> _buildMarkers(
-    AsyncValue<List<dynamic>> positionsAsync,
-    AsyncValue<List<dynamic>> tripsAsync,
-    String? selectedId,
-  ) {
-    final positions = positionsAsync.valueOrNull ?? [];
-    final trips = tripsAsync.valueOrNull ?? [];
-
-    return positions.map<Marker>((pos) {
-      // Find matching trip for this position
-      final trip = trips
-          .cast<dynamic>()
-          .where((t) => t.id == pos.tripId)
-          .firstOrNull;
-      final status = trip?.status ?? _inferStatusFromPosition(pos);
-      final routeLabel = pos.routeName ?? '?';
-      final isSelected = pos.tripId == selectedId;
-
-      return Marker(
-        point: LatLng(pos.latitude, pos.longitude),
-        width: 48,
-        height: 40,
-        child: VehicleMarkerWidget(
-          status: status,
-          routeLabel: routeLabel,
-          heading: pos.heading,
-          isSelected: isSelected,
-          isStale: pos.isStale(),
-          onTap: () {
-            ref.read(selectedTripIdProvider.notifier).state = pos.tripId;
-          },
-        ),
-      );
-    }).toList();
-  }
-
-  dynamic _inferStatusFromPosition(dynamic pos) {
-    // If we can't find a trip, infer from speed
-    if (pos.speed != null && pos.speed < 2.0) {
-      return _defaultStatus;
-    }
-    return _defaultStatus;
-  }
-
-  // ignore: unused_element
-  static final _defaultStatus = _DefaultStatusHelper();
-}
-
-/// Fallback for when trip status is unknown
-class _DefaultStatusHelper {
-  Color get color => BusFlowColors.neutral;
-  String get label => 'Desconhecido';
-  IconData get icon => Icons.help_outline;
-  bool get isActive => true;
-  bool get requiresAttention => false;
 }
 
 class _MapControlButton extends StatelessWidget {

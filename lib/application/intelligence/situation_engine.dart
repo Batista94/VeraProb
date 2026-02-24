@@ -2,8 +2,12 @@ import '../../../application/operational_control_service.dart';
 import '../../../domain/entities/operational_trip.dart';
 import '../../../domain/entities/operational_warning.dart';
 import 'detectors/delay_detector.dart';
+import 'detectors/off_route_detector.dart';
+import 'detectors/signal_loss_detector.dart';
 import 'detectors/situation_detector.dart';
 import 'detectors/stopped_vehicle_detector.dart';
+
+import '../../../domain/entities/vehicle_operational_state.dart';
 
 /// The core intelligence engine that analyzes active trips and detects issues.
 ///
@@ -14,24 +18,28 @@ class SituationEngine {
   final List<SituationDetector> _detectors = [
     const DelayDetector(),
     const StoppedVehicleDetector(),
+    const OffRouteDetector(),
+    const SignalLossDetector(),
   ];
 
   /// Analyzes a list of trips and returns a new list enriched with intelligence.
   List<OperationalTrip> analyze(
     List<OperationalTrip> rawTrips,
+    Map<String, VehicleOperationalState> vehicleStates,
     OperationalControlService control,
   ) {
     return rawTrips.map((trip) {
       if (!trip.isActive) return trip; // Terminal trips don't need analysis
 
       final history = control.getEventsForTrip(trip.id);
+      final state = vehicleStates[trip.vehicleId ?? trip.id];
       final warnings = <OperationalWarning>[];
       int totalSeverity = 0;
 
       // Run each detector
       for (final detector in _detectors) {
         if (detector.canDetect(trip)) {
-          final warning = detector.evaluate(trip, history);
+          final warning = detector.evaluate(trip, state, history);
           if (warning != null) {
             warnings.add(warning);
             totalSeverity += warning.severityScore;

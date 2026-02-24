@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/entities/operational_trip.dart';
-import '../../../../domain/entities/trip_event.dart';
-import '../../../../domain/enums/event_type.dart';
-import '../../../../domain/enums/trip_status.dart';
-import '../../../../domain/entities/operational_suggestion.dart';
-import '../../../../application/intelligence/suggestion_engine.dart';
-import '../../../../state/providers/fleet_providers.dart';
-import '../../../shared/widgets/status_badge.dart';
+import 'package:busflow/core/theme/app_theme.dart';
+import 'package:busflow/domain/entities/operational_trip.dart';
+import 'package:busflow/domain/entities/trip_event.dart';
+import 'package:busflow/domain/enums/event_type.dart';
+import 'package:busflow/domain/enums/trip_status.dart';
+import 'package:busflow/domain/entities/operational_suggestion.dart';
+import 'package:busflow/application/intelligence/suggestion_engine.dart';
+import 'package:busflow/state/providers/fleet_providers.dart';
+import 'package:busflow/presentation/shared/widgets/status_badge.dart';
 import 'occurrence_modal.dart';
 
 /// Detailed vehicle/trip drawer shown when an operator selects a trip.

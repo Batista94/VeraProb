@@ -15,7 +15,13 @@ class MockVehiclePositionService extends Mock
 
 class MockTripRepository extends Mock implements ITripRepository {}
 
+class FakeVehiclePosition extends Fake implements VehiclePosition {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeVehiclePosition());
+  });
+
   late TrackingService service;
   late MockGeoLocatorService mockGeoLocator;
   late MockVehiclePositionService mockVehicleRepository;
@@ -72,10 +78,10 @@ void main() {
     // Allow stream to process
     await Future.delayed(Duration.zero);
 
-    verify(() => mockVehicleRepository.sendVehiclePosition(any())).called(1);
     final captured = verify(
       () => mockVehicleRepository.sendVehiclePosition(captureAny()),
     ).captured;
+    expect(captured, hasLength(1));
     final pos = captured.first as VehiclePosition;
     expect(pos.tripId, 'route_1'); // UI expects routeId as tripId for display
     expect(pos.source, 'driver_app_gps');

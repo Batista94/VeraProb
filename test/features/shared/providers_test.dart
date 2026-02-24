@@ -12,6 +12,7 @@ import 'package:busflow/features/driver/data/repositories/driver_repository.dart
 import 'package:busflow/features/stops/domain/entities/bus_stop.dart';
 import 'package:busflow/core/geolocation/geo_locator.dart';
 import 'package:busflow/features/driver/presentation/tracking_service.dart';
+import 'package:busflow/features/shared/data/repositories/trip_repository.dart';
 
 class MockSharedPreferences extends Mock implements SharedPreferences {}
 
@@ -19,6 +20,8 @@ class MockGeoLocatorService extends Mock implements GeoLocatorService {}
 
 class MockVehiclePositionService extends Mock
     implements IVehiclePositionService {}
+
+class MockTripRepository extends Mock implements ITripRepository {}
 
 class FakeDriverRepository implements IDriverRepository {
   @override
@@ -81,7 +84,10 @@ void main() {
 
     test('driverRepositoryProvider returns IDriverRepository', () {
       container = ProviderContainer(
-        overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(mockPrefs),
+          driverRepositoryProvider.overrideWithValue(FakeDriverRepository()),
+        ],
       );
 
       final repo = container.read(driverRepositoryProvider);
@@ -121,11 +127,13 @@ void main() {
     });
 
     test('trackingServiceProvider returns TrackingService', () {
+      final mockTripRepo = MockTripRepository();
       container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(mockPrefs),
           geoLocatorProvider.overrideWithValue(mockGeoLocator),
           vehicleRepositoryProvider.overrideWithValue(mockVehicleRepo),
+          tripRepositoryProvider.overrideWithValue(mockTripRepo),
         ],
       );
 

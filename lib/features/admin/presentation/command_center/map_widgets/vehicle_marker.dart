@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../domain/enums/trip_status.dart';
+import 'package:busflow/domain/enums/trip_status.dart';
+import 'package:busflow/domain/enums/motion_state.dart';
 
 /// A map marker representing a vehicle, colored by trip status.
 ///
@@ -9,8 +10,9 @@ class VehicleMarkerWidget extends StatelessWidget {
   final TripStatus status;
   final String routeLabel;
   final double? heading;
+  final MotionState? motionState;
+  final double confidence;
   final bool isSelected;
-  final bool isStale;
   final VoidCallback? onTap;
 
   const VehicleMarkerWidget({
@@ -18,19 +20,22 @@ class VehicleMarkerWidget extends StatelessWidget {
     required this.status,
     required this.routeLabel,
     this.heading,
+    this.motionState,
+    this.confidence = 1.0,
     this.isSelected = false,
-    this.isStale = false,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = status.color;
-    final opacity = isStale ? 0.4 : 1.0;
+    // Map confidence directly to opacity (with a minimum baseline so it doesn't disappear completely)
+    final opacity = (confidence * 0.7) + 0.3; // 1.0 -> 1.0, 0.0 -> 0.3
 
     return GestureDetector(
       onTap: onTap,
-      child: Opacity(
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 500),
         opacity: opacity,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -84,7 +89,9 @@ class VehicleMarkerWidget extends StatelessWidget {
                   ),
                 ],
               ),
-              child: status == TripStatus.atStop
+              child:
+                  (motionState == MotionState.dwellingAtStop ||
+                      status == TripStatus.atStop)
                   ? Icon(
                       Icons.hail,
                       size: isSelected ? 10 : 8,

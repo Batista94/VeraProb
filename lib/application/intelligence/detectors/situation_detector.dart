@@ -2,6 +2,8 @@ import '../../../domain/entities/operational_trip.dart';
 import '../../../domain/entities/operational_warning.dart';
 import '../../../domain/entities/trip_event.dart';
 
+import '../../../domain/entities/vehicle_operational_state.dart';
+
 /// Base interface for all situation detectors.
 ///
 /// A detector is a pure function that analyzes a trip and its history
@@ -16,5 +18,9 @@ abstract class SituationDetector {
   bool canDetect(OperationalTrip trip);
 
   /// Evaluate the trip and return a warning if an issue is found.
-  OperationalWarning? evaluate(OperationalTrip trip, List<TripEvent> history);
+  OperationalWarning? evaluate(
+    OperationalTrip trip,
+    VehicleOperationalState? state,
+    List<TripEvent> history,
+  );
 }

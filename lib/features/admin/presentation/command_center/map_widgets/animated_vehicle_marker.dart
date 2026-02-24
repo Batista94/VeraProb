@@ -1,0 +1,166 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+
+import 'vehicle_marker.dart';
+import 'package:busflow/domain/entities/vehicle_operational_state.dart';
+import 'package:busflow/domain/enums/trip_status.dart';
+import 'package:busflow/domain/enums/motion_state.dart';
+
+/// A wrapper around [MarkerLayer] that animates vehicle positions.
+///
+/// It maintains a local state of all vehicles and smoothly interpolates
+/// their LatLng coordinates when new [VehicleOperationalState] data arrives.
+class AnimatedFleetMarkerLayer extends StatefulWidget {
+  final List<VehicleOperationalState> states;
+  final List<dynamic> trips;
+  final String? selectedId;
+  final void Function(String) onMarkerTap;
+
+  const AnimatedFleetMarkerLayer({
+    super.key,
+    required this.states,
+    required this.trips,
+    this.selectedId,
+    required this.onMarkerTap,
+  });
+
+  @override
+  State<AnimatedFleetMarkerLayer> createState() =>
+      _AnimatedFleetMarkerLayerState();
+}
+
+class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  // Map of vehicleId -> (oldPoint, newPoint, currentPoint)
+  final Map<String, _VehicleAnimState> _animStates = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 1200),
+        )..addListener(() {
+          setState(() {
+            final t = Curves.easeInOutQuad.transform(_controller.value);
+            for (final state in _animStates.values) {
+              final lat =
+                  state.oldPoint.latitude +
+                  (state.newPoint.latitude - state.oldPoint.latitude) * t;
+              final lng =
+                  state.oldPoint.longitude +
+                  (state.newPoint.longitude - state.oldPoint.longitude) * t;
+              state.currentPoint = LatLng(lat, lng);
+            }
+          });
+        });
+
+    _initializeStates();
+  }
+
+  @override
+  void didUpdateWidget(AnimatedFleetMarkerLayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Check if new states arrived
+    bool needsAnimation = false;
+
+    for (final newState in widget.states) {
+      final existingState = _animStates[newState.vehicleId];
+      final newPoint = LatLng(newState.latitude, newState.longitude);
+
+      if (existingState == null) {
+        // New vehicle, no animation needed initially
+        _animStates[newState.vehicleId] = _VehicleAnimState(
+          oldPoint: newPoint,
+          newPoint: newPoint,
+          currentPoint: newPoint,
+        );
+      } else if (existingState.newPoint != newPoint) {
+        // Vehicle moved, setup animation
+        existingState.oldPoint = existingState.currentPoint;
+        existingState.newPoint = newPoint;
+        needsAnimation = true;
+      }
+    }
+
+    // Remove stale vehicles
+    final currentIds = widget.states.map((s) => s.vehicleId).toSet();
+    _animStates.removeWhere((id, _) => !currentIds.contains(id));
+
+    if (needsAnimation) {
+      _controller.forward(from: 0.0);
+    }
+  }
+
+  void _initializeStates() {
+    for (final state in widget.states) {
+      final point = LatLng(state.latitude, state.longitude);
+      _animStates[state.vehicleId] = _VehicleAnimState(
+        oldPoint: point,
+        newPoint: point,
+        currentPoint: point,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final markers = widget.states.map((state) {
+      final animState = _animStates[state.vehicleId];
+      final point =
+          animState?.currentPoint ?? LatLng(state.latitude, state.longitude);
+
+      final trip = widget.trips
+          .cast<dynamic>()
+          .where((t) => t.id == state.tripId)
+          .firstOrNull;
+
+      final status = trip?.status ?? _DefaultStatusHelper().status;
+      final isSelected = state.tripId == widget.selectedId;
+
+      return Marker(
+        point: point,
+        width: 48,
+        height: 48,
+        child: VehicleMarkerWidget(
+          status: status,
+          routeLabel: state.routeName ?? '?',
+          motionState: state.motionState,
+          confidence: state.confidence,
+          heading: state.heading,
+          isSelected: isSelected,
+          onTap: () => widget.onMarkerTap(state.tripId),
+        ),
+      );
+    }).toList();
+
+    return MarkerLayer(markers: markers);
+  }
+}
+
+class _VehicleAnimState {
+  LatLng oldPoint;
+  LatLng newPoint;
+  LatLng currentPoint;
+
+  _VehicleAnimState({
+    required this.oldPoint,
+    required this.newPoint,
+    required this.currentPoint,
+  });
+}
+
+class _DefaultStatusHelper {
+  TripStatus get status => TripStatus.scheduled;
+}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:busflow/features/driver/presentation/driver_selection_screen.dart';
+import 'package:busflow/presentation/widgets/skeleton_list_loader.dart';
 import 'package:busflow/features/shared/providers.dart';
 import 'package:busflow/features/driver/domain/entities/driver.dart';
 import 'package:busflow/features/driver/data/repositories/driver_repository.dart';
@@ -109,7 +110,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildSelectionScreen());
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(SkeletonListLoader), findsOneWidget);
     });
 
     testWidgets('shows dropdown after drivers are loaded', (tester) async {

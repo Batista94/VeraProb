@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
+import 'package:busflow/core/theme/app_theme.dart';
 
 /// Placeholder for the Trips Timeline screen.
 /// Will display a Gantt-style timeline of all trips for the day.

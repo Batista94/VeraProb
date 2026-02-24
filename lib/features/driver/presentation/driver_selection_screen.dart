@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/providers.dart';
 import '../../driver/domain/entities/driver.dart';
-import 'driver_screen.dart';
+import '../../driver/presentation/driver_screen.dart'; // Just avoiding relative issues from driver_screen down to widgets
+import '../../../presentation/widgets/skeleton_list_loader.dart';
 
 class DriverSelectionScreen extends ConsumerStatefulWidget {
   const DriverSelectionScreen({super.key});
@@ -54,7 +55,10 @@ class _DriverSelectionScreenState extends ConsumerState<DriverSelectionScreen> {
                   });
                 },
               ),
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const SizedBox(
+                height: 80,
+                child: SkeletonListLoader(itemCount: 1),
+              ),
               error: (err, stack) => Text('Erro ao carregar motoristas: $err'),
             ),
             const SizedBox(height: 32),

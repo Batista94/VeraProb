@@ -49,7 +49,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final warning = detector.evaluate(trip, []);
+      final warning = detector.evaluate(trip, null, []);
       expect(warning, isNull);
     });
 
@@ -63,7 +63,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final warning = detector.evaluate(trip, []);
+      final warning = detector.evaluate(trip, null, []);
       expect(warning, isNotNull);
       expect(warning!.type, 'delay_risk');
       expect(warning.severityScore, 20);
@@ -80,7 +80,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final warning = detector.evaluate(trip, []);
+      final warning = detector.evaluate(trip, null, []);
       expect(warning, isNotNull);
       expect(warning!.type, 'delay_critical');
       expect(warning.severityScore, 40);

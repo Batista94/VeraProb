@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
+import 'package:busflow/core/theme/app_theme.dart';
 
 /// Placeholder for the Resource Management screen.
 /// Will contain tabs for Drivers, Vehicles, and Routes management.

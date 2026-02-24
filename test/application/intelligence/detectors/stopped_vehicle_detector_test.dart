@@ -40,7 +40,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final warning = detector.evaluate(trip, []);
+      final warning = detector.evaluate(trip, null, []);
       expect(warning, isNotNull);
       expect(warning!.type, 'vehicle_stopped');
       expect(warning.severityScore, 50); // Highly severe
@@ -55,7 +55,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final warning = detector.evaluate(trip, []);
+      final warning = detector.evaluate(trip, null, []);
       expect(warning, isNull);
     });
   });

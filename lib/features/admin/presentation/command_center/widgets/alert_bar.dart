@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/fleet_providers.dart';
+import 'package:busflow/core/theme/app_theme.dart';
+import 'package:busflow/state/providers/fleet_providers.dart';
 
 /// Bottom alert bar showing attention-requiring events.
 ///

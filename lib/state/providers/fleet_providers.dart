@@ -6,7 +6,12 @@ import '../../data/services/fleet_simulation_service.dart';
 import '../../domain/entities/operational_trip.dart';
 import '../../domain/entities/trip_event.dart';
 import '../../domain/entities/vehicle_position.dart';
+import '../../domain/entities/vehicle_operational_state.dart';
 import '../../application/audit/audit_service.dart';
+import '../../application/normalization/operational_state_normalizer.dart';
+import '../../application/adapters/operational_data_provider.dart';
+import '../../application/adapters/simulation_data_provider.dart';
+import '../../application/adapters/realtime_data_provider.dart';
 import '../../domain/enums/trip_status.dart';
 
 // ── Core Services ──────────────────────────────────────
@@ -50,10 +55,20 @@ final enrichedTripsProvider = Provider<List<OperationalTrip>>((ref) {
   final engine = ref.watch(situationEngineProvider);
   final control = ref.read(operationalControlProvider);
 
+  // Get the latest stabilized states from the Normalizer
+  final normalizedStatesAsync = ref.watch(normalizedStateProvider);
+  final statesMap = <String, VehicleOperationalState>{};
+
+  if (normalizedStatesAsync.hasValue) {
+    for (final state in normalizedStatesAsync.value!) {
+      statesMap[state.vehicleId] = state;
+    }
+  }
+
   return tripsAsync.maybeWhen(
     data: (rawTrips) {
-      // Pass raw trips through the intelligence engine
-      return engine.analyze(rawTrips, control);
+      // Pass raw trips and stabilized vehicle states through the intelligence engine
+      return engine.analyze(rawTrips, statesMap, control);
     },
     orElse: () => [],
   );
@@ -65,12 +80,60 @@ final activeTripsProvider = Provider<List<OperationalTrip>>((ref) {
   return enrichedTrips.where((t) => t.isActive).toList();
 });
 
+// ── Data Adapters & Feature Flags ────────────────────────
+
+/// Feature flag to toggle between Simulation and Realtime IoT hardware feeds.
+final useRealtimeDataProvider = StateProvider<bool>((ref) => false);
+
+/// The active operational data adapter based on the feature flag.
+final operationalDataProvider = Provider<IOperationalDataProvider>((ref) {
+  final useRealtime = ref.watch(useRealtimeDataProvider);
+
+  if (useRealtime) {
+    return RealtimeDataProvider();
+  } else {
+    final simulation = ref.read(fleetSimulationProvider);
+    return SimulationDataProvider(simulation);
+  }
+});
+
 // ── Position Stream ────────────────────────────────────
 
-/// Stream of vehicle positions, updated every 15 seconds.
+/// Stream of raw vehicle positions, updated by the active data adapter.
 final positionStreamProvider = StreamProvider<List<VehiclePosition>>((ref) {
-  final simulation = ref.read(fleetSimulationProvider);
-  return simulation.positionStream(interval: const Duration(seconds: 15));
+  final adapter = ref.watch(operationalDataProvider);
+
+  // Ensure the adapter is connected and cleans up when no longer watched
+  adapter.connect();
+  ref.onDispose(() => adapter.disconnect());
+
+  return adapter.positionStream;
+});
+
+/// Singleton instance of the operational state normalizer.
+final operationalStateNormalizerProvider = Provider<OperationalStateNormalizer>(
+  (ref) {
+    return OperationalStateNormalizer();
+  },
+);
+
+/// Stream of stabilized vehicle operational states.
+/// This prevents GPS jitter from reaching the UI or the Situation Engine.
+final normalizedStateProvider = StreamProvider<List<VehicleOperationalState>>((
+  ref,
+) {
+  final rawPositionsAsync = ref.watch(positionStreamProvider);
+  final normalizer = ref.watch(operationalStateNormalizerProvider);
+
+  return rawPositionsAsync.when(
+    data: (rawPositions) {
+      // In Phase 1, we don't have Stop geofencing wired up to real stops yet.
+      // We pass an empty list, allowing debounce and smoothing to work first.
+      return Stream.value(normalizer.normalize(rawPositions, knownStops: []));
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
 });
 
 // ── Selected Trip ──────────────────────────────────────

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
+import 'package:busflow/core/theme/app_theme.dart';
 
 /// Placeholder for the System Health screen.
 /// Will display feed statuses, audit logs, and system diagnostics.
