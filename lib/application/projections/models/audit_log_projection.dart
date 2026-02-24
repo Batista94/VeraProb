@@ -1,3 +1,5 @@
+import '../../../domain/enums/incident_lifecycle_status.dart';
+
 /// A rigidly formatted audit log entry for the projection layer.
 class AuditLogEntry {
   final String id;
@@ -12,6 +14,7 @@ class AuditLogEntry {
   final String? vehiclePlate;
   final String? routeName;
   final String? statusLabel;
+  final IncidentLifecycleStatus? lifecycleStatus;
 
   const AuditLogEntry({
     required this.id,
@@ -24,6 +27,7 @@ class AuditLogEntry {
     this.vehiclePlate,
     this.routeName,
     this.statusLabel,
+    this.lifecycleStatus,
   });
 }
 

@@ -7,6 +7,7 @@ import 'features/admin/presentation/command_center/command_center_screen.dart';
 import 'features/admin/presentation/trips/trips_timeline_screen.dart';
 import 'features/admin/presentation/resources/resource_management_screen.dart';
 import 'features/admin/presentation/system/system_health_screen.dart';
+import 'features/admin/presentation/command_center/screens/operational_audit_screen.dart';
 import 'features/shared/providers.dart';
 
 void main() async {
@@ -36,6 +37,7 @@ class BusFlowAdminApp extends StatelessWidget {
           AdminDestination.trips: TripsTimelineScreen(),
           AdminDestination.resources: ResourceManagementScreen(),
           AdminDestination.system: SystemHealthScreen(),
+          AdminDestination.audit: OperationalAuditScreen(),
         },
       ),
     );

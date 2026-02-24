@@ -1,0 +1,64 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+enum FleetStatusFilter { all, active, onTime, delayed, alerts, atStop }
+
+class CommandCenterFilterState {
+  final FleetStatusFilter selectedFleetStatusFilter;
+  final int? selectedSeverityFilter;
+  final String? followVehicleId;
+
+  const CommandCenterFilterState({
+    this.selectedFleetStatusFilter = FleetStatusFilter.all,
+    this.selectedSeverityFilter,
+    this.followVehicleId,
+  });
+
+  CommandCenterFilterState copyWith({
+    FleetStatusFilter? selectedFleetStatusFilter,
+    int? selectedSeverityFilter,
+    String? followVehicleId,
+    bool clearFollow = false,
+  }) {
+    return CommandCenterFilterState(
+      selectedFleetStatusFilter:
+          selectedFleetStatusFilter ?? this.selectedFleetStatusFilter,
+      selectedSeverityFilter:
+          selectedSeverityFilter ?? this.selectedSeverityFilter,
+      followVehicleId: clearFollow
+          ? null
+          : (followVehicleId ?? this.followVehicleId),
+    );
+  }
+}
+
+class CommandCenterFilterNotifier
+    extends StateNotifier<CommandCenterFilterState> {
+  CommandCenterFilterNotifier() : super(const CommandCenterFilterState());
+
+  void setStatusFilter(FleetStatusFilter filter) {
+    if (state.selectedFleetStatusFilter == filter) {
+      state = state.copyWith(selectedFleetStatusFilter: FleetStatusFilter.all);
+    } else {
+      state = state.copyWith(selectedFleetStatusFilter: filter);
+    }
+  }
+
+  void setSeverityFilter(int? severity) {
+    state = state.copyWith(selectedSeverityFilter: severity);
+  }
+
+  void setFollowVehicleId(String? vehicleId) {
+    state = state.copyWith(
+      followVehicleId: vehicleId,
+      clearFollow: vehicleId == null,
+    );
+  }
+}
+
+final commandCenterFilterProvider =
+    StateNotifierProvider<
+      CommandCenterFilterNotifier,
+      CommandCenterFilterState
+    >((ref) {
+      return CommandCenterFilterNotifier();
+    });

@@ -27,6 +27,12 @@ enum AdminDestination {
     selectedIcon: Icons.monitor_heart,
     label: 'Sistema',
     tooltip: 'Saúde do Sistema',
+  ),
+  audit(
+    icon: Icons.history_outlined,
+    selectedIcon: Icons.history,
+    label: 'Auditoria',
+    tooltip: 'Auditoria OCC',
   );
 
   final IconData icon;

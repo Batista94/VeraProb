@@ -7,12 +7,14 @@ class FleetStatusProjection {
   final List<VehicleOperationalState> delayedVehicles;
   final List<VehicleOperationalState> offRouteVehicles;
   final List<VehicleOperationalState> signalLostVehicles;
+  final List<VehicleOperationalState> allFilteredVehicles;
 
   const FleetStatusProjection({
     this.activeVehicles = const [],
     this.delayedVehicles = const [],
     this.offRouteVehicles = const [],
     this.signalLostVehicles = const [],
+    this.allFilteredVehicles = const [],
   });
 
   /// Total number of vehicles currently tracked
@@ -29,12 +31,14 @@ class FleetStatusProjection {
     List<VehicleOperationalState>? delayedVehicles,
     List<VehicleOperationalState>? offRouteVehicles,
     List<VehicleOperationalState>? signalLostVehicles,
+    List<VehicleOperationalState>? allFilteredVehicles,
   }) {
     return FleetStatusProjection(
       activeVehicles: activeVehicles ?? this.activeVehicles,
       delayedVehicles: delayedVehicles ?? this.delayedVehicles,
       offRouteVehicles: offRouteVehicles ?? this.offRouteVehicles,
       signalLostVehicles: signalLostVehicles ?? this.signalLostVehicles,
+      allFilteredVehicles: allFilteredVehicles ?? this.allFilteredVehicles,
     );
   }
 }

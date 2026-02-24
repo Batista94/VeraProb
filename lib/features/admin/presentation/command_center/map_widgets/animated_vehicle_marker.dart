@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'vehicle_marker.dart';
 import 'package:busflow/domain/entities/vehicle_operational_state.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
+import 'package:busflow/application/projections/providers/fleet_attention_projection_provider.dart';
 
 /// A wrapper around [MarkerLayer] that animates vehicle positions.
 ///
@@ -13,6 +14,7 @@ import 'package:busflow/domain/enums/trip_status.dart';
 class AnimatedFleetMarkerLayer extends StatefulWidget {
   final List<VehicleOperationalState> states;
   final List<dynamic> trips;
+  final FleetAttentionProjection? attentionProjection;
   final String? selectedId;
   final void Function(String) onMarkerTap;
 
@@ -20,6 +22,7 @@ class AnimatedFleetMarkerLayer extends StatefulWidget {
     super.key,
     required this.states,
     required this.trips,
+    this.attentionProjection,
     this.selectedId,
     required this.onMarkerTap,
   });
@@ -115,6 +118,9 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
 
   @override
   Widget build(BuildContext context) {
+    final camera = MapCamera.of(context);
+    final showLabels = camera.zoom >= 14.0;
+
     final markers = widget.states.map((state) {
       final animState = _animStates[state.vehicleId];
       final point =
@@ -127,6 +133,9 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
 
       final status = trip?.status ?? _DefaultStatusHelper().status;
       final isSelected = state.tripId == widget.selectedId;
+      final attention = widget.attentionProjection?.getContextFor(
+        state.vehicleId,
+      );
 
       return Marker(
         point: point,
@@ -139,6 +148,9 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
           confidence: state.confidence,
           heading: state.heading,
           isSelected: isSelected,
+          showLabel: showLabels,
+          opacityMultiplier: attention?.opacityMultiplier ?? 1.0,
+          isPulsing: attention?.isPulsing ?? false,
           onTap: () => widget.onMarkerTap(state.tripId),
         ),
       );

@@ -6,7 +6,10 @@ import 'package:latlong2/latlong.dart';
 import 'package:busflow/core/config/constants.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/state/providers/fleet_providers.dart';
-import 'package:busflow/domain/entities/vehicle_operational_state.dart';
+import 'package:busflow/application/projections/providers/fleet_status_projection_provider.dart';
+import 'package:busflow/application/projections/providers/command_center_filter_provider.dart';
+import 'package:busflow/application/projections/providers/fleet_attention_projection_provider.dart';
+import 'package:busflow/dev/performance_metrics.dart';
 import '../map_widgets/animated_vehicle_marker.dart';
 
 /// The main fleet map for the Command Center.
@@ -26,8 +29,45 @@ class _FleetMapState extends ConsumerState<FleetMap> {
   @override
   Widget build(BuildContext context) {
     final positionsAsync = ref.watch(normalizedStateProvider);
+    final projection = ref.watch(fleetStatusProjectionProvider);
     final tripsAsync = ref.watch(tripStreamProvider);
     final selectedId = ref.watch(selectedTripIdProvider);
+
+    // Follow Mode: Pan map when new coordinates arrive for the tracked vehicle
+    ref.listen(normalizedStateProvider, (previous, next) {
+      final filter = ref.read(commandCenterFilterProvider);
+      if (filter.followVehicleId != null && next.hasValue) {
+        final vehicle = next.value!
+            .where((v) => v.vehicleId == filter.followVehicleId)
+            .firstOrNull;
+        if (vehicle != null) {
+          _mapController.move(
+            LatLng(vehicle.latitude, vehicle.longitude),
+            _mapController.camera.zoom,
+          );
+        }
+      }
+    });
+
+    // Follow Mode: Initial jump when a new vehicle is selected to follow
+    ref.listen(commandCenterFilterProvider, (previous, next) {
+      if (next.followVehicleId != null &&
+          previous?.followVehicleId != next.followVehicleId) {
+        final positions = ref.read(normalizedStateProvider).valueOrNull;
+        final vehicle = positions
+            ?.where((v) => v.vehicleId == next.followVehicleId)
+            .firstOrNull;
+        if (vehicle != null) {
+          final targetZoom = _mapController.camera.zoom < 15.0
+              ? 16.0
+              : _mapController.camera.zoom;
+          _mapController.move(
+            LatLng(vehicle.latitude, vehicle.longitude),
+            targetZoom,
+          );
+        }
+      }
+    });
 
     return Stack(
       children: [
@@ -43,6 +83,17 @@ class _FleetMapState extends ConsumerState<FleetMap> {
             minZoom: 10,
             maxZoom: 18,
             backgroundColor: BusFlowColors.background,
+            onPositionChanged: (position, hasGesture) {
+              if (hasGesture) {
+                // Break follow mode if operator manually pans the map
+                final filter = ref.read(commandCenterFilterProvider);
+                if (filter.followVehicleId != null) {
+                  ref
+                      .read(commandCenterFilterProvider.notifier)
+                      .setFollowVehicleId(null);
+                }
+              }
+            },
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all,
             ),
@@ -56,14 +107,30 @@ class _FleetMapState extends ConsumerState<FleetMap> {
             ),
 
             // Animated Vehicle markers
-            AnimatedFleetMarkerLayer(
-              states: (positionsAsync.valueOrNull ?? [])
-                  .cast<VehicleOperationalState>(),
-              trips: tripsAsync.valueOrNull ?? [],
-              selectedId: selectedId,
-              onMarkerTap: (tripId) {
-                ref.read(selectedTripIdProvider.notifier).state = tripId;
-              },
+            RebuildCounter(
+              name: 'FleetMap',
+              child: AnimatedFleetMarkerLayer(
+                states: projection.allFilteredVehicles,
+                trips: tripsAsync.valueOrNull ?? [],
+                attentionProjection: ref.watch(
+                  fleetAttentionProjectionProvider,
+                ),
+                selectedId: selectedId,
+                onMarkerTap: (tripId) {
+                  ref.read(selectedTripIdProvider.notifier).state = tripId;
+
+                  // Active Follow Mode
+                  final vehicleId = projection.allFilteredVehicles
+                      .where((v) => v.tripId == tripId)
+                      .firstOrNull
+                      ?.vehicleId;
+                  if (vehicleId != null) {
+                    ref
+                        .read(commandCenterFilterProvider.notifier)
+                        .setFollowVehicleId(vehicleId);
+                  }
+                },
+              ),
             ),
           ],
         ),

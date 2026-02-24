@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/audit_log.dart';
+import '../../../domain/enums/incident_lifecycle_status.dart';
 import '../../audit/audit_service.dart';
 import '../../../state/providers/fleet_providers.dart';
 import '../../../domain/entities/operational_trip.dart';
@@ -73,6 +74,7 @@ final auditLogProjectionProvider = Provider<AuditLogProjection>((ref) {
       vehiclePlate: tripInfo?.vehiclePlate ?? tripInfo?.vehicleId,
       routeName: tripInfo?.routeShortName ?? tripInfo?.routeId,
       statusLabel: tripInfo?.status.label, // Using the enum's existing label
+      lifecycleStatus: _determineLifecycleStatus(log.actionType),
     );
   }).toList();
 
@@ -98,4 +100,28 @@ String? _buildDetails(AuditLog log) {
     return 'Mudou de ${log.oldValue} para ${log.newValue}';
   }
   return 'Entidade: ${log.entityId}';
+}
+
+IncidentLifecycleStatus? _determineLifecycleStatus(String actionType) {
+  final upper = actionType.toUpperCase();
+  if (upper.contains('RESOLVED') ||
+      upper.contains('CANCEL') ||
+      upper.contains('MAINTENANCE')) {
+    return IncidentLifecycleStatus.resolved;
+  }
+  if (upper.contains('ACKNOWLEDGE')) {
+    return IncidentLifecycleStatus.acknowledged;
+  }
+  if (upper.contains('DELAY_CRITICAL') ||
+      upper.contains('POS_LOST_CRITICAL') ||
+      upper.contains('OFF_ROUTE_CRITICAL') ||
+      upper.contains('CRITICAL')) {
+    return IncidentLifecycleStatus.open;
+  }
+  if (upper.contains('DELAY') ||
+      upper.contains('OFF_ROUTE') ||
+      upper.contains('WARNING')) {
+    return IncidentLifecycleStatus.inProgress;
+  }
+  return null;
 }

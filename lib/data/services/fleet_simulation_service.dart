@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import '../../application/adapters/stress_scenario_config.dart';
 import '../../domain/entities/operational_trip.dart';
 import '../../domain/entities/trip_event.dart';
 import '../../domain/entities/vehicle_position.dart';
@@ -11,7 +12,12 @@ import '../../domain/enums/trip_status.dart';
 /// Generates trips and positions along real bus corridors,
 /// with natural movement patterns, delays, and state transitions.
 class FleetSimulationService {
-  final Random _random = Random(42); // Deterministic seed for consistency
+  final StressScenarioConfig? config;
+  late final Random _random; // Deterministic seed for consistency
+
+  FleetSimulationService({this.config}) {
+    _random = Random(config?.seed ?? 42);
+  }
 
   // São Paulo real bus route corridors (approximate)
   static const _corridors = [
@@ -129,12 +135,14 @@ class FleetSimulationService {
     if (_initialized) return;
     _initialized = true;
 
-    for (var i = 0; i < _corridors.length; i++) {
-      final corridor = _corridors[i];
+    final count = config?.vehicleCount ?? _corridors.length;
+
+    for (var i = 0; i < count; i++) {
+      final corridor = _corridors[i % _corridors.length];
       _trips.add(
         _SimulatedTrip(
           id: 'trip-${corridor.shortName}-${i.toString().padLeft(3, '0')}',
-          routeId: 'route-$i',
+          routeId: 'route-${i % _corridors.length}',
           corridor: corridor,
           driverName: _driverNames[i % _driverNames.length],
           vehiclePlate: _plates[i % _plates.length],
@@ -146,12 +154,16 @@ class FleetSimulationService {
       );
     }
 
-    // Set some interesting states
-    _trips[3] = _trips[3].copyWith(
-      status: TripStatus.delayed,
-      delaySeconds: 480, // 8 min delay
-    );
-    _trips[5] = _trips[5].copyWith(status: TripStatus.atStop, speed: 0);
+    // Set some interesting states deterministically based on seed
+    if (_trips.length > 3) {
+      _trips[3] = _trips[3].copyWith(
+        status: TripStatus.delayed,
+        delaySeconds: 480, // 8 min delay
+      );
+    }
+    if (_trips.length > 5) {
+      _trips[5] = _trips[5].copyWith(status: TripStatus.atStop, speed: 0);
+    }
   }
 
   TripStatus _randomActiveStatus() {
@@ -185,7 +197,7 @@ class FleetSimulationService {
     while (true) {
       _advanceSimulation();
       yield _trips
-          .where((t) => t.status.isActive)
+          .where((t) => t.status.isActive && !t.isSignalLost)
           .map((t) => t.toVehiclePosition())
           .toList();
       await Future.delayed(interval);
@@ -202,7 +214,7 @@ class FleetSimulationService {
   List<VehiclePosition> get currentPositions {
     _initializeTrips();
     return _trips
-        .where((t) => t.status.isActive)
+        .where((t) => t.status.isActive && !t.isSignalLost)
         .map((t) => t.toVehiclePosition())
         .toList();
   }
@@ -313,17 +325,24 @@ class FleetSimulationService {
 
   _SimulatedTrip _evolveState(_SimulatedTrip trip, int index) {
     final roll = _random.nextDouble();
+    final incidentProb = config?.incidentProbability ?? 0.05;
+    final signalLossProb = config?.signalLossProbability ?? 0.05;
+
+    // Signal loss toggle
+    if (roll < signalLossProb) {
+      return trip.copyWith(isSignalLost: !trip.isSignalLost);
+    }
 
     switch (trip.status) {
       case TripStatus.enRoute:
-        if (roll < 0.1) {
-          return trip.copyWith(status: TripStatus.atStop, speed: 0);
-        }
-        if (roll < 0.15) {
+        if (roll < incidentProb) {
           return trip.copyWith(
             status: TripStatus.delayed,
             delaySeconds: 180 + _random.nextInt(600),
           );
+        }
+        if (roll < 0.1) {
+          return trip.copyWith(status: TripStatus.atStop, speed: 0);
         }
         return trip;
 
@@ -395,6 +414,7 @@ class _SimulatedTrip {
   final int delaySeconds;
   final double latNoise;
   final double lngNoise;
+  final bool isSignalLost;
 
   const _SimulatedTrip({
     required this.id,
@@ -408,6 +428,7 @@ class _SimulatedTrip {
     this.delaySeconds = 0,
     this.latNoise = 0,
     this.lngNoise = 0,
+    this.isSignalLost = false,
   });
 
   _SimulatedTrip copyWith({
@@ -422,6 +443,7 @@ class _SimulatedTrip {
     int? delaySeconds,
     double? latNoise,
     double? lngNoise,
+    bool? isSignalLost,
   }) {
     return _SimulatedTrip(
       id: id ?? this.id,
@@ -435,6 +457,7 @@ class _SimulatedTrip {
       delaySeconds: delaySeconds ?? this.delaySeconds,
       latNoise: latNoise ?? this.latNoise,
       lngNoise: lngNoise ?? this.lngNoise,
+      isSignalLost: isSignalLost ?? this.isSignalLost,
     );
   }
 

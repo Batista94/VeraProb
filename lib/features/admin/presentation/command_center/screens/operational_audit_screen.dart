@@ -106,7 +106,11 @@ class OperationalAuditScreen extends ConsumerWidget {
       child: const Row(
         children: [
           SizedBox(width: 80, child: Text('HORA', style: _headerStyle)),
-          SizedBox(width: 100, child: Text('CATEGORIA', style: _headerStyle)),
+          SizedBox(
+            width: 110,
+            child: Text('CICLO DE VIDA', style: _headerStyle),
+          ),
+          SizedBox(width: 90, child: Text('CATEGORIA', style: _headerStyle)),
           Expanded(flex: 3, child: Text('AÇÃO', style: _headerStyle)),
           Expanded(flex: 2, child: Text('VEÍCULO', style: _headerStyle)),
           Expanded(flex: 2, child: Text('LINHA', style: _headerStyle)),
@@ -160,7 +164,45 @@ class OperationalAuditScreen extends ConsumerWidget {
                   ),
                 ),
                 SizedBox(
-                  width: 100,
+                  width: 110,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: log.lifecycleStatus != null
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: log.lifecycleStatus!.color.withValues(
+                                alpha: 0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: log.lifecycleStatus!.color.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              log.lifecycleStatus!.label,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: log.lifecycleStatus!.color,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            '-',
+                            style: TextStyle(
+                              color: BusFlowColors.textSecondary,
+                            ),
+                          ),
+                  ),
+                ),
+                SizedBox(
+                  width: 90,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
@@ -366,6 +408,11 @@ class _AuditSidePanel extends ConsumerWidget {
             label: 'Status no Momento',
             value: log.statusLabel ?? 'Desconhecido',
           ),
+          if (log.lifecycleStatus != null)
+            _DetailRow(
+              label: 'Ciclo de Vida',
+              value: log.lifecycleStatus!.label,
+            ),
 
           if (log.details != null) ...[
             const Divider(height: 32, color: BusFlowColors.border),

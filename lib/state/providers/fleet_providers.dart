@@ -12,12 +12,29 @@ import '../../application/normalization/operational_state_normalizer.dart';
 import '../../application/adapters/operational_data_provider.dart';
 import '../../application/adapters/simulation_data_provider.dart';
 import '../../application/adapters/realtime_data_provider.dart';
+import '../../application/adapters/stress_scenario_config.dart';
+import '../../dev/performance_metrics.dart';
 import '../../domain/enums/trip_status.dart';
+import '../../application/projections/providers/command_center_filter_provider.dart';
 
 // ── Core Services ──────────────────────────────────────
 
+/// Optional stress scenario configuration. When set, forces the simulation into stress mode.
+/// Can be enabled via passing --dart-define=STRESS_MODE=true
+final stressScenarioProvider = StateProvider<StressScenarioConfig?>((ref) {
+  const isStressEnabled = bool.fromEnvironment(
+    'STRESS_MODE',
+    defaultValue: false,
+  );
+  if (isStressEnabled) {
+    return StressScenarioConfig.extreme250();
+  }
+  return null;
+});
+
 final fleetSimulationProvider = Provider<FleetSimulationService>((ref) {
-  return FleetSimulationService();
+  final config = ref.watch(stressScenarioProvider);
+  return FleetSimulationService(config: config);
 });
 
 final operationalControlProvider = Provider<OperationalControlService>((ref) {
@@ -93,7 +110,8 @@ final operationalDataProvider = Provider<IOperationalDataProvider>((ref) {
     return RealtimeDataProvider();
   } else {
     final simulation = ref.read(fleetSimulationProvider);
-    return SimulationDataProvider(simulation);
+    final metrics = ref.read(performanceMetricsProvider);
+    return SimulationDataProvider(simulation, metrics: metrics);
   }
 });
 
@@ -218,16 +236,32 @@ final fleetSummaryProvider = Provider<FleetSummary>((ref) {
 
 // ── Filter Providers ───────────────────────────────────
 
-final tripStatusFilterProvider = StateProvider<TripStatus?>((ref) => null);
-
 /// Filtered trips sorted intelligently (Severity Score > Attention > Delay)
 final filteredTripsProvider = Provider<List<OperationalTrip>>((ref) {
   final enrichedTrips = ref.watch(enrichedTripsProvider);
   var active = enrichedTrips.where((t) => t.isActive).toList();
 
-  final statusFilter = ref.watch(tripStatusFilterProvider);
-  if (statusFilter != null) {
-    active = active.where((t) => t.status == statusFilter).toList();
+  final filterState = ref.watch(commandCenterFilterProvider);
+  final statusFilter = filterState.selectedFleetStatusFilter;
+
+  if (statusFilter != FleetStatusFilter.all) {
+    active = active.where((t) {
+      switch (statusFilter) {
+        case FleetStatusFilter.active:
+          return t.status.isActive;
+        case FleetStatusFilter.onTime:
+          return t.status == TripStatus.enRoute ||
+              t.status == TripStatus.atStop;
+        case FleetStatusFilter.delayed:
+          return t.status == TripStatus.delayed;
+        case FleetStatusFilter.alerts:
+          return t.status.requiresAttention;
+        case FleetStatusFilter.atStop:
+          return t.status == TripStatus.atStop;
+        case FleetStatusFilter.all:
+          return true;
+      }
+    }).toList();
   }
 
   active.sort((a, b) {

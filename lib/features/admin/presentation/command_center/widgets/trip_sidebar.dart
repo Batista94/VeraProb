@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/domain/entities/operational_trip.dart';
-import 'package:busflow/domain/enums/trip_status.dart';
 import 'package:busflow/state/providers/fleet_providers.dart';
+import 'package:busflow/application/projections/providers/command_center_filter_provider.dart';
 import 'package:busflow/presentation/shared/widgets/status_badge.dart';
+import 'package:busflow/dev/performance_metrics.dart';
 
 /// Left sidebar in the Command Center showing all active trips.
 class TripSidebar extends ConsumerWidget {
@@ -14,49 +15,55 @@ class TripSidebar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final trips = ref.watch(filteredTripsProvider);
     final selectedId = ref.watch(selectedTripIdProvider);
-    final statusFilter = ref.watch(tripStatusFilterProvider);
+    final filterState = ref.watch(commandCenterFilterProvider);
+    final statusFilter = filterState.selectedFleetStatusFilter;
 
-    return Container(
-      width: 280,
-      decoration: const BoxDecoration(
-        color: BusFlowColors.surface,
-        border: Border(right: BorderSide(color: BusFlowColors.border)),
-      ),
-      child: Column(
-        children: [
-          // Header + filter chips
-          _SidebarHeader(
-            tripCount: trips.length,
-            statusFilter: statusFilter,
-            onFilterChanged: (status) {
-              ref.read(tripStatusFilterProvider.notifier).state = status;
-            },
-          ),
+    return RebuildCounter(
+      name: 'Sidebar',
+      child: Container(
+        width: 280,
+        decoration: const BoxDecoration(
+          color: BusFlowColors.surface,
+          border: Border(right: BorderSide(color: BusFlowColors.border)),
+        ),
+        child: Column(
+          children: [
+            // Header + filter chips
+            _SidebarHeader(
+              tripCount: trips.length,
+              statusFilter: statusFilter,
+              onFilterChanged: (status) {
+                ref
+                    .read(commandCenterFilterProvider.notifier)
+                    .setStatusFilter(status);
+              },
+            ),
 
-          const Divider(height: 1, color: BusFlowColors.border),
+            const Divider(height: 1, color: BusFlowColors.border),
 
-          // Trip list
-          Expanded(
-            child: trips.isEmpty
-                ? _EmptyState()
-                : ListView.separated(
-                    itemCount: trips.length,
-                    separatorBuilder: (_, _) =>
-                        const Divider(height: 1, color: BusFlowColors.border),
-                    itemBuilder: (context, index) {
-                      final trip = trips[index];
-                      return _TripCard(
-                        trip: trip,
-                        isSelected: trip.id == selectedId,
-                        onTap: () {
-                          ref.read(selectedTripIdProvider.notifier).state =
-                              trip.id == selectedId ? null : trip.id;
-                        },
-                      );
-                    },
-                  ),
-          ),
-        ],
+            // Trip list
+            Expanded(
+              child: trips.isEmpty
+                  ? _EmptyState()
+                  : ListView.separated(
+                      itemCount: trips.length,
+                      separatorBuilder: (_, _) =>
+                          const Divider(height: 1, color: BusFlowColors.border),
+                      itemBuilder: (context, index) {
+                        final trip = trips[index];
+                        return _TripCard(
+                          trip: trip,
+                          isSelected: trip.id == selectedId,
+                          onTap: () {
+                            ref.read(selectedTripIdProvider.notifier).state =
+                                trip.id == selectedId ? null : trip.id;
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -64,8 +71,8 @@ class TripSidebar extends ConsumerWidget {
 
 class _SidebarHeader extends StatelessWidget {
   final int tripCount;
-  final TripStatus? statusFilter;
-  final ValueChanged<TripStatus?> onFilterChanged;
+  final FleetStatusFilter statusFilter;
+  final ValueChanged<FleetStatusFilter> onFilterChanged;
 
   const _SidebarHeader({
     required this.tripCount,
@@ -113,28 +120,20 @@ class _SidebarHeader extends StatelessWidget {
             children: [
               _FilterChip(
                 label: 'Todos',
-                isSelected: statusFilter == null,
-                onTap: () => onFilterChanged(null),
+                isSelected: statusFilter == FleetStatusFilter.all,
+                onTap: () => onFilterChanged(FleetStatusFilter.all),
               ),
               _FilterChip(
                 label: 'Em Trânsito',
                 color: BusFlowColors.onTime,
-                isSelected: statusFilter == TripStatus.enRoute,
-                onTap: () => onFilterChanged(
-                  statusFilter == TripStatus.enRoute
-                      ? null
-                      : TripStatus.enRoute,
-                ),
+                isSelected: statusFilter == FleetStatusFilter.onTime,
+                onTap: () => onFilterChanged(FleetStatusFilter.onTime),
               ),
               _FilterChip(
                 label: 'Atrasados',
                 color: BusFlowColors.delayed,
-                isSelected: statusFilter == TripStatus.delayed,
-                onTap: () => onFilterChanged(
-                  statusFilter == TripStatus.delayed
-                      ? null
-                      : TripStatus.delayed,
-                ),
+                isSelected: statusFilter == FleetStatusFilter.delayed,
+                onTap: () => onFilterChanged(FleetStatusFilter.delayed),
               ),
             ],
           ),
