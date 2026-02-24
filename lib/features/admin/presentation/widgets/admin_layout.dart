@@ -16,30 +16,69 @@ class AdminLayout extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = ref.watch(adminIndexProvider);
     final isWideScreen = MediaQuery.of(context).size.width >= 600;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('BusFlow Admin 🚌'),
-        backgroundColor: Colors.indigo,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text('🚌', style: TextStyle(fontSize: 20)),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'BusFlow Admin',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF1A237E),
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Row(
         children: [
           // Sidebar (NavigationRail) for wide screens
           if (isWideScreen)
-            NavigationRail(
-              backgroundColor: Colors.grey[100],
-              selectedIndex: selectedIndex,
-              onDestinationSelected: (index) {
-                ref.read(adminIndexProvider.notifier).state = index;
-              },
-              labelType: NavigationRailLabelType.all,
-              destinations: destinations,
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                border: Border(right: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: NavigationRail(
+                backgroundColor: Colors.transparent,
+                selectedIndex: selectedIndex,
+                onDestinationSelected: (index) {
+                  ref.read(adminIndexProvider.notifier).state = index;
+                },
+                labelType: NavigationRailLabelType.all,
+                indicatorColor: colorScheme.primaryContainer,
+                selectedLabelTextStyle: TextStyle(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+                unselectedLabelTextStyle: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                ),
+                useIndicator: true,
+                minWidth: 80,
+                destinations: destinations,
+              ),
             ),
 
           // Main Content
           Expanded(
-            child: IndexedStack(index: selectedIndex, children: children),
+            child: Container(
+              color: const Color(0xFFF5F7FA),
+              child: IndexedStack(index: selectedIndex, children: children),
+            ),
           ),
         ],
       ),
@@ -51,6 +90,7 @@ class AdminLayout extends ConsumerWidget {
               onTap: (index) {
                 ref.read(adminIndexProvider.notifier).state = index;
               },
+              selectedItemColor: colorScheme.primary,
               items: destinations.map((d) {
                 return BottomNavigationBarItem(
                   icon: d.icon,

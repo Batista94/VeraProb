@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/logger_service.dart';
 import '../providers/trips_provider.dart';
 
 class TimecardReportsScreen extends ConsumerWidget {
@@ -126,7 +127,31 @@ class TimecardReportsScreen extends ConsumerWidget {
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Erro: $err')),
+                error: (err, stack) {
+                  LoggerService().error(
+                    'Falha ao carregar relatórios',
+                    error: err,
+                    stackTrace: stack,
+                  );
+                  return const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                        SizedBox(height: 12),
+                        Text(
+                          'Não foi possível carregar os relatórios agora.',
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Tente novamente mais tarde.',
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],

@@ -34,7 +34,7 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(mockSharedPreferences),
         driverRepositoryProvider.overrideWithValue(mockDriverRepository),
       ],
-      child: const MaterialApp(home: DriversScreen()),
+      child: const MaterialApp(home: Scaffold(body: DriversScreen())),
     );
   }
 
@@ -45,9 +45,9 @@ void main() {
       await tester.pumpWidget(buildDriversScreen());
       await tester.pumpAndSettle();
 
-      expect(find.text('Gerenciamento de Motoristas'), findsOneWidget);
-      expect(find.text('Nenhum motorista cadastrado.'), findsOneWidget);
-      expect(find.byIcon(Icons.add), findsOneWidget);
+      expect(find.text('Motoristas da Frota'), findsOneWidget);
+      expect(find.text('Nenhum motorista cadastrado ainda.'), findsOneWidget);
+      expect(find.text('Cadastrar motorista'), findsOneWidget);
     });
 
     testWidgets('renders List of Drivers', (tester) async {
@@ -59,15 +59,15 @@ void main() {
       );
 
       await tester.pumpWidget(buildDriversScreen());
-      // Wait for FutureBuilder/Riverpod
       await tester.pumpAndSettle();
 
       expect(find.text('João Silva'), findsOneWidget);
-      expect(find.text('CNH: 111'), findsOneWidget);
+      expect(find.text('111'), findsOneWidget);
       expect(find.text('Maria Oliveira'), findsOneWidget);
+      expect(find.text('Ativo'), findsNWidgets(2));
     });
 
-    testWidgets('Add Driver flow', (tester) async {
+    testWidgets('Add Driver flow via drawer', (tester) async {
       when(() => mockDriverRepository.getDrivers()).thenAnswer((_) async => []);
       when(
         () => mockDriverRepository.addDriver(any()),
@@ -76,29 +76,45 @@ void main() {
       await tester.pumpWidget(buildDriversScreen());
       await tester.pumpAndSettle();
 
-      // Tap Add
-      await tester.tap(find.byIcon(Icons.add));
+      // Tap "Cadastrar motorista" button
+      await tester.tap(find.text('Cadastrar motorista'));
       await tester.pumpAndSettle();
 
-      // Verify Dialog
-      expect(find.text('Novo Motorista'), findsOneWidget);
+      // Verify drawer opened
+      expect(
+        find.text('Cadastrar motorista'),
+        findsNWidgets(2),
+      ); // button + drawer title
+      expect(
+        find.text(
+          'Este cadastro registra o motorista na frota. O acesso ao sistema é configurado separadamente.',
+        ),
+        findsOneWidget,
+      );
 
       // Enter data
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Nome Completo'),
-        'Carlos',
+        find.widgetWithText(TextFormField, 'Ex: João Carlos da Silva'),
+        'Carlos Teste',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Número da CNH'),
-        '333',
+        find.widgetWithText(TextFormField, 'Ex: 12345678900'),
+        '999888777',
       );
 
-      // Tap Save
-      await tester.tap(find.text('Salvar'));
-      await tester.pumpAndSettle();
+      // Tap Cadastrar button in drawer
+      await tester.tap(find.widgetWithText(FilledButton, 'Cadastrar'));
+
+      // Pump enough for async save + animation, but don't use pumpAndSettle
+      // (3s highlight timer prevents settling)
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Verify interaction
       verify(() => mockDriverRepository.addDriver(any())).called(1);
+
+      // Advance past highlight timer to avoid pending timer assertion
+      await tester.pump(const Duration(seconds: 4));
     });
 
     testWidgets('Delete Driver flow', (tester) async {
@@ -117,8 +133,8 @@ void main() {
       await tester.pumpWidget(buildDriversScreen());
       await tester.pumpAndSettle();
 
-      // Find delete icon (IconButton with delete icon)
-      final deleteButton = find.byIcon(Icons.delete);
+      // Find delete icon
+      final deleteButton = find.byIcon(Icons.delete_outline);
       expect(deleteButton, findsOneWidget);
 
       await tester.tap(deleteButton);
@@ -133,6 +149,54 @@ void main() {
 
       // Verify interaction
       verify(() => mockDriverRepository.deleteDriver('1')).called(1);
+    });
+
+    testWidgets('Search filters drivers', (tester) async {
+      when(() => mockDriverRepository.getDrivers()).thenAnswer(
+        (_) async => [
+          const Driver(id: '1', name: 'João Silva', licenseNumber: '111'),
+          const Driver(id: '2', name: 'Maria Oliveira', licenseNumber: '222'),
+        ],
+      );
+
+      await tester.pumpWidget(buildDriversScreen());
+      await tester.pumpAndSettle();
+
+      // Both visible initially
+      expect(find.text('João Silva'), findsOneWidget);
+      expect(find.text('Maria Oliveira'), findsOneWidget);
+
+      // Type search
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Buscar por nome ou CNH...'),
+        'João',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('João Silva'), findsOneWidget);
+      expect(find.text('Maria Oliveira'), findsNothing);
+    });
+
+    testWidgets('Form validation prevents empty fields', (tester) async {
+      when(() => mockDriverRepository.getDrivers()).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(buildDriversScreen());
+      await tester.pumpAndSettle();
+
+      // Open drawer
+      await tester.tap(find.text('Cadastrar motorista'));
+      await tester.pumpAndSettle();
+
+      // Tap Cadastrar without filling fields
+      await tester.tap(find.widgetWithText(FilledButton, 'Cadastrar'));
+      await tester.pumpAndSettle();
+
+      // Verify validation messages
+      expect(find.text('O nome é obrigatório'), findsOneWidget);
+      expect(find.text('O número da CNH é obrigatório'), findsOneWidget);
+
+      // Verify addDriver was NOT called
+      verifyNever(() => mockDriverRepository.addDriver(any()));
     });
   });
 }
