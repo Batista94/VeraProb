@@ -29,6 +29,7 @@ class SimulationControlService implements OperationalControlService {
       fromStatus: oldStatus,
       toStatus: newStatus,
       metadata: {
+        // ignore: use_null_aware_elements
         if (reason != null) 'reason': reason,
         'source': 'operator_manual',
         'timestamp': DateTime.now().toIso8601String(),
@@ -54,6 +55,7 @@ class SimulationControlService implements OperationalControlService {
       toStatus: trip?.status,
       metadata: {
         ...?metadata,
+        // ignore: use_null_aware_elements
         if (notes != null) 'notes': notes,
         'source': 'operator_manual',
         'timestamp': DateTime.now().toIso8601String(),

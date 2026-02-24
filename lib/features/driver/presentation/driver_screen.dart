@@ -140,7 +140,7 @@ class _DriverScreenState extends ConsumerState<DriverScreen> {
                   dropdownColor: isNight
                       ? const Color(0xFF3C3C3C)
                       : Colors.white,
-                  value: _selectedLine,
+                  initialValue: _selectedLine,
                   style: TextStyle(color: textColor, fontSize: 16),
                   items: _availableLines.map((line) {
                     return DropdownMenuItem(

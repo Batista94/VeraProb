@@ -136,7 +136,7 @@ class BusDetailSheet extends StatelessWidget {
                       );
                     },
                     loading: () => _buildInfoChip(Icons.timer, 'Calculando...'),
-                    error: (_, __) => _buildInfoChip(Icons.timer, '--'),
+                    error: (_, _) => _buildInfoChip(Icons.timer, '--'),
                   );
                 },
               ),

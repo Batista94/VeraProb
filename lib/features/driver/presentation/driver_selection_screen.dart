@@ -41,7 +41,7 @@ class _DriverSelectionScreenState extends ConsumerState<DriverSelectionScreen> {
                   border: OutlineInputBorder(),
                   labelText: 'Selecione seu nome',
                 ),
-                value: _selectedDriver,
+                initialValue: _selectedDriver,
                 items: drivers.map((driver) {
                   return DropdownMenuItem(
                     value: driver,

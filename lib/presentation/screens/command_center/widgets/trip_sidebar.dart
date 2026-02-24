@@ -41,7 +41,7 @@ class TripSidebar extends ConsumerWidget {
                 ? _EmptyState()
                 : ListView.separated(
                     itemCount: trips.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const Divider(height: 1, color: BusFlowColors.border),
                     itemBuilder: (context, index) {
                       final trip = trips[index];

@@ -44,7 +44,7 @@ class AlertBar extends ConsumerWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: alertTrips.length,
-              separatorBuilder: (_, _2) => Padding(
+              separatorBuilder: (_, _) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Text(
                   '│',

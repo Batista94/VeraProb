@@ -367,7 +367,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
           Expanded(
             child: ListView.separated(
               itemCount: drivers.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (_, _) =>
                   Divider(height: 1, color: Colors.grey.shade200),
               itemBuilder: (context, index) {
                 final driver = drivers[index];
