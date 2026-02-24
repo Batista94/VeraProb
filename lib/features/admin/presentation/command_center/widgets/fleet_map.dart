@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -161,6 +162,10 @@ class _FleetMapState extends ConsumerState<FleetMap> {
     Widget tileWidget,
     TileImage tile,
   ) {
+    // Web browsers enforce strict CORS policies that block Canvas reading (WebGL)
+    // of cross-origin imagery. Avoid the ColorFilter on web to prevent canvas tainting.
+    if (kIsWeb) return tileWidget;
+
     return ColorFiltered(
       colorFilter: const ColorFilter.matrix([
         -0.8, 0.0, 0.0, 0.0, 40.0, //

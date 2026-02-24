@@ -5,7 +5,6 @@ import 'package:latlong2/latlong.dart';
 import 'vehicle_marker.dart';
 import 'package:busflow/domain/entities/vehicle_operational_state.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
-import 'package:busflow/domain/enums/motion_state.dart';
 
 /// A wrapper around [MarkerLayer] that animates vehicle positions.
 ///

@@ -4,6 +4,7 @@ import 'widgets/admin_layout.dart';
 import 'dashboard_screen.dart';
 import 'drivers_screen.dart';
 import 'timecard_reports_screen.dart';
+import 'command_center/screens/operational_audit_screen.dart';
 
 class AdminHome extends StatelessWidget {
   const AdminHome({super.key});
@@ -27,8 +28,18 @@ class AdminHome extends StatelessWidget {
           selectedIcon: Icon(Icons.access_time_filled),
           label: Text('Ponto Eletrônico'),
         ),
+        NavigationRailDestination(
+          icon: Icon(Icons.history_outlined),
+          selectedIcon: Icon(Icons.history),
+          label: Text('Auditoria OCC'),
+        ),
       ],
-      children: [DashboardScreen(), DriversScreen(), TimecardReportsScreen()],
+      children: [
+        DashboardScreen(),
+        DriversScreen(),
+        TimecardReportsScreen(),
+        OperationalAuditScreen(),
+      ],
     );
   }
 }

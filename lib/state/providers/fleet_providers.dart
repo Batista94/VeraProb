@@ -132,7 +132,7 @@ final normalizedStateProvider = StreamProvider<List<VehicleOperationalState>>((
       return Stream.value(normalizer.normalize(rawPositions, knownStops: []));
     },
     loading: () => Stream.value([]),
-    error: (_, __) => Stream.value([]),
+    error: (error, stack) => Stream.value([]),
   );
 });
 
