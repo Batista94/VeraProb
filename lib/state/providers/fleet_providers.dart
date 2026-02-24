@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/operational_control_service.dart';
+import '../../application/simulation_control_service.dart';
 import '../../data/services/fleet_simulation_service.dart';
 import '../../domain/entities/operational_trip.dart';
+import '../../domain/entities/trip_event.dart';
 import '../../domain/entities/vehicle_position.dart';
 import '../../domain/enums/trip_status.dart';
 
@@ -9,6 +12,22 @@ import '../../domain/enums/trip_status.dart';
 final fleetSimulationProvider = Provider<FleetSimulationService>((ref) {
   return FleetSimulationService();
 });
+
+// ── Operational Control Service ────────────────────────
+
+final operationalControlProvider = Provider<OperationalControlService>((ref) {
+  final simulation = ref.read(fleetSimulationProvider);
+  return SimulationControlService(simulation);
+});
+
+// ── UI Refresh Counter ─────────────────────────────────
+// Incremented after every mutation to force providers to re-evaluate.
+
+final uiRefreshTrigger = StateProvider<int>((ref) => 0);
+
+void triggerUIRefresh(WidgetRef ref) {
+  ref.read(uiRefreshTrigger.notifier).state++;
+}
 
 // ── Trip Stream ────────────────────────────────────────
 
@@ -20,6 +39,7 @@ final tripStreamProvider = StreamProvider<List<OperationalTrip>>((ref) {
 
 /// All active trips (non-terminal)
 final activeTripsProvider = Provider<List<OperationalTrip>>((ref) {
+  ref.watch(uiRefreshTrigger);
   final tripsAsync = ref.watch(tripStreamProvider);
   return tripsAsync.maybeWhen(
     data: (trips) => trips.where((t) => t.isActive).toList(),
@@ -45,6 +65,7 @@ final selectedTripProvider = Provider<OperationalTrip?>((ref) {
   final selectedId = ref.watch(selectedTripIdProvider);
   if (selectedId == null) return null;
 
+  ref.watch(uiRefreshTrigger);
   final tripsAsync = ref.watch(tripStreamProvider);
   return tripsAsync.maybeWhen(
     data: (trips) {
@@ -58,9 +79,20 @@ final selectedTripProvider = Provider<OperationalTrip?>((ref) {
   );
 });
 
+// ── Trip Events ────────────────────────────────────────
+
+/// Events for the currently selected trip.
+final selectedTripEventsProvider = Provider<List<TripEvent>>((ref) {
+  final selectedId = ref.watch(selectedTripIdProvider);
+  if (selectedId == null) return [];
+
+  ref.watch(uiRefreshTrigger);
+  final simulation = ref.read(fleetSimulationProvider);
+  return simulation.getEventsForTrip(selectedId);
+});
+
 // ── Fleet Summary (KPIs) ──────────────────────────────
 
-/// Aggregated fleet KPIs for the KPI bar.
 class FleetSummary {
   final int totalActive;
   final int onTime;
@@ -80,6 +112,7 @@ class FleetSummary {
 }
 
 final fleetSummaryProvider = Provider<FleetSummary>((ref) {
+  ref.watch(uiRefreshTrigger);
   final tripsAsync = ref.watch(tripStreamProvider);
 
   return tripsAsync.maybeWhen(
@@ -117,11 +150,10 @@ final fleetSummaryProvider = Provider<FleetSummary>((ref) {
 
 // ── Filter Providers ───────────────────────────────────
 
-/// Status filter for the trip sidebar.
 final tripStatusFilterProvider = StateProvider<TripStatus?>((ref) => null);
 
-/// Filtered trips based on active status filter.
 final filteredTripsProvider = Provider<List<OperationalTrip>>((ref) {
+  ref.watch(uiRefreshTrigger);
   final tripsAsync = ref.watch(tripStreamProvider);
   final statusFilter = ref.watch(tripStatusFilterProvider);
 
@@ -131,7 +163,6 @@ final filteredTripsProvider = Provider<List<OperationalTrip>>((ref) {
       if (statusFilter != null) {
         filtered = filtered.where((t) => t.status == statusFilter).toList();
       }
-      // Sort: attention-requiring first, then by delay
       filtered.sort((a, b) {
         if (a.requiresAttention && !b.requiresAttention) return -1;
         if (!a.requiresAttention && b.requiresAttention) return 1;

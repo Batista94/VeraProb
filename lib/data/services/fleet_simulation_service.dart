@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 import '../../domain/entities/operational_trip.dart';
+import '../../domain/entities/trip_event.dart';
 import '../../domain/entities/vehicle_position.dart';
+import '../../domain/enums/event_type.dart';
 import '../../domain/enums/trip_status.dart';
 
 /// Simulates a realistic GTFS Realtime feed for São Paulo.
@@ -113,8 +115,14 @@ class FleetSimulationService {
 
   // Internal state for simulation
   final List<_SimulatedTrip> _trips = [];
+  final Map<String, List<TripEvent>> _eventLog = {};
+  final _tripChangeController =
+      StreamController<List<OperationalTrip>>.broadcast();
+  final _positionChangeController =
+      StreamController<List<VehiclePosition>>.broadcast();
   bool _initialized = false;
   int _tickCount = 0;
+  int _eventCounter = 0;
 
   /// Initialize all simulated trips
   void _initializeTrips() {
@@ -197,6 +205,77 @@ class FleetSimulationService {
         .where((t) => t.status.isActive)
         .map((t) => t.toVehiclePosition())
         .toList();
+  }
+
+  // ── Mutation Methods (for OperationalControlService) ──────
+
+  /// Update the status of a trip by ID.
+  /// Returns the previous status for event generation.
+  TripStatus? updateTripStatus(
+    String tripId,
+    TripStatus newStatus, {
+    int? delaySeconds,
+  }) {
+    _initializeTrips();
+    final index = _trips.indexWhere((t) => t.id == tripId);
+    if (index == -1) return null;
+
+    final oldStatus = _trips[index].status;
+    _trips[index] = _trips[index].copyWith(
+      status: newStatus,
+      delaySeconds:
+          delaySeconds ?? (newStatus == TripStatus.enRoute ? 0 : null),
+      speed:
+          newStatus == TripStatus.interrupted || newStatus == TripStatus.atStop
+          ? 0
+          : null,
+    );
+
+    // Notify listeners
+    _emitCurrentState();
+    return oldStatus;
+  }
+
+  /// Store a trip event in the in-memory log.
+  TripEvent addEvent({
+    required String tripId,
+    required EventType eventType,
+    TripStatus? fromStatus,
+    TripStatus? toStatus,
+    Map<String, dynamic>? metadata,
+  }) {
+    _eventCounter++;
+    final event = TripEvent(
+      id: 'evt-$_eventCounter',
+      tripId: tripId,
+      eventType: eventType,
+      fromStatus: fromStatus,
+      toStatus: toStatus,
+      metadata: metadata,
+      createdAt: DateTime.now(),
+    );
+    _eventLog.putIfAbsent(tripId, () => []);
+    _eventLog[tripId]!.insert(0, event); // Newest first
+    return event;
+  }
+
+  /// Get all events for a trip, newest first.
+  List<TripEvent> getEventsForTrip(String tripId) {
+    return _eventLog[tripId] ?? [];
+  }
+
+  /// Get a trip by ID.
+  OperationalTrip? getTripById(String tripId) {
+    _initializeTrips();
+    final index = _trips.indexWhere((t) => t.id == tripId);
+    if (index == -1) return null;
+    return _trips[index].toOperationalTrip();
+  }
+
+  /// Push current state to stream listeners.
+  void _emitCurrentState() {
+    _tripChangeController.add(currentTrips);
+    _positionChangeController.add(currentPositions);
   }
 
   /// Advance simulation by one tick

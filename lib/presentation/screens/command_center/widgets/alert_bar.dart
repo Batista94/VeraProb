@@ -4,6 +4,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../state/providers/fleet_providers.dart';
 
 /// Bottom alert bar showing attention-requiring events.
+///
+/// Sprint 2: Now supports click-to-select and inline resolve action.
 class AlertBar extends ConsumerWidget {
   const AlertBar({super.key});
 
@@ -32,7 +34,7 @@ class AlertBar extends ConsumerWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '${alertTrips.length} ALERTAS:',
+            '${alertTrips.length} ALERTA${alertTrips.length > 1 ? 'S' : ''}:',
             style: BusFlowTypography.badge.copyWith(
               color: BusFlowColors.critical,
             ),
@@ -42,8 +44,8 @@ class AlertBar extends ConsumerWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: alertTrips.length,
-              separatorBuilder: (_, __) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+              separatorBuilder: (_, _2) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Text(
                   '│',
                   style: TextStyle(
@@ -54,18 +56,75 @@ class AlertBar extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final trip = alertTrips[index];
                 return Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      ref.read(selectedTripIdProvider.notifier).state = trip.id;
-                    },
-                    child: Text(
-                      '${trip.routeShortName ?? trip.routeId} — '
-                      '${trip.status.label} '
-                      '${trip.delaySeconds > 0 ? trip.delayDisplay : ""}',
-                      style: BusFlowTypography.caption.copyWith(
-                        color: BusFlowColors.textPrimary,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Click to select this trip (opens drawer)
+                      GestureDetector(
+                        onTap: () {
+                          ref.read(selectedTripIdProvider.notifier).state =
+                              trip.id;
+                        },
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Text(
+                            '${trip.routeShortName ?? trip.routeId} — '
+                            '${trip.status.label} '
+                            '${trip.delaySeconds > 0 ? trip.delayDisplay : ""}',
+                            style: BusFlowTypography.caption.copyWith(
+                              color: BusFlowColors.textPrimary,
+                              decoration: TextDecoration.underline,
+                              decorationColor: BusFlowColors.textSecondary,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 6),
+                      // Inline resolve button
+                      GestureDetector(
+                        onTap: () async {
+                          final control = ref.read(operationalControlProvider);
+                          await control.resolveAlert(trip.id);
+                          triggerUIRefresh(ref);
+                        },
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(3),
+                              border: Border.all(
+                                color: BusFlowColors.onTime.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check,
+                                  size: 10,
+                                  color: BusFlowColors.onTime,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'Tratado',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                    color: BusFlowColors.onTime,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
