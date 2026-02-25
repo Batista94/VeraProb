@@ -1,6 +1,7 @@
 import '../../../application/operational_control_service.dart';
 import '../../domain/authority/commands/operational_command.dart';
 import '../../domain/authority/commands/trips/resolve_alert_command.dart';
+import '../../domain/authority/commands/trips/create_trip_event_command.dart';
 import '../../domain/authority/core/operational_action_mapper.dart';
 import '../../domain/authority/decision/authorization_decision.dart';
 import '../../domain/authority/policies/authority_policy_evaluator.dart';
@@ -60,6 +61,13 @@ class AuthorizingCommandBus implements OperationalCommandBus {
     // 6. Execute Mutation safely behind the Trust Barrier
     if (command is ResolveAlertCommand) {
       await _controlService.resolveAlert(command.tripId);
+    } else if (command is CreateTripEventCommand) {
+      await _controlService.createTripEvent(
+        command.tripId,
+        command.type,
+        metadata: command.metadata,
+        notes: command.notes,
+      );
     }
   }
 }

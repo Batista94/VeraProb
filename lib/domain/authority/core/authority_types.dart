@@ -20,6 +20,7 @@ class OperationalActionType extends Equatable {
     'override_route_deviation',
   );
   static const assignDriver = OperationalActionType('assign_driver');
+  static const createTripEvent = OperationalActionType('create_trip_event');
 
   @override
   List<Object?> get props => [key];

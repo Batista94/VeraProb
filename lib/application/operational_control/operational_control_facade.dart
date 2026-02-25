@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 import '../../domain/authority/commands/trips/resolve_alert_command.dart';
+import '../../domain/authority/commands/trips/create_trip_event_command.dart';
+import '../../domain/enums/event_type.dart';
 import '../authority/operational_command_bus.dart';
 
 /// Application Facade for Operational Intent.
@@ -53,6 +55,39 @@ class OperationalControlFacade {
         print('Reason: ${e.reason}');
       }
       // Re-throw so the UI can show a Snackbar
+      rethrow;
+    }
+  }
+
+  /// Called by the UI when a user registers a new occurrence (Trip Event).
+  Future<void> createTripEvent({
+    required String tripId,
+    required EventType type,
+    Map<String, dynamic>? metadata,
+    String? notes,
+  }) async {
+    final command = CreateTripEventCommand(
+      tripId: tripId,
+      type: type,
+      metadata: metadata,
+      notes: notes,
+    );
+
+    try {
+      if (kDebugMode) {
+        print('====== UI DISPATCHING: Create Trip Event on $tripId ======');
+      }
+
+      await _commandBus.dispatch(command);
+
+      if (kDebugMode) {
+        print('====== UI RECEIVED: Success! Update Screen. ======');
+      }
+    } on UnauthorizedActionException catch (e) {
+      if (kDebugMode) {
+        print('====== UI RECEIVED: ERROR! Policy Blocked. ======');
+        print('Reason: ${e.reason}');
+      }
       rethrow;
     }
   }

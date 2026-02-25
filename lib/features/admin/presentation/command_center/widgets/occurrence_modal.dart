@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/domain/enums/event_type.dart';
 import 'package:busflow/state/providers/fleet_providers.dart';
+import 'package:busflow/state/providers/authority_providers.dart';
+import 'package:busflow/application/authority/operational_command_bus.dart';
 
 /// Modal for registering an operational occurrence on a trip.
 ///
 /// Allows the operator to select event type, severity, and add notes.
-/// On confirm, creates a TripEvent via OperationalControlService.
+/// On confirm, creates a TripEvent via OperationalControlFacade.
 class OccurrenceModal extends ConsumerStatefulWidget {
   final String tripId;
   final String tripLabel;
@@ -228,18 +230,34 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
   Future<void> _submit() async {
     setState(() => _isSubmitting = true);
 
-    final control = ref.read(operationalControlProvider);
-    await control.createTripEvent(
-      widget.tripId,
-      _selectedType,
-      metadata: {'severity': _severity},
-      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-    );
+    final facade = ref.read(operationalControlFacadeProvider);
 
-    triggerUIRefresh(ref);
+    try {
+      await facade.createTripEvent(
+        tripId: widget.tripId,
+        type: _selectedType,
+        metadata: {'severity': _severity},
+        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+      );
 
-    if (mounted) {
-      Navigator.pop(context, true);
+      triggerUIRefresh(ref);
+
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
+    } on UnauthorizedActionException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Acesso Negado: ${e.reason}'),
+            backgroundColor: BusFlowColors.critical,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 

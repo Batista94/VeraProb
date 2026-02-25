@@ -2,8 +2,9 @@ import 'authority_types.dart';
 import '../commands/operational_command.dart';
 import '../commands/trips/resolve_alert_command.dart';
 import '../commands/trips/update_trip_status_command.dart';
-import '../commands/trips/acknowledge_alert_command.dart';
 import '../commands/trips/override_route_deviation_command.dart';
+import '../commands/trips/acknowledge_alert_command.dart';
+import '../commands/trips/create_trip_event_command.dart';
 import '../commands/vehicles/reassign_vehicle_command.dart';
 
 /// Centralized router linking concrete Command intentions to Abstract ActionTypes.
@@ -30,6 +31,10 @@ class OperationalActionMapper {
 
     if (command is ReassignVehicleCommand) {
       return OperationalActionType.reassignVehicle;
+    }
+
+    if (command is CreateTripEventCommand) {
+      return OperationalActionType.createTripEvent;
     }
 
     if (command is OverrideRouteDeviationCommand) {
