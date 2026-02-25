@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:busflow/application/projections/providers/forensic_ledger_provider.dart';
-import 'package:busflow/domain/authority/decision/authorization_decision.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 
 /// Activity Console Strip (SOC/NOC Style)
@@ -61,7 +60,7 @@ class ForensicConsoleStrip extends ConsumerWidget {
                 time: _formatTime(entry.timestamp),
                 actor: entry.actorId,
                 action: entry.actionType,
-                isApproved: entry.result == DecisionResult.approved,
+                isApproved: entry.result == 'APPROVED',
               );
             },
           );

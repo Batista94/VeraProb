@@ -1,0 +1,10 @@
+Analyzing MVP - Bus...                                          
+
+   info - Don't invoke 'print' in production code - lib\application\simulation_control_service.dart:40:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\application\simulation_control_service.dart:80:11 - avoid_print
+   info - The private field _recentFrames could be 'final' - lib\dev\performance_metrics.dart:113:21 - prefer_final_fields
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\dev\performance_metrics.dart:164:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\dev\performance_metrics.dart:166:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\dev\performance_metrics.dart:168:45 - deprecated_member_use
+   info - The type of the right operand ('DecisionResult') isn't a subtype or a supertype of the left operand ('String') - lib\features\admin\presentation\command_center\widgets\forensic_console_strip.dart:64:42 - unrelated_type_equality_checks
+

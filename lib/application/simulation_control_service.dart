@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../domain/entities/operational_trip.dart';
 import '../domain/entities/trip_event.dart';
 import '../domain/enums/event_type.dart';
@@ -37,7 +38,7 @@ class SimulationControlService implements OperationalControlService {
         )
         .catchError((e) {
           // In production, log to crashlytics/sentry
-          print('Failed to log audit action: $e');
+          debugPrint('Failed to log audit action: $e');
         });
 
     final event = _simulation.addEvent(
@@ -77,7 +78,7 @@ class SimulationControlService implements OperationalControlService {
         )
         .catchError((e) {
           // In production, log to crashlytics/sentry
-          print('Failed to log audit action: $e');
+          debugPrint('Failed to log audit action: $e');
         });
 
     final event = _simulation.addEvent(

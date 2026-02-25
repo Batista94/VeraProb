@@ -110,7 +110,7 @@ class PerformanceOverlayHud extends ConsumerStatefulWidget {
 class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
     with SingleTickerProviderStateMixin {
   late final Ticker _ticker;
-  List<FrameTiming> _recentFrames = [];
+  final List<FrameTiming> _recentFrames = [];
   double _currentFps = 60.0;
 
   @override
@@ -161,11 +161,16 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.85),
+            color: Colors.black.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.greenAccent.withOpacity(0.5)),
+            border: Border.all(
+              color: Colors.greenAccent.withValues(alpha: 0.5),
+            ),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 10,
+              ),
             ],
           ),
           child: DefaultTextStyle(
