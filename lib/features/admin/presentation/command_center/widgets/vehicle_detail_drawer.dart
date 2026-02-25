@@ -10,6 +10,8 @@ import 'package:busflow/application/intelligence/suggestion_engine.dart';
 import 'package:busflow/state/providers/fleet_providers.dart';
 import 'package:busflow/presentation/shared/widgets/status_badge.dart';
 import 'occurrence_modal.dart';
+import 'package:busflow/domain/authority/commands/trips/update_trip_status_command.dart';
+import '../utils/ui_command_dispatcher.dart';
 
 /// Detailed vehicle/trip drawer shown when an operator selects a trip.
 ///
@@ -332,13 +334,8 @@ class _ActionsSection extends ConsumerWidget {
                   enabled:
                       trip.status == TripStatus.delayed ||
                       trip.status == TripStatus.interrupted,
-                  onTap: () => _updateStatus(
-                    ref,
-                    context,
-                    trip.id,
-                    TripStatus.enRoute,
-                    reason: 'Regularizado pelo operador',
-                  ),
+                  onTap: () =>
+                      _dispatchStatusUpdate(context, ref, TripStatus.enRoute),
                 ),
               ),
               const SizedBox(width: 6),
@@ -364,12 +361,10 @@ class _ActionsSection extends ConsumerWidget {
                   label: 'Redespachar',
                   color: BusFlowColors.scheduled,
                   enabled: trip.status.isActive,
-                  onTap: () => _updateStatus(
-                    ref,
+                  onTap: () => _dispatchStatusUpdate(
                     context,
-                    trip.id,
+                    ref,
                     TripStatus.dispatched,
-                    reason: 'Redespachado pelo operador',
                   ),
                 ),
               ),
@@ -389,12 +384,10 @@ class _ActionsSection extends ConsumerWidget {
                     title: 'Interromper Viagem',
                     message:
                         'Confirma a interrupção da viagem ${trip.routeShortName ?? trip.routeId}?',
-                    onConfirm: () => _updateStatus(
-                      ref,
+                    onConfirm: () => _dispatchStatusUpdate(
                       context,
-                      trip.id,
+                      ref,
                       TripStatus.interrupted,
-                      reason: 'Interrompido pelo operador',
                     ),
                   ),
                 ),
@@ -416,13 +409,8 @@ class _ActionsSection extends ConsumerWidget {
               message:
                   'ATENÇÃO: Esta ação é irreversível.\nConfirma o cancelamento da viagem ${trip.routeShortName ?? trip.routeId}?',
               destructive: true,
-              onConfirm: () => _updateStatus(
-                ref,
-                context,
-                trip.id,
-                TripStatus.cancelled,
-                reason: 'Cancelado pelo operador',
-              ),
+              onConfirm: () =>
+                  _dispatchStatusUpdate(context, ref, TripStatus.cancelled),
             ),
           ),
         ],
@@ -430,16 +418,20 @@ class _ActionsSection extends ConsumerWidget {
     );
   }
 
-  Future<void> _updateStatus(
-    WidgetRef ref,
+  Future<void> _dispatchStatusUpdate(
     BuildContext context,
-    String tripId,
-    TripStatus newStatus, {
-    String? reason,
-  }) async {
-    final control = ref.read(operationalControlProvider);
-    await control.updateTripStatus(tripId, newStatus, reason: reason);
-    triggerUIRefresh(ref);
+    WidgetRef ref,
+    TripStatus newStatus,
+  ) async {
+    final command = UpdateTripStatusCommand(
+      tripId: trip.id,
+      newStatus: newStatus,
+    );
+
+    final success = await UiCommandDispatcher.dispatch(context, ref, command);
+    if (success) {
+      triggerUIRefresh(ref);
+    }
   }
 
   Future<void> _showOccurrenceModal(BuildContext context, WidgetRef ref) async {

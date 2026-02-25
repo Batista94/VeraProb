@@ -25,6 +25,7 @@ class FleetMap extends ConsumerStatefulWidget {
 
 class _FleetMapState extends ConsumerState<FleetMap> {
   final MapController _mapController = MapController();
+  bool _showLabels = true;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +85,14 @@ class _FleetMapState extends ConsumerState<FleetMap> {
             maxZoom: 18,
             backgroundColor: BusFlowColors.background,
             onPositionChanged: (position, hasGesture) {
+              final zoom = position.zoom;
+              final shouldShowLabels = zoom >= 14.0;
+              if (_showLabels != shouldShowLabels) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) setState(() => _showLabels = shouldShowLabels);
+                });
+              }
+
               if (hasGesture) {
                 // Break follow mode if operator manually pans the map
                 final filter = ref.read(commandCenterFilterProvider);
@@ -116,18 +125,28 @@ class _FleetMapState extends ConsumerState<FleetMap> {
                   fleetAttentionProjectionProvider,
                 ),
                 selectedId: selectedId,
+                showLabels: _showLabels,
                 onMarkerTap: (tripId) {
                   ref.read(selectedTripIdProvider.notifier).state = tripId;
 
                   // Active Follow Mode
-                  final vehicleId = projection.allFilteredVehicles
+                  final vehicle = projection.allFilteredVehicles
                       .where((v) => v.tripId == tripId)
-                      .firstOrNull
-                      ?.vehicleId;
-                  if (vehicleId != null) {
+                      .firstOrNull;
+
+                  if (vehicle != null) {
                     ref
                         .read(commandCenterFilterProvider.notifier)
-                        .setFollowVehicleId(vehicleId);
+                        .setFollowVehicleId(vehicle.vehicleId);
+
+                    // Instant Pan
+                    final targetZoom = _mapController.camera.zoom < 15.0
+                        ? 16.0
+                        : _mapController.camera.zoom;
+                    _mapController.move(
+                      LatLng(vehicle.latitude, vehicle.longitude),
+                      targetZoom,
+                    );
                   }
                 },
               ),

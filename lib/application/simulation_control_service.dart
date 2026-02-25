@@ -25,14 +25,20 @@ class SimulationControlService implements OperationalControlService {
   }) async {
     final oldStatus = _simulation.updateTripStatus(tripId, newStatus);
 
-    await _auditService.logAction(
-      operatorId: 'operator_local_mock', // TODO: Get from auth session
-      actionType: 'TRIP_STATUS_CHANGE',
-      entityId: tripId,
-      oldValue: oldStatus?.name,
-      newValue: newStatus.name,
-      reason: reason ?? 'Mudança de status via painel',
-    );
+    // Fire-and-forget: Audit logging never blocks operational flow
+    _auditService
+        .logAction(
+          operatorId: 'operator_local_mock', // TODO: Get from auth session
+          actionType: 'TRIP_STATUS_CHANGE',
+          entityId: tripId,
+          oldValue: oldStatus?.name,
+          newValue: newStatus.name,
+          reason: reason ?? 'Mudança de status via painel',
+        )
+        .catchError((e) {
+          // In production, log to crashlytics/sentry
+          print('Failed to log audit action: $e');
+        });
 
     final event = _simulation.addEvent(
       tripId: tripId,
@@ -59,14 +65,20 @@ class SimulationControlService implements OperationalControlService {
   }) async {
     final trip = _simulation.getTripById(tripId);
 
-    await _auditService.logAction(
-      operatorId: 'operator_local_mock', // TODO: Get from auth session
-      actionType: 'CREATE_INCIDENT_${eventType.name.toUpperCase()}',
-      entityId: tripId,
-      oldValue: trip?.status.name,
-      newValue: trip?.status.name, // Status might not change directly here
-      reason: notes ?? 'Incidente reportado manualmente',
-    );
+    // Fire-and-forget: Audit logging never blocks operational flow
+    _auditService
+        .logAction(
+          operatorId: 'operator_local_mock', // TODO: Get from auth session
+          actionType: 'CREATE_INCIDENT_${eventType.name.toUpperCase()}',
+          entityId: tripId,
+          oldValue: trip?.status.name,
+          newValue: trip?.status.name, // Status might not change directly here
+          reason: notes ?? 'Incidente reportado manualmente',
+        )
+        .catchError((e) {
+          // In production, log to crashlytics/sentry
+          print('Failed to log audit action: $e');
+        });
 
     final event = _simulation.addEvent(
       tripId: tripId,

@@ -14,6 +14,7 @@ import '../../domain/enums/trip_status.dart';
 class FleetSimulationService {
   final StressScenarioConfig? config;
   late final Random _random; // Deterministic seed for consistency
+  Timer? _simTimer;
 
   FleetSimulationService({this.config}) {
     _random = Random(config?.seed ?? 42);
@@ -174,34 +175,32 @@ class FleetSimulationService {
     return TripStatus.dispatched;
   }
 
+  void _ensureSimulationRunning(Duration interval) {
+    if (_simTimer != null) return;
+    _initializeTrips();
+    _simTimer = Timer.periodic(interval, (_) {
+      _tickCount++;
+      _advanceSimulation();
+      _emitCurrentState();
+    });
+  }
+
   /// Get a stream of operational trips, updated every [interval].
   Stream<List<OperationalTrip>> tripStream({
     Duration interval = const Duration(seconds: 15),
   }) async* {
-    _initializeTrips();
-
-    while (true) {
-      _tickCount++;
-      _advanceSimulation();
-      yield _trips.map((t) => t.toOperationalTrip()).toList();
-      await Future.delayed(interval);
-    }
+    _ensureSimulationRunning(interval);
+    yield currentTrips;
+    yield* _tripChangeController.stream;
   }
 
   /// Get a stream of vehicle positions, updated every [interval].
   Stream<List<VehiclePosition>> positionStream({
     Duration interval = const Duration(seconds: 15),
   }) async* {
-    _initializeTrips();
-
-    while (true) {
-      _advanceSimulation();
-      yield _trips
-          .where((t) => t.status.isActive && !t.isSignalLost)
-          .map((t) => t.toVehiclePosition())
-          .toList();
-      await Future.delayed(interval);
-    }
+    _ensureSimulationRunning(interval);
+    yield currentPositions;
+    yield* _positionChangeController.stream;
   }
 
   /// Get current snapshot of trips (non-streaming)

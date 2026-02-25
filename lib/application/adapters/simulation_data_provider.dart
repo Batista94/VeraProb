@@ -15,6 +15,7 @@ class SimulationDataProvider implements IOperationalDataProvider {
 
   StreamSubscription? _sub;
   final _controller = StreamController<List<VehiclePosition>>.broadcast();
+  List<VehiclePosition>? _lastData;
 
   bool _isConnected = false;
 
@@ -25,7 +26,12 @@ class SimulationDataProvider implements IOperationalDataProvider {
   });
 
   @override
-  Stream<List<VehiclePosition>> get positionStream => _controller.stream;
+  Stream<List<VehiclePosition>> get positionStream async* {
+    if (_lastData != null) {
+      yield _lastData!;
+    }
+    yield* _controller.stream;
+  }
 
   @override
   bool get isConnected => _isConnected;
@@ -38,6 +44,7 @@ class SimulationDataProvider implements IOperationalDataProvider {
     _sub = _simulationService.positionStream(interval: updateInterval).listen((
       data,
     ) {
+      _lastData = data;
       metrics?.markIngestion();
       _controller.add(data);
     }, onError: (e) => _controller.addError(e));

@@ -36,7 +36,7 @@ class VehicleMarkerWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = status.color;
     // Map confidence directly to opacity (with a minimum baseline so it doesn't disappear completely)
-    final baseOpacity = (confidence * 0.7) + 0.3; // 1.0 -> 1.0, 0.0 -> 0.3
+    final baseOpacity = (confidence * 0.8) + 0.2; // 1.0 -> 1.0, 0.0 -> 0.2
     final finalOpacity = baseOpacity * opacityMultiplier;
 
     return GestureDetector(
@@ -93,14 +93,15 @@ class VehicleMarkerWidget extends StatelessWidget {
           width: isSelected ? 3 : 1.5,
         ),
         boxShadow: [
+          if (isSelected)
+            BoxShadow(
+              color: color.withValues(alpha: 0.6),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
           BoxShadow(
-            color: color.withValues(alpha: 0.5),
-            blurRadius: isSelected ? 8 : 4,
-            spreadRadius: isSelected ? 2 : 0,
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 3,
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 2,
             offset: const Offset(0, 1),
           ),
         ],
@@ -164,7 +165,7 @@ class _PulsingRingState extends State<_PulsingRing>
       animation: _animation,
       builder: (context, child) {
         final spread = widget.isSelected ? 4.0 : 2.0;
-        final extraSpread = _animation.value * 8.0;
+        final extraSpread = _animation.value * 24.0;
 
         return Container(
           decoration: BoxDecoration(
@@ -172,9 +173,9 @@ class _PulsingRingState extends State<_PulsingRing>
             boxShadow: [
               BoxShadow(
                 color: widget.color.withValues(
-                  alpha: 0.6 - (_animation.value * 0.4),
+                  alpha: 0.8 - (_animation.value * 0.8),
                 ),
-                blurRadius: widget.isSelected ? 12 : 8,
+                blurRadius: widget.isSelected ? 20 : 16,
                 spreadRadius: spread + extraSpread,
               ),
             ],

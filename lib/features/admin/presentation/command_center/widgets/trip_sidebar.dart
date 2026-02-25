@@ -55,8 +55,27 @@ class TripSidebar extends ConsumerWidget {
                           trip: trip,
                           isSelected: trip.id == selectedId,
                           onTap: () {
+                            final isSelecting = trip.id != selectedId;
                             ref.read(selectedTripIdProvider.notifier).state =
-                                trip.id == selectedId ? null : trip.id;
+                                isSelecting ? trip.id : null;
+
+                            if (isSelecting) {
+                              final positions = ref
+                                  .read(normalizedStateProvider)
+                                  .valueOrNull;
+                              final vehicle = positions
+                                  ?.where((v) => v.tripId == trip.id)
+                                  .firstOrNull;
+                              if (vehicle != null) {
+                                ref
+                                    .read(commandCenterFilterProvider.notifier)
+                                    .setFollowVehicleId(vehicle.vehicleId);
+                              }
+                            } else {
+                              ref
+                                  .read(commandCenterFilterProvider.notifier)
+                                  .setFollowVehicleId(null);
+                            }
                           },
                         );
                       },

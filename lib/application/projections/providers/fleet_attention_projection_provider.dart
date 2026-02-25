@@ -73,7 +73,7 @@ final fleetAttentionProjectionProvider = Provider<FleetAttentionProjection>((
       } else {
         // Normal during Incident: Dimmed
         vehicleStates[state.vehicleId] = const AttentionContext(
-          opacityMultiplier: 0.2, // Fade out
+          opacityMultiplier: 0.6, // Visibility increased from 0.2 to 0.6
           isPulsing: false,
         );
       }

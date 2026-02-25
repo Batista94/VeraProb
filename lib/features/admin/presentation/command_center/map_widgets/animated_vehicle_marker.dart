@@ -16,6 +16,7 @@ class AnimatedFleetMarkerLayer extends StatefulWidget {
   final List<dynamic> trips;
   final FleetAttentionProjection? attentionProjection;
   final String? selectedId;
+  final bool showLabels;
   final void Function(String) onMarkerTap;
 
   const AnimatedFleetMarkerLayer({
@@ -24,6 +25,7 @@ class AnimatedFleetMarkerLayer extends StatefulWidget {
     required this.trips,
     this.attentionProjection,
     this.selectedId,
+    this.showLabels = true,
     required this.onMarkerTap,
   });
 
@@ -95,6 +97,12 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
     _animStates.removeWhere((id, _) => !currentIds.contains(id));
 
     if (needsAnimation) {
+      // Prevent unaffected markers from teleporting when controller resets to 0.0
+      for (final state in _animStates.values) {
+        if (state.oldPoint != state.currentPoint) {
+          state.oldPoint = state.currentPoint;
+        }
+      }
       _controller.forward(from: 0.0);
     }
   }
@@ -118,9 +126,6 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
 
   @override
   Widget build(BuildContext context) {
-    final camera = MapCamera.of(context);
-    final showLabels = camera.zoom >= 14.0;
-
     final markers = widget.states.map((state) {
       final animState = _animStates[state.vehicleId];
       final point =
@@ -148,7 +153,7 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
           confidence: state.confidence,
           heading: state.heading,
           isSelected: isSelected,
-          showLabel: showLabels,
+          showLabel: widget.showLabels,
           opacityMultiplier: attention?.opacityMultiplier ?? 1.0,
           isPulsing: attention?.isPulsing ?? false,
           onTap: () => widget.onMarkerTap(state.tripId),
