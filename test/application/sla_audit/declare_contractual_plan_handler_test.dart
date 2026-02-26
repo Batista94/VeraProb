@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:busflow/application/sla_audit/contractual_service_input.dart';
 import 'package:busflow/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:busflow/application/sla_audit/declare_contractual_plan_handler.dart';
-import 'package:busflow/domain/sla_audit/contractual_plan_declared_event.dart';
 import 'package:busflow/domain/sla_audit/domain_exception.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
@@ -87,9 +86,9 @@ void main() {
         expect(persisted, isNotNull);
         expect(persisted!.id, plan.id);
 
-        // Exactly one event was appended to the ledger
+        // Exactly one entry was appended to the ledger
         expect(ledger.entries, hasLength(1));
-        expect(ledger.entries.first, isA<ContractualPlanDeclaredEvent>());
+        expect(ledger.entries.first.type, 'PLAN_DECLARED');
       },
     );
 

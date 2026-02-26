@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math';
 
+import '../../application/sla_audit/sla_ledger_mapper.dart';
 import '../../domain/entities/vehicle_operational_state.dart';
 import '../../domain/sla_audit/contractual_execution_state.dart';
 import '../../domain/sla_audit/contractual_execution_state_repository.dart';
@@ -87,7 +89,8 @@ class ContractualEvaluationEngine {
           await _executionRepo.save(state);
 
           for (final event in state.domainEvents) {
-            await _ledgerRepo.append(event);
+            final entry = SlaLedgerMapper.mapToEntry(event);
+            await _ledgerRepo.append(entry);
           }
 
           _firstEntryTimestamps.remove(state.setId);
@@ -118,7 +121,8 @@ class ContractualEvaluationEngine {
       await _executionRepo.save(state);
 
       for (final event in state.domainEvents) {
-        await _ledgerRepo.append(event);
+        final entry = SlaLedgerMapper.mapToEntry(event);
+        await _ledgerRepo.append(entry);
       }
     }
   }

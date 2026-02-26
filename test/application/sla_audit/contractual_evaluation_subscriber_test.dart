@@ -64,6 +64,7 @@ void main() {
     return ContractualExecutionState.create(
       setId: setId,
       contractId: contractId,
+      planVersion: 1,
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
@@ -136,6 +137,7 @@ void main() {
       final expiredState = ContractualExecutionState.create(
         setId: 'set-expired',
         contractId: 'c-1',
+        planVersion: 1,
         startLatitude: geoLat,
         startLongitude: geoLng,
         startRadiusMeters: geoRadius,

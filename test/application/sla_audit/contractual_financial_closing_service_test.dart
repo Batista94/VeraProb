@@ -5,10 +5,12 @@ import 'package:busflow/application/sla_audit/projections/contractual_financial_
 import 'package:busflow/core/time/brazil_time.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 
 void main() {
   late InMemoryContractualExecutionStateRepository executionRepo;
   late InMemoryContractualFinancialSnapshotRepository snapshotRepo;
+  late InMemorySlaAuditLedgerRepository ledgerRepo;
   late ContractualFinancialSnapshotGenerator generator;
   late ContractualFinancialClosingService closingService;
 
@@ -17,9 +19,11 @@ void main() {
     BrazilTime.ensureInitialized();
     executionRepo = InMemoryContractualExecutionStateRepository();
     snapshotRepo = InMemoryContractualFinancialSnapshotRepository();
+    ledgerRepo = InMemorySlaAuditLedgerRepository();
     generator = ContractualFinancialSnapshotGenerator(
       executionRepo: executionRepo,
       snapshotRepo: snapshotRepo,
+      ledgerRepo: ledgerRepo,
     );
     closingService = ContractualFinancialClosingService(generator: generator);
   });

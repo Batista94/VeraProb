@@ -38,6 +38,7 @@ void main() {
     return ContractualExecutionState.create(
       setId: setId,
       contractId: contractId,
+      planVersion: 1,
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,

@@ -1,13 +1,17 @@
-import 'domain_event.dart';
+import 'sla_ledger_entry.dart';
 
-/// Domain Port: Append-only ledger for SLA Audit domain events.
+/// Domain Port: Append-only ledger for SLA Audit forensic entries.
 ///
 /// This port belongs exclusively to the `sla_audit` subdomain.
 /// It is intentionally separate from the Trust Backbone's
 /// [ForensicDecisionRepository], which handles [AuthorizationDecision]s.
 ///
-/// Implementations must guarantee append-only semantics.
+/// Implementations must guarantee append-only semantics and monotonic ordering.
 abstract class SlaAuditLedgerRepository {
-  /// Appends a domain event to the ledger.
-  Future<void> append(DomainEvent event);
+  /// Appends a forensic entry to the ledger.
+  Future<void> append(SlaLedgerEntry entry);
+
+  /// Retrieves the sequence ID of the most recent entry in the ledger.
+  /// Used to deterministically capture the causal boundary of a financial closure.
+  Future<int?> getLastEntryId();
 }

@@ -24,6 +24,7 @@ void main() {
     return ContractualExecutionState.create(
       setId: setId,
       contractId: contractId,
+      planVersion: 1,
       startLatitude: startLat,
       startLongitude: startLng,
       startRadiusMeters: startRadius,
@@ -59,6 +60,7 @@ void main() {
         () => ContractualExecutionState.create(
           setId: 'set-1',
           contractId: 'c-1',
+          planVersion: 1,
           startLatitude: -23.55,
           startLongitude: -46.63,
           startRadiusMeters: 100,
@@ -74,6 +76,7 @@ void main() {
         () => ContractualExecutionState.create(
           setId: 'set-1',
           contractId: 'c-1',
+          planVersion: 1,
           startLatitude: -23.55,
           startLongitude: -46.63,
           startRadiusMeters: 100,

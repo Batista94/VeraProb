@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
 import '../shared/money.dart';
+import 'domain_exception.dart';
 
 /// Immutable daily financial snapshot for contractual SLA obligations.
 ///
@@ -32,6 +33,19 @@ class ContractualFinancialDailySnapshot extends Equatable {
   final double riskPercentage;
   final double lossPercentage;
 
+  /// Causal linkage: The last ledger entry ID considered in this closure.
+  /// Proves deterministically the exact boundary of events computed.
+  final int? lastLedgerEntryId;
+
+  /// Reprocessing chain: The ID of the snapshot this one replaces (if any).
+  final String? previousSnapshotId;
+
+  /// Reprocessing chain: Required justification if [previousSnapshotId] is set.
+  final String? reprocessingReason;
+
+  /// Auditing: The user who triggered the manual reprocessing (null for auto).
+  final String? authorUserId;
+
   const ContractualFinancialDailySnapshot._({
     required this.id,
     required this.contractId,
@@ -44,6 +58,10 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required this.lostRevenue,
     required this.riskPercentage,
     required this.lossPercentage,
+    required this.lastLedgerEntryId,
+    this.previousSnapshotId,
+    this.reprocessingReason,
+    this.authorUserId,
   });
 
   /// Creates a new immutable daily financial snapshot.
@@ -59,7 +77,18 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required Money protectedRevenue,
     required Money revenueAtRisk,
     required Money lostRevenue,
+    required int? lastLedgerEntryId,
+    String? previousSnapshotId,
+    String? reprocessingReason,
+    String? authorUserId,
   }) {
+    if (previousSnapshotId != null &&
+        (reprocessingReason == null || reprocessingReason.trim().isEmpty)) {
+      throw DomainException(
+        'A reprocessing reason is required when providing a previousSnapshotId.',
+      );
+    }
+
     final normalizedDate = DateTime.utc(
       operationalDateUtc.year,
       operationalDateUtc.month,
@@ -86,6 +115,10 @@ class ContractualFinancialDailySnapshot extends Equatable {
       lostRevenue: lostRevenue,
       riskPercentage: riskPercentage,
       lossPercentage: lossPercentage,
+      lastLedgerEntryId: lastLedgerEntryId,
+      previousSnapshotId: previousSnapshotId,
+      reprocessingReason: reprocessingReason,
+      authorUserId: authorUserId,
     );
   }
 
@@ -102,5 +135,9 @@ class ContractualFinancialDailySnapshot extends Equatable {
     lostRevenue,
     riskPercentage,
     lossPercentage,
+    lastLedgerEntryId,
+    previousSnapshotId,
+    reprocessingReason,
+    authorUserId,
   ];
 }

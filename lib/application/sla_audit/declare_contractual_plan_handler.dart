@@ -3,6 +3,7 @@ import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'declare_contractual_plan_command.dart';
+import 'sla_ledger_mapper.dart';
 
 /// Application service that handles the declaration of a contractual plan.
 ///
@@ -67,9 +68,10 @@ class DeclareContractualPlanHandler {
     // 3. Persist aggregate
     await _repository.save(plan);
 
-    // 4. Append all domain events to the ledger (generic, no type casting)
+    // 4. Append all domain events to the ledger
     for (final event in plan.domainEvents) {
-      await _ledger.append(event);
+      final entry = SlaLedgerMapper.mapToEntry(event);
+      await _ledger.append(entry);
     }
 
     // 5. Return aggregate

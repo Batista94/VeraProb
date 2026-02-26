@@ -4,6 +4,7 @@ import 'domain_event.dart';
 class ExecutionBoundEvent extends DomainEvent {
   final String setId;
   final String contractId;
+  final int planVersion;
   final String vehicleId;
   final DateTime bindingTimestampUtc;
   final double bindingLatitude;
@@ -13,6 +14,7 @@ class ExecutionBoundEvent extends DomainEvent {
     required super.occurredAtUtc,
     required this.setId,
     required this.contractId,
+    required this.planVersion,
     required this.vehicleId,
     required this.bindingTimestampUtc,
     required this.bindingLatitude,
@@ -25,12 +27,14 @@ class ExecutionBoundEvent extends DomainEvent {
 class NoShowDeclaredEvent extends DomainEvent {
   final String setId;
   final String contractId;
+  final int planVersion;
   final DateTime declaredAtUtc;
 
   const NoShowDeclaredEvent({
     required super.occurredAtUtc,
     required this.setId,
     required this.contractId,
+    required this.planVersion,
     required this.declaredAtUtc,
   });
 }
@@ -40,12 +44,14 @@ class NoShowDeclaredEvent extends DomainEvent {
 class EvidenceGapDeclaredEvent extends DomainEvent {
   final String setId;
   final String contractId;
+  final int planVersion;
   final DateTime declaredAtUtc;
 
   const EvidenceGapDeclaredEvent({
     required super.occurredAtUtc,
     required this.setId,
     required this.contractId,
+    required this.planVersion,
     required this.declaredAtUtc,
   });
 }

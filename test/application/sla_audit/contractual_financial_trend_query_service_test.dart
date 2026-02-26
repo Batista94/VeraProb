@@ -34,6 +34,7 @@ void main() {
       protectedRevenue: protected_,
       revenueAtRisk: atRisk,
       lostRevenue: lost,
+      lastLedgerEntryId: 1,
     );
   }
 

@@ -9,7 +9,9 @@ import '../sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
 import '../sla_audit/in_memory_plan_declaration_repository.dart';
 import '../sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import '../sla_audit/postgres_contractual_execution_state_repository.dart';
+import '../sla_audit/postgres_contractual_financial_snapshot_repository.dart';
 import '../sla_audit/postgres_plan_declaration_repository.dart';
+import '../sla_audit/postgres_sla_audit_ledger_repository.dart';
 import 'persistence_mode.dart';
 
 /// Provider that holds the current persistence mode of the application.
@@ -54,7 +56,7 @@ class PersistenceProvider {
       case PersistenceMode.inMemory:
         return InMemorySlaAuditLedgerRepository();
       case PersistenceMode.postgres:
-        throw UnimplementedError('Postgres persistence not implemented yet');
+        return PostgresSlaAuditLedgerRepository();
     }
   }
 
@@ -64,7 +66,7 @@ class PersistenceProvider {
       case PersistenceMode.inMemory:
         return InMemoryContractualFinancialSnapshotRepository();
       case PersistenceMode.postgres:
-        throw UnimplementedError('Postgres persistence not implemented yet');
+        return PostgresContractualFinancialSnapshotRepository();
     }
   }
 }

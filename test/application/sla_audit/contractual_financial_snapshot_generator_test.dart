@@ -6,10 +6,12 @@ import 'package:busflow/domain/shared/money.dart';
 import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 
 void main() {
   late InMemoryContractualExecutionStateRepository executionRepo;
   late InMemoryContractualFinancialSnapshotRepository snapshotRepo;
+  late InMemorySlaAuditLedgerRepository ledgerRepo;
   late ContractualFinancialSnapshotGenerator generator;
 
   const geoLat = -23.5505;
@@ -21,9 +23,11 @@ void main() {
     BrazilTime.ensureInitialized();
     executionRepo = InMemoryContractualExecutionStateRepository();
     snapshotRepo = InMemoryContractualFinancialSnapshotRepository();
+    ledgerRepo = InMemorySlaAuditLedgerRepository();
     generator = ContractualFinancialSnapshotGenerator(
       executionRepo: executionRepo,
       snapshotRepo: snapshotRepo,
+      ledgerRepo: ledgerRepo,
     );
   });
 
@@ -38,6 +42,7 @@ void main() {
     return ContractualExecutionState.create(
       setId: setId,
       contractId: contractId,
+      planVersion: 1,
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,

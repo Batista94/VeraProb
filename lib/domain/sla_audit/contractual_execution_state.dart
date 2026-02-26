@@ -32,6 +32,7 @@ class ContractualExecutionState {
   final String id;
   final String setId;
   final String contractId;
+  final int planVersion;
 
   // ── Geofence (denormalized from ContractualServiceExecution) ───
   /// Start geofence center latitude. Immutable after creation.
@@ -92,6 +93,7 @@ class ContractualExecutionState {
     required this.id,
     required this.setId,
     required this.contractId,
+    required this.planVersion,
     required this.startLatitude,
     required this.startLongitude,
     required this.startRadiusMeters,
@@ -119,6 +121,7 @@ class ContractualExecutionState {
   static ContractualExecutionState create({
     required String setId,
     required String contractId,
+    required int planVersion,
     required double startLatitude,
     required double startLongitude,
     required int startRadiusMeters,
@@ -148,6 +151,7 @@ class ContractualExecutionState {
       id: const Uuid().v4(),
       setId: setId,
       contractId: contractId,
+      planVersion: planVersion,
       startLatitude: startLatitude,
       startLongitude: startLongitude,
       startRadiusMeters: startRadiusMeters,
@@ -191,6 +195,7 @@ class ContractualExecutionState {
         occurredAtUtc: timestampUtc,
         setId: setId,
         contractId: contractId,
+        planVersion: planVersion,
         vehicleId: vehicleId,
         bindingTimestampUtc: timestampUtc,
         bindingLatitude: latitude,
@@ -225,6 +230,7 @@ class ContractualExecutionState {
         occurredAtUtc: nowUtc,
         setId: setId,
         contractId: contractId,
+        planVersion: planVersion,
         declaredAtUtc: nowUtc,
       ),
     );
@@ -247,6 +253,7 @@ class ContractualExecutionState {
         occurredAtUtc: nowUtc,
         setId: setId,
         contractId: contractId,
+        planVersion: planVersion,
         declaredAtUtc: nowUtc,
       ),
     );
@@ -276,6 +283,7 @@ class ContractualExecutionState {
     required String id,
     required String setId,
     required String contractId,
+    required int planVersion,
     required double startLatitude,
     required double startLongitude,
     required int startRadiusMeters,
@@ -298,6 +306,7 @@ class ContractualExecutionState {
       id: id,
       setId: setId,
       contractId: contractId,
+      planVersion: planVersion,
       startLatitude: startLatitude,
       startLongitude: startLongitude,
       startRadiusMeters: startRadiusMeters,

@@ -14,6 +14,7 @@ void main() {
         protectedRevenue: Money.fromDouble(500.0),
         revenueAtRisk: Money.fromDouble(300.0),
         lostRevenue: Money.fromDouble(200.0),
+        lastLedgerEntryId: 1,
       );
 
       expect(snapshot.contractId, 'c-1');
@@ -34,6 +35,7 @@ void main() {
         protectedRevenue: const Money(10000),
         revenueAtRisk: const Money(0),
         lostRevenue: const Money(0),
+        lastLedgerEntryId: 1,
       );
 
       expect(snapshot.operationalDateUtc, DateTime.utc(2026, 3, 1));
@@ -49,6 +51,7 @@ void main() {
         protectedRevenue: const Money(50000),
         revenueAtRisk: const Money(30000),
         lostRevenue: const Money(20000),
+        lastLedgerEntryId: 1,
       );
 
       expect(snapshot.riskPercentage, 30.0);
@@ -65,6 +68,7 @@ void main() {
         protectedRevenue: const Money(0),
         revenueAtRisk: const Money(0),
         lostRevenue: const Money(0),
+        lastLedgerEntryId: 1,
       );
 
       expect(snapshot.riskPercentage, 0.0);
@@ -81,6 +85,7 @@ void main() {
         protectedRevenue: const Money(10000),
         revenueAtRisk: const Money(0),
         lostRevenue: const Money(0),
+        lastLedgerEntryId: 1,
       );
 
       // Different id means different instance but same value semantics

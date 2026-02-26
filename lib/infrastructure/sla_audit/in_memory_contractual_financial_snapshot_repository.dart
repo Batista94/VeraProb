@@ -19,8 +19,20 @@ class InMemoryContractualFinancialSnapshotRepository
     String? contractId,
   }) async {
     final snapshots = _store.values.toList();
-    if (contractId == null) return snapshots;
-    return snapshots.where((s) => s.contractId == contractId).toList();
+
+    // Identify superseded snapshots (those referenced by another snapshot's previousSnapshotId)
+    final supersededIds = snapshots
+        .where((s) => s.previousSnapshotId != null)
+        .map((s) => s.previousSnapshotId!)
+        .toSet();
+
+    // Filter to only active snapshots (not superseded)
+    final activeSnapshots = snapshots.where(
+      (s) => !supersededIds.contains(s.id),
+    );
+
+    if (contractId == null) return activeSnapshots.toList();
+    return activeSnapshots.where((s) => s.contractId == contractId).toList();
   }
 
   @override
@@ -33,9 +45,7 @@ class InMemoryContractualFinancialSnapshotRepository
       operationalDateUtc.month,
       operationalDateUtc.day,
     );
-    return _store.values.any(
-      (s) =>
-          s.operationalDateUtc == normalizedDate && s.contractId == contractId,
-    );
+    final active = await findAll(contractId: contractId);
+    return active.any((s) => s.operationalDateUtc == normalizedDate);
   }
 }
