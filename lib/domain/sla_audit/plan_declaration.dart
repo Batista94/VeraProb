@@ -130,6 +130,31 @@ class PlanDeclaration extends Equatable {
     );
   }
 
+  /// Reconstitutes a [PlanDeclaration] from persistence.
+  ///
+  /// This factory is used by infrastructure repositories to restore
+  /// the aggregate state. It does NOT emit domain events.
+  static PlanDeclaration reconstitute({
+    required String id,
+    required String contractId,
+    required DateTime declaredAtUtc,
+    required String declaredByUserId,
+    required int planVersion,
+    required String originalFileHash,
+    required List<ContractualServiceExecution> services,
+  }) {
+    return PlanDeclaration._(
+      id: id,
+      contractId: contractId,
+      declaredAtUtc: declaredAtUtc,
+      declaredByUserId: declaredByUserId,
+      planVersion: planVersion,
+      originalFileHash: originalFileHash,
+      services: List.unmodifiable(services),
+      domainEvents: const [], // RECONSTITUTION: No events emitted
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,

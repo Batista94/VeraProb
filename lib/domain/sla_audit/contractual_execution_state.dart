@@ -268,6 +268,59 @@ class ContractualExecutionState {
     }
   }
 
+  /// Reconstitutes a [ContractualExecutionState] from persistence.
+  ///
+  /// Restores the full state of the aggregate, including identity,
+  /// status, and binder evidence. Does NOT emit domain events.
+  static ContractualExecutionState reconstitute({
+    required String id,
+    required String setId,
+    required String contractId,
+    required double startLatitude,
+    required double startLongitude,
+    required int startRadiusMeters,
+    String? plannedVehicleId,
+    required double contractualValue,
+    required double noShowPenaltyMultiplier,
+    required DateTime windowStartUtc,
+    required DateTime windowEndUtc,
+    required ExecutionStatus status,
+    required DateTime createdAtUtc,
+    required DateTime lastEvaluatedAtUtc,
+    required DateTime statusLastUpdatedAtUtc,
+    DateTime? finalizedAtUtc,
+    String? boundVehicleId,
+    DateTime? bindingTimestampUtc,
+    double? bindingLatitude,
+    double? bindingLongitude,
+  }) {
+    final state = ContractualExecutionState._(
+      id: id,
+      setId: setId,
+      contractId: contractId,
+      startLatitude: startLatitude,
+      startLongitude: startLongitude,
+      startRadiusMeters: startRadiusMeters,
+      plannedVehicleId: plannedVehicleId,
+      contractualValue: contractualValue,
+      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      windowStartUtc: windowStartUtc,
+      windowEndUtc: windowEndUtc,
+      status: status,
+      createdAtUtc: createdAtUtc,
+      lastEvaluatedAtUtc: lastEvaluatedAtUtc,
+      statusLastUpdatedAtUtc: statusLastUpdatedAtUtc,
+    );
+
+    state._finalizedAtUtc = finalizedAtUtc;
+    state._boundVehicleId = boundVehicleId;
+    state._bindingTimestampUtc = bindingTimestampUtc;
+    state._bindingLatitude = bindingLatitude;
+    state._bindingLongitude = bindingLongitude;
+
+    return state;
+  }
+
   // ── Identity Equality ─────────────────────────────────────
 
   @override

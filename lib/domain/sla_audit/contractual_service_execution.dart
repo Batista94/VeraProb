@@ -155,6 +155,38 @@ class ContractualServiceExecution extends Equatable {
     }
   }
 
+  /// Reconstitutes a [ContractualServiceExecution] from persistence.
+  /// Does NOT generate a new SET; uses the provided one.
+  static ContractualServiceExecution reconstitute({
+    required String setId,
+    required DateTime scheduledStartTimeUtc,
+    required DateTime scheduledEndTimeUtc,
+    required double startLatitude,
+    required double startLongitude,
+    required int startRadiusMeters,
+    required double endLatitude,
+    required double endLongitude,
+    required int endRadiusMeters,
+    String? plannedVehicleId,
+    required double contractualValue,
+    required double noShowPenaltyMultiplier,
+  }) {
+    return ContractualServiceExecution._(
+      setId: setId,
+      scheduledStartTimeUtc: scheduledStartTimeUtc,
+      scheduledEndTimeUtc: scheduledEndTimeUtc,
+      startLatitude: startLatitude,
+      startLongitude: startLongitude,
+      startRadiusMeters: startRadiusMeters,
+      endLatitude: endLatitude,
+      endLongitude: endLongitude,
+      endRadiusMeters: endRadiusMeters,
+      plannedVehicleId: plannedVehicleId,
+      contractualValue: contractualValue,
+      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+    );
+  }
+
   /// Equality is based **exclusively** on [setId].
   @override
   List<Object?> get props => [setId];

@@ -94,11 +94,8 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
     final List<dynamic> servicesJson = data['contractual_service_executions'];
 
     final services = servicesJson.map((s) {
-      // Note: We use the public create() method to ensure invariants are preserved
-      // even during reconstruction, although we should theoretically have a fromStorage()
-      // internal constructor if invariants could change over time.
-      return ContractualServiceExecution.create(
-        contractId: data['contract_id'],
+      return ContractualServiceExecution.reconstitute(
+        setId: s['set_id'],
         scheduledStartTimeUtc: DateTime.parse(s['scheduled_start_time_utc']),
         scheduledEndTimeUtc: DateTime.parse(s['scheduled_end_time_utc']),
         startLatitude: (s['start_latitude'] as num).toDouble(),
@@ -114,23 +111,12 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
       );
     }).toList();
 
-    // Reconstructing using private constructor or create?
-    // The base code uses a private constructor for domain state and a create() for new objects.
-    // For reconstruction, we should ideally use a factory that doesn't emit events or a private constructor.
-    // Since PlanDeclaration._ is private, we'll use a trick or expose a internal constructor if needed.
-    // However, looking at the domain code, PlanDeclaration.create emits a ContractualPlanDeclaredEvent.
-    // For now, we will use the existing structure, acknowledging that reconstruction shouldn't emit events.
-
-    // A better approach for the MVP is to use a direct mapping if permitted.
-    // But since I cannot change the domain (PlanDeclaration._ is private),
-    // and I shouldn't change the domain... I have a challenge.
-    // Wait, let me check PlanDeclaration again.
-
-    return PlanDeclaration.create(
+    return PlanDeclaration.reconstitute(
+      id: data['id'],
       contractId: data['contract_id'],
       declaredAtUtc: DateTime.parse(data['declared_at_utc']),
       declaredByUserId: data['declared_by_user_id'],
-      planVersion: data['plan_version'], // Fixed parameter name
+      planVersion: data['plan_version'],
       originalFileHash: data['original_file_hash'],
       services: services,
     );
