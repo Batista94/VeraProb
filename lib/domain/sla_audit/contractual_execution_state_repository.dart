@@ -20,4 +20,27 @@ abstract class ContractualExecutionStateRepository {
     String contractId,
     DateTime nowUtc,
   );
+
+  /// Retrieves all pending execution states whose time window
+  /// contains [nowUtc], regardless of contract.
+  ///
+  /// Returns an unmodifiable list.
+  Future<List<ContractualExecutionState>> findPendingInWindow(DateTime nowUtc);
+
+  /// Retrieves all pending execution states whose time window
+  /// has expired (windowEndUtc < [nowUtc]), regardless of contract.
+  ///
+  /// Returns an unmodifiable list.
+  Future<List<ContractualExecutionState>> findExpiredPending(DateTime nowUtc);
+
+  /// Retrieves all execution states regardless of status or contract.
+  ///
+  /// Returns an unmodifiable list.
+  Future<List<ContractualExecutionState>> findAll();
+
+  /// Retrieves all execution states for a given contract,
+  /// regardless of status.
+  ///
+  /// Returns an unmodifiable list.
+  Future<List<ContractualExecutionState>> findByContract(String contractId);
 }

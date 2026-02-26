@@ -35,4 +35,45 @@ class InMemoryContractualExecutionStateRepository
 
     return UnmodifiableListView(results);
   }
+
+  @override
+  Future<List<ContractualExecutionState>> findPendingInWindow(
+    DateTime nowUtc,
+  ) async {
+    final results = _store.values.where((s) {
+      return s.status == ExecutionStatus.pending &&
+          !s.windowStartUtc.isAfter(nowUtc) &&
+          !s.windowEndUtc.isBefore(nowUtc);
+    }).toList();
+
+    return UnmodifiableListView(results);
+  }
+
+  @override
+  Future<List<ContractualExecutionState>> findExpiredPending(
+    DateTime nowUtc,
+  ) async {
+    final results = _store.values.where((s) {
+      return s.status == ExecutionStatus.pending &&
+          s.windowEndUtc.isBefore(nowUtc);
+    }).toList();
+
+    return UnmodifiableListView(results);
+  }
+
+  @override
+  Future<List<ContractualExecutionState>> findAll() async {
+    return UnmodifiableListView(_store.values.toList());
+  }
+
+  @override
+  Future<List<ContractualExecutionState>> findByContract(
+    String contractId,
+  ) async {
+    final results = _store.values
+        .where((s) => s.contractId == contractId)
+        .toList();
+
+    return UnmodifiableListView(results);
+  }
 }

@@ -33,6 +33,20 @@ class ContractualExecutionState {
   final String setId;
   final String contractId;
 
+  // ── Geofence (denormalized from ContractualServiceExecution) ───
+  /// Start geofence center latitude. Immutable after creation.
+  final double startLatitude;
+
+  /// Start geofence center longitude. Immutable after creation.
+  final double startLongitude;
+
+  /// Start geofence radius in meters. Immutable after creation.
+  final int startRadiusMeters;
+
+  // ── Vehicle Planning ──────────────────────────────────────────
+  /// Planned vehicle for this obligation. Null means any vehicle can fulfill it.
+  final String? plannedVehicleId;
+
   // ── Time Window ───────────────────────────────────────────
   final DateTime windowStartUtc;
   final DateTime windowEndUtc;
@@ -69,6 +83,10 @@ class ContractualExecutionState {
     required this.id,
     required this.setId,
     required this.contractId,
+    required this.startLatitude,
+    required this.startLongitude,
+    required this.startRadiusMeters,
+    this.plannedVehicleId,
     required this.windowStartUtc,
     required this.windowEndUtc,
     required ExecutionStatus status,
@@ -88,6 +106,10 @@ class ContractualExecutionState {
   static ContractualExecutionState create({
     required String setId,
     required String contractId,
+    required double startLatitude,
+    required double startLongitude,
+    required int startRadiusMeters,
+    String? plannedVehicleId,
     required DateTime windowStartUtc,
     required DateTime windowEndUtc,
   }) {
@@ -103,6 +125,10 @@ class ContractualExecutionState {
       id: const Uuid().v4(),
       setId: setId,
       contractId: contractId,
+      startLatitude: startLatitude,
+      startLongitude: startLongitude,
+      startRadiusMeters: startRadiusMeters,
+      plannedVehicleId: plannedVehicleId,
       windowStartUtc: windowStartUtc,
       windowEndUtc: windowEndUtc,
       status: ExecutionStatus.pending,

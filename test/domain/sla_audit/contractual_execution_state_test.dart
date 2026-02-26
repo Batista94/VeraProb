@@ -10,6 +10,10 @@ void main() {
   ContractualExecutionState makeState({
     String setId = 'set-1',
     String contractId = 'contract-1',
+    double startLat = -23.5505,
+    double startLng = -46.6333,
+    int startRadius = 100,
+    String? plannedVehicleId,
     DateTime? windowStart,
     DateTime? windowEnd,
   }) {
@@ -18,6 +22,10 @@ void main() {
     return ContractualExecutionState.create(
       setId: setId,
       contractId: contractId,
+      startLatitude: startLat,
+      startLongitude: startLng,
+      startRadiusMeters: startRadius,
+      plannedVehicleId: plannedVehicleId,
       windowStartUtc: start,
       windowEndUtc: end,
     );
@@ -47,6 +55,9 @@ void main() {
         () => ContractualExecutionState.create(
           setId: 'set-1',
           contractId: 'c-1',
+          startLatitude: -23.55,
+          startLongitude: -46.63,
+          startRadiusMeters: 100,
           windowStartUtc: t,
           windowEndUtc: t,
         ),
@@ -57,6 +68,9 @@ void main() {
         () => ContractualExecutionState.create(
           setId: 'set-1',
           contractId: 'c-1',
+          startLatitude: -23.55,
+          startLongitude: -46.63,
+          startRadiusMeters: 100,
           windowStartUtc: t,
           windowEndUtc: t.subtract(const Duration(minutes: 1)),
         ),
