@@ -16,6 +16,8 @@ void main() {
     String? plannedVehicleId,
     DateTime? windowStart,
     DateTime? windowEnd,
+    double contractualValue = 150.0,
+    double noShowPenaltyMultiplier = 1.5,
   }) {
     final start = windowStart ?? DateTime.utc(2026, 3, 1, 6, 0);
     final end = windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0);
@@ -26,6 +28,8 @@ void main() {
       startLongitude: startLng,
       startRadiusMeters: startRadius,
       plannedVehicleId: plannedVehicleId,
+      contractualValue: contractualValue,
+      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
       windowStartUtc: start,
       windowEndUtc: end,
     );
@@ -58,6 +62,8 @@ void main() {
           startLatitude: -23.55,
           startLongitude: -46.63,
           startRadiusMeters: 100,
+          contractualValue: 100.0,
+          noShowPenaltyMultiplier: 1.0,
           windowStartUtc: t,
           windowEndUtc: t,
         ),
@@ -71,6 +77,8 @@ void main() {
           startLatitude: -23.55,
           startLongitude: -46.63,
           startRadiusMeters: 100,
+          contractualValue: 100.0,
+          noShowPenaltyMultiplier: 1.0,
           windowStartUtc: t,
           windowEndUtc: t.subtract(const Duration(minutes: 1)),
         ),

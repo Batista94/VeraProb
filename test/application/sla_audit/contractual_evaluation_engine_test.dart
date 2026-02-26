@@ -42,6 +42,8 @@ void main() {
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
       plannedVehicleId: plannedVehicleId,
+      contractualValue: 150.0,
+      noShowPenaltyMultiplier: 1.5,
       windowStartUtc: windowStart ?? DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0),
     );

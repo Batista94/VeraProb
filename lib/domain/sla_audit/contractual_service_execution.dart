@@ -36,6 +36,14 @@ class ContractualServiceExecution extends Equatable {
   // ── Planning ──────────────────────────────────────────────
   final String? plannedVehicleId;
 
+  // ── Financial ─────────────────────────────────────────────
+  /// Contractual value of this service execution obligation.
+  final double contractualValue;
+
+  /// Multiplier applied to contractualValue when the obligation
+  /// results in a NoShow. Must be >= 1.0.
+  final double noShowPenaltyMultiplier;
+
   // ── Private constructor ───────────────────────────────────
   const ContractualServiceExecution._({
     required this.setId,
@@ -48,6 +56,8 @@ class ContractualServiceExecution extends Equatable {
     required this.endLongitude,
     required this.endRadiusMeters,
     this.plannedVehicleId,
+    required this.contractualValue,
+    required this.noShowPenaltyMultiplier,
   });
 
   /// Creates a [ContractualServiceExecution] with a deterministic SET
@@ -68,6 +78,8 @@ class ContractualServiceExecution extends Equatable {
     required double endLongitude,
     required int endRadiusMeters,
     String? plannedVehicleId,
+    required double contractualValue,
+    required double noShowPenaltyMultiplier,
   }) {
     // ── Temporal invariant ────────────────────────────────
     if (!scheduledEndTimeUtc.isAfter(scheduledStartTimeUtc)) {
@@ -86,6 +98,14 @@ class ContractualServiceExecution extends Equatable {
     _validateLongitude(endLongitude, 'endLongitude');
     _validateRadius(endRadiusMeters, 'endRadiusMeters');
 
+    // ── Financial invariants ──────────────────────────────
+    if (contractualValue <= 0) {
+      throw const DomainException('contractualValue must be greater than 0');
+    }
+    if (noShowPenaltyMultiplier < 1.0) {
+      throw const DomainException('noShowPenaltyMultiplier must be >= 1.0');
+    }
+
     // ── Generate deterministic SET ────────────────────────
     final setId = _generateSetId(contractId, scheduledStartTimeUtc);
 
@@ -100,6 +120,8 @@ class ContractualServiceExecution extends Equatable {
       endLongitude: endLongitude,
       endRadiusMeters: endRadiusMeters,
       plannedVehicleId: plannedVehicleId,
+      contractualValue: contractualValue,
+      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
     );
   }
 

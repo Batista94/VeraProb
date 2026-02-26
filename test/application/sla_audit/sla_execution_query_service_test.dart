@@ -22,6 +22,8 @@ void main() {
     String contractId = 'c-1',
     DateTime? windowStart,
     DateTime? windowEnd,
+    double contractualValue = 150.0,
+    double noShowPenaltyMultiplier = 1.5,
   }) {
     return ContractualExecutionState.create(
       setId: setId,
@@ -29,6 +31,8 @@ void main() {
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
+      contractualValue: contractualValue,
+      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
       windowStartUtc: windowStart ?? DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0),
     );
@@ -167,5 +171,64 @@ void main() {
       expect(item.startLongitude, geoLng);
       expect(item.startRadiusMeters, geoRadius);
     });
+
+    test(
+      'getSummary calculates financial projections correctly without fall-through',
+      () async {
+        // 1. Pending: contractualValue = 50.0 → should not affect any revenue
+        final pending = makeState(
+          setId: 'fin-pending',
+          contractualValue: 50.0,
+          noShowPenaltyMultiplier: 1.0,
+        );
+        await repo.save(pending);
+
+        // 2. Executed: contractualValue = 200.0 → protectedRevenue only
+        final executed = makeState(
+          setId: 'fin-exec',
+          contractualValue: 200.0,
+          noShowPenaltyMultiplier: 2.0,
+        );
+        executed.bindExecution(
+          vehicleId: 'v-1',
+          latitude: geoLat,
+          longitude: geoLng,
+          timestampUtc: DateTime.utc(2026, 3, 1, 6, 30),
+        );
+        await repo.save(executed);
+
+        // 3. NoShow: contractualValue = 100.0, multiplier = 1.5 → lostRevenue = 150 only
+        final noShow = makeState(
+          setId: 'fin-noshow',
+          contractualValue: 100.0,
+          noShowPenaltyMultiplier: 1.5,
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        noShow.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
+        await repo.save(noShow);
+
+        // 4. EvidenceGap: contractualValue = 80.0 → revenueAtRisk only
+        final gap = makeState(
+          setId: 'fin-gap',
+          contractualValue: 80.0,
+          noShowPenaltyMultiplier: 1.0,
+        );
+        gap.markEvidenceGap(DateTime.utc(2026, 3, 1, 6, 45));
+        await repo.save(gap);
+
+        final summary = await queryService.getSummary();
+
+        // Verify counters are isolated
+        expect(summary.totalPending, 1);
+        expect(summary.totalExecuted, 1);
+        expect(summary.totalNoShow, 1);
+        expect(summary.totalEvidenceGap, 1);
+
+        // Verify revenues are isolated
+        expect(summary.protectedRevenue, 200.0);
+        expect(summary.lostRevenue, 150.0); // 100 * 1.5
+        expect(summary.revenueAtRisk, 80.0);
+      },
+    );
   });
 }

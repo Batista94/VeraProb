@@ -12,6 +12,11 @@ class SlaExecutionSummary extends Equatable {
   final int totalEvidenceGap;
   final DateTime generatedAtUtc;
 
+  // ── Financial Projections ──────────────────────────────────
+  final double protectedRevenue;
+  final double revenueAtRisk;
+  final double lostRevenue;
+
   const SlaExecutionSummary({
     this.contractId,
     required this.totalPending,
@@ -19,6 +24,9 @@ class SlaExecutionSummary extends Equatable {
     required this.totalNoShow,
     required this.totalEvidenceGap,
     required this.generatedAtUtc,
+    this.protectedRevenue = 0.0,
+    this.revenueAtRisk = 0.0,
+    this.lostRevenue = 0.0,
   });
 
   int get total =>
@@ -32,5 +40,8 @@ class SlaExecutionSummary extends Equatable {
     totalNoShow,
     totalEvidenceGap,
     generatedAtUtc,
+    protectedRevenue,
+    revenueAtRisk,
+    lostRevenue,
   ];
 }

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../domain/entities/vehicle_operational_state.dart';
 import 'contractual_evaluation_engine.dart';
+import 'contractual_financial_closing_service.dart';
 
 /// Orchestrator that connects the [ContractualEvaluationEngine] to the
 /// live telemetry stream and a periodic sweep timer.
@@ -12,6 +13,7 @@ import 'contractual_evaluation_engine.dart';
 /// - Subscribe to the normalized vehicle state stream
 /// - Forward each vehicle state to the engine for geofence evaluation
 /// - Periodically sweep expired obligations for NoShow detection
+/// - Trigger daily financial closing via [ContractualFinancialClosingService]
 ///
 /// **Does NOT:**
 /// - Import Flutter widgets or Riverpod
@@ -23,6 +25,7 @@ class ContractualEvaluationSubscriber {
   final ContractualEvaluationEngine _engine;
   final Stream<List<VehicleOperationalState>> _vehicleStream;
   final Duration _sweepInterval;
+  final ContractualFinancialClosingService? _closingService;
 
   StreamSubscription<List<VehicleOperationalState>>? _subscription;
   Timer? _sweepTimer;
@@ -31,9 +34,11 @@ class ContractualEvaluationSubscriber {
     required ContractualEvaluationEngine engine,
     required Stream<List<VehicleOperationalState>> vehicleStream,
     required Duration sweepInterval,
+    ContractualFinancialClosingService? closingService,
   }) : _engine = engine,
        _vehicleStream = vehicleStream,
-       _sweepInterval = sweepInterval;
+       _sweepInterval = sweepInterval,
+       _closingService = closingService;
 
   /// Whether the subscriber is actively listening.
   bool get isActive => _subscription != null;
@@ -86,12 +91,22 @@ class ContractualEvaluationSubscriber {
   }
 
   /// Sweep expired obligations for NoShow detection.
+  /// Also triggers daily financial closing if configured.
   void _onSweepTick() async {
     try {
       await _engine.sweepExpiredObligations(nowUtc: DateTime.now().toUtc());
     } catch (e) {
       if (kDebugMode) {
         print('[SLA SUBSCRIBER] Error during sweep: $e');
+      }
+    }
+
+    // Financial closing — non-blocking, errors logged
+    try {
+      await _closingService?.onTick();
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SLA SUBSCRIBER] Error during financial closing: $e');
       }
     }
   }

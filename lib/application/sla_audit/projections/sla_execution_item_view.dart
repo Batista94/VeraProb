@@ -18,6 +18,8 @@ class SlaExecutionItemView extends Equatable {
   final double startLatitude;
   final double startLongitude;
   final int startRadiusMeters;
+  final double contractualValue;
+  final double noShowPenaltyMultiplier;
 
   const SlaExecutionItemView({
     required this.setId,
@@ -31,6 +33,8 @@ class SlaExecutionItemView extends Equatable {
     required this.startLatitude,
     required this.startLongitude,
     required this.startRadiusMeters,
+    required this.contractualValue,
+    required this.noShowPenaltyMultiplier,
   });
 
   @override
@@ -46,5 +50,7 @@ class SlaExecutionItemView extends Equatable {
     startLatitude,
     startLongitude,
     startRadiusMeters,
+    contractualValue,
+    noShowPenaltyMultiplier,
   ];
 }

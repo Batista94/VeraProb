@@ -18,6 +18,8 @@ class ContractualServiceInput {
   final double endLongitude;
   final int endRadiusMeters;
   final String? plannedVehicleId;
+  final double contractualValue;
+  final double noShowPenaltyMultiplier;
 
   const ContractualServiceInput({
     required this.scheduledStartTimeUtc,
@@ -29,5 +31,7 @@ class ContractualServiceInput {
     required this.endLongitude,
     required this.endRadiusMeters,
     this.plannedVehicleId,
+    required this.contractualValue,
+    required this.noShowPenaltyMultiplier,
   });
 }

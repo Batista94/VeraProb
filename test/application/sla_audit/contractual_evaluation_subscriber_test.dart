@@ -67,6 +67,8 @@ void main() {
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
+      contractualValue: 150.0,
+      noShowPenaltyMultiplier: 1.5,
       windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
     );
@@ -75,8 +77,7 @@ void main() {
   // ── Tests ────────────────────────────────────────────────
   group('ContractualEvaluationSubscriber', () {
     test('processes single vehicle from stream', () async {
-      final state = makeExecState();
-      await repo.save(state);
+      await repo.save(makeExecState());
 
       final subscriber = ContractualEvaluationSubscriber(
         engine: engine,
@@ -130,7 +131,6 @@ void main() {
     });
 
     test('sweep timer calls sweepExpiredObligations', () async {
-      final state = makeExecState(setId: 'set-expired');
       // Manually override status to simulate expired state in window
       // We can't change window times after creation, so create with past window
       final expiredState = ContractualExecutionState.create(
@@ -139,6 +139,8 @@ void main() {
         startLatitude: geoLat,
         startLongitude: geoLng,
         startRadiusMeters: geoRadius,
+        contractualValue: 150.0,
+        noShowPenaltyMultiplier: 1.5,
         windowStartUtc: DateTime.utc(2026, 2, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 2, 1, 7, 0), // past
       );
@@ -180,8 +182,7 @@ void main() {
     });
 
     test('start() does not create duplicate subscriptions', () async {
-      final state = makeExecState();
-      await repo.save(state);
+      await repo.save(makeExecState());
 
       final subscriber = ContractualEvaluationSubscriber(
         engine: engine,

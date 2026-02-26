@@ -23,17 +23,25 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
         : await _repo.findAll();
 
     int pending = 0, executed = 0, noShow = 0, evidenceGap = 0;
+    double protectedRevenue = 0.0, revenueAtRisk = 0.0, lostRevenue = 0.0;
 
     for (final s in states) {
       switch (s.status) {
         case ExecutionStatus.pending:
           pending++;
+          break;
         case ExecutionStatus.executed:
           executed++;
+          protectedRevenue += s.contractualValue;
+          break;
         case ExecutionStatus.noShow:
           noShow++;
+          lostRevenue += s.contractualValue * s.noShowPenaltyMultiplier;
+          break;
         case ExecutionStatus.evidenceGap:
           evidenceGap++;
+          revenueAtRisk += s.contractualValue;
+          break;
       }
     }
 
@@ -44,6 +52,9 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
       totalNoShow: noShow,
       totalEvidenceGap: evidenceGap,
       generatedAtUtc: DateTime.now().toUtc(),
+      protectedRevenue: protectedRevenue,
+      revenueAtRisk: revenueAtRisk,
+      lostRevenue: lostRevenue,
     );
   }
 
@@ -77,6 +88,8 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
       startLatitude: s.startLatitude,
       startLongitude: s.startLongitude,
       startRadiusMeters: s.startRadiusMeters,
+      contractualValue: s.contractualValue,
+      noShowPenaltyMultiplier: s.noShowPenaltyMultiplier,
     );
   }
 }

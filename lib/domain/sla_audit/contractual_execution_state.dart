@@ -47,6 +47,13 @@ class ContractualExecutionState {
   /// Planned vehicle for this obligation. Null means any vehicle can fulfill it.
   final String? plannedVehicleId;
 
+  // ── Financial ─────────────────────────────────────────────
+  /// Contractual value of this service obligation.
+  final double contractualValue;
+
+  /// Multiplier applied to contractualValue on NoShow. >= 1.0.
+  final double noShowPenaltyMultiplier;
+
   // ── Time Window ───────────────────────────────────────────
   final DateTime windowStartUtc;
   final DateTime windowEndUtc;
@@ -69,9 +76,11 @@ class ContractualExecutionState {
   // ── Lifecycle Timestamps ──────────────────────────────────
   final DateTime createdAtUtc;
   DateTime _lastEvaluatedAtUtc;
+  DateTime _statusLastUpdatedAtUtc;
   DateTime? _finalizedAtUtc;
 
   DateTime get lastEvaluatedAtUtc => _lastEvaluatedAtUtc;
+  DateTime get statusLastUpdatedAtUtc => _statusLastUpdatedAtUtc;
   DateTime? get finalizedAtUtc => _finalizedAtUtc;
 
   // ── Domain Events ─────────────────────────────────────────
@@ -87,13 +96,17 @@ class ContractualExecutionState {
     required this.startLongitude,
     required this.startRadiusMeters,
     this.plannedVehicleId,
+    required this.contractualValue,
+    required this.noShowPenaltyMultiplier,
     required this.windowStartUtc,
     required this.windowEndUtc,
     required ExecutionStatus status,
     required this.createdAtUtc,
     required DateTime lastEvaluatedAtUtc,
+    required DateTime statusLastUpdatedAtUtc,
   }) : _status = status,
-       _lastEvaluatedAtUtc = lastEvaluatedAtUtc;
+       _lastEvaluatedAtUtc = lastEvaluatedAtUtc,
+       _statusLastUpdatedAtUtc = statusLastUpdatedAtUtc;
 
   // ── Factory ───────────────────────────────────────────────
   /// Creates a new [ContractualExecutionState] in [ExecutionStatus.pending].
@@ -110,6 +123,8 @@ class ContractualExecutionState {
     required double startLongitude,
     required int startRadiusMeters,
     String? plannedVehicleId,
+    required double contractualValue,
+    required double noShowPenaltyMultiplier,
     required DateTime windowStartUtc,
     required DateTime windowEndUtc,
   }) {
@@ -117,6 +132,14 @@ class ContractualExecutionState {
       throw const DomainException(
         'windowEndUtc must be strictly after windowStartUtc',
       );
+    }
+
+    if (contractualValue <= 0) {
+      throw const DomainException('contractualValue must be greater than 0');
+    }
+
+    if (noShowPenaltyMultiplier < 1.0) {
+      throw const DomainException('noShowPenaltyMultiplier must be >= 1.0');
     }
 
     final now = DateTime.now().toUtc();
@@ -129,11 +152,14 @@ class ContractualExecutionState {
       startLongitude: startLongitude,
       startRadiusMeters: startRadiusMeters,
       plannedVehicleId: plannedVehicleId,
+      contractualValue: contractualValue,
+      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
       windowStartUtc: windowStartUtc,
       windowEndUtc: windowEndUtc,
       status: ExecutionStatus.pending,
       createdAtUtc: now,
       lastEvaluatedAtUtc: now,
+      statusLastUpdatedAtUtc: now,
     );
   }
 
@@ -157,6 +183,7 @@ class ContractualExecutionState {
     _bindingLatitude = latitude;
     _bindingLongitude = longitude;
     _lastEvaluatedAtUtc = timestampUtc;
+    _statusLastUpdatedAtUtc = timestampUtc;
     _finalizedAtUtc = timestampUtc;
 
     _domainEvents.add(
@@ -190,6 +217,7 @@ class ContractualExecutionState {
 
     _status = ExecutionStatus.noShow;
     _lastEvaluatedAtUtc = nowUtc;
+    _statusLastUpdatedAtUtc = nowUtc;
     _finalizedAtUtc = nowUtc;
 
     _domainEvents.add(
@@ -211,6 +239,7 @@ class ContractualExecutionState {
 
     _status = ExecutionStatus.evidenceGap;
     _lastEvaluatedAtUtc = nowUtc;
+    _statusLastUpdatedAtUtc = nowUtc;
     _finalizedAtUtc = nowUtc;
 
     _domainEvents.add(

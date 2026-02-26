@@ -31,6 +31,8 @@ void main() {
     double endLat = -23.5600,
     double endLng = -46.6400,
     int endRadius = 100,
+    double contractualValue = 150.0,
+    double noShowPenaltyMultiplier = 1.5,
   }) {
     final s = start ?? DateTime.utc(2026, 3, 1, 6, 0);
     final e = end ?? s.add(const Duration(hours: 1));
@@ -43,6 +45,8 @@ void main() {
       endLatitude: endLat,
       endLongitude: endLng,
       endRadiusMeters: endRadius,
+      contractualValue: contractualValue,
+      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
     );
   }
 

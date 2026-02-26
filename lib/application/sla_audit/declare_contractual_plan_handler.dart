@@ -48,6 +48,8 @@ class DeclareContractualPlanHandler {
             endLongitude: input.endLongitude,
             endRadiusMeters: input.endRadiusMeters,
             plannedVehicleId: input.plannedVehicleId,
+            contractualValue: input.contractualValue,
+            noShowPenaltyMultiplier: input.noShowPenaltyMultiplier,
           ),
         )
         .toList();
