@@ -16,6 +16,8 @@ import '../../application/adapters/stress_scenario_config.dart';
 import '../../dev/performance_metrics.dart';
 import '../../domain/enums/trip_status.dart';
 import '../../application/projections/providers/command_center_filter_provider.dart';
+import '../../application/projections/providers/fleet_attention_projection_provider.dart';
+import '../../application/projections/models/attention_state.dart';
 
 // ── Core Services ──────────────────────────────────────
 
@@ -24,7 +26,7 @@ import '../../application/projections/providers/command_center_filter_provider.d
 final stressScenarioProvider = StateProvider<StressScenarioConfig?>((ref) {
   const isStressEnabled = bool.fromEnvironment(
     'STRESS_MODE',
-    defaultValue: false,
+    defaultValue: true,
   );
   if (isStressEnabled) {
     return StressScenarioConfig.extreme250();
@@ -49,7 +51,11 @@ final situationEngineProvider = Provider<SituationEngine>((ref) {
 });
 
 // ── UI Refresh Counter ─────────────────────────────────
-// Incremented after every mutation to force providers to re-evaluate.
+// Workaround: Incremented after mutations to force `selectedTripEventsProvider`
+// to re-read events from FleetSimulationService (which uses synchronous reads,
+// not streams). Trip status updates propagate naturally via stream emission
+// from _emitCurrentState() and do NOT need this workaround.
+// TODO: Replace with a StreamProvider for events in a future data architecture sprint.
 
 final uiRefreshTrigger = StateProvider<int>((ref) => 0);
 
@@ -216,7 +222,15 @@ final fleetSummaryProvider = Provider<FleetSummary>((ref) {
       )
       .length;
   final delayed = active.where((t) => t.status == TripStatus.delayed).length;
-  final alerts = active.where((t) => t.status.requiresAttention).length;
+
+  // Alerts count: CRITICAL attention only (not delayed).
+  // We use the attention projection to count vehicles with true emergencies.
+  final attentionProjection = ref.watch(fleetAttentionProjectionProvider);
+  final alerts = active.where((t) {
+    if (t.vehicleId == null) return false;
+    final ctx = attentionProjection.getContextFor(t.vehicleId!);
+    return ctx.attentionState == AttentionState.critical;
+  }).length;
   final atStop = active.where((t) => t.status == TripStatus.atStop).length;
 
   final totalDelay = active.fold<int>(0, (sum, t) => sum + t.delaySeconds);
@@ -255,7 +269,12 @@ final filteredTripsProvider = Provider<List<OperationalTrip>>((ref) {
         case FleetStatusFilter.delayed:
           return t.status == TripStatus.delayed;
         case FleetStatusFilter.alerts:
-          return t.status.requiresAttention;
+          // OCC Hardening: CRITICAL attention only — delayed is WARNING, not alert
+          if (t.vehicleId == null) return false;
+          final attProj = ref.watch(fleetAttentionProjectionProvider);
+          return attProj.getContextFor(t.vehicleId!).attentionState ==
+              AttentionState.critical;
+
         case FleetStatusFilter.atStop:
           return t.status == TripStatus.atStop;
         case FleetStatusFilter.all:

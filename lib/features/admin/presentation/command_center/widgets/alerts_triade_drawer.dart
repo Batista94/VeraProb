@@ -285,12 +285,14 @@ class _AlertCard extends ConsumerWidget {
                   onPressed: () async {
                     final facade = ref.read(operationalControlFacadeProvider);
                     try {
-                      // Fase 4 Teste: Forçando o Context Mock de operador nível 1 (que bloqueamos na Policy in-memory)
                       await facade.resolveAlert(
                         tripId: trip.id,
                         simulateRole: 'level1_operator',
                       );
-                      triggerUIRefresh(ref);
+                      // No triggerUIRefresh needed here — trip status propagates
+                      // via FleetSimulationService._emitCurrentState() stream.
+                      // (triggerUIRefresh is only needed in VehicleDetailDrawer
+                      // where the event timeline reads events synchronously.)
                     } on UnauthorizedActionException catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(

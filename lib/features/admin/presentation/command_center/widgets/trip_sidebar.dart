@@ -7,7 +7,17 @@ import 'package:busflow/application/projections/providers/command_center_filter_
 import 'package:busflow/presentation/shared/widgets/status_badge.dart';
 import 'package:busflow/dev/performance_metrics.dart';
 
+/// Local sidebar state for search and sort (not global — UI-only).
+final _sidebarSearchProvider = StateProvider<String>((ref) => '');
+final _sidebarSortAscProvider = StateProvider<bool>((ref) => true);
+
 /// Left sidebar in the Command Center showing all active trips.
+///
+/// Features:
+/// - Incremental search by route/line name
+/// - Sort by route name (A→Z / Z→A toggle)
+/// - Active filter banner when KpiBar filter is active
+/// - No duplicate filter chips (filters are in KpiBar only)
 class TripSidebar extends ConsumerWidget {
   const TripSidebar({super.key});
 
@@ -17,6 +27,27 @@ class TripSidebar extends ConsumerWidget {
     final selectedId = ref.watch(selectedTripIdProvider);
     final filterState = ref.watch(commandCenterFilterProvider);
     final statusFilter = filterState.selectedFleetStatusFilter;
+    final searchQuery = ref.watch(_sidebarSearchProvider).toLowerCase();
+    final sortAsc = ref.watch(_sidebarSortAscProvider);
+
+    // Apply local search filter
+    var displayTrips = trips.where((t) {
+      if (searchQuery.isEmpty) return true;
+      final routeName = (t.routeShortName ?? t.routeLongName ?? '')
+          .toLowerCase();
+      return routeName.contains(searchQuery);
+    }).toList();
+
+    // Apply local sort if user toggled it
+    if (sortAsc) {
+      displayTrips.sort(
+        (a, b) => (a.routeShortName ?? '').compareTo(b.routeShortName ?? ''),
+      );
+    } else {
+      displayTrips.sort(
+        (a, b) => (b.routeShortName ?? '').compareTo(a.routeShortName ?? ''),
+      );
+    }
 
     return RebuildCounter(
       name: 'Sidebar',
@@ -28,29 +59,45 @@ class TripSidebar extends ConsumerWidget {
         ),
         child: Column(
           children: [
-            // Header + filter chips
-            _SidebarHeader(
-              tripCount: trips.length,
-              statusFilter: statusFilter,
-              onFilterChanged: (status) {
-                ref
-                    .read(commandCenterFilterProvider.notifier)
-                    .setStatusFilter(status);
+            // Header
+            _SidebarHeader(tripCount: displayTrips.length),
+
+            const Divider(height: 1, color: BusFlowColors.border),
+
+            // Search + Sort controls
+            _SearchSortBar(
+              onSearchChanged: (query) {
+                ref.read(_sidebarSearchProvider.notifier).state = query;
+              },
+              sortAsc: sortAsc,
+              onSortToggle: () {
+                ref.read(_sidebarSortAscProvider.notifier).state = !sortAsc;
               },
             ),
 
             const Divider(height: 1, color: BusFlowColors.border),
 
+            // Active filter indicator banner
+            if (statusFilter != FleetStatusFilter.all)
+              _ActiveFilterBanner(
+                statusFilter: statusFilter,
+                onClear: () {
+                  ref
+                      .read(commandCenterFilterProvider.notifier)
+                      .setStatusFilter(FleetStatusFilter.all);
+                },
+              ),
+
             // Trip list
             Expanded(
-              child: trips.isEmpty
+              child: displayTrips.isEmpty
                   ? _EmptyState()
                   : ListView.separated(
-                      itemCount: trips.length,
+                      itemCount: displayTrips.length,
                       separatorBuilder: (_, _) =>
                           const Divider(height: 1, color: BusFlowColors.border),
                       itemBuilder: (context, index) {
-                        final trip = trips[index];
+                        final trip = displayTrips[index];
                         return _TripCard(
                           trip: trip,
                           isSelected: trip.id == selectedId,
@@ -88,73 +135,38 @@ class TripSidebar extends ConsumerWidget {
   }
 }
 
+// ── Header ──────────────────────────────────────────────
 class _SidebarHeader extends StatelessWidget {
   final int tripCount;
-  final FleetStatusFilter statusFilter;
-  final ValueChanged<FleetStatusFilter> onFilterChanged;
-
-  const _SidebarHeader({
-    required this.tripCount,
-    required this.statusFilter,
-    required this.onFilterChanged,
-  });
+  const _SidebarHeader({required this.tripCount});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Text(
-                'VIAGENS ATIVAS',
-                style: BusFlowTypography.caption.copyWith(
-                  letterSpacing: 1.0,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: BusFlowColors.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$tripCount',
-                  style: BusFlowTypography.caption.copyWith(
-                    color: BusFlowColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            'VIAGENS ATIVAS',
+            style: BusFlowTypography.caption.copyWith(
+              letterSpacing: 1.0,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 8),
-          // Filter chips
-          Wrap(
-            spacing: 4,
-            children: [
-              _FilterChip(
-                label: 'Todos',
-                isSelected: statusFilter == FleetStatusFilter.all,
-                onTap: () => onFilterChanged(FleetStatusFilter.all),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: BusFlowColors.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$tripCount',
+              style: BusFlowTypography.caption.copyWith(
+                color: BusFlowColors.primary,
+                fontWeight: FontWeight.w700,
               ),
-              _FilterChip(
-                label: 'Em Trânsito',
-                color: BusFlowColors.onTime,
-                isSelected: statusFilter == FleetStatusFilter.onTime,
-                onTap: () => onFilterChanged(FleetStatusFilter.onTime),
-              ),
-              _FilterChip(
-                label: 'Atrasados',
-                color: BusFlowColors.delayed,
-                isSelected: statusFilter == FleetStatusFilter.delayed,
-                onTap: () => onFilterChanged(FleetStatusFilter.delayed),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -162,51 +174,95 @@ class _SidebarHeader extends StatelessWidget {
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final Color? color;
-  final bool isSelected;
-  final VoidCallback onTap;
+// ── Search + Sort Bar ───────────────────────────────────
+class _SearchSortBar extends StatelessWidget {
+  final ValueChanged<String> onSearchChanged;
+  final bool sortAsc;
+  final VoidCallback onSortToggle;
 
-  const _FilterChip({
-    required this.label,
-    this.color,
-    required this.isSelected,
-    required this.onTap,
+  const _SearchSortBar({
+    required this.onSearchChanged,
+    required this.sortAsc,
+    required this.onSortToggle,
   });
 
   @override
   Widget build(BuildContext context) {
-    final chipColor = color ?? BusFlowColors.textSecondary;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? chipColor.withValues(alpha: 0.15)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: isSelected
-                ? chipColor.withValues(alpha: 0.5)
-                : BusFlowColors.border,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 30,
+              child: TextField(
+                onChanged: onSearchChanged,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: BusFlowColors.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Buscar linha...',
+                  hintStyle: TextStyle(
+                    fontSize: 12,
+                    color: BusFlowColors.textDisabled,
+                  ),
+                  prefixIcon: const Icon(Icons.search, size: 16),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 32,
+                    maxHeight: 30,
+                  ),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 0,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: const BorderSide(color: BusFlowColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: const BorderSide(color: BusFlowColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(
+                      color: BusFlowColors.primary.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: BusFlowColors.surface,
+                ),
+              ),
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? chipColor : BusFlowColors.textSecondary,
+          const SizedBox(width: 6),
+          // Sort toggle
+          InkWell(
+            onTap: onSortToggle,
+            borderRadius: BorderRadius.circular(4),
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: BusFlowColors.border),
+              ),
+              child: Icon(
+                sortAsc ? Icons.sort_by_alpha : Icons.sort_by_alpha,
+                size: 16,
+                color: BusFlowColors.textSecondary,
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
+// ── Trip Card ───────────────────────────────────────────
 class _TripCard extends StatelessWidget {
   final OperationalTrip trip;
   final bool isSelected;
@@ -245,66 +301,73 @@ class _TripCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    trip.routeShortName ?? trip.routeId,
-                    style: BusFlowTypography.sectionTitle,
+                    trip.routeDisplay,
+                    style: BusFlowTypography.bodySmall.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                StatusBadge(status: trip.status, compact: true),
+                StatusBadge(status: trip.status),
               ],
             ),
             const SizedBox(height: 4),
-            // Driver + Vehicle
+            // Details row
             Padding(
               padding: const EdgeInsets.only(left: 12),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.person_outline,
-                    size: 12,
-                    color: BusFlowColors.textDisabled,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      trip.driverName ?? 'Sem motorista',
-                      style: BusFlowTypography.caption,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
                   if (trip.vehiclePlate != null) ...[
                     Icon(
-                      Icons.directions_bus_outlined,
+                      Icons.directions_bus,
                       size: 12,
                       color: BusFlowColors.textDisabled,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 2),
                     Text(trip.vehiclePlate!, style: BusFlowTypography.caption),
+                    const SizedBox(width: 8),
                   ],
+                  if (trip.driverName != null) ...[
+                    Icon(
+                      Icons.person,
+                      size: 12,
+                      color: BusFlowColors.textDisabled,
+                    ),
+                    const SizedBox(width: 2),
+                    Expanded(
+                      child: Text(
+                        trip.driverName!,
+                        style: BusFlowTypography.caption,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  // Delay badge
+                  if (trip.delaySeconds > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: BusFlowColors.delayed.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        trip.delayDisplay,
+                        style: BusFlowTypography.caption.copyWith(
+                          color: BusFlowColors.delayed,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
-            // Delay info
-            if (trip.delaySeconds > 0)
-              Padding(
-                padding: const EdgeInsets.only(left: 12, top: 4),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: BusFlowColors.delayed.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: Text(
-                    trip.delayDisplay,
-                    style: BusFlowTypography.caption.copyWith(
-                      color: BusFlowColors.delayed,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -312,6 +375,7 @@ class _TripCard extends StatelessWidget {
   }
 }
 
+// ── Empty State ─────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -332,5 +396,95 @@ class _EmptyState extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ── Active Filter Banner ────────────────────────────────
+class _ActiveFilterBanner extends StatelessWidget {
+  final FleetStatusFilter statusFilter;
+  final VoidCallback onClear;
+
+  const _ActiveFilterBanner({
+    required this.statusFilter,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final filterColor = _colorForFilter(statusFilter);
+    final filterLabel = _labelForFilter(statusFilter);
+
+    return Container(
+      height: 28,
+      decoration: BoxDecoration(
+        color: filterColor.withValues(alpha: 0.08),
+        border: Border(
+          left: BorderSide(color: filterColor, width: 3),
+          bottom: const BorderSide(color: BusFlowColors.border),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          Icon(Icons.filter_list, size: 12, color: filterColor),
+          const SizedBox(width: 6),
+          Text(
+            'Filtro: $filterLabel',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: filterColor,
+            ),
+          ),
+          const Spacer(),
+          InkWell(
+            onTap: onClear,
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Icon(
+                Icons.close,
+                size: 14,
+                color: BusFlowColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _colorForFilter(FleetStatusFilter filter) {
+    switch (filter) {
+      case FleetStatusFilter.active:
+        return BusFlowColors.primary;
+      case FleetStatusFilter.onTime:
+        return BusFlowColors.onTime;
+      case FleetStatusFilter.delayed:
+        return BusFlowColors.delayed;
+      case FleetStatusFilter.alerts:
+        return BusFlowColors.critical;
+      case FleetStatusFilter.atStop:
+        return BusFlowColors.scheduled;
+      case FleetStatusFilter.all:
+        return BusFlowColors.textSecondary;
+    }
+  }
+
+  String _labelForFilter(FleetStatusFilter filter) {
+    switch (filter) {
+      case FleetStatusFilter.active:
+        return 'Em Operação';
+      case FleetStatusFilter.onTime:
+        return 'No Horário';
+      case FleetStatusFilter.delayed:
+        return 'Atrasados';
+      case FleetStatusFilter.alerts:
+        return 'Alertas';
+      case FleetStatusFilter.atStop:
+        return 'No Ponto';
+      case FleetStatusFilter.all:
+        return 'Todos';
+    }
   }
 }

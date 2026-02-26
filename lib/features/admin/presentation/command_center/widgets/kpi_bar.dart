@@ -141,19 +141,24 @@ class _KpiChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? color.withValues(alpha: 0.15)
+              ? color.withValues(alpha: 0.25)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: isSelected
-                ? color.withValues(alpha: 0.5)
+                ? color.withValues(alpha: 0.8)
                 : Colors.transparent,
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 16, color: color),
+            if (isSelected) ...[
+              const SizedBox(width: 3),
+              Text('●', style: TextStyle(fontSize: 6, color: color)),
+            ],
             const SizedBox(width: 6),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -172,7 +177,7 @@ class _KpiChip extends StatelessWidget {
                   label,
                   style: BusFlowTypography.caption.copyWith(
                     fontSize: 10,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
                   ),
                 ),
               ],

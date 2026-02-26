@@ -6,11 +6,15 @@ import 'vehicle_marker.dart';
 import 'package:busflow/domain/entities/vehicle_operational_state.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
 import 'package:busflow/application/projections/providers/fleet_attention_projection_provider.dart';
+import 'package:busflow/application/projections/models/attention_state.dart';
 
 /// A wrapper around [MarkerLayer] that animates vehicle positions.
 ///
 /// It maintains a local state of all vehicles and smoothly interpolates
 /// their LatLng coordinates when new [VehicleOperationalState] data arrives.
+///
+/// Uses a single shared AnimationController for all markers to minimize
+/// resource usage in stress scenarios (200+ vehicles).
 class AnimatedFleetMarkerLayer extends StatefulWidget {
   final List<VehicleOperationalState> states;
   final List<dynamic> trips;
@@ -47,10 +51,10 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
     _controller =
         AnimationController(
           vsync: this,
-          duration: const Duration(milliseconds: 1200),
+          duration: const Duration(milliseconds: 700),
         )..addListener(() {
           setState(() {
-            final t = Curves.easeInOutQuad.transform(_controller.value);
+            final t = Curves.easeInOutCubic.transform(_controller.value);
             for (final state in _animStates.values) {
               final lat =
                   state.oldPoint.latitude +
@@ -70,7 +74,6 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
   void didUpdateWidget(AnimatedFleetMarkerLayer oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Check if new states arrived
     bool needsAnimation = false;
 
     for (final newState in widget.states) {
@@ -85,7 +88,8 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
           currentPoint: newPoint,
         );
       } else if (existingState.newPoint != newPoint) {
-        // Vehicle moved, setup animation
+        // Vehicle moved — start interpolation from current visual position
+        // to new target. This prevents the teleport flash on controller reset.
         existingState.oldPoint = existingState.currentPoint;
         existingState.newPoint = newPoint;
         needsAnimation = true;
@@ -97,10 +101,14 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
     _animStates.removeWhere((id, _) => !currentIds.contains(id));
 
     if (needsAnimation) {
-      // Prevent unaffected markers from teleporting when controller resets to 0.0
-      for (final state in _animStates.values) {
-        if (state.oldPoint != state.currentPoint) {
+      // Snapshot all non-moving markers at their current visual position
+      // so they don't jump when the controller resets to 0.0
+      for (final entry in _animStates.entries) {
+        final state = entry.value;
+        if (state.oldPoint == state.newPoint) {
+          // This marker didn't move — freeze it at current position
           state.oldPoint = state.currentPoint;
+          state.newPoint = state.currentPoint;
         }
       }
       _controller.forward(from: 0.0);
@@ -156,6 +164,7 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
           showLabel: widget.showLabels,
           opacityMultiplier: attention?.opacityMultiplier ?? 1.0,
           isPulsing: attention?.isPulsing ?? false,
+          attentionState: attention?.attentionState ?? AttentionState.normal,
           onTap: () => widget.onMarkerTap(state.tripId),
         ),
       );

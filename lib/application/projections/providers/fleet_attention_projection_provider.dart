@@ -1,18 +1,33 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/enums/route_adherence.dart';
+import '../../../domain/enums/trip_status.dart';
 import '../../../state/providers/fleet_providers.dart';
+import '../models/attention_state.dart';
 
+/// Context for a single vehicle's attention state on the map.
 class AttentionContext {
+  final AttentionState attentionState;
   final double opacityMultiplier;
   final bool isPulsing;
 
   const AttentionContext({
+    required this.attentionState,
     required this.opacityMultiplier,
     required this.isPulsing,
   });
+
+  static const normal = AttentionContext(
+    attentionState: AttentionState.normal,
+    opacityMultiplier: 1.0,
+    isPulsing: false,
+  );
 }
 
+/// Global fleet attention projection.
+///
+/// Derives [AttentionState] for every vehicle using the pure
+/// [deriveAttentionState] function. When any vehicle is CRITICAL,
+/// all NORMAL vehicles are dimmed to focus operator attention.
 class FleetAttentionProjection {
   final bool isFocusModeActive;
   final Map<String, AttentionContext> vehicleStates;
@@ -23,13 +38,10 @@ class FleetAttentionProjection {
   });
 
   AttentionContext getContextFor(String vehicleId) {
-    return vehicleStates[vehicleId] ??
-        const AttentionContext(opacityMultiplier: 1.0, isPulsing: false);
+    return vehicleStates[vehicleId] ?? AttentionContext.normal;
   }
 }
 
-/// Computes global attention logic.
-/// Fades out normal vehicles if there is any critical incident or off-route vehicle.
 final fleetAttentionProjectionProvider = Provider<FleetAttentionProjection>((
   ref,
 ) {
@@ -45,49 +57,57 @@ final fleetAttentionProjectionProvider = Provider<FleetAttentionProjection>((
 
   final states = positionsAsync.value!;
 
-  final criticalVehicleIds = <String>{};
+  // Build a lookup: tripId → trip for O(1) access
+  final tripsByTripId = {for (final t in trips) t.id: t};
+
+  // First pass: derive AttentionState for each vehicle
+  final derivedStates = <String, AttentionState>{};
+  bool hasCritical = false;
 
   for (final state in states) {
-    if (state.routeAdherence == RouteAdherence.offRoute) {
-      criticalVehicleIds.add(state.vehicleId);
-      continue;
-    }
+    final trip = tripsByTripId[state.tripId];
+    final attention = deriveAttentionState(
+      status: trip?.status ?? TripStatus.enRoute,
+      severityScore: trip?.severityScore ?? 0,
+      connectivity: state.connectivityState,
+      adherence: state.routeAdherence,
+    );
 
-    final trip = trips.where((t) => t.id == state.tripId).firstOrNull;
-    if (trip != null && trip.severityScore >= 3) {
-      criticalVehicleIds.add(state.vehicleId);
-    }
+    derivedStates[state.vehicleId] = attention;
+    if (attention == AttentionState.critical) hasCritical = true;
   }
 
-  final isFocusModeActive = criticalVehicleIds.isNotEmpty;
+  // Second pass: compute visual context based on global state
   final vehicleStates = <String, AttentionContext>{};
 
-  for (final state in states) {
-    if (isFocusModeActive) {
-      if (criticalVehicleIds.contains(state.vehicleId)) {
-        // Critical: Full opacity, pulsating shadow
-        vehicleStates[state.vehicleId] = const AttentionContext(
+  for (final entry in derivedStates.entries) {
+    final vehicleId = entry.key;
+    final attention = entry.value;
+
+    switch (attention) {
+      case AttentionState.critical:
+        vehicleStates[vehicleId] = const AttentionContext(
+          attentionState: AttentionState.critical,
           opacityMultiplier: 1.0,
           isPulsing: true,
         );
-      } else {
-        // Normal during Incident: Dimmed
-        vehicleStates[state.vehicleId] = const AttentionContext(
-          opacityMultiplier: 0.6, // Visibility increased from 0.2 to 0.6
+      case AttentionState.warning:
+        vehicleStates[vehicleId] = AttentionContext(
+          attentionState: AttentionState.warning,
+          opacityMultiplier: hasCritical ? 0.85 : 1.0,
           isPulsing: false,
         );
-      }
-    } else {
-      // Normal map
-      vehicleStates[state.vehicleId] = const AttentionContext(
-        opacityMultiplier: 1.0,
-        isPulsing: false,
-      );
+      case AttentionState.normal:
+        vehicleStates[vehicleId] = AttentionContext(
+          attentionState: AttentionState.normal,
+          opacityMultiplier: hasCritical ? 0.6 : 1.0,
+          isPulsing: false,
+        );
     }
   }
 
   return FleetAttentionProjection(
-    isFocusModeActive: isFocusModeActive,
+    isFocusModeActive: hasCritical,
     vehicleStates: vehicleStates,
   );
 });

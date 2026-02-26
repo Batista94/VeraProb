@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
 import 'package:busflow/domain/enums/motion_state.dart';
+import 'package:busflow/application/projections/models/attention_state.dart';
 
 /// A map marker representing a vehicle, colored by trip status.
 ///
-/// Renders as a directional arrow (when heading is known) or a dot,
-/// with the trip's status color and a route label.
+/// Visual hierarchy (OCC Operational Standard):
+/// - NORMAL: 14px dot, status color fill, white border
+/// - WARNING (delay): 16px dot, amber fill, no ring, no pulse
+/// - CRITICAL (emergency): 18px dot, red ring border, pulsing halo
+/// - isSelected: white glow (blurRadius 12, spreadRadius 4)
 class VehicleMarkerWidget extends StatelessWidget {
   final TripStatus status;
   final String routeLabel;
@@ -16,6 +20,7 @@ class VehicleMarkerWidget extends StatelessWidget {
   final bool showLabel;
   final double opacityMultiplier;
   final bool isPulsing;
+  final AttentionState attentionState;
   final VoidCallback? onTap;
 
   const VehicleMarkerWidget({
@@ -29,14 +34,14 @@ class VehicleMarkerWidget extends StatelessWidget {
     this.showLabel = true,
     this.opacityMultiplier = 1.0,
     this.isPulsing = false,
+    this.attentionState = AttentionState.normal,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = status.color;
-    // Map confidence directly to opacity (with a minimum baseline so it doesn't disappear completely)
-    final baseOpacity = (confidence * 0.8) + 0.2; // 1.0 -> 1.0, 0.0 -> 0.2
+    final baseOpacity = (confidence * 0.8) + 0.2;
     final finalOpacity = baseOpacity * opacityMultiplier;
 
     return GestureDetector(
@@ -73,7 +78,7 @@ class VehicleMarkerWidget extends StatelessWidget {
                 ),
               ),
             if (showLabel) const SizedBox(height: 2),
-            // Vehicle dot
+            // Vehicle dot with tiered visual hierarchy
             _buildDot(color),
           ],
         ),
@@ -82,22 +87,45 @@ class VehicleMarkerWidget extends StatelessWidget {
   }
 
   Widget _buildDot(Color color) {
+    // Tiered sizing based on AttentionState, not TripStatus
+    final double dotSize;
+    switch (attentionState) {
+      case AttentionState.critical:
+        dotSize = isSelected ? 22 : 18;
+      case AttentionState.warning:
+        dotSize = isSelected ? 20 : 16;
+      case AttentionState.normal:
+        dotSize = isSelected ? 18 : 14;
+    }
+
+    final isCritical = attentionState == AttentionState.critical;
+
     final dot = Container(
-      width: isSelected ? 18 : 14,
-      height: isSelected ? 18 : 14,
+      width: dotSize,
+      height: dotSize,
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
         border: Border.all(
-          color: isSelected ? Colors.white : Colors.white70,
-          width: isSelected ? 3 : 1.5,
+          // Red ring ONLY for CRITICAL, white for everything else
+          color: isCritical
+              ? const Color(0xFFFF1744)
+              : (isSelected ? Colors.white : Colors.white70),
+          width: isCritical ? (isSelected ? 3.5 : 2.5) : (isSelected ? 3 : 1.5),
         ),
         boxShadow: [
+          // Strong glow for selected vehicle
           if (isSelected)
             BoxShadow(
-              color: color.withValues(alpha: 0.6),
-              blurRadius: 8,
-              spreadRadius: 2,
+              color: Colors.white.withValues(alpha: 0.5),
+              blurRadius: 12,
+              spreadRadius: 4,
+            ),
+          if (isCritical && !isSelected)
+            BoxShadow(
+              color: const Color(0xFFFF1744).withValues(alpha: 0.4),
+              blurRadius: 6,
+              spreadRadius: 1,
             ),
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.4),
@@ -113,7 +141,8 @@ class VehicleMarkerWidget extends StatelessWidget {
           : null,
     );
 
-    if (isPulsing) {
+    // Pulsing ring ONLY for CRITICAL attention state
+    if (isPulsing && isCritical) {
       return _PulsingRing(color: color, isSelected: isSelected, child: dot);
     }
     return dot;

@@ -7,19 +7,62 @@ import 'package:busflow/core/theme/app_theme.dart';
 ///
 /// A fixed horizontal strip at the bottom of the Command Center that consumes
 /// the [forensicLedgerProjectionProvider] to display the Trust Backbone in real-time.
-class ForensicConsoleStrip extends ConsumerWidget {
+///
+/// Features:
+/// - Auto-scrolls ONLY when the operator is at the start (position 0)
+/// - Displays narrative sentences from the Projection Layer
+/// - Full manual scroll supported without interruption
+class ForensicConsoleStrip extends ConsumerStatefulWidget {
   const ForensicConsoleStrip({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Escuta a stream contínua de decisões forenses projetadas em memória
+  ConsumerState<ForensicConsoleStrip> createState() =>
+      _ForensicConsoleStripState();
+}
+
+class _ForensicConsoleStripState extends ConsumerState<ForensicConsoleStrip> {
+  final ScrollController _scrollController = ScrollController();
+  int _previousEntryCount = 0;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToNewestIfAtEdge(int currentCount) {
+    if (currentCount > _previousEntryCount && _scrollController.hasClients) {
+      // Only auto-scroll if the operator is already at the start (not
+      // manually scrolling through older entries).
+      final isAtStart =
+          !_scrollController.hasClients ||
+          !_scrollController.position.hasContentDimensions ||
+          _scrollController.position.atEdge && _scrollController.offset <= 10.0;
+
+      if (isAtStart) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              0.0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+            );
+          }
+        });
+      }
+    }
+    _previousEntryCount = currentCount;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final ledgerAsync = ref.watch(forensicLedgerProjectionProvider);
 
     return Container(
       height: 40,
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A), // Strict dark background
+        color: Color(0xFF1A1A1A),
         border: Border(top: BorderSide(color: Color(0xFF333333))),
       ),
       child: ledgerAsync.when(
@@ -38,13 +81,13 @@ class ForensicConsoleStrip extends ConsumerWidget {
             );
           }
 
-          // Render horizontally, limiting to 50 items so memory doesn't leak indefinitely
           final displayEntries = entries.take(50).toList();
+          _scrollToNewestIfAtEdge(displayEntries.length);
 
           return ListView.separated(
+            controller: _scrollController,
             scrollDirection: Axis.horizontal,
-            reverse:
-                false, // We assume projected entries are newest-first. We want them flowing left to right.
+            physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: displayEntries.length,
             separatorBuilder: (context, index) => const VerticalDivider(
@@ -58,8 +101,7 @@ class ForensicConsoleStrip extends ConsumerWidget {
               final entry = displayEntries[index];
               return _ConsoleItem(
                 time: _formatTime(entry.timestamp),
-                actor: entry.actorId,
-                action: entry.actionType,
+                narrative: entry.narrative,
                 isApproved: entry.result == 'APPROVED',
               );
             },
@@ -80,14 +122,12 @@ class ForensicConsoleStrip extends ConsumerWidget {
 
 class _ConsoleItem extends StatelessWidget {
   final String time;
-  final String actor;
-  final String action;
+  final String narrative;
   final bool isApproved;
 
   const _ConsoleItem({
     required this.time,
-    required this.actor,
-    required this.action,
+    required this.narrative,
     required this.isApproved,
   });
 
@@ -111,27 +151,17 @@ class _ConsoleItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            actor,
-            style: const TextStyle(
-              color: BusFlowColors.primary,
-              fontFamily: 'monospace',
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 6),
-          const Text(
-            '•',
-            style: TextStyle(color: Colors.white24, fontSize: 11),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            action,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontFamily: 'monospace',
-              fontSize: 11,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 350),
+            child: Text(
+              narrative,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontFamily: 'monospace',
+                fontSize: 11,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
           const SizedBox(width: 8),

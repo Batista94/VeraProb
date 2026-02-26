@@ -7,15 +7,21 @@ import 'package:equatable/equatable.dart';
 class ForensicLedgerEntry extends Equatable {
   final String decisionId;
   final String actionType;
+  final String actionLabel;
   final String actorId;
   final String result;
+  final String? reason;
+  final String narrative;
   final DateTime timestamp;
 
   const ForensicLedgerEntry({
     required this.decisionId,
     required this.actionType,
+    required this.actionLabel,
     required this.actorId,
     required this.result,
+    this.reason,
+    required this.narrative,
     required this.timestamp,
   });
 
@@ -23,8 +29,11 @@ class ForensicLedgerEntry extends Equatable {
   List<Object?> get props => [
     decisionId,
     actionType,
+    actionLabel,
     actorId,
     result,
+    reason,
+    narrative,
     timestamp,
   ];
 }
