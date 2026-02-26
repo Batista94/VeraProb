@@ -1,0 +1,1 @@
+enum PersistenceMode { inMemory, postgres }

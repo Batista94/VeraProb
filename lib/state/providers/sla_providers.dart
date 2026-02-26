@@ -8,27 +8,27 @@ import '../../domain/sla_audit/contractual_execution_state_repository.dart';
 import '../../domain/sla_audit/execution_status.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
-import '../../infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
-import '../../infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
-import '../../infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import '../../infrastructure/persistence/persistence_provider.dart';
 
 // ── Repositories (Singletons) ───────────────────────────────
 
 final planDeclarationRepositoryProvider = Provider<PlanDeclarationRepository>((
   ref,
 ) {
-  return InMemoryPlanDeclarationRepository();
+  return ref.watch(persistenceProvider).makePlanDeclarationRepository();
 });
 
 final contractualExecutionStateRepositoryProvider =
     Provider<ContractualExecutionStateRepository>((ref) {
-      return InMemoryContractualExecutionStateRepository();
+      return ref
+          .watch(persistenceProvider)
+          .makeContractualExecutionStateRepository();
     });
 
 final slaAuditLedgerRepositoryProvider = Provider<SlaAuditLedgerRepository>((
   ref,
 ) {
-  return InMemorySlaAuditLedgerRepository();
+  return ref.watch(persistenceProvider).makeSlaAuditLedgerRepository();
 });
 
 // ── Query Service ───────────────────────────────────────────
