@@ -30,4 +30,10 @@ class InMemorySlaAuditLedgerRepository implements SlaAuditLedgerRepository {
 
   /// Returns a copy of the recorded entries for testing/verification.
   List<SlaLedgerEntry> get entries => List.unmodifiable(_entries);
+
+  @override
+  Future<List<SlaLedgerEntry>> getEntriesBySetId(String setId) async {
+    return _entries.where((e) => e.setId == setId).toList()
+      ..sort((a, b) => a.occurredAtUtc.compareTo(b.occurredAtUtc));
+  }
 }

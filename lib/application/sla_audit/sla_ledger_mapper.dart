@@ -48,7 +48,6 @@ class SlaLedgerMapper {
         payload: {'declared_at_utc': event.declaredAtUtc.toIso8601String()},
       );
     }
-
     if (event is ContractualPlanDeclaredEvent) {
       return SlaLedgerEntry(
         type: 'PLAN_DECLARED',
@@ -61,6 +60,53 @@ class SlaLedgerMapper {
           'declared_at_utc': event.declaredAtUtc.toIso8601String(),
           'declared_by_user_id': event.declaredByUserId,
           'total_services': event.totalServicesDeclared,
+        },
+      );
+    }
+
+    if (event is OccurrenceRegisteredEvidence) {
+      return SlaLedgerEntry(
+        type: 'OCCURRENCE_REGISTERED',
+        setId: event.tripId,
+        contractId: 'N/A', // Set later when merged or queried contextually
+        planVersion: 0,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'vehicle_id': event.vehicleId,
+          'operator_id': event.operatorId,
+          'occurrence_type': event.occurrenceType,
+          'notes': event.notes,
+          'metadata': event.metadata,
+        },
+      );
+    }
+
+    if (event is TripInterruptedEvidence) {
+      return SlaLedgerEntry(
+        type: 'TRIP_INTERRUPTED',
+        setId: event.tripId,
+        contractId: 'N/A', // Set later when merged or queried contextually
+        planVersion: 0,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'vehicle_id': event.vehicleId,
+          'operator_id': event.operatorId,
+          'reason': event.reason,
+        },
+      );
+    }
+
+    if (event is TripCancelledEvidence) {
+      return SlaLedgerEntry(
+        type: 'TRIP_CANCELLED',
+        setId: event.tripId,
+        contractId: 'N/A', // Set later when merged or queried contextually
+        planVersion: 0,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'vehicle_id': event.vehicleId,
+          'operator_id': event.operatorId,
+          'reason': event.reason,
         },
       );
     }

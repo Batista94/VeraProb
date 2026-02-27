@@ -6,26 +6,41 @@ import 'package:busflow/domain/enums/trip_status.dart';
 import 'package:busflow/domain/enums/event_type.dart';
 import 'package:busflow/domain/entities/trip_event.dart';
 import 'package:busflow/application/audit/audit_service.dart';
+import 'package:busflow/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:busflow/domain/sla_audit/sla_ledger_entry.dart';
 
 class MockFleetSimulationService extends Mock
     implements FleetSimulationService {}
 
 class MockAuditService extends Mock implements AuditService {}
 
+class MockSlaAuditLedgerRepository extends Mock
+    implements SlaAuditLedgerRepository {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(EventType.statusChange);
     registerFallbackValue(TripStatus.enRoute);
+    registerFallbackValue(
+      SlaLedgerEntry(
+        type: 'DUMMY',
+        contractId: 'N/A',
+        planVersion: 0,
+        occurredAtUtc: DateTime.now(),
+      ),
+    );
   });
 
   group('SimulationControlService Actions', () {
     late SimulationControlService service;
     late MockFleetSimulationService mockSimulation;
     late MockAuditService mockAudit;
+    late MockSlaAuditLedgerRepository mockLedgerRepo;
 
     setUp(() {
       mockSimulation = MockFleetSimulationService();
       mockAudit = MockAuditService();
+      mockLedgerRepo = MockSlaAuditLedgerRepository();
 
       when(
         () => mockAudit.logAction(
@@ -38,7 +53,13 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      service = SimulationControlService(mockSimulation, mockAudit);
+      when(() => mockLedgerRepo.append(any())).thenAnswer((_) async {});
+
+      service = SimulationControlService(
+        mockSimulation,
+        mockAudit,
+        mockLedgerRepo,
+      );
     });
 
     test(
@@ -75,6 +96,9 @@ void main() {
         verify(
           () => mockSimulation.updateTripStatus('t_1', TripStatus.enRoute),
         ).called(1);
+
+        // Verify ledger was NOT called (Regularize/Resolve Alert is operational, not forensic)
+        verifyNever(() => mockLedgerRepo.append(any()));
       },
     );
 
@@ -106,6 +130,37 @@ void main() {
       verify(
         () => mockSimulation.updateTripStatus('t_2', TripStatus.cancelled),
       ).called(1);
+
+      // Verify ledger WAS called with TRIP_CANCELLED
+      verify(() => mockLedgerRepo.append(any())).called(1);
+    });
+
+    test('Ocurrence generates SlaLedgerEntry in repository', () async {
+      when(
+        () => mockSimulation.addEvent(
+          tripId: any(named: 'tripId'),
+          eventType: any(named: 'eventType'),
+          fromStatus: any(named: 'fromStatus'),
+          toStatus: any(named: 'toStatus'),
+          metadata: any(named: 'metadata'),
+        ),
+      ).thenReturn(
+        TripEvent(
+          id: '3',
+          tripId: 't_3',
+          eventType: EventType.manualOverride,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      await service.createTripEvent(
+        't_3',
+        EventType.manualOverride,
+        metadata: {'type': 'Accident'},
+        notes: 'Test occurrence',
+      );
+
+      verify(() => mockLedgerRepo.append(any())).called(1);
     });
   });
 }

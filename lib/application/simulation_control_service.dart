@@ -6,6 +6,9 @@ import '../domain/enums/trip_status.dart';
 import '../data/services/fleet_simulation_service.dart';
 import 'audit/audit_service.dart';
 import 'operational_control_service.dart';
+import '../../domain/sla_audit/execution_events.dart';
+import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'sla_audit/sla_ledger_mapper.dart';
 
 /// Concrete implementation of [OperationalControlService] backed by
 /// the in-memory [FleetSimulationService].
@@ -15,8 +18,13 @@ import 'operational_control_service.dart';
 class SimulationControlService implements OperationalControlService {
   final FleetSimulationService _simulation;
   final AuditService _auditService;
+  final SlaAuditLedgerRepository _ledgerRepo;
 
-  SimulationControlService(this._simulation, this._auditService);
+  SimulationControlService(
+    this._simulation,
+    this._auditService,
+    this._ledgerRepo,
+  );
 
   @override
   Future<TripEvent> updateTripStatus(
@@ -53,6 +61,30 @@ class SimulationControlService implements OperationalControlService {
         'timestamp': DateTime.now().toIso8601String(),
       },
     );
+
+    // ── Dispatch forensic evidence to the SlaAuditLedger ──
+    final nowUtc = DateTime.now().toUtc();
+    final trip = _simulation.getTripById(tripId);
+
+    if (newStatus == TripStatus.interrupted) {
+      final evidence = TripInterruptedEvidence(
+        occurredAtUtc: nowUtc,
+        tripId: tripId,
+        vehicleId: trip?.vehicleId,
+        operatorId: 'operator_local_mock', // TODO: Get from auth session
+        reason: reason,
+      );
+      await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(evidence));
+    } else if (newStatus == TripStatus.cancelled) {
+      final evidence = TripCancelledEvidence(
+        occurredAtUtc: nowUtc,
+        tripId: tripId,
+        vehicleId: trip?.vehicleId,
+        operatorId: 'operator_local_mock',
+        reason: reason,
+      );
+      await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(evidence));
+    }
 
     return event;
   }
@@ -94,6 +126,18 @@ class SimulationControlService implements OperationalControlService {
         'timestamp': DateTime.now().toIso8601String(),
       },
     );
+
+    // ── Dispatch forensic evidence to the SlaAuditLedger ──
+    final evidence = OccurrenceRegisteredEvidence(
+      occurredAtUtc: DateTime.now().toUtc(),
+      tripId: tripId,
+      vehicleId: trip?.vehicleId,
+      operatorId: 'operator_local_mock', // TODO: Get from auth session
+      occurrenceType: eventType.name,
+      notes: notes,
+      metadata: metadata ?? const {},
+    );
+    await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(evidence));
 
     return event;
   }

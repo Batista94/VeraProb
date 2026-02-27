@@ -45,4 +45,25 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
     if (response == null) return null;
     return response['id'] as int;
   }
+
+  @override
+  Future<List<SlaLedgerEntry>> getEntriesBySetId(String setId) async {
+    final response = await _client
+        .from('sla_audit_ledger')
+        .select()
+        .eq('set_id', setId)
+        .order('occurred_at_utc', ascending: true);
+
+    return (response as List).map((row) {
+      return SlaLedgerEntry(
+        id: row['id'] as int,
+        type: row['type'] as String,
+        setId: row['set_id'] as String?,
+        contractId: row['contract_id'] as String,
+        planVersion: row['plan_version'] as int,
+        occurredAtUtc: DateTime.parse(row['occurred_at_utc'] as String),
+        payload: row['payload'] as Map<String, dynamic>? ?? const {},
+      );
+    }).toList();
+  }
 }

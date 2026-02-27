@@ -4,7 +4,7 @@ import '../../application/operational_control_service.dart';
 import '../../application/simulation_control_service.dart';
 import '../../data/services/fleet_simulation_service.dart';
 import '../../domain/entities/operational_trip.dart';
-import '../../domain/entities/trip_event.dart';
+import '../../domain/sla_audit/sla_ledger_entry.dart';
 import '../../domain/entities/vehicle_position.dart';
 import '../../domain/entities/vehicle_operational_state.dart';
 import '../../application/audit/audit_service.dart';
@@ -18,6 +18,7 @@ import '../../domain/enums/trip_status.dart';
 import '../../application/projections/providers/command_center_filter_provider.dart';
 import '../../application/projections/providers/fleet_attention_projection_provider.dart';
 import '../../application/projections/models/attention_state.dart';
+import 'sla_providers.dart';
 
 // ── Core Services ──────────────────────────────────────
 
@@ -42,7 +43,8 @@ final fleetSimulationProvider = Provider<FleetSimulationService>((ref) {
 final operationalControlProvider = Provider<OperationalControlService>((ref) {
   final simulation = ref.read(fleetSimulationProvider);
   final audit = ref.read(auditServiceProvider);
-  return SimulationControlService(simulation, audit);
+  final ledgerRepo = ref.read(slaAuditLedgerRepositoryProvider);
+  return SimulationControlService(simulation, audit, ledgerRepo);
 });
 
 // Sprint 3: The Intelligence Engine
@@ -180,14 +182,21 @@ final selectedTripProvider = Provider<OperationalTrip?>((ref) {
 
 // ── Trip Events ────────────────────────────────────────
 
-/// Events for the currently selected trip.
-final selectedTripEventsProvider = Provider<List<TripEvent>>((ref) {
+/// Forensic evidence timeline for the currently selected trip.
+final forensicLedgerProjectionProvider = FutureProvider<List<SlaLedgerEntry>>((
+  ref,
+) async {
   final selectedId = ref.watch(selectedTripIdProvider);
   if (selectedId == null) return [];
 
+  // Re-fetch when UI triggers an update
   ref.watch(uiRefreshTrigger);
-  final simulation = ref.read(fleetSimulationProvider);
-  return simulation.getEventsForTrip(selectedId);
+
+  final ledgerRepo = ref.read(slaAuditLedgerRepositoryProvider);
+  final entries = await ledgerRepo.getEntriesBySetId(selectedId);
+
+  // Sort descending (newest first) for UI timeline
+  return entries.reversed.toList();
 });
 
 // ── Fleet Summary (KPIs) ──────────────────────────────
@@ -221,7 +230,10 @@ final fleetSummaryProvider = Provider<FleetSummary>((ref) {
         (t) => t.status == TripStatus.enRoute || t.status == TripStatus.atStop,
       )
       .length;
-  final delayed = active.where((t) => t.status == TripStatus.delayed).length;
+  final delayedTrips = active
+      .where((t) => t.status == TripStatus.delayed)
+      .toList();
+  final delayed = delayedTrips.length;
 
   // Alerts count: CRITICAL attention only (not delayed).
   // We use the attention projection to count vehicles with true emergencies.
@@ -233,10 +245,13 @@ final fleetSummaryProvider = Provider<FleetSummary>((ref) {
   }).length;
   final atStop = active.where((t) => t.status == TripStatus.atStop).length;
 
-  final totalDelay = active.fold<int>(0, (sum, t) => sum + t.delaySeconds);
-  final avgDelay = active.isEmpty
+  final totalDelay = delayedTrips.fold<int>(
+    0,
+    (sum, t) => sum + t.delaySeconds,
+  );
+  final avgDelay = delayedTrips.isEmpty
       ? 0
-      : (totalDelay / active.length / 60).round();
+      : (totalDelay / delayedTrips.length / 60).round();
 
   return FleetSummary(
     totalActive: active.length,

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/domain/entities/operational_trip.dart';
-import 'package:busflow/domain/entities/trip_event.dart';
-import 'package:busflow/domain/enums/event_type.dart';
+import 'package:busflow/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
 import 'package:busflow/domain/entities/operational_suggestion.dart';
 import 'package:busflow/application/intelligence/suggestion_engine.dart';
@@ -31,7 +30,7 @@ class VehicleDetailDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final events = ref.watch(selectedTripEventsProvider);
+    final eventsAsync = ref.watch(forensicLedgerProjectionProvider);
     final suggestion = SuggestionEngine().generateSuggestion(
       ref: ref,
       context: context,
@@ -79,7 +78,17 @@ class VehicleDetailDrawer extends ConsumerWidget {
                   const Divider(height: 1, color: BusFlowColors.border),
 
                   // Event Timeline
-                  _EventTimeline(events: events),
+                  eventsAsync.when(
+                    data: (entries) => _EventTimeline(entries: entries),
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (e, st) => Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text('Erro ao carregar histórico: $e'),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -544,9 +553,9 @@ class _ActionButton extends StatelessWidget {
 // ── Event Timeline ────────────────────────────────────
 
 class _EventTimeline extends StatelessWidget {
-  final List<TripEvent> events;
+  final List<SlaLedgerEntry> entries;
 
-  const _EventTimeline({required this.events});
+  const _EventTimeline({required this.entries});
 
   @override
   Widget build(BuildContext context) {
@@ -556,7 +565,7 @@ class _EventTimeline extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'HISTÓRICO DE EVENTOS',
+            'HISTÓRICO DE EVIDÊNCIAS FORENSES',
             style: BusFlowTypography.caption.copyWith(
               letterSpacing: 1.0,
               fontWeight: FontWeight.w600,
@@ -564,16 +573,16 @@ class _EventTimeline extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          if (events.isEmpty)
+          if (entries.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'Nenhum evento registrado',
+                'Nenhum evento registrado no Ledger',
                 style: BusFlowTypography.bodySmall,
               ),
             )
           else
-            ...events.take(10).map((event) => _EventTile(event: event)),
+            ...entries.take(15).map((entry) => _EventTile(entry: entry)),
         ],
       ),
     );
@@ -581,9 +590,9 @@ class _EventTimeline extends StatelessWidget {
 }
 
 class _EventTile extends StatelessWidget {
-  final TripEvent event;
+  final SlaLedgerEntry entry;
 
-  const _EventTile({required this.event});
+  const _EventTile({required this.entry});
 
   @override
   Widget build(BuildContext context) {
@@ -600,12 +609,12 @@ class _EventTile extends StatelessWidget {
                 height: 12,
                 margin: const EdgeInsets.only(top: 2),
                 decoration: BoxDecoration(
-                  color: _eventColor(event),
+                  color: _eventColor(entry),
                   shape: BoxShape.circle,
                   border: Border.all(color: BusFlowColors.surface, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: _eventColor(event).withValues(alpha: 0.5),
+                      color: _eventColor(entry).withValues(alpha: 0.5),
                       blurRadius: 4,
                     ),
                   ],
@@ -627,14 +636,14 @@ class _EventTile extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      event.eventType.icon,
+                      _eventIcon(entry),
                       size: 12,
-                      color: _eventColor(event),
+                      color: _eventColor(entry),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        event.eventType.label,
+                        _eventLabel(entry),
                         style: BusFlowTypography.caption.copyWith(
                           fontWeight: FontWeight.w600,
                           color: BusFlowColors.textPrimary,
@@ -642,17 +651,17 @@ class _EventTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _formatTime(event.createdAt),
+                      _formatTime(entry.occurredAtUtc.toLocal()),
                       style: BusFlowTypography.caption.copyWith(fontSize: 10),
                     ),
                   ],
                 ),
-                Text(event.summary, style: BusFlowTypography.caption),
-                if (event.metadata?['notes'] != null)
+                Text(_eventSummary(entry), style: BusFlowTypography.caption),
+                if (entry.payload['notes'] != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
-                      event.metadata!['notes'],
+                      entry.payload['notes'] as String,
                       style: BusFlowTypography.caption.copyWith(
                         fontStyle: FontStyle.italic,
                       ),
@@ -666,13 +675,73 @@ class _EventTile extends StatelessWidget {
     );
   }
 
-  Color _eventColor(TripEvent event) {
-    switch (event.eventType.severity) {
-      case EventSeverity.warning:
+  IconData _eventIcon(SlaLedgerEntry entry) {
+    switch (entry.type) {
+      case 'OCCURRENCE_REGISTERED':
+        return Icons.report_problem;
+      case 'TRIP_INTERRUPTED':
+        return Icons.pause_circle;
+      case 'TRIP_CANCELLED':
+        return Icons.cancel;
+      case 'NO_SHOW_DECLARED':
+        return Icons.money_off;
+      case 'EVIDENCE_GAP_DECLARED':
+        return Icons.satellite_alt;
+      case 'EXECUTION_BOUND':
+        return Icons.link;
+      default:
+        return Icons.adjust;
+    }
+  }
+
+  String _eventLabel(SlaLedgerEntry entry) {
+    switch (entry.type) {
+      case 'OCCURRENCE_REGISTERED':
+        final type =
+            entry.payload['occurrence_type'] as String? ?? 'Desconhecido';
+        return 'Ocorrência: $type';
+      case 'TRIP_INTERRUPTED':
+        return 'Viagem Interrompida';
+      case 'TRIP_CANCELLED':
+        return 'Viagem Cancelada';
+      case 'NO_SHOW_DECLARED':
+        return 'Veredito: No-Show';
+      case 'EVIDENCE_GAP_DECLARED':
+        return 'Veredito: Falta Evidência';
+      case 'EXECUTION_BOUND':
+        return 'Execução Associada';
+      default:
+        return 'Fato: ${entry.type}';
+    }
+  }
+
+  String _eventSummary(SlaLedgerEntry entry) {
+    switch (entry.type) {
+      case 'OCCURRENCE_REGISTERED':
+        return 'Registrado pelo CCO';
+      case 'TRIP_INTERRUPTED':
+      case 'TRIP_CANCELLED':
+        return entry.payload['reason'] as String? ?? 'Ação manual';
+      case 'EXECUTION_BOUND':
+        final vehicle = entry.payload['vehicle_id'] as String? ?? '?';
+        return 'Veículo $vehicle atribuído';
+      default:
+        return 'Audit Entry #${entry.id ?? '-'}';
+    }
+  }
+
+  Color _eventColor(SlaLedgerEntry entry) {
+    switch (entry.type) {
+      case 'TRIP_INTERRUPTED':
+      case 'TRIP_CANCELLED':
+      case 'NO_SHOW_DECLARED':
+        return BusFlowColors.critical;
+      case 'OCCURRENCE_REGISTERED':
+      case 'EVIDENCE_GAP_DECLARED':
         return BusFlowColors.delayed;
-      case EventSeverity.info:
+      case 'EXECUTION_BOUND':
         return BusFlowColors.onTime;
-      case EventSeverity.neutral:
+      default:
         return BusFlowColors.textSecondary;
     }
   }

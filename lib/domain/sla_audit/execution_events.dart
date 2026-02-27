@@ -55,3 +55,64 @@ class EvidenceGapDeclaredEvent extends DomainEvent {
     required this.declaredAtUtc,
   });
 }
+
+// ── Evidence Events (Human Interventions) ───────────────────
+
+/// Base class for human-originated operational facts that bypass the standard
+/// contractual evaluation state machine. These serve exclusively as
+/// unalterable forensic anchors in the Ledger.
+abstract class EvidenceEvent extends DomainEvent {
+  final String tripId; // Maps to setId in the SLA domain
+  final String? vehicleId;
+  final String operatorId;
+
+  const EvidenceEvent({
+    required super.occurredAtUtc,
+    required this.tripId,
+    this.vehicleId,
+    required this.operatorId,
+  });
+}
+
+/// Emitted when an operator manually registers an occurrence via OCC.
+class OccurrenceRegisteredEvidence extends EvidenceEvent {
+  final String occurrenceType;
+  final String? notes;
+  final Map<String, dynamic> metadata;
+
+  const OccurrenceRegisteredEvidence({
+    required super.occurredAtUtc,
+    required super.tripId,
+    super.vehicleId,
+    required super.operatorId,
+    required this.occurrenceType,
+    this.notes,
+    this.metadata = const {},
+  });
+}
+
+/// Emitted when an operator manually interrupts a trip via OCC.
+class TripInterruptedEvidence extends EvidenceEvent {
+  final String? reason;
+
+  const TripInterruptedEvidence({
+    required super.occurredAtUtc,
+    required super.tripId,
+    super.vehicleId,
+    required super.operatorId,
+    this.reason,
+  });
+}
+
+/// Emitted when an operator manually cancels a trip via OCC.
+class TripCancelledEvidence extends EvidenceEvent {
+  final String? reason;
+
+  const TripCancelledEvidence({
+    required super.occurredAtUtc,
+    required super.tripId,
+    super.vehicleId,
+    required super.operatorId,
+    this.reason,
+  });
+}
