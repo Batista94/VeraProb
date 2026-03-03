@@ -122,6 +122,44 @@ class ContractualFinancialDailySnapshot extends Equatable {
     );
   }
 
+  /// Reconstitutes an existing snapshot from persistence without generating a new ID
+  /// or recalculating percentages.
+  factory ContractualFinancialDailySnapshot.reconstitute({
+    required String id,
+    required String? contractId,
+    required DateTime operationalDateUtc,
+    required String operationalTimezone,
+    required DateTime closedAtUtc,
+    required Money totalContractedRevenue,
+    required Money protectedRevenue,
+    required Money revenueAtRisk,
+    required Money lostRevenue,
+    required double riskPercentage,
+    required double lossPercentage,
+    required int? lastLedgerEntryId,
+    String? previousSnapshotId,
+    String? reprocessingReason,
+    String? authorUserId,
+  }) {
+    return ContractualFinancialDailySnapshot._(
+      id: id,
+      contractId: contractId,
+      operationalDateUtc: operationalDateUtc,
+      operationalTimezone: operationalTimezone,
+      closedAtUtc: closedAtUtc,
+      totalContractedRevenue: totalContractedRevenue,
+      protectedRevenue: protectedRevenue,
+      revenueAtRisk: revenueAtRisk,
+      lostRevenue: lostRevenue,
+      riskPercentage: riskPercentage,
+      lossPercentage: lossPercentage,
+      lastLedgerEntryId: lastLedgerEntryId,
+      previousSnapshotId: previousSnapshotId,
+      reprocessingReason: reprocessingReason,
+      authorUserId: authorUserId,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,

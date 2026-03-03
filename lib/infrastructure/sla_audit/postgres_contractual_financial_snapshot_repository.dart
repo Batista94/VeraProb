@@ -78,7 +78,8 @@ class PostgresContractualFinancialSnapshotRepository
   }
 
   ContractualFinancialDailySnapshot _mapRow(Map<String, dynamic> row) {
-    return ContractualFinancialDailySnapshot.create(
+    return ContractualFinancialDailySnapshot.reconstitute(
+      id: row['id'] as String,
       contractId: row['contract_id'] as String?,
       operationalDateUtc: DateTime.parse(row['operational_date_utc'] as String),
       operationalTimezone: row['operational_timezone'] as String,
@@ -89,6 +90,8 @@ class PostgresContractualFinancialSnapshotRepository
       protectedRevenue: Money(row['protected_revenue_cents'] as int),
       revenueAtRisk: Money(row['revenue_at_risk_cents'] as int),
       lostRevenue: Money(row['lost_revenue_cents'] as int),
+      riskPercentage: (row['risk_percentage'] as num).toDouble(),
+      lossPercentage: (row['loss_percentage'] as num).toDouble(),
       lastLedgerEntryId: row['last_ledger_entry_id'] != null
           ? row['last_ledger_entry_id'] as int
           : null,
