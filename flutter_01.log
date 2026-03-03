@@ -1,0 +1,82 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter test test/integration/sla_audit_e2e_postgres_test.dart \
+
+## exception
+
+PathAccessException: PathAccessException: Directory listing failed, path = 'C:\$Recycle.Bin\S-1-5-18\*' (OS Error: Acesso negado, errno = 5)
+
+```
+#0      _Directory._fillWithDirectoryListing (dart:io-patch/directory_patch.dart:49:4)
+#1      _Directory.listSync (dart:io/directory_impl.dart:273:5)
+#2      ForwardingDirectory.listSync (package:file/src/forwarding/forwarding_directory.dart:43:12)
+#3      ForwardingDirectory.listSync (package:file/src/forwarding/forwarding_directory.dart:43:12)
+#4      _findTests (package:flutter_tools/src/commands/test.dart:849:8)
+#5      TestCommand.verifyThenRunCommand (package:flutter_tools/src/commands/test.dart:359:32)
+#6      FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1559:33)
+<asynchronous suspension>
+#7      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#8      CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+<asynchronous suspension>
+#9      FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:487:9)
+<asynchronous suspension>
+#10     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#11     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:422:5)
+<asynchronous suspension>
+#12     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:104:11)
+<asynchronous suspension>
+#13     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#14     main (package:flutter_tools/executable.dart:103:3)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[32m[✓][39m Flutter (Channel stable, 3.38.9, on Microsoft Windows [versÆo 10.0.26200.7922], locale pt-BR) [816ms]
+    [32m•[39m Flutter version 3.38.9 on channel stable at C:\Flutter\flutter
+    [32m•[39m Upstream repository https://github.com/flutter/flutter.git
+    [32m•[39m Framework revision 67323de285 (5 weeks ago), 2026-01-28 13:43:12 -0800
+    [32m•[39m Engine revision 587c18f873
+    [32m•[39m Dart version 3.10.8
+    [32m•[39m DevTools version 2.51.1
+    [32m•[39m Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-native-assets,
+      omit-legacy-version-file, enable-lldb-debugging
+
+[32m[✓][39m Windows Version (11 Pro 64-bit, 25H2, 2009) [12,3s]
+
+[31m[✗][39m Android toolchain - develop for Android devices [505ms]
+    [31m✗[39m Unable to locate Android SDK.
+      Install Android Studio from: https://developer.android.com/studio/index.html
+      On first launch it will assist you in installing the Android SDK components.
+      (or visit https://flutter.dev/to/windows-android-setup for detailed instructions).
+      If the Android SDK has been installed to a custom location, please use
+      `flutter config --android-sdk` to update to that location.
+
+
+[32m[✓][39m Chrome - develop for the web [456ms]
+    [32m•[39m Chrome at C:\Program Files\Google\Chrome\Application\chrome.exe
+
+[33m[!][39m Visual Studio - develop Windows apps (Ferramentas de Build do Visual Studio 2022 17.14.26) [454ms]
+    [32m•[39m Visual Studio at C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
+    [32m•[39m Ferramentas de Build do Visual Studio 2022 version 17.14.36930.0
+    [32m•[39m Windows 10 SDK version 10.0.26100.0
+    [31m✗[39m The current Visual Studio installation is incomplete.
+      Please use Visual Studio Installer to complete the installation or reinstall Visual Studio.
+
+[32m[✓][39m Connected device (3 available) [331ms]
+    [32m•[39m Windows (desktop) • windows • windows-x64    • Microsoft Windows [versÆo 10.0.26200.7922]
+    [32m•[39m Chrome (web)      • chrome  • web-javascript • Google Chrome 145.0.7632.117
+    [32m•[39m Edge (web)        • edge    • web-javascript • Microsoft Edge 145.0.3800.58
+
+[32m[✓][39m Network resources [558ms]
+    [32m•[39m All expected network resources are available.
+
+[33m![39m Doctor found issues in 2 categories.
+```
