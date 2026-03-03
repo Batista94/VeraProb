@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/logger_service.dart';
-import '../../driver/domain/entities/driver.dart';
+import '../../shared/domain/entities/driver.dart';
 import '../../shared/providers.dart';
 import '../../../domain/enums/user_role.dart';
 import '../../../state/providers/auth_providers.dart';

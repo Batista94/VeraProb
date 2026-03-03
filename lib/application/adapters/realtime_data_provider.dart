@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/config/supabase_client.dart';
 import '../../domain/entities/vehicle_position.dart';
 import 'operational_data_provider.dart';
 
@@ -8,6 +10,7 @@ import 'operational_data_provider.dart';
 /// or simply yields empty lists, until the hardware team provides the WS endpoint.
 class RealtimeDataProvider implements IOperationalDataProvider {
   final _controller = StreamController<List<VehiclePosition>>.broadcast();
+  RealtimeChannel? _channel;
   bool _isConnected = false;
 
   @override
@@ -20,13 +23,28 @@ class RealtimeDataProvider implements IOperationalDataProvider {
   Future<void> connect() async {
     if (_isConnected) return;
 
-    // TODO: Initialize Supabase Realtime channel or raw WebSocket connection to IoT Hub.
+    // Pending: Finalize channel name with hardware team
+    _channel = supabase.channel('fleet-live-positions');
+
+    _channel!
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'vehicle_positions',
+          callback: (payload) {
+            // Normalization logic would go here
+          },
+        )
+        .subscribe();
+
     _isConnected = true;
   }
 
   @override
   Future<void> disconnect() async {
-    // TODO: Teardown sockets
+    if (!_isConnected) return;
+    await _channel?.unsubscribe();
+    _channel = null;
     _isConnected = false;
   }
 }

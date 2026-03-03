@@ -9,3 +9,14 @@ import '../../domain/enums/user_role.dart';
 final currentUserRoleProvider = StateProvider<UserRole>((ref) {
   return UserRole.supervisor;
 });
+
+/// Current operator ID (from auth session in production).
+final currentOperatorIdProvider = Provider<String>((ref) {
+  // In production, this would be supabase.auth.currentUser?.id
+  return 'ops-772';
+});
+
+/// Current operator Display Name.
+final currentOperatorNameProvider = Provider<String>((ref) {
+  return 'Supervisor Master';
+});

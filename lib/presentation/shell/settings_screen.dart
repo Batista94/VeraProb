@@ -1,0 +1,151 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme/app_theme.dart';
+import '../../state/providers/fleet_providers.dart';
+import '../../state/providers/auth_providers.dart';
+
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final useRealtime = ref.watch(useRealtimeDataProvider);
+    final operatorName = ref.watch(currentOperatorNameProvider);
+    final operatorId = ref.watch(currentOperatorIdProvider);
+
+    return Scaffold(
+      backgroundColor: BusFlowColors.background,
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'CONFIGURAÇÕES DO SISTEMA',
+                    style: BusFlowTypography.sectionTitle.copyWith(
+                      color: BusFlowColors.primary,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Gerencie as preferências globais do Centro de Controle.',
+                    style: BusFlowTypography.bodySmall,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // ── Seção: Sessão Atual ────────────────
+                  _SectionHeader(title: 'Sessão Atual'),
+                  _SettingTile(
+                    label: 'Operador Conectado',
+                    value: operatorName,
+                    icon: Icons.person_outline,
+                  ),
+                  _SettingTile(
+                    label: 'ID do Operador',
+                    value: operatorId,
+                    icon: Icons.badge_outlined,
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // ── Seção: Conectividade ───────────────
+                  _SectionHeader(title: 'Dados e Conectividade'),
+                  SwitchListTile(
+                    title: const Text('Modo Hardware Real-time'),
+                    subtitle: const Text(
+                      'Quando ativado, o sistema tentará conectar aos hubs de IoT via WebSocket em vez de usar a simulação.',
+                    ),
+                    value: useRealtime,
+                    activeThumbColor: BusFlowColors.primary,
+                    contentPadding: EdgeInsets.zero,
+                    onChanged: (val) {
+                      ref.read(useRealtimeDataProvider.notifier).state = val;
+                    },
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // ── Seção: Informações Técnicas ───────
+                  _SectionHeader(title: 'Sobre a Plataforma'),
+                  const _SettingTile(
+                    label: 'Versão do Software',
+                    value: '1.0.0-mvp.hardening',
+                    icon: Icons.info_outline,
+                  ),
+                  const _SettingTile(
+                    label: 'Ambiente',
+                    value: 'Desenvolvimento / Simulação',
+                    icon: Icons.code,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title.toUpperCase(),
+          style: BusFlowTypography.caption.copyWith(
+            color: BusFlowColors.textSecondary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const Divider(height: 24, color: BusFlowColors.border),
+      ],
+    );
+  }
+}
+
+class _SettingTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _SettingTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: BusFlowColors.textSecondary),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: BusFlowTypography.caption),
+              Text(
+                value,
+                style: BusFlowTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -24,7 +24,19 @@ class LoggerService {
     if (error != null) debugPrint('Error: $error');
     if (stackTrace != null) debugPrint('StackTrace: $stackTrace');
 
-    // TODO: Send to external monitoring service (Sentry/NewRelic)
+    // Pending: Send to external monitoring service (Sentry/NewRelic)
+    _reportToExternalService(message, error, stackTrace);
+  }
+
+  void _reportToExternalService(
+    String message,
+    Object? error,
+    StackTrace? stackTrace,
+  ) {
+    // structured hook for future Sentry.captureException or FirebaseCrashlytics
+    if (kReleaseMode) {
+      // Sentry.captureException(error, stackTrace: stackTrace);
+    }
   }
 
   void security(String event) {

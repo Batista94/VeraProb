@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:busflow/features/admin/presentation/drivers_screen.dart';
 import 'package:busflow/features/shared/providers.dart';
-import 'package:busflow/features/driver/domain/entities/driver.dart';
-import 'package:busflow/features/driver/data/repositories/driver_repository.dart';
+import 'package:busflow/features/shared/domain/entities/driver.dart';
+import 'package:busflow/features/shared/data/repositories/driver_repository.dart';
 import 'package:busflow/domain/enums/user_role.dart';
 import 'package:busflow/state/providers/auth_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -203,3 +203,4 @@ void main() {
     });
   });
 }
+

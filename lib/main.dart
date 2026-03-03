@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'core/config/supabase_client.dart';
-import 'core/theme/app_theme.dart';
-import 'features/passenger/presentation/map_screen.dart';
-import 'features/driver/presentation/driver_screen.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core/theme/app_theme.dart';
+import 'presentation/shell/admin_shell.dart';
+import 'features/admin/presentation/command_center/command_center_screen.dart';
+import 'features/admin/presentation/trips/trips_timeline_screen.dart';
+import 'features/admin/presentation/resources/resource_management_screen.dart';
+import 'features/admin/presentation/system/system_health_screen.dart';
+import 'features/admin/presentation/command_center/screens/operational_audit_screen.dart';
 import 'features/shared/providers.dart';
+import 'presentation/shell/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,71 +18,29 @@ void main() async {
   runApp(
     ProviderScope(
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-      child: const BusFlowApp(),
+      child: const BusFlowAdminApp(),
     ),
   );
 }
 
-class BusFlowApp extends StatelessWidget {
-  const BusFlowApp({super.key});
+class BusFlowAdminApp extends StatelessWidget {
+  const BusFlowAdminApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BusFlow',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('BusFlow MVP')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton.icon(
-              icon: const Icon(Icons.map),
-              label: const Text('SOU PASSAGEIRO (Mapa)'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const MapScreen()));
-              },
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.directions_bus),
-              label: const Text('SOU MOTORISTA (App)'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-                backgroundColor: Colors.black87,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const DriverScreen()));
-              },
-            ),
-          ],
-        ),
+      title: 'BusFlow — Control Center',
+      theme: AppTheme.darkTheme,
+      debugShowCheckedModeBanner: false,
+      home: const AdminShell(
+        screens: {
+          AdminDestination.commandCenter: CommandCenterScreen(),
+          AdminDestination.trips: TripsTimelineScreen(),
+          AdminDestination.resources: ResourceManagementScreen(),
+          AdminDestination.system: SystemHealthScreen(),
+          AdminDestination.audit: OperationalAuditScreen(),
+          AdminDestination.settings: SettingsScreen(),
+        },
       ),
     );
   }

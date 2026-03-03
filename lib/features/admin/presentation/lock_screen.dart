@@ -11,7 +11,10 @@ class AdminLockScreen extends StatefulWidget {
 
 class _AdminLockScreenState extends State<AdminLockScreen> {
   final TextEditingController _pinController = TextEditingController();
-  static const String _adminPin = '1234'; // TODO: Move to Env/SecureStorage
+  static const String _adminPin = String.fromEnvironment(
+    'ADMIN_PIN',
+    defaultValue: '1234',
+  );
   String? _error;
 
   void _verifyPin() {

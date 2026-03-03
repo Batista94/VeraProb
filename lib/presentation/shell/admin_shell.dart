@@ -33,6 +33,12 @@ enum AdminDestination {
     selectedIcon: Icons.history,
     label: 'Auditoria',
     tooltip: 'Auditoria OCC',
+  ),
+  settings(
+    icon: Icons.settings_outlined,
+    selectedIcon: Icons.settings,
+    label: 'Ajustes',
+    tooltip: 'Configurações do Sistema',
   );
 
   final IconData icon;
@@ -90,6 +96,7 @@ class AdminShell extends ConsumerWidget {
                   onDestinationSelected: (dest) {
                     ref.read(adminDestinationProvider.notifier).state = dest;
                   },
+                  ref: ref,
                 ),
 
                 // ── Vertical Divider ───────────────────────
@@ -278,10 +285,12 @@ class _LiveClockState extends State<_LiveClock> {
 class _IconSidebar extends StatelessWidget {
   final AdminDestination currentDestination;
   final ValueChanged<AdminDestination> onDestinationSelected;
+  final WidgetRef ref;
 
   const _IconSidebar({
     required this.currentDestination,
     required this.onDestinationSelected,
+    required this.ref,
   });
 
   @override
@@ -310,9 +319,10 @@ class _IconSidebar extends StatelessWidget {
           _SidebarIcon(
             icon: Icons.settings_outlined,
             tooltip: 'Configurações',
-            isSelected: false,
+            isSelected: currentDestination == AdminDestination.settings,
             onTap: () {
-              // TODO: Settings screen
+              ref.read(adminDestinationProvider.notifier).state =
+                  AdminDestination.settings;
             },
           ),
 

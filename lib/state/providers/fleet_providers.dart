@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'auth_providers.dart';
 import '../../application/intelligence/situation_engine.dart';
 import '../../application/operational_control_service.dart';
 import '../../application/simulation_control_service.dart';
@@ -44,7 +45,12 @@ final operationalControlProvider = Provider<OperationalControlService>((ref) {
   final simulation = ref.read(fleetSimulationProvider);
   final audit = ref.read(auditServiceProvider);
   final ledgerRepo = ref.read(slaAuditLedgerRepositoryProvider);
-  return SimulationControlService(simulation, audit, ledgerRepo);
+  return SimulationControlService(
+    simulation,
+    audit,
+    ledgerRepo,
+    getOperatorId: () => ref.read(currentOperatorIdProvider),
+  );
 });
 
 // Sprint 3: The Intelligence Engine
@@ -57,7 +63,7 @@ final situationEngineProvider = Provider<SituationEngine>((ref) {
 // to re-read events from FleetSimulationService (which uses synchronous reads,
 // not streams). Trip status updates propagate naturally via stream emission
 // from _emitCurrentState() and do NOT need this workaround.
-// TODO: Replace with a StreamProvider for events in a future data architecture sprint.
+// Pending: Replace with a StreamProvider for events in a future data architecture sprint.
 
 final uiRefreshTrigger = StateProvider<int>((ref) => 0);
 

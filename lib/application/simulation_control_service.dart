@@ -19,12 +19,14 @@ class SimulationControlService implements OperationalControlService {
   final FleetSimulationService _simulation;
   final AuditService _auditService;
   final SlaAuditLedgerRepository _ledgerRepo;
+  final String Function() _getOperatorId;
 
   SimulationControlService(
     this._simulation,
     this._auditService,
-    this._ledgerRepo,
-  );
+    this._ledgerRepo, {
+    required String Function() getOperatorId,
+  }) : _getOperatorId = getOperatorId;
 
   @override
   Future<TripEvent> updateTripStatus(
@@ -37,7 +39,7 @@ class SimulationControlService implements OperationalControlService {
     // Fire-and-forget: Audit logging never blocks operational flow
     _auditService
         .logAction(
-          operatorId: 'operator_local_mock', // TODO: Get from auth session
+          operatorId: _getOperatorId(), // Use injected operator ID
           actionType: 'TRIP_STATUS_CHANGE',
           entityId: tripId,
           oldValue: oldStatus?.name,
@@ -71,7 +73,7 @@ class SimulationControlService implements OperationalControlService {
         occurredAtUtc: nowUtc,
         tripId: tripId,
         vehicleId: trip?.vehicleId,
-        operatorId: 'operator_local_mock', // TODO: Get from auth session
+        operatorId: _getOperatorId(), // Use injected operator ID
         reason: reason,
       );
       await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(evidence));
@@ -80,7 +82,7 @@ class SimulationControlService implements OperationalControlService {
         occurredAtUtc: nowUtc,
         tripId: tripId,
         vehicleId: trip?.vehicleId,
-        operatorId: 'operator_local_mock',
+        operatorId: _getOperatorId(),
         reason: reason,
       );
       await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(evidence));
@@ -101,7 +103,7 @@ class SimulationControlService implements OperationalControlService {
     // Fire-and-forget: Audit logging never blocks operational flow
     _auditService
         .logAction(
-          operatorId: 'operator_local_mock', // TODO: Get from auth session
+          operatorId: _getOperatorId(), // Use injected operator ID
           actionType: 'CREATE_INCIDENT_${eventType.name.toUpperCase()}',
           entityId: tripId,
           oldValue: trip?.status.name,
@@ -132,7 +134,7 @@ class SimulationControlService implements OperationalControlService {
       occurredAtUtc: DateTime.now().toUtc(),
       tripId: tripId,
       vehicleId: trip?.vehicleId,
-      operatorId: 'operator_local_mock', // TODO: Get from auth session
+      operatorId: _getOperatorId(), // Use injected operator ID
       occurrenceType: eventType.name,
       notes: notes,
       metadata: metadata ?? const {},

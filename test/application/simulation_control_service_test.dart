@@ -59,6 +59,7 @@ void main() {
         mockSimulation,
         mockAudit,
         mockLedgerRepo,
+        getOperatorId: () => 'test_operator',
       );
     });
 

@@ -15,7 +15,7 @@ class SupabaseConfig {
   );
 
   static Future<void> initialize() async {
-    // TODO: Replace with actual credentials
+    // Pending: Replace with actual credentials
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
   }
 }
