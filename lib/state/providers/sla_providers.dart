@@ -8,6 +8,7 @@ import '../../domain/sla_audit/contractual_execution_state_repository.dart';
 import '../../domain/sla_audit/execution_status.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import '../../infrastructure/persistence/persistence_mode.dart';
 import '../../infrastructure/persistence/persistence_provider.dart';
 
 // ── Repositories (Singletons) ───────────────────────────────
@@ -36,6 +37,15 @@ final slaAuditLedgerRepositoryProvider = Provider<SlaAuditLedgerRepository>((
 final slaExecutionQueryServiceProvider = Provider<SlaExecutionQueryService>((
   ref,
 ) {
+  final mode = ref.watch(persistenceModeProvider);
+
+  if (mode == PersistenceMode.postgres) {
+    throw UnimplementedError(
+      'Read-model Postgres implementation not available yet',
+    );
+  }
+
+  // Safe to watch InMemory repo since the mode is inMemory
   final repo = ref.watch(contractualExecutionStateRepositoryProvider);
   return SlaExecutionQueryServiceInMemory(repo: repo);
 });
