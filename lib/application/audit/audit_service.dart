@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/audit_log.dart';
 import '../../core/services/logger_service.dart';
+import '../../infrastructure/persistence/persistence_mode.dart';
+import '../../infrastructure/persistence/persistence_provider.dart';
 
 /// Interface for the Audit subsystem.
 abstract class AuditService {
@@ -77,5 +79,12 @@ class InMemoryAuditService implements AuditService {
 // ---------------------------------------------------------------------------
 
 final auditServiceProvider = Provider<AuditService>((ref) {
-  return InMemoryAuditService();
+  final mode = ref.watch(persistenceModeProvider);
+
+  switch (mode) {
+    case PersistenceMode.inMemory:
+      return InMemoryAuditService();
+    case PersistenceMode.postgres:
+      throw UnimplementedError('PostgresAuditService not implemented yet');
+  }
 });

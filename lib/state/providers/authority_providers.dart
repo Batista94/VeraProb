@@ -9,6 +9,8 @@ import '../../domain/authority/policies/authority_policy_evaluator.dart';
 import '../../domain/authority/policies/in_memory_policy_evaluator.dart';
 import '../../domain/authority/repositories/forensic_decision_repository.dart';
 import '../../domain/authority/repositories/in_memory_forensic_repository.dart';
+import '../../infrastructure/persistence/persistence_mode.dart';
+import '../../infrastructure/persistence/persistence_provider.dart';
 import '../../state/providers/fleet_providers.dart';
 
 /// ---------------------------------------------------------
@@ -31,10 +33,17 @@ final mockAuthorizationContextProvider = StateProvider<AuthorizationContext>((
 /// FASE 3/4: COMMAND BUS & AUTHORITY DEPENDENCIES
 /// ---------------------------------------------------------
 
-/// Forensics Storage (Append-Only)
 final forensicDecisionRepositoryProvider = Provider<ForensicDecisionRepository>(
   (ref) {
-    return InMemoryForensicRepository();
+    final mode = ref.watch(persistenceModeProvider);
+    switch (mode) {
+      case PersistenceMode.inMemory:
+        return InMemoryForensicRepository();
+      case PersistenceMode.postgres:
+        throw UnimplementedError(
+          'PostgresForensicRepository not implemented yet',
+        );
+    }
   },
 );
 
@@ -42,7 +51,13 @@ final forensicDecisionRepositoryProvider = Provider<ForensicDecisionRepository>(
 final authorityPolicyEvaluatorProvider = Provider<AuthorityPolicyEvaluator>((
   ref,
 ) {
-  return InMemoryPolicyEvaluator();
+  final mode = ref.watch(persistenceModeProvider);
+  switch (mode) {
+    case PersistenceMode.inMemory:
+      return InMemoryPolicyEvaluator();
+    case PersistenceMode.postgres:
+      throw UnimplementedError('PostgresPolicyEvaluator not implemented yet');
+  }
 });
 
 /// The Command Bus Interceptor Hub
