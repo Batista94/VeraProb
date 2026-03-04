@@ -144,9 +144,9 @@ CREATE INDEX idx_financial_snapshot_date ON public.contractual_financial_snapsho
 CREATE INDEX idx_financial_snapshot_contract ON public.contractual_financial_snapshot(contract_id);
 
 -- ============================================================
--- REVOKE PRIVILEGES / SECURITY CONSIDERATIONS 
--- (Ensuring application-layer immmutability maps to database-layer)
+-- SECURITY HARDENING
 -- ============================================================
--- Because we only connect via standard methods using the application client,
--- we're relying on the repository logic to restrict updates/deletes in MVP.
--- In a highly-secure production environment we'd REVOKE UPDATE, DELETE ON these tables.
+-- Database-level invariants (REVOKE UPDATE/DELETE, RLS, policies)
+-- are enforced by the migration:
+--   supabase/migrations/20260304195300_sla_audit_hardening.sql
+-- ============================================================
