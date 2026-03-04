@@ -37,6 +37,10 @@ class SlaExecutionItemView extends Equatable {
     required this.noShowPenaltyMultiplier,
   });
 
+  /// Computed penalty value for display purposes.
+  /// Formula lives here (projection layer), not in the UI.
+  double get calculatedPenalty => contractualValue * noShowPenaltyMultiplier;
+
   @override
   List<Object?> get props => [
     setId,

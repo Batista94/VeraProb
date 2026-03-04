@@ -69,9 +69,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                     if (item.status == ExecutionStatus.noShow)
                       _InfoField(
                         label: 'Penalidade Calculada',
-                        value: _currencyFormat.format(
-                          item.contractualValue * item.noShowPenaltyMultiplier,
-                        ),
+                        value: _currencyFormat.format(item.calculatedPenalty),
                       ),
                     const Divider(height: 48),
                     const Text(
