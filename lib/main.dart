@@ -11,6 +11,8 @@ import 'features/admin/presentation/command_center/screens/operational_audit_scr
 import 'features/shared/providers.dart';
 import 'presentation/shell/settings_screen.dart';
 import 'core/config/supabase_client.dart';
+import 'infrastructure/persistence/persistence_mode.dart';
+import 'infrastructure/persistence/persistence_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +24,11 @@ void main() async {
 
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        // FASE 6 — Atomic Switch: runtime now operates on Postgres.
+        persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
+      ],
       child: const BusFlowAdminApp(),
     ),
   );
