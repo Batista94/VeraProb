@@ -7,7 +7,9 @@ import 'package:uuid/uuid.dart';
 
 import 'postgres_test_config.dart';
 
-void main() {
+void main() async {
+  final isRunning = await PostgresTestConfig.isSupabaseRunning();
+
   group(
     'FASE 5 - Financial Snapshot Repository Postgres Tests (contractual_financial_snapshot)',
     () {
@@ -16,10 +18,12 @@ void main() {
       final uuid = const Uuid();
 
       setUpAll(() async {
-        client = await PostgresTestConfig.createClient();
-        repository = PostgresContractualFinancialSnapshotRepository(
-          client: client,
-        );
+        if (isRunning) {
+          client = await PostgresTestConfig.createClient();
+          repository = PostgresContractualFinancialSnapshotRepository(
+            client: client,
+          );
+        }
       });
 
       test(
@@ -132,5 +136,6 @@ void main() {
         },
       );
     },
+    skip: !isRunning ? 'Skipped: Local Supabase environment is offline.' : null,
   );
 }

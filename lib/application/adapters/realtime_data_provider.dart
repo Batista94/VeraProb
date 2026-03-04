@@ -49,7 +49,7 @@ class RealtimeDataProvider implements IOperationalDataProvider {
           schema: 'public',
           table: 'vehicle_positions',
           callback: (payload) {
-            _onPayloadReceived(payload);
+            onPayloadReceived(payload);
           },
         )
         .subscribe();
@@ -79,7 +79,8 @@ class RealtimeDataProvider implements IOperationalDataProvider {
 
   // ── Internal ──────────────────────────────────────────────
 
-  void _onPayloadReceived(PostgresChangePayload payload) {
+  @visibleForTesting
+  void onPayloadReceived(PostgresChangePayload payload) {
     final record = payload.newRecord;
     if (record.isEmpty) return;
 

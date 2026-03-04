@@ -111,5 +111,42 @@ void main() {
       final result = normalizer.processPing(secondPing);
       expect(result, isA<VehiclePosition>());
     });
+
+    // --- QA Playbook: Módulo 15 Testes de Tolerância a Poison Pills ---
+
+    test(
+      'QA Módulo 15 - Rejects time-travel glitch (moved 100m in 0 seconds)',
+      () {
+        final time0 = DateTime.utc(2026, 3, 1, 10, 0, 0);
+
+        final ping1 = RawTelemetryPing(
+          vehicleId: 'glitch-bus',
+          tripId: 'trip-1',
+          latitude: -23.550500,
+          longitude: -46.633300,
+          heading: 0,
+          speed: 20,
+          accuracy: 5.0,
+          timestamp: time0,
+        );
+
+        normalizer.processPing(ping1);
+
+        // Exactly same timestamp, but latitude noticeably changed
+        final ping2 = RawTelemetryPing(
+          vehicleId: 'glitch-bus',
+          tripId: 'trip-1',
+          latitude: -23.551500, // Roughly 111 meters away
+          longitude: -46.633300,
+          heading: 0,
+          speed: 20,
+          accuracy: 5.0,
+          timestamp: time0, // SAME TIMESTAMP
+        );
+
+        final result = normalizer.processPing(ping2);
+        expect(result, isNull);
+      },
+    );
   });
 }

@@ -209,5 +209,127 @@ void main() {
       expect(r1.status, ExecutionStatus.executed);
       expect(r2.status, ExecutionStatus.executed);
     });
+
+    test(
+      'idempotency: same payload twice does not duplicate processing',
+      () async {
+        final state = makeExecState();
+        await repo.save(state);
+        final vehicle = makeVehicleState();
+
+        final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
+        final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
+
+        await engine.processVehicleState(vehicle, nowUtc: t0);
+        await engine.processVehicleState(vehicle, nowUtc: t0); // Duplicate
+
+        await engine.processVehicleState(vehicle, nowUtc: t31);
+        await engine.processVehicleState(vehicle, nowUtc: t31); // Duplicate
+
+        final result = await repo.findBySetId('set-1');
+        expect(result!.status, ExecutionStatus.executed);
+        expect(ledger.entries, hasLength(1));
+      },
+    );
+
+    test(
+      'out-of-order telemetry: older timestamp does not break dwell if already started',
+      () async {
+        final state = makeExecState();
+        await repo.save(state);
+        final vehicleInside = makeVehicleState();
+        final vehicleOutside = makeVehicleState(latitude: geoLat + 0.005);
+
+        final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
+        final tMinus10 = DateTime.utc(
+          2026,
+          3,
+          1,
+          6,
+          29,
+          50,
+        ); // Came late, was outside then
+        final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
+
+        await engine.processVehicleState(vehicleInside, nowUtc: t0);
+
+        // Late event arrives out of order
+        await engine.processVehicleState(vehicleOutside, nowUtc: tMinus10);
+
+        await engine.processVehicleState(vehicleInside, nowUtc: t31);
+
+        final result = await repo.findBySetId('set-1');
+        expect(result!.status, ExecutionStatus.executed);
+        expect(ledger.entries, hasLength(1));
+      },
+    );
+
+    test(
+      'sweepExpiredObligations is idempotent for prolonged absence',
+      () async {
+        final state = makeExecState(windowEnd: DateTime.utc(2026, 3, 1, 7, 0));
+        await repo.save(state);
+
+        final afterExpiry1 = DateTime.utc(2026, 3, 1, 7, 1);
+        await engine.sweepExpiredObligations(nowUtc: afterExpiry1);
+
+        final afterExpiry2 = DateTime.utc(2026, 3, 1, 7, 10);
+        await engine.sweepExpiredObligations(nowUtc: afterExpiry2);
+
+        final result = await repo.findBySetId('set-1');
+        expect(result!.status, ExecutionStatus.noShow);
+        // Should still be 1 event in ledger, not 2
+        expect(ledger.entries, hasLength(1));
+      },
+    );
+
+    test(
+      'delayed execution is rejected if already marked as no-show',
+      () async {
+        final state = makeExecState(windowEnd: DateTime.utc(2026, 3, 1, 7, 0));
+        await repo.save(state);
+
+        // Sweep marks as no-show
+        final afterExpiry = DateTime.utc(2026, 3, 1, 7, 1);
+        await engine.sweepExpiredObligations(nowUtc: afterExpiry);
+
+        // Vehicle arrives very late (after no-show)
+        final vehicle = makeVehicleState();
+        final tLate0 = DateTime.utc(2026, 3, 1, 7, 5, 0);
+        final tLate31 = DateTime.utc(2026, 3, 1, 7, 5, 31);
+
+        await engine.processVehicleState(vehicle, nowUtc: tLate0);
+        await engine.processVehicleState(vehicle, nowUtc: tLate31);
+
+        final result = await repo.findBySetId('set-1');
+        expect(result!.status, ExecutionStatus.noShow);
+
+        // Still only 1 ledger entry (the no-show)
+        expect(ledger.entries, hasLength(1));
+      },
+    );
+
+    test(
+      'concurrent events for same setid do not duplicate execution',
+      () async {
+        final state = makeExecState();
+        await repo.save(state);
+
+        final vehicle = makeVehicleState();
+        final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
+        final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
+
+        await engine.processVehicleState(vehicle, nowUtc: t0);
+
+        // Fire 3 simultaneous events for t31
+        await Future.wait([
+          engine.processVehicleState(vehicle, nowUtc: t31),
+          engine.processVehicleState(vehicle, nowUtc: t31),
+          engine.processVehicleState(vehicle, nowUtc: t31),
+        ]);
+
+        expect(ledger.entries, hasLength(1));
+      },
+    );
   });
 }

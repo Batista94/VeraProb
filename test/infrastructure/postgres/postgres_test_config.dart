@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
 
 /// Configuração local para os testes de integração do Postgres.
 /// Utiliza as credenciais padrão do `supabase start` rodando na porta 54321.
@@ -12,5 +13,17 @@ class PostgresTestConfig {
     // Para testes isolados, inicializamos uma nova instância sem afetar o global
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
     return Supabase.instance.client;
+  }
+
+  /// Verifica se o Supabase local está rodando (usado para skip automático de testes)
+  static Future<bool> isSupabaseRunning() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$supabaseUrl/auth/v1/health'))
+          .timeout(const Duration(seconds: 2));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false; // Connection refused or timeout
+    }
   }
 }

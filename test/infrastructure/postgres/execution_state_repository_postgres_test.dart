@@ -6,7 +6,9 @@ import 'package:uuid/uuid.dart';
 
 import 'postgres_test_config.dart';
 
-void main() {
+void main() async {
+  final isRunning = await PostgresTestConfig.isSupabaseRunning();
+
   group(
     'FASE 5 - Execution State Repository Postgres Tests (execution_states)',
     () {
@@ -15,8 +17,10 @@ void main() {
       final uuid = const Uuid();
 
       setUpAll(() async {
-        client = await PostgresTestConfig.createClient();
-        repository = PostgresContractualExecutionStateRepository(client);
+        if (isRunning) {
+          client = await PostgresTestConfig.createClient();
+          repository = PostgresContractualExecutionStateRepository(client);
+        }
       });
 
       test('1. Insert and full domain reconstitution cycle works', () async {
@@ -137,5 +141,6 @@ void main() {
         },
       );
     },
+    skip: !isRunning ? 'Skipped: Local Supabase environment is offline.' : null,
   );
 }

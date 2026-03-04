@@ -12,10 +12,13 @@ import 'package:busflow/application/sla_audit/declare_contractual_plan_handler.d
 import 'package:busflow/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:busflow/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
 import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
+import 'package:busflow/domain/sla_audit/execution_status.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_snapshot_repository.dart';
+import 'package:busflow/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
+import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
 
 // ── Database Integrity Helpers ───────────────────────────
 
@@ -54,6 +57,10 @@ void main() {
   late DeclareContractualPlanHandler declarationHandler;
   late ContractualEvaluationEngine evaluationEngine;
   late ContractualFinancialSnapshotGenerator snapshotGenerator;
+
+  // Query Services (Projections)
+  late SlaExecutionQueryServicePostgres executionQueryService;
+  late ContractualFinancialImpactQueryServicePostgres impactQueryService;
 
   // Test Scope Constants
   final uiqueTestRunId = const Uuid().v4().substring(0, 8);
@@ -108,6 +115,9 @@ void main() {
       snapshotRepo: snapshotRepo,
       ledgerRepo: ledgerRepo,
     );
+
+    executionQueryService = SlaExecutionQueryServicePostgres(client);
+    impactQueryService = ContractualFinancialImpactQueryServicePostgres(client);
 
     // Explicit Database Cleanup Scope for this contract
     await cleanupTestData(client, contractId);
@@ -425,6 +435,35 @@ void main() {
         reason:
             'Postgres UNIQUE(contract_id, plan_version) must reject this insert',
       );
+    });
+
+    test('Stage 7 — E2E UI Dashboard Query Coverage', () async {
+      // 1. Verify SLA Execution Item projections
+      final summary = await executionQueryService.getSummary(
+        contractId: contractId,
+      );
+
+      expect(summary.totalExecuted, 1, reason: '1 executed set from telemetry');
+      expect(summary.totalPending, 0);
+      expect(summary.total, 1);
+      expect(summary.protectedRevenue, 100.0);
+
+      final executedList = await executionQueryService.listByStatus(
+        ExecutionStatus.executed,
+        contractId: contractId,
+      );
+      expect(executedList.first.boundVehicleId, vehicleId);
+
+      // 2. Verify Financial Impact projections
+      final impact = await impactQueryService.getImpact(contractId: contractId);
+
+      expect(
+        impact.protectedRevenue.cents,
+        10000,
+        reason: '100 BRL = 10000 cents',
+      );
+      expect(impact.lostRevenue.cents, 0);
+      expect(impact.revenueAtRisk.cents, 0);
     });
   });
 }

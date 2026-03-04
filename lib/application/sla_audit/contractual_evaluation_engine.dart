@@ -4,6 +4,7 @@ import 'dart:math';
 import '../../application/sla_audit/sla_ledger_mapper.dart';
 import '../../domain/entities/vehicle_operational_state.dart';
 import '../../domain/sla_audit/contractual_execution_state.dart';
+import '../../domain/sla_audit/execution_status.dart';
 import '../../domain/sla_audit/contractual_execution_state_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
 
@@ -75,9 +76,17 @@ class ContractualEvaluationEngine {
           () => now,
         );
 
+        if (now.isBefore(firstEntry)) {
+          // Out of order ping from before first entry. Ignore to avoid breaking dwell.
+          continue;
+        }
+
         final dwellDuration = now.difference(firstEntry);
 
         if (dwellDuration.inSeconds >= _minDwellSeconds) {
+          // Check status again defensivelly against concurrent evaluations
+          if (state.status != ExecutionStatus.pending) continue;
+
           // 5. Execute binding
           state.bindExecution(
             vehicleId: vehicleState.vehicleId,
@@ -97,7 +106,11 @@ class ContractualEvaluationEngine {
         }
       } else {
         // Vehicle left the geofence — reset dwell timer
-        _firstEntryTimestamps.remove(state.setId);
+        // Only reset if this is NOT a delayed out-of-order ping from before the first entry
+        final firstEntry = _firstEntryTimestamps[state.setId];
+        if (firstEntry != null && now.isAfter(firstEntry)) {
+          _firstEntryTimestamps.remove(state.setId);
+        }
       }
     }
   }

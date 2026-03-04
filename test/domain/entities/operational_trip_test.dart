@@ -3,105 +3,119 @@ import 'package:busflow/domain/entities/operational_trip.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
 
 void main() {
-  group('OperationalTrip Domain Rules', () {
-    test(
-      'requiresAttention returns false for normal states with low severity',
-      () {
-        final trip = OperationalTrip(
-          id: '1',
-          routeId: 'r1',
-          vehicleId: 'v1',
-          status: TripStatus.enRoute, // Not requiring attention by itself
-          severityScore: 10, // Low severity
-          scheduledStart: DateTime.now(),
-        );
-
-        expect(trip.requiresAttention, isFalse);
-      },
-    );
-
-    test(
-      'requiresAttention returns true for status that requires attention',
-      () {
-        final trip = OperationalTrip(
-          id: '2',
-          routeId: 'r1',
-          vehicleId: 'v1',
-          status: TripStatus
-              .interrupted, // requiresAttention is true for this status
-          severityScore: 0,
-          scheduledStart: DateTime.now(),
-        );
-
-        expect(trip.requiresAttention, isTrue);
-      },
-    );
-
-    test(
-      'requiresAttention returns true when severityScore is high (>= 30)',
-      () {
-        final trip = OperationalTrip(
-          id: '3',
-          routeId: 'r1',
-          vehicleId: 'v1',
-          status: TripStatus.enRoute, // Status is normal
-          severityScore: 30, // Score triggers attention
-          scheduledStart: DateTime.now(),
-        );
-
-        expect(trip.requiresAttention, isTrue);
-      },
-    );
-
-    test('isTerminal correctly identifies terminal states', () {
-      final activeTrip = OperationalTrip(
+  group('OperationalTrip', () {
+    test('isActive derives from status correctly', () {
+      final tripInTransit = OperationalTrip(
         id: '1',
         routeId: 'r1',
-        vehicleId: 'v1',
+        scheduledStart: DateTime.now(),
         status: TripStatus.enRoute,
-        scheduledStart: DateTime.now(),
       );
-      final completedTrip = OperationalTrip(
-        id: '2',
-        routeId: 'r1',
-        vehicleId: 'v1',
-        status: TripStatus.completed,
-        scheduledStart: DateTime.now(),
-      );
-      final cancelledTrip = OperationalTrip(
-        id: '3',
-        routeId: 'r1',
-        vehicleId: 'v1',
-        status: TripStatus.cancelled,
-        scheduledStart: DateTime.now(),
-      );
+      expect(tripInTransit.isActive, isTrue);
 
-      expect(activeTrip.isTerminal, isFalse);
-      expect(completedTrip.isTerminal, isTrue);
-      expect(cancelledTrip.isTerminal, isTrue);
+      final tripFinished = tripInTransit.copyWith(status: TripStatus.completed);
+      expect(tripFinished.isActive, isFalse);
     });
 
-    test('copyWith properly copies and replaces intelligence properties', () {
-      final original = OperationalTrip(
+    test('isTerminal derives from status correctly', () {
+      final tripCompleted = OperationalTrip(
         id: '1',
         routeId: 'r1',
-        vehicleId: 'v1',
-        status: TripStatus.scheduled,
+        scheduledStart: DateTime.now(),
+        status: TripStatus.completed,
+      );
+      expect(tripCompleted.isTerminal, isTrue);
+
+      final tripCanceled = tripCompleted.copyWith(status: TripStatus.cancelled);
+      expect(tripCanceled.isTerminal, isTrue);
+
+      final tripPending = tripCompleted.copyWith(status: TripStatus.scheduled);
+      expect(tripPending.isTerminal, isFalse);
+    });
+
+    test('requiresAttention triggers on severity or status', () {
+      final normalTrip = OperationalTrip(
+        id: '1',
+        routeId: 'r1',
+        scheduledStart: DateTime.now(),
+        status: TripStatus.enRoute,
+        severityScore: 10,
+      );
+      expect(normalTrip.requiresAttention, isFalse);
+
+      final severeTrip = normalTrip.copyWith(severityScore: 30);
+      expect(severeTrip.requiresAttention, isTrue);
+
+      final divertedTrip = normalTrip.copyWith(
+        status: TripStatus.delayed,
+      ); // Delayed requires attention
+      expect(divertedTrip.requiresAttention, isTrue);
+    });
+
+    test('isFullyAssigned checks driver and vehicle', () {
+      final trip = OperationalTrip(
+        id: '1',
+        routeId: 'r1',
         scheduledStart: DateTime.now(),
       );
+      expect(trip.isFullyAssigned, isFalse);
 
-      final updated = original.copyWith(
-        severityScore: 50,
-        status: TripStatus.enRoute,
-        delaySeconds: 120,
+      final assignedTrip = trip.copyWith(driverId: 'd1', vehicleId: 'v1');
+      expect(assignedTrip.isFullyAssigned, isTrue);
+    });
+
+    test('delayDisplay formats strings correctly', () {
+      final onTime = OperationalTrip(
+        id: '1',
+        routeId: 'r1',
+        scheduledStart: DateTime.now(),
+        delaySeconds: 0,
       );
+      expect(onTime.delayDisplay, 'No horário');
 
-      expect(updated.id, original.id);
-      expect(updated.routeId, original.routeId);
-      expect(updated.severityScore, 50);
-      expect(updated.status, TripStatus.enRoute);
-      expect(updated.delaySeconds, 120);
-      expect(updated.requiresAttention, isTrue); // 50 > 29
+      final minorDelay = onTime.copyWith(delaySeconds: 30);
+      expect(minorDelay.delayDisplay, '< 1 min');
+
+      final majorDelay = onTime.copyWith(delaySeconds: 120);
+      expect(majorDelay.delayDisplay, '+2 min');
+    });
+
+    test('routeDisplay combines short and long names gracefully', () {
+      final trip = OperationalTrip(
+        id: '1',
+        routeId: 'r1',
+        scheduledStart: DateTime.now(),
+      );
+      expect(trip.routeDisplay, 'r1');
+
+      final shortOnly = trip.copyWith(routeShortName: '100A');
+      expect(shortOnly.routeDisplay, '100A');
+
+      final fullInfo = shortOnly.copyWith(routeLongName: 'Centro - Bairro');
+      expect(fullInfo.routeDisplay, '100A — Centro - Bairro');
+    });
+
+    test('fromJson & toJson map structural fields correctly', () {
+      final json = {
+        'id': 'trip-uuid',
+        'route_id': 'route-uuid',
+        'status': 'en_route',
+        'scheduled_start': '2026-03-01T10:00:00.000Z',
+        'delay_seconds': 60,
+        'completion_pct': 0.5,
+        'source_type': 'manual',
+        'severity_score': 10,
+      };
+
+      final trip = OperationalTrip.fromJson(json);
+      expect(trip.id, 'trip-uuid');
+      expect(trip.status, TripStatus.enRoute);
+      expect(trip.delaySeconds, 60);
+
+      final exported = trip.toJson();
+      expect(exported['id'], 'trip-uuid');
+      expect(exported['status'], 'en_route');
+      expect(exported['delay_seconds'], 60);
     });
   });
 }
