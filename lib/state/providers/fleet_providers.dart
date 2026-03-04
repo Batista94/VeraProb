@@ -114,7 +114,7 @@ final activeTripsProvider = Provider<List<OperationalTrip>>((ref) {
 // ── Data Adapters & Feature Flags ────────────────────────
 
 /// Feature flag to toggle between Simulation and Realtime IoT hardware feeds.
-final useRealtimeDataProvider = StateProvider<bool>((ref) => false);
+final useRealtimeDataProvider = StateProvider<bool>((ref) => true);
 
 /// The active operational data adapter based on the feature flag.
 final operationalDataProvider = Provider<IOperationalDataProvider>((ref) {
