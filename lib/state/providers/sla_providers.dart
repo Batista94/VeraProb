@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/sla_audit/projections/sla_execution_item_view.dart';
+import '../../application/sla_audit/contractual_evaluation_engine.dart';
 import '../../application/sla_audit/projections/sla_execution_query_service.dart';
 import '../../application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
 import '../../application/sla_audit/projections/sla_execution_summary.dart';
@@ -33,6 +34,18 @@ final slaAuditLedgerRepositoryProvider = Provider<SlaAuditLedgerRepository>((
 ) {
   return ref.watch(persistenceProvider).makeSlaAuditLedgerRepository();
 });
+
+// ── Engine ──────────────────────────────────────────────────
+
+/// FASE 7: Registers the [ContractualEvaluationEngine] in the runtime.
+/// This is the sole component authorized to produce contractual decisions.
+final contractualEvaluationEngineProvider =
+    Provider<ContractualEvaluationEngine>((ref) {
+      return ContractualEvaluationEngine(
+        executionRepo: ref.watch(contractualExecutionStateRepositoryProvider),
+        ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
+      );
+    });
 
 // ── Query Service ───────────────────────────────────────────
 
