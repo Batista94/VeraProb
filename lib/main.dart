@@ -10,9 +10,14 @@ import 'features/admin/presentation/system/system_health_screen.dart';
 import 'features/admin/presentation/command_center/screens/operational_audit_screen.dart';
 import 'features/shared/providers.dart';
 import 'presentation/shell/settings_screen.dart';
+import 'core/config/supabase_client.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // FASE 0 - Passively initialize Supabase. No overrides or dependencies created.
+  await SupabaseConfig.initialize();
+
   final prefs = await SharedPreferences.getInstance();
 
   runApp(
