@@ -9,8 +9,10 @@ import '../../domain/authority/policies/authority_policy_evaluator.dart';
 import '../../domain/authority/policies/in_memory_policy_evaluator.dart';
 import '../../domain/authority/repositories/forensic_decision_repository.dart';
 import '../../domain/authority/repositories/in_memory_forensic_repository.dart';
+import '../../infrastructure/authority/postgres_forensic_repository.dart';
 import '../../infrastructure/persistence/persistence_mode.dart';
 import '../../infrastructure/persistence/persistence_provider.dart';
+import '../../infrastructure/providers/supabase_provider.dart';
 import '../../state/providers/fleet_providers.dart';
 
 /// ---------------------------------------------------------
@@ -40,24 +42,17 @@ final forensicDecisionRepositoryProvider = Provider<ForensicDecisionRepository>(
       case PersistenceMode.inMemory:
         return InMemoryForensicRepository();
       case PersistenceMode.postgres:
-        throw UnimplementedError(
-          'PostgresForensicRepository not implemented yet',
-        );
+        final client = ref.watch(supabaseClientProvider);
+        return PostgresForensicRepository(client);
     }
   },
 );
 
-/// Policy Ruleset
+/// Policy Ruleset - Purely functional, no persistence needed
 final authorityPolicyEvaluatorProvider = Provider<AuthorityPolicyEvaluator>((
   ref,
 ) {
-  final mode = ref.watch(persistenceModeProvider);
-  switch (mode) {
-    case PersistenceMode.inMemory:
-      return InMemoryPolicyEvaluator();
-    case PersistenceMode.postgres:
-      throw UnimplementedError('PostgresPolicyEvaluator not implemented yet');
-  }
+  return InMemoryPolicyEvaluator();
 });
 
 /// The Command Bus Interceptor Hub

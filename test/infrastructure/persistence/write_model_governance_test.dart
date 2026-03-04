@@ -1,15 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:busflow/application/audit/audit_service.dart';
 import 'package:busflow/domain/authority/policies/in_memory_policy_evaluator.dart';
 import 'package:busflow/domain/authority/repositories/in_memory_forensic_repository.dart';
+import 'package:busflow/infrastructure/audit/postgres_audit_service.dart';
+import 'package:busflow/infrastructure/authority/postgres_forensic_repository.dart';
 import 'package:busflow/infrastructure/persistence/persistence_mode.dart';
 import 'package:busflow/infrastructure/persistence/persistence_provider.dart';
+import 'package:busflow/infrastructure/providers/supabase_provider.dart';
 import 'package:busflow/state/providers/authority_providers.dart';
+
+class MockSupabaseClient extends Mock implements SupabaseClient {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  group('FASE 1 - Write-Model Governance Tests', () {
+  group('FASE 2 - Write-Model Governance Tests', () {
     test('Default mode should return InMemory implementations', () {
       final container =
           ProviderContainer(); // Default mode is PersistenceMode.inMemory
@@ -41,34 +48,42 @@ void main() {
     });
 
     test(
-      'Override to Postgres should throw UnimplementedError in governed providers',
+      'Override to Postgres should return Postgres implementations in governed providers',
       () {
+        final mockSupabase = MockSupabaseClient();
         final container = ProviderContainer(
           overrides: [
             persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
+            supabaseClientProvider.overrideWithValue(mockSupabase),
           ],
         );
         addTearDown(container.dispose);
 
+        final auditService = container.read(auditServiceProvider);
         expect(
-          () => container.read(auditServiceProvider),
-          throwsUnimplementedError,
+          auditService,
+          isA<PostgresAuditService>(),
           reason:
-              'auditServiceProvider should throw when postgres mode is selected but not implemented',
+              'auditServiceProvider should return PostgresAuditService when postgres mode is selected',
         );
 
+        final forensicRepo = container.read(forensicDecisionRepositoryProvider);
         expect(
-          () => container.read(forensicDecisionRepositoryProvider),
-          throwsUnimplementedError,
+          forensicRepo,
+          isA<PostgresForensicRepository>(),
           reason:
-              'forensicDecisionRepositoryProvider should throw when postgres mode is selected but not implemented',
+              'forensicDecisionRepositoryProvider should return PostgresForensicRepository when postgres mode is selected',
         );
 
+        // Policy Evaluator is purely functional, it should remain InMemory even if mode is postgres.
+        final policyEvaluator = container.read(
+          authorityPolicyEvaluatorProvider,
+        );
         expect(
-          () => container.read(authorityPolicyEvaluatorProvider),
-          throwsUnimplementedError,
+          policyEvaluator,
+          isA<InMemoryPolicyEvaluator>(),
           reason:
-              'authorityPolicyEvaluatorProvider should throw when postgres mode is selected but not implemented',
+              'authorityPolicyEvaluatorProvider should always return InMemoryPolicyEvaluator as it lacks persistence',
         );
       },
     );
