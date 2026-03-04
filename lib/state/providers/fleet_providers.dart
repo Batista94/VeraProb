@@ -11,10 +11,8 @@ import '../../domain/entities/vehicle_operational_state.dart';
 import '../../application/audit/audit_service.dart';
 import '../../application/normalization/operational_state_normalizer.dart';
 import '../../application/adapters/operational_data_provider.dart';
-import '../../application/adapters/simulation_data_provider.dart';
 import '../../application/adapters/realtime_data_provider.dart';
 import '../../application/adapters/stress_scenario_config.dart';
-import '../../dev/performance_metrics.dart';
 import '../../domain/enums/trip_status.dart';
 import '../../application/projections/providers/command_center_filter_provider.dart';
 import '../../application/projections/providers/fleet_attention_projection_provider.dart';
@@ -111,22 +109,12 @@ final activeTripsProvider = Provider<List<OperationalTrip>>((ref) {
   return enrichedTrips.where((t) => t.isActive).toList();
 });
 
-// ── Data Adapters & Feature Flags ────────────────────────
+// ── Data Adapter ─────────────────────────────────────────
 
-/// Feature flag to toggle between Simulation and Realtime IoT hardware feeds.
-final useRealtimeDataProvider = StateProvider<bool>((ref) => true);
-
-/// The active operational data adapter based on the feature flag.
+/// The operational data adapter.
+/// FASE 10: Simulation removed. Only real telemetry via Supabase Realtime.
 final operationalDataProvider = Provider<IOperationalDataProvider>((ref) {
-  final useRealtime = ref.watch(useRealtimeDataProvider);
-
-  if (useRealtime) {
-    return RealtimeDataProvider();
-  } else {
-    final simulation = ref.read(fleetSimulationProvider);
-    final metrics = ref.read(performanceMetricsProvider);
-    return SimulationDataProvider(simulation, metrics: metrics);
-  }
+  return RealtimeDataProvider();
 });
 
 // ── Position Stream ────────────────────────────────────

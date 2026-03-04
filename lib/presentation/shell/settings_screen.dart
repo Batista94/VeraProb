@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
-import '../../state/providers/fleet_providers.dart';
 import '../../state/providers/auth_providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -9,7 +8,6 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final useRealtime = ref.watch(useRealtimeDataProvider);
     final operatorName = ref.watch(currentOperatorNameProvider);
     final operatorId = ref.watch(currentOperatorIdProvider);
 
@@ -54,17 +52,10 @@ class SettingsScreen extends ConsumerWidget {
 
                   // ── Seção: Conectividade ───────────────
                   _SectionHeader(title: 'Dados e Conectividade'),
-                  SwitchListTile(
-                    title: const Text('Modo Hardware Real-time'),
-                    subtitle: const Text(
-                      'Quando ativado, o sistema tentará conectar aos hubs de IoT via WebSocket em vez de usar a simulação.',
-                    ),
-                    value: useRealtime,
-                    activeThumbColor: BusFlowColors.primary,
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (val) {
-                      ref.read(useRealtimeDataProvider.notifier).state = val;
-                    },
+                  const _SettingTile(
+                    label: 'Telemetria',
+                    value: 'Real-time (Supabase)',
+                    icon: Icons.sensors,
                   ),
 
                   const SizedBox(height: 32),

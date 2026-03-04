@@ -12,7 +12,7 @@ import 'operational_data_provider.dart';
 /// - Maintains a `Map<tripId, VehiclePosition>` buffer
 /// - Each Realtime payload updates one entry
 /// - Stale entries (older than [_positionTtl]) are evicted before emission
-/// - Emits the full current snapshot on every update
+/// - Deduplicates: only emits when the snapshot actually changes
 ///
 /// This guarantees the downstream `Stream<List<VehiclePosition>>` always
 /// represents the **current operational state** of the fleet.
@@ -23,6 +23,9 @@ class RealtimeDataProvider implements IOperationalDataProvider {
 
   /// Internal buffer: tripId → latest position.
   final Map<String, VehiclePosition> _positionBuffer = {};
+
+  /// Last emitted snapshot for deduplication.
+  List<VehiclePosition> _lastEmittedSnapshot = [];
 
   /// Time-to-live for buffered positions.
   /// Consistent with [VehiclePosition.isStale] which uses 2 minutes.
@@ -66,6 +69,7 @@ class RealtimeDataProvider implements IOperationalDataProvider {
     await _channel?.unsubscribe();
     _channel = null;
     _positionBuffer.clear();
+    _lastEmittedSnapshot = [];
     _isConnected = false;
 
     if (kDebugMode) {
@@ -102,8 +106,16 @@ class RealtimeDataProvider implements IOperationalDataProvider {
         (_, pos) => now.difference(pos.timestamp) > _positionTtl,
       );
 
-      // 3. Emit clean snapshot
-      _controller.add(_positionBuffer.values.toList());
+      // 3. Build deterministic snapshot (sorted by tripId)
+      final snapshot = _positionBuffer.values.toList()
+        ..sort((a, b) => a.tripId.compareTo(b.tripId));
+
+      // 4. Deduplicate: emit only if snapshot changed
+      if (snapshot.length != _lastEmittedSnapshot.length ||
+          !listEquals(snapshot, _lastEmittedSnapshot)) {
+        _lastEmittedSnapshot = snapshot;
+        _controller.add(snapshot);
+      }
 
       if (kDebugMode) {
         debugPrint(

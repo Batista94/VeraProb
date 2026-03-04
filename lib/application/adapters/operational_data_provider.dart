@@ -3,9 +3,8 @@ import '../../domain/entities/vehicle_position.dart';
 /// Adapter interface for ingesting raw vehicle GPS telemetry.
 ///
 /// This abstracts the source of the data from the Normalization Layer.
-/// The application can switch between:
-/// 1. [SimulationDataProvider] (generates fake GPS pings for testing)
-/// 2. [RealtimeDataProvider] (connects to actual hardware via WebSockets)
+/// Current implementation:
+/// - [RealtimeDataProvider] (connects to Supabase Realtime via WebSockets)
 abstract interface class IOperationalDataProvider {
   /// Stream of raw, noisy GPS positions arriving from the fleet.
   Stream<List<VehiclePosition>> get positionStream;
