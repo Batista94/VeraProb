@@ -1,0 +1,43 @@
+00:00 +0: loading C:/Projects/MVP - Bus/test/infrastructure/persistence/read_model_governance_test.dart
+00:00 +0: FASE 3 - Read-Model Governance Tests Default mode should return InMemory implementations for Read-Models
+00:00 +1: FASE 3 - Read-Model Governance Tests Override to Postgres should throw standardized UnimplementedError in governed Read-Model providers
+00:00 +1 -1: FASE 3 - Read-Model Governance Tests Override to Postgres should throw standardized UnimplementedError in governed Read-Model providers [E]
+  Expected: throws <Instance of 'UnimplementedError'> with `message`: 'Read-model Postgres implementation not available yet'
+    Actual: <Closure: () => SlaExecutionQueryService>
+     Which: threw _AssertionError:<'package:supabase_flutter/src/supabase.dart': Failed assertion: line 45 pos 7: '_instance._isInitialized': You must initialize the supabase instance before calling Supabase.instance>
+            stack package:riverpod/src/framework/container.dart 241:21                                                 ProviderContainer.read
+                  test\infrastructure\persistence\read_model_governance_test.dart 62:27                                main.<fn>.<fn>.<fn>
+                  package:matcher                                                                                      expect
+                  package:flutter_test/src/widget_tester.dart 473:18                                                   expect
+                  test\infrastructure\persistence\read_model_governance_test.dart 61:9                                 main.<fn>.<fn>
+                  package:test_api                                                                                     Invoker._waitForOutstandingCallbacks.<fn>
+                  package:riverpod/src/framework/element.dart 742:20                                                   ProviderElementBase.watch
+                  package:busflow/state/providers/sla_providers.dart 41:20                                             slaExecutionQueryServiceProvider.<fn>
+                  package:riverpod/src/framework/container.dart 241:21                                                 ProviderContainer.read
+                  test\infrastructure\persistence\read_model_governance_test.dart 62:27                                main.<fn>.<fn>.<fn>
+                  package:matcher                                                                                      expect
+                  package:flutter_test/src/widget_tester.dart 473:18                                                   expect
+                  test\infrastructure\persistence\read_model_governance_test.dart 61:9                                 main.<fn>.<fn>
+                  dart:core                                                                                            _AssertionError._throwNew
+                  package:supabase_flutter/src/supabase.dart 45:7                                                      Supabase.instance
+                  package:busflow/core/config/supabase_client.dart 3:27                                                supabase
+                  package:busflow/core/config/supabase_client.dart 0:0                                                 supabase
+                  package:busflow/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart 22:27  new PostgresContractualExecutionStateRepository
+                  package:busflow/infrastructure/persistence/persistence_provider.dart 50:16                           PersistenceProvider.makeContractualExecutionStateRepository
+                  package:busflow/state/providers/sla_providers.dart 26:12                                             contractualExecutionStateRepositoryProvider.<fn>
+                  package:riverpod/src/framework/element.dart 714:12                                                   ProviderElementBase.watch
+                  package:busflow/state/providers/sla_providers.dart 41:20                                             slaExecutionQueryServiceProvider.<fn>
+                  package:riverpod/src/framework/container.dart 241:21                                                 ProviderContainer.read
+                  test\infrastructure\persistence\read_model_governance_test.dart 62:27                                main.<fn>.<fn>.<fn>
+                  package:matcher                                                                                      expect
+                  package:flutter_test/src/widget_tester.dart 473:18                                                   expect
+                  test\infrastructure\persistence\read_model_governance_test.dart 61:9                                 main.<fn>.<fn>
+                  
+            which is not an instance of 'UnimplementedError'
+  slaExecutionQueryServiceProvider should block Postgres execution with specific error
+  
+  package:matcher                                                       expect
+  package:flutter_test/src/widget_tester.dart 473:18                    expect
+  test\infrastructure\persistence\read_model_governance_test.dart 61:9  main.<fn>.<fn>
+  
+00:00 +1 -1: Some tests failed.

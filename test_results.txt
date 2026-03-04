@@ -1,0 +1,322 @@
+00:00 +0: loading C:/Projects/MVP - Bus/test/application/intelligence/detectors/delay_detector_test.dart
+00:00 +0: C:/Projects/MVP - Bus/test/application/intelligence/detectors/delay_detector_test.dart: DelayDetector Rules canDetect is true for active or scheduled trips
+00:00 +1: C:/Projects/MVP - Bus/test/application/intelligence/detectors/delay_detector_test.dart: DelayDetector Rules evaluate returns null for delay < 3 minutes
+00:00 +2: C:/Projects/MVP - Bus/test/application/intelligence/detectors/delay_detector_test.dart: DelayDetector Rules evaluate returns risk warning for delay between 3 and 9 minutes
+00:00 +3: C:/Projects/MVP - Bus/test/application/intelligence/detectors/delay_detector_test.dart: DelayDetector Rules evaluate returns critical warning for delay >= 10 minutes
+00:00 +4: C:/Projects/MVP - Bus/test/application/intelligence/detectors/stopped_vehicle_detector_test.dart: StoppedVehicleDetector Rules canDetect is true only for active trips
+00:00 +5: C:/Projects/MVP - Bus/test/application/intelligence/detectors/stopped_vehicle_detector_test.dart: StoppedVehicleDetector Rules evaluate returns severe warning for interrupted trips
+00:00 +6: C:/Projects/MVP - Bus/test/application/intelligence/detectors/stopped_vehicle_detector_test.dart: StoppedVehicleDetector Rules evaluate returns null for normally flowing trips
+00:00 +7: C:/Projects/MVP - Bus/test/application/intelligence/situation_engine_test.dart: SituationEngine (The Brain) Rules Trip with multiple problems sums severity up to a cap (100)
+00:00 +8: C:/Projects/MVP - Bus/test/application/intelligence/situation_engine_test.dart: SituationEngine (The Brain) Rules Severity is capped at 100 even with extreme anomalies
+00:00 +9: C:/Projects/MVP - Bus/test/application/intelligence/situation_engine_test.dart: SituationEngine (The Brain) Rules Normal trips have 0 severity and no warnings
+00:00 +10: C:/Projects/MVP - Bus/test/application/intelligence/situation_engine_test.dart: SituationEngine (The Brain) Rules If problem is resolved, severity resets to 0
+00:00 +11: C:/Projects/MVP - Bus/test/application/intelligence/suggestion_engine_test.dart: SuggestionEngine Rules Trip without attention required returns null suggestion
+00:00 +12: C:/Projects/MVP - Bus/test/application/intelligence/suggestion_engine_test.dart: SuggestionEngine Rules Returns Cancellation suggestion for stopped vehicle
+00:00 +13: C:/Projects/MVP - Bus/test/application/intelligence/suggestion_engine_test.dart: SuggestionEngine Rules Returns Interruption suggestion for critical delay
+00:00 +14: C:/Projects/MVP - Bus/test/application/intelligence/suggestion_engine_test.dart: SuggestionEngine Rules Returns Regularization suggestion for simple delay
+00:01 +15: C:/Projects/MVP - Bus/test/application/intelligence/telemetry_normalizer_test.dart: TelemetryNormalizer (The Purgatory) Discards ping with terrible accuracy
+00:01 +16: C:/Projects/MVP - Bus/test/application/intelligence/telemetry_normalizer_test.dart: TelemetryNormalizer (The Purgatory) Accepts first good ping
+00:01 +17: C:/Projects/MVP - Bus/test/application/intelligence/telemetry_normalizer_test.dart: TelemetryNormalizer (The Purgatory) Discards ping implying impossible speed jump (Haversine jump)
+00:01 +18: C:/Projects/MVP - Bus/test/application/intelligence/telemetry_normalizer_test.dart: TelemetryNormalizer (The Purgatory) Accepts valid sequential pings
+00:01 +19: C:/Projects/MVP - Bus/test/application/normalization/operational_state_normalizer_test.dart: debounces frequent updates within threshold
+00:01 +20: C:/Projects/MVP - Bus/test/application/normalization/operational_state_normalizer_test.dart: filters impossible jumps (teleportation)
+00:01 +21: C:/Projects/MVP - Bus/test/application/normalization/operational_state_normalizer_test.dart: applies spatial smoothing to latest positions
+00:01 +22: C:/Projects/MVP - Bus/test/application/normalization/operational_state_normalizer_test.dart: transitions to dwellingAtStop based on geofence
+00:01 +23: C:/Projects/MVP - Bus/test/application/normalization/operational_state_normalizer_test.dart: handles missing vehicles by degrading connectivity state
+00:01 +24: C:/Projects/MVP - Bus/test/application/simulation_control_service_test.dart: (setUpAll)
+00:01 +24: C:/Projects/MVP - Bus/test/application/simulation_control_service_test.dart: SimulationControlService Actions Regularizar updates status to enRoute and clears delay via simulation
+00:01 +25: C:/Projects/MVP - Bus/test/application/simulation_control_service_test.dart: SimulationControlService Actions Cancelar updates status and logs event
+00:01 +26: C:/Projects/MVP - Bus/test/application/simulation_control_service_test.dart: SimulationControlService Actions Ocurrence generates SlaLedgerEntry in repository
+00:01 +27: C:/Projects/MVP - Bus/test/application/simulation_control_service_test.dart: (tearDownAll)
+00:02 +27: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_engine_test.dart: ContractualEvaluationEngine binding occurs after 30s continuous dwell inside geofence
+00:02 +28: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_engine_test.dart: ContractualEvaluationEngine no binding if vehicle leaves geofence before 30s
+00:02 +29: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_engine_test.dart: ContractualEvaluationEngine plannedVehicleId is respected — wrong vehicle ignored
+00:02 +30: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_engine_test.dart: ContractualEvaluationEngine sweepExpiredObligations marks NoShow correctly
+00:02 +31: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_engine_test.dart: ContractualEvaluationEngine finalized states are not reprocessed
+00:02 +32: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_engine_test.dart: ContractualEvaluationEngine multiple execution states do not interfere
+00:02 +33: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_subscriber_test.dart: ContractualEvaluationSubscriber processes single vehicle from stream
+00:02 +34: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_subscriber_test.dart: ContractualEvaluationSubscriber processes multiple vehicles from stream
+00:02 +35: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_subscriber_test.dart: ContractualEvaluationSubscriber sweep timer calls sweepExpiredObligations
+00:03 +36: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_closing_service_test.dart: ContractualFinancialClosingService first onTick records current day without generating snapshot
+00:03 +37: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_closing_service_test.dart: ContractualFinancialClosingService first onTick records current day without generating snapshot
+00:03 +38: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_subscriber_test.dart: ContractualEvaluationSubscriber start() does not create duplicate subscriptions
+00:03 +39: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_subscriber_test.dart: ContractualEvaluationSubscriber start() does not create duplicate subscriptions
+00:03 +40: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_evaluation_subscriber_test.dart: ContractualEvaluationSubscriber engine error does not cancel the subscription
+00:03 +41: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_impact_query_service_test.dart: ContractualFinancialImpactQueryService (snapshot-based) empty repository returns zero Money values
+00:03 +42: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_impact_query_service_test.dart: ContractualFinancialImpactQueryService (snapshot-based) returns latest snapshot as current impact
+00:03 +43: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_impact_query_service_test.dart: ContractualFinancialImpactQueryService (snapshot-based) filters by contractId
+00:03 +44: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_snapshot_generator_test.dart: ContractualFinancialSnapshotGenerator empty repo generates snapshot with zero values
+00:03 +45: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_snapshot_generator_test.dart: ContractualFinancialSnapshotGenerator generates correct snapshot for executed states
+00:03 +46: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_snapshot_generator_test.dart: ContractualFinancialSnapshotGenerator generates correct snapshot for mixed statuses
+00:03 +47: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_snapshot_generator_test.dart: ContractualFinancialSnapshotGenerator is idempotent (does not create duplicate snapshots)
+00:03 +48: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_snapshot_generator_test.dart: ContractualFinancialSnapshotGenerator filters by contractId
+00:03 +49: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_trend_query_service_test.dart: ContractualFinancialTrendQueryService (snapshot-based) empty repository returns empty list
+00:03 +50: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_trend_query_service_test.dart: ContractualFinancialTrendQueryService (snapshot-based) single snapshot returns one trend point
+00:03 +51: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_trend_query_service_test.dart: ContractualFinancialTrendQueryService (snapshot-based) multiple snapshots are sorted by date ascending
+00:03 +52: C:/Projects/MVP - Bus/test/application/sla_audit/contractual_financial_trend_query_service_test.dart: ContractualFinancialTrendQueryService (snapshot-based) filters by contractId
+00:04 +53: C:/Projects/MVP - Bus/test/application/sla_audit/declare_contractual_plan_handler_test.dart: DeclareContractualPlanHandler happy path — aggregate created, persisted, event in ledger
+00:04 +54: C:/Projects/MVP - Bus/test/application/sla_audit/declare_contractual_plan_handler_test.dart: DeclareContractualPlanHandler persistence — findById returns saved aggregate
+00:04 +55: C:/Projects/MVP - Bus/test/application/sla_audit/declare_contractual_plan_handler_test.dart: DeclareContractualPlanHandler findByContract — returns all declarations for a contract
+00:04 +56: C:/Projects/MVP - Bus/test/application/sla_audit/declare_contractual_plan_handler_test.dart: DeclareContractualPlanHandler DomainException propagation — nothing persisted on invalid input
+00:04 +57: C:/Projects/MVP - Bus/test/application/sla_audit/declare_contractual_plan_handler_test.dart: DeclareContractualPlanHandler multiple services — all SETs created from inputs
+00:04 +58: C:/Projects/MVP - Bus/test/application/sla_audit/sla_execution_query_service_test.dart: SlaExecutionQueryService (in-memory) getSummary reflects correct counts by status
+00:04 +59: C:/Projects/MVP - Bus/test/application/sla_audit/sla_execution_query_service_test.dart: SlaExecutionQueryService (in-memory) getSummary filters by contractId
+00:04 +60: C:/Projects/MVP - Bus/test/application/sla_audit/sla_execution_query_service_test.dart: SlaExecutionQueryService (in-memory) listByStatus returns only matching status
+00:04 +61: C:/Projects/MVP - Bus/test/application/sla_audit/sla_execution_query_service_test.dart: SlaExecutionQueryService (in-memory) listByStatus orders by windowStartUtc ascending
+00:04 +62: C:/Projects/MVP - Bus/test/application/sla_audit/sla_execution_query_service_test.dart: SlaExecutionQueryService (in-memory) finalized and pending states are correctly separated
+00:04 +63: C:/Projects/MVP - Bus/test/application/sla_audit/sla_execution_query_service_test.dart: SlaExecutionQueryService (in-memory) getSummary calculates financial projections correctly without fall-through
+00:04 +64: C:/Projects/MVP - Bus/test/application/sla_audit/sla_ledger_mapper_test.dart: SlaLedgerMapper - EvidenceEvents Verification OccurrenceRegisteredEvidence maps gracefully without validation faults
+00:04 +65: C:/Projects/MVP - Bus/test/application/sla_audit/sla_ledger_mapper_test.dart: SlaLedgerMapper - EvidenceEvents Verification TripInterruptedEvidence maps gracefully
+00:04 +66: C:/Projects/MVP - Bus/test/application/sla_audit/sla_ledger_mapper_test.dart: SlaLedgerMapper - EvidenceEvents Verification TripCancelledEvidence maps gracefully
+00:05 +67: C:/Projects/MVP - Bus/test/domain/authority/hardening/authorizing_command_bus_test.dart: Architecture Guardians: AuthorizingCommandBus 1. The Golden Path (Approved Mutator): Should log APPROVED and call Mutator 1 time
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: test-actor | Target: urn:busflow:trip:t-123
+00:05 +68: C:/Projects/MVP - Bus/test/domain/authority/hardening/authorizing_command_bus_test.dart: Architecture Guardians: AuthorizingCommandBus 2. The Iron Gate (Denied Mutator): Should log DENIED and call Mutator 0 times
+[FORENSIC LEDGER] ❌ DENIED | Action: resolve_alert | Actor: test-actor | Target: urn:busflow:trip:t-999
+00:05 +69: C:/Projects/MVP - Bus/test/domain/authority/hardening/authorizing_command_bus_test.dart: Architecture Guardians: AuthorizingCommandBus 3. The Unmapped Rogue Command: Should fail mapping, skipping Evaluator and Mutator
+00:05 +70: C:/Projects/MVP - Bus/test/domain/authority/hardening/authorizing_command_bus_test.dart: Architecture Guardians: AuthorizingCommandBus 4. Atomic Mutator Failure: Should still retain the APPROVED forensic log even if system crashes downstream
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: test-actor | Target: urn:busflow:trip:t-crash
+00:05 +71: C:/Projects/MVP - Bus/test/domain/authority/hardening/forensic_concurrency_test.dart: Architecture Guardians: Forensic Concurrency Test 5. Mass Concurrent Dispatches: Should maintain ledger consistency without dropping decisions
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_0
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_1
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_2
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_3
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_4
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_5
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_6
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_7
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_8
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_9
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_10
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_11
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_12
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_13
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_14
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_15
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_16
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_17
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_18
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_19
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_20
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_21
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_22
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_23
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_24
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_25
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_26
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_27
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_28
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_29
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_30
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_31
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_32
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_33
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_34
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_35
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_36
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_37
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_38
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_39
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_40
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_41
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_42
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_43
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_44
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_45
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_46
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_47
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_48
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_49
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_50
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_51
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_52
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_53
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_54
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_55
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_56
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_57
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_58
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_59
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_60
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_61
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_62
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_63
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_64
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_65
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_66
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_67
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_68
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_69
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_70
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_71
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_72
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_73
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_74
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_75
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_76
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_77
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_78
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_79
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_80
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_81
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_82
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_83
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_84
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_85
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_86
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_87
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_88
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_89
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_90
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_91
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_92
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_93
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_94
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_95
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_96
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_97
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_98
+[FORENSIC LEDGER] ✅ APPROVED | Action: resolve_alert | Actor: stress-actor | Target: urn:busflow:trip:concurrent_trip_99
+00:05 +72: C:/Projects/MVP - Bus/test/domain/entities/operational_trip_test.dart: OperationalTrip Domain Rules requiresAttention returns false for normal states with low severity
+00:05 +73: C:/Projects/MVP - Bus/test/domain/entities/operational_trip_test.dart: OperationalTrip Domain Rules requiresAttention returns true for status that requires attention
+00:05 +74: C:/Projects/MVP - Bus/test/domain/entities/operational_trip_test.dart: OperationalTrip Domain Rules requiresAttention returns true when severityScore is high (>= 30)
+00:05 +75: C:/Projects/MVP - Bus/test/domain/entities/operational_trip_test.dart: OperationalTrip Domain Rules isTerminal correctly identifies terminal states
+00:05 +76: C:/Projects/MVP - Bus/test/domain/entities/operational_trip_test.dart: OperationalTrip Domain Rules copyWith properly copies and replaces intelligence properties
+00:05 +77: C:/Projects/MVP - Bus/test/domain/entities/trip_event_test.dart: TripEvent Domain Rules summary describes status change accurately
+00:05 +78: C:/Projects/MVP - Bus/test/domain/entities/trip_event_test.dart: TripEvent Domain Rules summary describes delay deviation accurately
+00:05 +79: C:/Projects/MVP - Bus/test/domain/entities/trip_event_test.dart: TripEvent Domain Rules summary defaults to event type label when no specifics apply
+00:05 +80: C:/Projects/MVP - Bus/test/domain/entities/trip_event_test.dart: TripEvent Domain Rules TripEvent retains immutability properties
+00:06 +81: C:/Projects/MVP - Bus/test/domain/shared/money_test.dart: Money Value Object creates from cents
+00:06 +82: C:/Projects/MVP - Bus/test/domain/shared/money_test.dart: Money Value Object creates from double using round()
+00:06 +83: C:/Projects/MVP - Bus/test/domain/shared/money_test.dart: Money Value Object converts to double correctly
+00:06 +84: C:/Projects/MVP - Bus/test/domain/shared/money_test.dart: Money Value Object addition operator works correctly
+00:06 +85: C:/Projects/MVP - Bus/test/domain/shared/money_test.dart: Money Value Object multiplication operator works correctly with rounding
+00:06 +86: C:/Projects/MVP - Bus/test/domain/shared/money_test.dart: Money Value Object equality is based on cents value
+00:06 +87: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState create() initializes with pending status
+00:06 +88: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState throws on invalid time window (end <= start)
+00:06 +89: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState bindExecution transitions to executed with evidence
+00:06 +90: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState bindExecution emits ExecutionBoundEvent
+00:06 +91: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState cannot bindExecution after already executed
+00:06 +92: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState markNoShow works when window has expired
+00:06 +93: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState markNoShow emits NoShowDeclaredEvent
+00:06 +94: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState markNoShow rejected before window expires
+00:06 +95: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState markEvidenceGap works correctly
+00:06 +96: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState markEvidenceGap emits EvidenceGapDeclaredEvent
+00:06 +97: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState no transitions allowed after finalization (executed)
+00:06 +98: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState no transitions allowed after finalization (noShow)
+00:06 +99: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState updateEvaluationTimestamp updates without state change
+00:06 +100: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState domainEvents list is unmodifiable
+00:06 +101: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: ContractualExecutionState equality based on id only
+00:06 +102: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: InMemoryContractualExecutionStateRepository save and findBySetId
+00:06 +103: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: InMemoryContractualExecutionStateRepository findBySetId returns null when not found
+00:06 +104: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: InMemoryContractualExecutionStateRepository save overwrites existing entry
+00:06 +105: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_execution_state_test.dart: InMemoryContractualExecutionStateRepository findPendingByContractAndTime filters correctly
+00:06 +106: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_financial_daily_snapshot_test.dart: ContractualFinancialDailySnapshot creates with correct fields and auto-calculated percentages
+00:06 +107: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_financial_daily_snapshot_test.dart: ContractualFinancialDailySnapshot normalizes operationalDateUtc to midnight UTC
+00:06 +108: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_financial_daily_snapshot_test.dart: ContractualFinancialDailySnapshot calculates percentages correctly
+00:06 +109: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_financial_daily_snapshot_test.dart: ContractualFinancialDailySnapshot handles zero total revenue (no division by zero)
+00:06 +110: C:/Projects/MVP - Bus/test/domain/sla_audit/contractual_financial_daily_snapshot_test.dart: ContractualFinancialDailySnapshot is immutable (Equatable)
+00:07 +111: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: ContractualServiceExecution create() produces entity with deterministic SET
+00:07 +112: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: ContractualServiceExecution different inputs produce different SETs
+00:07 +113: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: ContractualServiceExecution equality is based exclusively on setId
+00:07 +114: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: ContractualServiceExecution throws on scheduledEndTimeUtc <= scheduledStartTimeUtc
+00:07 +115: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: ContractualServiceExecution throws on invalid startLatitude
+00:07 +116: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: ContractualServiceExecution throws on invalid endLatitude
+00:07 +117: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: ContractualServiceExecution throws on invalid startLongitude
+00:07 +118: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: ContractualServiceExecution throws on invalid endLongitude
+00:07 +119: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: ContractualServiceExecution throws on startRadiusMeters <= 0
+00:07 +120: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: ContractualServiceExecution throws on endRadiusMeters <= 0
+00:07 +121: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration create() produces aggregate with correct fields
+00:07 +122: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration create() emits exactly one ContractualPlanDeclaredEvent
+00:07 +123: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration emitted event contains correct fields
+00:07 +124: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration throws on empty contractId
+00:07 +125: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration throws on empty declaredByUserId
+00:07 +126: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration throws on empty originalFileHash
+00:07 +127: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration throws on empty services list
+00:07 +128: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration throws on duplicate SET in services
+00:07 +129: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration throws on future declaredAtUtc
+00:07 +130: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration services list is unmodifiable externally
+00:07 +131: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration domainEvents list is unmodifiable externally
+00:07 +132: C:/Projects/MVP - Bus/test/domain/sla_audit/plan_declaration_test.dart: PlanDeclaration accepts multiple unique services
+00:07 +133: C:/Projects/MVP - Bus/test/features/admin/presentation/dashboard_screen_test.dart: DashboardScreen renders all sections
+[38;5;12m┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;12m│ 💡 [1m[3mflutter_map[0m[0m
+[38;5;12m│ 💡 flutter_map wants to help keep map data available for everyone.[0m
+[38;5;12m│ 💡 We use the OpenStreetMap public tile servers in our code examples & demo app,[0m
+[38;5;12m│ 💡 but they are NOT free to use by everyone. Please review whether OSM's tile[0m
+[38;5;12m│ 💡 servers are appropriate and the best choice for your app.[0m
+[38;5;12m│ 💡 See:[0m
+[38;5;12m│ 💡  * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)[0m
+[38;5;12m│ 💡  * https://docs.fleaflet.dev/osm-warn for more information about this warning[0m
+[38;5;12m└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+00:08 +134: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen renders Empty State when no drivers
+00:08 +135: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen renders Empty State when no drivers
+00:08 +136: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen renders Empty State when no drivers
+00:08 +136: C:/Projects/MVP - Bus/test/features/shared/data/repositories/vehicle_repository_test.dart: VehicleRepository sendVehiclePosition completes without throwing
+🚀 UPLOAD [driver_app_gps] Trip trip_send: -23.55, -46.63
+00:08 +137: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen renders Empty State when no drivers
+00:08 +137: C:/Projects/MVP - Bus/test/features/shared/data/repositories/vehicle_repository_test.dart: VehicleRepository sendVehiclePosition handles null optional fields
+🚀 UPLOAD [driver_app_gps] Trip trip_nulls: -23.55, -46.63
+00:08 +138: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen renders Empty State when no drivers
+00:08 +138: C:/Projects/MVP - Bus/test/features/admin/presentation/dashboard_screen_test.dart: DashboardScreen Seed Data button is clickable
+[38;5;12m┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;12m│ 💡 [1m[3mflutter_map[0m[0m
+[38;5;12m│ 💡 flutter_map wants to help keep map data available for everyone.[0m
+[38;5;12m│ 💡 We use the OpenStreetMap public tile servers in our code examples & demo app,[0m
+[38;5;12m│ 💡 but they are NOT free to use by everyone. Please review whether OSM's tile[0m
+[38;5;12m│ 💡 servers are appropriate and the best choice for your app.[0m
+[38;5;12m│ 💡 See:[0m
+[38;5;12m│ 💡  * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)[0m
+[38;5;12m│ 💡  * https://docs.fleaflet.dev/osm-warn for more information about this warning[0m
+[38;5;12m└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+00:08 +139: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen renders Empty State when no drivers
+00:08 +140: C:/Projects/MVP - Bus/test/features/admin/presentation/timecard_reports_screen_test.dart: TimecardReportsScreen renders empty table when no data
+00:08 +141: C:/Projects/MVP - Bus/test/features/admin/presentation/timecard_reports_screen_test.dart: TimecardReportsScreen renders empty table when no data
+00:08 +142: C:/Projects/MVP - Bus/test/features/admin/presentation/timecard_reports_screen_test.dart: TimecardReportsScreen renders empty table when no data
+00:08 +143: C:/Projects/MVP - Bus/test/features/admin/presentation/timecard_reports_screen_test.dart: TimecardReportsScreen renders empty table when no data
+00:08 +144: C:/Projects/MVP - Bus/test/features/admin/presentation/timecard_reports_screen_test.dart: TimecardReportsScreen renders empty table when no data
+00:08 +145: C:/Projects/MVP - Bus/test/features/admin/presentation/timecard_reports_screen_test.dart: TimecardReportsScreen renders empty table when no data
+00:08 +146: C:/Projects/MVP - Bus/test/features/admin/presentation/timecard_reports_screen_test.dart: TimecardReportsScreen renders empty table when no data
+00:08 +147: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen renders List of Drivers
+00:09 +148: C:/Projects/MVP - Bus/test/features/admin/presentation/timecard_reports_screen_test.dart: TimecardReportsScreen renders Rows with Data
+00:09 +149: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Add Driver flow via drawer
+00:09 +150: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Add Driver flow via drawer
+00:09 +151: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Delete Driver flow
+00:09 +152: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Delete Driver flow
+00:09 +153: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Delete Driver flow
+00:09 +154: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Delete Driver flow
+00:09 +155: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Delete Driver flow
+00:09 +156: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Delete Driver flow
+00:09 +157: C:/Projects/MVP - Bus/test/features/shared/providers_test.dart: Provider Definitions searchQueryStreamProvider emits empty string initially
+00:09 +158: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Search filters drivers
+00:09 +159: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Search filters drivers
+00:09 +160: C:/Projects/MVP - Bus/test/features/admin/presentation/drivers_screen_test.dart: DriversScreen Search filters drivers
+00:10 +161: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return a non-empty list
+00:10 +162: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return a non-empty list
+00:10 +163: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return a non-empty list
+00:10 +164: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return a non-empty list
+00:10 +165: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return a non-empty list
+00:10 +166: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return BusStop instances
+00:10 +167: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return BusStop instances
+00:10 +168: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return BusStop instances
+00:10 +169: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return exactly 4 mock stops
+00:11 +170: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return exactly 4 mock stops
+00:11 +171: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return exactly 4 mock stops
+00:11 +171 -1: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return exactly 4 mock stops
+00:11 +171 -1: C:/Projects/MVP - Bus/test/integration/sla_audit_e2e_postgres_test.dart: (setUpAll) [E]
+  Exception: E2E Test aborted: Missing SUPABASE_URL or SUPABASE_KEY. Run via: flutter test test/integration/sla_audit_e2e_postgres_test.dart --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_KEY=...
+  test\integration\sla_audit_e2e_postgres_test.dart 76:7  main.<fn>
+  
+00:11 +171 -2: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository getNearbyStops should return exactly 4 mock stops
+00:11 +171 -2: C:/Projects/MVP - Bus/test/integration/sla_audit_e2e_postgres_test.dart: (tearDownAll) [E]
+  LateInitializationError: Local 'client' has not been initialized.
+  dart:_internal                                     LateError._throwLocalNotInitialized
+  test\integration\sla_audit_e2e_postgres_test.dart  main.<fn>
+  
+00:11 +172 -2: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository all stops should have non-empty names
+00:11 +173 -2: C:/Projects/MVP - Bus/test/presentation/sla_financial_impact_screen_test.dart: SlaFinancialImpactScreen renders 4 KPI cards with correct titles
+00:12 +174 -2: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository all stops should have valid coordinates
+00:12 +175 -2: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository all stops should have valid coordinates
+00:12 +176 -2: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository all stops should have valid coordinates
+00:12 +177 -2: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository all stops should have valid coordinates
+00:12 +178 -2: C:/Projects/MVP - Bus/test/features/stops/data/repositories/bus_stop_repository_test.dart: BusStopRepository all stops should have valid coordinates
+00:12 +179 -2: Some tests failed.

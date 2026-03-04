@@ -2,6 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../state/providers/authority_providers.dart';
 import '../../../domain/authority/repositories/in_memory_forensic_repository.dart';
 import '../../../domain/authority/decision/authorization_decision.dart';
+import '../../../infrastructure/authority/postgres_forensic_ledger_projection.dart';
+import '../../../infrastructure/persistence/persistence_mode.dart';
+import '../../../infrastructure/persistence/persistence_provider.dart';
+import '../../../infrastructure/providers/supabase_provider.dart';
 import '../models/forensic_ledger_entry.dart';
 
 /// Builds a narrative sentence from an [AuthorizationDecision].
@@ -43,6 +47,13 @@ String _actionVerb(String key) {
 /// sorted in reverse-chronological order (newest first).
 final forensicLedgerProjectionProvider =
     StreamProvider<List<ForensicLedgerEntry>>((ref) {
+      final mode = ref.watch(persistenceModeProvider);
+
+      if (mode == PersistenceMode.postgres) {
+        final client = ref.watch(supabaseClientProvider);
+        return PostgresForensicLedgerProjection(client).watchLedger();
+      }
+
       final repo = ref.watch(forensicDecisionRepositoryProvider);
 
       if (repo is InMemoryForensicRepository) {

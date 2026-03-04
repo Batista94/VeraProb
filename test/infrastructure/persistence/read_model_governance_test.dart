@@ -1,15 +1,24 @@
+import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_trend_query_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:busflow/application/sla_audit/projections/contractual_financial_impact_query_service_in_memory.dart';
+import 'package:busflow/application/sla_audit/projections/contractual_financial_trend_query_service_in_memory.dart';
 import 'package:busflow/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
 import 'package:busflow/infrastructure/persistence/persistence_mode.dart';
 import 'package:busflow/infrastructure/persistence/persistence_provider.dart';
+import 'package:busflow/infrastructure/providers/supabase_provider.dart';
+import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
+import 'package:busflow/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
 import 'package:busflow/state/providers/sla_financial_providers.dart';
 import 'package:busflow/state/providers/sla_providers.dart';
 
+class MockSupabaseClient extends Mock implements SupabaseClient {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  group('FASE 3 - Read-Model Governance Tests', () {
+  group('FASE 4 - Read-Model Governance Tests', () {
     test(
       'Default mode should return InMemory implementations for Read-Models',
       () {
@@ -36,40 +45,60 @@ void main() {
           reason:
               'financialImpactQueryServiceProvider should be InMemory by default',
         );
+
+        final financialTrendQueryService = container.read(
+          financialTrendQueryServiceProvider,
+        );
+        expect(
+          financialTrendQueryService,
+          isA<ContractualFinancialTrendQueryServiceInMemory>(),
+          reason:
+              'financialTrendQueryServiceProvider should be InMemory by default',
+        );
       },
     );
 
     test(
-      'Override to Postgres should throw standardized UnimplementedError in governed Read-Model providers',
+      'Override to Postgres should return Postgres implementations for Read-Models',
       () {
+        final mockSupabase = MockSupabaseClient();
         final container = ProviderContainer(
           overrides: [
             persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
+            supabaseClientProvider.overrideWithValue(mockSupabase),
           ],
         );
         addTearDown(container.dispose);
 
-        // Verify the standardized exception message
-        final matcher = throwsA(
-          isA<UnimplementedError>().having(
-            (e) => e.message,
-            'message',
-            'Read-model Postgres implementation not available yet',
-          ),
+        // Verify the provider instantiates the PG Query Service
+        final slaExecutionQueryService = container.read(
+          slaExecutionQueryServiceProvider,
+        );
+        expect(
+          slaExecutionQueryService,
+          isA<SlaExecutionQueryServicePostgres>(),
+          reason:
+              'slaExecutionQueryServiceProvider should return Postgres implementation when overridden',
         );
 
+        final financialImpactQueryService = container.read(
+          financialImpactQueryServiceProvider,
+        );
         expect(
-          () => container.read(slaExecutionQueryServiceProvider),
-          matcher,
+          financialImpactQueryService,
+          isA<ContractualFinancialImpactQueryServicePostgres>(),
           reason:
-              'slaExecutionQueryServiceProvider should block Postgres execution with specific error',
+              'financialImpactQueryServiceProvider should return Postgres implementation when overridden',
         );
 
+        final financialTrendQueryService = container.read(
+          financialTrendQueryServiceProvider,
+        );
         expect(
-          () => container.read(financialImpactQueryServiceProvider),
-          matcher,
+          financialTrendQueryService,
+          isA<ContractualFinancialTrendQueryServicePostgres>(),
           reason:
-              'financialImpactQueryServiceProvider should block Postgres execution with specific error',
+              'financialTrendQueryServiceProvider should return Postgres implementation when overridden',
         );
       },
     );
