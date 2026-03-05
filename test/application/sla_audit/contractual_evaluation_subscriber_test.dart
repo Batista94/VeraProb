@@ -8,6 +8,7 @@ import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
 import 'package:busflow/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:busflow/application/sla_audit/contractual_evaluation_subscriber.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 
@@ -27,6 +28,7 @@ void main() {
     ledger = InMemorySlaAuditLedgerRepository();
     engine = ContractualEvaluationEngine(
       executionRepo: repo,
+      planRepo: InMemoryPlanDeclarationRepository(),
       ledgerRepo: ledger,
     );
     streamController =
@@ -62,6 +64,7 @@ void main() {
     String contractId = 'c-1',
   }) {
     return ContractualExecutionState.create(
+      organizationId: 'org-1',
       setId: setId,
       contractId: contractId,
       planVersion: 1,
@@ -135,6 +138,7 @@ void main() {
       // Manually override status to simulate expired state in window
       // We can't change window times after creation, so create with past window
       final expiredState = ContractualExecutionState.create(
+        organizationId: 'org-1',
         setId: 'set-expired',
         contractId: 'c-1',
         planVersion: 1,

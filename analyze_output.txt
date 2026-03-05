@@ -1,6 +1,0 @@
-Analyzing MVP - Bus...                                          
-
-  error - Target of URI doesn't exist: 'package:busflow/features/shared/data/repositories/favorites_repository.dart' - test\features\shared\data\repositories\favorites_repository_test.dart:4:8 - uri_does_not_exist
-  error - Undefined class 'FavoritesNotifier' - test\features\shared\data\repositories\favorites_repository_test.dart:10:8 - undefined_class
-  error - The function 'FavoritesNotifier' isn't defined - test\features\shared\data\repositories\favorites_repository_test.dart:21:16 - undefined_function
-

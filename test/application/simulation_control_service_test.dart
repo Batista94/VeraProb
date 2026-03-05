@@ -22,7 +22,7 @@ void main() {
     registerFallbackValue(EventType.statusChange);
     registerFallbackValue(TripStatus.enRoute);
     registerFallbackValue(
-      SlaLedgerEntry(
+      SlaLedgerEntry(organizationId: 'org-1', 
         type: 'DUMMY',
         contractId: 'N/A',
         planVersion: 0,
@@ -44,6 +44,7 @@ void main() {
 
       when(
         () => mockAudit.logAction(
+          organizationId: any(named: 'organizationId'),
           operatorId: any(named: 'operatorId'),
           actionType: any(named: 'actionType'),
           entityId: any(named: 'entityId'),

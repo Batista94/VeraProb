@@ -28,7 +28,7 @@ void main() async {
         () async {
           final setId = uuid.v4();
           final contractId = uuid.v4();
-          final entry = SlaLedgerEntry(
+          final entry = SlaLedgerEntry(organizationId: 'org-1', 
             type: 'PLAN_DECLARED',
             setId: setId,
             contractId: contractId,
@@ -59,7 +59,7 @@ void main() async {
           final setId = uuid.v4();
           final contractId = uuid.v4();
 
-          final entry1 = SlaLedgerEntry(
+          final entry1 = SlaLedgerEntry(organizationId: 'org-1', 
             type: 'EXECUTION_BOUND',
             setId: setId,
             contractId: contractId,
@@ -69,7 +69,7 @@ void main() async {
             ),
           );
 
-          final entry2 = SlaLedgerEntry(
+          final entry2 = SlaLedgerEntry(organizationId: 'org-1', 
             type: 'EXECUTION_FINALIZED',
             setId: setId,
             contractId: contractId,
@@ -95,7 +95,7 @@ void main() async {
         final setId = uuid.v4();
         final contractId = uuid.v4();
 
-        final entry = SlaLedgerEntry(
+        final entry = SlaLedgerEntry(organizationId: 'org-1', 
           type: 'PLAN_DECLARED',
           setId: setId,
           contractId: contractId,
@@ -125,7 +125,7 @@ void main() async {
         final setId = uuid.v4();
         final contractId = uuid.v4();
 
-        final entry = SlaLedgerEntry(
+        final entry = SlaLedgerEntry(organizationId: 'org-1', 
           type: 'PLAN_DECLARED',
           setId: setId,
           contractId: contractId,

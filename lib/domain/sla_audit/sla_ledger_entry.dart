@@ -13,6 +13,9 @@ class SlaLedgerEntry extends Equatable {
   /// Forensic type of the entry (e.g., 'PLAN_DECLARED', 'EXECUTION_BOUND').
   final String type;
 
+  /// The Tenant / Organization ID that owns this ledger entry.
+  final String organizationId;
+
   /// Causal linkage: The specific obligation (SET) this entry refers to.
   /// For plan-level events, this might be null or represent the whole declaration.
   final String? setId;
@@ -31,6 +34,7 @@ class SlaLedgerEntry extends Equatable {
 
   const SlaLedgerEntry({
     this.id,
+    required this.organizationId,
     required this.type,
     this.setId,
     required this.contractId,
@@ -42,6 +46,7 @@ class SlaLedgerEntry extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    organizationId,
     type,
     setId,
     contractId,

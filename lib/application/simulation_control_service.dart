@@ -39,6 +39,7 @@ class SimulationControlService implements OperationalControlService {
     // Fire-and-forget: Audit logging never blocks operational flow
     _auditService
         .logAction(
+          organizationId: 'mock-org-id', // TODO: Inject from Auth Provider
           operatorId: _getOperatorId(), // Use injected operator ID
           actionType: 'TRIP_STATUS_CHANGE',
           entityId: tripId,
@@ -70,6 +71,7 @@ class SimulationControlService implements OperationalControlService {
 
     if (newStatus == TripStatus.interrupted) {
       final evidence = TripInterruptedEvidence(
+        organizationId: 'mock-org-id', // TODO: Inject from Auth Provider
         occurredAtUtc: nowUtc,
         tripId: tripId,
         vehicleId: trip?.vehicleId,
@@ -79,6 +81,7 @@ class SimulationControlService implements OperationalControlService {
       await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(evidence));
     } else if (newStatus == TripStatus.cancelled) {
       final evidence = TripCancelledEvidence(
+        organizationId: 'mock-org-id',
         occurredAtUtc: nowUtc,
         tripId: tripId,
         vehicleId: trip?.vehicleId,
@@ -103,6 +106,7 @@ class SimulationControlService implements OperationalControlService {
     // Fire-and-forget: Audit logging never blocks operational flow
     _auditService
         .logAction(
+          organizationId: 'mock-org-id', // TODO: Inject from Auth Provider
           operatorId: _getOperatorId(), // Use injected operator ID
           actionType: 'CREATE_INCIDENT_${eventType.name.toUpperCase()}',
           entityId: tripId,
@@ -131,6 +135,7 @@ class SimulationControlService implements OperationalControlService {
 
     // ── Dispatch forensic evidence to the SlaAuditLedger ──
     final evidence = OccurrenceRegisteredEvidence(
+      organizationId: 'mock-org-id', // TODO: Inject from Auth Provider
       occurredAtUtc: DateTime.now().toUtc(),
       tripId: tripId,
       vehicleId: trip?.vehicleId,

@@ -1,26 +1,33 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final supabase = Supabase.instance.client;
 
 class SupabaseConfig {
-  // A02: Security Misconfiguration - Use Env Vars
-  static const String supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://xyzcompany.supabase.co',
-  );
-
-  static const String supabaseKey = String.fromEnvironment(
-    'SUPABASE_KEY',
-    defaultValue: 'public-anon-key',
-  );
-
   static Future<void> initialize() async {
     try {
-      // Pending: Replace with actual credentials
-      await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+      await dotenv.load(fileName: ".env");
     } catch (e) {
-      // Silent fail in tests or when environment is not fully setup
-      // Ensures neutral infrastructure does not break runtime or tests
+      // It's okay if .env is missing in CI or if environment is injected via --dart-define
+    }
+
+    final supabaseUrl =
+        dotenv.env['SUPABASE_URL'] ??
+        const String.fromEnvironment('SUPABASE_URL');
+
+    final supabaseAnonKey =
+        dotenv.env['SUPABASE_KEY'] ??
+        const String.fromEnvironment('SUPABASE_KEY');
+
+    if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+      // In Phase 0, we allow fallback for the InMemory persistence mode tests.
+      return;
+    }
+
+    try {
+      await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+    } catch (e) {
+      // Allowed to fail if running strictly local tests without mock setup.
     }
   }
 }

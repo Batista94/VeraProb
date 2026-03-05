@@ -5,7 +5,11 @@ import '../../application/sla_audit/sla_ledger_mapper.dart';
 import '../../domain/entities/vehicle_operational_state.dart';
 import '../../domain/sla_audit/contractual_execution_state.dart';
 import '../../domain/sla_audit/execution_status.dart';
+import '../../domain/sla_audit/contractual_rule.dart';
 import '../../domain/sla_audit/contractual_execution_state_repository.dart';
+import '../../domain/sla_audit/plan_declaration.dart';
+import '../../domain/sla_audit/plan_declaration_repository.dart';
+import '../../domain/sla_audit/rule_snapshot.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
 
 /// Application Service: Reactive evaluation engine for contractual
@@ -20,6 +24,7 @@ import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
 /// Does NOT depend on Riverpod. Called externally by a stream subscriber.
 class ContractualEvaluationEngine {
   final ContractualExecutionStateRepository _executionRepo;
+  final PlanDeclarationRepository _planRepo;
   final SlaAuditLedgerRepository _ledgerRepo;
 
   /// Minimum dwell time inside the geofence before binding (seconds).
@@ -29,11 +34,27 @@ class ContractualEvaluationEngine {
   /// Key: setId, Value: first entry timestamp.
   final Map<String, DateTime> _firstEntryTimestamps = {};
 
+  /// Cache for plan declarations to avoid hitting DB per ping.
+  final Map<String, PlanDeclaration> _planCache = {};
+
   ContractualEvaluationEngine({
     required ContractualExecutionStateRepository executionRepo,
+    required PlanDeclarationRepository planRepo,
     required SlaAuditLedgerRepository ledgerRepo,
   }) : _executionRepo = executionRepo,
+       _planRepo = planRepo,
        _ledgerRepo = ledgerRepo;
+
+  Future<RuleSnapshot> _getRuleSnapshot(String contractId, int version) async {
+    final cacheKey = '${contractId}_$version';
+    if (_planCache.containsKey(cacheKey)) {
+      return _planCache[cacheKey]!.ruleSnapshot;
+    }
+    final plans = await _planRepo.findByContract(contractId);
+    final plan = plans.firstWhere((p) => p.planVersion == version);
+    _planCache[cacheKey] = plan;
+    return plan.ruleSnapshot;
+  }
 
   // ── Method 1: Process Vehicle Telemetry ─────────────────
 
@@ -59,6 +80,19 @@ class ContractualEvaluationEngine {
     );
 
     for (final state in eligible) {
+      final rules = await _getRuleSnapshot(state.contractId, state.planVersion);
+
+      // Determine dwell requirement dynamically (default 30s)
+      int requiredDwell = _minDwellSeconds;
+      for (final rule in rules.rules) {
+        if (rule.ruleType == SlaRuleType.minGeofenceCoverage) {
+          final dwellParam = rule.config['min_dwell_seconds'];
+          if (dwellParam is int) {
+            requiredDwell = dwellParam;
+          }
+        }
+      }
+
       // 3. Calculate geofence distance
       final distance = _haversineMeters(
         vehicleState.latitude,
@@ -83,7 +117,7 @@ class ContractualEvaluationEngine {
 
         final dwellDuration = now.difference(firstEntry);
 
-        if (dwellDuration.inSeconds >= _minDwellSeconds) {
+        if (dwellDuration.inSeconds >= requiredDwell) {
           // Check status again defensivelly against concurrent evaluations
           if (state.status != ExecutionStatus.pending) continue;
 

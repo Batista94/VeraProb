@@ -27,7 +27,7 @@ void main() async {
         final setId = uuid.v4();
         final contractId = uuid.v4();
 
-        final state = ContractualExecutionState.create(
+        final state = ContractualExecutionState.create(organizationId: 'org-1', 
           setId: setId,
           contractId: contractId,
           planVersion: 1,
@@ -89,7 +89,7 @@ void main() async {
         () async {
           final contractId = uuid.v4();
 
-          final state1 = ContractualExecutionState.create(
+          final state1 = ContractualExecutionState.create(organizationId: 'org-1', 
             setId: uuid.v4(),
             contractId: contractId,
             planVersion: 1,
@@ -106,7 +106,7 @@ void main() async {
             ),
           );
 
-          final state2 = ContractualExecutionState.create(
+          final state2 = ContractualExecutionState.create(organizationId: 'org-1', 
             setId: uuid.v4(),
             contractId: uuid.v4(), // Different contract
             planVersion: 1,

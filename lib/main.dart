@@ -2,14 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
-import 'presentation/shell/admin_shell.dart';
-import 'features/admin/presentation/command_center/command_center_screen.dart';
-import 'features/admin/presentation/trips/trips_timeline_screen.dart';
-import 'features/admin/presentation/resources/resource_management_screen.dart';
-import 'features/admin/presentation/system/system_health_screen.dart';
-import 'features/admin/presentation/command_center/screens/operational_audit_screen.dart';
 import 'features/shared/providers.dart';
-import 'presentation/shell/settings_screen.dart';
+import 'features/shared/widgets/error_boundary.dart';
+import 'features/admin/presentation/lock_screen.dart';
 import 'core/config/supabase_client.dart';
 import 'infrastructure/persistence/persistence_mode.dart';
 import 'infrastructure/persistence/persistence_provider.dart';
@@ -59,16 +54,7 @@ class _BusFlowAdminAppState extends ConsumerState<BusFlowAdminApp> {
       title: 'BusFlow — Control Center',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      home: const AdminShell(
-        screens: {
-          AdminDestination.commandCenter: CommandCenterScreen(),
-          AdminDestination.trips: TripsTimelineScreen(),
-          AdminDestination.resources: ResourceManagementScreen(),
-          AdminDestination.system: SystemHealthScreen(),
-          AdminDestination.audit: OperationalAuditScreen(),
-          AdminDestination.settings: SettingsScreen(),
-        },
-      ),
+      home: const ErrorBoundary(child: AdminLockScreen()),
     );
   }
 }

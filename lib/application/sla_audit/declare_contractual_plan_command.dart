@@ -8,6 +8,7 @@ import 'contractual_service_input.dart';
 /// Does NOT extend [OperationalCommand] — plan declaration is an
 /// administrative setup action, not a real-time operational mutation.
 class DeclareContractualPlanCommand {
+  final String organizationId;
   final String contractId;
   final String declaredByUserId;
   final int planVersion;
@@ -16,6 +17,7 @@ class DeclareContractualPlanCommand {
   final List<ContractualServiceInput> services;
 
   const DeclareContractualPlanCommand({
+    required this.organizationId,
     required this.contractId,
     required this.declaredByUserId,
     required this.planVersion,

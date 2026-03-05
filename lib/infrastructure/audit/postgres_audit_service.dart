@@ -11,6 +11,7 @@ class PostgresAuditService implements AuditService {
 
   @override
   Future<void> logAction({
+    required String organizationId,
     required String operatorId,
     required String actionType,
     required String entityId,
@@ -21,6 +22,7 @@ class PostgresAuditService implements AuditService {
     final log = AuditLog(
       id: DateTime.now().millisecondsSinceEpoch
           .toString(), // Managed by DB or here
+      organizationId: organizationId,
       operatorId: operatorId,
       actionType: actionType,
       entityId: entityId,
@@ -35,20 +37,24 @@ class PostgresAuditService implements AuditService {
   }
 
   @override
-  List<AuditLog> getLogsForEntity(String entityId) {
-    // The current public interface is synchronous, but Supabase is async.
-    // Since Phase 2 rule strictly prohibits altering public contracts,
-    // and runtime remains 100% InMemory, we throw here.
-    throw UnimplementedError(
-      'PostgresAuditService cannot implement synchronous read. Contract must be updated to Future.',
-    );
+  Future<List<AuditLog>> getLogsForEntity(String entityId) async {
+    final response = await _client
+        .from('audit_logs')
+        .select()
+        .eq('entity_id', entityId)
+        .order('timestamp', ascending: false);
+
+    return (response as List).map((data) => AuditLog.fromJson(data)).toList();
   }
 
   @override
-  List<AuditLog> getRecentLogs({int limit = 50}) {
-    // Synchronous interface constraint.
-    throw UnimplementedError(
-      'PostgresAuditService cannot implement synchronous read. Contract must be updated to Future.',
-    );
+  Future<List<AuditLog>> getRecentLogs({int limit = 50}) async {
+    final response = await _client
+        .from('audit_logs')
+        .select()
+        .order('timestamp', ascending: false)
+        .limit(limit);
+
+    return (response as List).map((data) => AuditLog.fromJson(data)).toList();
   }
 }

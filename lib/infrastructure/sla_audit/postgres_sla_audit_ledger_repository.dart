@@ -23,7 +23,8 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
     // For idempotency, we rely on the fact that ledger entries are append-only facts.
     // If a collision detection is needed, we could use a unique constraint on
     // (type, set_id, occurred_at_utc, contract_id, plan_version).
-    await _client.from('sla_audit_ledger').insert({
+    await _client.from('sla_audit_ledger_v2').insert({
+      'organization_id': entry.organizationId,
       'type': entry.type,
       'set_id': entry.setId,
       'contract_id': entry.contractId,
@@ -36,7 +37,7 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   @override
   Future<int?> getLastEntryId() async {
     final response = await _client
-        .from('sla_audit_ledger')
+        .from('sla_audit_ledger_v2')
         .select('id')
         .order('id', ascending: false)
         .limit(1)
@@ -49,7 +50,7 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   @override
   Future<List<SlaLedgerEntry>> getEntriesBySetId(String setId) async {
     final response = await _client
-        .from('sla_audit_ledger')
+        .from('sla_audit_ledger_v2')
         .select()
         .eq('set_id', setId)
         .order('occurred_at_utc', ascending: true);
@@ -57,6 +58,7 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
     return (response as List).map((row) {
       return SlaLedgerEntry(
         id: row['id'] as int,
+        organizationId: row['organization_id'] as String,
         type: row['type'] as String,
         setId: row['set_id'] as String?,
         contractId: row['contract_id'] as String,

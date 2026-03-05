@@ -21,7 +21,7 @@ void main() {
   }) {
     final start = windowStart ?? DateTime.utc(2026, 3, 1, 6, 0);
     final end = windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0);
-    return ContractualExecutionState.create(
+    return ContractualExecutionState.create(organizationId: 'org-1', 
       setId: setId,
       contractId: contractId,
       planVersion: 1,
@@ -57,7 +57,7 @@ void main() {
       final t = DateTime.utc(2026, 3, 1, 6, 0);
 
       expect(
-        () => ContractualExecutionState.create(
+        () => ContractualExecutionState.create(organizationId: 'org-1', 
           setId: 'set-1',
           contractId: 'c-1',
           planVersion: 1,
@@ -73,7 +73,7 @@ void main() {
       );
 
       expect(
-        () => ContractualExecutionState.create(
+        () => ContractualExecutionState.create(organizationId: 'org-1', 
           setId: 'set-1',
           contractId: 'c-1',
           planVersion: 1,

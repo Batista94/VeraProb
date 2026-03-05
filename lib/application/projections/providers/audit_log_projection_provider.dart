@@ -10,10 +10,12 @@ import '../models/audit_log_projection.dart';
 
 /// Provides a formatted, read-only projection of the Audit Logs.
 /// Fetches the logs from the AuditService (acting as the persistent event store).
-final auditLogProjectionProvider = Provider<AuditLogProjection>((ref) {
-  // Fetch from the synchronous in-memory store.
+final auditLogProjectionProvider = FutureProvider<AuditLogProjection>((
+  ref,
+) async {
+  // Fetch from the persistent/in-memory store.
   final auditService = ref.watch(auditServiceProvider);
-  final rawLogs = auditService.getRecentLogs(limit: 200);
+  final rawLogs = await auditService.getRecentLogs(limit: 200);
 
   // 1. O(1) Lookup Map for Enrichment (Avoids nested iterative joins)
   final trips = ref.watch(enrichedTripsProvider);

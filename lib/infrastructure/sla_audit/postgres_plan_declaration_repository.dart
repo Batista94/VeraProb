@@ -4,6 +4,7 @@ import '../../core/config/supabase_client.dart';
 import '../../domain/sla_audit/contractual_service_execution.dart';
 import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
+import '../../domain/sla_audit/rule_snapshot.dart';
 
 /// Postgres implementation of [PlanDeclarationRepository].
 ///
@@ -41,6 +42,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
       'declared_by_user_id': plan.declaredByUserId,
       'plan_version': plan.planVersion,
       'original_file_hash': plan.originalFileHash,
+      'rule_snapshot_jsonb': plan.ruleSnapshot.toJson(),
     });
 
     // 3. Persist Child Entities (Service Executions)
@@ -113,11 +115,15 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
 
     return PlanDeclaration.reconstitute(
       id: data['id'],
+      organizationId: data['organization_id'],
       contractId: data['contract_id'],
       declaredAtUtc: DateTime.parse(data['declared_at_utc']),
       declaredByUserId: data['declared_by_user_id'],
       planVersion: data['plan_version'],
       originalFileHash: data['original_file_hash'],
+      ruleSnapshot: RuleSnapshot.fromJson(
+        List<dynamic>.from(data['rule_snapshot_jsonb']),
+      ),
       services: services,
     );
   }

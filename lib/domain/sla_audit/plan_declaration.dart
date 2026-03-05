@@ -7,6 +7,7 @@ import 'contractual_plan_declared_event.dart';
 import 'contractual_service_execution.dart';
 import 'domain_event.dart';
 import 'domain_exception.dart';
+import 'rule_snapshot.dart';
 
 /// Aggregate Root representing the formal, immutable, and auditable
 /// declaration of a contractual operational plan.
@@ -27,11 +28,13 @@ class PlanDeclaration extends Equatable {
   final String id;
 
   // ── Attributes ────────────────────────────────────────────
+  final String organizationId;
   final String contractId;
   final DateTime declaredAtUtc;
   final String declaredByUserId;
   final int planVersion;
   final String originalFileHash;
+  final RuleSnapshot ruleSnapshot;
 
   // ── Internal collections ──────────────────────────────────
   final List<ContractualServiceExecution> _services;
@@ -41,11 +44,13 @@ class PlanDeclaration extends Equatable {
   // ignore: prefer_const_constructors_in_immutables
   PlanDeclaration._({
     required this.id,
+    required this.organizationId,
     required this.contractId,
     required this.declaredAtUtc,
     required this.declaredByUserId,
     required this.planVersion,
     required this.originalFileHash,
+    required this.ruleSnapshot,
     required List<ContractualServiceExecution> services,
     required List<DomainEvent> domainEvents,
   }) : _services = services,
@@ -68,11 +73,13 @@ class PlanDeclaration extends Equatable {
   ///
   /// Throws [DomainException] if any invariant is violated.
   static PlanDeclaration create({
+    required String organizationId,
     required String contractId,
     required DateTime declaredAtUtc,
     required String declaredByUserId,
     required int planVersion,
     required String originalFileHash,
+    required RuleSnapshot ruleSnapshot,
     required List<ContractualServiceExecution> services,
   }) {
     // ── Validate invariants ─────────────────────────────────
@@ -109,6 +116,7 @@ class PlanDeclaration extends Equatable {
 
     // ── Emit domain event ───────────────────────────────────
     final event = ContractualPlanDeclaredEvent(
+      organizationId: organizationId,
       occurredAtUtc: DateTime.now().toUtc(),
       planDeclarationId: id,
       contractId: contractId,
@@ -120,11 +128,13 @@ class PlanDeclaration extends Equatable {
 
     return PlanDeclaration._(
       id: id,
+      organizationId: organizationId,
       contractId: contractId,
       declaredAtUtc: declaredAtUtc,
       declaredByUserId: declaredByUserId,
       planVersion: planVersion,
       originalFileHash: originalFileHash,
+      ruleSnapshot: ruleSnapshot,
       services: List.unmodifiable(services),
       domainEvents: [event],
     );
@@ -136,20 +146,24 @@ class PlanDeclaration extends Equatable {
   /// the aggregate state. It does NOT emit domain events.
   static PlanDeclaration reconstitute({
     required String id,
+    required String organizationId,
     required String contractId,
     required DateTime declaredAtUtc,
     required String declaredByUserId,
     required int planVersion,
     required String originalFileHash,
+    required RuleSnapshot ruleSnapshot,
     required List<ContractualServiceExecution> services,
   }) {
     return PlanDeclaration._(
       id: id,
+      organizationId: organizationId,
       contractId: contractId,
       declaredAtUtc: declaredAtUtc,
       declaredByUserId: declaredByUserId,
       planVersion: planVersion,
       originalFileHash: originalFileHash,
+      ruleSnapshot: ruleSnapshot,
       services: List.unmodifiable(services),
       domainEvents: const [], // RECONSTITUTION: No events emitted
     );
@@ -158,11 +172,13 @@ class PlanDeclaration extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    organizationId,
     contractId,
     declaredAtUtc,
     declaredByUserId,
     planVersion,
     originalFileHash,
+    ruleSnapshot,
     _services,
   ];
 }

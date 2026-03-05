@@ -11,6 +11,7 @@ class ExecutionBoundEvent extends DomainEvent {
   final double bindingLongitude;
 
   const ExecutionBoundEvent({
+    required super.organizationId,
     required super.occurredAtUtc,
     required this.setId,
     required this.contractId,
@@ -31,6 +32,7 @@ class NoShowDeclaredEvent extends DomainEvent {
   final DateTime declaredAtUtc;
 
   const NoShowDeclaredEvent({
+    required super.organizationId,
     required super.occurredAtUtc,
     required this.setId,
     required this.contractId,
@@ -48,6 +50,7 @@ class EvidenceGapDeclaredEvent extends DomainEvent {
   final DateTime declaredAtUtc;
 
   const EvidenceGapDeclaredEvent({
+    required super.organizationId,
     required super.occurredAtUtc,
     required this.setId,
     required this.contractId,
@@ -67,6 +70,7 @@ abstract class EvidenceEvent extends DomainEvent {
   final String operatorId;
 
   const EvidenceEvent({
+    required super.organizationId,
     required super.occurredAtUtc,
     required this.tripId,
     this.vehicleId,
@@ -81,6 +85,7 @@ class OccurrenceRegisteredEvidence extends EvidenceEvent {
   final Map<String, dynamic> metadata;
 
   const OccurrenceRegisteredEvidence({
+    required super.organizationId,
     required super.occurredAtUtc,
     required super.tripId,
     super.vehicleId,
@@ -96,6 +101,7 @@ class TripInterruptedEvidence extends EvidenceEvent {
   final String? reason;
 
   const TripInterruptedEvidence({
+    required super.organizationId,
     required super.occurredAtUtc,
     required super.tripId,
     super.vehicleId,
@@ -109,6 +115,7 @@ class TripCancelledEvidence extends EvidenceEvent {
   final String? reason;
 
   const TripCancelledEvidence({
+    required super.organizationId,
     required super.occurredAtUtc,
     required super.tripId,
     super.vehicleId,

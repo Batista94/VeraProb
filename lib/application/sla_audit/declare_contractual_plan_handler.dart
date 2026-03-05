@@ -2,6 +2,7 @@ import '../../domain/sla_audit/contractual_service_execution.dart';
 import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import '../../domain/sla_audit/contractual_rule_repository.dart';
 import 'declare_contractual_plan_command.dart';
 import 'sla_ledger_mapper.dart';
 
@@ -20,12 +21,15 @@ import 'sla_ledger_mapper.dart';
 class DeclareContractualPlanHandler {
   final PlanDeclarationRepository _repository;
   final SlaAuditLedgerRepository _ledger;
+  final ContractualRuleRepository _ruleRepository;
 
   DeclareContractualPlanHandler({
     required PlanDeclarationRepository repository,
     required SlaAuditLedgerRepository ledger,
+    required ContractualRuleRepository ruleRepository,
   }) : _repository = repository,
-       _ledger = ledger;
+       _ledger = ledger,
+       _ruleRepository = ruleRepository;
 
   /// Handles the command by creating the aggregate, persisting it,
   /// and appending all domain events to the ledger.
@@ -55,13 +59,21 @@ class DeclareContractualPlanHandler {
         )
         .toList();
 
+    // 1.5 Fetch the active Rule Snapshot explicitly binding temporal algorithms
+    final ruleSnapshot = await _ruleRepository.getActiveSnapshotForContract(
+      command.organizationId,
+      command.contractId,
+    );
+
     // 2. Create aggregate via domain factory
     final plan = PlanDeclaration.create(
+      organizationId: command.organizationId,
       contractId: command.contractId,
       declaredAtUtc: command.declaredAtUtc,
       declaredByUserId: command.declaredByUserId,
       planVersion: command.planVersion,
       originalFileHash: command.originalFileHash,
+      ruleSnapshot: ruleSnapshot,
       services: services,
     );
 

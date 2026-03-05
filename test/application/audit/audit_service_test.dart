@@ -11,6 +11,7 @@ void main() {
 
     test('logAction records securely and chronologically', () async {
       await auditService.logAction(
+        organizationId: 'org1',
         operatorId: 'op1',
         actionType: 'RESOLVE_ALERT',
         entityId: 'e1',
@@ -19,7 +20,7 @@ void main() {
         reason: 'Test action',
       );
 
-      final logs = auditService.getLogsForEntity('e1');
+      final logs = await auditService.getLogsForEntity('e1');
       expect(logs.length, 1);
       final log = logs.first;
 
@@ -33,42 +34,46 @@ void main() {
 
     test('getLogsForEntity filters properly and sorts latest first', () async {
       await auditService.logAction(
+        organizationId: 'org1',
         operatorId: 'op1',
         actionType: 'A1',
         entityId: 'e1',
       );
       await Future.delayed(const Duration(milliseconds: 10)); // Force time gap
       await auditService.logAction(
+        organizationId: 'org1',
         operatorId: 'op1',
         actionType: 'A2',
         entityId: 'e1',
       );
 
       await auditService.logAction(
+        organizationId: 'org1',
         operatorId: 'op1',
         actionType: 'A3',
         entityId: 'e2',
       );
 
-      final e1Logs = auditService.getLogsForEntity('e1');
+      final e1Logs = await auditService.getLogsForEntity('e1');
       expect(e1Logs.length, 2);
       expect(e1Logs.first.actionType, 'A2'); // Latest first
       expect(e1Logs.last.actionType, 'A1');
 
-      final e2Logs = auditService.getLogsForEntity('e2');
+      final e2Logs = await auditService.getLogsForEntity('e2');
       expect(e2Logs.length, 1);
     });
 
     test('getRecentLogs limits by parameters', () async {
       for (int i = 0; i < 10; i++) {
         await auditService.logAction(
+          organizationId: 'org1',
           operatorId: 'op1',
           actionType: 'A$i',
           entityId: 'e1',
         );
       }
 
-      final recent = auditService.getRecentLogs(limit: 5);
+      final recent = await auditService.getRecentLogs(limit: 5);
       expect(recent.length, 5);
     });
   });

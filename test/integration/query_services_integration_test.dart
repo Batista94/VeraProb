@@ -5,6 +5,9 @@ import 'package:busflow/domain/entities/vehicle_operational_state.dart';
 import 'package:busflow/domain/enums/connectivity_state.dart';
 import 'package:busflow/domain/enums/motion_state.dart';
 import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
+import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
+import 'package:busflow/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
@@ -20,12 +23,14 @@ void main() {
 
         final engine = ContractualEvaluationEngine(
           executionRepo: execRepo,
+          planRepo: PostgresPlanDeclarationRepository(Supabase.instance.client),
           ledgerRepo: ledgerRepo,
         );
 
         // 1. Setup pending state
         final windowEnd = DateTime.utc(2026, 3, 1, 7, 0);
         final state = ContractualExecutionState.create(
+          organizationId: 'org-1',
           setId: 'set-consistent',
           contractId: 'contract-x',
           planVersion: 1,
@@ -80,6 +85,7 @@ void main() {
 
         // 4. Create another state for no-show
         final state2 = ContractualExecutionState.create(
+          organizationId: 'org-1',
           setId: 'set-noshow',
           contractId: 'contract-x',
           planVersion: 1,

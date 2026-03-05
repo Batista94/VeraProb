@@ -49,6 +49,7 @@ final contractualEvaluationEngineProvider =
     Provider<ContractualEvaluationEngine>((ref) {
       return ContractualEvaluationEngine(
         executionRepo: ref.watch(contractualExecutionStateRepositoryProvider),
+        planRepo: ref.watch(planDeclarationRepositoryProvider),
         ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
       );
     });

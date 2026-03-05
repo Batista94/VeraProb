@@ -12,6 +12,7 @@ class InMemorySlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   Future<void> append(SlaLedgerEntry entry) async {
     final entryWithId = SlaLedgerEntry(
       id: _nextId++,
+      organizationId: entry.organizationId,
       type: entry.type,
       setId: entry.setId,
       contractId: entry.contractId,

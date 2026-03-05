@@ -7,6 +7,9 @@ import 'package:equatable/equatable.dart';
 class AuditLog extends Equatable {
   final String id;
 
+  /// The Tenant / Organization ID that owns this audit record. Isolated boundary.
+  final String organizationId;
+
   /// ID of the user (Admin, Supervisor, Operator) taking the action
   final String operatorId;
 
@@ -30,6 +33,7 @@ class AuditLog extends Equatable {
 
   const AuditLog({
     required this.id,
+    required this.organizationId,
     required this.operatorId,
     required this.actionType,
     required this.entityId,
@@ -42,6 +46,7 @@ class AuditLog extends Equatable {
   factory AuditLog.fromJson(Map<String, dynamic> json) {
     return AuditLog(
       id: json['id'] as String,
+      organizationId: json['organization_id'] as String,
       operatorId: json['operator_id'] as String,
       actionType: json['action_type'] as String,
       entityId: json['entity_id'] as String,
@@ -55,6 +60,7 @@ class AuditLog extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'organization_id': organizationId,
       'operator_id': operatorId,
       'action_type': actionType,
       'entity_id': entityId,
@@ -68,6 +74,7 @@ class AuditLog extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    organizationId,
     operatorId,
     actionType,
     entityId,

@@ -13,6 +13,7 @@ class SlaLedgerMapper {
   static SlaLedgerEntry mapToEntry(DomainEvent event) {
     if (event is ExecutionBoundEvent) {
       return SlaLedgerEntry(
+        organizationId: event.organizationId,
         type: 'EXECUTION_BOUND',
         setId: event.setId,
         contractId: event.contractId,
@@ -29,6 +30,7 @@ class SlaLedgerMapper {
 
     if (event is NoShowDeclaredEvent) {
       return SlaLedgerEntry(
+        organizationId: event.organizationId,
         type: 'NO_SHOW_DECLARED',
         setId: event.setId,
         contractId: event.contractId,
@@ -40,6 +42,7 @@ class SlaLedgerMapper {
 
     if (event is EvidenceGapDeclaredEvent) {
       return SlaLedgerEntry(
+        organizationId: event.organizationId,
         type: 'EVIDENCE_GAP_DECLARED',
         setId: event.setId,
         contractId: event.contractId,
@@ -50,6 +53,7 @@ class SlaLedgerMapper {
     }
     if (event is ContractualPlanDeclaredEvent) {
       return SlaLedgerEntry(
+        organizationId: event.organizationId,
         type: 'PLAN_DECLARED',
         setId: null,
         contractId: event.contractId,
@@ -66,6 +70,7 @@ class SlaLedgerMapper {
 
     if (event is OccurrenceRegisteredEvidence) {
       return SlaLedgerEntry(
+        organizationId: event.organizationId,
         type: 'OCCURRENCE_REGISTERED',
         setId: event.tripId,
         contractId: 'N/A', // Set later when merged or queried contextually
@@ -83,6 +88,7 @@ class SlaLedgerMapper {
 
     if (event is TripInterruptedEvidence) {
       return SlaLedgerEntry(
+        organizationId: event.organizationId,
         type: 'TRIP_INTERRUPTED',
         setId: event.tripId,
         contractId: 'N/A', // Set later when merged or queried contextually
@@ -98,6 +104,7 @@ class SlaLedgerMapper {
 
     if (event is TripCancelledEvidence) {
       return SlaLedgerEntry(
+        organizationId: event.organizationId,
         type: 'TRIP_CANCELLED',
         setId: event.tripId,
         contractId: 'N/A', // Set later when merged or queried contextually
@@ -113,6 +120,7 @@ class SlaLedgerMapper {
 
     // Generic fallback for unknown events
     return SlaLedgerEntry(
+      organizationId: event.organizationId,
       type: 'UNKNOWN_EVENT',
       contractId: 'unknown',
       planVersion: 0,

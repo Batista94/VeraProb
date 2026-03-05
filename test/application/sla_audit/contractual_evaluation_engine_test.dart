@@ -3,14 +3,19 @@ import 'package:busflow/application/sla_audit/contractual_evaluation_engine.dart
 import 'package:busflow/domain/entities/vehicle_operational_state.dart';
 import 'package:busflow/domain/enums/motion_state.dart';
 import 'package:busflow/domain/enums/connectivity_state.dart';
+import 'package:busflow/domain/sla_audit/contractual_service_execution.dart';
 import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
+import 'package:busflow/domain/sla_audit/plan_declaration.dart';
+import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 
 void main() {
   // ── Shared fixtures ──────────────────────────────────────
   late InMemoryContractualExecutionStateRepository repo;
+  late InMemoryPlanDeclarationRepository planRepo;
   late InMemorySlaAuditLedgerRepository ledger;
   late ContractualEvaluationEngine engine;
 
@@ -21,9 +26,11 @@ void main() {
 
   setUp(() {
     repo = InMemoryContractualExecutionStateRepository();
+    planRepo = InMemoryPlanDeclarationRepository();
     ledger = InMemorySlaAuditLedgerRepository();
     engine = ContractualEvaluationEngine(
       executionRepo: repo,
+      planRepo: planRepo,
       ledgerRepo: ledger,
     );
   });
@@ -36,6 +43,7 @@ void main() {
     DateTime? windowEnd,
   }) {
     return ContractualExecutionState.create(
+      organizationId: 'org-1',
       setId: setId,
       contractId: contractId,
       planVersion: 1,
@@ -48,6 +56,34 @@ void main() {
       windowStartUtc: windowStart ?? DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0),
     );
+  }
+
+  Future<void> seedPlan(String contractId, int version) async {
+    final declaration = PlanDeclaration.create(
+      organizationId: 'org-1',
+      contractId: contractId,
+      planVersion: version,
+      declaredAtUtc: DateTime.utc(2026, 1, 1),
+      declaredByUserId: 'user-1',
+      originalFileHash: 'hash-1',
+      services: [
+        ContractualServiceExecution.create(
+          contractId: contractId,
+          scheduledStartTimeUtc: DateTime.utc(2026, 3, 1, 6, 0),
+          scheduledEndTimeUtc: DateTime.utc(2026, 3, 1, 7, 0),
+          startLatitude: -23.5505,
+          startLongitude: -46.6333,
+          startRadiusMeters: 100,
+          endLatitude: -23.5600,
+          endLongitude: -46.6400,
+          endRadiusMeters: 100,
+          contractualValue: 150.0,
+          noShowPenaltyMultiplier: 1.5,
+        ),
+      ],
+      ruleSnapshot: const RuleSnapshot([]),
+    );
+    await planRepo.save(declaration);
   }
 
   VehicleOperationalState makeVehicleState({
@@ -73,6 +109,7 @@ void main() {
   // ── Tests ────────────────────────────────────────────────
   group('ContractualEvaluationEngine', () {
     test('binding occurs after 30s continuous dwell inside geofence', () async {
+      await seedPlan('c-1', 1);
       final state = makeExecState();
       await repo.save(state);
 
@@ -94,6 +131,7 @@ void main() {
     });
 
     test('no binding if vehicle leaves geofence before 30s', () async {
+      await seedPlan('c-1', 1);
       final state = makeExecState();
       await repo.save(state);
 
@@ -118,6 +156,7 @@ void main() {
     });
 
     test('plannedVehicleId is respected — wrong vehicle ignored', () async {
+      await seedPlan('c-1', 1);
       final state = makeExecState(plannedVehicleId: 'v-assigned');
       await repo.save(state);
 
@@ -155,6 +194,7 @@ void main() {
     });
 
     test('finalized states are not reprocessed', () async {
+      await seedPlan('c-1', 1);
       final state = makeExecState();
       await repo.save(state);
 
@@ -178,6 +218,9 @@ void main() {
     });
 
     test('multiple execution states do not interfere', () async {
+      await seedPlan('c-1', 1);
+      await seedPlan('c-2', 1);
+
       final state1 = makeExecState(setId: 'set-1');
       final state2 = makeExecState(
         setId: 'set-2',
@@ -213,6 +256,7 @@ void main() {
     test(
       'idempotency: same payload twice does not duplicate processing',
       () async {
+        await seedPlan('c-1', 1);
         final state = makeExecState();
         await repo.save(state);
         final vehicle = makeVehicleState();
@@ -235,6 +279,7 @@ void main() {
     test(
       'out-of-order telemetry: older timestamp does not break dwell if already started',
       () async {
+        await seedPlan('c-1', 1);
         final state = makeExecState();
         await repo.save(state);
         final vehicleInside = makeVehicleState();
@@ -286,6 +331,7 @@ void main() {
     test(
       'delayed execution is rejected if already marked as no-show',
       () async {
+        await seedPlan('c-1', 1);
         final state = makeExecState(windowEnd: DateTime.utc(2026, 3, 1, 7, 0));
         await repo.save(state);
 
@@ -312,6 +358,7 @@ void main() {
     test(
       'concurrent events for same setid do not duplicate execution',
       () async {
+        await seedPlan('c-1', 1);
         final state = makeExecState();
         await repo.save(state);
 

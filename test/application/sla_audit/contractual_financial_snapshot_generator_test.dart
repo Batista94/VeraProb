@@ -39,7 +39,7 @@ void main() {
     required DateTime windowStart,
     required DateTime windowEnd,
   }) {
-    return ContractualExecutionState.create(
+    return ContractualExecutionState.create(organizationId: 'org-1', 
       setId: setId,
       contractId: contractId,
       planVersion: 1,

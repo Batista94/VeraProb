@@ -121,141 +121,151 @@ class OperationalAuditScreen extends ConsumerWidget {
   }
 
   Widget _buildLogTable(WidgetRef ref) {
-    final projection = ref.watch(auditLogProjectionProvider);
+    final projectionAsync = ref.watch(auditLogProjectionProvider);
     final selectedLog = ref.watch(selectedAuditLogProvider);
 
-    if (projection.isLoading && projection.entries.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (projection.entries.isEmpty) {
-      return const Center(
+    return projectionAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(
         child: Text(
-          'Nenhum registro encontrado',
-          style: TextStyle(color: BusFlowColors.textSecondary),
+          'Erro ao carregar auditoria: $err',
+          style: const TextStyle(color: BusFlowColors.error),
+          textAlign: TextAlign.center,
         ),
-      );
-    }
+      ),
+      data: (projection) {
+        if (projection.entries.isEmpty) {
+          return const Center(
+            child: Text(
+              'Nenhum registro encontrado',
+              style: TextStyle(color: BusFlowColors.textSecondary),
+            ),
+          );
+        }
 
-    return ListView.builder(
-      itemCount: projection.entries.length,
-      itemBuilder: (context, index) {
-        final log = projection.entries[index];
-        final isSelected = selectedLog?.id == log.id;
+        return ListView.builder(
+          itemCount: projection.entries.length,
+          itemBuilder: (context, index) {
+            final log = projection.entries[index];
+            final isSelected = selectedLog?.id == log.id;
 
-        return InkWell(
-          onTap: () {
-            ref.read(selectedAuditLogProvider.notifier).state = log;
-          },
-          child: Container(
-            color: isSelected
-                ? BusFlowColors.primary.withValues(alpha: 0.1)
-                : (index.isEven
-                      ? BusFlowColors.background
-                      : BusFlowColors.surface),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    DateFormat('HH:mm:ss').format(log.timestamp),
-                    style: _cellStyle.copyWith(fontFamily: 'monospace'),
-                  ),
+            return InkWell(
+              onTap: () {
+                ref.read(selectedAuditLogProvider.notifier).state = log;
+              },
+              child: Container(
+                color: isSelected
+                    ? BusFlowColors.primary.withValues(alpha: 0.1)
+                    : (index.isEven
+                          ? BusFlowColors.background
+                          : BusFlowColors.surface),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
-                SizedBox(
-                  width: 110,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: log.lifecycleStatus != null
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: log.lifecycleStatus!.color.withValues(
-                                alpha: 0.15,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: log.lifecycleStatus!.color.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              log.lifecycleStatus!.label,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: log.lifecycleStatus!.color,
-                              ),
-                            ),
-                          )
-                        : const Text(
-                            '-',
-                            style: TextStyle(
-                              color: BusFlowColors.textSecondary,
-                            ),
-                          ),
-                  ),
-                ),
-                SizedBox(
-                  width: 90,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: log.category == 'SYSTEM'
-                          ? BusFlowColors.info.withValues(alpha: 0.2)
-                          : BusFlowColors.warning.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      log.category,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: log.category == 'SYSTEM'
-                            ? BusFlowColors.info
-                            : BusFlowColors.warning,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 80,
+                      child: Text(
+                        DateFormat('HH:mm:ss').format(log.timestamp),
+                        style: _cellStyle.copyWith(fontFamily: 'monospace'),
                       ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    log.action,
-                    style: _cellStyle.copyWith(fontWeight: FontWeight.w500),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    log.vehiclePlate ?? '-',
-                    style: _cellStyle.copyWith(fontFamily: 'monospace'),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(log.routeName ?? '-', style: _cellStyle),
-                ),
-                SizedBox(
-                  width: 120,
-                  child: Text(
-                    log.actorName ?? '-',
-                    style: _cellStyle.copyWith(
-                      color: BusFlowColors.textSecondary,
+                    SizedBox(
+                      width: 110,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: log.lifecycleStatus != null
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: log.lifecycleStatus!.color.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: log.lifecycleStatus!.color
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                child: Text(
+                                  log.lifecycleStatus!.label,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: log.lifecycleStatus!.color,
+                                  ),
+                                ),
+                              )
+                            : const Text(
+                                '-',
+                                style: TextStyle(
+                                  color: BusFlowColors.textSecondary,
+                                ),
+                              ),
+                      ),
                     ),
-                  ),
+                    SizedBox(
+                      width: 90,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: log.category == 'SYSTEM'
+                              ? BusFlowColors.info.withValues(alpha: 0.2)
+                              : BusFlowColors.warning.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          log.category,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: log.category == 'SYSTEM'
+                                ? BusFlowColors.info
+                                : BusFlowColors.warning,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        log.action,
+                        style: _cellStyle.copyWith(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        log.vehiclePlate ?? '-',
+                        style: _cellStyle.copyWith(fontFamily: 'monospace'),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(log.routeName ?? '-', style: _cellStyle),
+                    ),
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        log.actorName ?? '-',
+                        style: _cellStyle.copyWith(
+                          color: BusFlowColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

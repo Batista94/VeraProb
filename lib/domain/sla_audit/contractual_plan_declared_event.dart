@@ -13,6 +13,7 @@ class ContractualPlanDeclaredEvent extends DomainEvent {
   final int totalServicesDeclared;
 
   const ContractualPlanDeclaredEvent({
+    required super.organizationId,
     required super.occurredAtUtc,
     required this.planDeclarationId,
     required this.contractId,

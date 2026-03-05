@@ -44,7 +44,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   _SettingTile(
                     label: 'ID do Operador',
-                    value: operatorId,
+                    value: operatorId ?? 'Não autenticado',
                     icon: Icons.badge_outlined,
                   ),
 

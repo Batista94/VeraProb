@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:busflow/domain/sla_audit/contractual_rule.dart';
+import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:busflow/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:busflow/core/time/brazil_time.dart';
 import 'package:busflow/domain/enums/motion_state.dart';
 import 'package:busflow/domain/enums/connectivity_state.dart';
@@ -23,21 +26,9 @@ import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_
 // ── Database Integrity Helpers ───────────────────────────
 
 Future<void> cleanupTestData(SupabaseClient db, String cid) async {
-  // Cascade guarantees cleaning plan_declarations drops
-  // contractual_service_executions and execution_states + transitions.
-  // However, for extra safety during test, we delete manually across roots.
-
-  // 1. Delete Financial Snapshots
-  await db
-      .from('contractual_financial_snapshot')
-      .delete()
-      .eq('contract_id', cid);
-
-  // 2. Delete Ledger Events
-  await db.from('sla_audit_ledger').delete().eq('contract_id', cid);
-
-  // 3. Delete Plan Declarations (Cascades to SETs and ExecStates)
-  await db.from('plan_declarations').delete().eq('contract_id', cid);
+  // Cloud Validation Environment:
+  // DELETE operations are prohibited by architecture hardening.
+  // Tests rely on unique contract IDs instead of teardown logic.
 }
 
 void main() {
@@ -103,10 +94,12 @@ void main() {
     declarationHandler = DeclareContractualPlanHandler(
       repository: planRepo,
       ledger: ledgerRepo,
+      ruleRepository: MockContractualRuleRepository(),
     );
 
     evaluationEngine = ContractualEvaluationEngine(
       executionRepo: executionRepo,
+      planRepo: planRepo,
       ledgerRepo: ledgerRepo,
     );
 
@@ -118,14 +111,9 @@ void main() {
 
     executionQueryService = SlaExecutionQueryServicePostgres(client);
     impactQueryService = ContractualFinancialImpactQueryServicePostgres(client);
-
-    // Explicit Database Cleanup Scope for this contract
-    await cleanupTestData(client, contractId);
   });
 
   tearDownAll(() async {
-    // Explicit Database Cleanup Scope
-    await cleanupTestData(client, contractId);
     client.dispose();
   });
 
@@ -148,6 +136,7 @@ void main() {
       );
 
       final command = DeclareContractualPlanCommand(
+        organizationId: 'org-1',
         contractId: contractId,
         declaredByUserId: 'admin-e2e',
         planVersion: planVersion,
@@ -187,6 +176,7 @@ void main() {
       // For MVP, if external system hasn't created the state yet, the engine won't see it.
       // Wait, let's artificially initialize it as if the scheduler spawned it.
       final newState = ContractualExecutionState.create(
+        organizationId: 'org-1',
         setId: service.setId,
         contractId: contractId,
         planVersion: planVersion,
@@ -407,6 +397,7 @@ void main() {
 
       // 3. Aggregate internal immutability / duplicate check
       final duplicatePlanCommand = DeclareContractualPlanCommand(
+        organizationId: 'org-1',
         contractId: contractId, // same contract
         planVersion: planVersion, // same version
         declaredByUserId: 'hacker',
@@ -466,4 +457,17 @@ void main() {
       expect(impact.revenueAtRisk.cents, 0);
     });
   });
+}
+
+class MockContractualRuleRepository implements ContractualRuleRepository {
+  @override
+  Future<RuleSnapshot> getActiveSnapshotForContract(
+    String orgId,
+    String contractId,
+  ) async {
+    return const RuleSnapshot([]);
+  }
+
+  @override
+  Future<void> saveRule(ContractualRule rule) async {}
 }

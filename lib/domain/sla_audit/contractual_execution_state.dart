@@ -30,6 +30,7 @@ import 'execution_status.dart';
 class ContractualExecutionState {
   // ── Identity ──────────────────────────────────────────────
   final String id;
+  final String organizationId;
   final String setId;
   final String contractId;
   final int planVersion;
@@ -91,6 +92,7 @@ class ContractualExecutionState {
   // ── Private Constructor ───────────────────────────────────
   ContractualExecutionState._({
     required this.id,
+    required this.organizationId,
     required this.setId,
     required this.contractId,
     required this.planVersion,
@@ -119,6 +121,7 @@ class ContractualExecutionState {
   ///
   /// Throws [DomainException] if [windowEndUtc] is not after [windowStartUtc].
   static ContractualExecutionState create({
+    required String organizationId,
     required String setId,
     required String contractId,
     required int planVersion,
@@ -149,6 +152,7 @@ class ContractualExecutionState {
 
     return ContractualExecutionState._(
       id: const Uuid().v4(),
+      organizationId: organizationId,
       setId: setId,
       contractId: contractId,
       planVersion: planVersion,
@@ -192,6 +196,7 @@ class ContractualExecutionState {
 
     _domainEvents.add(
       ExecutionBoundEvent(
+        organizationId: organizationId,
         occurredAtUtc: timestampUtc,
         setId: setId,
         contractId: contractId,
@@ -227,6 +232,7 @@ class ContractualExecutionState {
 
     _domainEvents.add(
       NoShowDeclaredEvent(
+        organizationId: organizationId,
         occurredAtUtc: nowUtc,
         setId: setId,
         contractId: contractId,
@@ -250,6 +256,7 @@ class ContractualExecutionState {
 
     _domainEvents.add(
       EvidenceGapDeclaredEvent(
+        organizationId: organizationId,
         occurredAtUtc: nowUtc,
         setId: setId,
         contractId: contractId,
@@ -281,6 +288,7 @@ class ContractualExecutionState {
   /// status, and binder evidence. Does NOT emit domain events.
   static ContractualExecutionState reconstitute({
     required String id,
+    required String organizationId,
     required String setId,
     required String contractId,
     required int planVersion,
@@ -304,6 +312,7 @@ class ContractualExecutionState {
   }) {
     final state = ContractualExecutionState._(
       id: id,
+      organizationId: organizationId,
       setId: setId,
       contractId: contractId,
       planVersion: planVersion,

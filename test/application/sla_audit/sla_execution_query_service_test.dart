@@ -25,7 +25,7 @@ void main() {
     double contractualValue = 150.0,
     double noShowPenaltyMultiplier = 1.5,
   }) {
-    return ContractualExecutionState.create(
+    return ContractualExecutionState.create(organizationId: 'org-1', 
       setId: setId,
       contractId: contractId,
       planVersion: 1,

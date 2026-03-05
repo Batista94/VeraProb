@@ -10,6 +10,7 @@ import '../../infrastructure/providers/supabase_provider.dart';
 abstract class AuditService {
   /// Records a new action log securely.
   Future<void> logAction({
+    required String organizationId,
     required String operatorId,
     required String actionType,
     required String entityId,
@@ -19,10 +20,10 @@ abstract class AuditService {
   });
 
   /// Retrieves chronological audit logs for a specific entity.
-  List<AuditLog> getLogsForEntity(String entityId);
+  Future<List<AuditLog>> getLogsForEntity(String entityId);
 
   /// Retrieves the most recent system-wide actions (useful for Admin dashboards).
-  List<AuditLog> getRecentLogs({int limit = 50});
+  Future<List<AuditLog>> getRecentLogs({int limit = 50});
 }
 
 /// In-memory implementation of the AuditService for Sprint 6.
@@ -34,6 +35,7 @@ class InMemoryAuditService implements AuditService {
 
   @override
   Future<void> logAction({
+    required String organizationId,
     required String operatorId,
     required String actionType,
     required String entityId,
@@ -43,6 +45,7 @@ class InMemoryAuditService implements AuditService {
   }) async {
     final log = AuditLog(
       id: DateTime.now().millisecondsSinceEpoch.toString(), // ephemeral mock id
+      organizationId: organizationId,
       operatorId: operatorId,
       actionType: actionType,
       entityId: entityId,
@@ -63,13 +66,13 @@ class InMemoryAuditService implements AuditService {
   }
 
   @override
-  List<AuditLog> getLogsForEntity(String entityId) {
+  Future<List<AuditLog>> getLogsForEntity(String entityId) async {
     return _logs.where((log) => log.entityId == entityId).toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp)); // Latest first
   }
 
   @override
-  List<AuditLog> getRecentLogs({int limit = 50}) {
+  Future<List<AuditLog>> getRecentLogs({int limit = 50}) async {
     final sorted = List<AuditLog>.from(_logs)
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return sorted.take(limit).toList();

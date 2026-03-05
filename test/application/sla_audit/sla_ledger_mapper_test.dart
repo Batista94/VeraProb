@@ -9,7 +9,7 @@ void main() {
     test(
       'OccurrenceRegisteredEvidence maps gracefully without validation faults',
       () {
-        final evidence = OccurrenceRegisteredEvidence(
+        final evidence = OccurrenceRegisteredEvidence(organizationId: 'org-1', 
           occurredAtUtc: now,
           tripId: 'trip-789',
           vehicleId: 'veh-001',
@@ -36,7 +36,7 @@ void main() {
     );
 
     test('TripInterruptedEvidence maps gracefully', () {
-      final evidence = TripInterruptedEvidence(
+      final evidence = TripInterruptedEvidence(organizationId: 'org-1', 
         occurredAtUtc: now,
         tripId: 'trip-789',
         vehicleId: 'veh-001',
@@ -58,7 +58,7 @@ void main() {
     });
 
     test('TripCancelledEvidence maps gracefully', () {
-      final evidence = TripCancelledEvidence(
+      final evidence = TripCancelledEvidence(organizationId: 'org-1', 
         occurredAtUtc: now,
         tripId: 'trip-789',
         vehicleId: null,

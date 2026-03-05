@@ -102,29 +102,48 @@ Fluxo reativo via Riverpod: `Raw Telemetry` → `OperationalStateNormalizer` →
 BusFlow é *persistence-agnostic*. Pode rodar em Supabase, PostgreSQL, SQLite, In-Memory ou qualquer adapter compatível. Infraestrutura não define o domínio.
 
 🧪 **Testes**
-Cobertura de domínio, Engine, Snapshot, Query Services e Widget.
+Suíte rigorosa de automação de QA cobrindo de ponta-a-ponta:
+- Cobertura de 100% no Core Engine e regras de SLA.
+- Testes de **Event Replay** (Event Sourcing integrity).
+- Testes de **Resiliência e Reconexão** Realtime.
+- Testes de **Idempotência** e proteção contra "Poison Pills".
+- Validação de imutabilidade via banco (Postgres Hardening).
 - Execução: `flutter test`
-- Análise: `flutter analyze`
 
 🚀 **Como Executar (Admin Web)**
 ```bash
-flutter run -d chrome -t lib/main_admin.dart --web-port 8080
+flutter run -d chrome -t lib/main.dart --web-port 8080
 ```
 
 🔒 **Segurança**
-- PIN Lock no Admin
-- Forensic Ledger append-only
-- Controle RBAC
-- Segregação de comandos
-- Event logging auditável
+- PIN Lock no Admin via Environment Variables.
+- Forensic Ledger **Append-Only** (RLS Hardening).
+- Snapshot Financeiro Imutável (Revoke Update/Delete).
+- Segregação estrita entre comandos e consultas (CQRS).
 
 📌 **Status do Projeto**
-Produto em evolução contínua com Engine funcional, Snapshot financeiro implementado, camada financeira endurecida e arquitetura soberana validada. **Não é MVP. É fundação de produto enterprise.**
+O BusFlow consolidou sua fundação Enterprise. O sistema possui um **SLA Engine determinístico**, persistência imutável em **PostgreSQL/Supabase** e um pipeline de telemetria com **Idempotência Funcional**. A infraestrutura está preparada para auditoria financeira profissional com 100% de rastreabilidade.
 
 🧭 **Visão de Futuro**
-- Persistência real de snapshots
-- Trend baseado em `statusLastUpdatedAtUtc`
-- Integração GTFS / IoT real
-- APIs B2B
-- Relatórios financeiros exportáveis
-- Integração com ERPs
+- Painel de tendências históricas (Trends) e Analytics preditivo.
+- Integração nativa com protocolos GTFS-Realtime e gateways IoT.
+- Exportação de evidências forenses e relatórios fiscais.
+- APIs B2B para integração direta com ERPs (SAP, Totvs, Oracle).
+- Expansão do sistema de alertas via Webhooks.
+
+📚 **Documentação & Governança do Repositório**
+
+Todo o contexto arquitetural, regras de engenharia e histórico de governança residem duravelmente na pasta `docs/` dentro do próprio repositório. O acesso à documentação é estruturado da seguinte forma:
+
+*   [`docs/architecture/`](./docs/architecture/)
+    *   `01_system_overview.md`
+    *   `02_event_pipeline.md`
+    *   `03_multi_tenant_foundation.md`
+    *   `04_contract_rules_engine.md`
+    *   `05_occ_operational_model.md`
+*   [`docs/governance/`](./docs/governance/)
+    *   `lifecycle_framework.md` (Governança Ágil do Conselho de Engenharia)
+*   [`docs/governance/compliance/`](./docs/governance/compliance/)
+    *   Relatórios de Validação e Auditorias
+*   [`docs/runbooks/`](./docs/runbooks/)
+    *   Procedimentos Operacionais (ex: `operational_testing.md`)

@@ -47,7 +47,8 @@ final operationalControlProvider = Provider<OperationalControlService>((ref) {
     simulation,
     audit,
     ledgerRepo,
-    getOperatorId: () => ref.read(currentOperatorIdProvider),
+    getOperatorId: () =>
+        ref.read(currentOperatorIdProvider) ?? 'unauthenticated',
   );
 });
 

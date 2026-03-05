@@ -9,6 +9,9 @@ enum UserRole {
   /// Mid-level access. Can create incidents, dispatch vehicles, and resolve alerts.
   supervisor,
 
+  /// Read-only access. Financial investigation and metrics. Specific to B2B auditing.
+  systemManager,
+
   /// Base-level access. Can only view the map, alerts, and perform basic trip reporting.
   operator;
 
@@ -16,9 +19,9 @@ enum UserRole {
   bool hasPermission(UserRole requiredRole) {
     switch (requiredRole) {
       case UserRole.operator:
-        return this == UserRole.admin ||
-            this == UserRole.supervisor ||
-            this == UserRole.operator;
+        return true; // Everyone can do what an operator does
+      case UserRole.systemManager:
+        return this == UserRole.admin || this == UserRole.systemManager;
       case UserRole.supervisor:
         return this == UserRole.admin || this == UserRole.supervisor;
       case UserRole.admin:
@@ -33,6 +36,8 @@ enum UserRole {
         return 'Administrador';
       case UserRole.supervisor:
         return 'Supervisor';
+      case UserRole.systemManager:
+        return 'Auditor';
       case UserRole.operator:
         return 'Operador';
     }

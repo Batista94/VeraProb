@@ -182,6 +182,7 @@ class PostgresContractualExecutionStateRepository
   Map<String, dynamic> _mapToDb(ContractualExecutionState state) {
     return {
       'id': state.id,
+      'organization_id': state.organizationId,
       'set_id': state.setId,
       'contract_id': state.contractId,
       'plan_version': state.planVersion,
@@ -209,6 +210,7 @@ class PostgresContractualExecutionStateRepository
   ContractualExecutionState _mapToEntity(Map<String, dynamic> data) {
     return ContractualExecutionState.reconstitute(
       id: data['id'],
+      organizationId: data['organization_id'],
       setId: data['set_id'],
       contractId: data['contract_id'],
       planVersion: data['plan_version'] as int,

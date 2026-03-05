@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/logger_service.dart';
-import 'admin_home.dart'; // Import extracted AdminHome
+import '../../../../core/theme/app_theme.dart';
+import 'admin_home.dart';
 
 class AdminLockScreen extends StatefulWidget {
   const AdminLockScreen({super.key});
@@ -10,26 +12,61 @@ class AdminLockScreen extends StatefulWidget {
 }
 
 class _AdminLockScreenState extends State<AdminLockScreen> {
-  final TextEditingController _pinController = TextEditingController();
-  static const String _adminPin = String.fromEnvironment(
-    'ADMIN_PIN',
-    defaultValue: '1234',
-  );
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final _supabase = Supabase.instance.client;
+
+  bool _isLoading = false;
   String? _error;
 
-  void _verifyPin() {
-    if (_pinController.text == _adminPin) {
-      LoggerService().security('Admin Access Granted');
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const AdminHome()));
-    } else {
-      LoggerService().security('Admin Access Failed: Invalid PIN');
-      setState(() {
-        _error = 'PIN Incorreto';
-        _pinController.clear();
-      });
+  @override
+  void initState() {
+    super.initState();
+    // Auto-login if session already exists
+    _supabase.auth.onAuthStateChange.listen((data) {
+      if (!mounted) return;
+      final session = data.session;
+      if (session != null) {
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const AdminHome()));
+      }
+    });
+  }
+
+  Future<void> _signIn() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Preencha E-mail e Senha');
+      return;
     }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await _supabase.auth.signInWithPassword(email: email, password: password);
+      LoggerService().security('Admin Access Granted via Supabase: $email');
+      // Navigation is handled by onAuthStateChange listener
+    } on AuthException catch (e) {
+      LoggerService().security('Admin Access Failed: ${e.message}');
+      setState(() => _error = 'Credenciais Incorretas');
+    } catch (e) {
+      setState(() => _error = 'Erro interno inesperado');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -51,37 +88,54 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
               const Icon(Icons.security, size: 64, color: Colors.blueGrey),
               const SizedBox(height: 16),
               const Text(
-                'Acesso Restrito',
+                'Autenticação Corporativa',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const Text('Digite o PIN de Administrador'),
+              const Text('Acesse a plataforma de controle'),
               const SizedBox(height: 24),
               TextField(
-                controller: _pinController,
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'E-mail',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
                 obscureText: true,
-                keyboardType: TextInputType.number,
-                maxLength: 4,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 24, letterSpacing: 8),
                 decoration: InputDecoration(
-                  counterText: '',
+                  labelText: 'Senha',
+                  prefixIcon: const Icon(Icons.lock),
                   errorText: _error,
                   border: const OutlineInputBorder(),
                 ),
-                onSubmitted: (_) => _verifyPin(),
+                onSubmitted: (_) => _signIn(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _verifyPin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueGrey,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text('ENTRAR'),
-                ),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                        onPressed: _signIn,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BusFlowColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text(
+                          'ENTRAR',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
               ),
             ],
           ),

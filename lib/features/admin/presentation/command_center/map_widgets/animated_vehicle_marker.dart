@@ -134,7 +134,12 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
 
   @override
   Widget build(BuildContext context) {
-    final markers = widget.states.map((state) {
+    // Filter out invalid or zero coordinates that shouldn't be rendered on the map
+    final validStates = widget.states.where(
+      (s) => s.latitude != 0.0 && s.longitude != 0.0,
+    );
+
+    final markers = validStates.map((state) {
       final animState = _animStates[state.vehicleId];
       final point =
           animState?.currentPoint ?? LatLng(state.latitude, state.longitude);
