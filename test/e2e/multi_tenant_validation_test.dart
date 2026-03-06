@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:busflow/domain/sla_audit/domain_event.dart';
+
 import 'package:busflow/domain/sla_audit/execution_events.dart';
 import 'package:busflow/application/sla_audit/sla_ledger_mapper.dart';
 
@@ -8,10 +7,6 @@ void main() {
   // Scenarios for Multi-Tenant Validation
 
   group('Multi-Tenant Validation Scenarios', () {
-    late SupabaseClient adminClient;
-    late SupabaseClient orgAClient;
-    late SupabaseClient orgBClient;
-
     const orgA = 'org-a-123';
     const orgB = 'org-b-456';
 

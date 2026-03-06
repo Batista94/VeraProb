@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
+import 'investigation_modal.dart';
 
 final _currencyFormat = NumberFormat.currency(
   locale: 'pt_BR',
@@ -105,6 +106,39 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                       ),
                     ],
                   ],
+                ),
+              ),
+            ),
+            // ── Investigation Action ──────────────────────
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: BusFlowColors.border.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    showDialog(
+                      context: context,
+                      builder: (_) => InvestigationModal(
+                        setId: item.setId,
+                        contractId: item.contractId,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.search, size: 16),
+                  label: const Text('Investigar Decisão'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BusFlowColors.secondary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
               ),
             ),

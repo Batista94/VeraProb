@@ -5,12 +5,13 @@ import 'package:busflow/domain/entities/vehicle_operational_state.dart';
 import 'package:busflow/domain/enums/connectivity_state.dart';
 import 'package:busflow/domain/enums/motion_state.dart';
 import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
-import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
-import 'package:busflow/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:busflow/domain/sla_audit/plan_declaration.dart';
+import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
 
 void main() {
   group('Query Services Integration Consistency', () {
@@ -21,10 +22,26 @@ void main() {
         final ledgerRepo = InMemorySlaAuditLedgerRepository();
         final queryService = SlaExecutionQueryServiceInMemory(repo: execRepo);
 
+        final planRepo = InMemoryPlanDeclarationRepository();
         final engine = ContractualEvaluationEngine(
           executionRepo: execRepo,
-          planRepo: PostgresPlanDeclarationRepository(Supabase.instance.client),
+          planRepo: planRepo,
           ledgerRepo: ledgerRepo,
+          traceRepo: InMemoryEvaluationTraceRepository(),
+        );
+
+        await planRepo.save(
+          PlanDeclaration.reconstitute(
+            id: 'plan-xyz',
+            organizationId: 'org-1',
+            contractId: 'contract-x',
+            planVersion: 1,
+            declaredAtUtc: DateTime.utc(2026, 3, 1),
+            declaredByUserId: 'test',
+            originalFileHash: 'hash',
+            services: const [],
+            ruleSnapshot: const RuleSnapshot([]),
+          ),
         );
 
         // 1. Setup pending state

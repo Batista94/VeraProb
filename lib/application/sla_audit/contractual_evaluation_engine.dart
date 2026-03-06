@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:uuid/uuid.dart';
 
 import '../../application/sla_audit/sla_ledger_mapper.dart';
 import '../../domain/entities/vehicle_operational_state.dart';
@@ -11,24 +12,22 @@ import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/rule_snapshot.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import '../../domain/sla_audit/evaluation_trace.dart';
+import '../../domain/sla_audit/evaluation_trace_repository.dart';
+import '../../domain/sla_audit/engine_evaluation_result.dart';
 
 /// Application Service: Reactive evaluation engine for contractual
 /// service execution obligations.
 ///
 /// Connects vehicle telemetry to [ContractualExecutionState] aggregates
 /// via geofence detection and dwell-time validation.
-///
-/// **Intentionally separate from [SituationEngine]** — this engine
-/// evaluates contractual compliance, not operational anomalies.
-///
-/// Does NOT depend on Riverpod. Called externally by a stream subscriber.
 class ContractualEvaluationEngine {
   final ContractualExecutionStateRepository _executionRepo;
   final PlanDeclarationRepository _planRepo;
   final SlaAuditLedgerRepository _ledgerRepo;
+  final EvaluationTraceRepository _traceRepo;
 
-  /// Minimum dwell time inside the geofence before binding (seconds).
-  static const int _minDwellSeconds = 30;
+  static const String currentEngineVersion = 'busflow-core_v3';
 
   /// Tracks when a vehicle first entered a SET's geofence.
   /// Key: setId, Value: first entry timestamp.
@@ -41,9 +40,11 @@ class ContractualEvaluationEngine {
     required ContractualExecutionStateRepository executionRepo,
     required PlanDeclarationRepository planRepo,
     required SlaAuditLedgerRepository ledgerRepo,
+    required EvaluationTraceRepository traceRepo,
   }) : _executionRepo = executionRepo,
        _planRepo = planRepo,
-       _ledgerRepo = ledgerRepo;
+       _ledgerRepo = ledgerRepo,
+       _traceRepo = traceRepo;
 
   Future<RuleSnapshot> _getRuleSnapshot(String contractId, int version) async {
     final cacheKey = '${contractId}_$version';
@@ -58,21 +59,15 @@ class ContractualEvaluationEngine {
 
   // ── Method 1: Process Vehicle Telemetry ─────────────────
 
-  /// Evaluates a single vehicle state against all pending contractual
-  /// obligations. Performs geofence detection and dwell-time binding.
-  ///
-  /// [nowUtc] is injectable for testability. Defaults to current UTC time.
   Future<void> processVehicleState(
     VehicleOperationalState vehicleState, {
     DateTime? nowUtc,
   }) async {
     final now = nowUtc ?? DateTime.now().toUtc();
 
-    // 1. Find all pending execution states in their active window
     final pendingStates = await _executionRepo.findPendingInWindow(now);
     if (pendingStates.isEmpty) return;
 
-    // 2. Filter by vehicle eligibility
     final eligible = pendingStates.where(
       (s) =>
           s.plannedVehicleId == null ||
@@ -82,18 +77,37 @@ class ContractualEvaluationEngine {
     for (final state in eligible) {
       final rules = await _getRuleSnapshot(state.contractId, state.planVersion);
 
-      // Determine dwell requirement dynamically (default 30s)
-      int requiredDwell = _minDwellSeconds;
-      for (final rule in rules.rules) {
+      // Deterministic deterministic execution order
+      final sortedRules = rules.rules.toList()
+        ..sort((a, b) {
+          final cmp = a.evaluationOrder.compareTo(b.evaluationOrder);
+          return cmp != 0 ? cmp : a.ruleId.compareTo(b.ruleId);
+        });
+
+      int requiredDwell = 30; // Default fallback
+      final List<EvaluationDecision> decisions = [];
+
+      for (final rule in sortedRules) {
         if (rule.ruleType == SlaRuleType.minGeofenceCoverage) {
           final dwellParam = rule.config['min_dwell_seconds'];
-          if (dwellParam is int) {
-            requiredDwell = dwellParam;
-          }
+          if (dwellParam is int) requiredDwell = dwellParam;
+
+          decisions.add(
+            EvaluationDecision(
+              ruleId: rule.ruleId,
+              ruleType: rule.ruleType.value,
+              ruleVersion: rule.ruleVersion,
+              rulePriority: rule.evaluationOrder,
+              outcome: 'EVALUATED_DWELL_REQUIREMENT',
+              evidence: {
+                'required_dwell_seconds': requiredDwell,
+                'parameter_source': 'rule_config',
+              },
+            ),
+          );
         }
       }
 
-      // 3. Calculate geofence distance
       final distance = _haversineMeters(
         vehicleState.latitude,
         vehicleState.longitude,
@@ -104,24 +118,17 @@ class ContractualEvaluationEngine {
       final insideGeofence = distance <= state.startRadiusMeters;
 
       if (insideGeofence) {
-        // 4. Track dwell time
         final firstEntry = _firstEntryTimestamps.putIfAbsent(
           state.setId,
           () => now,
         );
-
-        if (now.isBefore(firstEntry)) {
-          // Out of order ping from before first entry. Ignore to avoid breaking dwell.
-          continue;
-        }
+        if (now.isBefore(firstEntry)) continue;
 
         final dwellDuration = now.difference(firstEntry);
 
         if (dwellDuration.inSeconds >= requiredDwell) {
-          // Check status again defensivelly against concurrent evaluations
           if (state.status != ExecutionStatus.pending) continue;
 
-          // 5. Execute binding
           state.bindExecution(
             vehicleId: vehicleState.vehicleId,
             latitude: vehicleState.latitude,
@@ -129,18 +136,27 @@ class ContractualEvaluationEngine {
             timestampUtc: now,
           );
 
-          await _executionRepo.save(state);
+          // Generate outcome decision
+          decisions.add(
+            EvaluationDecision(
+              ruleId: 'engine-core',
+              ruleType: 'BIND_EXECUTION',
+              ruleVersion: 1,
+              rulePriority: 999,
+              outcome: 'PASS',
+              evidence: {
+                'distance_meters': distance,
+                'allowed_radius_meters': state.startRadiusMeters,
+                'actual_dwell_seconds': dwellDuration.inSeconds,
+                'required_dwell_seconds': requiredDwell,
+              },
+            ),
+          );
 
-          for (final event in state.domainEvents) {
-            final entry = SlaLedgerMapper.mapToEntry(event);
-            await _ledgerRepo.append(entry);
-          }
-
+          await _commitEvaluationResults(state, now, decisions);
           _firstEntryTimestamps.remove(state.setId);
         }
       } else {
-        // Vehicle left the geofence — reset dwell timer
-        // Only reset if this is NOT a delayed out-of-order ping from before the first entry
         final firstEntry = _firstEntryTimestamps[state.setId];
         if (firstEntry != null && now.isAfter(firstEntry)) {
           _firstEntryTimestamps.remove(state.setId);
@@ -151,32 +167,102 @@ class ContractualEvaluationEngine {
 
   // ── Method 2: Sweep Expired Obligations ─────────────────
 
-  /// Marks all expired pending obligations as NoShow.
-  ///
-  /// This method does NOT depend on telemetry — it should be called
-  /// periodically by an external scheduler or subscriber.
-  ///
-  /// [nowUtc] is injectable for testability. Defaults to current UTC time.
   Future<void> sweepExpiredObligations({DateTime? nowUtc}) async {
     final now = nowUtc ?? DateTime.now().toUtc();
-
     final expiredStates = await _executionRepo.findExpiredPending(now);
 
     for (final state in expiredStates) {
+      final rules = await _getRuleSnapshot(state.contractId, state.planVersion);
+
+      final sortedRules = rules.rules.toList()
+        ..sort((a, b) {
+          final cmp = a.evaluationOrder.compareTo(b.evaluationOrder);
+          return cmp != 0 ? cmp : a.ruleId.compareTo(b.ruleId);
+        });
+
+      final List<EvaluationDecision> decisions = [];
+      String outcome = 'NO_SHOW_PENALTY';
+      int? penaltyCents;
+
+      for (final rule in sortedRules) {
+        if (rule.ruleType == SlaRuleType.noShowPenalty) {
+          final amount = rule.config['penalty_amount_cents'];
+          if (amount is int) penaltyCents = amount;
+
+          decisions.add(
+            EvaluationDecision(
+              ruleId: rule.ruleId,
+              ruleType: rule.ruleType.value,
+              ruleVersion: rule.ruleVersion,
+              rulePriority: rule.evaluationOrder,
+              outcome: 'PENALTY_ASSESSED',
+              financialImpactCents: penaltyCents,
+              evidence: {'penalty_amount_cents': penaltyCents},
+            ),
+          );
+        }
+      }
+
       state.markNoShow(now);
 
-      await _executionRepo.save(state);
+      decisions.add(
+        EvaluationDecision(
+          ruleId: 'engine-core',
+          ruleType: 'EXPIRATION_SWEEP',
+          ruleVersion: 1,
+          rulePriority: 999,
+          outcome: outcome,
+          evidence: {
+            'scheduled_window_end_utc': state.windowEndUtc.toIso8601String(),
+            'evaluated_at_utc': now.toIso8601String(),
+            'expired_by_seconds': now.difference(state.windowEndUtc).inSeconds,
+          },
+        ),
+      );
 
-      for (final event in state.domainEvents) {
-        final entry = SlaLedgerMapper.mapToEntry(event);
-        await _ledgerRepo.append(entry);
-      }
+      await _commitEvaluationResults(state, now, decisions);
     }
+  }
+
+  // ── Persistence Helper ────────────────────────────────────
+
+  /// Formally constructs the Triplet and routes it to repositories.
+  Future<void> _commitEvaluationResults(
+    ContractualExecutionState state,
+    DateTime now,
+    List<EvaluationDecision> decisions,
+  ) async {
+    await _executionRepo.save(state);
+
+    // ── Pipeline: Ledger first → event_id → Trace ──────────
+    // Persist ledger entries and capture the last event UUID
+    // for causal linkage with the evaluation trace.
+    String? triggeringEventId;
+    for (final event in state.domainEvents) {
+      final entry = SlaLedgerMapper.mapToEntry(event);
+      triggeringEventId = await _ledgerRepo.append(entry);
+    }
+
+    // Construct the investigative trace anchored to the ledger event
+    final trace = EvaluationTrace(
+      id: const Uuid().v4(),
+      organizationId: state.organizationId,
+      entityId: state.setId,
+      triggeringEventId: triggeringEventId ?? 'no-ledger-event',
+      evaluatedAtUtc: now,
+      engineVersion: currentEngineVersion,
+      decisions: decisions,
+    );
+
+    // Form conceptual triplet (Financial Snapshot omitted here as it runs daily)
+    final result = EngineEvaluationResult(executionState: state, trace: trace);
+
+    // Persist trace
+    await _traceRepo.save(result.trace);
   }
 
   // ── Haversine ───────────────────────────────────────────
 
-  /// Distance in metres between two lat/lng points.
   static double _haversineMeters(
     double lat1,
     double lon1,

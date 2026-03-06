@@ -22,7 +22,8 @@ void main() {
     registerFallbackValue(EventType.statusChange);
     registerFallbackValue(TripStatus.enRoute);
     registerFallbackValue(
-      SlaLedgerEntry(organizationId: 'org-1', 
+      SlaLedgerEntry(
+        organizationId: 'org-1',
         type: 'DUMMY',
         contractId: 'N/A',
         planVersion: 0,
@@ -54,7 +55,9 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      when(() => mockLedgerRepo.append(any())).thenAnswer((_) async {});
+      when(
+        () => mockLedgerRepo.append(any()),
+      ).thenAnswer((_) async => 'mock-event-id');
 
       service = SimulationControlService(
         mockSimulation,

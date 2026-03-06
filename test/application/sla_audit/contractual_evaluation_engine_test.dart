@@ -11,6 +11,7 @@ import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 
 void main() {
   // ── Shared fixtures ──────────────────────────────────────
@@ -28,10 +29,12 @@ void main() {
     repo = InMemoryContractualExecutionStateRepository();
     planRepo = InMemoryPlanDeclarationRepository();
     ledger = InMemorySlaAuditLedgerRepository();
+    final traceRepo = InMemoryEvaluationTraceRepository();
     engine = ContractualEvaluationEngine(
       executionRepo: repo,
       planRepo: planRepo,
       ledgerRepo: ledger,
+      traceRepo: traceRepo,
     );
   });
 
@@ -182,6 +185,7 @@ void main() {
     });
 
     test('sweepExpiredObligations marks NoShow correctly', () async {
+      await seedPlan('c-1', 1);
       final state = makeExecState(windowEnd: DateTime.utc(2026, 3, 1, 7, 0));
       await repo.save(state);
 
@@ -312,6 +316,7 @@ void main() {
     test(
       'sweepExpiredObligations is idempotent for prolonged absence',
       () async {
+        await seedPlan('c-1', 1);
         final state = makeExecState(windowEnd: DateTime.utc(2026, 3, 1, 7, 0));
         await repo.save(state);
 

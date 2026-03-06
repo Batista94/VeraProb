@@ -18,20 +18,22 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
     : _client = client ?? supabase;
 
   @override
-  Future<void> append(SlaLedgerEntry entry) async {
-    // We use a simple insert. Postgres handles the bigserial ID.
-    // For idempotency, we rely on the fact that ledger entries are append-only facts.
-    // If a collision detection is needed, we could use a unique constraint on
-    // (type, set_id, occurred_at_utc, contract_id, plan_version).
-    await _client.from('sla_audit_ledger_v2').insert({
-      'organization_id': entry.organizationId,
-      'type': entry.type,
-      'set_id': entry.setId,
-      'contract_id': entry.contractId,
-      'plan_version': entry.planVersion,
-      'payload': entry.payload,
-      'occurred_at_utc': entry.occurredAtUtc.toIso8601String(),
-    });
+  Future<String> append(SlaLedgerEntry entry) async {
+    final response = await _client
+        .from('sla_audit_ledger_v2')
+        .insert({
+          'organization_id': entry.organizationId,
+          'type': entry.type,
+          'set_id': entry.setId,
+          'contract_id': entry.contractId,
+          'plan_version': entry.planVersion,
+          'payload': entry.payload,
+          'occurred_at_utc': entry.occurredAtUtc.toIso8601String(),
+        })
+        .select('id')
+        .single();
+
+    return response['id'] as String;
   }
 
   @override

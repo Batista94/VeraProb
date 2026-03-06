@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../application/sla_audit/projections/sla_execution_item_view.dart';
 import '../../application/sla_audit/contractual_evaluation_engine.dart';
@@ -13,10 +14,13 @@ import '../../domain/sla_audit/contractual_execution_state_repository.dart';
 import '../../domain/sla_audit/execution_status.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import '../../infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import '../../infrastructure/persistence/persistence_mode.dart';
 import '../../infrastructure/persistence/persistence_provider.dart';
 import '../../infrastructure/providers/supabase_provider.dart';
 import '../../infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
+import '../../domain/sla_audit/evaluation_trace_repository.dart';
+import '../../infrastructure/sla_audit/postgres_evaluation_trace_repository.dart';
 import 'fleet_providers.dart';
 import 'sla_financial_providers.dart';
 
@@ -41,6 +45,16 @@ final slaAuditLedgerRepositoryProvider = Provider<SlaAuditLedgerRepository>((
   return ref.watch(persistenceProvider).makeSlaAuditLedgerRepository();
 });
 
+final evaluationTraceRepositoryProvider = Provider<EvaluationTraceRepository>((
+  ref,
+) {
+  final mode = ref.watch(persistenceModeProvider);
+  if (mode == PersistenceMode.postgres) {
+    return PostgresEvaluationTraceRepository(Supabase.instance.client);
+  }
+  return InMemoryEvaluationTraceRepository();
+});
+
 // ── Engine ──────────────────────────────────────────────────
 
 /// FASE 7: Registers the [ContractualEvaluationEngine] in the runtime.
@@ -51,6 +65,7 @@ final contractualEvaluationEngineProvider =
         executionRepo: ref.watch(contractualExecutionStateRepositoryProvider),
         planRepo: ref.watch(planDeclarationRepositoryProvider),
         ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
+        traceRepo: ref.watch(evaluationTraceRepositoryProvider),
       );
     });
 

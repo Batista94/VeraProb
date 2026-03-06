@@ -26,10 +26,16 @@
 - [x] **Implementation:** Basic rules Administration logic (Services).
 - [x] **Validation:** Rule Replay Integrity & Scenario simulations.
 
-## [/] Phase 3: Explainability & Investigation
-- [ ] Modify engine to append `evaluation_trace` JSON to `execution_states` and financial snapshots.
-- [ ] Evolve OCC from Map Monitoring to "Investigation Console".
-- [ ] Build "Timeline Investigation Modal" overlaying telemetry, events, and decision reasoning side-by-side.
+## [x] Phase 3: Explainability & Investigation
+- [x] **Design:** Architectural specification for Evaluation Traces and Investigation Console.
+- [x] **Council Review:** Validate trace schema, OCC integration, and causal linkage.
+- [x] **Infrastructure:** SQL migration for `contractual_evaluation_traces` (append-only, RLS).
+- [x] **Domain:** `EvaluationTrace`, `EvaluationDecision`, `EngineEvaluationResult` entities.
+- [x] **Application:** Refactor `ContractualEvaluationEngine` to emit deterministic traces.
+- [x] **Persistence:** Postgres and In-Memory trace repositories with causal ledger linkage.
+- [x] **Provider:** `evaluationTraceRepositoryProvider` with persistence mode toggle.
+- [x] **Presentation:** OCC `InvestigationModal` with ledger timeline, decision cards, and evidence display.
+- [x] **Validation:** Phase 3 Compliance Review — all 8 tests pass.
 
 ## [ ] Phase 4: Operational Proactivity & Alerts
 - [ ] Define `AlertTriggeredEvent` and create `active_alerts` projection table.

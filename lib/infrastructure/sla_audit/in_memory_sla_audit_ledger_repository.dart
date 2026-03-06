@@ -1,3 +1,4 @@
+import 'package:uuid/uuid.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
 import '../../domain/sla_audit/sla_ledger_entry.dart';
 
@@ -9,9 +10,11 @@ class InMemorySlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   int _nextId = 1;
 
   @override
-  Future<void> append(SlaLedgerEntry entry) async {
+  Future<String> append(SlaLedgerEntry entry) async {
+    final eventId = const Uuid().v4();
     final entryWithId = SlaLedgerEntry(
       id: _nextId++,
+      eventId: eventId,
       organizationId: entry.organizationId,
       type: entry.type,
       setId: entry.setId,
@@ -21,6 +24,7 @@ class InMemorySlaAuditLedgerRepository implements SlaAuditLedgerRepository {
       payload: entry.payload,
     );
     _entries.add(entryWithId);
+    return eventId;
   }
 
   @override

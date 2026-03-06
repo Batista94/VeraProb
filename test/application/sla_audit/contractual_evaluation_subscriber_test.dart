@@ -11,11 +11,15 @@ import 'package:busflow/application/sla_audit/contractual_evaluation_subscriber.
 import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:busflow/domain/sla_audit/plan_declaration.dart';
+import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
 
 void main() {
   // ── Shared fixtures ──────────────────────────────────────
   late InMemoryContractualExecutionStateRepository repo;
   late InMemorySlaAuditLedgerRepository ledger;
+  late InMemoryPlanDeclarationRepository planRepo;
   late ContractualEvaluationEngine engine;
   late StreamController<List<VehicleOperationalState>> streamController;
 
@@ -23,16 +27,47 @@ void main() {
   const geoLng = -46.6333;
   const geoRadius = 100;
 
-  setUp(() {
+  setUp(() async {
     repo = InMemoryContractualExecutionStateRepository();
     ledger = InMemorySlaAuditLedgerRepository();
+    planRepo = InMemoryPlanDeclarationRepository();
     engine = ContractualEvaluationEngine(
       executionRepo: repo,
-      planRepo: InMemoryPlanDeclarationRepository(),
+      planRepo: planRepo,
       ledgerRepo: ledger,
+      traceRepo: InMemoryEvaluationTraceRepository(),
     );
     streamController =
         StreamController<List<VehicleOperationalState>>.broadcast();
+
+    // Default seed
+    // We only need the ruleSnapshot empty for most of these tests
+    await planRepo.save(
+      PlanDeclaration.reconstitute(
+        id: 'plan-123',
+        organizationId: 'org-1',
+        contractId: 'c-1',
+        planVersion: 1,
+        declaredAtUtc: DateTime.utc(2026, 3, 1),
+        declaredByUserId: 'test',
+        originalFileHash: 'hash',
+        services: const [],
+        ruleSnapshot: const RuleSnapshot([]),
+      ),
+    );
+    await planRepo.save(
+      PlanDeclaration.reconstitute(
+        id: 'plan-xyz',
+        organizationId: 'org-1',
+        contractId: 'c-2',
+        planVersion: 1,
+        declaredAtUtc: DateTime.utc(2026, 3, 1),
+        declaredByUserId: 'test',
+        originalFileHash: 'hash',
+        services: const [],
+        ruleSnapshot: const RuleSnapshot([]),
+      ),
+    );
   });
 
   tearDown(() async {

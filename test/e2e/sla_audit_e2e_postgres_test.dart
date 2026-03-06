@@ -22,6 +22,7 @@ import 'package:busflow/infrastructure/sla_audit/postgres_sla_audit_ledger_repos
 import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_snapshot_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 
 // ── Database Integrity Helpers ───────────────────────────
 
@@ -101,6 +102,7 @@ void main() {
       executionRepo: executionRepo,
       planRepo: planRepo,
       ledgerRepo: ledgerRepo,
+      traceRepo: InMemoryEvaluationTraceRepository(),
     );
 
     snapshotGenerator = ContractualFinancialSnapshotGenerator(
