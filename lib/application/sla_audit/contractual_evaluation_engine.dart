@@ -15,6 +15,8 @@ import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
 import '../../domain/sla_audit/evaluation_trace.dart';
 import '../../domain/sla_audit/evaluation_trace_repository.dart';
 import '../../domain/sla_audit/engine_evaluation_result.dart';
+import '../../domain/sla_audit/operational_alert_repository.dart';
+import 'alert_derivation_service.dart';
 
 /// Application Service: Reactive evaluation engine for contractual
 /// service execution obligations.
@@ -26,6 +28,7 @@ class ContractualEvaluationEngine {
   final PlanDeclarationRepository _planRepo;
   final SlaAuditLedgerRepository _ledgerRepo;
   final EvaluationTraceRepository _traceRepo;
+  final OperationalAlertRepository? _alertRepo;
 
   static const String currentEngineVersion = 'busflow-core_v3';
 
@@ -41,10 +44,12 @@ class ContractualEvaluationEngine {
     required PlanDeclarationRepository planRepo,
     required SlaAuditLedgerRepository ledgerRepo,
     required EvaluationTraceRepository traceRepo,
+    OperationalAlertRepository? alertRepo,
   }) : _executionRepo = executionRepo,
        _planRepo = planRepo,
        _ledgerRepo = ledgerRepo,
-       _traceRepo = traceRepo;
+       _traceRepo = traceRepo,
+       _alertRepo = alertRepo;
 
   Future<RuleSnapshot> _getRuleSnapshot(String contractId, int version) async {
     final cacheKey = '${contractId}_$version';
@@ -259,6 +264,20 @@ class ContractualEvaluationEngine {
 
     // Persist trace
     await _traceRepo.save(result.trace);
+
+    // ── Alert Derivation ──────────────────────────────────
+    if (_alertRepo != null) {
+      final alert = AlertDerivationService.deriveFrom(
+        state: state,
+        decisions: decisions,
+        evaluatedAtUtc: now,
+        triggeringEventId: triggeringEventId,
+        traceId: trace.id,
+      );
+      if (alert != null) {
+        await _alertRepo.save(alert);
+      }
+    }
   }
 
   // ── Haversine ───────────────────────────────────────────

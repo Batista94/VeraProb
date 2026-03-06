@@ -37,10 +37,17 @@
 - [x] **Presentation:** OCC `InvestigationModal` with ledger timeline, decision cards, and evidence display.
 - [x] **Validation:** Phase 3 Compliance Review — all 8 tests pass.
 
-## [ ] Phase 4: Operational Proactivity & Alerts
-- [ ] Define `AlertTriggeredEvent` and create `active_alerts` projection table.
-- [ ] Integrate alerts into the OCC sidebar with triage workflows.
-- [ ] Implement realtime notification streams for critical SLA violations.
+## [x] Phase 4: Operational Alerts
+- [x] **Design:** Phase 4 Design Specification for alert derivation, lifecycle, OCC visualization, and storage.
+- [x] **Council Review:** Validate alert model, tenant isolation, and idempotency.
+- [x] **Domain:** `OperationalAlert` entity and `OperationalAlertRepository` interface.
+- [x] **Application:** `AlertDerivationService` and `AlertService` with lifecycle enforcement.
+- [x] **Infrastructure:** SQL migration with UNIQUE idempotency constraint, RLS, and triage indexes.
+- [x] **Infrastructure:** Postgres and In-Memory repository implementations.
+- [x] **Provider:** Alert providers with tenant-scoped queries and `AlertService` provider.
+- [x] **Engine:** Alert derivation wired into `_commitEvaluationResults` pipeline.
+- [x] **Presentation:** OCC `ContractualAlertsPanel` with severity sort, investigation links, and acknowledge.
+- [x] **Validation:** Phase 4 Compliance Review — all 10 tests pass.
 
 ## [ ] Phase 5: Reporting & Financial Exports
 - [ ] Implement async PostgreSQL aggregation pipelines (pg_cron) for monthly compliance and financial exports.

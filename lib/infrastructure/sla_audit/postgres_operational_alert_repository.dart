@@ -1,0 +1,102 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../domain/sla_audit/operational_alert.dart';
+import '../../domain/sla_audit/operational_alert_repository.dart';
+
+/// Postgres implementation of [OperationalAlertRepository] via Supabase.
+class PostgresOperationalAlertRepository implements OperationalAlertRepository {
+  final SupabaseClient _client;
+
+  PostgresOperationalAlertRepository(this._client);
+
+  static const _table = 'operational_alerts';
+
+  @override
+  Future<String> save(OperationalAlert alert) async {
+    final result = await _client
+        .from(_table)
+        .insert({
+          'organization_id': alert.organizationId,
+          'entity_id': alert.entityId,
+          'contract_id': alert.contractId,
+          'alert_type': alert.alertType,
+          'severity': alert.severity,
+          'triggered_at_utc': alert.triggeredAtUtc.toIso8601String(),
+          'triggering_event_id': alert.triggeringEventId,
+          'trace_id': alert.traceId,
+          'context': alert.context,
+          'status': alert.status,
+        })
+        .select('id')
+        .single();
+    return result['id'] as String;
+  }
+
+  @override
+  Future<List<OperationalAlert>> findActive(String organizationId) async {
+    final data = await _client
+        .from(_table)
+        .select()
+        .eq('organization_id', organizationId)
+        .eq('status', 'ACTIVE')
+        .order('severity')
+        .order('triggered_at_utc', ascending: false);
+    return data.map(_fromRow).toList();
+  }
+
+  @override
+  Future<List<OperationalAlert>> findByEntityId(String entityId) async {
+    final data = await _client
+        .from(_table)
+        .select()
+        .eq('entity_id', entityId)
+        .order('triggered_at_utc', ascending: false);
+    return data.map(_fromRow).toList();
+  }
+
+  @override
+  Future<OperationalAlert?> findById(String alertId) async {
+    final data = await _client
+        .from(_table)
+        .select()
+        .eq('id', alertId)
+        .maybeSingle();
+    return data == null ? null : _fromRow(data);
+  }
+
+  @override
+  Future<void> update(OperationalAlert alert) async {
+    await _client
+        .from(_table)
+        .update({
+          'status': alert.status,
+          'acknowledged_at_utc': alert.acknowledgedAtUtc?.toIso8601String(),
+          'acknowledged_by_user_id': alert.acknowledgedByUserId,
+          'resolved_at_utc': alert.resolvedAtUtc?.toIso8601String(),
+        })
+        .eq('id', alert.id);
+  }
+
+  OperationalAlert _fromRow(Map<String, dynamic> row) {
+    return OperationalAlert(
+      id: row['id'] as String,
+      organizationId: row['organization_id'] as String,
+      entityId: row['entity_id'] as String,
+      contractId: row['contract_id'] as String,
+      alertType: row['alert_type'] as String,
+      severity: row['severity'] as String,
+      triggeredAtUtc: DateTime.parse(row['triggered_at_utc'] as String),
+      triggeringEventId: row['triggering_event_id'] as String?,
+      traceId: row['trace_id'] as String?,
+      context: Map<String, dynamic>.from(row['context'] as Map? ?? {}),
+      status: row['status'] as String,
+      acknowledgedAtUtc: row['acknowledged_at_utc'] != null
+          ? DateTime.parse(row['acknowledged_at_utc'] as String)
+          : null,
+      acknowledgedByUserId: row['acknowledged_by_user_id'] as String?,
+      resolvedAtUtc: row['resolved_at_utc'] != null
+          ? DateTime.parse(row['resolved_at_utc'] as String)
+          : null,
+    );
+  }
+}

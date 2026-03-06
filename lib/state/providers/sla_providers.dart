@@ -21,6 +21,9 @@ import '../../infrastructure/providers/supabase_provider.dart';
 import '../../infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
 import '../../domain/sla_audit/evaluation_trace_repository.dart';
 import '../../infrastructure/sla_audit/postgres_evaluation_trace_repository.dart';
+import '../../domain/sla_audit/operational_alert_repository.dart';
+import '../../infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
+import '../../infrastructure/sla_audit/postgres_operational_alert_repository.dart';
 import 'fleet_providers.dart';
 import 'sla_financial_providers.dart';
 
@@ -55,6 +58,16 @@ final evaluationTraceRepositoryProvider = Provider<EvaluationTraceRepository>((
   return InMemoryEvaluationTraceRepository();
 });
 
+final operationalAlertRepositoryProvider = Provider<OperationalAlertRepository>(
+  (ref) {
+    final mode = ref.watch(persistenceModeProvider);
+    if (mode == PersistenceMode.postgres) {
+      return PostgresOperationalAlertRepository(Supabase.instance.client);
+    }
+    return InMemoryOperationalAlertRepository();
+  },
+);
+
 // ── Engine ──────────────────────────────────────────────────
 
 /// FASE 7: Registers the [ContractualEvaluationEngine] in the runtime.
@@ -66,6 +79,7 @@ final contractualEvaluationEngineProvider =
         planRepo: ref.watch(planDeclarationRepositoryProvider),
         ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
         traceRepo: ref.watch(evaluationTraceRepositoryProvider),
+        alertRepo: ref.watch(operationalAlertRepositoryProvider),
       );
     });
 
