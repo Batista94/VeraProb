@@ -7,6 +7,7 @@ import 'timecard_reports_screen.dart';
 import 'command_center/screens/operational_audit_screen.dart';
 import 'screens/sla_audit_screen.dart';
 import 'screens/sla_financial_impact_screen.dart';
+import 'screens/billing_cycle_reports_screen.dart';
 
 class AdminHome extends StatelessWidget {
   const AdminHome({super.key});
@@ -45,6 +46,11 @@ class AdminHome extends StatelessWidget {
           selectedIcon: Icon(Icons.account_balance),
           label: Text('Impacto Financeiro'),
         ),
+        NavigationRailDestination(
+          icon: Icon(Icons.summarize_outlined),
+          selectedIcon: Icon(Icons.summarize),
+          label: Text('Relatórios'),
+        ),
       ],
       children: [
         DashboardScreen(),
@@ -53,6 +59,7 @@ class AdminHome extends StatelessWidget {
         OperationalAuditScreen(),
         SlaAuditScreen(),
         SlaFinancialImpactScreen(),
+        BillingCycleReportsScreen(),
       ],
     );
   }

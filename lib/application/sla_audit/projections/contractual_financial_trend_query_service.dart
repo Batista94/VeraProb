@@ -6,5 +6,8 @@ import 'contractual_financial_trend_point.dart';
 /// grouped by creation date. Does NOT alter any state.
 abstract class ContractualFinancialTrendQueryService {
   /// Returns a chronologically ordered list of daily financial snapshots.
-  Future<List<ContractualFinancialTrendPoint>> getTrend({String? contractId});
+  Future<List<ContractualFinancialTrendPoint>> getTrend({
+    required String organizationId,
+    String? contractId,
+  });
 }

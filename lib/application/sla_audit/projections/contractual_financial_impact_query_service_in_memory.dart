@@ -17,8 +17,14 @@ class ContractualFinancialImpactQueryServiceInMemory
   }) : _snapshotRepo = snapshotRepo;
 
   @override
-  Future<ContractualFinancialImpact> getImpact({String? contractId}) async {
-    final snapshots = await _snapshotRepo.findAll(contractId: contractId);
+  Future<ContractualFinancialImpact> getImpact({
+    required String organizationId,
+    String? contractId,
+  }) async {
+    final snapshots = await _snapshotRepo.findAll(
+      organizationId: organizationId,
+      contractId: contractId,
+    );
 
     if (snapshots.isEmpty) {
       return ContractualFinancialImpact(

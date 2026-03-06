@@ -19,9 +19,13 @@ class ContractualFinancialTrendQueryServiceInMemory
 
   @override
   Future<List<ContractualFinancialTrendPoint>> getTrend({
+    required String organizationId,
     String? contractId,
   }) async {
-    final snapshots = await _snapshotRepo.findAll(contractId: contractId);
+    final snapshots = await _snapshotRepo.findAll(
+      organizationId: organizationId,
+      contractId: contractId,
+    );
 
     if (snapshots.isEmpty) return [];
 

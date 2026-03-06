@@ -25,7 +25,8 @@ void main() {
     double contractualValue = 150.0,
     double noShowPenaltyMultiplier = 1.5,
   }) {
-    return ContractualExecutionState.create(organizationId: 'org-1', 
+    return ContractualExecutionState.create(
+      organizationId: 'org-1',
       setId: setId,
       contractId: contractId,
       planVersion: 1,
@@ -72,7 +73,7 @@ void main() {
     test('getSummary reflects correct counts by status', () async {
       await seedMixedStates();
 
-      final summary = await queryService.getSummary();
+      final summary = await queryService.getSummary(organizationId: 'org-1');
 
       expect(summary.totalPending, 2);
       expect(summary.totalExecuted, 1);
@@ -87,12 +88,18 @@ void main() {
       await repo.save(makeState(setId: 'c1-2', contractId: 'c-1'));
       await repo.save(makeState(setId: 'c2-1', contractId: 'c-2'));
 
-      final summaryC1 = await queryService.getSummary(contractId: 'c-1');
+      final summaryC1 = await queryService.getSummary(
+        organizationId: 'org-1',
+        contractId: 'c-1',
+      );
       expect(summaryC1.totalPending, 2);
       expect(summaryC1.total, 2);
       expect(summaryC1.contractId, 'c-1');
 
-      final summaryC2 = await queryService.getSummary(contractId: 'c-2');
+      final summaryC2 = await queryService.getSummary(
+        organizationId: 'org-1',
+        contractId: 'c-2',
+      );
       expect(summaryC2.totalPending, 1);
       expect(summaryC2.total, 1);
     });
@@ -100,7 +107,10 @@ void main() {
     test('listByStatus returns only matching status', () async {
       await seedMixedStates();
 
-      final pending = await queryService.listByStatus(ExecutionStatus.pending);
+      final pending = await queryService.listByStatus(
+        ExecutionStatus.pending,
+        organizationId: 'org-1',
+      );
       expect(pending, hasLength(2));
       expect(
         pending.every((item) => item.status == ExecutionStatus.pending),
@@ -109,6 +119,7 @@ void main() {
 
       final executed = await queryService.listByStatus(
         ExecutionStatus.executed,
+        organizationId: 'org-1',
       );
       expect(executed, hasLength(1));
       expect(executed.first.setId, 'executed-1');
@@ -138,7 +149,10 @@ void main() {
         ),
       );
 
-      final items = await queryService.listByStatus(ExecutionStatus.pending);
+      final items = await queryService.listByStatus(
+        ExecutionStatus.pending,
+        organizationId: 'org-1',
+      );
 
       expect(items, hasLength(3));
       expect(items[0].setId, 'early');
@@ -151,12 +165,14 @@ void main() {
 
       final noShowItems = await queryService.listByStatus(
         ExecutionStatus.noShow,
+        organizationId: 'org-1',
       );
       expect(noShowItems, hasLength(1));
       expect(noShowItems.first.setId, 'noshow-1');
 
       final gapItems = await queryService.listByStatus(
         ExecutionStatus.evidenceGap,
+        organizationId: 'org-1',
       );
       expect(gapItems, hasLength(1));
       expect(gapItems.first.setId, 'gap-1');
@@ -164,6 +180,7 @@ void main() {
       // Verify read model fields are mapped correctly
       final executedItems = await queryService.listByStatus(
         ExecutionStatus.executed,
+        organizationId: 'org-1',
       );
       final item = executedItems.first;
       expect(item.boundAtUtc, isNotNull);
@@ -217,7 +234,7 @@ void main() {
         gap.markEvidenceGap(DateTime.utc(2026, 3, 1, 6, 45));
         await repo.save(gap);
 
-        final summary = await queryService.getSummary();
+        final summary = await queryService.getSummary(organizationId: 'org-1');
 
         // Verify counters are isolated
         expect(summary.totalPending, 1);

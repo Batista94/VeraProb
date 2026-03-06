@@ -7,8 +7,7 @@ class ErrorBoundary extends StatefulWidget {
   final Widget child;
   final Widget Function(FlutterErrorDetails errorDetails)? errorBuilder;
 
-  const ErrorBoundary({Key? key, required this.child, this.errorBuilder})
-    : super(key: key);
+  const ErrorBoundary({super.key, required this.child, this.errorBuilder});
 
   @override
   State<ErrorBoundary> createState() => _ErrorBoundaryState();
@@ -40,17 +39,17 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
       if (widget.errorBuilder != null) {
         return widget.errorBuilder!(_error!);
       }
-      return _DefaultErrorWidget(error: _error!);
+      return ErrorView(error: _error!);
     }
 
     return widget.child;
   }
 }
 
-class _DefaultErrorWidget extends StatelessWidget {
+class ErrorView extends StatelessWidget {
   final FlutterErrorDetails error;
 
-  const _DefaultErrorWidget({Key? key, required this.error}) : super(key: key);
+  const ErrorView({super.key, required this.error});
 
   @override
   Widget build(BuildContext context) {

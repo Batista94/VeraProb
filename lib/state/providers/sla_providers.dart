@@ -24,6 +24,7 @@ import '../../infrastructure/sla_audit/postgres_evaluation_trace_repository.dart
 import '../../domain/sla_audit/operational_alert_repository.dart';
 import '../../infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
 import '../../infrastructure/sla_audit/postgres_operational_alert_repository.dart';
+import 'auth_providers.dart';
 import 'fleet_providers.dart';
 import 'sla_financial_providers.dart';
 
@@ -122,10 +123,16 @@ final contractualEvaluationSubscriberProvider =
           .positionStream
           .map((positions) => normalizer.normalize(positions, knownStops: []));
 
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) {
+        throw StateError('Organization ID is missing for SLA Subscriber');
+      }
+
       return ContractualEvaluationSubscriber(
         engine: ref.watch(contractualEvaluationEngineProvider),
         vehicleStream: vehicleStream,
         sweepInterval: const Duration(minutes: 1),
+        organizationId: organizationId,
         closingService: ref.watch(contractualFinancialClosingServiceProvider),
       );
     });
@@ -150,8 +157,13 @@ final slaExecutionQueryServiceProvider = Provider<SlaExecutionQueryService>((
 // ── Projections (Read Models) ───────────────────────────────
 
 final slaSummaryProvider = FutureProvider<SlaExecutionSummary>((ref) async {
+  final organizationId = ref.watch(currentOrganizationIdProvider);
+  if (organizationId == null) {
+    return SlaExecutionSummary.empty();
+  }
+
   final service = ref.watch(slaExecutionQueryServiceProvider);
-  return service.getSummary();
+  return service.getSummary(organizationId: organizationId);
 });
 
 final slaExceptionsProvider = FutureProvider<List<SlaExecutionItemView>>((
@@ -159,9 +171,18 @@ final slaExceptionsProvider = FutureProvider<List<SlaExecutionItemView>>((
 ) async {
   final service = ref.watch(slaExecutionQueryServiceProvider);
 
+  final organizationId = ref.watch(currentOrganizationIdProvider);
+  if (organizationId == null) return [];
+
   // We only want exceptions: noShow and evidenceGap
-  final noShows = await service.listByStatus(ExecutionStatus.noShow);
-  final gaps = await service.listByStatus(ExecutionStatus.evidenceGap);
+  final noShows = await service.listByStatus(
+    ExecutionStatus.noShow,
+    organizationId: organizationId,
+  );
+  final gaps = await service.listByStatus(
+    ExecutionStatus.evidenceGap,
+    organizationId: organizationId,
+  );
 
   final all = [...noShows, ...gaps];
 

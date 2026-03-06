@@ -62,7 +62,9 @@ void main() {
         await execRepo.save(state);
 
         // Query verification (Pending)
-        final initialSummary = await queryService.getSummary();
+        final initialSummary = await queryService.getSummary(
+          organizationId: 'org-1',
+        );
         expect(initialSummary.totalPending, 1);
         expect(initialSummary.totalExecuted, 0);
         expect(initialSummary.protectedRevenue, 0.0);
@@ -89,7 +91,9 @@ void main() {
         await engine.processVehicleState(vehicle, nowUtc: t31); // Triggers bind
 
         // 3. Query verification (Executed)
-        final midSummary = await queryService.getSummary();
+        final midSummary = await queryService.getSummary(
+          organizationId: 'org-1',
+        );
         expect(midSummary.totalPending, 0);
         expect(midSummary.totalExecuted, 1);
         expect(midSummary.protectedRevenue, 200.0); // Revenue bound!
@@ -97,6 +101,7 @@ void main() {
 
         final executedList = await queryService.listByStatus(
           ExecutionStatus.executed,
+          organizationId: 'org-1',
         );
         expect(executedList.first.boundVehicleId, 'v-100');
 
@@ -122,7 +127,9 @@ void main() {
         );
 
         // 5. Final Query Verification
-        final finalSummary = await queryService.getSummary();
+        final finalSummary = await queryService.getSummary(
+          organizationId: 'org-1',
+        );
         expect(finalSummary.totalPending, 0);
         expect(finalSummary.totalExecuted, 1);
         expect(finalSummary.totalNoShow, 1);
@@ -131,6 +138,7 @@ void main() {
 
         final noshowList = await queryService.listByStatus(
           ExecutionStatus.noShow,
+          organizationId: 'org-1',
         );
         expect(noshowList.first.setId, 'set-noshow');
 

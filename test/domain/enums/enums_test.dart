@@ -3,8 +3,6 @@ import 'package:busflow/domain/enums/motion_state.dart';
 import 'package:busflow/domain/enums/connectivity_state.dart';
 import 'package:busflow/domain/enums/route_adherence.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
-import 'package:busflow/domain/enums/user_role.dart';
-import 'package:busflow/domain/enums/event_type.dart';
 
 void main() {
   group('Enums Domain Tests', () {

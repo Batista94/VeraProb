@@ -24,21 +24,26 @@ void main() {
     required Money lost,
   }) {
     return ContractualFinancialDailySnapshot.create(
+      organizationId: 'org-1',
       contractId: contractId,
       operationalDateUtc: date,
       operationalTimezone: 'America/Sao_Paulo',
       closedAtUtc: DateTime.utc(2026, 3, 2, 3, 0),
       totalContractedRevenue: total,
       protectedRevenue: protected_,
-      revenueAtRisk: atRisk,
-      lostRevenue: lost,
-      lastLedgerEntryId: 1,
+      revenueAtRisk: const Money(300000), // 30 in risk
+      lostRevenue: const Money(100000), // 10 lost
+      totalObligations: 10,
+      executedCount: 7,
+      noShowCount: 1,
+      evidenceGapCount: 2,
+      lastLedgerEntryId: 100,
     );
   }
 
   group('ContractualFinancialImpactQueryService (snapshot-based)', () {
     test('empty repository returns zero Money values', () async {
-      final impact = await queryService.getImpact();
+      final impact = await queryService.getImpact(organizationId: 'org-1');
 
       expect(impact.totalContractedRevenue, const Money(0));
       expect(impact.protectedRevenue, const Money(0));
@@ -69,7 +74,7 @@ void main() {
         ),
       );
 
-      final impact = await queryService.getImpact();
+      final impact = await queryService.getImpact(organizationId: 'org-1');
 
       // Should return the latest snapshot (March 2nd)
       expect(impact.totalContractedRevenue, Money.fromDouble(2000.0));
@@ -99,10 +104,16 @@ void main() {
         ),
       );
 
-      final impactC1 = await queryService.getImpact(contractId: 'c-1');
+      final impactC1 = await queryService.getImpact(
+        organizationId: 'org-1',
+        contractId: 'c-1',
+      );
       expect(impactC1.totalContractedRevenue, Money.fromDouble(100.0));
 
-      final impactC2 = await queryService.getImpact(contractId: 'c-2');
+      final impactC2 = await queryService.getImpact(
+        organizationId: 'org-1',
+        contractId: 'c-2',
+      );
       expect(impactC2.totalContractedRevenue, Money.fromDouble(500.0));
     });
   });

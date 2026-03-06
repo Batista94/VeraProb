@@ -1,5 +1,4 @@
 import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
-import 'package:busflow/domain/sla_audit/contractual_rule.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:busflow/domain/sla_audit/contractual_plan_declared_event.dart';
 import 'package:busflow/domain/sla_audit/contractual_service_execution.dart';
@@ -46,7 +45,9 @@ void main() {
     String hash = 'abc123hash',
     List<ContractualServiceExecution>? services,
   }) {
-    return PlanDeclaration.create(ruleSnapshot: const RuleSnapshot([]), organizationId: 'org-1', 
+    return PlanDeclaration.create(
+      ruleSnapshot: const RuleSnapshot([]),
+      organizationId: 'org-1',
       contractId: contractId,
       declaredAtUtc: declaredAt ?? DateTime.utc(2026, 2, 25),
       declaredByUserId: userId,

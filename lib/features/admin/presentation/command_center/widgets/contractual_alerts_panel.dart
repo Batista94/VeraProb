@@ -80,7 +80,7 @@ class ContractualAlertsPanel extends ConsumerWidget {
                     height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  error: (_, __) => const Icon(
+                  error: (error, _) => const Icon(
                     Icons.error_outline,
                     color: BusFlowColors.critical,
                     size: 16,

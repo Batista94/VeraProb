@@ -14,6 +14,7 @@ import 'domain_exception.dart';
 /// from the Brazil operational timezone (America/Sao_Paulo).
 class ContractualFinancialDailySnapshot extends Equatable {
   final String id;
+  final String organizationId;
   final String? contractId;
 
   /// Operational day in normalized UTC (00:00Z).
@@ -33,6 +34,11 @@ class ContractualFinancialDailySnapshot extends Equatable {
   final double riskPercentage;
   final double lossPercentage;
 
+  final int totalObligations;
+  final int executedCount;
+  final int noShowCount;
+  final int evidenceGapCount;
+
   /// Causal linkage: The last ledger entry ID considered in this closure.
   /// Proves deterministically the exact boundary of events computed.
   final int? lastLedgerEntryId;
@@ -48,6 +54,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
 
   const ContractualFinancialDailySnapshot._({
     required this.id,
+    required this.organizationId,
     required this.contractId,
     required this.operationalDateUtc,
     required this.operationalTimezone,
@@ -58,6 +65,10 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required this.lostRevenue,
     required this.riskPercentage,
     required this.lossPercentage,
+    required this.totalObligations,
+    required this.executedCount,
+    required this.noShowCount,
+    required this.evidenceGapCount,
     required this.lastLedgerEntryId,
     this.previousSnapshotId,
     this.reprocessingReason,
@@ -69,6 +80,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
   /// Percentages are calculated automatically from the monetary values.
   /// [operationalDateUtc] is normalized to midnight UTC.
   static ContractualFinancialDailySnapshot create({
+    required String organizationId,
     required String? contractId,
     required DateTime operationalDateUtc,
     required String operationalTimezone,
@@ -77,6 +89,10 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required Money protectedRevenue,
     required Money revenueAtRisk,
     required Money lostRevenue,
+    required int totalObligations,
+    required int executedCount,
+    required int noShowCount,
+    required int evidenceGapCount,
     required int? lastLedgerEntryId,
     String? previousSnapshotId,
     String? reprocessingReason,
@@ -105,6 +121,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
 
     return ContractualFinancialDailySnapshot._(
       id: const Uuid().v4(),
+      organizationId: organizationId,
       contractId: contractId,
       operationalDateUtc: normalizedDate,
       operationalTimezone: operationalTimezone,
@@ -115,6 +132,10 @@ class ContractualFinancialDailySnapshot extends Equatable {
       lostRevenue: lostRevenue,
       riskPercentage: riskPercentage,
       lossPercentage: lossPercentage,
+      totalObligations: totalObligations,
+      executedCount: executedCount,
+      noShowCount: noShowCount,
+      evidenceGapCount: evidenceGapCount,
       lastLedgerEntryId: lastLedgerEntryId,
       previousSnapshotId: previousSnapshotId,
       reprocessingReason: reprocessingReason,
@@ -126,6 +147,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
   /// or recalculating percentages.
   factory ContractualFinancialDailySnapshot.reconstitute({
     required String id,
+    required String organizationId,
     required String? contractId,
     required DateTime operationalDateUtc,
     required String operationalTimezone,
@@ -136,6 +158,10 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required Money lostRevenue,
     required double riskPercentage,
     required double lossPercentage,
+    required int totalObligations,
+    required int executedCount,
+    required int noShowCount,
+    required int evidenceGapCount,
     required int? lastLedgerEntryId,
     String? previousSnapshotId,
     String? reprocessingReason,
@@ -143,6 +169,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
   }) {
     return ContractualFinancialDailySnapshot._(
       id: id,
+      organizationId: organizationId,
       contractId: contractId,
       operationalDateUtc: operationalDateUtc,
       operationalTimezone: operationalTimezone,
@@ -153,6 +180,10 @@ class ContractualFinancialDailySnapshot extends Equatable {
       lostRevenue: lostRevenue,
       riskPercentage: riskPercentage,
       lossPercentage: lossPercentage,
+      totalObligations: totalObligations,
+      executedCount: executedCount,
+      noShowCount: noShowCount,
+      evidenceGapCount: evidenceGapCount,
       lastLedgerEntryId: lastLedgerEntryId,
       previousSnapshotId: previousSnapshotId,
       reprocessingReason: reprocessingReason,
@@ -163,6 +194,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    organizationId,
     contractId,
     operationalDateUtc,
     operationalTimezone,
@@ -173,6 +205,10 @@ class ContractualFinancialDailySnapshot extends Equatable {
     lostRevenue,
     riskPercentage,
     lossPercentage,
+    totalObligations,
+    executedCount,
+    noShowCount,
+    evidenceGapCount,
     lastLedgerEntryId,
     previousSnapshotId,
     reprocessingReason,

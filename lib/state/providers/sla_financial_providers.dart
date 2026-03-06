@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/shared/money.dart';
+import 'auth_providers.dart';
 
 import '../../application/sla_audit/projections/contractual_financial_impact.dart';
 import '../../application/sla_audit/projections/contractual_financial_impact_query_service.dart';
@@ -44,8 +46,22 @@ final financialImpactQueryServiceProvider =
 final financialImpactProvider = FutureProvider<ContractualFinancialImpact>((
   ref,
 ) async {
+  final organizationId = ref.watch(currentOrganizationIdProvider);
+  if (organizationId == null) {
+    return ContractualFinancialImpact(
+      contractId: null,
+      generatedAtUtc: DateTime.now().toUtc(),
+      totalContractedRevenue: const Money(0),
+      protectedRevenue: const Money(0),
+      revenueAtRisk: const Money(0),
+      lostRevenue: const Money(0),
+      riskPercentage: 0.0,
+      lossPercentage: 0.0,
+    );
+  }
+
   final service = ref.watch(financialImpactQueryServiceProvider);
-  return service.getImpact();
+  return service.getImpact(organizationId: organizationId);
 });
 
 final financialTrendQueryServiceProvider =

@@ -26,21 +26,26 @@ void main() {
     required Money lost,
   }) {
     return ContractualFinancialDailySnapshot.create(
+      organizationId: 'org-1',
       contractId: contractId,
       operationalDateUtc: date,
       operationalTimezone: 'America/Sao_Paulo',
       closedAtUtc: DateTime.utc(2026, 3, 2, 3, 0),
       totalContractedRevenue: total,
       protectedRevenue: protected_,
-      revenueAtRisk: atRisk,
-      lostRevenue: lost,
-      lastLedgerEntryId: 1,
+      revenueAtRisk: const Money(1000),
+      lostRevenue: const Money(500),
+      totalObligations: 10,
+      executedCount: 8,
+      noShowCount: 1,
+      evidenceGapCount: 1,
+      lastLedgerEntryId: 100,
     );
   }
 
   group('ContractualFinancialTrendQueryService (snapshot-based)', () {
     test('empty repository returns empty list', () async {
-      final trend = await queryService.getTrend();
+      final trend = await queryService.getTrend(organizationId: 'org-1');
       expect(trend, isEmpty);
     });
 
@@ -55,7 +60,7 @@ void main() {
         ),
       );
 
-      final trend = await queryService.getTrend();
+      final trend = await queryService.getTrend(organizationId: 'org-1');
       expect(trend, hasLength(1));
 
       final point = trend.first;
@@ -85,7 +90,7 @@ void main() {
         ),
       );
 
-      final trend = await queryService.getTrend();
+      final trend = await queryService.getTrend(organizationId: 'org-1');
       expect(trend, hasLength(2));
       expect(trend[0].formattedDate, '01/03/2026');
       expect(trend[1].formattedDate, '02/03/2026');
@@ -114,7 +119,10 @@ void main() {
         ),
       );
 
-      final trendC1 = await queryService.getTrend(contractId: 'c-1');
+      final trendC1 = await queryService.getTrend(
+        organizationId: 'org-1',
+        contractId: 'c-1',
+      );
       expect(trendC1, hasLength(1));
       expect(trendC1.first.totalContractedRevenue, Money.fromDouble(100.0));
     });

@@ -25,6 +25,7 @@ class ContractualEvaluationSubscriber {
   final ContractualEvaluationEngine _engine;
   final Stream<List<VehicleOperationalState>> _vehicleStream;
   final Duration _sweepInterval;
+  final String organizationId;
   final ContractualFinancialClosingService? _closingService;
 
   StreamSubscription<List<VehicleOperationalState>>? _subscription;
@@ -34,6 +35,7 @@ class ContractualEvaluationSubscriber {
     required ContractualEvaluationEngine engine,
     required Stream<List<VehicleOperationalState>> vehicleStream,
     required Duration sweepInterval,
+    required this.organizationId,
     ContractualFinancialClosingService? closingService,
   }) : _engine = engine,
        _vehicleStream = vehicleStream,
@@ -101,9 +103,10 @@ class ContractualEvaluationSubscriber {
       }
     }
 
-    // Financial closing — non-blocking, errors logged
     try {
-      await _closingService?.onTick();
+      if (_closingService != null) {
+        await _closingService.onTick(organizationId);
+      }
     } catch (e) {
       if (kDebugMode) {
         print('[SLA SUBSCRIBER] Error during financial closing: $e');

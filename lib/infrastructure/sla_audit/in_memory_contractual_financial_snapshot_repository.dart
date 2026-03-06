@@ -16,9 +16,12 @@ class InMemoryContractualFinancialSnapshotRepository
 
   @override
   Future<List<ContractualFinancialDailySnapshot>> findAll({
+    required String organizationId,
     String? contractId,
   }) async {
-    final snapshots = _store.values.toList();
+    final snapshots = _store.values
+        .where((s) => s.organizationId == organizationId)
+        .toList();
 
     // Identify superseded snapshots (those referenced by another snapshot's previousSnapshotId)
     final supersededIds = snapshots
@@ -36,7 +39,26 @@ class InMemoryContractualFinancialSnapshotRepository
   }
 
   @override
+  Future<List<ContractualFinancialDailySnapshot>> findByDateRange({
+    required String organizationId,
+    required DateTime startUtc,
+    required DateTime endUtc,
+    String? contractId,
+  }) async {
+    final active = await findAll(
+      organizationId: organizationId,
+      contractId: contractId,
+    );
+    return active.where((s) {
+      final date = s.operationalDateUtc;
+      return (date.isAtSameMomentAs(startUtc) || date.isAfter(startUtc)) &&
+          (date.isAtSameMomentAs(endUtc) || date.isBefore(endUtc));
+    }).toList();
+  }
+
+  @override
   Future<bool> existsForDate(
+    String organizationId,
     DateTime operationalDateUtc, {
     String? contractId,
   }) async {
@@ -45,7 +67,10 @@ class InMemoryContractualFinancialSnapshotRepository
       operationalDateUtc.month,
       operationalDateUtc.day,
     );
-    final active = await findAll(contractId: contractId);
+    final active = await findAll(
+      organizationId: organizationId,
+      contractId: contractId,
+    );
     return active.any((s) => s.operationalDateUtc == normalizedDate);
   }
 }

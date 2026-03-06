@@ -32,21 +32,21 @@ void main() {
     test(
       'first onTick records current day without generating snapshot',
       () async {
-        await closingService.onTick();
+        await closingService.onTick('org-1');
 
         expect(closingService.lastClosedOperationalDateUtc, isNotNull);
 
-        final snapshots = await snapshotRepo.findAll();
+        final snapshots = await snapshotRepo.findAll(organizationId: 'org-1');
         expect(snapshots, isEmpty);
       },
     );
 
     test('subsequent onTick on same day does not generate snapshot', () async {
-      await closingService.onTick();
-      await closingService.onTick();
-      await closingService.onTick();
+      await closingService.onTick('org-1');
+      await closingService.onTick('org-1');
+      await closingService.onTick('org-1');
 
-      final snapshots = await snapshotRepo.findAll();
+      final snapshots = await snapshotRepo.findAll(organizationId: 'org-1');
       expect(snapshots, isEmpty);
     });
 

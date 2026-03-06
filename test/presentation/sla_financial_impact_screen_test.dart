@@ -15,7 +15,10 @@ class FakeFinancialImpactQueryService
   FakeFinancialImpactQueryService(this._impact);
 
   @override
-  Future<ContractualFinancialImpact> getImpact({String? contractId}) async {
+  Future<ContractualFinancialImpact> getImpact({
+    required String organizationId,
+    String? contractId,
+  }) async {
     return _impact;
   }
 }
@@ -23,7 +26,10 @@ class FakeFinancialImpactQueryService
 class ErrorFinancialImpactQueryService
     implements ContractualFinancialImpactQueryService {
   @override
-  Future<ContractualFinancialImpact> getImpact({String? contractId}) async {
+  Future<ContractualFinancialImpact> getImpact({
+    required String organizationId,
+    String? contractId,
+  }) async {
     throw Exception('Falha de conexão');
   }
 }

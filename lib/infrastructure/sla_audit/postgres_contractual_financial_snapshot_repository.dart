@@ -22,6 +22,7 @@ class PostgresContractualFinancialSnapshotRepository
   Future<void> save(ContractualFinancialDailySnapshot snapshot) async {
     await _client.from('contractual_financial_snapshot').insert({
       'id': snapshot.id,
+      'organization_id': snapshot.organizationId,
       'contract_id': snapshot.contractId,
       'operational_date_utc': snapshot.operationalDateUtc.toIso8601String(),
       'operational_timezone': snapshot.operationalTimezone,
@@ -32,6 +33,10 @@ class PostgresContractualFinancialSnapshotRepository
       'lost_revenue_cents': snapshot.lostRevenue.cents,
       'risk_percentage': snapshot.riskPercentage,
       'loss_percentage': snapshot.lossPercentage,
+      'total_obligations': snapshot.totalObligations,
+      'executed_count': snapshot.executedCount,
+      'no_show_count': snapshot.noShowCount,
+      'evidence_gap_count': snapshot.evidenceGapCount,
       'last_ledger_entry_id': snapshot.lastLedgerEntryId,
       'previous_snapshot_id': snapshot.previousSnapshotId,
       'reprocessing_reason': snapshot.reprocessingReason,
@@ -41,9 +46,13 @@ class PostgresContractualFinancialSnapshotRepository
 
   @override
   Future<List<ContractualFinancialDailySnapshot>> findAll({
+    required String organizationId,
     String? contractId,
   }) async {
-    var query = _client.from('contractual_financial_snapshot').select();
+    var query = _client
+        .from('contractual_financial_snapshot')
+        .select()
+        .eq('organization_id', organizationId);
 
     if (contractId != null) {
       query = query.eq('contract_id', contractId);
@@ -62,7 +71,38 @@ class PostgresContractualFinancialSnapshotRepository
   }
 
   @override
+  Future<List<ContractualFinancialDailySnapshot>> findByDateRange({
+    required String organizationId,
+    required DateTime startUtc,
+    required DateTime endUtc,
+    String? contractId,
+  }) async {
+    var query = _client
+        .from('contractual_financial_snapshot')
+        .select()
+        .eq('organization_id', organizationId)
+        .gte('operational_date_utc', startUtc.toIso8601String())
+        .lte('operational_date_utc', endUtc.toIso8601String());
+
+    if (contractId != null) {
+      query = query.eq('contract_id', contractId);
+    }
+
+    final response = await query;
+    final snapshots = (response as List).map((row) => _mapRow(row)).toList();
+
+    // Redundant but safe: ensure we only return active snapshots even in date ranges
+    final supersededIds = snapshots
+        .where((s) => s.previousSnapshotId != null)
+        .map((s) => s.previousSnapshotId!)
+        .toSet();
+
+    return snapshots.where((s) => !supersededIds.contains(s.id)).toList();
+  }
+
+  @override
   Future<bool> existsForDate(
+    String organizationId,
     DateTime operationalDateUtc, {
     String? contractId,
   }) async {
@@ -73,13 +113,17 @@ class PostgresContractualFinancialSnapshotRepository
     );
 
     // An automated snapshot should not be generated if an ACTIVE snapshot exists for this date.
-    final allActive = await findAll(contractId: contractId);
+    final allActive = await findAll(
+      organizationId: organizationId,
+      contractId: contractId,
+    );
     return allActive.any((s) => s.operationalDateUtc == normalizedDate);
   }
 
   ContractualFinancialDailySnapshot _mapRow(Map<String, dynamic> row) {
     return ContractualFinancialDailySnapshot.reconstitute(
       id: row['id'] as String,
+      organizationId: row['organization_id'] as String,
       contractId: row['contract_id'] as String?,
       operationalDateUtc: DateTime.parse(row['operational_date_utc'] as String),
       operationalTimezone: row['operational_timezone'] as String,
@@ -92,6 +136,10 @@ class PostgresContractualFinancialSnapshotRepository
       lostRevenue: Money(row['lost_revenue_cents'] as int),
       riskPercentage: (row['risk_percentage'] as num).toDouble(),
       lossPercentage: (row['loss_percentage'] as num).toDouble(),
+      totalObligations: row['total_obligations'] as int,
+      executedCount: row['executed_count'] as int,
+      noShowCount: row['no_show_count'] as int,
+      evidenceGapCount: row['evidence_gap_count'] as int,
       lastLedgerEntryId: row['last_ledger_entry_id'] != null
           ? row['last_ledger_entry_id'] as int
           : null,

@@ -12,8 +12,13 @@ class ContractualFinancialImpactQueryServicePostgres
   ContractualFinancialImpactQueryServicePostgres(this._client);
 
   @override
-  Future<ContractualFinancialImpact> getImpact({String? contractId}) async {
+  Future<ContractualFinancialImpact> getImpact({
+    required String organizationId,
+    String? contractId,
+  }) async {
     var query = _client.from('contractual_financial_snapshot').select();
+
+    query = query.eq('organization_id', organizationId);
 
     if (contractId != null) {
       query = query.eq('contract_id', contractId);

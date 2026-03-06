@@ -316,12 +316,16 @@ void main() {
 
       // Run daily closure manually for the test date
       await snapshotGenerator.generateDailySnapshot(
+        'org-1',
         operationalDateUtc,
         contractId: contractId,
       );
 
       // Check repo
-      final snapshots = await snapshotRepo.findAll(contractId: contractId);
+      final snapshots = await snapshotRepo.findAll(
+        organizationId: 'org-1',
+        contractId: contractId,
+      );
       expect(snapshots.length, 1, reason: 'Exactly 1 active snapshot created');
 
       final snap = snapshots.first;
@@ -349,6 +353,7 @@ void main() {
 
       // Reprocess explicitly
       await snapshotGenerator.reprocessDailySnapshot(
+        'org-1',
         operationalDateUtc,
         contractId: contractId,
         previousSnapshotId: originalSnapshotId!,
@@ -358,6 +363,7 @@ void main() {
 
       // Repo should STILL only return 1 active snapshot
       final activeSnapshots = await snapshotRepo.findAll(
+        organizationId: 'org-1',
         contractId: contractId,
       );
       expect(
@@ -433,6 +439,7 @@ void main() {
     test('Stage 7 — E2E UI Dashboard Query Coverage', () async {
       // 1. Verify SLA Execution Item projections
       final summary = await executionQueryService.getSummary(
+        organizationId: 'org-1',
         contractId: contractId,
       );
 
@@ -443,12 +450,16 @@ void main() {
 
       final executedList = await executionQueryService.listByStatus(
         ExecutionStatus.executed,
+        organizationId: 'org-1',
         contractId: contractId,
       );
       expect(executedList.first.boundVehicleId, vehicleId);
 
       // 2. Verify Financial Impact projections
-      final impact = await impactQueryService.getImpact(contractId: contractId);
+      final impact = await impactQueryService.getImpact(
+        organizationId: 'org-1',
+        contractId: contractId,
+      );
 
       expect(
         impact.protectedRevenue.cents,

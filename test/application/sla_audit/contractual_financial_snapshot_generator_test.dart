@@ -39,7 +39,8 @@ void main() {
     required DateTime windowStart,
     required DateTime windowEnd,
   }) {
-    return ContractualExecutionState.create(organizationId: 'org-1', 
+    return ContractualExecutionState.create(
+      organizationId: 'org-1',
       setId: setId,
       contractId: contractId,
       planVersion: 1,
@@ -55,9 +56,9 @@ void main() {
 
   group('ContractualFinancialSnapshotGenerator', () {
     test('empty repo generates snapshot with zero values', () async {
-      await generator.generateDailySnapshot(DateTime.utc(2026, 3, 1));
+      await generator.generateDailySnapshot('org-1', DateTime.utc(2026, 3, 1));
 
-      final snapshots = await snapshotRepo.findAll();
+      final snapshots = await snapshotRepo.findAll(organizationId: 'org-1');
       expect(snapshots, hasLength(1));
 
       final s = snapshots.first;
@@ -83,9 +84,9 @@ void main() {
       );
       await executionRepo.save(exec);
 
-      await generator.generateDailySnapshot(DateTime.utc(2026, 3, 1));
+      await generator.generateDailySnapshot('org-1', DateTime.utc(2026, 3, 1));
 
-      final snapshots = await snapshotRepo.findAll();
+      final snapshots = await snapshotRepo.findAll(organizationId: 'org-1');
       expect(snapshots, hasLength(1));
       expect(snapshots.first.protectedRevenue, Money.fromDouble(500.0));
     });
@@ -127,9 +128,9 @@ void main() {
       noShow.markNoShow(DateTime.utc(2026, 3, 1, 14, 1));
       await executionRepo.save(noShow);
 
-      await generator.generateDailySnapshot(DateTime.utc(2026, 3, 1));
+      await generator.generateDailySnapshot('org-1', DateTime.utc(2026, 3, 1));
 
-      final snapshots = await snapshotRepo.findAll();
+      final snapshots = await snapshotRepo.findAll(organizationId: 'org-1');
       expect(snapshots, hasLength(1));
 
       final s = snapshots.first;
@@ -149,10 +150,10 @@ void main() {
         ),
       );
 
-      await generator.generateDailySnapshot(DateTime.utc(2026, 3, 1));
-      await generator.generateDailySnapshot(DateTime.utc(2026, 3, 1));
+      await generator.generateDailySnapshot('org-1', DateTime.utc(2026, 3, 1));
+      await generator.generateDailySnapshot('org-1', DateTime.utc(2026, 3, 1));
 
-      final snapshots = await snapshotRepo.findAll();
+      final snapshots = await snapshotRepo.findAll(organizationId: 'org-1');
       expect(snapshots, hasLength(1));
     });
 
@@ -177,11 +178,15 @@ void main() {
       );
 
       await generator.generateDailySnapshot(
+        'org-1',
         DateTime.utc(2026, 3, 1),
         contractId: 'c-1',
       );
 
-      final snapshots = await snapshotRepo.findAll(contractId: 'c-1');
+      final snapshots = await snapshotRepo.findAll(
+        organizationId: 'org-1',
+        contractId: 'c-1',
+      );
       expect(snapshots, hasLength(1));
       expect(snapshots.first.totalContractedRevenue, Money.fromDouble(100.0));
     });

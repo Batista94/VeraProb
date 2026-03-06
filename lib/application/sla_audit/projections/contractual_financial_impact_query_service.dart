@@ -6,5 +6,8 @@ import 'contractual_financial_impact.dart';
 /// aggregates. Does NOT alter any state.
 abstract class ContractualFinancialImpactQueryService {
   /// Returns the financial impact summary, optionally filtered by contract.
-  Future<ContractualFinancialImpact> getImpact({String? contractId});
+  Future<ContractualFinancialImpact> getImpact({
+    required String organizationId,
+    String? contractId,
+  });
 }

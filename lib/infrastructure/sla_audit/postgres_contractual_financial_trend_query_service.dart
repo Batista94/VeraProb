@@ -15,9 +15,12 @@ class ContractualFinancialTrendQueryServicePostgres
 
   @override
   Future<List<ContractualFinancialTrendPoint>> getTrend({
+    required String organizationId,
     String? contractId,
   }) async {
     var query = _client.from('contractual_financial_snapshot').select();
+
+    query = query.eq('organization_id', organizationId);
 
     if (contractId != null) {
       query = query.eq('contract_id', contractId);

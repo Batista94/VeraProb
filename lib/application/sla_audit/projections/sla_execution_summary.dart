@@ -29,6 +29,14 @@ class SlaExecutionSummary extends Equatable {
     this.lostRevenue = 0.0,
   });
 
+  factory SlaExecutionSummary.empty() => SlaExecutionSummary(
+    totalPending: 0,
+    totalExecuted: 0,
+    totalNoShow: 0,
+    totalEvidenceGap: 0,
+    generatedAtUtc: DateTime.now().toUtc(),
+  );
+
   int get total =>
       totalPending + totalExecuted + totalNoShow + totalEvidenceGap;
 

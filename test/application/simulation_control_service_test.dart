@@ -64,6 +64,7 @@ void main() {
         mockAudit,
         mockLedgerRepo,
         getOperatorId: () => 'test_operator',
+        getOrganizationId: () => 'org-1',
       );
     });
 

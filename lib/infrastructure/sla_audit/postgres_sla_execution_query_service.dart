@@ -13,10 +13,14 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
   SlaExecutionQueryServicePostgres(this._client);
 
   @override
-  Future<SlaExecutionSummary> getSummary({String? contractId}) async {
+  Future<SlaExecutionSummary> getSummary({
+    required String organizationId,
+    String? contractId,
+  }) async {
     var query = _client
         .from('execution_states')
-        .select('status, contractual_value, no_show_penalty_multiplier');
+        .select('status, contractual_value, no_show_penalty_multiplier')
+        .eq('organization_id', organizationId);
 
     if (contractId != null) {
       query = query.eq('contract_id', contractId);
@@ -69,11 +73,13 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
   @override
   Future<List<SlaExecutionItemView>> listByStatus(
     ExecutionStatus status, {
+    required String organizationId,
     String? contractId,
   }) async {
     var query = _client
         .from('execution_states')
         .select()
+        .eq('organization_id', organizationId)
         .eq('status', status.name);
 
     if (contractId != null) {

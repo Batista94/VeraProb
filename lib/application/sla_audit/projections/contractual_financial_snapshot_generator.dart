@@ -34,6 +34,7 @@ class ContractualFinancialSnapshotGenerator {
   /// [operationalDateUtc] must be a normalized UTC date (00:00Z).
   /// If a snapshot already exists for this date, this is a no-op (idempotent).
   Future<void> generateDailySnapshot(
+    String organizationId,
     DateTime operationalDateUtc, {
     String? contractId,
   }) async {
@@ -45,6 +46,7 @@ class ContractualFinancialSnapshotGenerator {
 
     // Idempotency check
     final exists = await _snapshotRepo.existsForDate(
+      organizationId,
       normalizedDate,
       contractId: contractId,
     );
@@ -60,11 +62,16 @@ class ContractualFinancialSnapshotGenerator {
       return BrazilTime.isSameOperationalDay(s.windowStartUtc, normalizedDate);
     }).toList();
 
-    // Accumulate using Money exclusively
+    // Accumulate metrics
     Money totalContractedRevenue = const Money(0);
     Money protectedRevenue = const Money(0);
     Money revenueAtRisk = const Money(0);
     Money lostRevenue = const Money(0);
+
+    int totalObligations = dayStates.length;
+    int executedCount = 0;
+    int noShowCount = 0;
+    int evidenceGapCount = 0;
 
     for (final s in dayStates) {
       final value = Money.fromDouble(s.contractualValue);
@@ -76,18 +83,22 @@ class ContractualFinancialSnapshotGenerator {
           break;
         case ExecutionStatus.executed:
           protectedRevenue = protectedRevenue + value;
+          executedCount++;
           break;
         case ExecutionStatus.noShow:
           lostRevenue = lostRevenue + (value * s.noShowPenaltyMultiplier);
+          noShowCount++;
           break;
         case ExecutionStatus.evidenceGap:
           revenueAtRisk = revenueAtRisk + value;
+          evidenceGapCount++;
           break;
       }
     }
 
     // Create and persist snapshot
     final snapshot = ContractualFinancialDailySnapshot.create(
+      organizationId: organizationId,
       contractId: contractId,
       operationalDateUtc: normalizedDate,
       operationalTimezone: BrazilTime.operationalTimezone,
@@ -96,6 +107,10 @@ class ContractualFinancialSnapshotGenerator {
       protectedRevenue: protectedRevenue,
       revenueAtRisk: revenueAtRisk,
       lostRevenue: lostRevenue,
+      totalObligations: totalObligations,
+      executedCount: executedCount,
+      noShowCount: noShowCount,
+      evidenceGapCount: evidenceGapCount,
       lastLedgerEntryId: await _ledgerRepo.getLastEntryId(),
     );
 
@@ -105,6 +120,7 @@ class ContractualFinancialSnapshotGenerator {
   /// Manually reprocesses a financial snapshot for a given operational date.
   /// Generates a new snapshot that explicitly supersedes the active one.
   Future<void> reprocessDailySnapshot(
+    String organizationId,
     DateTime operationalDateUtc, {
     required String previousSnapshotId,
     required String reprocessingReason,
@@ -130,6 +146,11 @@ class ContractualFinancialSnapshotGenerator {
     Money revenueAtRisk = const Money(0);
     Money lostRevenue = const Money(0);
 
+    int totalObligations = dayStates.length;
+    int executedCount = 0;
+    int noShowCount = 0;
+    int evidenceGapCount = 0;
+
     for (final s in dayStates) {
       final value = Money.fromDouble(s.contractualValue);
       totalContractedRevenue = totalContractedRevenue + value;
@@ -140,17 +161,21 @@ class ContractualFinancialSnapshotGenerator {
           break;
         case ExecutionStatus.executed:
           protectedRevenue = protectedRevenue + value;
+          executedCount++;
           break;
         case ExecutionStatus.noShow:
           lostRevenue = lostRevenue + (value * s.noShowPenaltyMultiplier);
+          noShowCount++;
           break;
         case ExecutionStatus.evidenceGap:
           revenueAtRisk = revenueAtRisk + value;
+          evidenceGapCount++;
           break;
       }
     }
 
     final snapshot = ContractualFinancialDailySnapshot.create(
+      organizationId: organizationId,
       contractId: contractId,
       operationalDateUtc: normalizedDate,
       operationalTimezone: BrazilTime.operationalTimezone,
@@ -159,6 +184,10 @@ class ContractualFinancialSnapshotGenerator {
       protectedRevenue: protectedRevenue,
       revenueAtRisk: revenueAtRisk,
       lostRevenue: lostRevenue,
+      totalObligations: totalObligations,
+      executedCount: executedCount,
+      noShowCount: noShowCount,
+      evidenceGapCount: evidenceGapCount,
       lastLedgerEntryId: await _ledgerRepo.getLastEntryId(),
       previousSnapshotId: previousSnapshotId,
       reprocessingReason: reprocessingReason,

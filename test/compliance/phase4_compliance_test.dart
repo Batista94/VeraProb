@@ -10,7 +10,6 @@ import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
 import 'package:busflow/domain/sla_audit/plan_declaration.dart';
 import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
-import 'package:busflow/domain/sla_audit/evaluation_trace.dart';
 import 'package:busflow/domain/sla_audit/operational_alert.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';

@@ -122,6 +122,7 @@ void main() {
         engine: engine,
         vehicleStream: streamController.stream,
         sweepInterval: const Duration(minutes: 10),
+        organizationId: 'org-1',
       );
 
       await subscriber.start();
@@ -149,6 +150,7 @@ void main() {
         engine: engine,
         vehicleStream: streamController.stream,
         sweepInterval: const Duration(minutes: 10),
+        organizationId: 'org-1',
       );
 
       await subscriber.start();
@@ -191,6 +193,7 @@ void main() {
         engine: engine,
         vehicleStream: streamController.stream,
         sweepInterval: const Duration(milliseconds: 100),
+        organizationId: 'org-1',
       );
 
       await subscriber.start();
@@ -209,6 +212,7 @@ void main() {
         engine: engine,
         vehicleStream: streamController.stream,
         sweepInterval: const Duration(minutes: 10),
+        organizationId: 'org-1',
       );
 
       await subscriber.start();
@@ -229,6 +233,7 @@ void main() {
         engine: engine,
         vehicleStream: streamController.stream,
         sweepInterval: const Duration(minutes: 10),
+        organizationId: 'org-1',
       );
 
       await subscriber.start();
@@ -255,6 +260,7 @@ void main() {
         engine: engine,
         vehicleStream: streamController.stream,
         sweepInterval: const Duration(minutes: 10),
+        organizationId: 'org-1',
       );
 
       await subscriber.start();
@@ -273,11 +279,11 @@ void main() {
     });
 
     test('ignores duplicate telemetry to avoid redundant processing', () async {
-      await repo.save(makeExecState());
       final subscriber = ContractualEvaluationSubscriber(
         engine: engine,
         vehicleStream: streamController.stream,
         sweepInterval: const Duration(minutes: 10),
+        organizationId: 'org-1',
       );
       await subscriber.start();
 

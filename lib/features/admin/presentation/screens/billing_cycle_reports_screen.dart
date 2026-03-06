@@ -1,0 +1,218 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../../../features/shared/providers/reporting_providers.dart';
+import '../../../../domain/sla_audit/billing_cycle_report.dart';
+
+class BillingCycleReportsScreen extends ConsumerStatefulWidget {
+  const BillingCycleReportsScreen({super.key});
+
+  @override
+  ConsumerState<BillingCycleReportsScreen> createState() =>
+      _BillingCycleReportsScreenState();
+}
+
+class _BillingCycleReportsScreenState
+    extends ConsumerState<BillingCycleReportsScreen> {
+  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
+  DateTime _endDate = DateTime.now();
+  String? _selectedContractId;
+  bool _isLoading = false;
+  BillingCycleReport? _report;
+
+  Future<void> _generateReport() async {
+    setState(() => _isLoading = true);
+    try {
+      final report = await ref
+          .read(reportingServiceProvider)
+          .generateBillingCycleReport(
+            organizationId: 'org-1', // Mock or get from auth
+            periodStartUtc: _startDate,
+            periodEndUtc: _endDate,
+            contractId: _selectedContractId,
+          );
+      setState(() => _report = report);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _exportCsv() async {
+    if (_report == null) return;
+    final csv = ref.read(exportServiceProvider).generateCsv(_report!);
+
+    // In a real app, use share_plus or similar to save the file.
+    // For now, we simulate success and log the size.
+    debugPrint('CSV Exportado: ${csv.length} bytes');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Relatório CSV preparado (${csv.length} bytes)')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Relatórios de Ciclo de Faturamento')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildFilters(),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_report != null)
+              Expanded(child: _buildReportView())
+            else
+              const Center(
+                child: Text('Selecione o período e gere o relatório.'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilters() {
+    final df = DateFormat('dd/MM/yyyy');
+    return Row(
+      children: [
+        OutlinedButton.icon(
+          onPressed: () async {
+            final picked = await showDateRangePicker(
+              context: context,
+              firstDate: DateTime(2025),
+              lastDate: DateTime(2027),
+              initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
+            );
+            if (picked != null) {
+              setState(() {
+                _startDate = picked.start;
+                _endDate = picked.end;
+              });
+            }
+          },
+          icon: const Icon(Icons.date_range),
+          label: Text('${df.format(_startDate)} - ${df.format(_endDate)}'),
+        ),
+        const SizedBox(width: 16),
+        ElevatedButton(
+          onPressed: _generateReport,
+          child: const Text('Gerar Relatório'),
+        ),
+        if (_report != null) ...[
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: _exportCsv,
+            icon: const Icon(Icons.file_download),
+            tooltip: 'Exportar CSV',
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildReportView() {
+    final report = _report!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSummaryCards(report),
+        const SizedBox(height: 20),
+        if (!report.isComplete) _buildWarning(report),
+        const SizedBox(height: 10),
+        Expanded(
+          child: ListView.builder(
+            itemCount: report.snapshots.length,
+            itemBuilder: (context, index) {
+              final s = report.snapshots[index];
+              return ListTile(
+                title: Text(
+                  DateFormat('dd/MM/yyyy').format(s.operationalDateUtc),
+                ),
+                subtitle: Text(
+                  'Executadas: ${s.executedCount} / ${s.totalObligations}',
+                ),
+                trailing: Text(_formatCents(s.totalContractedRevenue.cents)),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCards(BillingCycleReport report) {
+    return Row(
+      children: [
+        _buildCard(
+          'Faturamento',
+          _formatCents(report.totalContractedRevenue.cents),
+        ),
+        _buildCard('Protegido', _formatCents(report.protectedRevenue.cents)),
+        _buildCard(
+          'Perda',
+          _formatCents(report.lostRevenue.cents),
+          color: Colors.red,
+        ),
+        _buildCard(
+          'Risco',
+          _formatCents(report.revenueAtRisk.cents),
+          color: Colors.orange,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCard(String label, String value, {Color? color}) {
+    return Expanded(
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Text(label, style: const TextStyle(fontSize: 12)),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWarning(BillingCycleReport report) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning, color: Colors.red),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Relatório Incompleto: Faltam ${report.missingDates.length} dias operacionais.',
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatCents(int cents) {
+    return NumberFormat.simpleCurrency(locale: 'pt_BR').format(cents / 100);
+  }
+}

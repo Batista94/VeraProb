@@ -17,15 +17,22 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
   }) : _repo = repo;
 
   @override
-  Future<SlaExecutionSummary> getSummary({String? contractId}) async {
-    final states = contractId != null
-        ? await _repo.findByContract(contractId)
-        : await _repo.findAll();
+  Future<SlaExecutionSummary> getSummary({
+    required String organizationId,
+    String? contractId,
+  }) async {
+    final states = await (contractId != null
+        ? _repo.findByContract(contractId)
+        : _repo.findAll());
+
+    final filteredByOrg = states.where(
+      (s) => s.organizationId == organizationId,
+    );
 
     int pending = 0, executed = 0, noShow = 0, evidenceGap = 0;
     double protectedRevenue = 0.0, revenueAtRisk = 0.0, lostRevenue = 0.0;
 
-    for (final s in states) {
+    for (final s in filteredByOrg) {
       switch (s.status) {
         case ExecutionStatus.pending:
           pending++;
@@ -61,14 +68,20 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
   @override
   Future<List<SlaExecutionItemView>> listByStatus(
     ExecutionStatus status, {
+    required String organizationId,
     String? contractId,
   }) async {
-    final states = contractId != null
-        ? await _repo.findByContract(contractId)
-        : await _repo.findAll();
+    final states = await (contractId != null
+        ? _repo.findByContract(contractId)
+        : _repo.findAll());
 
-    final filtered = states.where((s) => s.status == status).toList()
-      ..sort((a, b) => a.windowStartUtc.compareTo(b.windowStartUtc));
+    final filtered =
+        states
+            .where(
+              (s) => s.organizationId == organizationId && s.status == status,
+            )
+            .toList()
+          ..sort((a, b) => a.windowStartUtc.compareTo(b.windowStartUtc));
 
     return filtered.map(_toItemView).toList();
   }

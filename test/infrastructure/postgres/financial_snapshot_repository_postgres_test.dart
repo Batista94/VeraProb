@@ -34,6 +34,7 @@ void main() async {
           final closedAt = DateTime.now().toUtc();
 
           final snapshot = ContractualFinancialDailySnapshot.create(
+            organizationId: 'org-1',
             contractId: contractId,
             operationalDateUtc: operationalDate,
             operationalTimezone: 'America/Sao_Paulo',
@@ -42,6 +43,10 @@ void main() async {
             protectedRevenue: const Money(800000), // R$ 8.000,00
             revenueAtRisk: const Money(150000), // R$ 1.500,00
             lostRevenue: const Money(50000), // R$ 500,00
+            totalObligations: 100,
+            executedCount: 80,
+            noShowCount: 5,
+            evidenceGapCount: 15,
             lastLedgerEntryId: 442,
           );
 
@@ -53,6 +58,7 @@ void main() async {
           );
 
           final contractSnapshots = await repository.findAll(
+            organizationId: 'org-1',
             contractId: contractId,
           );
           expect(contractSnapshots.length, 1);
@@ -75,6 +81,7 @@ void main() async {
 
           // Original Generation
           final originalSnapshot = ContractualFinancialDailySnapshot.create(
+            organizationId: 'org-1',
             contractId: contractId,
             operationalDateUtc: operationalDate,
             operationalTimezone: 'America/Sao_Paulo',
@@ -85,6 +92,10 @@ void main() async {
             protectedRevenue: const Money(500000),
             revenueAtRisk: const Money(500000),
             lostRevenue: const Money(0),
+            totalObligations: 100,
+            executedCount: 50,
+            noShowCount: 0,
+            evidenceGapCount: 50,
             lastLedgerEntryId: 990,
           );
 
@@ -92,6 +103,7 @@ void main() async {
 
           // Reprocessing Generation (creates new one referencing the old one)
           final reprocessedSnapshot = ContractualFinancialDailySnapshot.create(
+            organizationId: 'org-1',
             contractId: contractId,
             operationalDateUtc: operationalDate,
             operationalTimezone: 'America/Sao_Paulo',
@@ -100,6 +112,10 @@ void main() async {
             protectedRevenue: const Money(800000),
             revenueAtRisk: const Money(200000),
             lostRevenue: const Money(0),
+            totalObligations: 100,
+            executedCount: 80,
+            noShowCount: 0,
+            evidenceGapCount: 20,
             lastLedgerEntryId: 1050,
             previousSnapshotId: originalSnapshot.id,
             reprocessingReason: 'Late operator check-in',
@@ -110,6 +126,7 @@ void main() async {
           // Native findAll rules state it should ONLY return the "active" snapshots (head of chain)
           // but the original one MUST persist in the database
           final activeContractSnapshots = await repository.findAll(
+            organizationId: 'org-1',
             contractId: contractId,
           );
 

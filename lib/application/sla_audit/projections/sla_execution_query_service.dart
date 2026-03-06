@@ -8,12 +8,16 @@ import 'sla_execution_summary.dart';
 /// Does NOT alter any state.
 abstract class SlaExecutionQueryService {
   /// Returns a summary of execution states, optionally filtered by contract.
-  Future<SlaExecutionSummary> getSummary({String? contractId});
+  Future<SlaExecutionSummary> getSummary({
+    required String organizationId,
+    String? contractId,
+  });
 
   /// Returns execution items filtered by status, optionally by contract.
   /// Ordered by [windowStartUtc] ascending.
   Future<List<SlaExecutionItemView>> listByStatus(
     ExecutionStatus status, {
+    required String organizationId,
     String? contractId,
   });
 }

@@ -6,6 +6,7 @@ void main() {
   group('ContractualFinancialDailySnapshot', () {
     test('creates with correct fields and auto-calculated percentages', () {
       final snapshot = ContractualFinancialDailySnapshot.create(
+        organizationId: 'org-1',
         contractId: 'c-1',
         operationalDateUtc: DateTime.utc(2026, 3, 1, 10, 30),
         operationalTimezone: 'America/Sao_Paulo',
@@ -14,6 +15,10 @@ void main() {
         protectedRevenue: Money.fromDouble(500.0),
         revenueAtRisk: Money.fromDouble(300.0),
         lostRevenue: Money.fromDouble(200.0),
+        totalObligations: 10,
+        executedCount: 8,
+        noShowCount: 1,
+        evidenceGapCount: 1,
         lastLedgerEntryId: 1,
       );
 
@@ -27,6 +32,7 @@ void main() {
 
     test('normalizes operationalDateUtc to midnight UTC', () {
       final snapshot = ContractualFinancialDailySnapshot.create(
+        organizationId: 'org-1',
         contractId: null,
         operationalDateUtc: DateTime.utc(2026, 3, 1, 15, 45, 30),
         operationalTimezone: 'America/Sao_Paulo',
@@ -35,6 +41,10 @@ void main() {
         protectedRevenue: const Money(10000),
         revenueAtRisk: const Money(0),
         lostRevenue: const Money(0),
+        totalObligations: 10,
+        executedCount: 10,
+        noShowCount: 0,
+        evidenceGapCount: 0,
         lastLedgerEntryId: 1,
       );
 
@@ -43,6 +53,7 @@ void main() {
 
     test('calculates percentages correctly', () {
       final snapshot = ContractualFinancialDailySnapshot.create(
+        organizationId: 'org-1',
         contractId: null,
         operationalDateUtc: DateTime.utc(2026, 3, 1),
         operationalTimezone: 'America/Sao_Paulo',
@@ -51,6 +62,10 @@ void main() {
         protectedRevenue: const Money(50000),
         revenueAtRisk: const Money(30000),
         lostRevenue: const Money(20000),
+        totalObligations: 10,
+        executedCount: 5,
+        noShowCount: 2,
+        evidenceGapCount: 3,
         lastLedgerEntryId: 1,
       );
 
@@ -60,6 +75,7 @@ void main() {
 
     test('handles zero total revenue (no division by zero)', () {
       final snapshot = ContractualFinancialDailySnapshot.create(
+        organizationId: 'org-1',
         contractId: null,
         operationalDateUtc: DateTime.utc(2026, 3, 1),
         operationalTimezone: 'America/Sao_Paulo',
@@ -68,6 +84,10 @@ void main() {
         protectedRevenue: const Money(0),
         revenueAtRisk: const Money(0),
         lostRevenue: const Money(0),
+        totalObligations: 0,
+        executedCount: 0,
+        noShowCount: 0,
+        evidenceGapCount: 0,
         lastLedgerEntryId: 1,
       );
 
@@ -77,6 +97,7 @@ void main() {
 
     test('is immutable (Equatable)', () {
       final s1 = ContractualFinancialDailySnapshot.create(
+        organizationId: 'org-1',
         contractId: null,
         operationalDateUtc: DateTime.utc(2026, 3, 1),
         operationalTimezone: 'America/Sao_Paulo',
@@ -85,11 +106,34 @@ void main() {
         protectedRevenue: const Money(10000),
         revenueAtRisk: const Money(0),
         lostRevenue: const Money(0),
+        totalObligations: 10,
+        executedCount: 10,
+        noShowCount: 0,
+        evidenceGapCount: 0,
         lastLedgerEntryId: 1,
       );
 
       // Different id means different instance but same value semantics
       expect(s1.id, isNotEmpty);
+    });
+    test('riskPercentage calculation', () {
+      final snapshot = ContractualFinancialDailySnapshot.create(
+        organizationId: 'org-1',
+        contractId: null,
+        operationalDateUtc: DateTime.utc(2026, 3, 1),
+        operationalTimezone: 'America/Sao_Paulo',
+        closedAtUtc: DateTime.utc(2026, 3, 2, 3, 0),
+        totalContractedRevenue: const Money(100),
+        protectedRevenue: const Money(50),
+        revenueAtRisk: const Money(30),
+        lostRevenue: const Money(20),
+        totalObligations: 10,
+        executedCount: 8,
+        noShowCount: 1,
+        evidenceGapCount: 1,
+        lastLedgerEntryId: 1,
+      );
+      expect(snapshot.riskPercentage, 30.0);
     });
   });
 }
