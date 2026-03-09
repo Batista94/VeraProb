@@ -80,7 +80,10 @@ class ContractualEvaluationSubscriber {
   void _onVehicleData(List<VehicleOperationalState> states) async {
     for (final state in states) {
       try {
-        await _engine.processVehicleState(state);
+        await _engine.processVehicleState(
+          state,
+          organizationId: organizationId,
+        );
       } catch (e) {
         if (kDebugMode) {
           print(
@@ -96,7 +99,10 @@ class ContractualEvaluationSubscriber {
   /// Also triggers daily financial closing if configured.
   void _onSweepTick() async {
     try {
-      await _engine.sweepExpiredObligations(nowUtc: DateTime.now().toUtc());
+      await _engine.sweepExpiredObligations(
+        nowUtc: DateTime.now().toUtc(),
+        organizationId: organizationId,
+      );
     } catch (e) {
       if (kDebugMode) {
         print('[SLA SUBSCRIBER] Error during sweep: $e');

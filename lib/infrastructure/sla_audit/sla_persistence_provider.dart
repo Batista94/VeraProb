@@ -1,0 +1,60 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../domain/sla_audit/contractual_execution_state_repository.dart';
+import '../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import '../../domain/sla_audit/plan_declaration_repository.dart';
+import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import '../../infrastructure/persistence/persistence_mode.dart';
+import '../../infrastructure/persistence/persistence_provider.dart';
+import 'in_memory_contractual_execution_state_repository.dart';
+import 'in_memory_contractual_financial_snapshot_repository.dart';
+import 'in_memory_plan_declaration_repository.dart';
+import 'in_memory_sla_audit_ledger_repository.dart';
+import 'postgres_contractual_execution_state_repository.dart';
+import 'postgres_contractual_financial_snapshot_repository.dart';
+import 'postgres_plan_declaration_repository.dart';
+import 'postgres_sla_audit_ledger_repository.dart';
+
+/// Repository factory providers for the Transport (SLA Audit) module.
+///
+/// These providers are intentionally isolated from the Core persistence layer.
+/// The Core [persistenceModeProvider] drives the implementation selection,
+/// but the module owns its own repository wiring.
+
+final planDeclarationRepositoryProvider = Provider<PlanDeclarationRepository>((
+  ref,
+) {
+  return switch (ref.watch(persistenceModeProvider)) {
+    PersistenceMode.inMemory => InMemoryPlanDeclarationRepository(),
+    PersistenceMode.postgres => PostgresPlanDeclarationRepository(),
+  };
+});
+
+final contractualExecutionStateRepositoryProvider =
+    Provider<ContractualExecutionStateRepository>((ref) {
+      return switch (ref.watch(persistenceModeProvider)) {
+        PersistenceMode.inMemory =>
+          InMemoryContractualExecutionStateRepository(),
+        PersistenceMode.postgres =>
+          PostgresContractualExecutionStateRepository(),
+      };
+    });
+
+final slaAuditLedgerRepositoryProvider = Provider<SlaAuditLedgerRepository>((
+  ref,
+) {
+  return switch (ref.watch(persistenceModeProvider)) {
+    PersistenceMode.inMemory => InMemorySlaAuditLedgerRepository(),
+    PersistenceMode.postgres => PostgresSlaAuditLedgerRepository(),
+  };
+});
+
+final contractualFinancialSnapshotRepositoryProvider =
+    Provider<ContractualFinancialSnapshotRepository>((ref) {
+      return switch (ref.watch(persistenceModeProvider)) {
+        PersistenceMode.inMemory =>
+          InMemoryContractualFinancialSnapshotRepository(),
+        PersistenceMode.postgres =>
+          PostgresContractualFinancialSnapshotRepository(),
+      };
+    });

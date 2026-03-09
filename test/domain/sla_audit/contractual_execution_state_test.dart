@@ -355,6 +355,7 @@ void main() {
       final results = await repo.findPendingByContractAndTime(
         'c-1',
         DateTime.utc(2026, 3, 1, 6, 30),
+        organizationId: 'org-1',
       );
 
       expect(results, hasLength(1));

@@ -24,10 +24,12 @@ class InMemoryContractualExecutionStateRepository
   @override
   Future<List<ContractualExecutionState>> findPendingByContractAndTime(
     String contractId,
-    DateTime nowUtc,
-  ) async {
+    DateTime nowUtc, {
+    required String organizationId,
+  }) async {
     final results = _store.values.where((s) {
-      return s.status == ExecutionStatus.pending &&
+      return s.organizationId == organizationId &&
+          s.status == ExecutionStatus.pending &&
           s.contractId == contractId &&
           !s.windowStartUtc.isAfter(nowUtc) &&
           !s.windowEndUtc.isBefore(nowUtc);
@@ -38,10 +40,12 @@ class InMemoryContractualExecutionStateRepository
 
   @override
   Future<List<ContractualExecutionState>> findPendingInWindow(
-    DateTime nowUtc,
-  ) async {
+    DateTime nowUtc, {
+    required String organizationId,
+  }) async {
     final results = _store.values.where((s) {
-      return s.status == ExecutionStatus.pending &&
+      return s.organizationId == organizationId &&
+          s.status == ExecutionStatus.pending &&
           !s.windowStartUtc.isAfter(nowUtc) &&
           !s.windowEndUtc.isBefore(nowUtc);
     }).toList();
@@ -51,10 +55,12 @@ class InMemoryContractualExecutionStateRepository
 
   @override
   Future<List<ContractualExecutionState>> findExpiredPending(
-    DateTime nowUtc,
-  ) async {
+    DateTime nowUtc, {
+    required String organizationId,
+  }) async {
     final results = _store.values.where((s) {
-      return s.status == ExecutionStatus.pending &&
+      return s.organizationId == organizationId &&
+          s.status == ExecutionStatus.pending &&
           s.windowEndUtc.isBefore(nowUtc);
     }).toList();
 
@@ -62,16 +68,24 @@ class InMemoryContractualExecutionStateRepository
   }
 
   @override
-  Future<List<ContractualExecutionState>> findAll() async {
-    return UnmodifiableListView(_store.values.toList());
+  Future<List<ContractualExecutionState>> findAll({
+    required String organizationId,
+  }) async {
+    final results = _store.values
+        .where((s) => s.organizationId == organizationId)
+        .toList();
+    return UnmodifiableListView(results);
   }
 
   @override
   Future<List<ContractualExecutionState>> findByContract(
-    String contractId,
-  ) async {
+    String contractId, {
+    required String organizationId,
+  }) async {
     final results = _store.values
-        .where((s) => s.contractId == contractId)
+        .where(
+          (s) => s.organizationId == organizationId && s.contractId == contractId,
+        )
         .toList();
 
     return UnmodifiableListView(results);

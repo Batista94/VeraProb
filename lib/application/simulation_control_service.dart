@@ -6,9 +6,7 @@ import '../domain/enums/trip_status.dart';
 import '../data/services/fleet_simulation_service.dart';
 import 'audit/audit_service.dart';
 import 'operational_control_service.dart';
-import '../../domain/sla_audit/execution_events.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
-import 'sla_audit/sla_ledger_mapper.dart';
+import 'ports/contractual_event_port.dart';
 
 /// Concrete implementation of [OperationalControlService] backed by
 /// the in-memory [FleetSimulationService].
@@ -18,14 +16,14 @@ import 'sla_audit/sla_ledger_mapper.dart';
 class SimulationControlService implements OperationalControlService {
   final FleetSimulationService _simulation;
   final AuditService _auditService;
-  final SlaAuditLedgerRepository _ledgerRepo;
+  final ContractualEventPort _contractualEvents;
   final String Function() _getOperatorId;
   final String Function() _getOrganizationId;
 
   SimulationControlService(
     this._simulation,
     this._auditService,
-    this._ledgerRepo, {
+    this._contractualEvents, {
     required String Function() getOperatorId,
     required String Function() getOrganizationId,
   }) : _getOperatorId = getOperatorId,
@@ -42,8 +40,8 @@ class SimulationControlService implements OperationalControlService {
     // Fire-and-forget: Audit logging never blocks operational flow
     _auditService
         .logAction(
-          organizationId: _getOrganizationId(), // Injected from Auth Provider
-          operatorId: _getOperatorId(), // Use injected operator ID
+          organizationId: _getOrganizationId(),
+          operatorId: _getOperatorId(),
           actionType: 'TRIP_STATUS_CHANGE',
           entityId: tripId,
           oldValue: oldStatus?.name,
@@ -68,30 +66,28 @@ class SimulationControlService implements OperationalControlService {
       },
     );
 
-    // ── Dispatch forensic evidence to the SlaAuditLedger ──
+    // ── Dispatch forensic evidence to the SLA ledger via the module port ──
     final nowUtc = DateTime.now().toUtc();
     final trip = _simulation.getTripById(tripId);
 
     if (newStatus == TripStatus.interrupted) {
-      final evidence = TripInterruptedEvidence(
-        organizationId: _getOrganizationId(), // Injected from Auth Provider
-        occurredAtUtc: nowUtc,
-        tripId: tripId,
-        vehicleId: trip?.vehicleId,
-        operatorId: _getOperatorId(), // Use injected operator ID
-        reason: reason,
-      );
-      await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(evidence));
-    } else if (newStatus == TripStatus.cancelled) {
-      final evidence = TripCancelledEvidence(
+      await _contractualEvents.dispatchTripInterrupted(
         organizationId: _getOrganizationId(),
-        occurredAtUtc: nowUtc,
         tripId: tripId,
         vehicleId: trip?.vehicleId,
         operatorId: _getOperatorId(),
         reason: reason,
+        occurredAtUtc: nowUtc,
       );
-      await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(evidence));
+    } else if (newStatus == TripStatus.cancelled) {
+      await _contractualEvents.dispatchTripCancelled(
+        organizationId: _getOrganizationId(),
+        tripId: tripId,
+        vehicleId: trip?.vehicleId,
+        operatorId: _getOperatorId(),
+        reason: reason,
+        occurredAtUtc: nowUtc,
+      );
     }
 
     return event;
@@ -109,12 +105,12 @@ class SimulationControlService implements OperationalControlService {
     // Fire-and-forget: Audit logging never blocks operational flow
     _auditService
         .logAction(
-          organizationId: _getOrganizationId(), // Injected from Auth Provider
-          operatorId: _getOperatorId(), // Use injected operator ID
+          organizationId: _getOrganizationId(),
+          operatorId: _getOperatorId(),
           actionType: 'CREATE_INCIDENT_${eventType.name.toUpperCase()}',
           entityId: tripId,
           oldValue: trip?.status.name,
-          newValue: trip?.status.name, // Status might not change directly here
+          newValue: trip?.status.name,
           reason: notes ?? 'Incidente reportado manualmente',
         )
         .catchError((e) {
@@ -136,18 +132,17 @@ class SimulationControlService implements OperationalControlService {
       },
     );
 
-    // ── Dispatch forensic evidence to the SlaAuditLedger ──
-    final evidence = OccurrenceRegisteredEvidence(
-      organizationId: _getOrganizationId(), // Injected from Auth Provider
-      occurredAtUtc: DateTime.now().toUtc(),
+    // ── Dispatch forensic evidence to the SLA ledger via the module port ──
+    await _contractualEvents.dispatchOccurrenceRegistered(
+      organizationId: _getOrganizationId(),
       tripId: tripId,
       vehicleId: trip?.vehicleId,
-      operatorId: _getOperatorId(), // Use injected operator ID
+      operatorId: _getOperatorId(),
       occurrenceType: eventType.name,
       notes: notes,
       metadata: metadata ?? const {},
+      occurredAtUtc: DateTime.now().toUtc(),
     );
-    await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(evidence));
 
     return event;
   }

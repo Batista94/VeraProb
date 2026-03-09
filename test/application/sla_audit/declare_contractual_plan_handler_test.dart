@@ -128,7 +128,7 @@ void main() {
         ),
       );
 
-      final results = await repository.findByContract('c-1');
+      final results = await repository.findByContract('c-1', organizationId: 'org-1');
       expect(results, hasLength(2));
       expect(results.every((p) => p.contractId == 'c-1'), isTrue);
     });
@@ -144,7 +144,7 @@ void main() {
         );
 
         // Repository should be empty
-        final found = await repository.findByContract('');
+        final found = await repository.findByContract('', organizationId: 'org-1');
         expect(found, isEmpty);
 
         // Ledger should be empty

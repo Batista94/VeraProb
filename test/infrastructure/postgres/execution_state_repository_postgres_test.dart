@@ -126,7 +126,7 @@ void main() async {
           await repository.save(state1);
           await repository.save(state2);
 
-          final contractStates = await repository.findByContract(contractId);
+          final contractStates = await repository.findByContract(contractId, organizationId: 'org-1');
 
           expect(contractStates.isNotEmpty, isTrue);
           expect(

@@ -10,13 +10,11 @@ import '../../application/sla_audit/projections/sla_execution_query_service.dart
 import '../../application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
 import '../../application/sla_audit/projections/sla_execution_summary.dart';
 import '../../domain/entities/vehicle_operational_state.dart';
-import '../../domain/sla_audit/contractual_execution_state_repository.dart';
 import '../../domain/sla_audit/execution_status.dart';
-import '../../domain/sla_audit/plan_declaration_repository.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
 import '../../infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import '../../infrastructure/persistence/persistence_mode.dart';
 import '../../infrastructure/persistence/persistence_provider.dart';
+import '../../infrastructure/sla_audit/sla_persistence_provider.dart';
 import '../../infrastructure/providers/supabase_provider.dart';
 import '../../infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
 import '../../domain/sla_audit/evaluation_trace_repository.dart';
@@ -28,26 +26,18 @@ import 'auth_providers.dart';
 import 'fleet_providers.dart';
 import 'sla_financial_providers.dart';
 
+// Re-export Transport module repository providers so existing consumers that
+// import this file continue to resolve them without modification.
+export '../../infrastructure/sla_audit/sla_persistence_provider.dart'
+    show
+        planDeclarationRepositoryProvider,
+        contractualExecutionStateRepositoryProvider,
+        slaAuditLedgerRepositoryProvider;
+
 // ── Repositories (Singletons) ───────────────────────────────
-
-final planDeclarationRepositoryProvider = Provider<PlanDeclarationRepository>((
-  ref,
-) {
-  return ref.watch(persistenceProvider).makePlanDeclarationRepository();
-});
-
-final contractualExecutionStateRepositoryProvider =
-    Provider<ContractualExecutionStateRepository>((ref) {
-      return ref
-          .watch(persistenceProvider)
-          .makeContractualExecutionStateRepository();
-    });
-
-final slaAuditLedgerRepositoryProvider = Provider<SlaAuditLedgerRepository>((
-  ref,
-) {
-  return ref.watch(persistenceProvider).makeSlaAuditLedgerRepository();
-});
+// planDeclarationRepositoryProvider, contractualExecutionStateRepositoryProvider,
+// and slaAuditLedgerRepositoryProvider are defined in sla_persistence_provider.dart
+// and re-exported above. All other providers in this file use them via Riverpod.
 
 final evaluationTraceRepositoryProvider = Provider<EvaluationTraceRepository>((
   ref,

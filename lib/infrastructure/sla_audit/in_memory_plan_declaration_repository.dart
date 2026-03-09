@@ -20,9 +20,14 @@ class InMemoryPlanDeclarationRepository implements PlanDeclarationRepository {
   }
 
   @override
-  Future<List<PlanDeclaration>> findByContract(String contractId) async {
+  Future<List<PlanDeclaration>> findByContract(
+    String contractId, {
+    required String organizationId,
+  }) async {
     final results = _store.values
-        .where((p) => p.contractId == contractId)
+        .where(
+          (p) => p.organizationId == organizationId && p.contractId == contractId,
+        )
         .toList();
     return UnmodifiableListView(results);
   }

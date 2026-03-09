@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze:*)",
+      "Bash(flutter test:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(where dart:*)",
+      "Bash(/tmp/fix_contract_rules.py:*)",
+      "Bash(/tmp/fix_contract_rules2.py:*)",
+      "Bash(/tmp/fix_debug.py:*)",
+      "Bash(/tmp/fix_debug2.py:*)",
+      "Bash(/tmp/fix_debug3.py:*)",
+      "Bash(/tmp/fix_contract_rules3.py:*)",
+      "Bash(/tmp/fix_repo_calls.py:*)",
+      "Bash(dart analyze:*)"
+    ]
+  }
+}

@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// Operational states of a trip in the BusFlow control center.
 ///
 /// These states form a finite state machine that drives all operational
@@ -69,66 +67,6 @@ enum TripStatus {
         return 'Fora de Serviço';
       case TripStatus.detour:
         return 'Desvio Ativo';
-    }
-  }
-
-  /// Map marker and badge color for this status
-  Color get color {
-    switch (this) {
-      case TripStatus.scheduled:
-        return const Color(0xFF448AFF); // Blue
-      case TripStatus.dispatched:
-        return const Color(0xFFFFD600); // Yellow
-      case TripStatus.enRoute:
-        return const Color(0xFF00C853); // Green
-      case TripStatus.atStop:
-        return const Color(0xFF00C853); // Green (pulsing in UI)
-      case TripStatus.delayed:
-        return const Color(0xFFFF9100); // Amber
-      case TripStatus.interrupted:
-        return const Color(0xFFFF1744); // Red
-      case TripStatus.completed:
-        return const Color(0xFF78909C); // Gray
-      case TripStatus.cancelled:
-        return const Color(0xFF37474F); // Dark gray
-      case TripStatus.noShow:
-        return const Color(0xFFB71C1C); // Dark red
-      case TripStatus.offline:
-        return const Color(0xFF9E9E9E); // Grey
-      case TripStatus.maintenance:
-        return const Color(0xFF212121); // Almost Black
-      case TripStatus.detour:
-        return const Color(0xFFFF6D00); // Deep Orange
-    }
-  }
-
-  /// Icon for this status
-  IconData get icon {
-    switch (this) {
-      case TripStatus.scheduled:
-        return Icons.schedule;
-      case TripStatus.dispatched:
-        return Icons.assignment_turned_in;
-      case TripStatus.enRoute:
-        return Icons.directions_bus;
-      case TripStatus.atStop:
-        return Icons.hail;
-      case TripStatus.delayed:
-        return Icons.warning_amber_rounded;
-      case TripStatus.interrupted:
-        return Icons.error;
-      case TripStatus.completed:
-        return Icons.check_circle;
-      case TripStatus.cancelled:
-        return Icons.cancel;
-      case TripStatus.noShow:
-        return Icons.remove_circle;
-      case TripStatus.offline:
-        return Icons.portable_wifi_off;
-      case TripStatus.maintenance:
-        return Icons.build;
-      case TripStatus.detour:
-        return Icons.alt_route;
     }
   }
 

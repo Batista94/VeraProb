@@ -76,6 +76,7 @@ class BillingCycleReport extends Equatable {
     required List<ContractualFinancialDailySnapshot> snapshots,
     required bool isComplete,
     required List<DateTime> missingDates,
+    DateTime? generatedAtUtc,
   }) {
     final contractScope = contractId ?? 'ALL';
     final startStr = periodStartUtc.toIso8601String();
@@ -126,7 +127,7 @@ class BillingCycleReport extends Equatable {
       noShowCount: noShow,
       evidenceGapCount: gap,
       complianceRate: compliance,
-      generatedAtUtc: DateTime.now().toUtc(),
+      generatedAtUtc: generatedAtUtc ?? DateTime.now().toUtc(),
       snapshotIds: snapshots.map((s) => s.id).toList(),
       operationalDates: snapshots.map((s) => s.operationalDateUtc).toList(),
       isComplete: isComplete,

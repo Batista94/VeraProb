@@ -1,47 +1,36 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:busflow/application/simulation_control_service.dart';
+import 'package:busflow/application/ports/contractual_event_port.dart';
 import 'package:busflow/data/services/fleet_simulation_service.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
 import 'package:busflow/domain/enums/event_type.dart';
 import 'package:busflow/domain/entities/trip_event.dart';
 import 'package:busflow/application/audit/audit_service.dart';
-import 'package:busflow/domain/sla_audit/sla_audit_ledger_repository.dart';
-import 'package:busflow/domain/sla_audit/sla_ledger_entry.dart';
 
 class MockFleetSimulationService extends Mock
     implements FleetSimulationService {}
 
 class MockAuditService extends Mock implements AuditService {}
 
-class MockSlaAuditLedgerRepository extends Mock
-    implements SlaAuditLedgerRepository {}
+class MockContractualEventPort extends Mock implements ContractualEventPort {}
 
 void main() {
   setUpAll(() {
     registerFallbackValue(EventType.statusChange);
     registerFallbackValue(TripStatus.enRoute);
-    registerFallbackValue(
-      SlaLedgerEntry(
-        organizationId: 'org-1',
-        type: 'DUMMY',
-        contractId: 'N/A',
-        planVersion: 0,
-        occurredAtUtc: DateTime.now(),
-      ),
-    );
   });
 
   group('SimulationControlService Actions', () {
     late SimulationControlService service;
     late MockFleetSimulationService mockSimulation;
     late MockAuditService mockAudit;
-    late MockSlaAuditLedgerRepository mockLedgerRepo;
+    late MockContractualEventPort mockEventPort;
 
     setUp(() {
       mockSimulation = MockFleetSimulationService();
       mockAudit = MockAuditService();
-      mockLedgerRepo = MockSlaAuditLedgerRepository();
+      mockEventPort = MockContractualEventPort();
 
       when(
         () => mockAudit.logAction(
@@ -56,13 +45,44 @@ void main() {
       ).thenAnswer((_) async {});
 
       when(
-        () => mockLedgerRepo.append(any()),
-      ).thenAnswer((_) async => 'mock-event-id');
+        () => mockEventPort.dispatchTripInterrupted(
+          organizationId: any(named: 'organizationId'),
+          tripId: any(named: 'tripId'),
+          vehicleId: any(named: 'vehicleId'),
+          operatorId: any(named: 'operatorId'),
+          reason: any(named: 'reason'),
+          occurredAtUtc: any(named: 'occurredAtUtc'),
+        ),
+      ).thenAnswer((_) async {});
+
+      when(
+        () => mockEventPort.dispatchTripCancelled(
+          organizationId: any(named: 'organizationId'),
+          tripId: any(named: 'tripId'),
+          vehicleId: any(named: 'vehicleId'),
+          operatorId: any(named: 'operatorId'),
+          reason: any(named: 'reason'),
+          occurredAtUtc: any(named: 'occurredAtUtc'),
+        ),
+      ).thenAnswer((_) async {});
+
+      when(
+        () => mockEventPort.dispatchOccurrenceRegistered(
+          organizationId: any(named: 'organizationId'),
+          tripId: any(named: 'tripId'),
+          vehicleId: any(named: 'vehicleId'),
+          operatorId: any(named: 'operatorId'),
+          occurrenceType: any(named: 'occurrenceType'),
+          notes: any(named: 'notes'),
+          metadata: any(named: 'metadata'),
+          occurredAtUtc: any(named: 'occurredAtUtc'),
+        ),
+      ).thenAnswer((_) async {});
 
       service = SimulationControlService(
         mockSimulation,
         mockAudit,
-        mockLedgerRepo,
+        mockEventPort,
         getOperatorId: () => 'test_operator',
         getOrganizationId: () => 'org-1',
       );
@@ -103,12 +123,31 @@ void main() {
           () => mockSimulation.updateTripStatus('t_1', TripStatus.enRoute),
         ).called(1);
 
-        // Verify ledger was NOT called (Regularize/Resolve Alert is operational, not forensic)
-        verifyNever(() => mockLedgerRepo.append(any()));
+        // Verify no contractual event was dispatched (Regularize is operational, not forensic)
+        verifyNever(
+          () => mockEventPort.dispatchTripInterrupted(
+            organizationId: any(named: 'organizationId'),
+            tripId: any(named: 'tripId'),
+            vehicleId: any(named: 'vehicleId'),
+            operatorId: any(named: 'operatorId'),
+            reason: any(named: 'reason'),
+            occurredAtUtc: any(named: 'occurredAtUtc'),
+          ),
+        );
+        verifyNever(
+          () => mockEventPort.dispatchTripCancelled(
+            organizationId: any(named: 'organizationId'),
+            tripId: any(named: 'tripId'),
+            vehicleId: any(named: 'vehicleId'),
+            operatorId: any(named: 'operatorId'),
+            reason: any(named: 'reason'),
+            occurredAtUtc: any(named: 'occurredAtUtc'),
+          ),
+        );
       },
     );
 
-    test('Cancelar updates status and logs event', () async {
+    test('Cancelar updates status and dispatches contractual evidence', () async {
       when(
         () => mockSimulation.updateTripStatus('t_2', TripStatus.cancelled),
       ).thenReturn(TripStatus.enRoute);
@@ -132,16 +171,24 @@ void main() {
 
       await service.updateTripStatus('t_2', TripStatus.cancelled);
 
-      // Verify no delay clearing logic for cancellation specifically
       verify(
         () => mockSimulation.updateTripStatus('t_2', TripStatus.cancelled),
       ).called(1);
 
-      // Verify ledger WAS called with TRIP_CANCELLED
-      verify(() => mockLedgerRepo.append(any())).called(1);
+      // Verify the port received the cancellation evidence
+      verify(
+        () => mockEventPort.dispatchTripCancelled(
+          organizationId: any(named: 'organizationId'),
+          tripId: any(named: 'tripId'),
+          vehicleId: any(named: 'vehicleId'),
+          operatorId: any(named: 'operatorId'),
+          reason: any(named: 'reason'),
+          occurredAtUtc: any(named: 'occurredAtUtc'),
+        ),
+      ).called(1);
     });
 
-    test('Ocurrence generates SlaLedgerEntry in repository', () async {
+    test('Ocurrence dispatches contractual evidence via port', () async {
       when(
         () => mockSimulation.addEvent(
           tripId: any(named: 'tripId'),
@@ -166,7 +213,18 @@ void main() {
         notes: 'Test occurrence',
       );
 
-      verify(() => mockLedgerRepo.append(any())).called(1);
+      verify(
+        () => mockEventPort.dispatchOccurrenceRegistered(
+          organizationId: any(named: 'organizationId'),
+          tripId: any(named: 'tripId'),
+          vehicleId: any(named: 'vehicleId'),
+          operatorId: any(named: 'operatorId'),
+          occurrenceType: any(named: 'occurrenceType'),
+          notes: any(named: 'notes'),
+          metadata: any(named: 'metadata'),
+          occurredAtUtc: any(named: 'occurredAtUtc'),
+        ),
+      ).called(1);
     });
   });
 }

@@ -152,7 +152,7 @@ void main() {
       sharedSetId = plan.services.first.setId;
 
       // 3. Validations
-      final plans = await planRepo.findByContract(contractId);
+      final plans = await planRepo.findByContract(contractId, organizationId: 'org-1');
       expect(plans.length, 1, reason: 'Exactly 1 plan in DB');
 
       final savedPlan = plans.first;
@@ -165,7 +165,7 @@ void main() {
       assert(sharedSetId != null, 'Dependency failed');
 
       // Given: An initial execution state
-      final savedPlan = (await planRepo.findByContract(contractId)).first;
+      final savedPlan = (await planRepo.findByContract(contractId, organizationId: 'org-1')).first;
       final service = savedPlan.services.first;
 
       final executionState = await executionRepo.findBySetId(service.setId);
@@ -200,6 +200,7 @@ void main() {
       final pendingStates = await executionRepo.findPendingByContractAndTime(
         contractId,
         testBaseTimeUtc,
+        organizationId: 'org-1',
       );
       expect(pendingStates.length, 1);
 
@@ -222,7 +223,8 @@ void main() {
       await evaluationEngine.processVehicleState(
         vehicleAtCenter,
         nowUtc: testBaseTimeUtc,
-      );
+        organizationId: 'org-1',
+);
 
       var stateAfterTick1 = await executionRepo.findBySetId(sharedSetId!);
       expect(
@@ -236,7 +238,8 @@ void main() {
       await evaluationEngine.processVehicleState(
         vehicleAtCenter,
         nowUtc: timeBindUtc,
-      );
+        organizationId: 'org-1',
+);
 
       // Validate DB transitions
       var stateAfterTick2 = await executionRepo.findBySetId(sharedSetId!);

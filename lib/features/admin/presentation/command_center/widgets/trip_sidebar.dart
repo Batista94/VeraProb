@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/domain/entities/operational_trip.dart';
 import 'package:busflow/state/providers/fleet_providers.dart';
+import 'package:busflow/presentation/shared/trip_status_theme.dart';
 import 'package:busflow/application/projections/providers/command_center_filter_provider.dart';
 import 'package:busflow/presentation/shared/widgets/status_badge.dart';
 import 'package:busflow/dev/performance_metrics.dart';

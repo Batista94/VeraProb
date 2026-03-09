@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// Types of operational events logged for audit purposes.
 enum EventType {
   statusChange,
@@ -35,31 +33,6 @@ enum EventType {
         return 'Feed Reconectado';
       case EventType.manualOverride:
         return 'Alteração Manual';
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case EventType.statusChange:
-        return Icons.swap_horiz;
-      case EventType.delayDetected:
-        return Icons.timer_off;
-      case EventType.delayRecovered:
-        return Icons.timer;
-      case EventType.positionLost:
-        return Icons.gps_off;
-      case EventType.positionRestored:
-        return Icons.gps_fixed;
-      case EventType.driverAssigned:
-        return Icons.person_add;
-      case EventType.vehicleAssigned:
-        return Icons.directions_bus;
-      case EventType.feedDisconnected:
-        return Icons.cloud_off;
-      case EventType.feedReconnected:
-        return Icons.cloud_done;
-      case EventType.manualOverride:
-        return Icons.edit;
     }
   }
 

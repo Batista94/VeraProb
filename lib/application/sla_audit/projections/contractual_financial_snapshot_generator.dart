@@ -54,8 +54,11 @@ class ContractualFinancialSnapshotGenerator {
 
     // Fetch execution states
     final allStates = contractId != null
-        ? await _executionRepo.findByContract(contractId)
-        : await _executionRepo.findAll();
+        ? await _executionRepo.findByContract(
+            contractId,
+            organizationId: organizationId,
+          )
+        : await _executionRepo.findAll(organizationId: organizationId);
 
     // Filter states belonging to this operational day (BRT timezone)
     final dayStates = allStates.where((s) {
@@ -134,8 +137,11 @@ class ContractualFinancialSnapshotGenerator {
     );
 
     final allStates = contractId != null
-        ? await _executionRepo.findByContract(contractId)
-        : await _executionRepo.findAll();
+        ? await _executionRepo.findByContract(
+            contractId,
+            organizationId: organizationId,
+          )
+        : await _executionRepo.findAll(organizationId: organizationId);
 
     final dayStates = allStates.where((s) {
       return BrazilTime.isSameOperationalDay(s.windowStartUtc, normalizedDate);

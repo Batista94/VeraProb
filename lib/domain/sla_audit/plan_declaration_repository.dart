@@ -13,7 +13,11 @@ abstract class PlanDeclarationRepository {
   /// Returns `null` if not found.
   Future<PlanDeclaration?> findById(String id);
 
-  /// Retrieves all [PlanDeclaration]s for a given contract.
+  /// Retrieves all [PlanDeclaration]s for a given contract,
+  /// scoped to [organizationId].
   /// Returns an unmodifiable list.
-  Future<List<PlanDeclaration>> findByContract(String contractId);
+  Future<List<PlanDeclaration>> findByContract(
+    String contractId, {
+    required String organizationId,
+  });
 }

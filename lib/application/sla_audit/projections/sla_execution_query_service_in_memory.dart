@@ -22,12 +22,11 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
     String? contractId,
   }) async {
     final states = await (contractId != null
-        ? _repo.findByContract(contractId)
-        : _repo.findAll());
+        ? _repo.findByContract(contractId, organizationId: organizationId)
+        : _repo.findAll(organizationId: organizationId));
 
-    final filteredByOrg = states.where(
-      (s) => s.organizationId == organizationId,
-    );
+    // org filter is enforced in the repo; iterate directly
+    final filteredByOrg = states;
 
     int pending = 0, executed = 0, noShow = 0, evidenceGap = 0;
     double protectedRevenue = 0.0, revenueAtRisk = 0.0, lostRevenue = 0.0;
@@ -72,14 +71,13 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
     String? contractId,
   }) async {
     final states = await (contractId != null
-        ? _repo.findByContract(contractId)
-        : _repo.findAll());
+        ? _repo.findByContract(contractId, organizationId: organizationId)
+        : _repo.findAll(organizationId: organizationId));
 
+    // org filter is enforced in the repo; filter only by status
     final filtered =
         states
-            .where(
-              (s) => s.organizationId == organizationId && s.status == status,
-            )
+            .where((s) => s.status == status)
             .toList()
           ..sort((a, b) => a.windowStartUtc.compareTo(b.windowStartUtc));
 

@@ -18,29 +18,41 @@ abstract class ContractualExecutionStateRepository {
   /// Returns an unmodifiable list.
   Future<List<ContractualExecutionState>> findPendingByContractAndTime(
     String contractId,
-    DateTime nowUtc,
-  );
+    DateTime nowUtc, {
+    required String organizationId,
+  });
 
   /// Retrieves all pending execution states whose time window
-  /// contains [nowUtc], regardless of contract.
+  /// contains [nowUtc], scoped to [organizationId].
   ///
   /// Returns an unmodifiable list.
-  Future<List<ContractualExecutionState>> findPendingInWindow(DateTime nowUtc);
+  Future<List<ContractualExecutionState>> findPendingInWindow(
+    DateTime nowUtc, {
+    required String organizationId,
+  });
 
   /// Retrieves all pending execution states whose time window
-  /// has expired (windowEndUtc < [nowUtc]), regardless of contract.
+  /// has expired (windowEndUtc < [nowUtc]), scoped to [organizationId].
   ///
   /// Returns an unmodifiable list.
-  Future<List<ContractualExecutionState>> findExpiredPending(DateTime nowUtc);
+  Future<List<ContractualExecutionState>> findExpiredPending(
+    DateTime nowUtc, {
+    required String organizationId,
+  });
 
-  /// Retrieves all execution states regardless of status or contract.
+  /// Retrieves all execution states for [organizationId].
   ///
   /// Returns an unmodifiable list.
-  Future<List<ContractualExecutionState>> findAll();
+  Future<List<ContractualExecutionState>> findAll({
+    required String organizationId,
+  });
 
   /// Retrieves all execution states for a given contract,
-  /// regardless of status.
+  /// scoped to [organizationId], regardless of status.
   ///
   /// Returns an unmodifiable list.
-  Future<List<ContractualExecutionState>> findByContract(String contractId);
+  Future<List<ContractualExecutionState>> findByContract(
+    String contractId, {
+    required String organizationId,
+  });
 }

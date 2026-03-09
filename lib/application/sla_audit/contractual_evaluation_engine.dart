@@ -51,12 +51,19 @@ class ContractualEvaluationEngine {
        _traceRepo = traceRepo,
        _alertRepo = alertRepo;
 
-  Future<RuleSnapshot> _getRuleSnapshot(String contractId, int version) async {
+  Future<RuleSnapshot> _getRuleSnapshot(
+    String contractId,
+    int version,
+    String organizationId,
+  ) async {
     final cacheKey = '${contractId}_$version';
     if (_planCache.containsKey(cacheKey)) {
       return _planCache[cacheKey]!.ruleSnapshot;
     }
-    final plans = await _planRepo.findByContract(contractId);
+    final plans = await _planRepo.findByContract(
+      contractId,
+      organizationId: organizationId,
+    );
     final plan = plans.firstWhere((p) => p.planVersion == version);
     _planCache[cacheKey] = plan;
     return plan.ruleSnapshot;
@@ -67,10 +74,14 @@ class ContractualEvaluationEngine {
   Future<void> processVehicleState(
     VehicleOperationalState vehicleState, {
     DateTime? nowUtc,
+    required String organizationId,
   }) async {
     final now = nowUtc ?? DateTime.now().toUtc();
 
-    final pendingStates = await _executionRepo.findPendingInWindow(now);
+    final pendingStates = await _executionRepo.findPendingInWindow(
+      now,
+      organizationId: organizationId,
+    );
     if (pendingStates.isEmpty) return;
 
     final eligible = pendingStates.where(
@@ -80,7 +91,11 @@ class ContractualEvaluationEngine {
     );
 
     for (final state in eligible) {
-      final rules = await _getRuleSnapshot(state.contractId, state.planVersion);
+      final rules = await _getRuleSnapshot(
+        state.contractId,
+        state.planVersion,
+        state.organizationId,
+      );
 
       // Deterministic deterministic execution order
       final sortedRules = rules.rules.toList()
@@ -172,12 +187,22 @@ class ContractualEvaluationEngine {
 
   // ── Method 2: Sweep Expired Obligations ─────────────────
 
-  Future<void> sweepExpiredObligations({DateTime? nowUtc}) async {
+  Future<void> sweepExpiredObligations({
+    DateTime? nowUtc,
+    required String organizationId,
+  }) async {
     final now = nowUtc ?? DateTime.now().toUtc();
-    final expiredStates = await _executionRepo.findExpiredPending(now);
+    final expiredStates = await _executionRepo.findExpiredPending(
+      now,
+      organizationId: organizationId,
+    );
 
     for (final state in expiredStates) {
-      final rules = await _getRuleSnapshot(state.contractId, state.planVersion);
+      final rules = await _getRuleSnapshot(
+        state.contractId,
+        state.planVersion,
+        state.organizationId,
+      );
 
       final sortedRules = rules.rules.toList()
         ..sort((a, b) {

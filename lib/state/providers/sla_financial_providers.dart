@@ -10,6 +10,7 @@ import '../../application/sla_audit/projections/contractual_financial_trend_quer
 import '../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
 import '../../infrastructure/persistence/persistence_mode.dart';
 import '../../infrastructure/persistence/persistence_provider.dart';
+import '../../infrastructure/sla_audit/sla_persistence_provider.dart';
 import '../../infrastructure/providers/supabase_provider.dart';
 import '../../infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
 import '../../infrastructure/sla_audit/postgres_contractual_financial_trend_query_service.dart';
@@ -18,9 +19,7 @@ import '../../infrastructure/sla_audit/postgres_contractual_financial_trend_quer
 
 final financialSnapshotRepositoryProvider =
     Provider<ContractualFinancialSnapshotRepository>((ref) {
-      return ref
-          .watch(persistenceProvider)
-          .makeContractualFinancialSnapshotRepository();
+      return ref.watch(contractualFinancialSnapshotRepositoryProvider);
     });
 
 // ── Query Service ───────────────────────────────────────────

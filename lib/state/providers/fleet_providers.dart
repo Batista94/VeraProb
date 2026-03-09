@@ -3,6 +3,7 @@ import 'auth_providers.dart';
 import '../../application/intelligence/situation_engine.dart';
 import '../../application/operational_control_service.dart';
 import '../../application/simulation_control_service.dart';
+import '../../application/sla_audit/sla_contractual_event_port.dart';
 import '../../data/services/fleet_simulation_service.dart';
 import '../../domain/entities/operational_trip.dart';
 import '../../domain/sla_audit/sla_ledger_entry.dart';
@@ -43,10 +44,13 @@ final operationalControlProvider = Provider<OperationalControlService>((ref) {
   final simulation = ref.read(fleetSimulationProvider);
   final audit = ref.read(auditServiceProvider);
   final ledgerRepo = ref.read(slaAuditLedgerRepositoryProvider);
+  // Inject the Transport module's port implementation. SimulationControlService
+  // only sees the ContractualEventPort abstraction — no sla_audit types leak.
+  final eventPort = SlaContractualEventPort(ledgerRepo);
   return SimulationControlService(
     simulation,
     audit,
-    ledgerRepo,
+    eventPort,
     getOperatorId: () =>
         ref.read(currentOperatorIdProvider) ?? 'unauthenticated',
     getOrganizationId: () =>

@@ -1,27 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 import 'package:busflow/application/intelligence/suggestion_engine.dart';
 import 'package:busflow/domain/entities/operational_trip.dart';
 import 'package:busflow/domain/entities/operational_warning.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
 
-class MockWidgetRef extends Mock implements WidgetRef {}
-
-class MockBuildContext extends Mock implements BuildContext {}
-
 void main() {
   group('SuggestionEngine Rules', () {
     late SuggestionEngine engine;
-    late MockWidgetRef mockRef;
-    late MockBuildContext mockContext;
 
     setUp(() {
       engine = SuggestionEngine();
-      mockRef = MockWidgetRef();
-      mockContext = MockBuildContext();
     });
 
     test('Trip without attention required returns null suggestion', () {
@@ -35,11 +24,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final suggestion = engine.generateSuggestion(
-        ref: mockRef,
-        context: mockContext,
-        trip: trip,
-      );
+      final suggestion = engine.generateSuggestion(trip: trip);
 
       expect(suggestion, isNull);
     });
@@ -63,11 +48,7 @@ void main() {
         ],
       );
 
-      final suggestion = engine.generateSuggestion(
-        ref: mockRef,
-        context: mockContext,
-        trip: trip,
-      );
+      final suggestion = engine.generateSuggestion(trip: trip);
 
       expect(suggestion, isNotNull);
       expect(suggestion!.actionLabel, 'Cancelar Viagem');
@@ -93,11 +74,7 @@ void main() {
         ],
       );
 
-      final suggestion = engine.generateSuggestion(
-        ref: mockRef,
-        context: mockContext,
-        trip: trip,
-      );
+      final suggestion = engine.generateSuggestion(trip: trip);
 
       expect(suggestion, isNotNull);
       expect(suggestion!.actionLabel, 'Interromper');
@@ -115,11 +92,7 @@ void main() {
         scheduledStart: DateTime.now(),
       );
 
-      final suggestion = engine.generateSuggestion(
-        ref: mockRef,
-        context: mockContext,
-        trip: trip,
-      );
+      final suggestion = engine.generateSuggestion(trip: trip);
 
       expect(suggestion, isNotNull);
       expect(suggestion!.actionLabel, 'Regularizar');

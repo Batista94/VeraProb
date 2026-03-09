@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import '../decision/authorization_decision.dart';
 import 'forensic_decision_repository.dart';
 
@@ -9,12 +7,12 @@ class InMemoryForensicRepository implements ForensicDecisionRepository {
   final List<AuthorizationDecision> _ledger = [];
   final _controller = StreamController<List<AuthorizationDecision>>.broadcast();
 
-  @visibleForTesting
   List<AuthorizationDecision> get testLedgerArray => List.unmodifiable(_ledger);
 
   InMemoryForensicRepository() {
-    // Initial state
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Emit initial empty state on the next microtask so subscribers
+    // registered synchronously after construction receive it.
+    scheduleMicrotask(() {
       if (!_controller.isClosed) {
         _controller.add(List.unmodifiable(_ledger));
       }
@@ -28,12 +26,14 @@ class InMemoryForensicRepository implements ForensicDecisionRepository {
       _controller.add(List.unmodifiable(_ledger));
     }
 
-    if (kDebugMode) {
-      final mark = decision.isApproved ? '✅ APPROVED' : '❌ DENIED';
+    assert(() {
+      final mark = decision.isApproved ? 'APPROVED' : 'DENIED';
+      // ignore: avoid_print
       print(
         '[FORENSIC LEDGER] $mark | Action: ${decision.actionType.key} | Actor: ${decision.actorId.value} | Target: ${decision.targetRef.urn}',
       );
-    }
+      return true;
+    }());
   }
 
   // Stream for projections

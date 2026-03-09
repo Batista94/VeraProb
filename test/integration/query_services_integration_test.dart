@@ -87,8 +87,8 @@ void main() {
         final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
         final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
 
-        await engine.processVehicleState(vehicle, nowUtc: t0);
-        await engine.processVehicleState(vehicle, nowUtc: t31); // Triggers bind
+        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
+        await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'); // Triggers bind
 
         // 3. Query verification (Executed)
         final midSummary = await queryService.getSummary(
@@ -124,6 +124,7 @@ void main() {
         // Sweep expired via engine
         await engine.sweepExpiredObligations(
           nowUtc: DateTime.utc(2026, 3, 1, 7, 30),
+          organizationId: 'org-1',
         );
 
         // 5. Final Query Verification

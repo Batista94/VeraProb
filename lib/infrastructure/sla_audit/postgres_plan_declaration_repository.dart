@@ -22,6 +22,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
     final existing = await _client
         .from('plan_declarations')
         .select('id')
+        .eq('organization_id', plan.organizationId)
         .eq('contract_id', plan.contractId)
         .eq('plan_version', plan.planVersion)
         .maybeSingle();
@@ -81,11 +82,15 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
   }
 
   @override
-  Future<List<PlanDeclaration>> findByContract(String contractId) async {
+  Future<List<PlanDeclaration>> findByContract(
+    String contractId, {
+    required String organizationId,
+  }) async {
     // Deterministic, Ordered Historical Recovery (Ordered by Version)
     final List<dynamic> data = await _client
         .from('plan_declarations')
         .select('*, contractual_service_executions(*)')
+        .eq('organization_id', organizationId)
         .eq('contract_id', contractId)
         .order('plan_version', ascending: true);
 

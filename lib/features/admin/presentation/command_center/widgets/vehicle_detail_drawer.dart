@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/domain/entities/operational_trip.dart';
 import 'package:busflow/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:busflow/presentation/shared/trip_status_theme.dart';
 import 'package:busflow/domain/enums/trip_status.dart';
 import 'package:busflow/domain/entities/operational_suggestion.dart';
 import 'package:busflow/application/intelligence/suggestion_engine.dart';
@@ -31,11 +32,7 @@ class VehicleDetailDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eventsAsync = ref.watch(forensicLedgerProjectionProvider);
-    final suggestion = SuggestionEngine().generateSuggestion(
-      ref: ref,
-      context: context,
-      trip: trip,
-    );
+    final suggestion = SuggestionEngine().generateSuggestion(trip: trip);
 
     return Container(
       width: 340,
@@ -68,7 +65,7 @@ class VehicleDetailDrawer extends ConsumerWidget {
 
                   // Intelligent Suggestion
                   if (suggestion != null) ...[
-                    _SuggestionSection(suggestion: suggestion),
+                    _SuggestionSection(suggestion: suggestion, tripId: trip.id),
                     const Divider(height: 1, color: BusFlowColors.border),
                   ],
 
@@ -253,13 +250,38 @@ class _InfoRow extends StatelessWidget {
 
 // ── Suggestion Section ────────────────────────────────
 
-class _SuggestionSection extends StatelessWidget {
+class _SuggestionSection extends ConsumerWidget {
   final OperationalSuggestion suggestion;
+  final String tripId;
 
-  const _SuggestionSection({required this.suggestion});
+  const _SuggestionSection({required this.suggestion, required this.tripId});
+
+  VoidCallback _buildCallback(WidgetRef ref) {
+    final control = ref.read(operationalControlProvider);
+    switch (suggestion.action) {
+      case SuggestionAction.cancelTrip:
+        return () {
+          control.updateTripStatus(tripId, TripStatus.cancelled,
+              reason: 'Cancelado via auto-sugestão (Veículo parado)');
+          triggerUIRefresh(ref);
+        };
+      case SuggestionAction.interruptTrip:
+        return () {
+          control.updateTripStatus(tripId, TripStatus.interrupted,
+              reason: 'Interrompido via auto-sugestão (Atraso crítico)');
+          triggerUIRefresh(ref);
+        };
+      case SuggestionAction.regularizeTrip:
+        return () {
+          control.updateTripStatus(tripId, TripStatus.enRoute,
+              reason: 'Regularizado via auto-sugestão (Acompanhado)');
+          triggerUIRefresh(ref);
+        };
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(12),
       color: BusFlowColors.primary.withValues(alpha: 0.05),
@@ -293,8 +315,8 @@ class _SuggestionSection extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: suggestion.onExecute,
-              icon: Icon(suggestion.actionIcon, size: 16),
+              onPressed: _buildCallback(ref),
+              icon: Icon(suggestion.action.icon, size: 16),
               label: Text(suggestion.actionLabel),
               style: FilledButton.styleFrom(
                 backgroundColor: BusFlowColors.primary,

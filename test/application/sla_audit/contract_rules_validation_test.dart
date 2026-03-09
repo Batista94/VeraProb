@@ -132,12 +132,12 @@ void main() {
         ); // Vehicle stayed for 10 seconds
 
         // Replay telemetry against the Engine
-        await engine.processVehicleState(createPing(t0), nowUtc: t0);
-        await engine.processVehicleState(createPing(t10), nowUtc: t10);
+        await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-1');
+        await engine.processVehicleState(createPing(t10), nowUtc: t10, organizationId: 'org-1');
 
         // Fetch the execution states
-        final stateV1 = (await execRepo.findByContract('contract-v1')).first;
-        final stateV2 = (await execRepo.findByContract('contract-v2')).first;
+        final stateV1 = (await execRepo.findByContract('contract-v1', organizationId: 'org-1')).first;
+        final stateV2 = (await execRepo.findByContract('contract-v2', organizationId: 'org-1')).first;
 
         // Assert Determinism:
         // Even though the same physical vehicle telemetry was fed to the engine at exactly the same time,
@@ -172,11 +172,11 @@ void main() {
       ); // Vehicle stayed for 15 seconds
 
       // Identical telemetry fed globally into the multi-tenant engine
-      await engine.processVehicleState(createPing(t0), nowUtc: t0);
-      await engine.processVehicleState(createPing(t15), nowUtc: t15);
+      await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-1');
+      await engine.processVehicleState(createPing(t15), nowUtc: t15, organizationId: 'org-1');
 
-      final stateA = (await execRepo.findByContract('contract-a')).first;
-      final stateB = (await execRepo.findByContract('contract-b')).first;
+      final stateA = (await execRepo.findByContract('contract-a', organizationId: 'org-1')).first;
+      final stateB = (await execRepo.findByContract('contract-b', organizationId: 'org-1')).first;
 
       // Verification of tenant boundary isolation inside identical compute pipeline
       expect(

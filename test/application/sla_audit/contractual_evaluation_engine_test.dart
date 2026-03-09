@@ -121,12 +121,12 @@ void main() {
       final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
 
       // First ping — enters geofence, timer starts
-      await engine.processVehicleState(vehicle, nowUtc: t0);
+      await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
       final afterFirst = await repo.findBySetId('set-1');
       expect(afterFirst!.status, ExecutionStatus.pending);
 
       // Second ping — 31s later, still inside → binding
-      await engine.processVehicleState(vehicle, nowUtc: t31);
+      await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1');
       final afterBinding = await repo.findBySetId('set-1');
       expect(afterBinding!.status, ExecutionStatus.executed);
       expect(afterBinding.boundVehicleId, 'v-1');
@@ -147,11 +147,11 @@ void main() {
       final t45 = DateTime.utc(2026, 3, 1, 6, 30, 45);
 
       // Enter geofence
-      await engine.processVehicleState(insideVehicle, nowUtc: t0);
+      await engine.processVehicleState(insideVehicle, nowUtc: t0, organizationId: 'org-1');
       // Leave geofence at 15s
-      await engine.processVehicleState(outsideVehicle, nowUtc: t15);
+      await engine.processVehicleState(outsideVehicle, nowUtc: t15, organizationId: 'org-1');
       // Re-enter at 45s — timer should have reset
-      await engine.processVehicleState(insideVehicle, nowUtc: t45);
+      await engine.processVehicleState(insideVehicle, nowUtc: t45, organizationId: 'org-1');
 
       final result = await repo.findBySetId('set-1');
       expect(result!.status, ExecutionStatus.pending);
@@ -168,16 +168,16 @@ void main() {
       final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
       final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
 
-      await engine.processVehicleState(wrongVehicle, nowUtc: t0);
-      await engine.processVehicleState(wrongVehicle, nowUtc: t31);
+      await engine.processVehicleState(wrongVehicle, nowUtc: t0, organizationId: 'org-1');
+      await engine.processVehicleState(wrongVehicle, nowUtc: t31, organizationId: 'org-1');
 
       final result = await repo.findBySetId('set-1');
       expect(result!.status, ExecutionStatus.pending);
 
       // Correct vehicle binds normally
       final rightVehicle = makeVehicleState(vehicleId: 'v-assigned');
-      await engine.processVehicleState(rightVehicle, nowUtc: t0);
-      await engine.processVehicleState(rightVehicle, nowUtc: t31);
+      await engine.processVehicleState(rightVehicle, nowUtc: t0, organizationId: 'org-1');
+      await engine.processVehicleState(rightVehicle, nowUtc: t31, organizationId: 'org-1');
 
       final bound = await repo.findBySetId('set-1');
       expect(bound!.status, ExecutionStatus.executed);
@@ -190,7 +190,7 @@ void main() {
       await repo.save(state);
 
       final afterExpiry = DateTime.utc(2026, 3, 1, 7, 1);
-      await engine.sweepExpiredObligations(nowUtc: afterExpiry);
+      await engine.sweepExpiredObligations(nowUtc: afterExpiry, organizationId: 'org-1');
 
       final result = await repo.findBySetId('set-1');
       expect(result!.status, ExecutionStatus.noShow);
@@ -206,16 +206,16 @@ void main() {
       final vehicle = makeVehicleState();
       final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
       final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
-      await engine.processVehicleState(vehicle, nowUtc: t0);
-      await engine.processVehicleState(vehicle, nowUtc: t31);
+      await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
+      await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1');
 
       expect(ledger.entries, hasLength(1));
 
       // Process again — should NOT create another binding
       final t60 = DateTime.utc(2026, 3, 1, 6, 31, 0);
       final t91 = DateTime.utc(2026, 3, 1, 6, 31, 31);
-      await engine.processVehicleState(vehicle, nowUtc: t60);
-      await engine.processVehicleState(vehicle, nowUtc: t91);
+      await engine.processVehicleState(vehicle, nowUtc: t60, organizationId: 'org-1');
+      await engine.processVehicleState(vehicle, nowUtc: t91, organizationId: 'org-1');
 
       // Still only 1 event
       expect(ledger.entries, hasLength(1));
@@ -238,8 +238,8 @@ void main() {
       final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
       final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
 
-      await engine.processVehicleState(vehicle, nowUtc: t0);
-      await engine.processVehicleState(vehicle, nowUtc: t31);
+      await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
+      await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1');
 
       // state1 bound (vehicle is at geofence center)
       final r1 = await repo.findBySetId('set-1');
@@ -252,6 +252,7 @@ void main() {
       // Sweep should not affect finalized states
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 7, 1),
+        organizationId: 'org-1',
       );
       expect(r1.status, ExecutionStatus.executed);
       expect(r2.status, ExecutionStatus.executed);
@@ -268,11 +269,11 @@ void main() {
         final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
         final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
 
-        await engine.processVehicleState(vehicle, nowUtc: t0);
-        await engine.processVehicleState(vehicle, nowUtc: t0); // Duplicate
+        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
+        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1'); // Duplicate
 
-        await engine.processVehicleState(vehicle, nowUtc: t31);
-        await engine.processVehicleState(vehicle, nowUtc: t31); // Duplicate
+        await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1');
+        await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'); // Duplicate
 
         final result = await repo.findBySetId('set-1');
         expect(result!.status, ExecutionStatus.executed);
@@ -300,12 +301,12 @@ void main() {
         ); // Came late, was outside then
         final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
 
-        await engine.processVehicleState(vehicleInside, nowUtc: t0);
+        await engine.processVehicleState(vehicleInside, nowUtc: t0, organizationId: 'org-1');
 
         // Late event arrives out of order
-        await engine.processVehicleState(vehicleOutside, nowUtc: tMinus10);
+        await engine.processVehicleState(vehicleOutside, nowUtc: tMinus10, organizationId: 'org-1');
 
-        await engine.processVehicleState(vehicleInside, nowUtc: t31);
+        await engine.processVehicleState(vehicleInside, nowUtc: t31, organizationId: 'org-1');
 
         final result = await repo.findBySetId('set-1');
         expect(result!.status, ExecutionStatus.executed);
@@ -321,10 +322,10 @@ void main() {
         await repo.save(state);
 
         final afterExpiry1 = DateTime.utc(2026, 3, 1, 7, 1);
-        await engine.sweepExpiredObligations(nowUtc: afterExpiry1);
+        await engine.sweepExpiredObligations(nowUtc: afterExpiry1, organizationId: 'org-1');
 
         final afterExpiry2 = DateTime.utc(2026, 3, 1, 7, 10);
-        await engine.sweepExpiredObligations(nowUtc: afterExpiry2);
+        await engine.sweepExpiredObligations(nowUtc: afterExpiry2, organizationId: 'org-1');
 
         final result = await repo.findBySetId('set-1');
         expect(result!.status, ExecutionStatus.noShow);
@@ -342,15 +343,15 @@ void main() {
 
         // Sweep marks as no-show
         final afterExpiry = DateTime.utc(2026, 3, 1, 7, 1);
-        await engine.sweepExpiredObligations(nowUtc: afterExpiry);
+        await engine.sweepExpiredObligations(nowUtc: afterExpiry, organizationId: 'org-1');
 
         // Vehicle arrives very late (after no-show)
         final vehicle = makeVehicleState();
         final tLate0 = DateTime.utc(2026, 3, 1, 7, 5, 0);
         final tLate31 = DateTime.utc(2026, 3, 1, 7, 5, 31);
 
-        await engine.processVehicleState(vehicle, nowUtc: tLate0);
-        await engine.processVehicleState(vehicle, nowUtc: tLate31);
+        await engine.processVehicleState(vehicle, nowUtc: tLate0, organizationId: 'org-1');
+        await engine.processVehicleState(vehicle, nowUtc: tLate31, organizationId: 'org-1');
 
         final result = await repo.findBySetId('set-1');
         expect(result!.status, ExecutionStatus.noShow);
@@ -371,13 +372,13 @@ void main() {
         final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
         final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
 
-        await engine.processVehicleState(vehicle, nowUtc: t0);
+        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
 
         // Fire 3 simultaneous events for t31
         await Future.wait([
-          engine.processVehicleState(vehicle, nowUtc: t31),
-          engine.processVehicleState(vehicle, nowUtc: t31),
-          engine.processVehicleState(vehicle, nowUtc: t31),
+          engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'),
+          engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'),
+          engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'),
         ]);
 
         expect(ledger.entries, hasLength(1));

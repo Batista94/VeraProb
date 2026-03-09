@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/domain/enums/event_type.dart';
 import 'package:busflow/state/providers/fleet_providers.dart';
+import 'package:busflow/presentation/shared/trip_status_theme.dart';
 import 'package:busflow/state/providers/authority_providers.dart';
 import 'package:busflow/application/authority/operational_command_bus.dart';
 

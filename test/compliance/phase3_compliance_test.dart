@@ -128,11 +128,13 @@ void main() {
       await engine.processVehicleState(
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30),
-      );
+        organizationId: 'org-1',
+);
       await engine.processVehicleState(
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30, 31),
-      );
+        organizationId: 'org-1',
+);
 
       final afterBinding = await repo.findBySetId('set-1');
       expect(afterBinding!.status, ExecutionStatus.executed);
@@ -152,7 +154,8 @@ void main() {
 
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
-      );
+        organizationId: 'org-1',
+);
 
       final afterSweep = await repo.findBySetId('set-1');
       expect(afterSweep!.status, ExecutionStatus.noShow);
@@ -177,11 +180,13 @@ void main() {
       await engine.processVehicleState(
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30),
-      );
+        organizationId: 'org-1',
+);
       await engine.processVehicleState(
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30, 31),
-      );
+        organizationId: 'org-1',
+);
 
       final traces = await traceRepo.findByEntityId('set-1');
       final entries = ledger.entries;
@@ -250,7 +255,7 @@ void main() {
 
         await r.save(makeState());
 
-        await e.sweepExpiredObligations(nowUtc: DateTime.utc(2026, 3, 1, 8, 0));
+        await e.sweepExpiredObligations(nowUtc: DateTime.utc(2026, 3, 1, 8, 0), organizationId: 'org-1');
         results.add(await t.findByEntityId('set-1'));
       }
 
@@ -281,7 +286,8 @@ void main() {
 
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
-      );
+        organizationId: 'org-1',
+);
 
       final traces = await traceRepo.findByEntityId('set-1');
       for (final trace in traces) {
@@ -303,7 +309,8 @@ void main() {
 
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
-      );
+        organizationId: 'org-1',
+);
 
       final traces = await traceRepo.findByEntityId('set-1');
       expect(traces, isNotEmpty);
