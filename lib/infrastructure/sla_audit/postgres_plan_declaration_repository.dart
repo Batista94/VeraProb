@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/supabase_client.dart';
+import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/contractual_service_execution.dart';
 import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
@@ -60,7 +61,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         'end_longitude': s.endLongitude,
         'end_radius_meters': s.endRadiusMeters,
         'planned_vehicle_id': s.plannedVehicleId,
-        'contractual_value': s.contractualValue,
+        'contractual_value_cents': s.contractualValue.cents,
         'no_show_penalty_multiplier': s.noShowPenaltyMultiplier,
       };
     }).toList();
@@ -112,7 +113,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         endLongitude: (s['end_longitude'] as num).toDouble(),
         endRadiusMeters: s['end_radius_meters'] as int,
         plannedVehicleId: s['planned_vehicle_id'],
-        contractualValue: (s['contractual_value'] as num).toDouble(),
+        contractualValue: Money((s['contractual_value_cents'] as num).toInt()),
         noShowPenaltyMultiplier: (s['no_show_penalty_multiplier'] as num)
             .toDouble(),
       );

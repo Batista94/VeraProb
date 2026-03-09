@@ -34,7 +34,7 @@ void main() {
   ContractualExecutionState makeState({
     required String setId,
     String contractId = 'c-1',
-    double contractualValue = 100.0,
+    Money contractualValue = const Money(10000),
     double noShowPenaltyMultiplier = 1.5,
     required DateTime windowStart,
     required DateTime windowEnd,
@@ -72,7 +72,7 @@ void main() {
       // windowStartUtc 2026-03-01 09:00 UTC = 2026-03-01 06:00 BRT (same day)
       final exec = makeState(
         setId: 'exec-1',
-        contractualValue: 500.0,
+        contractualValue: Money.fromDouble(500.0),
         windowStart: DateTime.utc(2026, 3, 1, 9, 0),
         windowEnd: DateTime.utc(2026, 3, 1, 10, 0),
       );
@@ -96,7 +96,7 @@ void main() {
       await executionRepo.save(
         makeState(
           setId: 'pending-1',
-          contractualValue: 200.0,
+          contractualValue: Money.fromDouble(200.0),
           windowStart: DateTime.utc(2026, 3, 1, 9, 0),
           windowEnd: DateTime.utc(2026, 3, 1, 10, 0),
         ),
@@ -105,7 +105,7 @@ void main() {
       // Executed
       final exec = makeState(
         setId: 'exec-1',
-        contractualValue: 300.0,
+        contractualValue: Money.fromDouble(300.0),
         windowStart: DateTime.utc(2026, 3, 1, 11, 0),
         windowEnd: DateTime.utc(2026, 3, 1, 12, 0),
       );
@@ -120,7 +120,7 @@ void main() {
       // NoShow
       final noShow = makeState(
         setId: 'noshow-1',
-        contractualValue: 100.0,
+        contractualValue: Money.fromDouble(100.0),
         noShowPenaltyMultiplier: 1.5,
         windowStart: DateTime.utc(2026, 3, 1, 13, 0),
         windowEnd: DateTime.utc(2026, 3, 1, 14, 0),
@@ -144,7 +144,7 @@ void main() {
       await executionRepo.save(
         makeState(
           setId: 'a',
-          contractualValue: 100.0,
+          contractualValue: Money.fromDouble(100.0),
           windowStart: DateTime.utc(2026, 3, 1, 9, 0),
           windowEnd: DateTime.utc(2026, 3, 1, 10, 0),
         ),
@@ -162,7 +162,7 @@ void main() {
         makeState(
           setId: 'c1-1',
           contractId: 'c-1',
-          contractualValue: 100.0,
+          contractualValue: Money.fromDouble(100.0),
           windowStart: DateTime.utc(2026, 3, 1, 9, 0),
           windowEnd: DateTime.utc(2026, 3, 1, 10, 0),
         ),
@@ -171,7 +171,7 @@ void main() {
         makeState(
           setId: 'c2-1',
           contractId: 'c-2',
-          contractualValue: 500.0,
+          contractualValue: Money.fromDouble(500.0),
           windowStart: DateTime.utc(2026, 3, 1, 9, 0),
           windowEnd: DateTime.utc(2026, 3, 1, 10, 0),
         ),

@@ -12,6 +12,7 @@ import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repo
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:busflow/domain/shared/money.dart';
 
 void main() {
   // ── Shared fixtures ──────────────────────────────────────
@@ -54,7 +55,7 @@ void main() {
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
       plannedVehicleId: plannedVehicleId,
-      contractualValue: 150.0,
+      contractualValue: Money.fromDouble(150.0),
       noShowPenaltyMultiplier: 1.5,
       windowStartUtc: windowStart ?? DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0),
@@ -80,7 +81,7 @@ void main() {
           endLatitude: -23.5600,
           endLongitude: -46.6400,
           endRadiusMeters: 100,
-          contractualValue: 150.0,
+          contractualValue: Money.fromDouble(150.0),
           noShowPenaltyMultiplier: 1.5,
         ),
       ],

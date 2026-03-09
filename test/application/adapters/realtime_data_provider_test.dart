@@ -29,7 +29,7 @@ void main() {
       provider.onPayloadReceived(payload);
     });
 
-    test('parses and buffers position successfully', () {
+    test('parses and buffers position successfully', () async {
       int emitCount = 0;
       provider.positionStream.listen((_) => emitCount++);
 
@@ -53,6 +53,10 @@ void main() {
       );
 
       provider.onPayloadReceived(validPayload);
+      // StreamController.broadcast() delivers events asynchronously via the
+      // microtask queue. Awaiting here lets the event loop process the queued
+      // emission before the assertion runs.
+      await Future.delayed(Duration.zero);
       expect(emitCount, 1);
     });
 

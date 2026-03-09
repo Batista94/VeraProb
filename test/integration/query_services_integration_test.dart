@@ -12,6 +12,7 @@ import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:busflow/domain/sla_audit/plan_declaration.dart';
 import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:busflow/domain/shared/money.dart';
 
 void main() {
   group('Query Services Integration Consistency', () {
@@ -54,7 +55,7 @@ void main() {
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 100,
-          contractualValue: 200.0,
+          contractualValue: Money.fromDouble(200.0),
           noShowPenaltyMultiplier: 2.0, // Should be 400.0 if no-show
           windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
           windowEndUtc: windowEnd,
@@ -67,7 +68,7 @@ void main() {
         );
         expect(initialSummary.totalPending, 1);
         expect(initialSummary.totalExecuted, 0);
-        expect(initialSummary.protectedRevenue, 0.0);
+        expect(initialSummary.protectedRevenue, const Money(0));
 
         // 2. Execute via Engine
         final vehicle = VehicleOperationalState(
@@ -96,8 +97,8 @@ void main() {
         );
         expect(midSummary.totalPending, 0);
         expect(midSummary.totalExecuted, 1);
-        expect(midSummary.protectedRevenue, 200.0); // Revenue bound!
-        expect(midSummary.lostRevenue, 0.0);
+        expect(midSummary.protectedRevenue, const Money(20000)); // Revenue bound!
+        expect(midSummary.lostRevenue, const Money(0));
 
         final executedList = await queryService.listByStatus(
           ExecutionStatus.executed,
@@ -114,7 +115,7 @@ void main() {
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 100,
-          contractualValue: 100.0,
+          contractualValue: Money.fromDouble(100.0),
           noShowPenaltyMultiplier: 1.5, // Penalty = 150.0
           windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
           windowEndUtc: windowEnd,
@@ -134,8 +135,8 @@ void main() {
         expect(finalSummary.totalPending, 0);
         expect(finalSummary.totalExecuted, 1);
         expect(finalSummary.totalNoShow, 1);
-        expect(finalSummary.protectedRevenue, 200.0);
-        expect(finalSummary.lostRevenue, 150.0); // 100 * 1.5 Penalty matched
+        expect(finalSummary.protectedRevenue, const Money(20000));
+        expect(finalSummary.lostRevenue, const Money(15000)); // 100 * 1.5 Penalty matched
 
         final noshowList = await queryService.listByStatus(
           ExecutionStatus.noShow,

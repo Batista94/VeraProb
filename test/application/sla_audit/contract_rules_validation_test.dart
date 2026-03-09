@@ -14,6 +14,7 @@ import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repo
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:busflow/domain/shared/money.dart';
 
 void main() {
   group('Phase 2 Validation: Contract Rules & Configurable Determinism', () {
@@ -72,7 +73,7 @@ void main() {
             endLatitude: -23.5600,
             endLongitude: -46.6400,
             endRadiusMeters: 100,
-            contractualValue: 150.0,
+            contractualValue: Money.fromDouble(150.0),
             noShowPenaltyMultiplier: 1.5,
           ),
         ],
@@ -88,7 +89,7 @@ void main() {
         startLatitude: geoLat,
         startLongitude: geoLng,
         startRadiusMeters: geoRadius,
-        contractualValue: 150.0,
+        contractualValue: Money.fromDouble(150.0),
         noShowPenaltyMultiplier: 1.5,
         windowStartUtc: DateTime.utc(2026, 3, 1, 5, 45),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 15),
@@ -171,12 +172,16 @@ void main() {
         15,
       ); // Vehicle stayed for 15 seconds
 
-      // Identical telemetry fed globally into the multi-tenant engine
-      await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-1');
-      await engine.processVehicleState(createPing(t15), nowUtc: t15, organizationId: 'org-1');
+      // Identical telemetry fed into each tenant's engine boundary separately.
+      // The isolation test verifies that the same physical vehicle, evaluated
+      // under org-a rules (60s) vs org-b rules (10s), produces different outcomes.
+      await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-a');
+      await engine.processVehicleState(createPing(t15), nowUtc: t15, organizationId: 'org-a');
+      await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-b');
+      await engine.processVehicleState(createPing(t15), nowUtc: t15, organizationId: 'org-b');
 
-      final stateA = (await execRepo.findByContract('contract-a', organizationId: 'org-1')).first;
-      final stateB = (await execRepo.findByContract('contract-b', organizationId: 'org-1')).first;
+      final stateA = (await execRepo.findByContract('contract-a', organizationId: 'org-a')).first;
+      final stateB = (await execRepo.findByContract('contract-b', organizationId: 'org-b')).first;
 
       // Verification of tenant boundary isolation inside identical compute pipeline
       expect(

@@ -14,6 +14,7 @@ import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repo
 import 'package:busflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import 'package:busflow/domain/sla_audit/plan_declaration.dart';
 import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:busflow/domain/shared/money.dart';
 
 void main() {
   // ── Shared fixtures ──────────────────────────────────────
@@ -106,7 +107,7 @@ void main() {
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
-      contractualValue: 150.0,
+      contractualValue: Money.fromDouble(150.0),
       noShowPenaltyMultiplier: 1.5,
       windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
@@ -182,7 +183,7 @@ void main() {
         startLatitude: geoLat,
         startLongitude: geoLng,
         startRadiusMeters: geoRadius,
-        contractualValue: 150.0,
+        contractualValue: Money.fromDouble(150.0),
         noShowPenaltyMultiplier: 1.5,
         windowStartUtc: DateTime.utc(2026, 2, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 2, 1, 7, 0), // past
@@ -279,6 +280,12 @@ void main() {
     });
 
     test('ignores duplicate telemetry to avoid redundant processing', () async {
+      // Seed the execution state so the engine has something to evaluate.
+      // Without this, findBySetId('set-1') returns null and the null-check
+      // assertion throws. All other tests in this group seed via repo.save()
+      // before starting the subscriber — this test was missing that step.
+      await repo.save(makeExecState());
+
       final subscriber = ContractualEvaluationSubscriber(
         engine: engine,
         vehicleStream: streamController.stream,

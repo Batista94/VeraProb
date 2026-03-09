@@ -5,24 +5,46 @@
 # IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
 # invoked from the command line by running `flutter analyze`.
 
-# The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  errors:
+    # Treat missing return statements as errors, not warnings.
+    missing_return: error
+    # Treat dead code as a warning (not an error, to avoid blocking builds).
+    dead_code: warning
+
+  # NOTE: strict-casts and strict-raw-types are intentionally NOT enabled here.
+  # Enabling them reveals ~80 type-safety issues in the infrastructure layer
+  # where JSON Map<dynamic, dynamic> values from Postgres are assigned to typed
+  # fields without explicit casts. These are real issues that will be addressed
+  # in Phase 7 (Operational Hardening) under a dedicated type-safety pass.
+  # Enabling them now would block the build without adding immediate safety value.
+
 linter:
-  # The lint rules applied to this project can be customized in the
-  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
-  # included above or to enable additional rules. A list of all available lints
-  # and their documentation is published at https://dart.dev/lints.
-  #
-  # Instead of disabling a lint rule for the entire project in the
-  # section below, it can also be suppressed for a single line of code
-  # or a specific dart file by using the `// ignore: name_of_lint` and
-  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
-  # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # ── Safety ──────────────────────────────────────────────────────────────
+    # Never use print() in production code — use a structured logger instead.
+    avoid_print: true
+
+    # Catch unawaited Futures — a common source of silent bugs where async
+    # operations are fire-and-forget when they should be awaited.
+    unawaited_futures: true
+
+    # ── Style / Correctness ─────────────────────────────────────────────────
+    # Use const constructors wherever possible (reduces widget rebuild cost).
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+
+    # Prefer super-parameter syntax (cleaner, less boilerplate constructors).
+    use_super_parameters: true
+
+    # Enforce explicit return types on all public APIs.
+    always_declare_return_types: true
+
+    # Enforce that every enum switch is exhaustive — catches missing cases
+    # when a new enum value is added later.
+    exhaustive_cases: true
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

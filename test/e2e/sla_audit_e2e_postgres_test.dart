@@ -23,6 +23,7 @@ import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_
 import 'package:busflow/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:busflow/domain/shared/money.dart';
 
 // ── Database Integrity Helpers ───────────────────────────
 
@@ -33,9 +34,20 @@ Future<void> cleanupTestData(SupabaseClient db, String cid) async {
 }
 
 void main() {
-  // Required real credentials for the E2E test
+  // Required real credentials for the E2E test.
+  // Inject via: flutter test --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_KEY=...
+  // When credentials are absent the entire suite is skipped cleanly instead of
+  // failing in setUpAll, which produces misleading error noise in CI.
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
   const supabaseKey = String.fromEnvironment('SUPABASE_KEY', defaultValue: '');
+
+  if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
+    // Register a single skipped placeholder so the runner reports this file
+    // as skipped rather than errored, keeping the CI signal clean.
+    test('SLA Audit E2E (skipped — no Supabase credentials)', () {},
+        skip: 'Set SUPABASE_URL and SUPABASE_KEY via --dart-define to run E2E tests.');
+    return;
+  }
 
   late SupabaseClient client;
 
@@ -424,7 +436,7 @@ void main() {
             endLatitude: 0,
             endLongitude: 0,
             endRadiusMeters: 10,
-            contractualValue: 1,
+            contractualValue: 1.0,
             noShowPenaltyMultiplier: 1.0,
           ),
         ],
@@ -449,7 +461,7 @@ void main() {
       expect(summary.totalExecuted, 1, reason: '1 executed set from telemetry');
       expect(summary.totalPending, 0);
       expect(summary.total, 1);
-      expect(summary.protectedRevenue, 100.0);
+      expect(summary.protectedRevenue, const Money(10000));
 
       final executedList = await executionQueryService.listByStatus(
         ExecutionStatus.executed,

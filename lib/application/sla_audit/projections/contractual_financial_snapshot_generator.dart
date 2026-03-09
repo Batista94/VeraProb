@@ -77,7 +77,7 @@ class ContractualFinancialSnapshotGenerator {
     int evidenceGapCount = 0;
 
     for (final s in dayStates) {
-      final value = Money.fromDouble(s.contractualValue);
+      final value = s.contractualValue;
       totalContractedRevenue = totalContractedRevenue + value;
 
       switch (s.status) {
@@ -158,7 +158,7 @@ class ContractualFinancialSnapshotGenerator {
     int evidenceGapCount = 0;
 
     for (final s in dayStates) {
-      final value = Money.fromDouble(s.contractualValue);
+      final value = s.contractualValue;
       totalContractedRevenue = totalContractedRevenue + value;
 
       switch (s.status) {

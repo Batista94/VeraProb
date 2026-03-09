@@ -4,6 +4,7 @@ import 'package:busflow/domain/sla_audit/domain_exception.dart';
 import 'package:busflow/domain/sla_audit/execution_events.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
+import 'package:busflow/domain/shared/money.dart';
 
 void main() {
   // ── Helpers ──────────────────────────────────────────────
@@ -16,7 +17,7 @@ void main() {
     String? plannedVehicleId,
     DateTime? windowStart,
     DateTime? windowEnd,
-    double contractualValue = 150.0,
+    Money contractualValue = const Money(15000),
     double noShowPenaltyMultiplier = 1.5,
   }) {
     final start = windowStart ?? DateTime.utc(2026, 3, 1, 6, 0);
@@ -64,7 +65,7 @@ void main() {
           startLatitude: -23.55,
           startLongitude: -46.63,
           startRadiusMeters: 100,
-          contractualValue: 100.0,
+          contractualValue: Money.fromDouble(100.0),
           noShowPenaltyMultiplier: 1.0,
           windowStartUtc: t,
           windowEndUtc: t,
@@ -73,14 +74,14 @@ void main() {
       );
 
       expect(
-        () => ContractualExecutionState.create(organizationId: 'org-1', 
+        () => ContractualExecutionState.create(organizationId: 'org-1',
           setId: 'set-1',
           contractId: 'c-1',
           planVersion: 1,
           startLatitude: -23.55,
           startLongitude: -46.63,
           startRadiusMeters: 100,
-          contractualValue: 100.0,
+          contractualValue: Money.fromDouble(100.0),
           noShowPenaltyMultiplier: 1.0,
           windowStartUtc: t,
           windowEndUtc: t.subtract(const Duration(minutes: 1)),

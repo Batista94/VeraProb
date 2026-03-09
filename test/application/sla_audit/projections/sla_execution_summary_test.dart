@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:busflow/application/sla_audit/projections/sla_execution_summary.dart';
+import 'package:busflow/domain/shared/money.dart';
 
 void main() {
   group('SlaExecutionSummary', () {
@@ -26,9 +27,9 @@ void main() {
       );
 
       expect(summary.contractId, isNull);
-      expect(summary.protectedRevenue, 0.0);
-      expect(summary.revenueAtRisk, 0.0);
-      expect(summary.lostRevenue, 0.0);
+      expect(summary.protectedRevenue, const Money(0));
+      expect(summary.revenueAtRisk, const Money(0));
+      expect(summary.lostRevenue, const Money(0));
     });
 
     test('props computes identical states as equal', () {

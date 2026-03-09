@@ -1,4 +1,5 @@
 import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:busflow/domain/shared/money.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:busflow/domain/sla_audit/contractual_plan_declared_event.dart';
 import 'package:busflow/domain/sla_audit/contractual_service_execution.dart';
@@ -17,7 +18,7 @@ void main() {
     double endLat = -23.5600,
     double endLng = -46.6400,
     int endRadius = 100,
-    double contractualValue = 150.0,
+    Money contractualValue = const Money(15000),
     double noShowPenaltyMultiplier = 1.5,
   }) {
     final s = start ?? DateTime.utc(2026, 3, 1, 6, 0);

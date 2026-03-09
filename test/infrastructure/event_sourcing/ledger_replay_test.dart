@@ -4,6 +4,7 @@ import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
+import 'package:busflow/domain/shared/money.dart';
 
 void main() {
   group('Event Sourcing Replay', () {
@@ -19,7 +20,7 @@ void main() {
         startLatitude: -23.5,
         startLongitude: -46.6,
         startRadiusMeters: 100,
-        contractualValue: 150.0,
+        contractualValue: Money.fromDouble(150.0),
         noShowPenaltyMultiplier: 1.5,
         windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
@@ -52,7 +53,7 @@ void main() {
         startLatitude: -23.5,
         startLongitude: -46.6,
         startRadiusMeters: 100,
-        contractualValue: 150.0,
+        contractualValue: Money.fromDouble(150.0),
         noShowPenaltyMultiplier: 1.5,
         windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
@@ -138,7 +139,7 @@ void main() {
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 100,
-          contractualValue: 150.0,
+          contractualValue: Money.fromDouble(150.0),
           noShowPenaltyMultiplier: 1.5,
           windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
           windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
@@ -166,7 +167,7 @@ void main() {
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 100,
-          contractualValue: 150.0,
+          contractualValue: Money.fromDouble(150.0),
           noShowPenaltyMultiplier: 1.5,
           windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
           windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),

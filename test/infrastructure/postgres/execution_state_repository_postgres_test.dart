@@ -1,4 +1,5 @@
 import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
+import 'package:busflow/domain/shared/money.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -35,7 +36,7 @@ void main() async {
           startLongitude: -46.6333,
           startRadiusMeters: 50,
           plannedVehicleId: 'veh-01',
-          contractualValue: 1500.0, // R$ 15,00
+          contractualValue: Money.fromDouble(1500.0), // R$ 15,00
           noShowPenaltyMultiplier: 1.5,
           windowStartUtc: DateTime.now().toUtc().subtract(
             const Duration(minutes: 10),
@@ -96,7 +97,7 @@ void main() async {
             startLatitude: -23.5505,
             startLongitude: -46.6333,
             startRadiusMeters: 50,
-            contractualValue: 1000.0,
+            contractualValue: Money.fromDouble(1000.0),
             noShowPenaltyMultiplier: 1.5,
             windowStartUtc: DateTime.now().toUtc().subtract(
               const Duration(minutes: 10),
@@ -113,7 +114,7 @@ void main() async {
             startLatitude: -23.5505,
             startLongitude: -46.6333,
             startRadiusMeters: 50,
-            contractualValue: 1000.0,
+            contractualValue: Money.fromDouble(1000.0),
             noShowPenaltyMultiplier: 1.5,
             windowStartUtc: DateTime.now().toUtc().subtract(
               const Duration(minutes: 10),

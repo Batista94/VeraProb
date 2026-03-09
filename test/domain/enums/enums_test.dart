@@ -14,13 +14,13 @@ void main() {
     });
 
     test('ConnectivityState extension methods', () {
-      expect(ConnectivityState.healthy.label, 'Conectado');
-      expect(ConnectivityState.signalLost.label, 'Sinal Perdido');
+      expect(ConnectivityState.healthy.label, 'Sinal OK');
+      expect(ConnectivityState.signalLost.label, 'Sem Sinal');
     });
 
     test('RouteAdherence extension methods', () {
       expect(RouteAdherence.onRoute.label, 'Na Rota');
-      expect(RouteAdherence.offRoute.label, 'Fora de Rota');
+      expect(RouteAdherence.offRoute.label, 'Fora da Rota');
     });
 
     test('TripStatus parsing and logic', () {

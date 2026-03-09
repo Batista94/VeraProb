@@ -61,7 +61,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                     const SizedBox(height: 16),
                     _InfoField(
                       label: 'Valor Contratual',
-                      value: _currencyFormat.format(item.contractualValue),
+                      value: _currencyFormat.format(item.contractualValue.toDouble()),
                     ),
                     _InfoField(
                       label: 'Multiplicador NoShow',
@@ -70,7 +70,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                     if (item.status == ExecutionStatus.noShow)
                       _InfoField(
                         label: 'Penalidade Calculada',
-                        value: _currencyFormat.format(item.calculatedPenalty),
+                        value: _currencyFormat.format(item.calculatedPenalty.toDouble()),
                       ),
                     const Divider(height: 48),
                     const Text(

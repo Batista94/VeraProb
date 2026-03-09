@@ -1,3 +1,4 @@
+import '../../../domain/shared/money.dart';
 import '../../../domain/sla_audit/contractual_execution_state.dart';
 import '../../../domain/sla_audit/contractual_execution_state_repository.dart';
 import '../../../domain/sla_audit/execution_status.dart';
@@ -29,7 +30,9 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
     final filteredByOrg = states;
 
     int pending = 0, executed = 0, noShow = 0, evidenceGap = 0;
-    double protectedRevenue = 0.0, revenueAtRisk = 0.0, lostRevenue = 0.0;
+    Money protectedRevenue = const Money(0);
+    Money revenueAtRisk = const Money(0);
+    Money lostRevenue = const Money(0);
 
     for (final s in filteredByOrg) {
       switch (s.status) {
@@ -38,15 +41,16 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
           break;
         case ExecutionStatus.executed:
           executed++;
-          protectedRevenue += s.contractualValue;
+          protectedRevenue = protectedRevenue + s.contractualValue;
           break;
         case ExecutionStatus.noShow:
           noShow++;
-          lostRevenue += s.contractualValue * s.noShowPenaltyMultiplier;
+          lostRevenue =
+              lostRevenue + (s.contractualValue * s.noShowPenaltyMultiplier);
           break;
         case ExecutionStatus.evidenceGap:
           evidenceGap++;
-          revenueAtRisk += s.contractualValue;
+          revenueAtRisk = revenueAtRisk + s.contractualValue;
           break;
       }
     }

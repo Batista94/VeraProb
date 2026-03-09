@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 
+import '../shared/money.dart';
 import 'domain_exception.dart';
 
 /// Internal Entity of the [PlanDeclaration] aggregate.
@@ -38,7 +39,7 @@ class ContractualServiceExecution extends Equatable {
 
   // ── Financial ─────────────────────────────────────────────
   /// Contractual value of this service execution obligation.
-  final double contractualValue;
+  final Money contractualValue;
 
   /// Multiplier applied to contractualValue when the obligation
   /// results in a NoShow. Must be >= 1.0.
@@ -78,7 +79,7 @@ class ContractualServiceExecution extends Equatable {
     required double endLongitude,
     required int endRadiusMeters,
     String? plannedVehicleId,
-    required double contractualValue,
+    required Money contractualValue,
     required double noShowPenaltyMultiplier,
   }) {
     // ── Temporal invariant ────────────────────────────────
@@ -99,7 +100,7 @@ class ContractualServiceExecution extends Equatable {
     _validateRadius(endRadiusMeters, 'endRadiusMeters');
 
     // ── Financial invariants ──────────────────────────────
-    if (contractualValue <= 0) {
+    if (contractualValue.cents <= 0) {
       throw const DomainException('contractualValue must be greater than 0');
     }
     if (noShowPenaltyMultiplier < 1.0) {
@@ -168,7 +169,7 @@ class ContractualServiceExecution extends Equatable {
     required double endLongitude,
     required int endRadiusMeters,
     String? plannedVehicleId,
-    required double contractualValue,
+    required Money contractualValue,
     required double noShowPenaltyMultiplier,
   }) {
     return ContractualServiceExecution._(

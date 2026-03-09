@@ -1,3 +1,4 @@
+import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/contractual_service_execution.dart';
 import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
@@ -53,7 +54,7 @@ class DeclareContractualPlanHandler {
             endLongitude: input.endLongitude,
             endRadiusMeters: input.endRadiusMeters,
             plannedVehicleId: input.plannedVehicleId,
-            contractualValue: input.contractualValue,
+            contractualValue: Money.fromDouble(input.contractualValue),
             noShowPenaltyMultiplier: input.noShowPenaltyMultiplier,
           ),
         )

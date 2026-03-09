@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/execution_status.dart';
 import '../../application/sla_audit/projections/sla_execution_item_view.dart';
 import '../../application/sla_audit/projections/sla_execution_query_service.dart';
@@ -19,7 +20,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
   }) async {
     var query = _client
         .from('execution_states')
-        .select('status, contractual_value, no_show_penalty_multiplier')
+        .select('status, contractual_value_cents, no_show_penalty_multiplier')
         .eq('organization_id', organizationId);
 
     if (contractId != null) {
@@ -33,27 +34,27 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
     int noShow = 0;
     int evidenceGap = 0;
 
-    double protectedRevenue = 0.0;
-    double revenueAtRisk = 0.0;
-    double lostRevenue = 0.0;
+    Money protectedRevenue = const Money(0);
+    Money revenueAtRisk = const Money(0);
+    Money lostRevenue = const Money(0);
 
     for (var row in rows) {
       final statusStr = row['status'] as String;
-      final val = (row['contractual_value'] as num).toDouble();
+      final val = Money((row['contractual_value_cents'] as num).toInt());
       final mult = (row['no_show_penalty_multiplier'] as num).toDouble();
 
       if (statusStr == ExecutionStatus.pending.name) {
         pending++;
-        revenueAtRisk += val;
+        revenueAtRisk = revenueAtRisk + val;
       } else if (statusStr == ExecutionStatus.executed.name) {
         executed++;
-        protectedRevenue += val;
+        protectedRevenue = protectedRevenue + val;
       } else if (statusStr == ExecutionStatus.noShow.name) {
         noShow++;
-        lostRevenue += val * mult;
+        lostRevenue = lostRevenue + (val * mult);
       } else if (statusStr == ExecutionStatus.evidenceGap.name) {
         evidenceGap++;
-        lostRevenue += val;
+        lostRevenue = lostRevenue + val;
       }
     }
 
@@ -108,7 +109,9 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         startLatitude: (row['start_latitude'] as num).toDouble(),
         startLongitude: (row['start_longitude'] as num).toDouble(),
         startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
-        contractualValue: (row['contractual_value'] as num).toDouble(),
+        contractualValue: Money(
+          (row['contractual_value_cents'] as num).toInt(),
+        ),
         noShowPenaltyMultiplier: (row['no_show_penalty_multiplier'] as num)
             .toDouble(),
       );

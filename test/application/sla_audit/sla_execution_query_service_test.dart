@@ -3,6 +3,7 @@ import 'package:busflow/application/sla_audit/projections/sla_execution_query_se
 import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
+import 'package:busflow/domain/shared/money.dart';
 
 void main() {
   late InMemoryContractualExecutionStateRepository repo;
@@ -22,7 +23,7 @@ void main() {
     String contractId = 'c-1',
     DateTime? windowStart,
     DateTime? windowEnd,
-    double contractualValue = 150.0,
+    Money contractualValue = const Money(15000),
     double noShowPenaltyMultiplier = 1.5,
   }) {
     return ContractualExecutionState.create(
@@ -196,7 +197,7 @@ void main() {
         // 1. Pending: contractualValue = 50.0 → should not affect any revenue
         final pending = makeState(
           setId: 'fin-pending',
-          contractualValue: 50.0,
+          contractualValue: Money.fromDouble(50.0),
           noShowPenaltyMultiplier: 1.0,
         );
         await repo.save(pending);
@@ -204,7 +205,7 @@ void main() {
         // 2. Executed: contractualValue = 200.0 → protectedRevenue only
         final executed = makeState(
           setId: 'fin-exec',
-          contractualValue: 200.0,
+          contractualValue: Money.fromDouble(200.0),
           noShowPenaltyMultiplier: 2.0,
         );
         executed.bindExecution(
@@ -218,7 +219,7 @@ void main() {
         // 3. NoShow: contractualValue = 100.0, multiplier = 1.5 → lostRevenue = 150 only
         final noShow = makeState(
           setId: 'fin-noshow',
-          contractualValue: 100.0,
+          contractualValue: Money.fromDouble(100.0),
           noShowPenaltyMultiplier: 1.5,
           windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
         );
@@ -228,7 +229,7 @@ void main() {
         // 4. EvidenceGap: contractualValue = 80.0 → revenueAtRisk only
         final gap = makeState(
           setId: 'fin-gap',
-          contractualValue: 80.0,
+          contractualValue: Money.fromDouble(80.0),
           noShowPenaltyMultiplier: 1.0,
         );
         gap.markEvidenceGap(DateTime.utc(2026, 3, 1, 6, 45));
@@ -243,9 +244,9 @@ void main() {
         expect(summary.totalEvidenceGap, 1);
 
         // Verify revenues are isolated
-        expect(summary.protectedRevenue, 200.0);
-        expect(summary.lostRevenue, 150.0); // 100 * 1.5
-        expect(summary.revenueAtRisk, 80.0);
+        expect(summary.protectedRevenue, const Money(20000));
+        expect(summary.lostRevenue, const Money(15000)); // 100 * 1.5
+        expect(summary.revenueAtRisk, const Money(8000));
       },
     );
   });

@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/supabase_client.dart';
+import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/contractual_execution_state.dart';
 import '../../domain/sla_audit/contractual_execution_state_repository.dart';
 import '../../domain/sla_audit/execution_status.dart';
@@ -203,7 +204,7 @@ class PostgresContractualExecutionStateRepository
       'start_longitude': state.startLongitude,
       'start_radius_meters': state.startRadiusMeters,
       'planned_vehicle_id': state.plannedVehicleId,
-      'contractual_value': state.contractualValue,
+      'contractual_value_cents': state.contractualValue.cents,
       'no_show_penalty_multiplier': state.noShowPenaltyMultiplier,
       'window_start_utc': state.windowStartUtc.toIso8601String(),
       'window_end_utc': state.windowEndUtc.toIso8601String(),
@@ -231,7 +232,9 @@ class PostgresContractualExecutionStateRepository
       startLongitude: (data['start_longitude'] as num).toDouble(),
       startRadiusMeters: data['start_radius_meters'] as int,
       plannedVehicleId: data['planned_vehicle_id'],
-      contractualValue: (data['contractual_value'] as num).toDouble(),
+      contractualValue: Money(
+        (data['contractual_value_cents'] as num).toInt(),
+      ),
       noShowPenaltyMultiplier: (data['no_show_penalty_multiplier'] as num)
           .toDouble(),
       windowStartUtc: DateTime.parse(data['window_start_utc']),

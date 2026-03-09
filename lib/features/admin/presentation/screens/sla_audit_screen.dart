@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:busflow/core/theme/app_theme.dart';
+import 'package:busflow/domain/shared/money.dart';
 import 'package:busflow/state/providers/sla_providers.dart';
 import 'package:busflow/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
@@ -102,7 +103,7 @@ class _SummaryCard extends StatelessWidget {
   final Color color;
   final int percentage;
   final String revenueLabel;
-  final double revenueValue;
+  final Money revenueValue;
 
   const _SummaryCard({
     required this.title,
@@ -172,7 +173,7 @@ class _SummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _currencyFormat.format(revenueValue),
+                  _currencyFormat.format(revenueValue.toDouble()),
                   style: BusFlowTypography.badge.copyWith(
                     color: color,
                     fontSize: 13,
@@ -246,7 +247,7 @@ class _SlaExceptionsTable extends ConsumerWidget {
                       ),
                       DataCell(
                         Text(
-                          _currencyFormat.format(item.contractualValue),
+                          _currencyFormat.format(item.contractualValue.toDouble()),
                           style: BusFlowTypography.bodyMedium,
                         ),
                       ),

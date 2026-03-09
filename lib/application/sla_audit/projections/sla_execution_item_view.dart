@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../domain/shared/money.dart';
 import '../../../domain/sla_audit/execution_status.dart';
 
 /// Read model: individual SET obligation view for lists and drill-down.
@@ -18,7 +19,7 @@ class SlaExecutionItemView extends Equatable {
   final double startLatitude;
   final double startLongitude;
   final int startRadiusMeters;
-  final double contractualValue;
+  final Money contractualValue;
   final double noShowPenaltyMultiplier;
 
   const SlaExecutionItemView({
@@ -39,7 +40,7 @@ class SlaExecutionItemView extends Equatable {
 
   /// Computed penalty value for display purposes.
   /// Formula lives here (projection layer), not in the UI.
-  double get calculatedPenalty => contractualValue * noShowPenaltyMultiplier;
+  Money get calculatedPenalty => contractualValue * noShowPenaltyMultiplier;
 
   @override
   List<Object?> get props => [

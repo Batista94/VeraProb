@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:uuid/uuid.dart';
 
+import '../shared/money.dart';
 import 'domain_event.dart';
 import 'domain_exception.dart';
 import 'execution_events.dart';
@@ -51,7 +52,7 @@ class ContractualExecutionState {
 
   // ── Financial ─────────────────────────────────────────────
   /// Contractual value of this service obligation.
-  final double contractualValue;
+  final Money contractualValue;
 
   /// Multiplier applied to contractualValue on NoShow. >= 1.0.
   final double noShowPenaltyMultiplier;
@@ -129,7 +130,7 @@ class ContractualExecutionState {
     required double startLongitude,
     required int startRadiusMeters,
     String? plannedVehicleId,
-    required double contractualValue,
+    required Money contractualValue,
     required double noShowPenaltyMultiplier,
     required DateTime windowStartUtc,
     required DateTime windowEndUtc,
@@ -140,7 +141,7 @@ class ContractualExecutionState {
       );
     }
 
-    if (contractualValue <= 0) {
+    if (contractualValue.cents <= 0) {
       throw const DomainException('contractualValue must be greater than 0');
     }
 
@@ -296,7 +297,7 @@ class ContractualExecutionState {
     required double startLongitude,
     required int startRadiusMeters,
     String? plannedVehicleId,
-    required double contractualValue,
+    required Money contractualValue,
     required double noShowPenaltyMultiplier,
     required DateTime windowStartUtc,
     required DateTime windowEndUtc,

@@ -6,6 +6,7 @@ import 'package:busflow/application/sla_audit/projections/contractual_financial_
 import 'package:busflow/domain/shared/money.dart';
 import 'package:busflow/features/admin/presentation/screens/sla_financial_impact_screen.dart';
 import 'package:busflow/state/providers/sla_financial_providers.dart';
+import 'package:busflow/state/providers/auth_providers.dart';
 
 /// Fake implementation for widget testing.
 class FakeFinancialImpactQueryService
@@ -38,7 +39,13 @@ Widget buildTestWidget({
   required ContractualFinancialImpactQueryService service,
 }) {
   return ProviderScope(
-    overrides: [financialImpactQueryServiceProvider.overrideWithValue(service)],
+    overrides: [
+      financialImpactQueryServiceProvider.overrideWithValue(service),
+      // financialImpactProvider reads currentOrganizationIdProvider to scope
+      // the query. Without a real auth session in tests, this returns null and
+      // the service is never called. Override it with a fixed test org.
+      currentOrganizationIdProvider.overrideWithValue('org-test'),
+    ],
     child: MaterialApp(
       home: Scaffold(
         body: SizedBox(
