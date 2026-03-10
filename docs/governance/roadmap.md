@@ -64,9 +64,11 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 |---------|--------|
 | Testes | 229 passing · 9 skipped (E2E sem credenciais) · 0 falhas |
 | Análise estática | 0 erros · 71 infos (`prefer_const` — baixa prioridade) |
+| Precisão financeira | `Money` (centavos BIGINT) em todo o stack — invariante enforced ✅ |
 | CI/CD | Não existe (Phase 8) |
 | Ambientes | Dev local único. Sem staging, sem prod. |
 | `strict-casts` | Desabilitado — ~80 issues de `dynamic` nos repos Postgres (Phase 8) |
+| Banco de dev | **Precisa de reset** antes de aplicar migration de Phase 5 |
 
 ---
 
@@ -137,6 +139,19 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 - [x] `.env.example` criado com instruções para dev e CI/CD
 - [x] `SUPABASE_KEY` confirmada como chave `anon` (não `service_role`)
 
+#### [x] A4 — Precisão Financeira (violação pré-Phase 5)
+> Detectada durante Council Review de Phase 5 — bloqueante antes de qualquer nova feature.
+
+- [x] `contractualValue: double` → `Money` em todo o stack (domínio, aplicação, infraestrutura, apresentação)
+- [x] `ContractualServiceExecution` e `ContractualExecutionState` — campo e assinaturas atualizados
+- [x] `DeclareContractualPlanHandler` — converte `double → Money` no boundary (input DTO continua `double`)
+- [x] `SlaExecutionItemView`, `SlaExecutionSummary` — campos `Money`; UI usa `.toDouble()` para `NumberFormat`
+- [x] `SlaExecutionQueryServiceInMemory` e `PostgresSlaExecutionQueryService` — acumulação com operadores `Money`
+- [x] `ContractualFinancialSnapshotGenerator` — removido `Money.fromDouble()` desnecessário
+- [x] Repositórios Postgres — escrita `.cents`, leitura `Money(int)`, coluna renomeada `contractual_value_cents`
+- [x] Migration `20260309000000_financial_precision_cents.sql` — `DOUBLE PRECISION → BIGINT`, backfill, DROP coluna antiga
+- [x] 15 arquivos de teste atualizados — 229 passing · 0 falhas
+
 ---
 
 ## Fases Pendentes
@@ -145,9 +160,9 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 
 ---
 
-### [ ] Phase 5 — Contract & Plan Lifecycle Management
+### [~] Phase 5 — Contract & Plan Lifecycle Management
 
-**⟵ PRÓXIMA FASE**
+**⟵ EM ANDAMENTO — Design Spec aprovado, implementação próxima**
 
 **Por que agora:** O motor de avaliação (Phases 0–4) está completo e determinístico.
 Mas atualmente **não existe nenhuma UI para um operador criar um contrato ou declarar um plano** —
@@ -157,35 +172,39 @@ A plataforma tem motor, mas não tem volante. Phase 5 constrói o volante.
 **Objetivo:** Interface completa para o ciclo de vida contratual — da criação de um contrato
 até o encerramento auditável do ciclo. Esta é a jornada primária do operador no produto.
 
-#### [ ] 5.1 — Design Specification
-**Artefato:** `docs/architecture/09_contract_plan_lifecycle_design.md`
+#### [x] 5.1 — Design Specification
+**Artefato:** `docs/architecture/09_contract_plan_lifecycle_design.md` ✅
+- [x] `Contract` aggregate: `draft → active → closed` (renovação adiada para Phase 6)
+- [x] `validFromUtc` / `validUntilUtc` como campos obrigatórios na criação
+- [x] `DeclareContractualPlanHandler` modificado para validar `Contract` antes de criar plano
+- [x] `originalFileHash` gerado como SHA-256 do JSON do command para planos criados via UI
+- [x] `CloseContractCommand` implementado no domínio; **botão de UI adiado para Phase 6** (requer RBAC)
+- [x] Encerrar com SETs ativos: permitido com modal de confirmação na UI
+- [x] Listagem com filtros por status e vigência; formulário criar + declarar plano; tela de detalhe
+- [x] Banco de dev: reset completo antes de aplicar migration (sem dados a preservar)
 
-Cobrir obrigatoriamente:
-- **Contract entity:** modelo de domínio para `Contract` (status: draft → active → closed → renewed)
-- **Plan declaration UI:** formulário para `DeclareContractualPlanCommand` via OCC
-- **Service execution setup:** como operadores configuram geofences, janelas de tempo e parâmetros SLA por SET
-- **Contract lifecycle transitions:** quem pode fazer cada transição, quais estados são terminais
-- **Listagem e filtros:** tela de contratos ativos, encerrados, com SLA em risco
-- **Impacto no engine:** como novos planos declarados via UI alimentam o pipeline existente
-- **Tenant scoping:** todas as telas filtradas por `organization_id` do JWT
-- **Imutabilidade:** planos publicados não podem ser editados — apenas uma nova versão pode ser declarada
+#### [x] 5.2 — Council Review ✅
+- [x] Plano via UI passa pelo mesmo `DeclareContractualPlanHandler` — sem bypass do domínio
+- [x] UI nunca escreve diretamente em repositórios — usa commands
+- [x] Transições de status controladas pelo domínio (`Contract.assertCanReceivePlan()`)
+- [x] `organization_id` derivado do JWT, nunca de input do formulário
+- [x] `contractId` referencia `Contract` real — validado pelo handler (DomainException se não existir)
+- [x] Todas as 5 decisões de produto registradas e incorporadas ao spec
 
-#### [ ] 5.2 — Council Review
-Validar antes de implementar:
-- Plano publicado via UI passa pelo mesmo `DeclareContractualPlanHandler` — sem bypass do domínio
-- UI nunca escreve diretamente em repositórios — usa commands
-- Transições de status de contrato são controladas pelo domínio, não pelo presenter
-- `organization_id` derivado do JWT, nunca de input do formulário
-
-#### [ ] 5.3 — Implementation
-- **Domain:** `Contract` aggregate com lifecycle state machine
-- **Application:** `CreateContractCommand`, `CloseContractCommand`, `AmendContractCommand`
-- **Infrastructure:** `contracts` table, migration com RLS, repositório Postgres
+#### [ ] 5.3 — Implementation  ← **PRÓXIMO PASSO**
+- **Domain:** `Contract` aggregate + `ContractStatus` enum + `ContractRepository` interface
+  + events: `ContractCreatedEvent`, `ContractActivatedEvent`, `ContractClosedEvent`
+- **Application:** `CreateContractHandler`, `CloseContractHandler`
+  + `DeclareContractualPlanHandler` modificado (valida Contract + ativa automaticamente)
+  + `ContractQueryService` + `ContractSummaryView` + `ContractDetailView`
+- **Infrastructure:** migration SQL (`contracts` table + FK em `plan_declarations` + reset dev)
+  + `InMemoryContractRepository` + `PostgresContractRepository`
+  + `ContractQueryServiceInMemory` + `ContractQueryServicePostgres`
 - **Presentation:**
-  - Tela de listagem de contratos (com filtros por status, período, SLA health)
-  - Formulário de criação de contrato
-  - Formulário de declaração de plano com SETs configuráveis
-  - Painel de detalhes do contrato com timeline de execuções
+  - `ContractsScreen` — listagem com filtros por status e vigência
+  - `CreateContractForm` — com `validFromUtc` / `validUntilUtc`
+  - `DeclareContractPlanForm` — SETs configuráveis (viagens programadas)
+  - `ContractDetailScreen` — abas: execuções, histórico de planos, financeiro
 
 #### [ ] 5.4 — Validation
 
@@ -205,7 +224,7 @@ Validar antes de implementar:
 - [ ] **Plano publicado não editável:** tentar editar plano existente → verificar que UI bloqueia ou retorna erro de domínio correto
 - [ ] **Isolamento de tenant:** logar como usuário de Org A → confirmar que nenhum contrato de Org B aparece na listagem
 - [ ] **Pipeline de avaliação:** após plano declarado, simular telemetria via Realtime → confirmar que execução muda de `pending` → `executed` na UI sem refresh manual
-- [ ] **Encerrar contrato:** usar ação de encerramento → tentar declarar novo plano → confirmar que é rejeitado
+- [ ] **Contrato encerrado (via teste automatizado/API):** confirmar que `CloseContractCommand` funciona no domínio e que declarar novo plano retorna `DomainException` — botão de UI vem na Phase 6
 
 - **Compliance Report:** `docs/governance/compliance/phase5_compliance_report.md`
 
@@ -455,9 +474,11 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 [✅] Phase 2  Contract Rules & Configurable Determinism
 [✅] Phase 3  Explainability & Investigation
 [✅] Phase 4  Operational Alerts
-[✅] Trilha A Correções Críticas de Débito Técnico
+[✅] Trilha A Correções Críticas de Débito Técnico (A1 testes · A2 lints · A3 segredos · A4 precisão financeira)
 ─────────────────────────────────────────────────────
-[  ] Phase 5  Contract & Plan Lifecycle Management   ← AGORA
+[~] Phase 5  Contract & Plan Lifecycle Management    ← EM ANDAMENTO
+     ✅ 5.1 Design Spec   ✅ 5.2 Council Review
+     ⏳ 5.3 Implementation  ·  5.4 Validation
 [  ] Phase 6  Administration & Tenant Self-Service
 [  ] Phase 7  Evidence & Audit Exports
 [  ] Phase 8  Operational Hardening
@@ -468,10 +489,11 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Phase 5 — Design Specification.**
+**Phase 5.3 — Implementation.**
 
-Criar `docs/architecture/09_contract_plan_lifecycle_design.md` cobrindo:
-`Contract` aggregate · lifecycle state machine · plan declaration UI ·
-SET configuration · tenant scoping · impacto no pipeline existente.
-
-Seguir ciclo obrigatório: Design Spec → Council Review → Implementation → Validation → Compliance Report.
+Ordem obrigatória:
+1. Domínio: `Contract` aggregate + `ContractStatus` + eventos de domínio
+2. Aplicação: handlers + query service
+3. Infraestrutura: migration SQL (reset dev primeiro) + repositórios
+4. Apresentação: telas de listagem, criação, declaração de plano e detalhe
+5. Testes e Phase 5.4 Validation
