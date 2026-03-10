@@ -1,9 +1,11 @@
 import '../../domain/shared/money.dart';
+import '../../domain/sla_audit/contract_repository.dart';
+import '../../domain/sla_audit/contractual_rule_repository.dart';
 import '../../domain/sla_audit/contractual_service_execution.dart';
+import '../../domain/sla_audit/domain_exception.dart';
 import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
-import '../../domain/sla_audit/contractual_rule_repository.dart';
 import 'declare_contractual_plan_command.dart';
 import 'sla_ledger_mapper.dart';
 
@@ -15,6 +17,8 @@ import 'sla_ledger_mapper.dart';
 ///
 /// The handler contains NO domain logic. All validation and entity creation
 /// is delegated to domain factories:
+/// - [Contract.assertCanReceivePlan()] — guards the pre-condition
+/// - [Contract.activate()] — automatic draft→active on first plan
 /// - [ContractualServiceExecution.create()]
 /// - [PlanDeclaration.create()]
 ///
@@ -23,14 +27,17 @@ class DeclareContractualPlanHandler {
   final PlanDeclarationRepository _repository;
   final SlaAuditLedgerRepository _ledger;
   final ContractualRuleRepository _ruleRepository;
+  final ContractRepository _contractRepository;
 
   DeclareContractualPlanHandler({
     required PlanDeclarationRepository repository,
     required SlaAuditLedgerRepository ledger,
     required ContractualRuleRepository ruleRepository,
-  }) : _repository = repository,
-       _ledger = ledger,
-       _ruleRepository = ruleRepository;
+    required ContractRepository contractRepository,
+  })  : _repository = repository,
+        _ledger = ledger,
+        _ruleRepository = ruleRepository,
+        _contractRepository = contractRepository;
 
   /// Handles the command by creating the aggregate, persisting it,
   /// and appending all domain events to the ledger.
@@ -40,6 +47,19 @@ class DeclareContractualPlanHandler {
   /// Throws [DomainException] if any invariant is violated —
   /// in which case nothing is persisted and the ledger remains untouched.
   Future<PlanDeclaration> handle(DeclareContractualPlanCommand command) async {
+    // 0. Validate Contract exists and can receive a plan (Phase 5)
+    final contract = await _contractRepository.findById(
+      command.contractId,
+      organizationId: command.organizationId,
+    );
+    if (contract == null) {
+      throw DomainException(
+        'Contract "${command.contractId}" not found for organization '
+        '"${command.organizationId}".',
+      );
+    }
+    contract.assertCanReceivePlan();
+
     // 1. Map each DTO input → domain Entity via factory
     final services = command.services
         .map(
@@ -78,16 +98,26 @@ class DeclareContractualPlanHandler {
       services: services,
     );
 
-    // 3. Persist aggregate
+    // 3. Persist plan aggregate
     await _repository.save(plan);
 
-    // 4. Append all domain events to the ledger
+    // 4. Append plan domain events to the ledger
     for (final event in plan.domainEvents) {
       final entry = SlaLedgerMapper.mapToEntry(event);
       await _ledger.append(entry);
     }
 
-    // 5. Return aggregate
+    // 5. If contract is still draft, activate it (first plan — draft→active)
+    if (contract.isDraft) {
+      final activated = contract.activate();
+      await _contractRepository.save(activated);
+      for (final event in activated.domainEvents) {
+        final entry = SlaLedgerMapper.mapToEntry(event);
+        await _ledger.append(entry);
+      }
+    }
+
+    // 6. Return plan aggregate
     return plan;
   }
 }

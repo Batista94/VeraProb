@@ -32,7 +32,8 @@ export '../../infrastructure/sla_audit/sla_persistence_provider.dart'
     show
         planDeclarationRepositoryProvider,
         contractualExecutionStateRepositoryProvider,
-        slaAuditLedgerRepositoryProvider;
+        slaAuditLedgerRepositoryProvider,
+        contractRepositoryProvider;
 
 // ── Repositories (Singletons) ───────────────────────────────
 // planDeclarationRepositoryProvider, contractualExecutionStateRepositoryProvider,

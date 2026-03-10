@@ -13,7 +13,9 @@
       "Bash(/tmp/fix_debug3.py:*)",
       "Bash(/tmp/fix_contract_rules3.py:*)",
       "Bash(/tmp/fix_repo_calls.py:*)",
-      "Bash(dart analyze:*)"
+      "Bash(dart analyze:*)",
+      "Bash(find \"C:\\\\Projects\\\\MVP - Bus\" -name \"*router*\" -o -name \"*route*\" -o -name \"*navigation*\" 2>/dev/null | head -20)",
+      "Bash(find \"C:\\\\Projects\\\\MVP - Bus\\\\lib\\\\features\" -type f -name \"*.dart\" 2>/dev/null | head -30)"
     ]
   }
 }

@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:busflow/application/sla_audit/contractual_service_input.dart';
 import 'package:busflow/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:busflow/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:busflow/domain/sla_audit/contract.dart';
+import 'package:busflow/domain/sla_audit/contract_repository.dart';
+import 'package:busflow/domain/sla_audit/contract_status.dart';
 import 'package:busflow/domain/sla_audit/domain_exception.dart';
 import 'package:busflow/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:busflow/domain/sla_audit/contractual_rule.dart';
@@ -23,6 +26,7 @@ void main() {
       repository: repository,
       ledger: ledger,
       ruleRepository: MockContractualRuleRepository(),
+      contractRepository: MockContractRepository(),
     );
   });
 
@@ -92,9 +96,10 @@ void main() {
         expect(persisted, isNotNull);
         expect(persisted!.id, plan.id);
 
-        // Exactly one entry was appended to the ledger
-        expect(ledger.entries, hasLength(1));
+        // Two entries appended: PLAN_DECLARED + CONTRACT_ACTIVATED (draft→active)
+        expect(ledger.entries, hasLength(2));
         expect(ledger.entries.first.type, 'PLAN_DECLARED');
+        expect(ledger.entries.last.type, 'CONTRACT_ACTIVATED');
       },
     );
 
@@ -168,8 +173,8 @@ void main() {
       final setIds = plan.services.map((s) => s.setId).toSet();
       expect(setIds, hasLength(3));
 
-      // Ledger received exactly 1 event
-      expect(ledger.entries, hasLength(1));
+      // Ledger received 2 events: PLAN_DECLARED + CONTRACT_ACTIVATED
+      expect(ledger.entries, hasLength(2));
     });
   });
 }
@@ -185,4 +190,34 @@ class MockContractualRuleRepository implements ContractualRuleRepository {
 
   @override
   Future<void> saveRule(ContractualRule rule) async {}
+}
+
+/// Returns a draft [Contract] for any non-empty contractId.
+/// Allows the handler to validate and activate contracts during tests.
+class MockContractRepository implements ContractRepository {
+  @override
+  Future<Contract?> findById(String id, {required String organizationId}) async {
+    if (id.isEmpty) return null;
+    return Contract.reconstitute(
+      id: id,
+      organizationId: organizationId,
+      name: 'Test Contract',
+      contractorName: 'Test Contractor',
+      validFromUtc: DateTime.utc(2026, 1, 1),
+      validUntilUtc: DateTime.utc(2026, 12, 31),
+      status: ContractStatus.draft,
+      createdAtUtc: DateTime.utc(2026, 1, 1),
+    );
+  }
+
+  @override
+  Future<void> save(Contract contract) async {}
+
+  @override
+  Future<List<Contract>> findByOrganization(
+    String organizationId, {
+    ContractStatus? status,
+  }) async {
+    return [];
+  }
 }

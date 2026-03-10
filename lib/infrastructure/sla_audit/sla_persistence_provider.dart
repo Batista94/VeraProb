@@ -1,15 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/sla_audit/contract_repository.dart';
 import '../../domain/sla_audit/contractual_execution_state_repository.dart';
 import '../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
 import '../../infrastructure/persistence/persistence_mode.dart';
 import '../../infrastructure/persistence/persistence_provider.dart';
+import 'in_memory_contract_repository.dart';
 import 'in_memory_contractual_execution_state_repository.dart';
 import 'in_memory_contractual_financial_snapshot_repository.dart';
 import 'in_memory_plan_declaration_repository.dart';
 import 'in_memory_sla_audit_ledger_repository.dart';
+import 'postgres_contract_repository.dart';
 import 'postgres_contractual_execution_state_repository.dart';
 import 'postgres_contractual_financial_snapshot_repository.dart';
 import 'postgres_plan_declaration_repository.dart';
@@ -58,3 +61,10 @@ final contractualFinancialSnapshotRepositoryProvider =
           PostgresContractualFinancialSnapshotRepository(),
       };
     });
+
+final contractRepositoryProvider = Provider<ContractRepository>((ref) {
+  return switch (ref.watch(persistenceModeProvider)) {
+    PersistenceMode.inMemory => InMemoryContractRepository(),
+    PersistenceMode.postgres => PostgresContractRepository(),
+  };
+});

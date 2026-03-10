@@ -62,7 +62,7 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 229 passing · 9 skipped (E2E sem credenciais) · 0 falhas |
+| Testes | 280 passing · 9 skipped (E2E sem credenciais) · 0 falhas |
 | Análise estática | 0 erros · 71 infos (`prefer_const` — baixa prioridade) |
 | Precisão financeira | `Money` (centavos BIGINT) em todo o stack — invariante enforced ✅ |
 | CI/CD | Não existe (Phase 8) |
@@ -191,7 +191,7 @@ até o encerramento auditável do ciclo. Esta é a jornada primária do operador
 - [x] `contractId` referencia `Contract` real — validado pelo handler (DomainException se não existir)
 - [x] Todas as 5 decisões de produto registradas e incorporadas ao spec
 
-#### [ ] 5.3 — Implementation  ← **PRÓXIMO PASSO**
+#### [x] 5.3 — Implementation ✅
 - **Domain:** `Contract` aggregate + `ContractStatus` enum + `ContractRepository` interface
   + events: `ContractCreatedEvent`, `ContractActivatedEvent`, `ContractClosedEvent`
 - **Application:** `CreateContractHandler`, `CloseContractHandler`
@@ -478,7 +478,7 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 ─────────────────────────────────────────────────────
 [~] Phase 5  Contract & Plan Lifecycle Management    ← EM ANDAMENTO
      ✅ 5.1 Design Spec   ✅ 5.2 Council Review
-     ⏳ 5.3 Implementation  ·  5.4 Validation
+     ✅ 5.3 Implementation  ·  ⏳ 5.4 Validation
 [  ] Phase 6  Administration & Tenant Self-Service
 [  ] Phase 7  Evidence & Audit Exports
 [  ] Phase 8  Operational Hardening

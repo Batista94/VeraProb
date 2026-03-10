@@ -1,3 +1,4 @@
+import '../../domain/sla_audit/contract_events.dart';
 import '../../domain/sla_audit/contractual_plan_declared_event.dart';
 import '../../domain/sla_audit/domain_event.dart';
 import '../../domain/sla_audit/execution_events.dart';
@@ -113,6 +114,53 @@ class SlaLedgerMapper {
         payload: {
           'vehicle_id': event.vehicleId,
           'operator_id': event.operatorId,
+          'reason': event.reason,
+        },
+      );
+    }
+
+    if (event is ContractCreatedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'CONTRACT_CREATED',
+        setId: null,
+        contractId: event.contractId,
+        planVersion: 0,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'name': event.name,
+          'contractor_name': event.contractorName,
+          'valid_from_utc': event.validFromUtc.toIso8601String(),
+          'valid_until_utc': event.validUntilUtc.toIso8601String(),
+        },
+      );
+    }
+
+    if (event is ContractActivatedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'CONTRACT_ACTIVATED',
+        setId: null,
+        contractId: event.contractId,
+        planVersion: 0,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'activated_at_utc': event.activatedAtUtc.toIso8601String(),
+        },
+      );
+    }
+
+    if (event is ContractClosedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'CONTRACT_CLOSED',
+        setId: null,
+        contractId: event.contractId,
+        planVersion: 0,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'closed_at_utc': event.closedAtUtc.toIso8601String(),
+          'closed_by_user_id': event.closedByUserId,
           'reason': event.reason,
         },
       );

@@ -5,6 +5,7 @@ import 'dashboard_screen.dart';
 import 'drivers_screen.dart';
 import 'timecard_reports_screen.dart';
 import 'command_center/screens/operational_audit_screen.dart';
+import 'screens/contracts_screen.dart';
 import 'screens/sla_audit_screen.dart';
 import 'screens/sla_financial_impact_screen.dart';
 import 'screens/billing_cycle_reports_screen.dart';
@@ -37,6 +38,11 @@ class AdminHome extends StatelessWidget {
           label: Text('Auditoria OCC'),
         ),
         NavigationRailDestination(
+          icon: Icon(Icons.description_outlined),
+          selectedIcon: Icon(Icons.description),
+          label: Text('Contratos'),
+        ),
+        NavigationRailDestination(
           icon: Icon(Icons.verified_user_outlined),
           selectedIcon: Icon(Icons.verified_user),
           label: Text('Auditoria de SLA'),
@@ -57,6 +63,7 @@ class AdminHome extends StatelessWidget {
         DriversScreen(),
         TimecardReportsScreen(),
         OperationalAuditScreen(),
+        ContractsScreen(),
         SlaAuditScreen(),
         SlaFinancialImpactScreen(),
         BillingCycleReportsScreen(),

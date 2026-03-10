@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:busflow/domain/sla_audit/contract.dart';
+import 'package:busflow/domain/sla_audit/contract_repository.dart';
+import 'package:busflow/domain/sla_audit/contract_status.dart';
 import 'package:busflow/domain/sla_audit/contractual_rule.dart';
 import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
 import 'package:busflow/domain/sla_audit/contractual_rule_repository.dart';
@@ -108,6 +111,7 @@ void main() {
       repository: planRepo,
       ledger: ledgerRepo,
       ruleRepository: MockContractualRuleRepository(),
+      contractRepository: MockContractRepository(),
     );
 
     evaluationEngine = ContractualEvaluationEngine(
@@ -498,4 +502,34 @@ class MockContractualRuleRepository implements ContractualRuleRepository {
 
   @override
   Future<void> saveRule(ContractualRule rule) async {}
+}
+
+/// Returns a draft [Contract] for any non-empty contractId.
+/// Allows the handler to validate and activate contracts during E2E tests.
+class MockContractRepository implements ContractRepository {
+  @override
+  Future<Contract?> findById(String id, {required String organizationId}) async {
+    if (id.isEmpty) return null;
+    return Contract.reconstitute(
+      id: id,
+      organizationId: organizationId,
+      name: 'E2E Test Contract',
+      contractorName: 'E2E Contractor',
+      validFromUtc: DateTime.utc(2026, 1, 1),
+      validUntilUtc: DateTime.utc(2026, 12, 31),
+      status: ContractStatus.draft,
+      createdAtUtc: DateTime.utc(2026, 1, 1),
+    );
+  }
+
+  @override
+  Future<void> save(Contract contract) async {}
+
+  @override
+  Future<List<Contract>> findByOrganization(
+    String organizationId, {
+    ContractStatus? status,
+  }) async {
+    return [];
+  }
 }
