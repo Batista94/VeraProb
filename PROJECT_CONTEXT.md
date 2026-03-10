@@ -41,7 +41,13 @@ Isolation is enforced from the bottom up via the `organization_id`.
 - **Compute Boundary:** The Evaluation Engine resolves rule configurations based on the tenant's context.
 
 ## 6. Governance Model
-The Engineering Council enforces a strict development lifecycle:
+The Engineering Council enforces a strict development lifecycle. This council is composed of specialized AI personas that review every design and implementation:
+- **Chief Architect:** Structural integrity, DDD, and core vs. module separation.
+- **Senior Engineer:** Tech stack (Flutter/Riverpod/Supabase), Clean Architecture, and performance.
+- **UX & Operations Director:** Human-system interaction, OCC workflows, and provenance.
+- **QA & Security Lead:** RLS enforcement, tenant isolation, and idempotency.
+
+The lifecycle consists of:
 1. **Design Specification** (Architectural Draft)
 2. **Council Review** (Validation of Invariants)
 3. **Implementation** (Code Execution)
@@ -49,18 +55,15 @@ The Engineering Council enforces a strict development lifecycle:
 5. **Compliance Report** (Durable Proof of Work)
 
 ## 7. Current System State
-- **Phase 0: Core Stabilization** (Completed) - Fixed MVP race conditions and crash bugs.
-- **Phase 1: Multi-Tenancy & Auth Foundation** (Completed) - Established RLS, HASH partitioning, and Supabase Auth.
-- **Phase 2: Contract Rules & Configurable Determinism** (Completed) - Implemented JSON-driven rule snapshots and deterministic engine resolution.
-- **Phase 3: Explainability & Investigation** (In Progress) - Evaluation traces and Investigation Console.
-- **Phase 4: Operational Alerts** (Planned) - Real-time derived alerts and triage UI.
-- **Phase 5: Reporting & Financial Exports** (Planned) - Compliance aggregation and CSV/PDF exports.
-- **Phase 6: Admin & Onboarding** (Planned) - Management UI for Organizations, Assets, and Rules.
-- **Phase 7: Operational Hardening** (Planned) - CI/CD, observability, and scaling.
+- **Phase 0 to 4:** (Completed) - Stabilization, Multi-Tenancy, Rules Engine, Investigation Traces, and Operational Alerts.
+- **Phase 5: Contract & Plan Lifecycle Management** (In Progress) - Design and Council Review completed. Moving to Implementation of UI and full lifecycle management.
+- **Phase 6: Admin & Tenant Self-Service** (Planned) - RBAC, invitations, and asset onboarding.
+- **Phase 7: Evidence & Audit Exports** (Planned) - Compliance aggregation and CSV/PDF exports.
 
 ## 8. Documentation Map
 For deeper technical details, refer to the `docs/` hierarchy:
-- [`docs/architecture`](./docs/architecture/): System overview, pipeline details, rules engine, and OCC model.
-- [`docs/governance`](./docs/governance/): Lifecycle framework, B2B strategy, and the Strategic Roadmap.
+- [`docs/council`](./docs/council/): AI Persona definitions (Architect, Senior Engineer, UX Director, QA Lead).
+- [`docs/architecture`](./docs/architecture/): System overview, pipeline details, and feature designs (01 to 09).
+- [`docs/governance`](./docs/governance/): Framework, B2B strategy, and the Strategic Roadmap.
 - [`docs/governance/compliance`](./docs/governance/compliance/): Validation reports and security audits.
 - [`docs/runbooks`](./docs/runbooks/): Database bootstrap and operational testing procedures.
