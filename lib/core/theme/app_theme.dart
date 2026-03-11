@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Operational color system for BusFlow Control Center.
 ///
@@ -7,27 +8,27 @@ import 'package:flutter/material.dart';
 class BusFlowColors {
   BusFlowColors._();
 
-  // ── Dark Theme Base ──────────────────────────────────
-  static const background = Color(0xFF0F1419);
-  static const surface = Color(0xFF1A2332);
-  static const surfaceElevated = Color(0xFF243044);
-  static const border = Color(0xFF2D3F56);
+  // ── Premium Dark Theme (Deep Navy/Obsidian) ────────────────
+  static const Color background = Color(0xFF030609); // Near black, high contrast
+  static const Color surface = Color(0xFF0B141C);    // Deep navy slate
+  static const Color surfaceElevated = Color(0xFF141F2B);
+  static const Color border = Color(0xFF1E2D3D);
 
-  // ── Status Colors ────────────────────────────────────
-  static const onTime = Color(0xFF00C853);
-  static const delayed = Color(0xFFFF9100);
-  static const critical = Color(0xFFFF1744);
-  static const scheduled = Color(0xFF448AFF);
-  static const neutral = Color(0xFF78909C);
+  // ── Status Colors (CFO & Ops Friendly) ──────────────────
+  static const Color onTime = Color(0xFF10B981);    // Emerald Green (Protected Revenue)
+  static const Color delayed = Color(0xFFF59E0B);   // Amber (Attention Required)
+  static const Color critical = Color(0xFFEF4444);  // Rose Red (Lost Revenue)
+  static const Color scheduled = Color(0xFF3B82F6); // Royal Blue (Upcoming)
+  static const Color neutral = Color(0xFF64748B);
 
-  // ── Accent ───────────────────────────────────────────
-  static const primary = Color(0xFF00BFA5);
-  static const secondary = Color(0xFF7C4DFF);
+  // ── High-Impact Accents ─────────────────────────────────
+  static const Color primary = Color(0xFF14B8A6);   // Teal/Mint (The "Signal")
+  static const Color secondary = Color(0xFF6366F1); // Indigo
 
-  // ── Text ─────────────────────────────────────────────
-  static const textPrimary = Color(0xFFECEFF1);
-  static const textSecondary = Color(0xFF90A4AE);
-  static const textDisabled = Color(0xFF546E7A);
+  // ── Premium Text Hierarchy ──────────────────────────────
+  static const Color textPrimary = Color(0xFFF8FAFC);
+  static const Color textSecondary = Color(0xFF94A3B8);
+  static const Color textDisabled = Color(0xFF475569);
 
   // ── Semantic ─────────────────────────────────────────
   static const success = onTime;
@@ -40,58 +41,53 @@ class BusFlowColors {
 class BusFlowTypography {
   BusFlowTypography._();
 
-  static const String fontFamily = 'Roboto';
+  // Use Inter as the premium bridge between UI and Data
+  static TextStyle get base => GoogleFonts.inter();
 
-  static const kpiValue = TextStyle(
-    fontFamily: fontFamily,
+  static TextStyle get kpiValue => base.copyWith(
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: BusFlowColors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: -0.7,
   );
 
-  static const kpiLabel = TextStyle(
-    fontFamily: fontFamily,
+  static TextStyle get kpiLabel => base.copyWith(
     fontSize: 11,
-    fontWeight: FontWeight.w500,
-    color: BusFlowColors.textSecondary,
-    letterSpacing: 0.5,
-  );
-
-  static const sectionTitle = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: BusFlowColors.textPrimary,
-    letterSpacing: 0.3,
+    color: BusFlowColors.textSecondary,
+    letterSpacing: 0.8,
+    textBaseline: TextBaseline.alphabetic,
   );
 
-  static const bodyMedium = TextStyle(
-    fontFamily: fontFamily,
+  static TextStyle get sectionTitle => base.copyWith(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: BusFlowColors.textPrimary,
+    letterSpacing: 0.2,
+  );
+
+  static TextStyle get bodyMedium => base.copyWith(
     fontSize: 13,
     fontWeight: FontWeight.w400,
     color: BusFlowColors.textPrimary,
   );
 
-  static const bodySmall = TextStyle(
-    fontFamily: fontFamily,
+  static TextStyle get bodySmall => base.copyWith(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     color: BusFlowColors.textSecondary,
   );
 
-  static const caption = TextStyle(
-    fontFamily: fontFamily,
+  static TextStyle get caption => base.copyWith(
     fontSize: 11,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w500,
     color: BusFlowColors.textDisabled,
   );
 
-  static const badge = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 11,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.3,
+  static TextStyle get badge => base.copyWith(
+    fontSize: 10,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.5,
   );
 }
 
@@ -102,7 +98,7 @@ class AppTheme {
   static final darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    fontFamily: BusFlowTypography.fontFamily,
+    fontFamily: GoogleFonts.inter().fontFamily,
     scaffoldBackgroundColor: BusFlowColors.background,
     colorScheme: const ColorScheme.dark(
       primary: BusFlowColors.primary,
@@ -113,19 +109,27 @@ class AppTheme {
       onSecondary: Colors.white,
       onSurface: BusFlowColors.textPrimary,
       onError: Colors.white,
+      surfaceContainer: BusFlowColors.surface,
+      surfaceContainerHigh: BusFlowColors.surfaceElevated,
     ),
+    textTheme: GoogleFonts.interTextTheme(const TextTheme(
+      headlineMedium: TextStyle(color: BusFlowColors.textPrimary, fontWeight: FontWeight.bold),
+      titleLarge: TextStyle(color: BusFlowColors.textPrimary, fontWeight: FontWeight.w600),
+      bodyMedium: TextStyle(color: BusFlowColors.textPrimary),
+      bodySmall: TextStyle(color: BusFlowColors.textSecondary),
+    )),
     appBarTheme: const AppBarTheme(
       backgroundColor: BusFlowColors.surface,
       foregroundColor: BusFlowColors.textPrimary,
       elevation: 0,
       centerTitle: false,
-      toolbarHeight: 48,
+      toolbarHeight: 64, // Slightly taller for premium feel
     ),
     cardTheme: CardThemeData(
       color: BusFlowColors.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: BusFlowColors.border, width: 1),
       ),
       margin: EdgeInsets.zero,
@@ -139,78 +143,57 @@ class AppTheme {
       color: BusFlowColors.textSecondary,
       size: 20,
     ),
-    tooltipTheme: TooltipThemeData(
-      decoration: BoxDecoration(
-        color: BusFlowColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: BusFlowColors.border),
-      ),
-      textStyle: BusFlowTypography.bodySmall.copyWith(
-        color: BusFlowColors.textPrimary,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      waitDuration: const Duration(milliseconds: 300),
-    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: BusFlowColors.surfaceElevated,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      fillColor: BusFlowColors.background, // Nested feel
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: BusFlowColors.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: BusFlowColors.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: BusFlowColors.primary, width: 1.5),
       ),
-      hintStyle: BusFlowTypography.bodySmall,
+      labelStyle: TextStyle(color: BusFlowColors.textSecondary, fontSize: 13),
+      hintStyle: TextStyle(color: BusFlowColors.textDisabled, fontSize: 13),
       isDense: true,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: BusFlowColors.primary,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         elevation: 0,
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 0.3),
       ),
     ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: BusFlowColors.primary,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: BusFlowColors.surface,
+      indicatorColor: BusFlowColors.primary.withValues(alpha: 0.1),
+      selectedIconTheme: const IconThemeData(color: BusFlowColors.primary, size: 24),
+      unselectedIconTheme: const IconThemeData(color: BusFlowColors.textDisabled, size: 24),
+      selectedLabelTextStyle: const TextStyle(
+        color: BusFlowColors.primary,
+        fontWeight: FontWeight.w700,
+        fontSize: 11,
       ),
-    ),
-    snackBarTheme: SnackBarThemeData(
-      backgroundColor: BusFlowColors.surfaceElevated,
-      contentTextStyle: BusFlowTypography.bodyMedium,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(6),
-        side: const BorderSide(color: BusFlowColors.border),
+      unselectedLabelTextStyle: const TextStyle(
+        color: BusFlowColors.textDisabled,
+        fontSize: 11,
       ),
-    ),
-    scrollbarTheme: ScrollbarThemeData(
-      thumbColor: WidgetStateProperty.all(
-        BusFlowColors.border.withValues(alpha: 0.6),
-      ),
-      trackColor: WidgetStateProperty.all(Colors.transparent),
-      radius: const Radius.circular(4),
-      thickness: WidgetStateProperty.all(4),
     ),
   );
 
-  // Keep light theme for compatibility but admin will use dark
   static final lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     colorSchemeSeed: BusFlowColors.primary,
-    fontFamily: BusFlowTypography.fontFamily,
+    fontFamily: GoogleFonts.inter().fontFamily,
   );
 }

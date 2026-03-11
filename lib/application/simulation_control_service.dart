@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import '../domain/entities/operational_trip.dart';
 import '../domain/entities/trip_event.dart';
@@ -38,20 +40,22 @@ class SimulationControlService implements OperationalControlService {
     final oldStatus = _simulation.updateTripStatus(tripId, newStatus);
 
     // Fire-and-forget: Audit logging never blocks operational flow
-    _auditService
-        .logAction(
-          organizationId: _getOrganizationId(),
-          operatorId: _getOperatorId(),
-          actionType: 'TRIP_STATUS_CHANGE',
-          entityId: tripId,
-          oldValue: oldStatus?.name,
-          newValue: newStatus.name,
-          reason: reason ?? 'Mudança de status via painel',
-        )
-        .catchError((e) {
-          // In production, log to crashlytics/sentry
-          debugPrint('Failed to log audit action: $e');
-        });
+    unawaited(
+      _auditService
+          .logAction(
+            organizationId: _getOrganizationId(),
+            operatorId: _getOperatorId(),
+            actionType: 'TRIP_STATUS_CHANGE',
+            entityId: tripId,
+            oldValue: oldStatus?.name,
+            newValue: newStatus.name,
+            reason: reason ?? 'Mudança de status via painel',
+          )
+          .catchError((e) {
+            // In production, log to crashlytics/sentry
+            debugPrint('Failed to log audit action: $e');
+          }),
+    );
 
     final event = _simulation.addEvent(
       tripId: tripId,
@@ -103,20 +107,22 @@ class SimulationControlService implements OperationalControlService {
     final trip = _simulation.getTripById(tripId);
 
     // Fire-and-forget: Audit logging never blocks operational flow
-    _auditService
-        .logAction(
-          organizationId: _getOrganizationId(),
-          operatorId: _getOperatorId(),
-          actionType: 'CREATE_INCIDENT_${eventType.name.toUpperCase()}',
-          entityId: tripId,
-          oldValue: trip?.status.name,
-          newValue: trip?.status.name,
-          reason: notes ?? 'Incidente reportado manualmente',
-        )
-        .catchError((e) {
-          // In production, log to crashlytics/sentry
-          debugPrint('Failed to log audit action: $e');
-        });
+    unawaited(
+      _auditService
+          .logAction(
+            organizationId: _getOrganizationId(),
+            operatorId: _getOperatorId(),
+            actionType: 'CREATE_INCIDENT_${eventType.name.toUpperCase()}',
+            entityId: tripId,
+            oldValue: trip?.status.name,
+            newValue: trip?.status.name,
+            reason: notes ?? 'Incidente reportado manualmente',
+          )
+          .catchError((e) {
+            // In production, log to crashlytics/sentry
+            debugPrint('Failed to log audit action: $e');
+          }),
+    );
 
     final event = _simulation.addEvent(
       tripId: tripId,

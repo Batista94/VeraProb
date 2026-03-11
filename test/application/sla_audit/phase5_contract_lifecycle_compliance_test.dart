@@ -21,8 +21,6 @@ import 'package:busflow/application/sla_audit/create_contract_handler.dart';
 import 'package:busflow/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:busflow/application/sla_audit/declare_contractual_plan_handler.dart';
 import 'package:busflow/application/sla_audit/contractual_service_input.dart';
-import 'package:busflow/domain/sla_audit/contract_repository.dart';
-import 'package:busflow/domain/sla_audit/contract.dart';
 import 'package:busflow/domain/sla_audit/contract_status.dart';
 import 'package:busflow/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:busflow/domain/sla_audit/contractual_rule.dart';

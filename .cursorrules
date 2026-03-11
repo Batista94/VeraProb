@@ -38,6 +38,18 @@ Whenever you inspect files, automatically audit against the NON-NEGOTIABLE INVAR
 
 ---
 
+# INFRASTRUCTURE & MANUAL SYNC PROTOCOL (STRICT)
+
+Because automated tests often use In-Memory Repositories, passing tests do NOT guarantee physical database synchronization. You MUST act as the infrastructure gatekeeper for the user (the PO).
+Whenever a database migration, schema change, or `.env` modification is created:
+1. HARD STOP: Do not assume the Supabase instance is updated automatically.
+2. ALERT THE PO: Output a massive, clear warning in the chat: "⚠️ AÇÃO MANUAL REQUERIDA: EXECUTAR NO SUPABASE ⚠️".
+3. PROVIDE THE PAYLOAD: Print the exact SQL code (or environment variables) formatted in a clear code block.
+4. REQUIRE CONFIRMATION: Ask explicitly: "Você já executou este SQL no SQL Editor do Supabase?"
+5. BLOCK PROGRESS: Do not proceed to the next feature, phase, or test step until the user explicitly confirms the manual synchronization.
+
+---
+
 # NON-NEGOTIABLE SYSTEM INVARIANTS
 
 1. IMMUTABLE EVENT LEDGER
@@ -88,6 +100,21 @@ Event Ingestion → Normalization → Subscriber → Evaluation Engine → Immut
 
 ---
 
+# ENVIRONMENT & LIFECYCLE AWARENESS
+
+CURRENT STATUS: Development (Bootstrap Phase).
+
+ENVIRONMENT RULES:
+1. DEVELOPMENT (Active): Focus on rapid iteration, in-memory testing, and manual Supabase migrations via the explicit sync protocol. Mock data is permitted for UI validation.
+2. HOMOLOGATION / STAGING (Locked): Do not propose deployment here yet. This phase will require a strict CI/CD pipeline, a separate Supabase project, and absolutely zero mock data in the Immutable Ledger.
+3. PRODUCTION (Locked): Strictly out of bounds.
+
+PROACTIVE MILESTONE ALERT:
+You must monitor the architectural maturity of the platform. When the core Event Ledger, the Evaluation Engine, and at least one end-to-end operational flow are stable, validated, and passing all invariants, you MUST halt and alert the PO with the following message:
+"🚀 MILESTONE REACHED: O núcleo do sistema está estável. Recomendo iniciarmos o planejamento para a Fase de Homologação (Staging). Deseja que eu elabore o Design Spec para a separação de ambientes no Supabase e CI/CD?"
+
+---
+
 # GOVERNANCE & COMPLIANCE
 
 DESIGN GOVERNANCE: Design Spec must include problem, proposal, domain entities, schema changes, replay/tenant analysis, migration strategy. Implementation must not begin before review.
@@ -98,6 +125,7 @@ ARCHITECTURE DECISION RECORDS (ADR): Generate an ADR in `docs/governance/adr/` f
 
 DEFINITION OF DONE:
 • code compiles and runs, automated tests pass, validation scenarios executed.
+• all manual database migrations (SQL) explicitly provided to the PO and confirmed as executed in the real Supabase environment.
 • tenant isolation confirmed, deterministic replay verified.
 • architectural invariants preserved, compliance report generated.
 

@@ -6,7 +6,12 @@ CREATE TABLE IF NOT EXISTS public.contractual_evaluation_traces (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
     entity_id TEXT NOT NULL, -- e.g., trip_id or set_id string for generic lookup
-    triggering_event_id UUID NOT NULL REFERENCES public.sla_audit_ledger_v2(event_id) ON DELETE RESTRICT,
+    -- NOTE: FK to sla_audit_ledger_v2 omitted intentionally.
+    -- sla_audit_ledger_v2 is HASH-partitioned with composite PK (organization_id, id).
+    -- PostgreSQL does not support FKs referencing a partial composite PK on partitioned tables.
+    -- The column was also incorrectly referencing 'event_id' (non-existent); the correct column is 'id'.
+    -- Referential integrity is enforced at the application layer.
+    triggering_event_id UUID NOT NULL,
     evaluated_at_utc TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
     engine_version TEXT NOT NULL,
     decisions_jsonb JSONB NOT NULL DEFAULT '[]'::jsonb

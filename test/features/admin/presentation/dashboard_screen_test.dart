@@ -52,17 +52,17 @@ void main() {
       await tester.pumpWidget(buildDashboard());
       await tester.pumpAndSettle();
 
-      expect(find.text('Visão Geral'), findsOneWidget);
-      expect(find.text('Monitoramento de frota e métricas'), findsOneWidget);
+      expect(find.text('Painel de Controle'), findsOneWidget);
+      expect(find.text('Operação em Tempo Real • Receita Protegida'), findsOneWidget);
 
       // Charts Section
-      expect(find.text('Viagens por Hora (Últimas 24h)'), findsOneWidget);
+      expect(find.text('Performance de Execução Operacional'), findsOneWidget);
 
       // Heatmap Section
-      expect(find.text('Mapa de Calor (Lotação)'), findsOneWidget);
+      expect(find.text('Projeção de Risco Operacional'), findsOneWidget);
 
       // Seed Button
-      expect(find.text('Carregar Dados Teste'), findsOneWidget);
+      expect(find.text('SIMULAR OPERAÇÃO'), findsOneWidget);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -74,7 +74,7 @@ void main() {
       await tester.pumpWidget(buildDashboard());
       await tester.pumpAndSettle();
 
-      final button = find.text('Carregar Dados Teste');
+      final button = find.text('SIMULAR OPERAÇÃO');
       expect(button, findsOneWidget);
 
       await tester.tap(button);

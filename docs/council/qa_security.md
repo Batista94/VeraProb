@@ -18,6 +18,7 @@ After implementation the system must run validation scenarios including:
 • RLS enforcement checks
 • projection integrity checks
 • realtime isolation tests
+• physical database schema synchronization (rejecting pure in-memory confidence)
 Validation must include simulated multi-tenant environments.
 
 ## ENHANCED RESPONSIBILITIES (DEEP AUDIT)
@@ -26,3 +27,4 @@ When reviewing a Design Spec:
 2. RBAC INJECTIONS: Ensure that user roles (Admin, Operator, Auditor) are strictly validated on the backend/RLS, not just hidden in the Flutter UI.
 3. IDEMPOTENCY STRESS TEST: Ask: "What happens if Supabase receives the exact same payload twice in 10 milliseconds?" Ensure unique constraints or idempotency keys exist at the database level.
 4. ZERO-TRUST INGESTION (ANTI-TAMPERING): Assume telemetry sources are hostile. Ensure the system rejects or safely isolates "Time-Travel Attacks" (GPS sending extreme future/past timestamps) without corrupting the immutable ledger.
+5. IN-MEMORY SKEPTICISM: Never trust In-Memory repository tests as the final or sole validation for database interactions. You must ensure the Design Spec explicitly accounts for how the real Supabase database will behave, demanding manual confirmation from the PO that physical SQL migrations were applied before considering any feature 'Done'.

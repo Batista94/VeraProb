@@ -41,8 +41,8 @@ class InvestigationModal extends ConsumerWidget {
             children: [
               const Icon(Icons.search, size: 18, color: BusFlowColors.primary),
               const SizedBox(width: 8),
-              const Text(
-                'Investigação de Avaliação',
+              Text(
+                'Análise Forense de Decisões',
                 style: BusFlowTypography.sectionTitle,
               ),
               const Spacer(),
@@ -54,10 +54,11 @@ class InvestigationModal extends ConsumerWidget {
                   border: Border.all(color: BusFlowColors.border),
                 ),
                 child: Text(
-                  'SOMENTE LEITURA',
+                  'MODO AUDITORIA',
                   style: BusFlowTypography.caption.copyWith(
                     color: BusFlowColors.warning,
                     letterSpacing: 1.0,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -194,8 +195,8 @@ class _LedgerTimelinePanel extends StatelessWidget {
               children: [
                 const Icon(Icons.timeline, size: 16, color: BusFlowColors.info),
                 const SizedBox(width: 8),
-                const Text(
-                  'Linha do Tempo',
+                Text(
+                  'Ledger Operacional',
                   style: BusFlowTypography.sectionTitle,
                 ),
               ],
@@ -218,7 +219,7 @@ class _LedgerTimelinePanel extends StatelessWidget {
               ),
               data: (entries) {
                 if (entries.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'Nenhum evento no ledger',
                       style: BusFlowTypography.bodySmall,
@@ -338,10 +339,10 @@ class _TimelineEvent extends StatelessWidget {
                             borderRadius: BorderRadius.circular(3),
                           ),
                           child: Text(
-                            'GATILHO',
+                            'AUDITADO',
                             style: BusFlowTypography.caption.copyWith(
                               color: BusFlowColors.primary,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w800,
                               fontSize: 9,
                               letterSpacing: 0.8,
                             ),
@@ -400,8 +401,8 @@ class _EvaluationTracePanel extends StatelessWidget {
                   color: BusFlowColors.secondary,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'Rastreabilidade da Avaliação',
+                Text(
+                  'Rastreabilidade Forense',
                   style: BusFlowTypography.sectionTitle,
                 ),
               ],
@@ -453,7 +454,7 @@ class _NoTraceState extends StatelessWidget {
         children: [
           Icon(Icons.info_outline, size: 48, color: BusFlowColors.textDisabled),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Nenhuma rastreabilidade disponível',
             style: BusFlowTypography.sectionTitle,
           ),
@@ -663,11 +664,12 @@ class _DecisionRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'EVIDÊNCIA',
+                   Text(
+                    'PROVA DOCUMENTAL',
                     style: BusFlowTypography.caption.copyWith(
                       letterSpacing: 1.0,
                       fontSize: 9,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),

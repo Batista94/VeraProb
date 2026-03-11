@@ -72,8 +72,8 @@ void main() {
   // Test Scope Constants
   final uiqueTestRunId = const Uuid().v4().substring(0, 8);
   final contractId = 'e2e-test-$uiqueTestRunId';
-  final vehicleId = 'v-e2e-999';
-  final planVersion = 1;
+  const vehicleId = 'v-e2e-999';
+  const planVersion = 1;
 
   // Temporal state
   final testBaseTimeUtc = DateTime.utc(2026, 3, 3, 10, 0); // Morning
@@ -132,7 +132,7 @@ void main() {
   });
 
   tearDownAll(() async {
-    client.dispose();
+    await client.dispose();
   });
 
   // ── 6-Stage E2E Test Suite ───────────────────────────────

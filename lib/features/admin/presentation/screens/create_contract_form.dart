@@ -5,15 +5,11 @@ import 'package:busflow/application/sla_audit/create_contract_command.dart';
 import 'package:busflow/domain/sla_audit/domain_exception.dart';
 import 'package:busflow/state/providers/auth_providers.dart';
 import 'package:busflow/state/providers/contract_providers.dart';
+import 'package:busflow/core/theme/app_theme.dart';
 
-/// Dialog form for creating a new [Contract] in draft status.
-///
-/// Usage: `await CreateContractForm.show(context, ref)`
-/// Returns `true` if contract was created successfully, `false` otherwise.
 class CreateContractForm extends ConsumerStatefulWidget {
   const CreateContractForm({super.key});
 
-  /// Opens the dialog and returns `true` on successful creation.
   static Future<bool?> show(BuildContext context, WidgetRef ref) {
     return showDialog<bool>(
       context: context,
@@ -38,6 +34,21 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    // Clear error message when user starts typing or changing fields
+    _nameController.addListener(_clearError);
+    _contractorController.addListener(_clearError);
+    _descriptionController.addListener(_clearError);
+  }
+
+  void _clearError() {
+    if (_errorMessage != null) {
+      setState(() => _errorMessage = null);
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _contractorController.dispose();
@@ -52,8 +63,22 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: BusFlowColors.primary,
+              onPrimary: Colors.white,
+              surface: BusFlowColors.surfaceElevated,
+              onSurface: BusFlowColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked == null) return;
+    _clearError();
     setState(() {
       if (isStart) {
         _validFrom = DateTime.utc(picked.year, picked.month, picked.day);
@@ -71,9 +96,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
       return;
     }
     if (!_validUntil!.isAfter(_validFrom!)) {
-      setState(
-        () => _errorMessage = 'A data de fim deve ser posterior à data de início.',
-      );
+      setState(() => _errorMessage = 'A data de fim deve ser posterior à data de início.');
       return;
     }
 
@@ -115,83 +138,106 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
   @override
   Widget build(BuildContext context) {
+    final organizationId = ref.watch(currentOrganizationIdProvider);
+    final isFetchingOrg = ref.watch(organizationIdFetcherProvider).isLoading;
+
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: BusFlowColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: BusFlowColors.border),
+      ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
+        constraints: const BoxConstraints(maxWidth: 500),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
                 Row(
                   children: [
-                    const Icon(Icons.description_outlined),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Novo Contrato',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: BusFlowColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      child: const Icon(Icons.description_rounded, color: BusFlowColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 14),
+                    Text(
+                      'Novo Contrato Operacional',
+                      style: BusFlowTypography.sectionTitle.copyWith(fontSize: 20),
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 18),
+                      icon: const Icon(Icons.close_rounded, size: 20, color: BusFlowColors.textDisabled),
                       onPressed: () => Navigator.of(context).pop(false),
-                      padding: EdgeInsets.zero,
                     ),
                   ],
                 ),
-                const Divider(height: 24),
-
-                // Nome do contrato
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome do contrato *',
-                    hintText: 'Ex: Rota SP–Campinas 2026',
-                  ),
-                  maxLength: 100,
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null,
-                ),
                 const SizedBox(height: 12),
-
-                // Nome do contratante
-                TextFormField(
-                  controller: _contractorController,
-                  decoration: const InputDecoration(
-                    labelText: 'Contratante *',
-                    hintText: 'Nome da empresa contratante',
-                  ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null,
-                ),
-                const SizedBox(height: 12),
-
-                // Descrição (opcional)
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Descrição (opcional)',
-                    hintText: 'Detalhes adicionais do contrato',
-                  ),
-                  maxLines: 2,
-                  minLines: 2,
+                Text(
+                  'Registre os parâmetros regulatórios para auditoria de SLR.',
+                  style: BusFlowTypography.bodySmall,
                 ),
                 const SizedBox(height: 16),
+                if (isFetchingOrg)
+                  const LinearProgressIndicator()
+                else if (organizationId == null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: BusFlowColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: BusFlowColors.error.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: BusFlowColors.error, size: 18),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Sessão sem organização vinculada. Faça logout e login novamente.',
+                            style: BusFlowTypography.bodySmall.copyWith(color: BusFlowColors.error),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 16),
 
-                // Vigência
-                const Text(
-                  'Período de Vigência *',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                TextFormField(
+                  controller: _nameController,
+                  style: BusFlowTypography.bodyMedium,
+                  decoration: const InputDecoration(
+                    labelText: 'Identificação Tributária/Comercial *',
+                    hintText: 'Ex: Concessão Norte - Lote 1',
+                  ),
+                  maxLength: 100,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
+                
+                TextFormField(
+                  controller: _contractorController,
+                  style: BusFlowTypography.bodyMedium,
+                  decoration: const InputDecoration(
+                    labelText: 'Entidade Contratante (Auditor) *',
+                    hintText: 'Ex: SPTRANS / Secretaria de Transportes',
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null,
+                ),
+                const SizedBox(height: 24),
+                
+                Text(
+                  'CRONOGRAMA DE VIGÊNCIA',
+                  style: BusFlowTypography.kpiLabel,
+                ),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -201,10 +247,10 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                         onTap: () => _pickDate(isStart: true),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: _DatePickerField(
-                        label: 'Fim',
+                        label: 'Término',
                         value: _validUntil,
                         onTap: () => _pickDate(isStart: false),
                       ),
@@ -212,26 +258,23 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                   ],
                 ),
 
-                // Error message
                 if (_errorMessage != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 24),
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.red.shade200),
+                      color: BusFlowColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: BusFlowColors.error.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline,
-                            color: Colors.red, size: 16),
-                        const SizedBox(width: 8),
+                        const Icon(Icons.error_outline_rounded, color: BusFlowColors.error, size: 18),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             _errorMessage!,
-                            style: const TextStyle(
-                              color: Colors.red, fontSize: 13),
+                            style: const TextStyle(color: BusFlowColors.error, fontSize: 13, fontWeight: FontWeight.w500),
                           ),
                         ),
                       ],
@@ -239,29 +282,20 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                   ),
                 ],
 
-                const SizedBox(height: 20),
-
-                // Actions
+                const SizedBox(height: 40),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : () => Navigator.of(context).pop(false),
-                      child: const Text('Cancelar'),
+                      onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+                      child: Text('DESCARTAR', style: BusFlowTypography.badge.copyWith(color: BusFlowColors.textSecondary)),
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton(
+                    const SizedBox(width: 16),
+                    ElevatedButton(
                       onPressed: _isSubmitting ? null : _submit,
                       child: _isSubmitting
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Text('Criar Contrato'),
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('ATIVAR CONTRATO'),
                     ),
                   ],
                 ),
@@ -279,31 +313,42 @@ class _DatePickerField extends StatelessWidget {
   final DateTime? value;
   final VoidCallback onTap;
 
-  const _DatePickerField({
-    required this.label,
-    required this.value,
-    required this.onTap,
-  });
+  const _DatePickerField({required this.label, required this.value, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          suffixIcon: const Icon(Icons.calendar_today, size: 16),
-          isDense: true,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: BusFlowColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: BusFlowColors.border),
         ),
-        child: Text(
-          value != null
-              ? '${value!.day.toString().padLeft(2, '0')}/${value!.month.toString().padLeft(2, '0')}/${value!.year}'
-              : 'Selecionar',
-          style: TextStyle(
-            color: value != null ? null : Colors.grey.shade500,
-            fontSize: 14,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: BusFlowTypography.kpiLabel.copyWith(fontSize: 10)),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    value != null
+                        ? '${value!.day.toString().padLeft(2, '0')}/${value!.month.toString().padLeft(2, '0')}/${value!.year}'
+                        : 'Definir Data',
+                    style: BusFlowTypography.bodyMedium.copyWith(
+                      color: value != null ? BusFlowColors.textPrimary : BusFlowColors.textDisabled,
+                      fontWeight: value != null ? FontWeight.w700 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.calendar_today_rounded, size: 14, color: BusFlowColors.primary),
+              ],
+            ),
+          ],
         ),
       ),
     );

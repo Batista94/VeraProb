@@ -7,6 +7,7 @@ import '../../application/sla_audit/projections/contract_detail_view.dart';
 import '../../application/sla_audit/projections/contract_query_service.dart';
 import '../../application/sla_audit/projections/contract_query_service_in_memory.dart';
 import '../../application/sla_audit/projections/contract_summary_view.dart';
+import '../../application/sla_audit/shift_projection_service.dart';
 import '../../domain/sla_audit/contract_status.dart';
 import '../../domain/sla_audit/contractual_rule_repository.dart';
 import '../../infrastructure/persistence/persistence_mode.dart';
@@ -16,6 +17,7 @@ import '../../infrastructure/sla_audit/postgres_contract_query_service.dart';
 import '../../infrastructure/sla_audit/postgres_contractual_rule_repository.dart';
 import '../../infrastructure/providers/supabase_provider.dart';
 import 'auth_providers.dart';
+import 'operational_zone_providers.dart';
 import 'sla_providers.dart';
 
 // ── Rule repository ──────────────────────────────────────────
@@ -46,6 +48,14 @@ final closeContractHandlerProvider = Provider<CloseContractHandler>((ref) {
   );
 });
 
+final shiftProjectionServiceProvider = Provider<ShiftProjectionService>((ref) {
+  return ShiftProjectionService(
+    planRepo: ref.watch(planDeclarationRepositoryProvider),
+    zoneRepo: ref.watch(operationalZoneRepositoryProvider),
+    alertRepo: ref.watch(operationalAlertRepositoryProvider),
+  );
+});
+
 final declareContractualPlanHandlerProvider =
     Provider<DeclareContractualPlanHandler>((ref) {
       return DeclareContractualPlanHandler(
@@ -53,6 +63,7 @@ final declareContractualPlanHandlerProvider =
         ledger: ref.watch(slaAuditLedgerRepositoryProvider),
         ruleRepository: ref.watch(contractualRuleRepositoryProvider),
         contractRepository: ref.watch(contractRepositoryProvider),
+        projectionService: ref.watch(shiftProjectionServiceProvider),
       );
     });
 

@@ -35,11 +35,10 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
     }
 
     // 2. Persist Aggregate Root
-    // In a real production environment, this should be done in a single transaction (via RPC).
-    // For this MVP step, we will use the standard client flow.
     await _client.from('plan_declarations').insert({
       'id': plan.id,
       'contract_id': plan.contractId,
+      'organization_id': plan.organizationId,
       'declared_at_utc': plan.declaredAtUtc.toIso8601String(),
       'declared_by_user_id': plan.declaredByUserId,
       'plan_version': plan.planVersion,
@@ -98,6 +97,60 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
     return data.map((d) => _mapToEntity(d)).toList();
   }
 
+  @override
+  Future<List<PlanDeclaration>> findByOrganization(String organizationId) async {
+    final List<dynamic> data = await _client
+        .from('plan_declarations')
+        .select('*, contractual_service_executions(*)')
+        .eq('organization_id', organizationId)
+        .order('plan_version', ascending: true);
+
+    return data.map((d) => _mapToEntity(d)).toList();
+  }
+
+  @override
+  Future<void> saveProjectedSets(
+    String planDeclarationId,
+    List<ContractualServiceExecution> sets,
+  ) async {
+    if (sets.isEmpty) return;
+
+    final data = sets.map((s) {
+      return {
+        'set_id': s.setId,
+        'plan_declaration_id': planDeclarationId,
+        'scheduled_start_time_utc': s.scheduledStartTimeUtc.toIso8601String(),
+        'scheduled_end_time_utc': s.scheduledEndTimeUtc.toIso8601String(),
+        'start_latitude': s.startLatitude,
+        'start_longitude': s.startLongitude,
+        'start_radius_meters': s.startRadiusMeters,
+        'end_latitude': s.endLatitude,
+        'end_longitude': s.endLongitude,
+        'end_radius_meters': s.endRadiusMeters,
+        'planned_vehicle_id': s.plannedVehicleId,
+        'contractual_value_cents': s.contractualValue.cents,
+        'no_show_penalty_multiplier': s.noShowPenaltyMultiplier,
+        'origin_zone_id': s.originZoneId,
+        'destination_zone_id': s.destinationZoneId,
+        'operational_date': s.operationalDate != null
+            ? '${s.operationalDate!.year}-'
+                '${s.operationalDate!.month.toString().padLeft(2, '0')}-'
+                '${s.operationalDate!.day.toString().padLeft(2, '0')}'
+            : null,
+        'shift_pattern_index': s.shiftPatternIndex,
+        'delay_tolerance_minutes': s.delayToleranceMinutes,
+        'delay_penalty_per_minute_cents': s.delayPenaltyPerMinute?.cents,
+        'downgrade_penalty_flat_cents': s.downgradePenaltyFlat?.cents,
+      };
+    }).toList();
+
+    // Upsert with ignoreDuplicates — idempotency via unique constraint
+    // (plan_declaration_id, shift_pattern_index, operational_date)
+    await _client
+        .from('contractual_service_executions')
+        .upsert(data, ignoreDuplicates: true);
+  }
+
   PlanDeclaration _mapToEntity(Map<String, dynamic> data) {
     final List<dynamic> servicesJson = data['contractual_service_executions'];
 
@@ -116,6 +169,19 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         contractualValue: Money((s['contractual_value_cents'] as num).toInt()),
         noShowPenaltyMultiplier: (s['no_show_penalty_multiplier'] as num)
             .toDouble(),
+        originZoneId: s['origin_zone_id'],
+        destinationZoneId: s['destination_zone_id'],
+        operationalDate: s['operational_date'] != null
+            ? DateTime.parse(s['operational_date'])
+            : null,
+        shiftPatternIndex: s['shift_pattern_index'],
+        delayToleranceMinutes: s['delay_tolerance_minutes'],
+        delayPenaltyPerMinute: s['delay_penalty_per_minute_cents'] != null
+            ? Money((s['delay_penalty_per_minute_cents'] as num).toInt())
+            : null,
+        downgradePenaltyFlat: s['downgrade_penalty_flat_cents'] != null
+            ? Money((s['downgrade_penalty_flat_cents'] as num).toInt())
+            : null,
       );
     }).toList();
 

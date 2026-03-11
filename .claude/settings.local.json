@@ -15,7 +15,11 @@
       "Bash(/tmp/fix_repo_calls.py:*)",
       "Bash(dart analyze:*)",
       "Bash(find \"C:\\\\Projects\\\\MVP - Bus\" -name \"*router*\" -o -name \"*route*\" -o -name \"*navigation*\" 2>/dev/null | head -20)",
-      "Bash(find \"C:\\\\Projects\\\\MVP - Bus\\\\lib\\\\features\" -type f -name \"*.dart\" 2>/dev/null | head -30)"
+      "Bash(find \"C:\\\\Projects\\\\MVP - Bus\\\\lib\\\\features\" -type f -name \"*.dart\" 2>/dev/null | head -30)",
+      "Bash(flutter build:*)",
+      "Bash(head -30 grep -n \"contract_id\\\\|CREATE TABLE plan_declarations\\\\|ADD COLUMN\" \"c:/Projects/MVP - Bus/supabase/migrations/20260305171000_multi_tenancy_foundation.sql\")",
+      "Bash(sed -i \"s/import ''screens\\\\/billing_cycle_reports_screen.dart'';/import ''screens\\\\/operational_zones_screen.dart'';\\\\nimport ''screens\\\\/billing_cycle_reports_screen.dart'';/\" lib/features/admin/presentation/admin_home.dart)",
+      "Bash(sed -i \"s/        BillingCycleReportsScreen\\(\\),/        OperationalZonesScreen\\(\\),\\\\n        BillingCycleReportsScreen\\(\\),/\" lib/features/admin/presentation/admin_home.dart)"
     ]
   }
 }

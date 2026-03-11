@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:busflow/application/sla_audit/projections/contract_summary_view.dart';
 import 'package:busflow/domain/sla_audit/contract_status.dart';
 import 'package:busflow/state/providers/contract_providers.dart';
+import 'package:busflow/core/theme/app_theme.dart';
 
 import 'create_contract_form.dart';
 import 'contract_detail_screen.dart';
@@ -18,7 +19,6 @@ class ContractsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedId = ref.watch(selectedContractIdProvider);
 
-    // When a contract is selected, show its detail screen.
     if (selectedId != null) {
       return ContractDetailScreen(contractId: selectedId);
     }
@@ -26,8 +26,6 @@ class ContractsScreen extends ConsumerWidget {
     return const _ContractListView();
   }
 }
-
-// ── List View ─────────────────────────────────────────────────────────────────
 
 class _ContractListView extends ConsumerWidget {
   const _ContractListView();
@@ -38,20 +36,33 @@ class _ContractListView extends ConsumerWidget {
     final activeFilter = ref.watch(contractStatusFilterProvider);
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──────────────────────────────────────────
           Row(
             children: [
-              const Text(
-                'Contratos',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Gestão de Contratos',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: BusFlowColors.textPrimary,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                  Text(
+                    'Controle de vigência e conformidade SLA',
+                    style: TextStyle(color: BusFlowColors.textSecondary, fontSize: 14),
+                  ),
+                ],
               ),
               const Spacer(),
-              FilledButton.icon(
-                icon: const Icon(Icons.add, size: 18),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add_rounded, size: 20),
                 label: const Text('Novo Contrato'),
                 onPressed: () async {
                   final created = await CreateContractForm.show(context, ref);
@@ -62,11 +73,10 @@ class _ContractListView extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
 
-          // ── Status filter chips ──────────────────────────────
           Wrap(
-            spacing: 8,
+            spacing: 12,
             children: [
               _FilterChip(
                 label: 'Todos',
@@ -76,24 +86,24 @@ class _ContractListView extends ConsumerWidget {
                     .state = null,
               ),
               _FilterChip(
-                label: 'Rascunho',
-                color: Colors.blueGrey,
+                label: 'Rascunhos',
+                color: BusFlowColors.neutral,
                 selected: activeFilter == ContractStatus.draft,
                 onSelected: (_) => ref
                     .read(contractStatusFilterProvider.notifier)
                     .state = ContractStatus.draft,
               ),
               _FilterChip(
-                label: 'Ativo',
-                color: Colors.green,
+                label: 'Ativos',
+                color: BusFlowColors.success,
                 selected: activeFilter == ContractStatus.active,
                 onSelected: (_) => ref
                     .read(contractStatusFilterProvider.notifier)
                     .state = ContractStatus.active,
               ),
               _FilterChip(
-                label: 'Encerrado',
-                color: Colors.red,
+                label: 'Encerrados',
+                color: BusFlowColors.error,
                 selected: activeFilter == ContractStatus.closed,
                 onSelected: (_) => ref
                     .read(contractStatusFilterProvider.notifier)
@@ -101,9 +111,8 @@ class _ContractListView extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
-          // ── Contract table ───────────────────────────────────
           Expanded(
             child: contractsAsync.when(
               data: (contracts) => contracts.isEmpty
@@ -114,7 +123,7 @@ class _ContractListView extends ConsumerWidget {
               error: (e, _) => Center(
                 child: Text(
                   'Erro ao carregar contratos: $e',
-                  style: const TextStyle(color: Colors.red),
+                  style: const TextStyle(color: BusFlowColors.error),
                 ),
               ),
             ),
@@ -125,77 +134,81 @@ class _ContractListView extends ConsumerWidget {
   }
 }
 
-// ── Table ─────────────────────────────────────────────────────────────────────
-
 class _ContractTable extends ConsumerWidget {
   final List<ContractSummaryView> contracts;
-
   const _ContractTable({required this.contracts});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
-      margin: EdgeInsets.zero,
-      child: SingleChildScrollView(
-        child: DataTable(
-          columnSpacing: 16,
-          headingTextStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SingleChildScrollView(
+          child: DataTable(
+            columnSpacing: 24,
+            headingRowColor: WidgetStateProperty.all(BusFlowColors.surfaceElevated),
+            headingTextStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: BusFlowColors.textSecondary,
+              letterSpacing: 0.5,
+            ),
+            dataRowMaxHeight: 64,
+            rows: contracts.map((c) => _buildRow(context, ref, c)).toList(),
+            columns: const [
+              DataColumn(label: Text('CONTRATO')),
+              DataColumn(label: Text('CONTRATANTE')),
+              DataColumn(label: Text('VIGÊNCIA')),
+              DataColumn(label: Text('STATUS')),
+              DataColumn(label: Text('SAÚDE SLA')),
+              DataColumn(label: Text('')),
+            ],
           ),
-          columns: const [
-            DataColumn(label: Text('Contrato')),
-            DataColumn(label: Text('Contratante')),
-            DataColumn(label: Text('Vigência')),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Plano')),
-            DataColumn(label: Text('SETs')),
-            DataColumn(label: Text('SLA %')),
-            DataColumn(label: Text('')),
-          ],
-          rows: contracts.map((c) => _buildRow(context, ref, c)).toList(),
         ),
       ),
     );
   }
 
-  DataRow _buildRow(
-    BuildContext context,
-    WidgetRef ref,
-    ContractSummaryView c,
-  ) {
+  DataRow _buildRow(BuildContext context, WidgetRef ref, ContractSummaryView c) {
     final vigencia =
         '${_dateFormat.format(c.validFromUtc.toLocal())} – ${_dateFormat.format(c.validUntilUtc.toLocal())}';
 
     return DataRow(
       cells: [
         DataCell(
-          Text(c.name, style: const TextStyle(fontWeight: FontWeight.w500)),
-        ),
-        DataCell(Text(c.contractorName)),
-        DataCell(Text(vigencia, style: const TextStyle(fontSize: 12))),
-        DataCell(_StatusChip(status: c.status)),
-        DataCell(
-          Text(
-            c.activePlanVersion > 0 ? 'v${c.activePlanVersion}' : '—',
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, color: BusFlowColors.textPrimary)),
+              if (c.activePlanVersion > 0)
+                Text('Plano v${c.activePlanVersion}', style: const TextStyle(fontSize: 11, color: BusFlowColors.textSecondary)),
+            ],
           ),
         ),
-        DataCell(Text('${c.totalSetsInProgress} pendentes')),
+        DataCell(Text(c.contractorName, style: const TextStyle(color: BusFlowColors.textPrimary))),
+        DataCell(Text(vigencia, style: const TextStyle(fontSize: 12, color: BusFlowColors.textSecondary))),
+        DataCell(_StatusChip(status: c.status)),
         DataCell(_SlaHealthBar(percentage: c.slaHealthPercentage)),
         DataCell(
           TextButton(
             onPressed: () {
               ref.read(selectedContractIdProvider.notifier).state = c.id;
             },
-            child: const Text('Detalhes'),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Gerenciar'),
+                SizedBox(width: 4),
+                Icon(Icons.chevron_right, size: 16),
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 }
-
-// ── Supporting widgets ────────────────────────────────────────────────────────
 
 class _FilterChip extends StatelessWidget {
   final String label;
@@ -212,43 +225,47 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? BusFlowColors.primary;
     return FilterChip(
       label: Text(label),
       selected: selected,
-      selectedColor: (color ?? Theme.of(context).colorScheme.primary)
-          .withValues(alpha: 0.2),
       onSelected: onSelected,
+      selectedColor: effectiveColor.withValues(alpha: 0.2),
+      checkmarkColor: effectiveColor,
+      labelStyle: TextStyle(
+        color: selected ? effectiveColor : BusFlowColors.textSecondary,
+        fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: selected ? effectiveColor : BusFlowColors.border,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
   }
 }
 
 class _StatusChip extends StatelessWidget {
   final ContractStatus status;
-
   const _StatusChip({required this.status});
 
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      ContractStatus.draft => ('Rascunho', Colors.blueGrey),
-      ContractStatus.active => ('Ativo', Colors.green),
-      ContractStatus.closed => ('Encerrado', Colors.red),
+      ContractStatus.draft => ('RASCUNHO', BusFlowColors.neutral),
+      ContractStatus.active => ('ATIVO', BusFlowColors.success),
+      ContractStatus.closed => ('ENCERRADO', BusFlowColors.error),
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
       ),
     );
   }
@@ -256,37 +273,35 @@ class _StatusChip extends StatelessWidget {
 
 class _SlaHealthBar extends StatelessWidget {
   final double percentage;
-
   const _SlaHealthBar({required this.percentage});
 
   @override
   Widget build(BuildContext context) {
     final pct = percentage.clamp(0.0, 100.0);
-    final color = pct >= 80
-        ? Colors.green
-        : pct >= 50
-            ? Colors.orange
-            : Colors.red;
+    final color = pct >= 90 ? BusFlowColors.success : pct >= 70 ? BusFlowColors.warning : BusFlowColors.error;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 64,
-          height: 6,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: pct / 100,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation<Color>(color),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${pct.toStringAsFixed(0)}%', 
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: pct / 100,
+                  minHeight: 4,
+                  backgroundColor: BusFlowColors.border,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
             ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          '${pct.toStringAsFixed(0)}%',
-          style: TextStyle(fontSize: 12, color: color),
+          ],
         ),
       ],
     );
@@ -295,28 +310,19 @@ class _SlaHealthBar extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState();
-
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.description_outlined,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nenhum contrato encontrado.',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
-          ),
+          Icon(Icons.description_outlined, size: 80, color: BusFlowColors.border),
+          const SizedBox(height: 24),
+          const Text('Nenhum contrato encontrado', 
+            style: TextStyle(color: BusFlowColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text(
-            'Clique em "Novo Contrato" para começar.',
-            style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-          ),
+          const Text('Crie um novo contrato para iniciar a auditoria de SLA.', 
+            style: TextStyle(color: BusFlowColors.textSecondary)),
         ],
       ),
     );

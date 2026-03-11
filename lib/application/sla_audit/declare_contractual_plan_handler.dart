@@ -7,6 +7,7 @@ import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'declare_contractual_plan_command.dart';
+import 'shift_projection_service.dart';
 import 'sla_ledger_mapper.dart';
 
 /// Application service that handles the declaration of a contractual plan.
@@ -19,8 +20,9 @@ import 'sla_ledger_mapper.dart';
 /// is delegated to domain factories:
 /// - [Contract.assertCanReceivePlan()] — guards the pre-condition
 /// - [Contract.activate()] — automatic draft→active on first plan
-/// - [ContractualServiceExecution.create()]
-/// - [PlanDeclaration.create()]
+/// - [ContractualServiceExecution.create()] / [PlanDeclaration.create()]
+/// - [PlanDeclaration.createWithShiftPatterns()] — B2B mode
+/// - [ShiftProjectionService.projectDays()] — eager 30-day SET projection (B2B)
 ///
 /// If any [DomainException] is thrown during creation, nothing is persisted.
 class DeclareContractualPlanHandler {
@@ -29,15 +31,22 @@ class DeclareContractualPlanHandler {
   final ContractualRuleRepository _ruleRepository;
   final ContractRepository _contractRepository;
 
+  /// Optional projection service. When provided, B2B shift-based plans eagerly
+  /// project SETs for the next 30 days immediately after declaration (B1 decision).
+  /// Null = projection disabled (backwards compatible — used in tests without zone repos).
+  final ShiftProjectionService? _projectionService;
+
   DeclareContractualPlanHandler({
     required PlanDeclarationRepository repository,
     required SlaAuditLedgerRepository ledger,
     required ContractualRuleRepository ruleRepository,
     required ContractRepository contractRepository,
+    ShiftProjectionService? projectionService,
   })  : _repository = repository,
         _ledger = ledger,
         _ruleRepository = ruleRepository,
-        _contractRepository = contractRepository;
+        _contractRepository = contractRepository,
+        _projectionService = projectionService;
 
   /// Handles the command by creating the aggregate, persisting it,
   /// and appending all domain events to the ledger.
@@ -47,6 +56,25 @@ class DeclareContractualPlanHandler {
   /// Throws [DomainException] if any invariant is violated —
   /// in which case nothing is persisted and the ledger remains untouched.
   Future<PlanDeclaration> handle(DeclareContractualPlanCommand command) async {
+    final isShiftBased = command.shiftPatterns.isNotEmpty;
+    final isManual = command.services.isNotEmpty;
+
+    if (!isShiftBased && !isManual) {
+      throw const DomainException(
+        'Command must include either services (manual) or shiftPatterns (B2B)',
+      );
+    }
+    if (isShiftBased && isManual) {
+      throw const DomainException(
+        'services and shiftPatterns are mutually exclusive',
+      );
+    }
+    if (isShiftBased && command.contractualValueCents <= 0) {
+      throw const DomainException(
+        'contractualValueCents must be > 0 for shift-based plans',
+      );
+    }
+
     // 0. Validate Contract exists and can receive a plan (Phase 5)
     final contract = await _contractRepository.findById(
       command.contractId,
@@ -60,46 +88,71 @@ class DeclareContractualPlanHandler {
     }
     contract.assertCanReceivePlan();
 
-    // 1. Map each DTO input → domain Entity via factory
-    final services = command.services
-        .map(
-          (input) => ContractualServiceExecution.create(
-            contractId: command.contractId,
-            scheduledStartTimeUtc: input.scheduledStartTimeUtc,
-            scheduledEndTimeUtc: input.scheduledEndTimeUtc,
-            startLatitude: input.startLatitude,
-            startLongitude: input.startLongitude,
-            startRadiusMeters: input.startRadiusMeters,
-            endLatitude: input.endLatitude,
-            endLongitude: input.endLongitude,
-            endRadiusMeters: input.endRadiusMeters,
-            plannedVehicleId: input.plannedVehicleId,
-            contractualValue: Money.fromDouble(input.contractualValue),
-            noShowPenaltyMultiplier: input.noShowPenaltyMultiplier,
-          ),
-        )
-        .toList();
-
-    // 1.5 Fetch the active Rule Snapshot explicitly binding temporal algorithms
+    // 1. Fetch the active Rule Snapshot
     final ruleSnapshot = await _ruleRepository.getActiveSnapshotForContract(
       command.organizationId,
       command.contractId,
     );
 
-    // 2. Create aggregate via domain factory
-    final plan = PlanDeclaration.create(
-      organizationId: command.organizationId,
-      contractId: command.contractId,
-      declaredAtUtc: command.declaredAtUtc,
-      declaredByUserId: command.declaredByUserId,
-      planVersion: command.planVersion,
-      originalFileHash: command.originalFileHash,
-      ruleSnapshot: ruleSnapshot,
-      services: services,
-    );
+    PlanDeclaration plan;
 
-    // 3. Persist plan aggregate
+    if (isShiftBased) {
+      // ── B2B shift-based mode ─────────────────────────────
+      plan = PlanDeclaration.createWithShiftPatterns(
+        organizationId: command.organizationId,
+        contractId: command.contractId,
+        declaredAtUtc: command.declaredAtUtc,
+        declaredByUserId: command.declaredByUserId,
+        planVersion: command.planVersion,
+        originalFileHash: command.originalFileHash,
+        ruleSnapshot: ruleSnapshot,
+        shiftPatterns: command.shiftPatterns,
+      );
+    } else {
+      // ── Manual mode (baseline) ───────────────────────────
+      final services = command.services
+          .map(
+            (input) => ContractualServiceExecution.create(
+              contractId: command.contractId,
+              scheduledStartTimeUtc: input.scheduledStartTimeUtc,
+              scheduledEndTimeUtc: input.scheduledEndTimeUtc,
+              startLatitude: input.startLatitude,
+              startLongitude: input.startLongitude,
+              startRadiusMeters: input.startRadiusMeters,
+              endLatitude: input.endLatitude,
+              endLongitude: input.endLongitude,
+              endRadiusMeters: input.endRadiusMeters,
+              plannedVehicleId: input.plannedVehicleId,
+              contractualValue: Money.fromDouble(input.contractualValue),
+              noShowPenaltyMultiplier: input.noShowPenaltyMultiplier,
+            ),
+          )
+          .toList();
+
+      plan = PlanDeclaration.create(
+        organizationId: command.organizationId,
+        contractId: command.contractId,
+        declaredAtUtc: command.declaredAtUtc,
+        declaredByUserId: command.declaredByUserId,
+        planVersion: command.planVersion,
+        originalFileHash: command.originalFileHash,
+        ruleSnapshot: ruleSnapshot,
+        services: services,
+      );
+    }
+
+    // 2. Persist plan aggregate
     await _repository.save(plan);
+
+    // 3. Eager SET projection for B2B plans (B1 decision: 30 days on declaration)
+    if (isShiftBased && _projectionService != null) {
+      final projected = await _projectionService.projectDays(
+        plan,
+        from: command.declaredAtUtc,
+        contractualValue: Money(command.contractualValueCents),
+      );
+      await _repository.saveProjectedSets(plan.id, projected);
+    }
 
     // 4. Append plan domain events to the ledger
     for (final event in plan.domainEvents) {

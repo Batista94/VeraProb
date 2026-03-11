@@ -9,7 +9,12 @@ CREATE TABLE operational_alerts (
   alert_type TEXT NOT NULL,
   severity TEXT NOT NULL,
   triggered_at_utc TIMESTAMPTZ NOT NULL DEFAULT now(),
-  triggering_event_id UUID REFERENCES sla_audit_ledger_v2(id),
+  -- NOTE: FK to sla_audit_ledger_v2 omitted intentionally.
+  -- sla_audit_ledger_v2 is HASH-partitioned with composite PK (organization_id, id).
+  -- PostgreSQL does not support FKs referencing a partial composite PK on partitioned tables.
+  -- Referential integrity is enforced at the application layer (handlers always write
+  -- the ledger entry before persisting any derived projection).
+  triggering_event_id UUID,
   trace_id UUID REFERENCES contractual_evaluation_traces(id),
   context JSONB NOT NULL DEFAULT '{}',
   status TEXT NOT NULL DEFAULT 'ACTIVE',

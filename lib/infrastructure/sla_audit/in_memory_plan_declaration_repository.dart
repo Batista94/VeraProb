@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import '../../domain/sla_audit/contractual_service_execution.dart';
 import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 
@@ -8,6 +9,10 @@ import '../../domain/sla_audit/plan_declaration_repository.dart';
 /// Uses a simple [Map] for storage. Suitable for development and testing.
 class InMemoryPlanDeclarationRepository implements PlanDeclarationRepository {
   final Map<String, PlanDeclaration> _store = {};
+
+  /// Projected SETs indexed by planDeclarationId.
+  /// Keyed by setId within each plan for idempotency.
+  final Map<String, Map<String, ContractualServiceExecution>> _projectedSets = {};
 
   @override
   Future<void> save(PlanDeclaration plan) async {
@@ -30,5 +35,31 @@ class InMemoryPlanDeclarationRepository implements PlanDeclarationRepository {
         )
         .toList();
     return UnmodifiableListView(results);
+  }
+
+  @override
+  Future<List<PlanDeclaration>> findByOrganization(String organizationId) async {
+    final results = _store.values
+        .where((p) => p.organizationId == organizationId)
+        .toList();
+    return UnmodifiableListView(results);
+  }
+
+  @override
+  Future<void> saveProjectedSets(
+    String planDeclarationId,
+    List<ContractualServiceExecution> sets,
+  ) async {
+    final bucket = _projectedSets.putIfAbsent(planDeclarationId, () => {});
+    for (final set in sets) {
+      bucket.putIfAbsent(set.setId, () => set); // idempotent: ignore duplicates
+    }
+  }
+
+  /// Test helper: returns all projected SETs for a given plan.
+  List<ContractualServiceExecution> projectedSetsFor(String planDeclarationId) {
+    return List.unmodifiable(
+      _projectedSets[planDeclarationId]?.values.toList() ?? [],
+    );
   }
 }

@@ -34,7 +34,7 @@ Testes manuais são **obrigatórios** antes de emitir o Compliance Report das se
 
 | Fase | Por quê é obrigatório |
 |------|-----------------------|
-| **Phase 5.4** | Primeiro fluxo completo do operador via UI — não existia antes |
+| **Phase 5.10** | Primeiro fluxo completo do operador via UI com B2B Refactoring (zonas, turnos, SLA) — inclui cenários originais da 5.4 |
 | **Phase 6.4** | RBAC com sessão real, convite por email — não automatizáveis por natureza |
 | **Phase 7.4** | PDF/CSV renderizados no browser — requerem verificação visual |
 | **Phase 8** | Penetration test, inspeção de DevTools, carga real |
@@ -50,11 +50,12 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 - **Ledger imutável:** sem UPDATE, sem DELETE — eventos são fatos históricos
 - **Precisão financeira:** Money em centavos inteiros (BIGINT), nunca double/float
 - **Tempo:** UTC no domínio e banco; conversão de fuso somente na UI
+  - *Exceção documentada (ADR Phase 5.7):* `ShiftPattern` armazena `arrivalTimeLocal + timezone` (IANA string) porque regras de recorrência não podem ser expressas em UTC absoluto. A conversão local → UTC ocorre no `ShiftProjectionService` no momento da projeção, não no domínio.
 - **Soberania do domínio:** camada de domínio é Dart puro — sem Flutter, sem Supabase
-- **Engine único:** só o `ContractualEvaluationEngine` calcula penalidades, transiciona estados, gera impacto financeiro
+- **Engine único:** só o `ContractualEvaluationEngine` calcula penalidades, transiciona estados, gera impacto financeiro. O `ShiftProjectionService` (Phase 5.7) é um application service separado responsável pela geração de SETs — não é um segundo engine de avaliação.
 - **OCC read-only:** a console operacional nunca chama repositórios de escrita
 - **Multi-tenancy:** todo evento e toda query carrega `organization_id` — sem exceções
-- **Idempotência:** replay de eventos produz exatamente o mesmo estado
+- **Idempotência:** replay de eventos produz exatamente o mesmo estado. SETs projetados por `ShiftProjectionService` são protegidos por unique constraint `(plan_declaration_id, shift_pattern_index, operational_date)` no banco.
 
 ---
 
@@ -62,13 +63,14 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 280 passing · 9 skipped (E2E sem credenciais) · 0 falhas |
-| Análise estática | 0 erros · 71 infos (`prefer_const` — baixa prioridade) |
+| Testes | 291 passing · 9 skipped (E2E sem credenciais) · 0 falhas |
+| Análise estática | 0 erros · 67 infos (`prefer_const` — baixa prioridade) |
 | Precisão financeira | `Money` (centavos BIGINT) em todo o stack — invariante enforced ✅ |
 | CI/CD | Não existe (Phase 8) |
 | Ambientes | Dev local único. Sem staging, sem prod. |
 | `strict-casts` | Desabilitado — ~80 issues de `dynamic` nos repos Postgres (Phase 8) |
-| Banco de dev | **Precisa de reset** antes de aplicar migration de Phase 5 |
+| Phase 5 baseline | Implementação 5.3 concluída (Contract aggregate, UI, 62 testes). **Supersedida pelo B2B Refactoring** — aguardando resolução de BLOCKERs (Opção A) antes de escrever código. |
+| Banco de dev | **Precisa de reset** antes de aplicar migrations do B2B Refactoring |
 
 ---
 
@@ -160,73 +162,151 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 
 ---
 
-### [~] Phase 5 — Contract & Plan Lifecycle Management
+### [~] Phase 5 — Contract & Plan Lifecycle Management (B2B Refactoring)
 
-**⟵ EM ANDAMENTO — Design Spec aprovado, implementação próxima**
+**⟵ EM ANDAMENTO — Resolução de BLOCKERs antes do código (Opção A)**
 
-**Por que agora:** O motor de avaliação (Phases 0–4) está completo e determinístico.
-Mas atualmente **não existe nenhuma UI para um operador criar um contrato ou declarar um plano** —
-isso só é possível via Supabase dashboard ou inserção direta por código.
-A plataforma tem motor, mas não tem volante. Phase 5 constrói o volante.
+**Objetivo original (5.1–5.3):** Interface completa para o ciclo de vida contratual.
+Implementação baseline concluída e preservada como referência de domínio.
 
-**Objetivo:** Interface completa para o ciclo de vida contratual — da criação de um contrato
-até o encerramento auditável do ciclo. Esta é a jornada primária do operador no produto.
+**Objetivo revisado (B2B Refactoring):** Domínio refatorado para falar a linguagem do
+fretamento corporativo B2B. O operador configura regras de negócio — não coordenadas GPS
+e timestamps manuais. Três novos conceitos de domínio:
+- `OperationalZone` — zona geofenceada com nome comercial ("Garagem Central", "Portaria Sul")
+- `ShiftPattern` — padrão de recorrência ("Seg–Sex, chegada às 07:00, fuso America/Sao_Paulo")
+- `SLAPenalties` — ofensores de margem: no-show, atraso por minuto, downgrade de frota
 
-#### [x] 5.1 — Design Specification
+---
+
+#### [x] 5.1 — Design Specification (baseline)
 **Artefato:** `docs/architecture/09_contract_plan_lifecycle_design.md` ✅
 - [x] `Contract` aggregate: `draft → active → closed` (renovação adiada para Phase 6)
 - [x] `validFromUtc` / `validUntilUtc` como campos obrigatórios na criação
 - [x] `DeclareContractualPlanHandler` modificado para validar `Contract` antes de criar plano
 - [x] `originalFileHash` gerado como SHA-256 do JSON do command para planos criados via UI
-- [x] `CloseContractCommand` implementado no domínio; **botão de UI adiado para Phase 6** (requer RBAC)
+- [x] `CloseContractCommand` implementado no domínio; botão de UI adiado para Phase 6 (requer RBAC)
 - [x] Encerrar com SETs ativos: permitido com modal de confirmação na UI
-- [x] Listagem com filtros por status e vigência; formulário criar + declarar plano; tela de detalhe
-- [x] Banco de dev: reset completo antes de aplicar migration (sem dados a preservar)
 
-#### [x] 5.2 — Council Review ✅
+#### [x] 5.2 — Council Review (baseline) ✅
 - [x] Plano via UI passa pelo mesmo `DeclareContractualPlanHandler` — sem bypass do domínio
 - [x] UI nunca escreve diretamente em repositórios — usa commands
 - [x] Transições de status controladas pelo domínio (`Contract.assertCanReceivePlan()`)
 - [x] `organization_id` derivado do JWT, nunca de input do formulário
 - [x] `contractId` referencia `Contract` real — validado pelo handler (DomainException se não existir)
-- [x] Todas as 5 decisões de produto registradas e incorporadas ao spec
 
-#### [x] 5.3 — Implementation ✅
-- **Domain:** `Contract` aggregate + `ContractStatus` enum + `ContractRepository` interface
+#### [x] 5.3 — Implementation (baseline — supersedida pelo B2B Refactoring) ✅
+> Artefatos preservados como referência. Serão refatorados nas fases 5.7–5.9.
+- **Domain:** `Contract` aggregate + `ContractStatus` + `ContractRepository`
   + events: `ContractCreatedEvent`, `ContractActivatedEvent`, `ContractClosedEvent`
 - **Application:** `CreateContractHandler`, `CloseContractHandler`
-  + `DeclareContractualPlanHandler` modificado (valida Contract + ativa automaticamente)
-  + `ContractQueryService` + `ContractSummaryView` + `ContractDetailView`
-- **Infrastructure:** migration SQL (`contracts` table + FK em `plan_declarations` + reset dev)
+  + `DeclareContractualPlanHandler` modificado + `ContractQueryService`
+- **Infrastructure:** migration SQL (`contracts` table + FK em `plan_declarations`)
   + `InMemoryContractRepository` + `PostgresContractRepository`
-  + `ContractQueryServiceInMemory` + `ContractQueryServicePostgres`
-- **Presentation:**
-  - `ContractsScreen` — listagem com filtros por status e vigência
-  - `CreateContractForm` — com `validFromUtc` / `validUntilUtc`
-  - `DeclareContractPlanForm` — SETs configuráveis (viagens programadas)
-  - `ContractDetailScreen` — abas: execuções, histórico de planos, financeiro
+- **Presentation:** `ContractsScreen` · `CreateContractForm` · `DeclareContractPlanForm` · `ContractDetailScreen`
 
-#### [ ] 5.4 — Validation
+#### [⏸] 5.4 — Validation (suspensa)
+> **Suspensa.** Substituída pela Phase 5.10 (Validation Consolidada) que cobre os cenários
+> originais desta fase mais os novos cenários do B2B Refactoring.
+
+---
+
+#### B2B Contract Refactoring — Council Review 2026-03-10
+
+**Design Spec aprovado:** `OperationalZone` + `ShiftPattern` + `SLAPenalties`.
+Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/Security · UX/Ops).
+**4 BLOCKERs resolvidos · Opção A concluída · Implementação liberada:**
+
+| # | BLOCKER | Decisão | Status |
+|---|---------|---------|--------|
+| B1 | Engine único | `ShiftProjectionService` Dart acionado pelo handler (projeta 30 dias) + boot check (`ensureProjected` no login) | ✅ Resolvido |
+| B2 | Imutabilidade | Lat/lng/radius snapshotados no `ContractualServiceExecution` no momento da projeção; `zoneId` apenas para auditoria | ✅ Resolvido |
+| B3 | Precisão financeira | `SLAPenalties { double noShowPenaltyMultiplier · int delayToleranceMinutes · Money delayPenaltyPerMinute · Money downgradePenaltyFlat }` | ✅ Resolvido |
+| B4 | Observabilidade | Gap permanente + `OperationalAlert` tipo `PROJECTION_GAP` / severity `CRITICAL`. Sem retroatividade. | ✅ Resolvido |
+
+#### [x] 5.5 — Blocker Resolution ✅
+- [x] B1: `ShiftProjectionService` como application service Dart — handler eager (30 dias) + boot check
+- [x] B2: Coordenadas snapshotadas no SET projetado — `zoneId` como auditoria apenas
+- [x] B3: `SLAPenalties` com `Money delayPenaltyPerMinute` + `Money downgradePenaltyFlat` + `double noShowPenaltyMultiplier`
+- [x] B4: Gap permanente + `PROJECTION_GAP` CRITICAL — sem backfill retroativo
+
+#### [x] 5.6 — Database Foundation ✅
+> **Migration:** `supabase/migrations/20260311000000_b2b_refactoring_foundation.sql`
+> **⚠️ Ação do PO:** executar esta migration no Supabase antes de iniciar Phase 5.10 (testes manuais).
+- `operational_zones` table com RLS (`USING` + `WITH CHECK`) e `ON DELETE RESTRICT` nas FKs de `shift_patterns`
+- `ShiftPattern` como payload JSONB em `plan_declarations` (componente do aggregate — sem tabela independente)
+- Unique constraint de idempotência: `(plan_declaration_id, shift_pattern_index, operational_date)` em `contractual_service_executions`
+- Colunas adicionais em `contractual_service_executions`: `origin_zone_id · destination_zone_id · delay_tolerance_minutes · operational_date · shift_pattern_index`
+- `delay_penalty_per_minute_cents BIGINT · downgrade_penalty_flat_cents BIGINT` em `contractual_service_executions` (snapshot de `SLAPenalties`)
+
+#### [x] 5.7 — Domain Refactoring
+- `OperationalZone` entity (nova — org-scoped, sem identidade de negócio própria além do `id`)
+- `ShiftPattern` value object (componente de `PlanDeclaration`): `daysOfWeek · arrivalTimeLocal · departureTimeLocal · timezone` validado contra IANA whitelist
+- `SLAPenalties` value object com invariantes financeiros enforced (`Money` fields)
+- `PlanDeclaration` refatorado: aceita `List<ShiftPattern>` na criação
+- `ShiftProjectionService`: projeta SETs determinísticos; snapshots coordenadas da zona; `setId = SHA-256(planDeclarationId + shiftPatternIndex + operationalDate)`
+- `OperationalZoneRepository` interface (domínio puro)
+- **ADR registrado:** exceção ao invariante UTC para `ShiftPattern.arrivalTimeLocal` (ver Invariantes acima)
+
+#### [x] 5.8 — Engine & Projection Upgrade
+- `ShiftProjectionService` acionado pelo `DeclareContractualPlanHandler` (projeta N=7 dias iniciais)
+- Gap detection: `ShiftProjectionService.detectAndAlertGaps()` — dias sem SETs em planos ativos geram `OperationalAlert` PROJECTION_GAP / CRITICAL
+- `InMemoryOperationalZoneRepository` + `PostgresOperationalZoneRepository`
+- `DeclareContractualPlanHandler` refatorado para aceitar `List<ShiftPattern>` no command
+
+#### [x] 5.9 — UI Overhaul
+- Tela de gestão de `OperationalZone` (criar/listar — dentro do OCC Admin, pré-requisito para declaração de plano)
+- `DeclareContractPlanForm` refatorado como wizard de 4 etapas:
+  1. Zonas de origem e destino (autocomplete de `OperationalZone` da org; inline "Criar primeira zona" se lista vazia)
+  2. Padrão de turno: dias da semana (checkboxes), horário de chegada e partida (time picker — horário local exibido)
+  3. SLA e penalidades: multiplicador de no-show, tolerância de atraso (min), valor por minuto (R$), downgrade (categoria + valor flat R$)
+  4. Revisão e publicação: resumo com projeção de X viagens nos próximos 7 dias, aviso de imutabilidade do plano
+- Rótulos pt-BR: `OperationalZone` → "Zona Operacional" · `ShiftPattern` → "Padrão de Turno" · SET → "Viagem Programada" (sem alteração)
+
+#### [ ] 5.10 — Validation Consolidada
+> Cobre cenários originais da 5.4 (suspensa) e todos os novos cenários B2B.
 
 **Cenários automatizados:**
-- Cenário 5.1: Plano criado via UI gera ledger entry `PLAN_DECLARED` — mesmo comportamento da API
-- Cenário 5.2: Plano publicado não pode ser editado — apenas nova versão aceita
-- Cenário 5.3: Operador de Org A não vê contratos de Org B na listagem
+- Cenário 5.1: Plano declarado com `ShiftPattern` gera ledger entry `PLAN_DECLARED` — mesmo comportamento da API
+- Cenário 5.2: Plano publicado não pode ser editado — nova versão deve ser declarada
+- Cenário 5.3: Operador de Org A não vê contratos nem zonas de Org B
 - Cenário 5.4: Contrato encerrado não aceita novos planos
+- Cenário 5.5: `ShiftProjectionService` projeta mesmo SET para mesma data + mesmo ShiftPattern (determinismo)
+- Cenário 5.6: Projeção executada 2× gera 1 SET, não 2 (idempotência via unique constraint)
+- Cenário 5.7: Atualizar coordenadas de `OperationalZone` não altera SETs já projetados (snapshot enforced)
+- Cenário 5.8: `ShiftPattern` com timezone inválida lança `DomainException` antes de qualquer persistência
+- Cenário 5.9: Gap detection gera `OperationalAlert` CRITICAL quando dia esperado não tem SETs projetados
 
 **⚠️ Testes Manuais Obrigatórios (Supabase dev ativo):**
-> Este é o primeiro momento em que existe um fluxo completo de usuário na UI.
-> Executar com Supabase real antes de emitir o Compliance Report.
-
-- [ ] **Smoke test de UI existente (fases 3 e 4):** Abrir `InvestigationModal` e `ContractualAlertsPanel` no browser — verificar que renderizam sem erros com dados reais
-- [ ] **Criar contrato** via formulário da OCC → confirmar que aparece na listagem com status correto
-- [ ] **Declarar plano** com ≥ 2 SETs → confirmar que ledger entry `PLAN_DECLARED` é gerada no Supabase
-- [ ] **Plano publicado não editável:** tentar editar plano existente → verificar que UI bloqueia ou retorna erro de domínio correto
-- [ ] **Isolamento de tenant:** logar como usuário de Org A → confirmar que nenhum contrato de Org B aparece na listagem
-- [ ] **Pipeline de avaliação:** após plano declarado, simular telemetria via Realtime → confirmar que execução muda de `pending` → `executed` na UI sem refresh manual
-- [ ] **Contrato encerrado (via teste automatizado/API):** confirmar que `CloseContractCommand` funciona no domínio e que declarar novo plano retorna `DomainException` — botão de UI vem na Phase 6
+- [ ] **Smoke test de UI existente (fases 3 e 4):** `InvestigationModal` e `ContractualAlertsPanel` renderizam sem erro com dados reais
+- [ ] **Criar zona operacional** via OCC → confirmar que aparece na listagem com `organization_id` correto no Supabase
+- [ ] **Criar contrato + declarar plano** com ShiftPattern → confirmar que SETs projetados aparecem na aba Execuções com status `pending`
+- [ ] **Determinismo de projeção:** declarar mesmo plano duas vezes → confirmar IDs de SETs idênticos, sem duplicatas no banco
+- [ ] **Snapshot de zona:** alterar coordenadas de uma zona → confirmar que SETs anteriores mantêm coordenadas originais
+- [ ] **Isolamento de tenant:** logar como Org A → confirmar que zonas e contratos de Org B não aparecem em nenhuma tela
+- [ ] **Pipeline de avaliação:** SET projetado + telemetria simulada via Realtime → confirmar transição `pending → executed` sem refresh manual
+- [ ] **Alert de gap:** forçar ausência de projeção para uma data → confirmar `OperationalAlert` PROJECTION_GAP aparece no painel
 
 - **Compliance Report:** `docs/governance/compliance/phase5_compliance_report.md`
+
+---
+
+### [ ] Trilha B — UI/UX Standardization & Session Reliability
+> **Por que agora:** Os testes manuais da Phase 5 revelaram inconsistências de alinhamento, 
+> falta de responsividade e instabilidade no Custom JWT hook do Supabase. 
+> Antes de escalar para automação total de tenants (Phase 6), a base visual e de sessão deve ser sólida.
+
+#### [ ] B1 — Padronização Visual (OCC)
+- [ ] **Alinhamento e Consistência:** Unificar alinhamento de textos (Dashboards vs. Listagens).
+- [ ] **Responsividade:** Garantir que AppBar, Sidebar e Tabelas adaptem-se a resoluções desktop variadas.
+- [ ] **Stress Mode Toggle:** Mover o overlay de performance para um botão sob demanda na AppBar.
+- [ ] **Localization (pt-BR):** Configurar `flutter_localizations` para que calendários e mensagens de sistema falem a língua do operador.
+
+#### [ ] B2 — Session Hook Reliability
+- [ ] **Fallback de Organização:** Implementar busca em `public.user_roles` quando o `org_id` estiver ausente no JWT (edge case de sincronização do hook).
+- [ ] **Validation Cleansing:** Garantir que mensagens de erro de formulário desapareçam imediatamente ao toque do usuário.
+
+> [!IMPORTANT]
+> **GOVERNANÇA DO CONSELHO:** Para a implementação definitiva destes itens (além do hotfix de validação), é MANDATÓRIO realizar uma sessão de Design Review com o conselho (UX/Senior Eng) para validar os novos breakpoints e a estratégia de cache de sessão.
 
 ---
 
@@ -476,9 +556,21 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 [✅] Phase 4  Operational Alerts
 [✅] Trilha A Correções Críticas de Débito Técnico (A1 testes · A2 lints · A3 segredos · A4 precisão financeira)
 ─────────────────────────────────────────────────────
-[~] Phase 5  Contract & Plan Lifecycle Management    ← EM ANDAMENTO
-     ✅ 5.1 Design Spec   ✅ 5.2 Council Review
-     ✅ 5.3 Implementation  ·  ⏳ 5.4 Validation
+[~] Phase 5  Contract & Plan Lifecycle Management (B2B Refactoring)  ← EM ANDAMENTO
+     ✅ 5.1 Design Spec (baseline)
+     ✅ 5.2 Council Review (baseline)
+     ✅ 5.3 Implementation (baseline — supersedida)
+     ⏸  5.4 Validation (suspensa → incorporada em 5.10)
+     ─ ─ ─  B2B Refactoring  ─ ─ ─
+     ✅ Design Spec B2B (OperationalZone · ShiftPattern · SLAPenalties)
+     ✅ Council Review B2B (4 BLOCKERs · Opção A selecionada)
+     ✅ 5.5 Blocker Resolution
+     ✅ 5.6 Database Foundation
+     ✅ 5.7 Domain Refactoring
+     ✅ 5.8 Engine & Projection Upgrade
+     🔄 5.9 UI Overhaul   ← EM ANDAMENTO
+     [ ] 5.10 Validation Consolidada
+[  ] Trilha B UI/UX Standardization & Session Reliability
 [  ] Phase 6  Administration & Tenant Self-Service
 [  ] Phase 7  Evidence & Audit Exports
 [  ] Phase 8  Operational Hardening
@@ -489,11 +581,15 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Phase 5.3 — Implementation.**
+**Phase 5.9 — UI Overhaul.** ← EM ANDAMENTO
 
-Ordem obrigatória:
-1. Domínio: `Contract` aggregate + `ContractStatus` + eventos de domínio
-2. Aplicação: handlers + query service
-3. Infraestrutura: migration SQL (reset dev primeiro) + repositórios
-4. Apresentação: telas de listagem, criação, declaração de plano e detalhe
-5. Testes e Phase 5.4 Validation
+5.6–5.8 ✅. Backend completo: ShiftProjectionService · InMemory/Postgres zone repos · handler B2B · 291 testes passing.
+Ordem obrigatória: **5.6 → 5.7 → 5.8 → 5.9 → 5.10**.
+
+| Fase | Entrega |
+|------|---------|
+| 5.6 | Migration SQL: `operational_zones` + colunas em `contractual_service_executions` + unique constraint de idempotência |
+| 5.7 | Domain: `OperationalZone` · `ShiftPattern` · `SLAPenalties` · `ShiftProjectionService` · modificações em `PlanDeclaration` e `ContractualServiceExecution` |
+| 5.8 | Engine: `DeclareContractualPlanHandler` integrado ao `ShiftProjectionService` + boot check + gap alerts + repositórios Postgres/InMemory |
+| 5.9 | UI: tela de zonas operacionais + wizard de 4 etapas para declaração de plano |
+| 5.10 | Validation: novos testes (determinismo, idempotência, snapshot, gap) + atualização dos 62 testes da 5.3 + checklist manual |

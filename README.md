@@ -8,8 +8,8 @@ Diferente de sistemas tradicionais de monitoramento ou TMS, o BusFlow não apena
 🎯 **Problema que Resolvemos**
 
 Empresas de transporte corporativo e fretado enfrentam:
-- Glosas técnicas recorrentes
-- Disputas de faturamento
+- Desconexão total entre o Acordo Comercial (Linhas/Turnos) e a Execução Física (Telemetria)
+- Glosas técnicas recorrentes e disputas de faturamento
 - Aumento do DSO (Days Sales Outstanding)
 - Perda silenciosa de margem
 - Dependência de conferência manual mensal
@@ -27,7 +27,7 @@ Telemetria → Normalização Operacional → Avaliação Contratual (SLA Engine
 - TMS convencional
 - Dashboard operacional genérico
 
-**BusFlow é:** Uma plataforma que transforma execução física em dinheiro protegido.
+**BusFlow é:** Uma plataforma que transforma execução física em dinheiro protegido, unindo a linguagem comercial das viações com auditoria automatizada.
 
 🏗 **Arquitetura**
 
@@ -42,7 +42,7 @@ Telemetria → Normalização Operacional → Avaliação Contratual (SLA Engine
 ### Camadas
 
 1️⃣ **Domain Layer (Soberana)**
-- Contém: `PlanDeclaration`, `ContractualServiceExecution`, `ContractualExecutionState`, `ExecutionStatus`, `Domain Events`, `Money` (Value Object financeiro).
+- Contém: `PlanDeclaration`, `ShiftPattern` (Padrões de Turno), `OperationalZone` (Zonas Nomeadas), `ContractualServiceExecution`, `ContractualExecutionState`, `ExecutionStatus`, `Domain Events`, `Money` (Value Object financeiro).
 - Nenhuma regra de negócio existe na UI.
 - Nenhuma dependência de infraestrutura contamina o domínio.
 
@@ -62,13 +62,14 @@ Telemetria → Normalização Operacional → Avaliação Contratual (SLA Engine
 
 🛡 **SLA Audit Engine**
 
-O coração do sistema. Detecta automaticamente:
-- **EXECUTADO**
-- **NO-SHOW**
-- **EVIDENCE GAP**
-- **PENDING**
+O coração do sistema. Diferente de hardwares de rastreamento genéricos, nosso motor compreende a linguagem do negócio B2B (Fretamento Contínuo). Ele detecta automaticamente o status da operação cruzando telemetria com as regras comerciais de:
+- **Padrões de Turno (Shift Patterns):** Projeção automática de dias úteis e horários esperados (ex: Seg-Sex, 07:00).
+- **Zonas Operacionais:** Conversão nos bastidores de plantas e portarias para polígonos auditáveis (Geofence), isolando o operador de coordenadas complexas.
+- **Multas por Atraso (Delay Penalty):** Avaliação determinística de janelas de tolerância contratuais e permanência mínima (dwell time).
+- **No-Show (Não Comparecimento):** Penalização automática de viagens não realizadas.
+- **Downgrade de Frota:** Desconto financeiro quando um veículo de categoria inferior ao contratado realiza a linha.
 
-Baseado em Geofence determinística, permanência mínima (dwell time), janela operacional e sweep automático de obrigações expiradas. Sem heurísticas subjetivas. Sem interpretação humana.
+Tudo isso baseado em matemática determinística e sweep automático de obrigações expiradas. Sem heurísticas subjetivas. Sem interpretação humana.
 
 💰 **Camada Financeira**
 
@@ -92,13 +93,13 @@ Calcula Receita Total Contratada, Receita Protegida, Receita em Risco, Receita P
 - Dia operacional baseado em timezone explícito
 - Sem uso de `DateTime.now()` direto nas regras ou `toLocal()`.
 
-� **Command Center (Camada Operacional)**
+🗺️ **Command Center (Camada Operacional)**
 Mapa em tempo real com Fleet Simulation, normalização de ruído, Situation Engine, alertas hierarquizados e Forensic Console Strip. O OCC não é o produto final; é a fonte de evidência para auditoria contratual.
 
 🔌 **Telemetria**
 Fluxo reativo via Riverpod: `Raw Telemetry` → `OperationalStateNormalizer` → `Evaluation Engine` → `ExecutionState Repository` → `Projections` → `UI`. Sem polling. Sem acoplamento. Reativo.
 
-� **Persistência**
+💾 **Persistência**
 BusFlow é *persistence-agnostic*. Pode rodar em Supabase, PostgreSQL, SQLite, In-Memory ou qualquer adapter compatível. Infraestrutura não define o domínio.
 
 🧪 **Testes**
@@ -113,37 +114,56 @@ Suíte rigorosa de automação de QA cobrindo de ponta-a-ponta:
 🚀 **Como Executar (Admin Web)**
 ```bash
 flutter run -d chrome -t lib/main.dart --web-port 8080
-```
 
-🔒 **Segurança**
-- PIN Lock no Admin via Environment Variables.
-- Forensic Ledger **Append-Only** (RLS Hardening).
-- Snapshot Financeiro Imutável (Revoke Update/Delete).
-- Segregação estrita entre comandos e consultas (CQRS).
+🔒 Segurança
 
-📌 **Status do Projeto**
-O BusFlow consolidou sua fundação Enterprise. O sistema possui um **SLA Engine determinístico**, persistência imutável em **PostgreSQL/Supabase** e um pipeline de telemetria com **Idempotência Funcional**. A infraestrutura está preparada para auditoria financeira profissional com 100% de rastreabilidade.
+PIN Lock no Admin via Environment Variables.
 
-🧭 **Visão de Futuro**
-- Painel de tendências históricas (Trends) e Analytics preditivo.
-- Integração nativa com protocolos GTFS-Realtime e gateways IoT.
-- Exportação de evidências forenses e relatórios fiscais.
-- APIs B2B para integração direta com ERPs (SAP, Totvs, Oracle).
-- Expansão do sistema de alertas via Webhooks.
+Forensic Ledger Append-Only (RLS Hardening).
 
-📚 **Documentação & Governança do Repositório**
+Snapshot Financeiro Imutável (Revoke Update/Delete).
 
-Todo o contexto arquitetural, regras de engenharia e histórico de governança residem duravelmente na pasta `docs/` dentro do próprio repositório. O acesso à documentação é estruturado da seguinte forma:
+Segregação estrita entre comandos e consultas (CQRS).
 
-*   [`docs/architecture/`](./docs/architecture/)
-    *   `01_system_overview.md`
-    *   `02_event_pipeline.md`
-    *   `03_multi_tenant_foundation.md`
-    *   `04_contract_rules_engine.md`
-    *   `05_occ_operational_model.md`
-*   [`docs/governance/`](./docs/governance/)
-    *   `lifecycle_framework.md` (Governança Ágil do Conselho de Engenharia)
-*   [`docs/governance/compliance/`](./docs/governance/compliance/)
-    *   Relatórios de Validação e Auditorias
-*   [`docs/runbooks/`](./docs/runbooks/)
-    *   Procedimentos Operacionais (ex: `operational_testing.md`)
+📌 Status do Projeto
+O BusFlow consolidou sua fundação Enterprise. O sistema possui um SLA Engine determinístico, persistência imutável em PostgreSQL/Supabase e um pipeline de telemetria com Idempotência Funcional. A infraestrutura está preparada para auditoria financeira profissional com 100% de rastreabilidade.
+
+🧭 Visão de Futuro
+
+Painel de tendências históricas (Trends) e Analytics preditivo.
+
+Integração nativa com protocolos GTFS-Realtime e gateways IoT.
+
+Exportação de evidências forenses e relatórios fiscais.
+
+APIs B2B para integração direta com ERPs (SAP, Totvs, Oracle).
+
+Expansão do sistema de alertas via Webhooks.
+
+📚 Documentação & Governança do Repositório
+
+Todo o contexto arquitetural, regras de engenharia e histórico de governança residem duravelmente na pasta docs/ dentro do próprio repositório. O acesso à documentação é estruturado da seguinte forma:
+
+docs/architecture/
+
+01_system_overview.md
+
+02_event_pipeline.md
+
+03_multi_tenant_foundation.md
+
+04_contract_rules_engine.md
+
+05_occ_operational_model.md
+
+docs/governance/
+
+lifecycle_framework.md (Governança Ágil do Conselho de Engenharia)
+
+docs/governance/compliance/
+
+Relatórios de Validação e Auditorias
+
+docs/runbooks/
+
+Procedimentos Operacionais (ex: operational_testing.md)

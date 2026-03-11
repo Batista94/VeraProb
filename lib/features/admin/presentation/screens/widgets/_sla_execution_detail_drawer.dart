@@ -54,7 +54,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                       value: item.plannedVehicleId ?? 'Qualquer veículo',
                     ),
                     const Divider(height: 48),
-                    const Text(
+                    Text(
                       'DADOS FINANCEIROS',
                       style: BusFlowTypography.caption,
                     ),
@@ -73,7 +73,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                         value: _currencyFormat.format(item.calculatedPenalty.toDouble()),
                       ),
                     const Divider(height: 48),
-                    const Text(
+                    Text(
                       'GEOFENCE DE PARTIDA',
                       style: BusFlowTypography.caption,
                     ),
@@ -89,7 +89,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                     ),
                     if (item.status == ExecutionStatus.executed) ...[
                       const Divider(height: 48),
-                      const Text(
+                      Text(
                         'EVIDÊNCIA DE EXECUÇÃO',
                         style: BusFlowTypography.caption,
                       ),
@@ -172,7 +172,7 @@ class _Header extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             'Detalhes da Obrigação',
             style: BusFlowTypography.sectionTitle,
           ),

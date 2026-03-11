@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class ChartsSection extends StatelessWidget {
   const ChartsSection({super.key});
@@ -7,15 +8,23 @@ class ChartsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 4,
+      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Viagens por Hora (Últimas 24h)',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              'Performance de Execução Operacional',
+              style: BusFlowTypography.sectionTitle.copyWith(
+                color: BusFlowColors.textPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Trips processadas nas últimas 24h (Audit Ledger)',
+              style: BusFlowTypography.caption,
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -27,25 +36,23 @@ class ChartsSection extends StatelessWidget {
                   barTouchData: BarTouchData(
                     enabled: false,
                     touchTooltipData: BarTouchTooltipData(
-                      tooltipBgColor: Colors.blueGrey,
-
-                      tooltipPadding: EdgeInsets.zero,
+                      tooltipBgColor: BusFlowColors.surfaceElevated,
+                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       tooltipMargin: 8,
-                      getTooltipItem:
-                          (
-                            BarChartGroupData group,
-                            int groupIndex,
-                            BarChartRodData rod,
-                            int rodIndex,
-                          ) {
-                            return BarTooltipItem(
-                              rod.toY.round().toString(),
-                              const TextStyle(
-                                color: Colors.cyan,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          },
+                      getTooltipItem: (
+                        BarChartGroupData group,
+                        int groupIndex,
+                        BarChartRodData rod,
+                        int rodIndex,
+                      ) {
+                        return BarTooltipItem(
+                          rod.toY.round().toString(),
+                          const TextStyle(
+                            color: BusFlowColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      },
                     ),
                   ),
                   titlesData: FlTitlesData(
@@ -54,10 +61,9 @@ class ChartsSection extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          const style = TextStyle(
-                            color: Color(0xff7589a2),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                          final style = BusFlowTypography.caption.copyWith(
+                            color: BusFlowColors.textSecondary,
+                            fontWeight: FontWeight.w600,
                           );
                           String text;
                           switch (value.toInt()) {
@@ -82,13 +88,11 @@ class ChartsSection extends StatelessWidget {
                             child: Text(text, style: style),
                           );
                         },
-                        reservedSize: 28, // Fix for bottom titles
+                        reservedSize: 28,
                       ),
                     ),
                     leftTitles: const AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: false,
-                      ), // Hide left titles
+                      sideTitles: SideTitles(showTitles: false),
                     ),
                     topTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
@@ -102,28 +106,28 @@ class ChartsSection extends StatelessWidget {
                     BarChartGroupData(
                       x: 0,
                       barRods: [
-                        BarChartRodData(toY: 5, color: Colors.lightBlueAccent),
+                        BarChartRodData(toY: 5, color: BusFlowColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),
                     BarChartGroupData(
                       x: 6,
                       barRods: [
-                        BarChartRodData(toY: 12, color: Colors.lightBlueAccent),
+                        BarChartRodData(toY: 12, color: BusFlowColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),
                     BarChartGroupData(
                       x: 12,
                       barRods: [
-                        BarChartRodData(toY: 19, color: Colors.lightBlueAccent),
+                        BarChartRodData(toY: 19, color: BusFlowColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),
                     BarChartGroupData(
                       x: 18,
                       barRods: [
-                        BarChartRodData(toY: 15, color: Colors.lightBlueAccent),
+                        BarChartRodData(toY: 15, color: BusFlowColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),

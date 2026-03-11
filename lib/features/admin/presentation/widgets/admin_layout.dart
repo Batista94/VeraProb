@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/admin_navigation_provider.dart';
 import '../../../../application/projections/providers/feed_health_projection_provider.dart';
 import '../../../../dev/performance_metrics.dart';
 import '../../../../state/providers/fleet_providers.dart';
+import '../../../../application/adapters/stress_scenario_config.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../lock_screen.dart';
 
 class AdminLayout extends ConsumerWidget {
   final List<Widget> children;
@@ -19,75 +23,94 @@ class AdminLayout extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = ref.watch(adminIndexProvider);
     final isWideScreen = MediaQuery.of(context).size.width >= 600;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: BusFlowColors.background,
       appBar: AppBar(
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                gradient: LinearGradient(
+                  colors: [BusFlowColors.primary, BusFlowColors.primary.withValues(alpha: 0.7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: BusFlowColors.primary.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Text('🚌', style: TextStyle(fontSize: 20)),
+              child: const Icon(Icons.hub_rounded, color: Colors.white, size: 20),
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'BusFlow Admin',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+            const SizedBox(width: 16),
+            Text(
+              'OCC • BUSFLOW',
+              style: BusFlowTypography.sectionTitle.copyWith(
+                fontSize: 16,
+                letterSpacing: 1.5,
+                fontWeight: FontWeight.w800,
+                color: BusFlowColors.textPrimary,
+              ),
             ),
             const Spacer(),
-            const _FeedHealthBadge(),
+            const _StressModeToggle(),
             const SizedBox(width: 16),
+            const _FeedHealthBadge(),
+            const SizedBox(width: 8),
+            const _LogoutButton(),
+            const SizedBox(width: 8),
           ],
         ),
-        backgroundColor: const Color(0xFF1A237E),
-        foregroundColor: Colors.white,
+        backgroundColor: BusFlowColors.surface,
+        foregroundColor: BusFlowColors.textPrimary,
         elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: BusFlowColors.border, width: 0.5),
+              ),
+            ),
+          ),
+        ),
       ),
       body: Stack(
         children: [
           Row(
             children: [
-              // Sidebar (NavigationRail) for wide screens
               if (isWideScreen)
                 Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
+                  width: 100,
+                  decoration: const BoxDecoration(
+                    color: BusFlowColors.surface,
                     border: Border(
-                      right: BorderSide(color: Colors.grey.shade200),
+                      right: BorderSide(color: BusFlowColors.border),
                     ),
                   ),
                   child: NavigationRail(
-                    backgroundColor: Colors.transparent,
                     selectedIndex: selectedIndex,
                     onDestinationSelected: (index) {
                       ref.read(adminIndexProvider.notifier).state = index;
                     },
                     labelType: NavigationRailLabelType.all,
-                    indicatorColor: colorScheme.primaryContainer,
-                    selectedLabelTextStyle: TextStyle(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                    unselectedLabelTextStyle: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
                     useIndicator: true,
-                    minWidth: 80,
                     destinations: destinations,
                   ),
                 ),
-
-              // Main Content
               Expanded(
                 child: Container(
-                  color: const Color(0xFFF5F7FA),
-                  child: IndexedStack(index: selectedIndex, children: children),
+                  color: BusFlowColors.background,
+                  child: IndexedStack(
+                    index: selectedIndex,
+                    children: children.map((child) => _AnimatedPage(child: child)).toList(),
+                  ),
                 ),
               ),
             ],
@@ -96,7 +119,6 @@ class AdminLayout extends ConsumerWidget {
             const PerformanceOverlayHud(),
         ],
       ),
-      // Bottom Navigation Bar for small screens
       bottomNavigationBar: isWideScreen
           ? null
           : BottomNavigationBar(
@@ -104,14 +126,77 @@ class AdminLayout extends ConsumerWidget {
               onTap: (index) {
                 ref.read(adminIndexProvider.notifier).state = index;
               },
-              selectedItemColor: colorScheme.primary,
+              backgroundColor: BusFlowColors.surface,
+              selectedItemColor: BusFlowColors.primary,
+              unselectedItemColor: BusFlowColors.textDisabled,
+              type: BottomNavigationBarType.fixed,
               items: destinations.map((d) {
                 return BottomNavigationBarItem(
                   icon: d.icon,
+                  activeIcon: d.selectedIcon,
                   label: (d.label as Text).data,
                 );
               }).toList(),
             ),
+    );
+  }
+}
+
+class _AnimatedPage extends StatelessWidget {
+  final Widget child;
+  const _AnimatedPage({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: child,
+    );
+  }
+}
+
+class _StressModeToggle extends ConsumerWidget {
+  const _StressModeToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isStressMode = ref.watch(stressScenarioProvider) != null;
+    return IconButton(
+      icon: Icon(
+        isStressMode ? Icons.speed_rounded : Icons.speed_outlined,
+        color: isStressMode ? BusFlowColors.primary : BusFlowColors.textDisabled,
+      ),
+      tooltip: isStressMode ? 'Desativar Stress Mode' : 'Ativar Stress Mode',
+      onPressed: () {
+        if (isStressMode) {
+          ref.read(stressScenarioProvider.notifier).state = null;
+        } else {
+          // Use a predefined scenario instead of a raw string
+          ref.read(stressScenarioProvider.notifier).state = StressScenarioConfig.extreme250();
+        }
+      },
+    );
+  }
+}
+
+class _LogoutButton extends StatelessWidget {
+  const _LogoutButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.logout_rounded),
+      tooltip: 'Sair',
+      color: BusFlowColors.textDisabled,
+      onPressed: () async {
+        await Supabase.instance.client.auth.signOut();
+        if (context.mounted) {
+          await Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+            (_) => false,
+          );
+        }
+      },
     );
   }
 }
@@ -126,8 +211,8 @@ class _FeedHealthBadge extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: health.color.withValues(alpha: 0.15),
-        border: Border.all(color: health.color.withValues(alpha: 0.5)),
+        color: health.color.withValues(alpha: 0.1),
+        border: Border.all(color: health.color.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -139,22 +224,14 @@ class _FeedHealthBadge extends ConsumerWidget {
             decoration: BoxDecoration(
               color: health.color,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: health.color.withValues(alpha: 0.5),
-                  blurRadius: 4,
-                  spreadRadius: 1,
-                ),
-              ],
             ),
           ),
           const SizedBox(width: 8),
           Text(
-            health.label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+            health.label.toUpperCase(),
+            style: BusFlowTypography.badge.copyWith(
               color: health.color,
+              fontSize: 9,
             ),
           ),
         ],

@@ -8,6 +8,7 @@ import 'command_center/screens/operational_audit_screen.dart';
 import 'screens/contracts_screen.dart';
 import 'screens/sla_audit_screen.dart';
 import 'screens/sla_financial_impact_screen.dart';
+import 'screens/operational_zones_screen.dart';
 import 'screens/billing_cycle_reports_screen.dart';
 
 class AdminHome extends StatelessWidget {
@@ -53,6 +54,11 @@ class AdminHome extends StatelessWidget {
           label: Text('Impacto Financeiro'),
         ),
         NavigationRailDestination(
+          icon: Icon(Icons.place_outlined),
+          selectedIcon: Icon(Icons.place),
+          label: Text('Zonas'),
+        ),
+        NavigationRailDestination(
           icon: Icon(Icons.summarize_outlined),
           selectedIcon: Icon(Icons.summarize),
           label: Text('Relatórios'),
@@ -66,6 +72,7 @@ class AdminHome extends StatelessWidget {
         ContractsScreen(),
         SlaAuditScreen(),
         SlaFinancialImpactScreen(),
+        OperationalZonesScreen(),
         BillingCycleReportsScreen(),
       ],
     );

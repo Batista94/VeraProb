@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/supabase_client.dart';
@@ -16,10 +17,38 @@ final currentOperatorIdProvider = Provider<String?>((ref) {
 
 /// Extracts the strict `organization_id` boundary from the JWT claims
 /// injected by the Postgres `custom_access_token_hook`.
+/// Direct fetcher for organization ID when JWT metadata is missing/syncing.
+final organizationIdFetcherProvider = FutureProvider<String?>((ref) async {
+  final authState = ref.watch(authStateProvider).valueOrNull;
+  final userId = authState?.session?.user.id;
+  if (userId == null) return null;
+
+  try {
+    final response = await supabase
+        .from('user_roles')
+        .select('organization_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+    
+    return response?['organization_id'] as String?;
+  } catch (e) {
+    debugPrint('[Auth] organizationIdFetcherProvider failed: $e');
+    return null;
+  }
+});
+
+/// Extracts the strict `organization_id` boundary from the JWT claims.
+/// Injected by the Postgres `custom_access_token_hook`.
 final currentOrganizationIdProvider = Provider<String?>((ref) {
   final authState = ref.watch(authStateProvider).valueOrNull;
+  
+  // 1. Try JWT metadata (fastest)
   final metadata = authState?.session?.user.appMetadata;
-  return metadata?['org_id'] as String?;
+  final fromMetadata = metadata?['org_id'] as String?;
+  if (fromMetadata != null) return fromMetadata;
+
+  // 2. Fallback to the async fetcher result if available
+  return ref.watch(organizationIdFetcherProvider).valueOrNull;
 });
 
 /// Current User Role derived from the JWT custom app_metadata claim.

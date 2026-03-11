@@ -72,67 +72,102 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blueGrey.shade900,
+      backgroundColor: BusFlowColors.background,
       body: Center(
         child: Container(
-          width: 300,
-          padding: const EdgeInsets.all(24),
+          width: 340,
+          padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [BoxShadow(blurRadius: 10, color: Colors.black45)],
+            color: BusFlowColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: BusFlowColors.border),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 40,
+                color: Colors.black.withValues(alpha: 0.5),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.security, size: 64, color: Colors.blueGrey),
-              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: BusFlowColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.shield_outlined,
+                  size: 48,
+                  color: BusFlowColors.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
               const Text(
                 'Autenticação Corporativa',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: BusFlowColors.textPrimary,
+                  letterSpacing: -0.5,
+                ),
               ),
               const SizedBox(height: 8),
-              const Text('Acesse a plataforma de controle'),
-              const SizedBox(height: 24),
+              const Text(
+                'Plataforma de Auditoria SLA',
+                style: TextStyle(
+                  color: BusFlowColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 32),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(color: BusFlowColors.textPrimary),
                 decoration: const InputDecoration(
-                  labelText: 'E-mail',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
+                  labelText: 'E-mail Corporativo',
+                  prefixIcon: Icon(Icons.email_outlined),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, letterSpacing: 8),
+                style: const TextStyle(
+                  color: BusFlowColors.textPrimary,
+                  letterSpacing: 4,
+                ),
                 decoration: InputDecoration(
-                  labelText: 'Senha',
-                  prefixIcon: const Icon(Icons.lock),
+                  labelText: 'Senha de Acesso',
+                  prefixIcon: const Icon(Icons.lock_outline),
                   errorText: _error,
-                  border: const OutlineInputBorder(),
                 ),
                 onSubmitted: (_) => _signIn(),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
+                height: 48,
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
                         onPressed: _signIn,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: BusFlowColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: const Text(
-                          'ENTRAR',
+                          'ACESSAR SISTEMA',
                           style: TextStyle(
                             color: Colors.white,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
                           ),
                         ),
                       ),

@@ -1,3 +1,4 @@
+import 'contractual_service_execution.dart';
 import 'plan_declaration.dart';
 
 /// Domain Port: Repository for persisting and querying [PlanDeclaration] aggregates.
@@ -20,4 +21,18 @@ abstract class PlanDeclarationRepository {
     String contractId, {
     required String organizationId,
   });
+
+  /// Retrieves all [PlanDeclaration]s for a given organization.
+  /// Used by [ShiftProjectionService.ensureProjected] during the operator boot check.
+  Future<List<PlanDeclaration>> findByOrganization(String organizationId);
+
+  /// Persists projected [ContractualServiceExecution] instances for a plan.
+  ///
+  /// Uses upsert semantics — idempotent. Duplicate projected SETs (same
+  /// plan + pattern + date) are silently ignored via the DB unique constraint.
+  /// Called by [DeclareContractualPlanHandler] after eager 30-day projection.
+  Future<void> saveProjectedSets(
+    String planDeclarationId,
+    List<ContractualServiceExecution> sets,
+  );
 }

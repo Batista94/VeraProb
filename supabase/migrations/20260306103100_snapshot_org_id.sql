@@ -9,7 +9,7 @@ ALTER TABLE contractual_financial_snapshot ADD COLUMN organization_id UUID NOT N
 ALTER TABLE contractual_financial_snapshot ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their organization snapshots" ON contractual_financial_snapshot
-    FOR SELECT USING (organization_id = auth.jwt() ->> 'org_id');
+    FOR SELECT USING (organization_id = (auth.jwt() ->> 'org_id')::uuid);
 
 CREATE POLICY "Users can insert their organization snapshots" ON contractual_financial_snapshot
-    FOR INSERT WITH CHECK (organization_id = auth.jwt() ->> 'org_id');
+    FOR INSERT WITH CHECK (organization_id = (auth.jwt() ->> 'org_id')::uuid);

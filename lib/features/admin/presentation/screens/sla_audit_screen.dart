@@ -27,8 +27,16 @@ class SlaAuditScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Auditoria de SLA',
-              style: BusFlowTypography.sectionTitle.copyWith(fontSize: 24),
+              'Relatório de Auditoria SLA',
+              style: BusFlowTypography.sectionTitle.copyWith(
+                fontSize: 24,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Consolidação de evidências forenses e proteção de receita.',
+              style: BusFlowTypography.bodySmall,
             ),
             const SizedBox(height: 24),
             const _SlaSummarySection(),
@@ -53,39 +61,39 @@ class _SlaSummarySection extends ConsumerWidget {
         children: [
           Expanded(
             child: _SummaryCard(
-              title: 'Executados',
+              title: 'CONFORMIDADES',
               value: summary.totalExecuted,
               color: BusFlowColors.success,
               percentage: summary.total > 0
                   ? (summary.totalExecuted / summary.total * 100).round()
                   : 0,
-              revenueLabel: 'Receita Protegida',
+              revenueLabel: 'RECEITA PROTEGIDA',
               revenueValue: summary.protectedRevenue,
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: _SummaryCard(
-              title: 'Em Risco',
+              title: 'INCONSISTÊNCIAS',
               value: summary.totalEvidenceGap,
               color: BusFlowColors.warning,
               percentage: summary.total > 0
                   ? (summary.totalEvidenceGap / summary.total * 100).round()
                   : 0,
-              revenueLabel: 'Receita em Risco',
+              revenueLabel: 'RECEITA EM RISCO',
               revenueValue: summary.revenueAtRisk,
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: _SummaryCard(
-              title: 'Perdidos',
+              title: 'QUEBRAS DE SLA',
               value: summary.totalNoShow,
               color: BusFlowColors.error,
               percentage: summary.total > 0
                   ? (summary.totalNoShow / summary.total * 100).round()
                   : 0,
-              revenueLabel: 'Receita Perdida',
+              revenueLabel: 'RECEITA PERDIDA',
               revenueValue: summary.lostRevenue,
             ),
           ),
@@ -139,8 +147,8 @@ class _SummaryCard extends StatelessWidget {
               Text(
                 value.toString(),
                 style: BusFlowTypography.kpiValue.copyWith(
-                  color: color,
-                  fontSize: 36,
+                  color: BusFlowColors.textPrimary,
+                  fontSize: 32,
                 ),
               ),
               const SizedBox(width: 8),
@@ -198,7 +206,7 @@ class _SlaExceptionsTable extends ConsumerWidget {
     return exceptionsAsync.when(
       data: (exceptions) {
         if (exceptions.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               'Nenhuma exceção detectada.',
               style: BusFlowTypography.bodyMedium,
@@ -301,7 +309,7 @@ class _StatusBadge extends StatelessWidget {
         ? BusFlowColors.error
         : BusFlowColors.warning;
 
-    final label = status == ExecutionStatus.noShow ? 'No Show' : 'Ev. Gap';
+    final label = status == ExecutionStatus.noShow ? 'Falha' : 'Gargalo';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
