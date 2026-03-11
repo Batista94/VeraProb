@@ -307,14 +307,14 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 > [!IMPORTANT]
 > **GOVERNANÇA DO CONSELHO:** Para a implementação definitiva destes itens (além do hotfix de validação), é MANDATÓRIO realizar uma sessão de Design Review com o conselho (UX/Senior Eng) para validar os novos breakpoints e a estratégia de cache de sessão.
 
-#### [ ] B3 — Contractual Risk Radar (Dashboard Pivot)
+#### [x] B3 — Contractual Risk Radar (Dashboard Pivot)
 > **Definido via Reunião do Conselho (10/Mar):** Pivotar a tela inicial para focar em métricas financeiras e obrigações, eliminando o mapa como componente central diário.
 
-- [ ] **Arquitetura (CQRS):** Criar `dashboardRiskFeedProvider` consumindo estritamente as *Projections* de leitura (`timelineProjection`) sem ferir limites do domínio.
-- [ ] **Segurança (RLS):** Garantir Tenant Isolation na agregação de turnos e alertas do feed principal.
-- [ ] **Apresentação (UI/UX):** Remover `HeatmapSection`. Injetar `ContractualRiskRadar` com KPIs CFO-Friendly (Receita em Risco/SLA Violado).
-- [ ] **Timeline Feed:** Listar as *Viagens Programadas* do dia atual, ordenando por severidade (CRITICAL > WARNING > ON_TIME).
-- [ ] **Mapa Analítico:** Restringir o FlutterMap ao `InvestigationModal` (sob demanda).
+- [x] **Arquitetura (CQRS):** Criar `dashboardRiskFeedProvider` consumindo estritamente as *Projections* de leitura (`timelineProjection`) sem ferir limites do domínio.
+- [x] **Segurança (RLS):** Garantir Tenant Isolation na agregação de turnos e alertas do feed principal.
+- [x] **Apresentação (UI/UX):** Remover `HeatmapSection`. Injetar `ContractualRiskRadar` com KPIs CFO-Friendly (Receita em Risco/SLA Violado).
+- [x] **Timeline Feed:** Listar as *Viagens Programadas* do dia atual, ordenando por severidade (CRITICAL > WARNING > ON_TIME).
+- [x] **Mapa Analítico:** Restringir o FlutterMap ao `InvestigationModal` (sob demanda).
 
 ---
 
@@ -579,7 +579,7 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
      ✅ 5.9 UI Overhaul
 [~] Trilha B UI/UX Standardization & Session Reliability  ← EM ANDAMENTO
      ✅ B1 Padronização Visual (OCC)
-     [ ] B3 Contractual Risk Radar (Pivot)
+     ✅ B3 Contractual Risk Radar (Pivot)
      [ ] B2 Session Hook Reliability
 [  ] Phase 6  Administration & Tenant Self-Service
 [  ] Phase 7  Evidence & Audit Exports

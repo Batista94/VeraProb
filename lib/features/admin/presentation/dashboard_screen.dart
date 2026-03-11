@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widgets/charts_section.dart';
-import 'widgets/heatmap_section.dart';
+import 'widgets/contractual_risk_radar.dart';
 import '../../../core/config/supabase_client.dart';
 import '../../../core/utils/data_seeder.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../../application/adapters/stress_scenario_config.dart';
-import '../../../../state/providers/fleet_providers.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -122,7 +119,7 @@ class DashboardScreen extends StatelessWidget {
         const SizedBox(height: 40),
         const ChartsSection(),
         const SizedBox(height: 32),
-        const HeatmapSection(),
+        const ContractualRiskRadar(),
         const SizedBox(height: 40),
       ],
     );

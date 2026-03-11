@@ -117,4 +117,52 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
       );
     }).toList();
   }
+
+  @override
+  Future<List<SlaExecutionItemView>> listByWindow(
+    DateTime startUtc,
+    DateTime endUtc, {
+    required String organizationId,
+    String? contractId,
+  }) async {
+    var query = _client
+        .from('execution_states')
+        .select()
+        .eq('organization_id', organizationId)
+        .gte('window_start_utc', startUtc.toIso8601String())
+        .lt('window_start_utc', endUtc.toIso8601String());
+
+    if (contractId != null) {
+      query = query.eq('contract_id', contractId);
+    }
+
+    final rows = await query
+        .order('window_start_utc', ascending: true)
+        .limit(500);
+
+    return rows.map((row) {
+      return SlaExecutionItemView(
+        setId: row['set_id'] as String,
+        contractId: row['contract_id'] as String,
+        status: ExecutionStatus.values.byName(row['status'] as String),
+        windowStartUtc: DateTime.parse(
+          row['window_start_utc'] as String,
+        ).toUtc(),
+        windowEndUtc: DateTime.parse(row['window_end_utc'] as String).toUtc(),
+        plannedVehicleId: row['planned_vehicle_id'] as String?,
+        boundVehicleId: row['bound_vehicle_id'] as String?,
+        boundAtUtc: row['binding_timestamp_utc'] != null
+            ? DateTime.parse(row['binding_timestamp_utc'] as String).toUtc()
+            : null,
+        startLatitude: (row['start_latitude'] as num).toDouble(),
+        startLongitude: (row['start_longitude'] as num).toDouble(),
+        startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
+        contractualValue: Money(
+          (row['contractual_value_cents'] as num).toInt(),
+        ),
+        noShowPenaltyMultiplier: (row['no_show_penalty_multiplier'] as num)
+            .toDouble(),
+      );
+    }).toList();
+  }
 }

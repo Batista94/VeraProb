@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/sla_audit/evaluation_trace.dart';
 import '../../domain/sla_audit/sla_ledger_entry.dart';
+import '../../domain/sla_audit/contractual_execution_state.dart';
 import 'sla_providers.dart';
 
 /// Retrieves all evaluation traces for a given entity (SET ID).
@@ -22,3 +23,10 @@ final ledgerEntriesProvider =
       entries.sort((a, b) => a.occurredAtUtc.compareTo(b.occurredAtUtc));
       return entries;
     });
+
+/// Retrieves a specific execution state for forensic analysis.
+final executionStateProvider =
+    FutureProvider.family<ContractualExecutionState?, String>((ref, setId) async {
+  final repo = ref.watch(contractualExecutionStateRepositoryProvider);
+  return repo.findBySetId(setId);
+});

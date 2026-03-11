@@ -20,4 +20,13 @@ abstract class SlaExecutionQueryService {
     required String organizationId,
     String? contractId,
   });
+
+  /// Returns execution items whose window starts within the given UTC bounds.
+  /// Ordered by [windowStartUtc] ascending.
+  Future<List<SlaExecutionItemView>> listByWindow(
+    DateTime startUtc,
+    DateTime endUtc, {
+    required String organizationId,
+    String? contractId,
+  });
 }

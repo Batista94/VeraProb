@@ -6,6 +6,7 @@ import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/domain/sla_audit/evaluation_trace.dart';
 import 'package:busflow/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:busflow/state/providers/investigation_providers.dart';
+import 'investigation_map_panel.dart';
 
 final _timeFormat = DateFormat('HH:mm:ss');
 final _dateFormat = DateFormat('dd/MM/yyyy HH:mm:ss');
@@ -79,16 +80,36 @@ class InvestigationModal extends ConsumerWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left: Ledger Timeline
+                    // Left: Map Panel & Ledger Timeline
                     Expanded(
                       flex: 1,
-                      child: _LedgerTimelinePanel(
-                        ledgerAsync: ledgerAsync,
-                        triggeringEventId: tracesAsync.whenOrNull(
-                          data: (traces) => traces.isNotEmpty
-                              ? traces.first.triggeringEventId
-                              : null,
-                        ),
+                      child: Column(
+                        children: [
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final stateAsync = ref.watch(executionStateProvider(setId));
+                              return stateAsync.when(
+                                loading: () => const Center(child: CircularProgressIndicator()),
+                                error: (e, st) => const SizedBox(),
+                                data: (state) {
+                                  if (state == null) return const SizedBox();
+                                  return InvestigationMapPanel(execution: state);
+                                },
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          Expanded(
+                            child: _LedgerTimelinePanel(
+                              ledgerAsync: ledgerAsync,
+                              triggeringEventId: tracesAsync.whenOrNull(
+                                data: (traces) => traces.isNotEmpty
+                                    ? traces.first.triggeringEventId
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 24),

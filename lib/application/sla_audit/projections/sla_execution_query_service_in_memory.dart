@@ -88,6 +88,31 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
     return filtered.map(_toItemView).toList();
   }
 
+  @override
+  Future<List<SlaExecutionItemView>> listByWindow(
+    DateTime startUtc,
+    DateTime endUtc, {
+    required String organizationId,
+    String? contractId,
+  }) async {
+    final states = await (contractId != null
+        ? _repo.findByContract(contractId, organizationId: organizationId)
+        : _repo.findAll(organizationId: organizationId));
+
+    final filtered =
+        states
+            .where(
+              (s) =>
+                  s.windowStartUtc.isAtSameMomentAs(startUtc) ||
+                  (s.windowStartUtc.isAfter(startUtc) &&
+                      s.windowStartUtc.isBefore(endUtc)),
+            )
+            .toList()
+          ..sort((a, b) => a.windowStartUtc.compareTo(b.windowStartUtc));
+
+    return filtered.map(_toItemView).toList();
+  }
+
   // ── Mapper ──────────────────────────────────────────────
 
   static SlaExecutionItemView _toItemView(ContractualExecutionState s) {
