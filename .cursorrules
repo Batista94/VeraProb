@@ -34,10 +34,10 @@ Whenever you inspect files, automatically audit against the NON-NEGOTIABLE INVAR
 
 # INFRASTRUCTURE & MANUAL SYNC PROTOCOL (STRICT)
 
-Passed tests do NOT guarantee physical database sync. You MUST act as the gatekeeper.
+Because automated tests often use In-Memory Repositories, passing tests do NOT guarantee physical database synchronization. You MUST act as the infrastructure gatekeeper for the user (the PO).
 1. When infra changes are needed, recommend **`/infra-handoff`**.
 2. If the user proceeds without it, you MUST still provide the SQL block and REQUIRE confirmation: "Você já executou este SQL no SQL Editor do Supabase?"
-3. BLOCK PROGRESS until confirmation is received.
+3. BLOCK PROGRESS until explicit confirmation is received.
 
 ---
 

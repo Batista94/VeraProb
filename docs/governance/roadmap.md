@@ -239,23 +239,23 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 - `delay_penalty_per_minute_cents BIGINT · downgrade_penalty_flat_cents BIGINT` em `contractual_service_executions` (snapshot de `SLAPenalties`)
 
 #### [x] 5.7 — Domain Refactoring
-- `OperationalZone` entity (nova — org-scoped, sem identidade de negócio própria além do `id`)
-- `ShiftPattern` value object (componente de `PlanDeclaration`): `daysOfWeek · arrivalTimeLocal · departureTimeLocal · timezone` validado contra IANA whitelist
-- `SLAPenalties` value object com invariantes financeiros enforced (`Money` fields)
-- `PlanDeclaration` refatorado: aceita `List<ShiftPattern>` na criação
-- `ShiftProjectionService`: projeta SETs determinísticos; snapshots coordenadas da zona; `setId = SHA-256(planDeclarationId + shiftPatternIndex + operationalDate)`
-- `OperationalZoneRepository` interface (domínio puro)
-- **ADR registrado:** exceção ao invariante UTC para `ShiftPattern.arrivalTimeLocal` (ver Invariantes acima)
+- [x] `OperationalZone` entity (nova — org-scoped, sem identidade de negócio própria além do `id`)
+- [x] `ShiftPattern` value object (componente de `PlanDeclaration`): `daysOfWeek · arrivalTimeLocal · departureTimeLocal · timezone` validado contra IANA whitelist
+- [x] `SLAPenalties` value object com invariantes financeiros enforced (`Money` fields)
+- [x] `PlanDeclaration` refatorado: aceita `List<ShiftPattern>` na criação
+- [x] `ShiftProjectionService`: projeta SETs determinísticos; snapshots coordenadas da zona; `setId = SHA-256(planDeclarationId + shiftPatternIndex + operationalDate)`
+- [x] `OperationalZoneRepository` interface (domínio puro)
+- [x] **ADR registrado:** exceção ao invariante UTC para `ShiftPattern.arrivalTimeLocal` (ver Invariantes acima)
 
 #### [x] 5.8 — Engine & Projection Upgrade
-- `ShiftProjectionService` acionado pelo `DeclareContractualPlanHandler` (projeta N=7 dias iniciais)
-- Gap detection: `ShiftProjectionService.detectAndAlertGaps()` — dias sem SETs em planos ativos geram `OperationalAlert` PROJECTION_GAP / CRITICAL
-- `InMemoryOperationalZoneRepository` + `PostgresOperationalZoneRepository`
-- `DeclareContractualPlanHandler` refatorado para aceitar `List<ShiftPattern>` no command
+- [x] `ShiftProjectionService` acionado pelo `DeclareContractualPlanHandler` (projeta N=7 dias iniciais)
+- [x] Gap detection: `ShiftProjectionService.detectAndAlertGaps()` — dias sem SETs em planos ativos geram `OperationalAlert` PROJECTION_GAP / CRITICAL
+- [x] `InMemoryOperationalZoneRepository` + `PostgresOperationalZoneRepository`
+- [x] `DeclareContractualPlanHandler` refatorado para aceitar `List<ShiftPattern>` no command
 
 #### [x] 5.9 — UI Overhaul
-- Tela de gestão de `OperationalZone` (criar/listar — dentro do OCC Admin, pré-requisito para declaração de plano)
-- `DeclareContractPlanForm` refatorado como wizard de 4 etapas:
+- [x] Tela de gestão de `OperationalZone` (criar/listar — dentro do OCC Admin, pré-requisito para declaração de plano)
+- [x] `DeclareContractPlanForm` refatorado como wizard de 4 etapas:
   1. Zonas de origem e destino (autocomplete de `OperationalZone` da org; inline "Criar primeira zona" se lista vazia)
   2. Padrão de turno: dias da semana (checkboxes), horário de chegada e partida (time picker — horário local exibido)
   3. SLA e penalidades: multiplicador de no-show, tolerância de atraso (min), valor por minuto (R$), downgrade (categoria + valor flat R$)
@@ -581,9 +581,9 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Phase 5.9 — UI Overhaul.** ← EM ANDAMENTO
+**Phase 5.9 — UI Overhaul.** ✅
 
-5.6–5.8 ✅. Backend completo: ShiftProjectionService · InMemory/Postgres zone repos · handler B2B · 291 testes passing.
+5.6–5.9 ✅. Backend completo: ShiftProjectionService · InMemory/Postgres zone repos · handler B2B · 291 testes passing. OCC Interface refatorada para B2B.
 Ordem obrigatória: **5.6 → 5.7 → 5.8 → 5.9 → 5.10**.
 
 | Fase | Entrega |

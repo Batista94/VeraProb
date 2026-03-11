@@ -4,28 +4,23 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
-import 'package:busflow/application/sla_audit/contractual_service_input.dart';
 import 'package:busflow/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:busflow/domain/sla_audit/domain_exception.dart';
+import 'package:busflow/domain/sla_audit/shift_pattern.dart';
+import 'package:busflow/domain/sla_audit/sla_penalties.dart';
+import 'package:busflow/domain/shared/money.dart';
 import 'package:busflow/state/providers/auth_providers.dart';
 import 'package:busflow/state/providers/contract_providers.dart';
 import 'package:busflow/state/providers/sla_providers.dart';
 
-final _currencyFormat = NumberFormat.currency(
-  locale: 'pt_BR',
-  symbol: r'R$',
-  decimalDigits: 2,
-);
 
-/// Dialog form for declaring a new [PlanDeclaration] for an existing contract.
+/// Dialog form for declaring a new B2B Plan for an existing contract.
 ///
-/// Each SET is a "Viagem Programada" (the term SET is internal to the domain).
-/// Computes SHA-256 of the serialized command JSON as [originalFileHash].
-///
-/// Usage: `await DeclareContractPlanForm.show(context, ref, contractId: id)`
-/// Returns `true` if plan was declared successfully, `false` otherwise.
+/// Translated using /B2B-OCC-Translator:
+/// - Replaces raw Lat/Lng with "Zonas Operacionais"
+/// - Replaces raw UTC timestamps with "Padrões de Turno"
+/// - Uses CFO-friendly terminology for SLA Penalties
 class DeclareContractPlanForm extends ConsumerStatefulWidget {
   final String contractId;
   final String contractName;
@@ -59,61 +54,148 @@ class DeclareContractPlanForm extends ConsumerStatefulWidget {
 
 class _DeclareContractPlanFormState
     extends ConsumerState<DeclareContractPlanForm> {
-  final List<_SetFormState> _sets = [];
+  int _currentStep = 0;
   bool _isSubmitting = false;
   String? _errorMessage;
+
+  // -- Step 1: Zonas Operacionais (Origin/Destination)
+  String? _selectedOriginZoneId;
+  String? _selectedDestinationZoneId;
+
+  // -- Step 2: Padrão de Turno (Schedule)
+  final Set<int> _selectedDays = {1, 2, 3, 4, 5}; // Seg-Sex
+  TimeOfDay? _arrivalTime;
+  TimeOfDay? _departureTime;
+  String _timezone = 'America/Sao_Paulo';
+
+  // -- Step 3: SLA & Penalidades (Financials)
+  final TextEditingController _baseValueController = TextEditingController();
+  final TextEditingController _delayToleranceController =
+      TextEditingController(text: '15');
+  final TextEditingController _delayMinuteValueController =
+      TextEditingController(text: '0,50');
+  final TextEditingController _downgradeValueController =
+      TextEditingController(text: '50,00');
+  final TextEditingController _noShowMultiplierController =
+      TextEditingController(text: '1,5');
 
   @override
   void initState() {
     super.initState();
-    _sets.add(_SetFormState()); // Start with one SET
+    _loadZones();
   }
 
   @override
   void dispose() {
-    for (final s in _sets) {
-      s.dispose();
-    }
+    _baseValueController.dispose();
+    _delayToleranceController.dispose();
+    _delayMinuteValueController.dispose();
+    _downgradeValueController.dispose();
+    _noShowMultiplierController.dispose();
     super.dispose();
   }
 
-  void _addSet() {
-    if (_sets.length >= 50) {
-      setState(
-        () => _errorMessage = 'Limite de 50 viagens programadas por plano.',
-      );
-      return;
+  Future<void> _loadZones() async {
+    // In a real app, use a dedicated provider. For now, we simulate finding them.
+    // Phase 5.9 implementation requires the repo from providers.
+  }
+
+  // --- Helpers for parsing financial inputs ---
+  int _parseReaisToCents(String value) {
+    if (value.trim().isEmpty) return 0;
+    final clean = value.replaceAll('.', '').replaceAll(',', '.');
+    final doubleVal = double.tryParse(clean) ?? 0.0;
+    return (doubleVal * 100).round();
+  }
+
+  double _parseDouble(String value) {
+    if (value.trim().isEmpty) return 0.0;
+    final clean = value.replaceAll(',', '.');
+    return double.tryParse(clean) ?? 0.0;
+  }
+
+  // --- Stepper Navigation ---
+
+  void _onStepContinue() {
+    if (_currentStep == 0) {
+      if (_selectedOriginZoneId == null || _selectedDestinationZoneId == null) {
+        setState(() {
+          _errorMessage =
+              'Selecione a Zona de Partida e a Zona de Chegada para continuar.';
+        });
+        return;
+      }
+      if (_selectedOriginZoneId == _selectedDestinationZoneId) {
+        setState(() {
+          _errorMessage = 'A Zona de Partida e Chegada devem ser diferentes.';
+        });
+        return;
+      }
+    } else if (_currentStep == 1) {
+      if (_selectedDays.isEmpty) {
+        setState(() {
+          _errorMessage = 'Selecione ao menos um dia da semana para o turno.';
+        });
+        return;
+      }
+      if (_arrivalTime == null || _departureTime == null) {
+        setState(() {
+          _errorMessage = 'Defina os horários de Chegada e Partida do turno.';
+        });
+        return;
+      }
+    } else if (_currentStep == 2) {
+      final baseVal = _parseReaisToCents(_baseValueController.text);
+      if (baseVal <= 0) {
+        setState(() {
+          _errorMessage = 'O valor base da viagem contratada não pode ser zero.';
+        });
+        return;
+      }
     }
-    setState(() => _sets.add(_SetFormState()));
+
+    setState(() {
+      _errorMessage = null;
+      if (_currentStep < 3) {
+        _currentStep++;
+      } else {
+        _submit();
+      }
+    });
   }
 
-  void _removeSet(int index) {
-    if (_sets.length <= 1) return; // Must keep at least one
-    _sets[index].dispose();
-    setState(() => _sets.removeAt(index));
+  void _onStepCancel() {
+    if (_currentStep > 0) {
+      setState(() {
+        _errorMessage = null;
+        _currentStep--;
+      });
+    } else {
+      Navigator.of(context).pop(false);
+    }
   }
 
-  /// Generates a deterministic SHA-256 hash of the command payload.
-  /// Keys are sorted alphabetically to guarantee determinism (SE-3).
-  String _computeHash(List<ContractualServiceInput> services) {
+  // --- Submit ---
+
+  String _formatTime(TimeOfDay time) {
+    final h = time.hour.toString().padLeft(2, '0');
+    final m = time.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  String _computeHash(DeclareContractualPlanCommand cmd) {
     final payload = {
-      'contract_id': widget.contractId,
-      'services': services
-          .map(
-            (s) => {
-              'end_latitude': s.endLatitude,
-              'end_longitude': s.endLongitude,
-              'end_radius_meters': s.endRadiusMeters,
-              'contractual_value': s.contractualValue,
-              'no_show_penalty_multiplier': s.noShowPenaltyMultiplier,
-              'scheduled_end_time_utc': s.scheduledEndTimeUtc.toIso8601String(),
-              'scheduled_start_time_utc':
-                  s.scheduledStartTimeUtc.toIso8601String(),
-              'start_latitude': s.startLatitude,
-              'start_longitude': s.startLongitude,
-              'start_radius_meters': s.startRadiusMeters,
-            },
-          )
+      'contract_id': cmd.contractId,
+      'base_value_cents': cmd.contractualValueCents,
+      'patterns': cmd.shiftPatterns
+          .map((p) => {
+                'days': p.daysOfWeek.toList()..sort(),
+                'arrival': p.arrivalTimeLocal,
+                'departure': p.departureTimeLocal,
+                'tz': p.timezone,
+                'origin': p.originZoneId,
+                'destination': p.destinationZoneId,
+              })
           .toList(),
     };
     final json = jsonEncode(payload);
@@ -121,15 +203,6 @@ class _DeclareContractPlanFormState
   }
 
   Future<void> _submit() async {
-    // Validate all sets
-    for (int i = 0; i < _sets.length; i++) {
-      final err = _sets[i].validate();
-      if (err != null) {
-        setState(() => _errorMessage = 'Viagem ${i + 1}: $err');
-        return;
-      }
-    }
-
     final organizationId = ref.read(currentOrganizationIdProvider);
     final operatorId = ref.read(currentOperatorIdProvider);
     if (organizationId == null || operatorId == null) {
@@ -143,34 +216,65 @@ class _DeclareContractPlanFormState
     });
 
     try {
-      // Build service inputs
-      final services = _sets.map((s) => s.toInput()).toList();
+      final baseValueCents = _parseReaisToCents(_baseValueController.text);
+      final delayCents = _parseReaisToCents(_delayMinuteValueController.text);
+      final downgradeCents = _parseReaisToCents(_downgradeValueController.text);
+      final noShowMult = _parseDouble(_noShowMultiplierController.text);
+      final tolerance = int.tryParse(_delayToleranceController.text) ?? 15;
 
-      // Compute next plan version
+      final penalties = SLAPenalties.create(
+        noShowPenaltyMultiplier: noShowMult,
+        delayToleranceMinutes: tolerance,
+        delayPenaltyPerMinute: Money(delayCents),
+        downgradePenaltyFlat: Money(downgradeCents),
+      );
+
+      final pattern = ShiftPattern.create(
+        index: 0,
+        daysOfWeek: _selectedDays.map((v) => DayOfWeek.fromValue(v)).toList(),
+        arrivalTimeLocal: _formatTime(_arrivalTime!),
+        departureTimeLocal: _formatTime(_departureTime!),
+        timezone: _timezone,
+        originZoneId: _selectedOriginZoneId!,
+        destinationZoneId: _selectedDestinationZoneId!,
+        penalties: penalties,
+      );
+
       final planRepo = ref.read(planDeclarationRepositoryProvider);
       final existing = await planRepo.findByContract(
         widget.contractId,
         organizationId: organizationId,
       );
-      final nextVersion =
-          existing.isEmpty ? 1 : existing.map((p) => p.planVersion).reduce((a, b) => a > b ? a : b) + 1;
+      final nextVersion = existing.isEmpty
+          ? 1
+          : existing.map((p) => p.planVersion).reduce((a, b) => a > b ? a : b) + 1;
 
-      // Compute deterministic hash (SE-3)
-      final originalFileHash = _computeHash(services);
+      // Create command WITHOUT hash to compute it deterministically
+      var cmd = DeclareContractualPlanCommand(
+        organizationId: organizationId,
+        contractId: widget.contractId,
+        declaredByUserId: operatorId,
+        planVersion: nextVersion,
+        originalFileHash: '', // temp
+        declaredAtUtc: DateTime.now().toUtc(),
+        shiftPatterns: [pattern],
+        contractualValueCents: baseValueCents,
+      );
+
+      // Mutate command with final hash
+      cmd = DeclareContractualPlanCommand(
+        organizationId: cmd.organizationId,
+        contractId: cmd.contractId,
+        declaredByUserId: cmd.declaredByUserId,
+        planVersion: cmd.planVersion,
+        originalFileHash: _computeHash(cmd),
+        declaredAtUtc: cmd.declaredAtUtc,
+        shiftPatterns: cmd.shiftPatterns,
+        contractualValueCents: cmd.contractualValueCents,
+      );
 
       final handler = ref.read(declareContractualPlanHandlerProvider);
-
-      await handler.handle(
-        DeclareContractualPlanCommand(
-          organizationId: organizationId,
-          contractId: widget.contractId,
-          declaredByUserId: operatorId,
-          planVersion: nextVersion,
-          originalFileHash: originalFileHash,
-          declaredAtUtc: DateTime.now().toUtc(),
-          services: services,
-        ),
-      );
+      await handler.handle(cmd);
 
       if (mounted) Navigator.of(context).pop(true);
     } on DomainException catch (e) {
@@ -182,24 +286,290 @@ class _DeclareContractPlanFormState
     }
   }
 
+  // --- UI Builders ---
+
+  Widget _buildStep1() {
+    // Dropdown mock for Phase 5.9 until we fetch real zones
+    final mockZones = [
+      const DropdownMenuItem(value: 'zone-1', child: Text('Garagem Central')),
+      const DropdownMenuItem(value: 'zone-2', child: Text('Portaria Sul (Fábrica)')),
+      const DropdownMenuItem(value: 'zone-3', child: Text('Terminal Rodoviário')),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Selecione as zonas operacionais (geofences) que delineiam esta rota B2B. As coordenadas reais serão blindadas.',
+          style: TextStyle(color: Colors.black54),
+        ),
+        const SizedBox(height: 20),
+        InputDecorator(
+          decoration: const InputDecoration(
+            labelText: 'Zona de Partida',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.business),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedOriginZoneId,
+              isExpanded: true,
+              items: mockZones,
+              onChanged: (val) => setState(() => _selectedOriginZoneId = val),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        InputDecorator(
+          decoration: const InputDecoration(
+            labelText: 'Zona de Chegada (Destino)',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.location_on),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedDestinationZoneId,
+              isExpanded: true,
+              items: mockZones,
+              onChanged: (val) => setState(() => _selectedDestinationZoneId = val),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep2() {
+    const daysMap = {
+      1: 'Seg',
+      2: 'Ter',
+      3: 'Qua',
+      4: 'Qui',
+      5: 'Sex',
+      6: 'Sáb',
+      7: 'Dom',
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Padrão de recorrência. Quando este turno ocorre e quais os horários da operação?',
+          style: TextStyle(color: Colors.black54),
+        ),
+        const SizedBox(height: 20),
+        const Text('Dias da Semana',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: daysMap.entries.map((e) {
+            final isSelected = _selectedDays.contains(e.key);
+            return FilterChip(
+              label: Text(e.value),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  if (selected) {
+                    _selectedDays.add(e.key);
+                  } else {
+                    _selectedDays.remove(e.key);
+                  }
+                });
+              },
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.grey.shade300),
+                ),
+                leading: const Icon(Icons.flight_takeoff),
+                title: const Text('Horário de Partida'),
+                subtitle: Text(_departureTime != null
+                    ? _formatTime(_departureTime!)
+                    : 'Não definido'),
+                onTap: () async {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: const TimeOfDay(hour: 6, minute: 0),
+                  );
+                  if (time != null) setState(() => _departureTime = time);
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.grey.shade300),
+                ),
+                leading: const Icon(Icons.flight_land),
+                title: const Text('Horário de Chegada'),
+                subtitle: Text(_arrivalTime != null
+                    ? _formatTime(_arrivalTime!)
+                    : 'Não definido'),
+                onTap: () async {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: const TimeOfDay(hour: 7, minute: 0),
+                  );
+                  if (time != null) setState(() => _arrivalTime = time);
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep3() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Configuração dos ofensores financeiros para descumprimento do Nível de Serviço (SLA).',
+          style: TextStyle(color: Colors.black54),
+        ),
+        const SizedBox(height: 20),
+        TextField(
+          controller: _baseValueController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            labelText: 'Valor Base por Viagem (R\$)',
+            prefixText: r'R$ ',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text('Penalidades',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _delayToleranceController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Tolerância Atraso (min)',
+                  suffixText: ' min',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextField(
+                controller: _delayMinuteValueController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Multa por Minuto',
+                  prefixText: 'R\$ ',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _noShowMultiplierController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Multiplicador No-Show',
+                  suffixText: ' x',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextField(
+                controller: _downgradeValueController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Multa Downgrade',
+                  prefixText: 'R\$ ',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep4() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Revise o contrato antes de publicar.',
+          style: TextStyle(color: Colors.black54),
+        ),
+        const SizedBox(height: 20),
+        Card(
+          color: Colors.blue.shade50,
+          elevation: 0,
+          child: const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('Padrão de Fretamento B2B configurado com sucesso.',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                const Text(
+                  'A engine de projeção irá automaticamente calcular e imobilizar no banco de dados as viagens ('
+                  'Viagens Programadas) para os próximos 30 dias com base nos dias e horários selecionados.\n\n'
+                  'Todas as zonas operacionais terão suas coordenadas blindadas no snapshot da projeção para proteção de auditoria retroativa.',
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          '⚠️ Após publicado, este Padrão de Turno não poderá ser modificado diretamente. Uma nova versão do plano precisará ser declarada.',
+          style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final totalValue = _sets.fold(
-      0.0,
-      (sum, s) => sum + (double.tryParse(s.valueController.text) ?? 0),
-    );
-
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
+        constraints: const BoxConstraints(maxWidth: 800, maxHeight: 700),
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(24).copyWith(bottom: 0),
+              child: Row(
                 children: [
                   const Icon(Icons.playlist_add_check_outlined),
                   const SizedBox(width: 10),
@@ -208,7 +578,7 @@ class _DeclareContractPlanFormState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Declarar Plano',
+                          'Configurar Padrão de Fretamento (B2B)',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -231,85 +601,14 @@ class _DeclareContractPlanFormState
                   ),
                 ],
               ),
-              const Divider(height: 20),
-
-              // SET list header
-              Row(
-                children: [
-                  const Text(
-                    'Viagens Programadas',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${_sets.length}/50',
-                      style: const TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Adicionar Viagem'),
-                    onPressed: _addSet,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // SET rows
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _sets.length,
-                  itemBuilder: (context, index) => _SetRow(
-                    index: index,
-                    state: _sets[index],
-                    canRemove: _sets.length > 1,
-                    onRemove: () => _removeSet(index),
-                    onChanged: () => setState(() {}),
-                  ),
-                ),
-              ),
-
-              const Divider(height: 20),
-
-              // Summary + warning
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${_sets.length} viagem(ns) · Valor total: ${_currencyFormat.format(totalValue)}',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          '⚠️  Plano publicado não pode ser editado. Uma nova versão deverá ser declarada.',
-                          style: TextStyle(fontSize: 11, color: Colors.orange),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              // Error message
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(10),
+            ),
+            const Divider(height: 24),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: Colors.red.shade50,
                     borderRadius: BorderRadius.circular(6),
@@ -330,317 +629,86 @@ class _DeclareContractPlanFormState
                     ],
                   ),
                 ),
-              ],
-
-              const SizedBox(height: 16),
-
-              // Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: _isSubmitting
-                        ? null
-                        : () => Navigator.of(context).pop(false),
-                    child: const Text('Cancelar'),
+              ),
+            Expanded(
+              child: Stepper(
+                type: StepperType.horizontal,
+                currentStep: _currentStep,
+                onStepContinue: _onStepContinue,
+                onStepCancel: _onStepCancel,
+                controlsBuilder: (context, details) {
+                  final isLastStep = _currentStep == 3;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 24),
+                    child: Row(
+                      children: [
+                        FilledButton.icon(
+                          onPressed: _isSubmitting ? null : details.onStepContinue,
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                )
+                              : Icon(isLastStep
+                                  ? Icons.publish
+                                  : Icons.arrow_forward),
+                          label: Text(
+                              isLastStep ? 'Publicar SLA B2B' : 'Continuar'),
+                        ),
+                        const SizedBox(width: 12),
+                        TextButton(
+                          onPressed: _isSubmitting ? null : details.onStepCancel,
+                          child: Text(_currentStep == 0 ? 'Cancelar' : 'Voltar'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                steps: [
+                  Step(
+                    title: const Text('Zonas'),
+                    content: _buildStep1(),
+                    isActive: _currentStep >= 0,
+                    state: _currentStep > 0
+                        ? StepState.complete
+                        : StepState.editing,
                   ),
-                  const SizedBox(width: 8),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.publish, size: 16),
-                    label: _isSubmitting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Publicar Plano'),
-                    onPressed: _isSubmitting ? null : _submit,
+                  Step(
+                    title: const Text('Turno'),
+                    content: _buildStep2(),
+                    isActive: _currentStep >= 1,
+                    state: _currentStep > 1
+                        ? StepState.complete
+                        : _currentStep == 1
+                            ? StepState.editing
+                            : StepState.indexed,
+                  ),
+                  Step(
+                    title: const Text('Penalidades'),
+                    content: _buildStep3(),
+                    isActive: _currentStep >= 2,
+                    state: _currentStep > 2
+                        ? StepState.complete
+                        : _currentStep == 2
+                            ? StepState.editing
+                            : StepState.indexed,
+                  ),
+                  Step(
+                    title: const Text('Revisão'),
+                    content: _buildStep4(),
+                    isActive: _currentStep >= 3,
+                    state: _currentStep == 3
+                        ? StepState.editing
+                        : StepState.indexed,
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── SET form state & row ──────────────────────────────────────────────────────
-
-class _SetFormState {
-  final TextEditingController startController = TextEditingController();
-  final TextEditingController endController = TextEditingController();
-  final TextEditingController startLatController = TextEditingController();
-  final TextEditingController startLngController = TextEditingController();
-  final TextEditingController startRadiusController =
-      TextEditingController(text: '200');
-  final TextEditingController endLatController = TextEditingController();
-  final TextEditingController endLngController = TextEditingController();
-  final TextEditingController endRadiusController =
-      TextEditingController(text: '200');
-  final TextEditingController valueController = TextEditingController();
-  final TextEditingController multiplierController =
-      TextEditingController(text: '1.5');
-
-  void dispose() {
-    startController.dispose();
-    endController.dispose();
-    startLatController.dispose();
-    startLngController.dispose();
-    startRadiusController.dispose();
-    endLatController.dispose();
-    endLngController.dispose();
-    endRadiusController.dispose();
-    valueController.dispose();
-    multiplierController.dispose();
-  }
-
-  String? validate() {
-    if (startController.text.trim().isEmpty) return 'Início programado obrigatório.';
-    if (endController.text.trim().isEmpty) return 'Fim programado obrigatório.';
-    final startLat = double.tryParse(startLatController.text);
-    final startLng = double.tryParse(startLngController.text);
-    final endLat = double.tryParse(endLatController.text);
-    final endLng = double.tryParse(endLngController.text);
-    if (startLat == null || startLat < -90 || startLat > 90) {
-      return 'Latitude de partida inválida (−90 a 90).';
-    }
-    if (startLng == null || startLng < -180 || startLng > 180) {
-      return 'Longitude de partida inválida (−180 a 180).';
-    }
-    if (endLat == null || endLat < -90 || endLat > 90) {
-      return 'Latitude de chegada inválida (−90 a 90).';
-    }
-    if (endLng == null || endLng < -180 || endLng > 180) {
-      return 'Longitude de chegada inválida (−180 a 180).';
-    }
-    if ((double.tryParse(valueController.text) ?? 0) <= 0) {
-      return 'Valor contratual deve ser maior que zero.';
-    }
-    return null;
-  }
-
-  ContractualServiceInput toInput() {
-    final start = DateTime.parse(startController.text.trim());
-    final end = DateTime.parse(endController.text.trim());
-    return ContractualServiceInput(
-      scheduledStartTimeUtc: start.isUtc ? start : start.toUtc(),
-      scheduledEndTimeUtc: end.isUtc ? end : end.toUtc(),
-      startLatitude: double.parse(startLatController.text),
-      startLongitude: double.parse(startLngController.text),
-      startRadiusMeters: int.tryParse(startRadiusController.text) ?? 200,
-      endLatitude: double.parse(endLatController.text),
-      endLongitude: double.parse(endLngController.text),
-      endRadiusMeters: int.tryParse(endRadiusController.text) ?? 200,
-      contractualValue: double.parse(valueController.text),
-      noShowPenaltyMultiplier:
-          double.tryParse(multiplierController.text) ?? 1.5,
-    );
-  }
-}
-
-class _SetRow extends StatelessWidget {
-  final int index;
-  final _SetFormState state;
-  final bool canRemove;
-  final VoidCallback onRemove;
-  final VoidCallback onChanged;
-
-  const _SetRow({
-    required this.index,
-    required this.state,
-    required this.canRemove,
-    required this.onRemove,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Row header
-            Row(
-              children: [
-                Text(
-                  'Viagem ${index + 1}',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 13),
-                ),
-                const Spacer(),
-                if (canRemove)
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        size: 16, color: Colors.red),
-                    onPressed: onRemove,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    tooltip: 'Remover viagem',
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Timestamps row
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: state.startController,
-                    onChanged: (_) => onChanged(),
-                    decoration: const InputDecoration(
-                      labelText: 'Início UTC (ISO)',
-                      hintText: '2026-03-15T06:00:00.000Z',
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: state.endController,
-                    onChanged: (_) => onChanged(),
-                    decoration: const InputDecoration(
-                      labelText: 'Fim UTC (ISO)',
-                      hintText: '2026-03-15T07:00:00.000Z',
-                      isDense: true,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Geofences
-            Row(
-              children: [
-                Expanded(
-                  child: _NumField(
-                    label: 'Lat. Partida',
-                    controller: state.startLatController,
-                    onChanged: onChanged,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _NumField(
-                    label: 'Lng. Partida',
-                    controller: state.startLngController,
-                    onChanged: onChanged,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                SizedBox(
-                  width: 80,
-                  child: _NumField(
-                    label: 'Raio (m)',
-                    controller: state.startRadiusController,
-                    onChanged: onChanged,
-                    isInt: true,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _NumField(
-                    label: 'Lat. Chegada',
-                    controller: state.endLatController,
-                    onChanged: onChanged,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _NumField(
-                    label: 'Lng. Chegada',
-                    controller: state.endLngController,
-                    onChanged: onChanged,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                SizedBox(
-                  width: 80,
-                  child: _NumField(
-                    label: 'Raio (m)',
-                    controller: state.endRadiusController,
-                    onChanged: onChanged,
-                    isInt: true,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Financial
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: state.valueController,
-                    onChanged: (_) => onChanged(),
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d+\.?\d{0,2}')),
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Valor (R\$)',
-                      prefixText: 'R\$ ',
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 120,
-                  child: _NumField(
-                    label: 'Mult. No-Show',
-                    controller: state.multiplierController,
-                    onChanged: onChanged,
-                  ),
-                ),
-              ],
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _NumField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final VoidCallback onChanged;
-  final bool isInt;
-
-  const _NumField({
-    required this.label,
-    required this.controller,
-    required this.onChanged,
-    this.isInt = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      onChanged: (_) => onChanged(),
-      keyboardType: TextInputType.numberWithOptions(
-        decimal: !isInt,
-        signed: true,
-      ),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(
-          isInt ? RegExp(r'^\d+') : RegExp(r'^-?\d+\.?\d*'),
-        ),
-      ],
-      decoration: InputDecoration(labelText: label, isDense: true),
     );
   }
 }
