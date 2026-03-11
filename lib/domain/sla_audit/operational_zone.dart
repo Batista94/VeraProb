@@ -3,7 +3,34 @@ import 'package:uuid/uuid.dart';
 
 import 'domain_exception.dart';
 
-/// Domain entity representing a named geofenced area owned by an organization.
+/// Business classification of an [OperationalZone].
+enum ZoneType { garagem, cliente, apoio }
+
+/// Optional geofence configuration for an [OperationalZone].
+///
+/// When present, the engine may use proximity checks against lat/lng.
+/// When absent, the zone is matched by id/name only — valid for MVP.
+///
+/// Making this a dedicated value object ensures the three geo fields are
+/// always present together or absent together, preventing partial-null states
+/// (e.g. latitude set but longitude null) which would silently corrupt
+/// geofence evaluation.
+class GeofenceConfiguration extends Equatable {
+  final double latitude;
+  final double longitude;
+  final int radiusMeters;
+
+  const GeofenceConfiguration({
+    required this.latitude,
+    required this.longitude,
+    required this.radiusMeters,
+  });
+
+  @override
+  List<Object?> get props => [latitude, longitude, radiusMeters];
+}
+
+/// Domain entity representing a named area owned by an organization.
 ///
 /// Operators reference zones by name (e.g. "Garagem Central", "Portaria Sul")
 /// when declaring shift patterns — never by raw GPS coordinates.
@@ -17,17 +44,21 @@ class OperationalZone extends Equatable {
   final String id;
   final String organizationId;
   final String name;
-  final double latitude;
-  final double longitude;
-  final int radiusMeters;
+  final ZoneType type;
+  final String? address;
+
+  /// Optional geofence. Null means "no geofence configured yet".
+  /// Never defaults to 0.0/0.0 — that coordinate is geographically valid
+  /// and would cause silent false-negatives in proximity checks.
+  final GeofenceConfiguration? geofence;
 
   const OperationalZone._({
     required this.id,
     required this.organizationId,
     required this.name,
-    required this.latitude,
-    required this.longitude,
-    required this.radiusMeters,
+    required this.type,
+    this.address,
+    this.geofence,
   });
 
   /// Creates a new [OperationalZone] with a generated UUID and validated invariants.
@@ -36,25 +67,27 @@ class OperationalZone extends Equatable {
   static OperationalZone create({
     required String organizationId,
     required String name,
-    required double latitude,
-    required double longitude,
-    required int radiusMeters,
+    required ZoneType type,
+    String? address,
+    GeofenceConfiguration? geofence,
   }) {
     if (organizationId.isEmpty) {
       throw const DomainException('organizationId must not be empty');
     }
     _validateName(name);
-    _validateLatitude(latitude);
-    _validateLongitude(longitude);
-    _validateRadius(radiusMeters);
+    if (geofence != null) {
+      _validateLatitude(geofence.latitude);
+      _validateLongitude(geofence.longitude);
+      _validateRadius(geofence.radiusMeters);
+    }
 
     return OperationalZone._(
       id: const Uuid().v4(),
       organizationId: organizationId,
       name: name,
-      latitude: latitude,
-      longitude: longitude,
-      radiusMeters: radiusMeters,
+      type: type,
+      address: address,
+      geofence: geofence,
     );
   }
 
@@ -63,17 +96,17 @@ class OperationalZone extends Equatable {
     required String id,
     required String organizationId,
     required String name,
-    required double latitude,
-    required double longitude,
-    required int radiusMeters,
+    required ZoneType type,
+    String? address,
+    GeofenceConfiguration? geofence,
   }) {
     return OperationalZone._(
       id: id,
       organizationId: organizationId,
       name: name,
-      latitude: latitude,
-      longitude: longitude,
-      radiusMeters: radiusMeters,
+      type: type,
+      address: address,
+      geofence: geofence,
     );
   }
 

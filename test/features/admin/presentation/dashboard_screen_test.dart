@@ -58,8 +58,8 @@ void main() {
       // Charts Section
       expect(find.text('Performance de Execução Operacional'), findsOneWidget);
 
-      // Heatmap Section
-      expect(find.text('Projeção de Risco Operacional'), findsOneWidget);
+      // Contractual Risk Radar (B3 — replaced heatmap)
+      expect(find.text('Radar de Risco Contratual'), findsOneWidget);
 
       // Seed Button
       expect(find.text('SIMULAR OPERAÇÃO'), findsOneWidget);

@@ -1,11 +1,12 @@
-/// Phase 5.4 — Automated Validation Scenarios
+/// Phase 5.4 / 5.10 — Automated Validation Scenarios
 ///
-/// Fonte da verdade: `docs/governance/roadmap.md` › Phase 5 › 5.4 Validation
+/// Fonte da verdade: `docs/governance/roadmap.md` › Phase 5 › 5.4 / 5.10 Validation
 ///
 /// Cenários automatizados (testes manuais com Supabase são responsabilidade do operador):
 ///
 ///   Cenário 5.1 — Plano criado via UI gera ledger entry `PLAN_DECLARED`
 ///                 (mesmo comportamento da API direta)
+///   Cenário 5.1-B2B — Plano declarado COM ShiftPattern gera ledger entry `PLAN_DECLARED`
 ///   Cenário 5.2 — Plano publicado não pode ser editado;
 ///                 apenas nova versão é aceita
 ///   Cenário 5.3 — Operador de Org A não vê contratos de Org B na listagem
@@ -15,6 +16,7 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 
 import 'package:busflow/application/sla_audit/close_contract_command.dart';
 import 'package:busflow/application/sla_audit/close_contract_handler.dart';
@@ -24,12 +26,19 @@ import 'package:busflow/application/sla_audit/declare_contractual_plan_command.d
 import 'package:busflow/application/sla_audit/declare_contractual_plan_handler.dart';
 import 'package:busflow/application/sla_audit/contractual_service_input.dart';
 import 'package:busflow/application/sla_audit/projections/contract_query_service_in_memory.dart';
+import 'package:busflow/application/sla_audit/shift_projection_service.dart';
 import 'package:busflow/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:busflow/domain/sla_audit/contractual_rule.dart';
 import 'package:busflow/domain/sla_audit/domain_exception.dart';
+import 'package:busflow/domain/sla_audit/operational_zone.dart';
 import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:busflow/domain/sla_audit/shift_pattern.dart';
+import 'package:busflow/domain/sla_audit/sla_penalties.dart';
+import 'package:busflow/domain/shared/money.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
+import 'package:busflow/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:busflow/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
@@ -67,6 +76,10 @@ class _StubRuleRepository implements ContractualRuleRepository {
 // ── Test suite ─────────────────────────────────────────────────────────────
 
 void main() {
+  setUpAll(() {
+    tz_data.initializeTimeZones();
+  });
+
   late InMemoryContractRepository contractRepo;
   late InMemoryPlanDeclarationRepository planRepo;
   late InMemorySlaAuditLedgerRepository ledger;
@@ -527,6 +540,119 @@ void main() {
         ));
 
         expect(plan2.planVersion, 2);
+      },
+    );
+  });
+
+  // ── Cenário 5.1-B2B ───────────────────────────────────────────────────────
+
+  group('Cenário 5.1-B2B — Plano declarado com ShiftPattern gera PLAN_DECLARED', () {
+    test(
+      '5.1-B2B: handler com ShiftPattern produz PLAN_DECLARED idêntico ao fluxo manual',
+      () async {
+        // Infra B2B
+        final zoneRepo = InMemoryOperationalZoneRepository();
+        final alertRepo = InMemoryOperationalAlertRepository();
+        final b2bPlanRepo = InMemoryPlanDeclarationRepository();
+        final b2bLedger = InMemorySlaAuditLedgerRepository();
+        final b2bContractRepo = InMemoryContractRepository();
+
+        final origin = OperationalZone.create(
+          organizationId: 'org-5-1-b2b',
+          name: 'Origem B2B',
+          type: ZoneType.garagem,
+          geofence: const GeofenceConfiguration(
+            latitude: -23.5505,
+            longitude: -46.6333,
+            radiusMeters: 200,
+          ),
+        );
+        final dest = OperationalZone.create(
+          organizationId: 'org-5-1-b2b',
+          name: 'Destino B2B',
+          type: ZoneType.cliente,
+          geofence: const GeofenceConfiguration(
+            latitude: -23.5600,
+            longitude: -46.6400,
+            radiusMeters: 200,
+          ),
+        );
+        await zoneRepo.save(origin);
+        await zoneRepo.save(dest);
+
+        final projectionService = ShiftProjectionService(
+          planRepo: b2bPlanRepo,
+          zoneRepo: zoneRepo,
+          alertRepo: alertRepo,
+        );
+
+        final b2bCreateHandler = CreateContractHandler(
+          contractRepository: b2bContractRepo,
+          ledger: b2bLedger,
+        );
+        final b2bPlanHandler = DeclareContractualPlanHandler(
+          repository: b2bPlanRepo,
+          ledger: b2bLedger,
+          ruleRepository: _StubRuleRepository(),
+          contractRepository: b2bContractRepo,
+          projectionService: projectionService,
+        );
+
+        final contract = await b2bCreateHandler.handle(CreateContractCommand(
+          organizationId: 'org-5-1-b2b',
+          name: 'Contrato B2B Turno',
+          contractorName: 'Trans B2B',
+          validFromUtc: DateTime.utc(2026, 1, 1),
+          validUntilUtc: DateTime.utc(2026, 12, 31),
+        ));
+
+        final pattern = ShiftPattern.create(
+          index: 0,
+          daysOfWeek: [DayOfWeek.monday, DayOfWeek.wednesday, DayOfWeek.friday],
+          departureTimeLocal: '06:30',
+          arrivalTimeLocal: '07:00',
+          timezone: 'America/Sao_Paulo',
+          originZoneId: origin.id,
+          destinationZoneId: dest.id,
+          penalties: SLAPenalties.create(
+            noShowPenaltyMultiplier: 1.5,
+            delayToleranceMinutes: 10,
+            delayPenaltyPerMinute: const Money(100),
+            downgradePenaltyFlat: const Money(5000),
+          ),
+        );
+
+        final plan = await b2bPlanHandler.handle(DeclareContractualPlanCommand(
+          organizationId: 'org-5-1-b2b',
+          contractId: contract.id,
+          declaredByUserId: 'operador-b2b',
+          planVersion: 1,
+          originalFileHash: 'b2b-hash-v1',
+          declaredAtUtc: DateTime.utc(2026, 1, 15),
+          shiftPatterns: [pattern],
+          contractualValueCents: 15000,
+        ));
+
+        // Plano criado com ShiftPatterns
+        expect(plan.planVersion, 1);
+        expect(plan.shiftPatterns, hasLength(1));
+        expect(plan.services, isEmpty,
+            reason: 'Plano B2B não tem serviços manuais — SETs são projetados');
+
+        // Ledger deve conter PLAN_DECLARED
+        final types = b2bLedger.entries.map((e) => e.type).toList();
+        expect(types.contains('PLAN_DECLARED'), isTrue,
+            reason: 'ShiftPattern-based plan deve gerar PLAN_DECLARED no ledger');
+
+        // Entrada PLAN_DECLARED aponta para org correta
+        final planEntry =
+            b2bLedger.entries.firstWhere((e) => e.type == 'PLAN_DECLARED');
+        expect(planEntry.organizationId, 'org-5-1-b2b');
+
+        // Contrato auto-ativado
+        final types2 = b2bLedger.entries.map((e) => e.type).toList();
+        expect(types2.contains('CONTRACT_ACTIVATED'), isTrue,
+            reason: 'Primeiro plano B2B deve ativar o contrato');
       },
     );
   });

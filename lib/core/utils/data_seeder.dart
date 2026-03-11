@@ -2,8 +2,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DataSeeder {
   final SupabaseClient _supabase;
+  final String organizationId;
 
-  DataSeeder(this._supabase);
+  DataSeeder(this._supabase, {required this.organizationId});
 
   Future<void> seedDrivers() async {
     // Check if drivers exist to avoid duplicates or clear them?
@@ -23,7 +24,9 @@ class DataSeeder {
           .maybeSingle();
 
       if (exists == null) {
-        await _supabase.from('drivers').insert(d);
+        final payload = Map<String, dynamic>.from(d);
+        payload['organization_id'] = organizationId;
+        await _supabase.from('drivers').insert(payload);
       }
     }
   }
@@ -60,7 +63,9 @@ class DataSeeder {
           .maybeSingle();
 
       if (exists == null) {
-        await _supabase.from('routes').insert(r);
+        final payload = Map<String, dynamic>.from(r);
+        payload['organization_id'] = organizationId;
+        await _supabase.from('routes').insert(payload);
       }
     }
   }

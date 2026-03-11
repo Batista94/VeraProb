@@ -50,11 +50,18 @@ class PostgresAuditService implements AuditService {
   @override
   Future<List<AuditLog>> getRecentLogs({int limit = 50}) async {
     final response = await _client
-        .from('audit_logs')
+        .from('sla_audit_ledger_v2')
         .select()
-        .order('timestamp', ascending: false)
+        .order('occurred_at_utc', ascending: false)
         .limit(limit);
 
-    return (response as List).map((data) => AuditLog.fromJson(data)).toList();
+    return (response as List).map((data) => AuditLog(
+      id: data['id'],
+      organizationId: data['organization_id'],
+      operatorId: data['operator_id'] ?? '',
+      actionType: data['event_type'],
+      entityId: data['entity_id'] ?? data['contract_id'] ?? '', // Handle both
+      timestamp: DateTime.parse(data['occurred_at_utc']),
+    )).toList();
   }
 }

@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widgets/charts_section.dart';
 import 'widgets/contractual_risk_radar.dart';
 import '../../../core/config/supabase_client.dart';
 import '../../../core/utils/data_seeder.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../state/providers/auth_providers.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
-  Future<void> _seedData(BuildContext context) async {
+  Future<void> _seedData(BuildContext context, WidgetRef ref) async {
+    final organizationId = ref.read(currentOrganizationIdProvider);
+    if (organizationId == null) return;
     try {
-      final seeder = DataSeeder(supabase);
+      final seeder = DataSeeder(supabase, organizationId: organizationId);
       await seeder.seedDrivers();
       await seeder.seedRoutes();
       if (context.mounted) {
@@ -33,7 +37,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
       children: [
@@ -102,7 +106,7 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 ElevatedButton.icon(
-                  onPressed: () => _seedData(context),
+                  onPressed: () => _seedData(context, ref),
                   icon: const Icon(Icons.bolt_rounded, size: 18),
                   label: const Text('SIMULAR OPERAÇÃO'),
                   style: ElevatedButton.styleFrom(

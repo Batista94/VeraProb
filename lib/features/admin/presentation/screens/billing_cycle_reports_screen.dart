@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../features/shared/providers/reporting_providers.dart';
 import '../../../../domain/sla_audit/billing_cycle_report.dart';
+import '../../../../state/providers/contract_providers.dart';
 
 class BillingCycleReportsScreen extends ConsumerStatefulWidget {
   const BillingCycleReportsScreen({super.key});
@@ -77,39 +78,87 @@ class _BillingCycleReportsScreenState
 
   Widget _buildFilters() {
     final df = DateFormat('dd/MM/yyyy');
-    return Row(
+    final contractsAsync = ref.watch(contractListProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        OutlinedButton.icon(
-          onPressed: () async {
-            final picked = await showDateRangePicker(
-              context: context,
-              firstDate: DateTime(2025),
-              lastDate: DateTime(2027),
-              initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
-            );
-            if (picked != null) {
-              setState(() {
-                _startDate = picked.start;
-                _endDate = picked.end;
-              });
-            }
-          },
-          icon: const Icon(Icons.date_range),
-          label: Text('${df.format(_startDate)} - ${df.format(_endDate)}'),
+        Row(
+          children: [
+            contractsAsync.when(
+              loading: () => const SizedBox(
+                width: 220,
+                child: LinearProgressIndicator(),
+              ),
+              error: (_, _) => const Text('Erro ao carregar contratos'),
+              data: (contracts) => DropdownButton<String?>(
+                value: _selectedContractId,
+                hint: const Text('Todos os contratos'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Todos os contratos'),
+                  ),
+                  ...contracts.map(
+                    (c) => DropdownMenuItem<String?>(
+                      value: c.id,
+                      child: Text('${c.name} — ${c.contractorName}'),
+                    ),
+                  ),
+                ],
+                onChanged: (value) =>
+                    setState(() => _selectedContractId = value),
+              ),
+            ),
+            const SizedBox(width: 16),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final picked = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2025),
+                  lastDate: DateTime(2027),
+                  initialDateRange:
+                      DateTimeRange(start: _startDate, end: _endDate),
+                );
+                if (picked != null) {
+                  setState(() {
+                    _startDate = picked.start;
+                    _endDate = picked.end;
+                  });
+                }
+              },
+              icon: const Icon(Icons.date_range),
+              label: Text('${df.format(_startDate)} - ${df.format(_endDate)}'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: _generateReport,
+              child: const Text('Gerar Relatório'),
+            ),
+            if (_report != null) ...[
+              const SizedBox(width: 16),
+              IconButton(
+                onPressed: _exportCsv,
+                icon: const Icon(Icons.file_download),
+                tooltip: 'Exportar CSV',
+              ),
+            ],
+          ],
         ),
-        const SizedBox(width: 16),
-        ElevatedButton(
-          onPressed: _generateReport,
-          child: const Text('Gerar Relatório'),
-        ),
-        if (_report != null) ...[
-          const SizedBox(width: 16),
-          IconButton(
-            onPressed: _exportCsv,
-            icon: const Icon(Icons.file_download),
-            tooltip: 'Exportar CSV',
+        if (_selectedContractId == null)
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 14, color: Colors.orange),
+                SizedBox(width: 4),
+                Text(
+                  'Nenhum contrato selecionado — relatório agrega todos os contratos.',
+                  style: TextStyle(fontSize: 12, color: Colors.orange),
+                ),
+              ],
+            ),
           ),
-        ],
       ],
     );
   }

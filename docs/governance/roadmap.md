@@ -63,7 +63,7 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 291 passing · 9 skipped (E2E sem credenciais) · 0 falhas |
+| Testes | 304 passing · 9 skipped (E2E sem credenciais) · 0 falhas |
 | Análise estática | 0 erros · 67 infos (`prefer_const` — baixa prioridade) |
 | Precisão financeira | `Money` (centavos BIGINT) em todo o stack — invariante enforced ✅ |
 | CI/CD | Não existe (Phase 8) |
@@ -230,8 +230,11 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 - [x] B4: Gap permanente + `PROJECTION_GAP` CRITICAL — sem backfill retroativo
 
 #### [x] 5.6 — Database Foundation ✅
-> **Migration:** `supabase/migrations/20260311000000_b2b_refactoring_foundation.sql`
-> **⚠️ Ação do PO:** executar esta migration no Supabase antes de iniciar Phase 5.10 (testes manuais).
+> **Migration principal:** `supabase/migrations/20260311000000_b2b_refactoring_foundation.sql`
+> **Migration complementar (Sprint 5.10 Realignment):** `supabase/migrations/20260311000002_operational_zone_business_fields.sql`
+> - Torna `latitude · longitude · radius_meters` nullable (`GeofenceConfiguration` opcional)
+> - Adiciona `type TEXT NOT NULL DEFAULT 'garagem'` e `address TEXT`
+> **⚠️ Ação do PO:** executar **ambas** as migrations no Supabase antes de iniciar Phase 5.10 (testes manuais).
 - `operational_zones` table com RLS (`USING` + `WITH CHECK`) e `ON DELETE RESTRICT` nas FKs de `shift_patterns`
 - `ShiftPattern` como payload JSONB em `plan_declarations` (componente do aggregate — sem tabela independente)
 - Unique constraint de idempotência: `(plan_declaration_id, shift_pattern_index, operational_date)` em `contractual_service_executions`
@@ -239,7 +242,10 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 - `delay_penalty_per_minute_cents BIGINT · downgrade_penalty_flat_cents BIGINT` em `contractual_service_executions` (snapshot de `SLAPenalties`)
 
 #### [x] 5.7 — Domain Refactoring
-- [x] `OperationalZone` entity (nova — org-scoped, sem identidade de negócio própria além do `id`)
+- [x] `OperationalZone` entity (org-scoped): `name · type (ZoneType enum) · address? · geofence (GeofenceConfiguration?)`
+  - `GeofenceConfiguration` é VO separado — garante que lat/lng/radius são presentes juntos ou ausentes juntos. Nunca defaulta para 0.0/0.0 (Gulf of Guinea).
+  - Geofence é **opcional na criação** (UI exibe em ExpansionTile "Avançado") mas **obrigatório na projeção** — `ShiftProjectionService` lança `DomainException` se zona referenciada no turno não tiver geofence.
+  - `ZoneType`: `garagem | cliente | apoio`
 - [x] `ShiftPattern` value object (componente de `PlanDeclaration`): `daysOfWeek · arrivalTimeLocal · departureTimeLocal · timezone` validado contra IANA whitelist
 - [x] `SLAPenalties` value object com invariantes financeiros enforced (`Money` fields)
 - [x] `PlanDeclaration` refatorado: aceita `List<ShiftPattern>` na criação
@@ -300,12 +306,28 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 - [ ] **Stress Mode Toggle:** Mover o overlay de performance para um botão sob demanda na AppBar.
 - [ ] **Localization (pt-BR):** Configurar `flutter_localizations` para que calendários e mensagens de sistema falem a língua do operador.
 
-#### [ ] B2 — Session Hook Reliability
-- [ ] **Fallback de Organização:** Implementar busca em `public.user_roles` quando o `org_id` estiver ausente no JWT (edge case de sincronização do hook).
-- [ ] **Validation Cleansing:** Garantir que mensagens de erro de formulário desapareçam imediatamente ao toque do usuário.
+#### [x] B2 — Session Hook Reliability
+- [x] **Fallback de Organização:** `organizationIdFetcherProvider` já implementado em `auth_providers.dart` — consulta `public.user_roles` quando `org_id` ausente no JWT. `currentOrganizationIdProvider` tenta JWT primeiro, cai no fallback assíncrono automaticamente.
+- [x] **Validation Cleansing:** `addListener(_clearError)` adicionado em `_CreateZoneDialogState` e `_DeclareContractPlanFormState`. `create_contract_form.dart` já estava correto.
 
-> [!IMPORTANT]
-> **GOVERNANÇA DO CONSELHO:** Para a implementação definitiva destes itens (além do hotfix de validação), é MANDATÓRIO realizar uma sessão de Design Review com o conselho (UX/Senior Eng) para validar os novos breakpoints e a estratégia de cache de sessão.
+> **Nota de Conselho (2026-03-11):** Design Review realizado — fallback estava previamente implementado e correto. Validation Cleansing aplicado como hotfix nos 2 formulários pendentes.
+
+#### [x] Sprint 5.10 Realignment — Ajustes de Domínio, Infra e UX
+> **Origem:** Sessão do Conselho convocada em 2026-03-11 para revisar plano de ação técnico antes dos testes manuais (5.10).
+> Itens aprovados e priorizados antes do smoke test para garantir que a interface e o domínio estejam "Enterprise-grade" antes da validação com dados reais.
+
+**Todos os itens concluídos:**
+- [x] `OperationalZone` — `GeofenceConfiguration?` VO (geofence opcional, nunca defaulta para 0.0/0.0)
+- [x] `ZoneType` enum (`garagem · cliente · apoio`) e campo `address?` no aggregate
+- [x] `ShiftProjectionService` — guarda invariante: lança `DomainException` se zona referenciada não tiver geofence
+- [x] `PostgresOperationalZoneRepository` — lê/escreve nullable geo columns + `type` + `address`
+- [x] UI (`OperationalZonesScreen`) — dropdown `ZoneType`, campo `address`, mapa em `ExpansionTile` (geofence opcional na criação)
+- [x] Migration `20260311000002_operational_zone_business_fields.sql`
+- [x] 13 testes atualizados para nova assinatura de `create`/`reconstitute` — 304 passing · 0 falhas
+- [x] **TAREFA 1.2:** Null fallback `actorName ?? 'N/D'` em `operational_audit_screen.dart`
+- [x] **TAREFA 3.1:** Tooltip financeiro no campo "Multiplicador No-Show" (`declare_contract_plan_form.dart`)
+- [x] **TAREFA 3.2:** `'LINHA'` → `'ROTA'` no cabeçalho e painel de detalhe (`operational_audit_screen.dart`)
+- [x] **TAREFA 3.3:** Filtro primário por `Contrato` na `BillingCycleReportsScreen` com aviso visual quando agregado
 
 #### [x] B3 — Contractual Risk Radar (Dashboard Pivot)
 > **Definido via Reunião do Conselho (10/Mar):** Pivotar a tela inicial para focar em métricas financeiras e obrigações, eliminando o mapa como componente central diário.
@@ -577,10 +599,11 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
      ✅ 5.7 Domain Refactoring
      ✅ 5.8 Engine & Projection Upgrade
      ✅ 5.9 UI Overhaul
-[~] Trilha B UI/UX Standardization & Session Reliability  ← EM ANDAMENTO
+✅ Trilha B UI/UX Standardization & Session Reliability
      ✅ B1 Padronização Visual (OCC)
      ✅ B3 Contractual Risk Radar (Pivot)
-     [ ] B2 Session Hook Reliability
+     ✅ Sprint 5.10 Realignment (domínio · infra · UX)
+     ✅ B2 Session Hook Reliability
 [  ] Phase 6  Administration & Tenant Self-Service
 [  ] Phase 7  Evidence & Audit Exports
 [  ] Phase 8  Operational Hardening
@@ -591,11 +614,11 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Trilha B3 — Contractual Risk Radar (Dashboard Pivot).** 📊
+**Trilha B concluída. Próximo passo: Testes Manuais (Phase 5.10) no Supabase dev.**
 
-O Conselho aprovou a substituição do Heatmap genérico na tela inicial por um Radar de Risco Contratual (Timeline) altamente focado no cliente B2B. A Trilha B1 (Padronização Visual em Telas de Detalhe) já foi concluída. Faremos o Pivot do Dashboard (B3) antes de rodar os Testes Manuais (Phase 5.10).
+B1 ✅ · B2 ✅ · B3 ✅ · Sprint 5.10 Realignment ✅
 
-Ordem atualizada: **Trilha B3 -> Trilha B2 -> Testes Manuais (Phase 5.10)**.
+Aplicar migration `20260311000002` no Supabase dev e executar o checklist de smoke test da Phase 5.10.
 
 | Fase | Entrega |
 |------|---------|

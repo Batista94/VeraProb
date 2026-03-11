@@ -45,16 +45,14 @@ void main() {
       final z1 = OperationalZone.create(
         organizationId: testOrgId,
         name: 'Z1',
-        latitude: 10,
-        longitude: 10,
-        radiusMeters: 50,
+        type: ZoneType.garagem,
+        geofence: const GeofenceConfiguration(latitude: 10, longitude: 10, radiusMeters: 50),
       );
       final z2 = OperationalZone.create(
         organizationId: testOrgId,
         name: 'Z2',
-        latitude: 20,
-        longitude: 20,
-        radiusMeters: 50,
+        type: ZoneType.cliente,
+        geofence: const GeofenceConfiguration(latitude: 20, longitude: 20, radiusMeters: 50),
       );
       await zoneRepo.save(z1);
       await zoneRepo.save(z2);
@@ -115,9 +113,12 @@ void main() {
         id: z1.id,
         organizationId: z1.organizationId,
         name: z1.name,
-        latitude: 99.9, // Changed
-        longitude: z1.longitude,
-        radiusMeters: z1.radiusMeters,
+        type: z1.type,
+        geofence: GeofenceConfiguration(
+          latitude: 99.9, // Changed
+          longitude: z1.geofence!.longitude,
+          radiusMeters: z1.geofence!.radiusMeters,
+        ),
       );
       await zoneRepo.save(mutatedZ1);
 
@@ -147,12 +148,11 @@ void main() {
     });
 
     test('Scenario 5.11: Extreme Timezone Offset (+14) normalization', () async {
-       final z1 = OperationalZone.create(
+      final z1 = OperationalZone.create(
         organizationId: testOrgId,
         name: 'Z-Line',
-        latitude: 0,
-        longitude: 0,
-        radiusMeters: 50,
+        type: ZoneType.garagem,
+        geofence: const GeofenceConfiguration(latitude: 10, longitude: 10, radiusMeters: 50),
       );
       await zoneRepo.save(z1);
 

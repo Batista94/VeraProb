@@ -35,9 +35,12 @@ void main() {
     return OperationalZone.create(
       organizationId: orgId,
       name: name,
-      latitude: lat,
-      longitude: lng,
-      radiusMeters: radius,
+      type: ZoneType.garagem,
+      geofence: GeofenceConfiguration(
+        latitude: lat,
+        longitude: lng,
+        radiusMeters: radius,
+      ),
     );
   }
 
@@ -256,9 +259,12 @@ void main() {
         id: origin.id,
         organizationId: origin.organizationId,
         name: origin.name,
-        latitude: 99.0, // different lat
-        longitude: origin.longitude,
-        radiusMeters: origin.radiusMeters,
+        type: origin.type,
+        geofence: GeofenceConfiguration(
+          latitude: 99.0, // different lat
+          longitude: origin.geofence!.longitude,
+          radiusMeters: origin.geofence!.radiusMeters,
+        ),
       );
       await zoneRepo.save(updatedOrigin);
 

@@ -20,9 +20,11 @@ class PostgresOperationalZoneRepository implements OperationalZoneRepository {
       'id': zone.id,
       'organization_id': zone.organizationId,
       'name': zone.name,
-      'latitude': zone.latitude,
-      'longitude': zone.longitude,
-      'radius_meters': zone.radiusMeters,
+      'type': zone.type.name,
+      'address': zone.address,
+      'latitude': zone.geofence?.latitude,
+      'longitude': zone.geofence?.longitude,
+      'radius_meters': zone.geofence?.radiusMeters,
     });
   }
 
@@ -56,13 +58,31 @@ class PostgresOperationalZoneRepository implements OperationalZoneRepository {
   }
 
   OperationalZone _mapToEntity(Map<String, dynamic> data) {
+    final lat = (data['latitude'] as num?)?.toDouble();
+    final lng = (data['longitude'] as num?)?.toDouble();
+    final radius = data['radius_meters'] as int?;
+
+    final geofence = (lat != null && lng != null && radius != null)
+        ? GeofenceConfiguration(
+            latitude: lat,
+            longitude: lng,
+            radiusMeters: radius,
+          )
+        : null;
+
+    final typeRaw = data['type'] as String? ?? 'garagem';
+    final type = ZoneType.values.firstWhere(
+      (e) => e.name == typeRaw,
+      orElse: () => ZoneType.garagem,
+    );
+
     return OperationalZone.reconstitute(
       id: data['id'],
       organizationId: data['organization_id'],
       name: data['name'],
-      latitude: (data['latitude'] as num).toDouble(),
-      longitude: (data['longitude'] as num).toDouble(),
-      radiusMeters: data['radius_meters'] as int,
+      type: type,
+      address: data['address'] as String?,
+      geofence: geofence,
     );
   }
 }

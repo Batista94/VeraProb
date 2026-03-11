@@ -5,6 +5,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 
 import '../../domain/sla_audit/contractual_service_execution.dart';
+import '../../domain/sla_audit/domain_exception.dart';
 import '../../domain/sla_audit/operational_alert.dart';
 import '../../domain/sla_audit/operational_alert_repository.dart';
 import '../../domain/sla_audit/operational_zone_repository.dart';
@@ -223,6 +224,22 @@ class ShiftProjectionService {
     );
     if (destZone == null) return null;
 
+    // Geofence is optional at zone creation but required at projection time.
+    // A zone without geofence cannot be used as origin/destination until an
+    // operator configures its coordinates via the Advanced Geofence panel.
+    if (originZone.geofence == null) {
+      throw DomainException(
+        'Zona "${originZone.name}" não possui geofence configurado. '
+        'Configure as coordenadas antes de projetar viagens.',
+      );
+    }
+    if (destZone.geofence == null) {
+      throw DomainException(
+        'Zona "${destZone.name}" não possui geofence configurado. '
+        'Configure as coordenadas antes de projetar viagens.',
+      );
+    }
+
     return ContractualServiceExecution.createProjected(
       planDeclarationId: plan.id,
       shiftPatternIndex: pattern.index,
@@ -231,14 +248,14 @@ class ShiftProjectionService {
       scheduledEndTimeUtc: endUtc,
       // Origin snapshot
       originZoneId: originZone.id,
-      startLatitude: originZone.latitude,
-      startLongitude: originZone.longitude,
-      startRadiusMeters: originZone.radiusMeters,
+      startLatitude: originZone.geofence!.latitude,
+      startLongitude: originZone.geofence!.longitude,
+      startRadiusMeters: originZone.geofence!.radiusMeters,
       // Destination snapshot
       destinationZoneId: destZone.id,
-      endLatitude: destZone.latitude,
-      endLongitude: destZone.longitude,
-      endRadiusMeters: destZone.radiusMeters,
+      endLatitude: destZone.geofence!.latitude,
+      endLongitude: destZone.geofence!.longitude,
+      endRadiusMeters: destZone.geofence!.radiusMeters,
       // Financial — provided by caller from contract rule snapshot
       contractualValue: contractualValue,
       noShowPenaltyMultiplier: pattern.penalties.noShowPenaltyMultiplier,

@@ -4,15 +4,17 @@ import '../../application/sla_audit/alert_service.dart';
 import '../../domain/sla_audit/operational_alert.dart';
 import 'sla_providers.dart';
 
+import 'auth_providers.dart';
+
 /// Provides active operational alerts for OCC triage.
 /// Sorted by severity (CRITICAL first) then by time (most recent first).
 final activeAlertsProvider = FutureProvider<List<OperationalAlert>>((
   ref,
 ) async {
   final repo = ref.watch(operationalAlertRepositoryProvider);
-  // Organization ID will be injected from tenant context in production.
-  // For now, fetch all active alerts across tenants in InMemory mode.
-  return repo.findActive('');
+  final orgId = ref.watch(currentOrganizationIdProvider);
+  if (orgId == null) return [];
+  return repo.findActive(orgId);
 });
 
 /// Provides alerts for a specific entity (SET ID).

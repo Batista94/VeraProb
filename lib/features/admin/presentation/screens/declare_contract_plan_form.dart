@@ -83,6 +83,15 @@ class _DeclareContractPlanFormState
   void initState() {
     super.initState();
     _loadZones();
+    _baseValueController.addListener(_clearError);
+    _delayToleranceController.addListener(_clearError);
+    _delayMinuteValueController.addListener(_clearError);
+    _downgradeValueController.addListener(_clearError);
+    _noShowMultiplierController.addListener(_clearError);
+  }
+
+  void _clearError() {
+    if (_errorMessage != null) setState(() => _errorMessage = null);
   }
 
   @override
@@ -497,6 +506,12 @@ class _DeclareContractPlanFormState
                   suffixText: ' x',
                   border: OutlineInputBorder(),
                   isDense: true,
+                  suffixIcon: Tooltip(
+                    message: 'Alavanca Financeira: penalidade aplicada ao valor base '
+                        'da viagem em caso de No-Show.\n'
+                        'Ex.: 1,5x = 150% do valor contratual cobrado do operador.',
+                    child: Icon(Icons.help_outline, size: 16),
+                  ),
                 ),
               ),
             ),
@@ -668,7 +683,7 @@ class _DeclareContractPlanFormState
                 },
                 steps: [
                   Step(
-                    title: const Text('Zonas'),
+                    title: const Text('Zonas Operacionais'),
                     content: _buildStep1(),
                     isActive: _currentStep >= 0,
                     state: _currentStep > 0

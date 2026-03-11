@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/domain/sla_audit/domain_exception.dart';
 import 'package:busflow/domain/sla_audit/operational_zone.dart';
@@ -10,9 +11,10 @@ import 'package:busflow/state/providers/operational_zone_providers.dart';
 
 /// Tela de gestão de Zonas Operacionais.
 ///
-/// Uma "Zona Operacional" é uma área geofenceada nomeada (ex: "Garagem Central")
-/// que os operadores referenciam ao declarar padrões de turno B2B.
-/// Lat/lng são snapshotados no SET no momento da projeção.
+/// Uma "Zona Operacional" é uma área nomeada (ex: "Garagem Central") que os
+/// operadores referenciam ao declarar padrões de turno B2B. O geofence
+/// (lat/lng/raio) é opcional — zonas sem geofence são válidas e identificadas
+/// apenas por nome/id.
 class OperationalZonesScreen extends ConsumerWidget {
   const OperationalZonesScreen({super.key});
 
@@ -34,14 +36,14 @@ class OperationalZonesScreen extends ConsumerWidget {
               const Spacer(),
               FilledButton.icon(
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Nova Zona'),
+                label: const Text('Nova Zona Operacional'),
                 onPressed: () => _showCreateDialog(context, ref),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'Áreas geofenceadas usadas como origem/destino nas viagens programadas.',
+            'Garagens, clientes e pontos de apoio usados como origem/destino nas viagens programadas.',
             style: BusFlowTypography.bodyMedium.copyWith(color: BusFlowColors.textSecondary),
           ),
           const SizedBox(height: 24),
@@ -77,6 +79,30 @@ class OperationalZonesScreen extends ConsumerWidget {
 
 // ── Zone list ────────────────────────────────────────────────
 
+extension on ZoneType {
+  String get label {
+    switch (this) {
+      case ZoneType.garagem:
+        return 'Garagem';
+      case ZoneType.cliente:
+        return 'Cliente';
+      case ZoneType.apoio:
+        return 'Apoio';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case ZoneType.garagem:
+        return Icons.garage_outlined;
+      case ZoneType.cliente:
+        return Icons.business_outlined;
+      case ZoneType.apoio:
+        return Icons.support_agent_outlined;
+    }
+  }
+}
+
 class _ZoneList extends StatelessWidget {
   final List<OperationalZone> zones;
 
@@ -89,6 +115,11 @@ class _ZoneList extends StatelessWidget {
       separatorBuilder: (_, _) => const Divider(height: 1, color: BusFlowColors.border),
       itemBuilder: (context, i) {
         final z = zones[i];
+        final geofenceInfo = z.geofence != null
+            ? 'Geofence: ${z.geofence!.radiusMeters} m'
+            : 'Sem geofence configurado';
+        final addressInfo = z.address ?? 'N/D';
+
         return ListTile(
           leading: Container(
             padding: const EdgeInsets.all(8),
@@ -96,11 +127,17 @@ class _ZoneList extends StatelessWidget {
               color: BusFlowColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.place, color: BusFlowColors.primary, size: 20),
+            child: Icon(z.type.icon, color: BusFlowColors.primary, size: 20),
           ),
-          title: Text(z.name, style: BusFlowTypography.kpiLabel),
+          title: Row(
+            children: [
+              Text(z.name, style: BusFlowTypography.kpiLabel),
+              const SizedBox(width: 8),
+              _TypeChip(label: z.type.label),
+            ],
+          ),
           subtitle: Text(
-            'Zona Protegida · Raio Operacional: ${z.radiusMeters} m',
+            '$addressInfo · $geofenceInfo',
             style: BusFlowTypography.caption.copyWith(color: BusFlowColors.textSecondary),
           ),
           trailing: Text(
@@ -112,6 +149,28 @@ class _ZoneList extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _TypeChip extends StatelessWidget {
+  final String label;
+
+  const _TypeChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: BusFlowColors.surface,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: BusFlowColors.border),
+      ),
+      child: Text(
+        label,
+        style: BusFlowTypography.caption.copyWith(color: BusFlowColors.textSecondary),
+      ),
     );
   }
 }
@@ -167,18 +226,31 @@ class _CreateZoneDialog extends ConsumerStatefulWidget {
 class _CreateZoneDialogState extends ConsumerState<_CreateZoneDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _latController = TextEditingController();
-  final _lngController = TextEditingController();
+  final _addressController = TextEditingController();
   final _radiusController = TextEditingController(text: '200');
+
+  ZoneType _selectedType = ZoneType.garagem;
+  LatLng? _selectedLocation;
 
   bool _isSubmitting = false;
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _nameController.addListener(_clearError);
+    _addressController.addListener(_clearError);
+    _radiusController.addListener(_clearError);
+  }
+
+  void _clearError() {
+    if (_errorMessage != null) setState(() => _errorMessage = null);
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
-    _latController.dispose();
-    _lngController.dispose();
+    _addressController.dispose();
     _radiusController.dispose();
     super.dispose();
   }
@@ -195,12 +267,23 @@ class _CreateZoneDialogState extends ConsumerState<_CreateZoneDialog> {
       final orgId = ref.read(currentOrganizationIdProvider);
       if (orgId == null) throw const DomainException('Sessão expirada. Faça login novamente.');
 
+      GeofenceConfiguration? geofence;
+      if (_selectedLocation != null) {
+        geofence = GeofenceConfiguration(
+          latitude: _selectedLocation!.latitude,
+          longitude: _selectedLocation!.longitude,
+          radiusMeters: int.parse(_radiusController.text),
+        );
+      }
+
       final zone = OperationalZone.create(
         organizationId: orgId,
         name: _nameController.text.trim(),
-        latitude: double.parse(_latController.text),
-        longitude: double.parse(_lngController.text),
-        radiusMeters: int.parse(_radiusController.text),
+        type: _selectedType,
+        address: _addressController.text.trim().isEmpty
+            ? null
+            : _addressController.text.trim(),
+        geofence: geofence,
       );
 
       await saveZone(zone, ref);
@@ -217,92 +300,152 @@ class _CreateZoneDialogState extends ConsumerState<_CreateZoneDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final radius = double.tryParse(_radiusController.text) ?? 200.0;
+
     return AlertDialog(
       title: const Text('Nova Zona Operacional'),
       content: SizedBox(
-        width: 400,
+        width: 600,
+        height: 620,
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nome *',
-                  hintText: 'Ex: Garagem Central, Portaria Sul',
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Tipo ──────────────────────────────────────
+                DropdownButtonFormField<ZoneType>(
+                  value: _selectedType,
+                  decoration: const InputDecoration(labelText: 'Tipo *'),
+                  items: ZoneType.values
+                      .map(
+                        (t) => DropdownMenuItem(
+                          value: t,
+                          child: Row(
+                            children: [
+                              Icon(t.icon, size: 18),
+                              const SizedBox(width: 8),
+                              Text(t.label),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedType = v!),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _latController,
-                      decoration: const InputDecoration(labelText: 'Latitude *'),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        signed: true,
-                        decimal: true,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]')),
-                      ],
-                      validator: (v) {
-                        final n = double.tryParse(v ?? '');
-                        if (n == null) return 'Inválido';
-                        if (n < -90 || n > 90) return '-90 a 90';
-                        return null;
-                      },
-                    ),
+                const SizedBox(height: 16),
+
+                // ── Nome ──────────────────────────────────────
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome *',
+                    hintText: 'Ex: Garagem Central, Portaria Sul',
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _lngController,
-                      decoration: const InputDecoration(labelText: 'Longitude *'),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        signed: true,
-                        decimal: true,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
+                  autofocus: true,
+                ),
+                const SizedBox(height: 16),
+
+                // ── Endereço ──────────────────────────────────
+                TextFormField(
+                  controller: _addressController,
+                  decoration: const InputDecoration(
+                    labelText: 'Endereço',
+                    hintText: 'Ex: Av. Paulista, 1000 — São Paulo/SP',
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ── Geofence (avançado) ───────────────────────
+                Theme(
+                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    title: Text(
+                      'Avançado: Ajuste de Geofence',
+                      style: BusFlowTypography.caption.copyWith(
+                        color: BusFlowColors.textSecondary,
+                        fontWeight: FontWeight.w600,
                       ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]')),
-                      ],
-                      validator: (v) {
-                        final n = double.tryParse(v ?? '');
-                        if (n == null) return 'Inválido';
-                        if (n < -180 || n > 180) return '-180 a 180';
-                        return null;
-                      },
                     ),
+                    subtitle: Text(
+                      _selectedLocation == null
+                          ? 'Opcional — clique no mapa para definir a área'
+                          : 'Geofence configurado · Raio: ${_radiusController.text} m',
+                      style: BusFlowTypography.caption.copyWith(
+                        color: _selectedLocation != null
+                            ? BusFlowColors.primary
+                            : BusFlowColors.textDisabled,
+                      ),
+                    ),
+                    children: [
+                      TextFormField(
+                        controller: _radiusController,
+                        decoration: const InputDecoration(
+                          labelText: 'Raio (metros)',
+                          hintText: '200',
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        onChanged: (_) => setState(() {}),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null; // optional
+                          final n = int.tryParse(v);
+                          if (n == null || n <= 0 || n > 50000) return '1 a 50000 m';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 300,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: FlutterMap(
+                            options: MapOptions(
+                              initialCenter: const LatLng(-23.5505, -46.6333),
+                              initialZoom: 13,
+                              onTap: (_, point) {
+                                setState(() => _selectedLocation = point);
+                              },
+                            ),
+                            children: [
+                              TileLayer(
+                                urlTemplate:
+                                    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                                subdomains: const ['a', 'b', 'c', 'd'],
+                                userAgentPackageName: 'com.busflow.app',
+                              ),
+                              if (_selectedLocation != null)
+                                CircleLayer(
+                                  circles: [
+                                    CircleMarker(
+                                      point: _selectedLocation!,
+                                      color: BusFlowColors.primary.withValues(alpha: 0.3),
+                                      borderColor: BusFlowColors.primary,
+                                      borderStrokeWidth: 2,
+                                      useRadiusInMeter: true,
+                                      radius: radius,
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _errorMessage!,
+                    style: BusFlowTypography.caption.copyWith(color: BusFlowColors.error),
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _radiusController,
-                decoration: const InputDecoration(
-                  labelText: 'Raio (metros) *',
-                  hintText: '200',
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (v) {
-                  final n = int.tryParse(v ?? '');
-                  if (n == null || n <= 0 || n > 50000) return '1 a 50000 m';
-                  return null;
-                },
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _errorMessage!,
-                  style: BusFlowTypography.caption.copyWith(color: BusFlowColors.error),
-                ),
               ],
-            ],
+            ),
           ),
         ),
       ),

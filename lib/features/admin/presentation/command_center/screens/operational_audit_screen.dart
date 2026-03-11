@@ -113,7 +113,7 @@ class OperationalAuditScreen extends ConsumerWidget {
           SizedBox(width: 90, child: Text('CATEGORIA', style: _headerStyle)),
           Expanded(flex: 3, child: Text('AÇÃO', style: _headerStyle)),
           Expanded(flex: 2, child: Text('VEÍCULO', style: _headerStyle)),
-          Expanded(flex: 2, child: Text('LINHA', style: _headerStyle)),
+          Expanded(flex: 2, child: Text('ROTA', style: _headerStyle)),
           SizedBox(width: 120, child: Text('AUTOR', style: _headerStyle)),
         ],
       ),
@@ -395,7 +395,7 @@ class _AuditSidePanel extends ConsumerWidget {
           _DetailRow(label: 'Ação', value: log.action),
           _DetailRow(
             label: 'Autor',
-            value: '${log.actorName} (${log.actorId})',
+            value: '${log.actorName ?? 'N/D'} (${log.actorId})',
           ),
 
           const Divider(height: 32, color: BusFlowColors.border),
@@ -413,7 +413,7 @@ class _AuditSidePanel extends ConsumerWidget {
             label: 'Veículo/Placa',
             value: log.vehiclePlate ?? 'Não aplicável',
           ),
-          _DetailRow(label: 'Linha', value: log.routeName ?? 'Não aplicável'),
+          _DetailRow(label: 'Rota', value: log.routeName ?? 'Não aplicável'),
           _DetailRow(
             label: 'Status no Momento',
             value: log.statusLabel ?? 'Desconhecido',
