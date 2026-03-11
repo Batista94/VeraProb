@@ -93,8 +93,8 @@ Calcula Receita Total Contratada, Receita Protegida, Receita em Risco, Receita P
 - Dia operacional baseado em timezone explícito
 - Sem uso de `DateTime.now()` direto nas regras ou `toLocal()`.
 
-🗺️ **Command Center (Camada Operacional)**
-Mapa em tempo real com Fleet Simulation, normalização de ruído, Situation Engine, alertas hierarquizados e Forensic Console Strip. O OCC não é o produto final; é a fonte de evidência para auditoria contratual.
+🗺️ **Contractual Risk Radar & OCC (Camada Operacional)**
+Em vez de um mapa genérico de monitoramento de frotas, o BusFlow utiliza um **Contractual Risk Radar**. O topo exibe instantaeamente KPIs financeiros (Receita Protegida vs Risco). O corpo principal é uma *Timeline* organizada por severidade de obrigações (Viagens Programadas), priorizando gargalos (*No-Shows*, *Evidence Gaps*). O mapa atua apenas como uma ferramenta forense estrita de sandbox, acionada somente sob demanda para investigações. O OCC não é o produto final; é a plataforma de triagem para a auditoria contratual.
 
 🔌 **Telemetria**
 Fluxo reativo via Riverpod: `Raw Telemetry` → `OperationalStateNormalizer` → `Evaluation Engine` → `ExecutionState Repository` → `Projections` → `UI`. Sem polling. Sem acoplamento. Reativo.

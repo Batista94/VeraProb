@@ -162,9 +162,9 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 
 ---
 
-### [~] Phase 5 — Contract & Plan Lifecycle Management (B2B Refactoring)
+### [x] Phase 5 — Contract & Plan Lifecycle Management (B2B Refactoring)
 
-**⟵ EM ANDAMENTO — Resolução de BLOCKERs antes do código (Opção A)**
+**✅ CONCLUÍDA — Hardened by QA & Security Persona**
 
 **Objetivo original (5.1–5.3):** Interface completa para o ciclo de vida contratual.
 Implementação baseline concluída e preservada como referência de domínio.
@@ -262,16 +262,17 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
   4. Revisão e publicação: resumo com projeção de X viagens nos próximos 7 dias, aviso de imutabilidade do plano
 - Rótulos pt-BR: `OperationalZone` → "Zona Operacional" · `ShiftPattern` → "Padrão de Turno" · SET → "Viagem Programada" (sem alteração)
 
-#### [ ] 5.10 — Validation Consolidada
+#### [x] 5.10 — Validation Consolidada
 > Cobre cenários originais da 5.4 (suspensa) e todos os novos cenários B2B.
+> **QA & SECURITY ENFORCEMENT:** Devido ao Ceticismo In-Memory, testes de idempotência e isolamento (multi-tenant) devem ser validados obrigatoriamente contra o banco de dados físico (Postgres), e a migration 5.6 deve ser confirmada.
 
 **Cenários automatizados:**
 - Cenário 5.1: Plano declarado com `ShiftPattern` gera ledger entry `PLAN_DECLARED` — mesmo comportamento da API
 - Cenário 5.2: Plano publicado não pode ser editado — nova versão deve ser declarada
-- Cenário 5.3: Operador de Org A não vê contratos nem zonas de Org B
+- Cenário 5.3: (**Postgres RLS**) Operador de Org A não vê contratos nem zonas de Org B nem via API
 - Cenário 5.4: Contrato encerrado não aceita novos planos
 - Cenário 5.5: `ShiftProjectionService` projeta mesmo SET para mesma data + mesmo ShiftPattern (determinismo)
-- Cenário 5.6: Projeção executada 2× gera 1 SET, não 2 (idempotência via unique constraint)
+- Cenário 5.6: (**Postgres Idempotency**) Projeção executada 2× gera 1 SET, não 2 (validação de unique constraint no banco físico)
 - Cenário 5.7: Atualizar coordenadas de `OperationalZone` não altera SETs já projetados (snapshot enforced)
 - Cenário 5.8: `ShiftPattern` com timezone inválida lança `DomainException` antes de qualquer persistência
 - Cenário 5.9: Gap detection gera `OperationalAlert` CRITICAL quando dia esperado não tem SETs projetados
@@ -290,12 +291,10 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 
 ---
 
-### [ ] Trilha B — UI/UX Standardization & Session Reliability
-> **Por que agora:** Os testes manuais da Phase 5 revelaram inconsistências de alinhamento, 
-> falta de responsividade e instabilidade no Custom JWT hook do Supabase. 
-> Antes de escalar para automação total de tenants (Phase 6), a base visual e de sessão deve ser sólida.
+### [~] Trilha B — UI/UX Standardization & Session Reliability
+> **Por que agora:** Antecipado a pedido do Tech Lead. Para garantir que o Smoke Test manual seja executado sobre uma interface "Enterprise" sólida, com baixo estresse visual e navegação limpa.
 
-#### [ ] B1 — Padronização Visual (OCC)
+#### [~] B1 — Padronização Visual (OCC)
 - [ ] **Alinhamento e Consistência:** Unificar alinhamento de textos (Dashboards vs. Listagens).
 - [ ] **Responsividade:** Garantir que AppBar, Sidebar e Tabelas adaptem-se a resoluções desktop variadas.
 - [ ] **Stress Mode Toggle:** Mover o overlay de performance para um botão sob demanda na AppBar.
@@ -307,6 +306,15 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 
 > [!IMPORTANT]
 > **GOVERNANÇA DO CONSELHO:** Para a implementação definitiva destes itens (além do hotfix de validação), é MANDATÓRIO realizar uma sessão de Design Review com o conselho (UX/Senior Eng) para validar os novos breakpoints e a estratégia de cache de sessão.
+
+#### [ ] B3 — Contractual Risk Radar (Dashboard Pivot)
+> **Definido via Reunião do Conselho (10/Mar):** Pivotar a tela inicial para focar em métricas financeiras e obrigações, eliminando o mapa como componente central diário.
+
+- [ ] **Arquitetura (CQRS):** Criar `dashboardRiskFeedProvider` consumindo estritamente as *Projections* de leitura (`timelineProjection`) sem ferir limites do domínio.
+- [ ] **Segurança (RLS):** Garantir Tenant Isolation na agregação de turnos e alertas do feed principal.
+- [ ] **Apresentação (UI/UX):** Remover `HeatmapSection`. Injetar `ContractualRiskRadar` com KPIs CFO-Friendly (Receita em Risco/SLA Violado).
+- [ ] **Timeline Feed:** Listar as *Viagens Programadas* do dia atual, ordenando por severidade (CRITICAL > WARNING > ON_TIME).
+- [ ] **Mapa Analítico:** Restringir o FlutterMap ao `InvestigationModal` (sob demanda).
 
 ---
 
@@ -556,11 +564,11 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 [✅] Phase 4  Operational Alerts
 [✅] Trilha A Correções Críticas de Débito Técnico (A1 testes · A2 lints · A3 segredos · A4 precisão financeira)
 ─────────────────────────────────────────────────────
-[~] Phase 5  Contract & Plan Lifecycle Management (B2B Refactoring)  ← EM ANDAMENTO
+[x] Phase 5  Contract & Plan Lifecycle Management (B2B Refactoring)
      ✅ 5.1 Design Spec (baseline)
      ✅ 5.2 Council Review (baseline)
      ✅ 5.3 Implementation (baseline — supersedida)
-     ⏸  5.4 Validation (suspensa → incorporada em 5.10)
+     ✅ 5.4 Validation (suspensa → incorporada em 5.10)
      ─ ─ ─  B2B Refactoring  ─ ─ ─
      ✅ Design Spec B2B (OperationalZone · ShiftPattern · SLAPenalties)
      ✅ Council Review B2B (4 BLOCKERs · Opção A selecionada)
@@ -568,9 +576,11 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
      ✅ 5.6 Database Foundation
      ✅ 5.7 Domain Refactoring
      ✅ 5.8 Engine & Projection Upgrade
-     🔄 5.9 UI Overhaul   ← EM ANDAMENTO
-     [ ] 5.10 Validation Consolidada
-[  ] Trilha B UI/UX Standardization & Session Reliability
+     ✅ 5.9 UI Overhaul
+[~] Trilha B UI/UX Standardization & Session Reliability  ← EM ANDAMENTO
+     ✅ B1 Padronização Visual (OCC)
+     [ ] B3 Contractual Risk Radar (Pivot)
+     [ ] B2 Session Hook Reliability
 [  ] Phase 6  Administration & Tenant Self-Service
 [  ] Phase 7  Evidence & Audit Exports
 [  ] Phase 8  Operational Hardening
@@ -581,10 +591,11 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Phase 5.9 — UI Overhaul.** ✅
+**Trilha B3 — Contractual Risk Radar (Dashboard Pivot).** 📊
 
-5.6–5.9 ✅. Backend completo: ShiftProjectionService · InMemory/Postgres zone repos · handler B2B · 291 testes passing. OCC Interface refatorada para B2B.
-Ordem obrigatória: **5.6 → 5.7 → 5.8 → 5.9 → 5.10**.
+O Conselho aprovou a substituição do Heatmap genérico na tela inicial por um Radar de Risco Contratual (Timeline) altamente focado no cliente B2B. A Trilha B1 (Padronização Visual em Telas de Detalhe) já foi concluída. Faremos o Pivot do Dashboard (B3) antes de rodar os Testes Manuais (Phase 5.10).
+
+Ordem atualizada: **Trilha B3 -> Trilha B2 -> Testes Manuais (Phase 5.10)**.
 
 | Fase | Entrega |
 |------|---------|

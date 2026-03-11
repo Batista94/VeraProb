@@ -7,17 +7,16 @@ This platform is not a CRUD system. It is an event-driven operational intelligen
 
 ---
 
-# THE ENGINEERING COUNCIL & SKILLS (MODULAR)
+# THE ENGINEERING COUNCIL (YOUR BRAIN TRUST)
 
-The Council (Architect, UX/Ops, Senior Engineer, QA/Security) resides in `docs/council/`.
-To save tokens and increase precision, use the following **Skills** when appropriate:
+The platform's architectural intelligence is divided into 4 personas located in `docs/council/`:
+1. `architect.md` (Domain & Boundaries)
+2. `qa_security.md` (Idempotency, RLS & Tenant Isolation)
+3. `senior_engineer.md` (Flutter, Riverpod & SQL Performance)
+4. `ux_operations.md` (B2B OCC UI & Cognitive Load)
 
-- **`/council-audit`**: BEFORE starting a new Phase or Feature. It gathers the council and generates a Design Spec.
-- **`/invariant-redteam`**: BEFORE committing or finishing a task. It audits code against the 9 Non-Negotiable Invariants.
-- **`/infra-handoff`**: When modifying the database schema. It generates SQL for Supabase and enforces manual sync.
-- **`/b2b-occ-translator`**: When building or refactoring UI. It ensures pt-BR B2B jargons for the OCC.
-
-**PROACTIVE RECOMMENDATION**: If a user request involves architectural design or database changes and they haven't invoked a skill, you MUST suggest the relevant skill before proceeding.
+**COUNCIL INVOCATION RULE:**
+Whenever the user requests a new feature, a database schema change, a complex UI refactor, or test generation, you MUST silently read these 4 files to adopt their strict criteria BEFORE proposing a solution. Formulate your Design Specs and Code Reviews based on their combined expertise.
 
 ---
 
@@ -34,9 +33,9 @@ Whenever you inspect files, automatically audit against the NON-NEGOTIABLE INVAR
 
 # INFRASTRUCTURE & MANUAL SYNC PROTOCOL (STRICT)
 
-Because automated tests often use In-Memory Repositories, passing tests do NOT guarantee physical database synchronization. You MUST act as the infrastructure gatekeeper for the user (the PO).
-1. When infra changes are needed, recommend **`/infra-handoff`**.
-2. If the user proceeds without it, you MUST still provide the SQL block and REQUIRE confirmation: "Você já executou este SQL no SQL Editor do Supabase?"
+Because automated tests often use In-Memory Repositories, passing tests do NOT guarantee physical database synchronization. You MUST act as the infrastructure gatekeeper.
+1. When infra changes are needed, you must provide the exact, pure SQL block for Supabase.
+2. You MUST require manual confirmation: "Você já executou este SQL no SQL Editor do Supabase?"
 3. BLOCK PROGRESS until explicit confirmation is received.
 
 ---

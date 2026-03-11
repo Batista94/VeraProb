@@ -87,19 +87,20 @@ class AdminLayout extends ConsumerWidget {
             children: [
               if (isWideScreen)
                 Container(
-                  width: 100,
                   decoration: const BoxDecoration(
-                    color: BusFlowColors.surface,
+                    color: BusFlowColors.background, // Match rail theme
                     border: Border(
                       right: BorderSide(color: BusFlowColors.border),
                     ),
                   ),
                   child: NavigationRail(
+                    extended: isWideScreen,
+                    minExtendedWidth: 220,
                     selectedIndex: selectedIndex,
                     onDestinationSelected: (index) {
                       ref.read(adminIndexProvider.notifier).state = index;
                     },
-                    labelType: NavigationRailLabelType.all,
+                    // Label type cannot be defined when extended is true
                     useIndicator: true,
                     destinations: destinations,
                   ),

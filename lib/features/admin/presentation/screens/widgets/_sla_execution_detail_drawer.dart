@@ -74,14 +74,13 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                       ),
                     const Divider(height: 48),
                     Text(
-                      'GEOFENCE DE PARTIDA',
+                      'LOCAL DE ORIGEM (ZONA OPERACIONAL)',
                       style: BusFlowTypography.caption,
                     ),
                     const SizedBox(height: 16),
                     _InfoField(
-                      label: 'Coordenadas',
-                      value:
-                          '${item.startLatitude.toStringAsFixed(6)}, ${item.startLongitude.toStringAsFixed(6)}',
+                      label: 'Referência Geográfica',
+                      value: 'Ocultado (Confidencial B2B)',
                     ),
                     _InfoField(
                       label: 'Raio de Detecção',
@@ -198,15 +197,15 @@ class _StatusSection extends StatelessWidget {
       case ExecutionStatus.noShow:
         color = BusFlowColors.error;
         label = 'NO SHOW';
-        description = 'Nenhum veículo detectado na geofence durante a janela.';
+        description = 'Não detectado: Obrigação não executada na Zona Operacional.';
       case ExecutionStatus.evidenceGap:
         color = BusFlowColors.warning;
         label = 'EVIDENCE GAP';
-        description = 'Veículo detectado, mas permanência foi insuficiente.';
+        description = 'Detecção Parcial: Indícios de Execução sem comprovação contínua.';
       case ExecutionStatus.executed:
         color = BusFlowColors.success;
         label = 'EXECUTADO';
-        description = 'Obrigação cumprida conforme contrato.';
+        description = 'Evidência confirmada: Obrigação B2B cumprida.';
       case ExecutionStatus.pending:
         color = BusFlowColors.textSecondary;
         label = 'PENDENTE';

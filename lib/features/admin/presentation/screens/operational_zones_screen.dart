@@ -100,13 +100,11 @@ class _ZoneList extends StatelessWidget {
           ),
           title: Text(z.name, style: BusFlowTypography.kpiLabel),
           subtitle: Text(
-            'Lat ${z.latitude.toStringAsFixed(6)} · '
-            'Lng ${z.longitude.toStringAsFixed(6)} · '
-            'Raio ${z.radiusMeters} m',
+            'Zona Protegida · Raio Operacional: ${z.radiusMeters} m',
             style: BusFlowTypography.caption.copyWith(color: BusFlowColors.textSecondary),
           ),
           trailing: Text(
-            z.id.substring(0, 8),
+            'ID: ${z.id.substring(0, 8)}',
             style: BusFlowTypography.caption.copyWith(
               color: BusFlowColors.textDisabled,
               fontFamily: 'monospace',

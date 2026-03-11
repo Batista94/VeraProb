@@ -151,8 +151,8 @@ class _DetailView extends ConsumerWidget {
                     isScrollable: true,
                     tabAlignment: TabAlignment.start,
                     tabs: [
-                      Tab(text: 'Execuções'),
-                      Tab(text: 'Financeiro'),
+                      Tab(text: 'Viagens Programadas'),
+                      Tab(text: 'Conciliação Financeira'),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -227,7 +227,7 @@ class _ExecutionsTab extends StatelessWidget {
         '${_dateTimeFormat.format(e.windowStartUtc.toLocal())} – ${_dateTimeFormat.format(e.windowEndUtc.toLocal())}';
     return DataRow(cells: [
       DataCell(
-        Text('${e.setId.substring(0, 8)}…',
+        SelectableText('${e.setId.substring(0, 8)}…',
             style: const TextStyle(fontSize: 11, fontFamily: 'monospace')),
       ),
       DataCell(_ExecutionStatusChip(status: e.status)),

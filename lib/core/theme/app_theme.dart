@@ -9,21 +9,22 @@ class BusFlowColors {
   BusFlowColors._();
 
   // ── Premium Dark Theme (Deep Navy/Obsidian) ────────────────
-  static const Color background = Color(0xFF030609); // Near black, high contrast
-  static const Color surface = Color(0xFF0B141C);    // Deep navy slate
-  static const Color surfaceElevated = Color(0xFF141F2B);
-  static const Color border = Color(0xFF1E2D3D);
+  static const Color background = Color(0xFF121212); // Softer than pure black
+  static const Color surface = Color(0xFF1E1E24);    // Deep modern slate
+  static const Color surfaceElevated = Color(0xFF2B2B36); // Noticeable elevation
+  static const Color border = Color(0xFF333340);
 
-  // ── Status Colors (CFO & Ops Friendly) ──────────────────
-  static const Color onTime = Color(0xFF10B981);    // Emerald Green (Protected Revenue)
-  static const Color delayed = Color(0xFFF59E0B);   // Amber (Attention Required)
-  static const Color critical = Color(0xFFEF4444);  // Rose Red (Lost Revenue)
-  static const Color scheduled = Color(0xFF3B82F6); // Royal Blue (Upcoming)
+  // ── Status Colors (CFO & Ops Friendly, Desaturated for Dark Mode) ─
+  static const Color onTime = Color(0xFF10B981);    // Emerald Green
+  static const Color delayed = Color(0xFFFBBF24);   // Desaturated Amber
+  static const Color critical = Color(0xFFF87171);  // Desaturated Rose Red
+  static const Color scheduled = Color(0xFF60A5FA); // Desaturated Royal Blue
   static const Color neutral = Color(0xFF64748B);
 
   // ── High-Impact Accents ─────────────────────────────────
-  static const Color primary = Color(0xFF14B8A6);   // Teal/Mint (The "Signal")
-  static const Color secondary = Color(0xFF6366F1); // Indigo
+  // A calmer, more premium teal.
+  static const Color primary = Color(0xFF2DD4BF);   
+  static const Color secondary = Color(0xFF818CF8); // Desaturated Indigo
 
   // ── Premium Text Hierarchy ──────────────────────────────
   static const Color textPrimary = Color(0xFFF8FAFC);
@@ -174,19 +175,49 @@ class AppTheme {
       ),
     ),
     navigationRailTheme: NavigationRailThemeData(
-      backgroundColor: BusFlowColors.surface,
-      indicatorColor: BusFlowColors.primary.withValues(alpha: 0.1),
+      backgroundColor: BusFlowColors.background, // Match background so it blends natively
+      indicatorColor: BusFlowColors.primary.withValues(alpha: 0.15),
       selectedIconTheme: const IconThemeData(color: BusFlowColors.primary, size: 24),
       unselectedIconTheme: const IconThemeData(color: BusFlowColors.textDisabled, size: 24),
       selectedLabelTextStyle: const TextStyle(
-        color: BusFlowColors.primary,
-        fontWeight: FontWeight.w700,
-        fontSize: 11,
+        color: BusFlowColors.textPrimary,
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
       ),
       unselectedLabelTextStyle: const TextStyle(
         color: BusFlowColors.textDisabled,
-        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        fontSize: 13,
       ),
+    ),
+    datePickerTheme: DatePickerThemeData(
+      backgroundColor: BusFlowColors.surfaceElevated,
+      headerBackgroundColor: BusFlowColors.surface,
+      headerForegroundColor: BusFlowColors.textPrimary,
+      surfaceTintColor: Colors.transparent, // Disable Material 3 subtle tint parsing
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: BusFlowColors.border, width: 1),
+      ),
+      dayStyle: BusFlowTypography.bodyMedium,
+      weekdayStyle: BusFlowTypography.caption,
+      yearStyle: BusFlowTypography.bodyMedium,
+      todayBorder: const BorderSide(color: BusFlowColors.primary),
+      todayForegroundColor: WidgetStateProperty.all(BusFlowColors.primary),
+      dayOverlayColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return BusFlowColors.primary;
+        }
+        return null; // Defer to default
+      }),
+      dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return BusFlowColors.background; // Dark text on bright primary
+        }
+        return BusFlowColors.textPrimary;
+      }),
+      cancelButtonStyle: TextButton.styleFrom(foregroundColor: BusFlowColors.textSecondary),
+      confirmButtonStyle: TextButton.styleFrom(foregroundColor: BusFlowColors.primary),
     ),
   );
 

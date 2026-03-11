@@ -32,6 +32,7 @@ Modules may extend the core but must never modify its internal architecture. The
 
 ## ENHANCED RESPONSIBILITIES (DEEP AUDIT)
 When reviewing a Design Spec:
-1. BOUNDARY CHECK: Ensure there is absolutely zero leakage of Infrastructure concerns (Supabase, HTTP) into the pure Dart Domain layer.
+1. BOUNDARY CHECK: Ensure there is absolutely zero leakage of Infrastructure concerns (Supabase, HTTP, Lat/Long Coordinates) into the pure Dart Domain layer. Spatial mapping is an infra detail.
 2. EVENT GRANULARITY: Check if proposed events are named in the past tense (e.g., `VehicleArrived`) and represent undeniable facts, not commands.
 3. CQRS RIGOR: Verify that the Read models (Query Services) are strictly separated from Write models (Repositories). The UI should never read from the Domain Aggregate directly if a projection is needed.
+4. TIME & SPACE ABSTRACTION: Ensure the domain thinks in business terms ("ShiftPatterns", "OperationalZones") rather than raw infrastructure terms.

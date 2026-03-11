@@ -42,28 +42,22 @@ class HeatmapSection extends StatelessWidget {
                       subdomains: const ['a', 'b', 'c', 'd'],
                       userAgentPackageName: 'com.busflow.app',
                     ),
-                    CircleLayer(
-                      circles: [
-                        CircleMarker(
+                    MarkerLayer(
+                      markers: [
+                        _buildGlowMarker(
                           point: const LatLng(-23.550520, -46.633308),
-                          color: BusFlowColors.critical.withValues(alpha: 0.3),
-                          borderStrokeWidth: 0,
-                          useRadiusInMeter: true,
-                          radius: 2000,
+                          color: BusFlowColors.critical,
+                          size: 120, // Visual size logic vs real meter scale
                         ),
-                        CircleMarker(
+                        _buildGlowMarker(
                           point: const LatLng(-23.565, -46.650),
-                          color: BusFlowColors.delayed.withValues(alpha: 0.3),
-                          borderStrokeWidth: 0,
-                          useRadiusInMeter: true,
-                          radius: 1200,
+                          color: BusFlowColors.delayed,
+                          size: 80,
                         ),
-                        CircleMarker(
+                        _buildGlowMarker(
                           point: const LatLng(-23.585, -46.665),
-                          color: BusFlowColors.onTime.withValues(alpha: 0.3),
-                          borderStrokeWidth: 0,
-                          useRadiusInMeter: true,
-                          radius: 1500,
+                          color: BusFlowColors.onTime,
+                          size: 100,
                         ),
                       ],
                     ),
@@ -73,10 +67,36 @@ class HeatmapSection extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Fonte: Event Audit Ledger • Projeção geoespacial baseada em SLR (Service Level Risk)',
+              'Fonte: Event Audit Ledger • Evidência Forense e Viagens Programadas (SLR)',
               style: BusFlowTypography.caption,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Marker _buildGlowMarker({
+    required LatLng point,
+    required Color color,
+    required double size,
+  }) {
+    return Marker(
+      point: point,
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: 0.7),
+              color.withValues(alpha: 0.3),
+              color.withValues(alpha: 0.0), // Fades to fully transparent at edges
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          ),
         ),
       ),
     );

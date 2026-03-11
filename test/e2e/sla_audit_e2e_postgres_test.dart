@@ -19,6 +19,7 @@ import 'package:busflow/application/sla_audit/contractual_evaluation_engine.dart
 import 'package:busflow/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
 import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
 import 'package:busflow/domain/sla_audit/execution_status.dart';
+import 'package:busflow/domain/sla_audit/plan_declaration.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
@@ -418,44 +419,105 @@ void main() {
       );
     });
 
-    test('Stage 6 — Immutability Interface Constraints', () async {
-      // Interfaces in Dart enforce the available methods.
-      // The Postgres repositories implement the Domain interfaces which intentionally lack update/delete.
-
-      // 3. Aggregate internal immutability / duplicate check
-      final duplicatePlanCommand = DeclareContractualPlanCommand(
+    test('Stage 6 — Postgres Idempotency (Unique Constraint)', () async {
+      // Let's test idempotency by attempting a raw insert of a duplicate SET.
+      final duplicateSet = ContractualExecutionState.create(
         organizationId: 'org-1',
-        contractId: contractId, // same contract
-        planVersion: planVersion, // same version
-        declaredByUserId: 'hacker',
-        originalFileHash: 'fake',
-        declaredAtUtc: DateTime.utc(2026, 3, 3),
-        services: [
-          ContractualServiceInput(
-            scheduledStartTimeUtc: testBaseTimeUtc,
-            scheduledEndTimeUtc: testBaseTimeUtc.add(const Duration(hours: 1)),
-            startLatitude: 0,
-            startLongitude: 0,
-            startRadiusMeters: 10,
-            endLatitude: 0,
-            endLongitude: 0,
-            endRadiusMeters: 10,
-            contractualValue: 1.0,
-            noShowPenaltyMultiplier: 1.0,
-          ),
-        ],
+        setId: sharedSetId!, // The SAME set ID
+        contractId: contractId,
+        planVersion: planVersion,
+        startLatitude: -23.5505, startLongitude: -46.6333, startRadiusMeters: 100,
+        contractualValue: const Money(10000), noShowPenaltyMultiplier: 1.5,
+        windowStartUtc: testBaseTimeUtc, windowEndUtc: testBaseTimeUtc,
       );
 
-      // Should fail either in DB constraint or domain layer
+      // This MUST throw a PostgrestException (code 23505 - unique_violation)
       expect(
-        () async => await declarationHandler.handle(duplicatePlanCommand),
-        throwsException,
-        reason:
-            'Postgres UNIQUE(contract_id, plan_version) must reject this insert',
+        () async => await executionRepo.save(duplicateSet),
+        throwsA(isA<PostgrestException>()),
+        reason: 'Postgres UNIQUE(set_id) or (plan,shift,date) must reject duplicate insertions',
       );
     });
 
-    test('Stage 7 — E2E UI Dashboard Query Coverage', () async {
+    test('Stage 7 — Postgres RLS Isolation (Multi-Tenant Penetration)', () async {
+      // Simulate an Operator from 'org-hacker' trying to read 'org-1' data via API.
+      // In a real environment with JWTs, Supabase Auth enforces this automatically.
+      // Since our integration tests use the service_role key or bypass Auth, 
+      // the Application logic MUST enforce isolation via `organizationId` parameter.
+
+      // 1. Try to read the contract plans using a different Org ID
+      final stolenPlans = await planRepo.findByContract(contractId, organizationId: 'org-hacker');
+      expect(stolenPlans, isEmpty, reason: 'RLS/Application boundary must isolate tenants');
+
+      // 2. Try to query the execution states
+      final stolenExecutions = await executionQueryService.listByStatus(
+        ExecutionStatus.executed,
+        organizationId: 'org-hacker',
+        contractId: contractId,
+      );
+      expect(stolenExecutions, isEmpty, reason: 'Cross-tenant execution queries must return 0 rows');
+
+      // 3. Try to generate a snapshot for another org's contract
+      await snapshotGenerator.generateDailySnapshot(
+        'org-hacker', // Attack vector
+        operationalDateUtc,
+        contractId: contractId,
+      );
+
+      final stolenSnapshots = await snapshotRepo.findAll(
+        organizationId: 'org-hacker',
+        contractId: contractId,
+      );
+      expect(
+        stolenSnapshots, 
+        isEmpty, 
+        reason: 'Cannot generate or read snapshots across tenant boundaries'
+      );
+    });
+
+    test('Stage 7.1 — Postgres RLS Active Attack (Write Sabotage)', () async {
+      // Setup: Create a legitimate plan for org-1
+      final hackerPlanId = const Uuid().v4();
+      
+      // Attempt 1: Hacker tries to 'overwrite' org-1's plan data by injecting their orgId
+      // In a hardened system, if the JWT is org-hacker, Postgres RLS 'WITH CHECK' 
+      // will reject an INSERT/UPDATE where organization_id != auth.jwt().
+      // Here we simulate the repo call.
+      
+      final forgedPlan = PlanDeclaration.reconstitute(
+        id: hackerPlanId,
+        organizationId: 'org-1', // Targeting Org 1
+        contractId: contractId,
+        planVersion: 99,
+        declaredByUserId: 'hacker',
+        originalFileHash: 'forged',
+        declaredAtUtc: DateTime.now().toUtc(),
+        ruleSnapshot: const RuleSnapshot([]),
+        services: [],
+      );
+
+      // This should fail at the Postgres level if RLS is enforced on the service_role
+      // or if the application layer validates the command org vs repo org.
+      // Since integration tests often use service_role, we focus on the REPO and DB level.
+      
+      // If we use a client restricted by RLS (authenticated as hacker):
+      // final hackerClient = SupabaseClient(url, hackerJwt);
+      // final hackerRepo = PostgresPlanDeclarationRepository(hackerClient);
+      
+      // Attempt: Sabotage Org 1's plan data
+      // This should be blocked by RLS if using a restricted client.
+      // Even with service_role, our repositories should enforce org isolation.
+      expect(
+        () async => await planRepo.save(forgedPlan),
+        throwsA(isA<PostgrestException>()),
+        reason: 'RLS WITH CHECK must prevent inserting data for a different organization_id',
+      );
+
+      final leakyData = await planRepo.findByContract(contractId, organizationId: 'org-hacker');
+      expect(leakyData, isEmpty);
+    });
+
+    test('Stage 8 — E2E UI Dashboard Query Coverage', () async {
       // 1. Verify SLA Execution Item projections
       final summary = await executionQueryService.getSummary(
         organizationId: 'org-1',

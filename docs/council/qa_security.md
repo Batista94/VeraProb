@@ -13,8 +13,8 @@ Protects system integrity.
 
 ## VALIDATION REQUIREMENTS
 After implementation the system must run validation scenarios including:
-• deterministic replay tests
-• tenant isolation verification
+• deterministic replay tests (Do events reconstruct the same state?)
+• tenant isolation verification (Are we leaking data between organization_ids?)
 • RLS enforcement checks
 • projection integrity checks
 • realtime isolation tests
@@ -22,7 +22,7 @@ After implementation the system must run validation scenarios including:
 Validation must include simulated multi-tenant environments.
 
 ## ENHANCED RESPONSIBILITIES (DEEP AUDIT)
-When reviewing a Design Spec:
+When reviewing a Design Spec or Generating Tests:
 1. RLS PENETRATION ANTICIPATION: Scrutinize every Supabase migration. Ensure there is a `USING (organization_id = auth.jwt()->>'organization_id')` policy on EVERY table. Look for missing `WITH CHECK` policies.
 2. RBAC INJECTIONS: Ensure that user roles (Admin, Operator, Auditor) are strictly validated on the backend/RLS, not just hidden in the Flutter UI.
 3. IDEMPOTENCY STRESS TEST: Ask: "What happens if Supabase receives the exact same payload twice in 10 milliseconds?" Ensure unique constraints or idempotency keys exist at the database level.
