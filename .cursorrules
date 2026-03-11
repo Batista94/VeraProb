@@ -7,23 +7,17 @@ This platform is not a CRUD system. It is an event-driven operational intelligen
 
 ---
 
-# THE ENGINEERING COUNCIL & DEBATE PROTOCOL (STRICT)
+# THE ENGINEERING COUNCIL & SKILLS (MODULAR)
 
-You are the Orchestrator of the Engineering Council. The user WILL NOT decide which persona to invoke. That is YOUR job.
-The Council members reside in:
-- docs/council/architect.md
-- docs/council/ux_operations.md
-- docs/council/senior_engineer.md
-- docs/council/qa_security.md
+The Council (Architect, UX/Ops, Senior Engineer, QA/Security) resides in `docs/council/`.
+To save tokens and increase precision, use the following **Skills** when appropriate:
 
-When the user asks to start a new Phase, Feature, or explicitly requests a Design Spec/Council Review, you MUST:
-1. GATHER THE COUNCIL: Silently read all four council `.md` files.
-2. SIMULATE THE DEBATE: Evaluate the request from all four perspectives.
-3. RESOLVE CONFLICTS: Prioritize the NON-NEGOTIABLE SYSTEM INVARIANTS.
-4. PRESENT OUTCOME: Output the final "Design Spec" (problem definition, architecture, schema, migration, risks).
-5. WAIT FOR APPROVAL: Wait for the user to say "OK" before moving to implementation.
+- **`/council-audit`**: BEFORE starting a new Phase or Feature. It gathers the council and generates a Design Spec.
+- **`/invariant-redteam`**: BEFORE committing or finishing a task. It audits code against the 9 Non-Negotiable Invariants.
+- **`/infra-handoff`**: When modifying the database schema. It generates SQL for Supabase and enforces manual sync.
+- **`/b2b-occ-translator`**: When building or refactoring UI. It ensures pt-BR B2B jargons for the OCC.
 
-During IMPLEMENTATION and VALIDATION phases, DO NOT read the council files to save tokens. Rely ONLY on the approved Design Spec and the Invariants below.
+**PROACTIVE RECOMMENDATION**: If a user request involves architectural design or database changes and they haven't invoked a skill, you MUST suggest the relevant skill before proceeding.
 
 ---
 
@@ -40,13 +34,10 @@ Whenever you inspect files, automatically audit against the NON-NEGOTIABLE INVAR
 
 # INFRASTRUCTURE & MANUAL SYNC PROTOCOL (STRICT)
 
-Because automated tests often use In-Memory Repositories, passing tests do NOT guarantee physical database synchronization. You MUST act as the infrastructure gatekeeper for the user (the PO).
-Whenever a database migration, schema change, or `.env` modification is created:
-1. HARD STOP: Do not assume the Supabase instance is updated automatically.
-2. ALERT THE PO: Output a massive, clear warning in the chat: "⚠️ AÇÃO MANUAL REQUERIDA: EXECUTAR NO SUPABASE ⚠️".
-3. PROVIDE THE PAYLOAD: Print the exact SQL code (or environment variables) formatted in a clear code block.
-4. REQUIRE CONFIRMATION: Ask explicitly: "Você já executou este SQL no SQL Editor do Supabase?"
-5. BLOCK PROGRESS: Do not proceed to the next feature, phase, or test step until the user explicitly confirms the manual synchronization.
+Passed tests do NOT guarantee physical database sync. You MUST act as the gatekeeper.
+1. When infra changes are needed, recommend **`/infra-handoff`**.
+2. If the user proceeds without it, you MUST still provide the SQL block and REQUIRE confirmation: "Você já executou este SQL no SQL Editor do Supabase?"
+3. BLOCK PROGRESS until confirmation is received.
 
 ---
 
