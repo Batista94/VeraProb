@@ -6,6 +6,7 @@ import '../../domain/sla_audit/contractual_service_execution.dart';
 import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/rule_snapshot.dart';
+import '../../domain/sla_audit/shift_pattern.dart';
 
 /// Postgres implementation of [PlanDeclarationRepository].
 ///
@@ -44,6 +45,10 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
       'plan_version': plan.planVersion,
       'original_file_hash': plan.originalFileHash,
       'rule_snapshot_jsonb': plan.ruleSnapshot.toJson(),
+      // B2B plans: persist the full ShiftPattern array for audit & JSONB integrity
+      if (plan.shiftPatterns.isNotEmpty)
+        'shift_patterns_payload':
+            plan.shiftPatterns.map((p) => p.toJson()).toList(),
     });
 
     // 3. Persist Child Entities (Service Executions)
@@ -185,6 +190,13 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
       );
     }).toList();
 
+    final shiftPatternsJson = data['shift_patterns_payload'];
+    final shiftPatterns = shiftPatternsJson != null
+        ? (shiftPatternsJson as List<dynamic>)
+            .map((p) => ShiftPattern.fromJson(Map<String, dynamic>.from(p as Map)))
+            .toList()
+        : <ShiftPattern>[];
+
     return PlanDeclaration.reconstitute(
       id: data['id'],
       organizationId: data['organization_id'],
@@ -197,6 +209,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         List<dynamic>.from(data['rule_snapshot_jsonb']),
       ),
       services: services,
+      shiftPatterns: shiftPatterns,
     );
   }
 }
