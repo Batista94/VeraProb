@@ -288,6 +288,27 @@ class _DeclareContractPlanFormState
             'A Zona de Partida e Chegada devem ser diferentes.');
         return;
       }
+      // ── GEOFENCE HARD BLOCK ───────────────────────────────────
+      // The engine is blind without coordinates + radius. Do NOT allow
+      // advancing to the shift pattern step if any zone lacks a geofence.
+      final zones = ref.read(operationalZonesProvider).valueOrNull ?? [];
+      final originZone =
+          zones.where((z) => z.id == _selectedOriginZoneId).firstOrNull;
+      final destZone =
+          zones.where((z) => z.id == _selectedDestinationZoneId).firstOrNull;
+      final missingNames = [
+        if (originZone?.geofence == null)
+          originZone?.name ?? 'Zona de Partida',
+        if (destZone?.geofence == null) destZone?.name ?? 'Zona de Chegada',
+      ];
+      if (missingNames.isNotEmpty) {
+        setState(() => _errorMessage =
+            'BLOQUEIO DE AUDITORIA: ${missingNames.join(' e ')} não possui '
+            'geofence configurado (Latitude, Longitude e Raio). '
+            'Acesse Zonas Operacionais → edite a zona → preencha os campos de '
+            'Geofence antes de continuar.');
+        return;
+      }
     } else if (_currentStep == 1) {
       if (_selectedDays.isEmpty) {
         setState(() => _errorMessage =
@@ -560,27 +581,39 @@ class _DeclareContractPlanFormState
             if (missingGeofence.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: BusFlowColors.warning.withValues(alpha: 0.1),
+                  color: BusFlowColors.error.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: BusFlowColors.warning.withValues(alpha: 0.4),
+                    color: BusFlowColors.error.withValues(alpha: 0.4),
                   ),
                 ),
-                child: Row(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.warning_amber_rounded,
-                        size: 16, color: BusFlowColors.warning),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${missingGeofence.map((z) => z!.name).join(', ')} não possui geofence '
-                        'configurado — a engine de projeção não conseguirá validar chegada/partida automaticamente.',
-                        style: const TextStyle(
-                            fontSize: 12, color: BusFlowColors.warning),
-                      ),
+                    Row(
+                      children: [
+                        const Icon(Icons.block,
+                            size: 16, color: BusFlowColors.error),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${missingGeofence.map((z) => z!.name).join(' e ')} '
+                            'não possui geofence configurado.',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: BusFlowColors.error,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'O motor de avaliação é cego sem coordenadas e raio. '
+                      'Configure o geofence em Zonas Operacionais antes de continuar.',
+                      style: TextStyle(fontSize: 11, color: BusFlowColors.error),
                     ),
                   ],
                 ),
