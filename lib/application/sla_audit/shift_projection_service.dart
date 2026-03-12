@@ -197,13 +197,17 @@ class ShiftProjectionService {
       int.parse(depParts[1]),
     );
 
-    // Resolve arrival time (scheduled end)
+    // Resolve arrival time (scheduled end).
+    // Overnight shifts cross midnight: arrival base date is D+1.
+    final arrivalBaseDate = pattern.isOvernight
+        ? operationalDate.add(const Duration(days: 1))
+        : operationalDate;
     final arrParts = pattern.arrivalTimeLocal.split(':');
     final arrLocal = tz.TZDateTime(
       location,
-      operationalDate.year,
-      operationalDate.month,
-      operationalDate.day,
+      arrivalBaseDate.year,
+      arrivalBaseDate.month,
+      arrivalBaseDate.day,
       int.parse(arrParts[0]),
       int.parse(arrParts[1]),
     );

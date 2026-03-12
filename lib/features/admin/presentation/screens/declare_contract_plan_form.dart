@@ -6,12 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:busflow/application/sla_audit/declare_contractual_plan_command.dart';
+import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/domain/sla_audit/domain_exception.dart';
 import 'package:busflow/domain/sla_audit/shift_pattern.dart';
 import 'package:busflow/domain/sla_audit/sla_penalties.dart';
 import 'package:busflow/domain/shared/money.dart';
 import 'package:busflow/state/providers/auth_providers.dart';
 import 'package:busflow/state/providers/contract_providers.dart';
+import 'package:busflow/state/providers/operational_zone_providers.dart';
 import 'package:busflow/state/providers/sla_providers.dart';
 
 
@@ -70,24 +72,38 @@ class _DeclareContractPlanFormState
 
   // -- Step 3: SLA & Penalidades (Financials)
   final TextEditingController _baseValueController = TextEditingController();
+
+  // Grupo 1 — Pontualidade e Janelas Operacionais
   final TextEditingController _delayToleranceController =
       TextEditingController(text: '15');
+  final TextEditingController _earlyArrivalToleranceController =
+      TextEditingController(text: '5');
+  final TextEditingController _dwellTimeController =
+      TextEditingController(text: '3');
+
+  // Grupo 2 — Falhas Críticas
+  final TextEditingController _noShowMultiplierController =
+      TextEditingController(text: '1,5');
+  final TextEditingController _noShowThresholdController =
+      TextEditingController(text: '60');
+
+  // Grupo 3 — Qualidade da Frota
   final TextEditingController _delayMinuteValueController =
       TextEditingController(text: '0,50');
   final TextEditingController _downgradeValueController =
       TextEditingController(text: '50,00');
-  final TextEditingController _noShowMultiplierController =
-      TextEditingController(text: '1,5');
 
   @override
   void initState() {
     super.initState();
-    _loadZones();
     _baseValueController.addListener(_clearError);
     _delayToleranceController.addListener(_clearError);
+    _earlyArrivalToleranceController.addListener(_clearError);
+    _dwellTimeController.addListener(_clearError);
+    _noShowMultiplierController.addListener(_clearError);
+    _noShowThresholdController.addListener(_clearError);
     _delayMinuteValueController.addListener(_clearError);
     _downgradeValueController.addListener(_clearError);
-    _noShowMultiplierController.addListener(_clearError);
   }
 
   void _clearError() {
@@ -98,15 +114,13 @@ class _DeclareContractPlanFormState
   void dispose() {
     _baseValueController.dispose();
     _delayToleranceController.dispose();
+    _earlyArrivalToleranceController.dispose();
+    _dwellTimeController.dispose();
+    _noShowMultiplierController.dispose();
+    _noShowThresholdController.dispose();
     _delayMinuteValueController.dispose();
     _downgradeValueController.dispose();
-    _noShowMultiplierController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadZones() async {
-    // In a real app, use a dedicated provider. For now, we simulate finding them.
-    // Phase 5.9 implementation requires the repo from providers.
   }
 
   // --- Helpers for parsing financial inputs ---
@@ -198,7 +212,7 @@ class _DeclareContractPlanFormState
       'base_value_cents': cmd.contractualValueCents,
       'patterns': cmd.shiftPatterns
           .map((p) => {
-                'days': p.daysOfWeek.toList()..sort(),
+                'days': p.daysOfWeek.map((d) => d.value).toList()..sort(),
                 'arrival': p.arrivalTimeLocal,
                 'departure': p.departureTimeLocal,
                 'tz': p.timezone,
@@ -230,12 +244,18 @@ class _DeclareContractPlanFormState
       final downgradeCents = _parseReaisToCents(_downgradeValueController.text);
       final noShowMult = _parseDouble(_noShowMultiplierController.text);
       final tolerance = int.tryParse(_delayToleranceController.text) ?? 15;
+      final noShowThreshold = int.tryParse(_noShowThresholdController.text) ?? 60;
+      final earlyArrival = int.tryParse(_earlyArrivalToleranceController.text) ?? 5;
+      final dwellTime = int.tryParse(_dwellTimeController.text) ?? 3;
 
       final penalties = SLAPenalties.create(
         noShowPenaltyMultiplier: noShowMult,
         delayToleranceMinutes: tolerance,
         delayPenaltyPerMinute: Money(delayCents),
         downgradePenaltyFlat: Money(downgradeCents),
+        noShowThresholdMinutes: noShowThreshold,
+        earlyArrivalToleranceMinutes: earlyArrival,
+        dwellTimeMinutes: dwellTime,
       );
 
       final pattern = ShiftPattern.create(
@@ -298,55 +318,125 @@ class _DeclareContractPlanFormState
   // --- UI Builders ---
 
   Widget _buildStep1() {
-    // Dropdown mock for Phase 5.9 until we fetch real zones
-    final mockZones = [
-      const DropdownMenuItem(value: 'zone-1', child: Text('Garagem Central')),
-      const DropdownMenuItem(value: 'zone-2', child: Text('Portaria Sul (Fábrica)')),
-      const DropdownMenuItem(value: 'zone-3', child: Text('Terminal Rodoviário')),
-    ];
+    final zonesAsync = ref.watch(operationalZonesProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Selecione as zonas operacionais (geofences) que delineiam esta rota B2B. As coordenadas reais serão blindadas.',
-          style: TextStyle(color: Colors.black54),
+    return zonesAsync.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
         ),
-        const SizedBox(height: 20),
-        InputDecorator(
-          decoration: const InputDecoration(
-            labelText: 'Zona de Partida',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.business),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedOriginZoneId,
-              isExpanded: true,
-              items: mockZones,
-              onChanged: (val) => setState(() => _selectedOriginZoneId = val),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'Erro ao carregar zonas operacionais: $e',
+          style: const TextStyle(color: BusFlowColors.error),
+        ),
+      ),
+      data: (zones) {
+        final items = zones.map((zone) {
+          final hasGeofence = zone.geofence != null;
+          return DropdownMenuItem<String>(
+            value: zone.id,
+            child: Row(
+              children: [
+                Icon(
+                  hasGeofence ? Icons.location_on : Icons.location_off,
+                  size: 16,
+                  color: hasGeofence
+                      ? BusFlowColors.onTime
+                      : BusFlowColors.warning,
+                ),
+                const SizedBox(width: 8),
+                Text(zone.name),
+              ],
             ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        InputDecorator(
-          decoration: const InputDecoration(
-            labelText: 'Zona de Chegada (Destino)',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.location_on),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedDestinationZoneId,
-              isExpanded: true,
-              items: mockZones,
-              onChanged: (val) => setState(() => _selectedDestinationZoneId = val),
+          );
+        }).toList();
+
+        // Geofence warning for selected zones
+        final originZone = zones.where((z) => z.id == _selectedOriginZoneId).firstOrNull;
+        final destZone = zones.where((z) => z.id == _selectedDestinationZoneId).firstOrNull;
+        final missingGeofence = [originZone, destZone]
+            .where((z) => z != null && z.geofence == null)
+            .toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Selecione as zonas operacionais (geofences) que delineiam esta rota B2B. As coordenadas reais serão blindadas.',
+              style: TextStyle(color: BusFlowColors.textSecondary),
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 20),
+            InputDecorator(
+              decoration: const InputDecoration(
+                labelText: 'Zona de Partida',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.business),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedOriginZoneId,
+                  isExpanded: true,
+                  items: items,
+                  onChanged: (val) => setState(() => _selectedOriginZoneId = val),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            InputDecorator(
+              decoration: const InputDecoration(
+                labelText: 'Zona de Chegada (Destino)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_on),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedDestinationZoneId,
+                  isExpanded: true,
+                  items: items,
+                  onChanged: (val) => setState(() => _selectedDestinationZoneId = val),
+                ),
+              ),
+            ),
+            if (missingGeofence.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: BusFlowColors.warning.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: BusFlowColors.warning.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 16, color: BusFlowColors.warning),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${missingGeofence.map((z) => z!.name).join(', ')} não possui geofence configurado — '
+                        'a engine de projeção não conseguirá validar chegada/partida automaticamente.',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: BusFlowColors.warning,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -366,7 +456,7 @@ class _DeclareContractPlanFormState
       children: [
         const Text(
           'Padrão de recorrência. Quando este turno ocorre e quais os horários da operação?',
-          style: TextStyle(color: Colors.black54),
+          style: TextStyle(color: BusFlowColors.textSecondary),
         ),
         const SizedBox(height: 20),
         const Text('Dias da Semana',
@@ -398,7 +488,7 @@ class _DeclareContractPlanFormState
               child: ListTile(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey.shade300),
+                  side: const BorderSide(color: BusFlowColors.border),
                 ),
                 leading: const Icon(Icons.flight_takeoff),
                 title: const Text('Horário de Partida'),
@@ -419,7 +509,7 @@ class _DeclareContractPlanFormState
               child: ListTile(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey.shade300),
+                  side: const BorderSide(color: BusFlowColors.border),
                 ),
                 leading: const Icon(Icons.flight_land),
                 title: const Text('Horário de Chegada'),
@@ -446,10 +536,12 @@ class _DeclareContractPlanFormState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Configuração dos ofensores financeiros para descumprimento do Nível de Serviço (SLA).',
-          style: TextStyle(color: Colors.black54),
+          'Cláusulas contratuais B2B. Configure os ofensores financeiros e janelas operacionais para descumprimento do Nível de Serviço (SLA).',
+          style: TextStyle(color: BusFlowColors.textSecondary),
         ),
         const SizedBox(height: 20),
+
+        // Valor base (fora dos grupos SLA)
         TextField(
           controller: _baseValueController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -459,9 +551,14 @@ class _DeclareContractPlanFormState
             border: OutlineInputBorder(),
           ),
         ),
-        const SizedBox(height: 24),
-        const Text('Penalidades',
-            style: TextStyle(fontWeight: FontWeight.w600)),
+
+        const SizedBox(height: 28),
+
+        // ── Grupo 1: Pontualidade e Janelas Operacionais ──
+        _SectionHeader(
+          icon: Icons.schedule,
+          label: 'Pontualidade e Janelas Operacionais',
+        ),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -470,22 +567,34 @@ class _DeclareContractPlanFormState
                 controller: _delayToleranceController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Tolerância Atraso (min)',
+                  labelText: 'Tolerância de Atraso (min)',
                   suffixText: ' min',
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: TextField(
-                controller: _delayMinuteValueController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                controller: _earlyArrivalToleranceController,
+                keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Multa por Minuto',
-                  prefixText: 'R\$ ',
+                  labelText: 'Tolerância de Antecipação (min)',
+                  suffixText: ' min',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _dwellTimeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Tempo Mínimo de Permanência (min)',
+                  suffixText: ' min',
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -493,7 +602,15 @@ class _DeclareContractPlanFormState
             ),
           ],
         ),
-        const SizedBox(height: 16),
+
+        const SizedBox(height: 24),
+
+        // ── Grupo 2: Falhas Críticas ──
+        _SectionHeader(
+          icon: Icons.warning_amber_rounded,
+          label: 'Falhas Críticas (Cláusulas de Penalidade)',
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -515,14 +632,59 @@ class _DeclareContractPlanFormState
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _noShowThresholdController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Teto para No-Show Automático (min)',
+                  suffixText: ' min',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  suffixIcon: Tooltip(
+                    message: 'Atraso (em minutos) a partir do qual o sistema '
+                        'classifica automaticamente a execução como No-Show. '
+                        'Padrão de mercado: 60 min.',
+                    child: Icon(Icons.help_outline, size: 16),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 24),
+
+        // ── Grupo 3: Qualidade da Frota ──
+        _SectionHeader(
+          icon: Icons.directions_bus,
+          label: 'Qualidade da Frota',
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _delayMinuteValueController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Multa por Minuto de Atraso',
+                  prefixText: 'R\$ ',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: TextField(
                 controller: _downgradeValueController,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
-                  labelText: 'Multa Downgrade',
+                  labelText: 'Multa por Downgrade de Veículo',
                   prefixText: 'R\$ ',
                   border: OutlineInputBorder(),
                   isDense: true,
@@ -541,24 +703,30 @@ class _DeclareContractPlanFormState
       children: [
         const Text(
           'Revise o contrato antes de publicar.',
-          style: TextStyle(color: Colors.black54),
+          style: TextStyle(color: BusFlowColors.textSecondary),
         ),
         const SizedBox(height: 20),
         Card(
-          color: Colors.blue.shade50,
+          color: BusFlowColors.info.withValues(alpha: 0.15),
           elevation: 0,
-          child: const Padding(
-            padding: EdgeInsets.all(16.0),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Padrão de Fretamento B2B configurado com sucesso.',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  'Padrão de Fretamento B2B configurado com sucesso.',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: BusFlowColors.textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 const Text(
                   'A engine de projeção irá automaticamente calcular e imobilizar no banco de dados as viagens ('
                   'Viagens Programadas) para os próximos 30 dias com base nos dias e horários selecionados.\n\n'
                   'Todas as zonas operacionais terão suas coordenadas blindadas no snapshot da projeção para proteção de auditoria retroativa.',
+                  style: TextStyle(color: BusFlowColors.textPrimary),
                 ),
               ],
             ),
@@ -567,7 +735,7 @@ class _DeclareContractPlanFormState
         const SizedBox(height: 20),
         const Text(
           '⚠️ Após publicado, este Padrão de Turno não poderá ser modificado diretamente. Uma nova versão do plano precisará ser declarada.',
-          style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+          style: TextStyle(color: BusFlowColors.warning, fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -603,7 +771,7 @@ class _DeclareContractPlanFormState
                           widget.contractName,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: BusFlowColors.textSecondary,
                           ),
                         ),
                       ],
@@ -625,20 +793,20 @@ class _DeclareContractPlanFormState
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: BusFlowColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.red.shade200),
+                    border: Border.all(color: BusFlowColors.error.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.error_outline,
-                          color: Colors.red, size: 16),
+                          color: BusFlowColors.error, size: 16),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
                           style: const TextStyle(
-                              color: Colors.red, fontSize: 13),
+                              color: BusFlowColors.error, fontSize: 13),
                         ),
                       ),
                     ],
@@ -701,7 +869,7 @@ class _DeclareContractPlanFormState
                             : StepState.indexed,
                   ),
                   Step(
-                    title: const Text('Penalidades'),
+                    title: const Text('Ofensores de Margem'),
                     content: _buildStep3(),
                     isActive: _currentStep >= 2,
                     state: _currentStep > 2
@@ -724,6 +892,34 @@ class _DeclareContractPlanFormState
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Section header widget for Step 3 SLA groups.
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _SectionHeader({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: BusFlowColors.info),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: BusFlowColors.info,
+          ),
+        ),
+        const SizedBox(width: 8),
+        const Expanded(child: Divider()),
+      ],
     );
   }
 }

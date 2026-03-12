@@ -65,9 +65,10 @@ class _ContractListView extends ConsumerWidget {
                 icon: const Icon(Icons.add_rounded, size: 20),
                 label: const Text('Novo Contrato'),
                 onPressed: () async {
-                  final created = await CreateContractForm.show(context, ref);
-                  if (created == true) {
+                  final newContractId = await CreateContractForm.show(context, ref);
+                  if (newContractId != null) {
                     ref.invalidate(contractListProvider);
+                    ref.read(selectedContractIdProvider.notifier).state = newContractId;
                   }
                 },
               ),

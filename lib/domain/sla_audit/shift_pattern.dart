@@ -106,12 +106,13 @@ class ShiftPattern extends Equatable {
     _validateTimeFormat(departureTimeLocal, 'departureTimeLocal');
     _validateTimezone(timezone);
 
-    // Departure must be before arrival on the same operational day
+    // Departure and arrival must differ (zero-duration shift is invalid).
+    // Overnight shifts (departure > arrival) are supported via isOvernight.
     final dep = _parseTime(departureTimeLocal);
     final arr = _parseTime(arrivalTimeLocal);
-    if (!dep.isBefore(arr)) {
+    if (dep == arr) {
       throw const DomainException(
-        'departureTimeLocal must be before arrivalTimeLocal',
+        'departureTimeLocal e arrivalTimeLocal não podem ser iguais.',
       );
     }
 
@@ -149,6 +150,11 @@ class ShiftPattern extends Equatable {
       penalties: penalties,
     );
   }
+
+  /// Returns true if the shift crosses midnight (departure is after arrival in
+  /// local time), requiring D+1 adjustment for the arrival date at projection.
+  bool get isOvernight =>
+      departureTimeLocal.compareTo(arrivalTimeLocal) > 0;
 
   /// Returns true if this pattern runs on [weekday] (1 = Monday, 7 = Sunday).
   bool runsOn(int weekday) => daysOfWeek.any((d) => d.value == weekday);

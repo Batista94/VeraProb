@@ -10,8 +10,8 @@ import 'package:busflow/core/theme/app_theme.dart';
 class CreateContractForm extends ConsumerStatefulWidget {
   const CreateContractForm({super.key});
 
-  static Future<bool?> show(BuildContext context, WidgetRef ref) {
-    return showDialog<bool>(
+  static Future<String?> show(BuildContext context, WidgetRef ref) {
+    return showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (_) => const CreateContractForm(),
@@ -113,7 +113,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
     try {
       final handler = ref.read(createContractHandlerProvider);
-      await handler.handle(
+      final contract = await handler.handle(
         CreateContractCommand(
           organizationId: organizationId,
           name: _nameController.text.trim(),
@@ -126,7 +126,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
         ),
       );
 
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) Navigator.of(context).pop(contract.id);
     } on DomainException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (e) {
@@ -175,7 +175,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 20, color: BusFlowColors.textDisabled),
-                      onPressed: () => Navigator.of(context).pop(false),
+                      onPressed: () => Navigator.of(context).pop(null),
                     ),
                   ],
                 ),
@@ -287,7 +287,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+                      onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(null),
                       child: Text('DESCARTAR', style: BusFlowTypography.badge.copyWith(color: BusFlowColors.textSecondary)),
                     ),
                     const SizedBox(width: 16),

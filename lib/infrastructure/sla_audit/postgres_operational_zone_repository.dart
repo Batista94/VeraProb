@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/supabase_client.dart';
+import '../../domain/sla_audit/domain_exception.dart';
 import '../../domain/sla_audit/operational_zone.dart';
 import '../../domain/sla_audit/operational_zone_repository.dart';
 
@@ -16,16 +17,25 @@ class PostgresOperationalZoneRepository implements OperationalZoneRepository {
 
   @override
   Future<void> save(OperationalZone zone) async {
-    await _client.from('operational_zones').upsert({
-      'id': zone.id,
-      'organization_id': zone.organizationId,
-      'name': zone.name,
-      'type': zone.type.name,
-      'address': zone.address,
-      'latitude': zone.geofence?.latitude,
-      'longitude': zone.geofence?.longitude,
-      'radius_meters': zone.geofence?.radiusMeters,
-    });
+    try {
+      await _client.from('operational_zones').upsert({
+        'id': zone.id,
+        'organization_id': zone.organizationId,
+        'name': zone.name,
+        'type': zone.type.name,
+        'address': zone.address,
+        'latitude': zone.geofence?.latitude,
+        'longitude': zone.geofence?.longitude,
+        'radius_meters': zone.geofence?.radiusMeters,
+      });
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') {
+        throw const DomainException(
+          'Já existe uma Zona Operacional com este nome na sua organização.',
+        );
+      }
+      rethrow;
+    }
   }
 
   @override

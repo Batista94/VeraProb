@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
 import 'package:busflow/application/sla_audit/shift_projection_service.dart';
+import 'package:busflow/domain/sla_audit/domain_exception.dart';
 import 'package:busflow/domain/sla_audit/contractual_service_execution.dart';
 import 'package:busflow/domain/sla_audit/operational_zone.dart';
 import 'package:busflow/domain/sla_audit/plan_declaration.dart';
@@ -404,6 +405,172 @@ void main() {
 
       // Zone not found → _projectOneSet returns null → skip gracefully
       expect(sets, isEmpty);
+    });
+
+    test('5.10 — overnight shift: isOvernight is true when departure > arrival', () {
+      final pattern = ShiftPattern.create(
+        index: 0,
+        daysOfWeek: [DayOfWeek.monday],
+        departureTimeLocal: '22:00',
+        arrivalTimeLocal: '02:00',
+        timezone: 'America/Sao_Paulo',
+        originZoneId: 'z1',
+        destinationZoneId: 'z2',
+        penalties: makePenalties(),
+      );
+
+      expect(pattern.isOvernight, isTrue);
+    });
+
+    test('5.11 — daytime shift: isOvernight is false when departure < arrival', () {
+      final pattern = ShiftPattern.create(
+        index: 0,
+        daysOfWeek: [DayOfWeek.monday],
+        departureTimeLocal: '06:30',
+        arrivalTimeLocal: '07:00',
+        timezone: 'America/Sao_Paulo',
+        originZoneId: 'z1',
+        destinationZoneId: 'z2',
+        penalties: makePenalties(),
+      );
+
+      expect(pattern.isOvernight, isFalse);
+    });
+
+    test('5.12 — zero-duration shift throws DomainException', () {
+      expect(
+        () => ShiftPattern.create(
+          index: 0,
+          daysOfWeek: [DayOfWeek.monday],
+          departureTimeLocal: '08:00',
+          arrivalTimeLocal: '08:00',
+          timezone: 'America/Sao_Paulo',
+          originZoneId: 'z1',
+          destinationZoneId: 'z2',
+          penalties: makePenalties(),
+        ),
+        throwsA(isA<DomainException>()),
+      );
+    });
+
+    test('5.14 — SLAPenalties: new fields have correct defaults and survive JSON roundtrip', () {
+      // Backward compat: existing call sites without new fields still work
+      final penalties = SLAPenalties.create(
+        noShowPenaltyMultiplier: 1.5,
+        delayToleranceMinutes: 10,
+        delayPenaltyPerMinute: const Money(100),
+        downgradePenaltyFlat: const Money(5000),
+      );
+
+      expect(penalties.noShowThresholdMinutes, 60);
+      expect(penalties.earlyArrivalToleranceMinutes, 5);
+      expect(penalties.dwellTimeMinutes, 3);
+
+      // toJson includes all 7 fields
+      final json = penalties.toJson();
+      expect(json['noShowThresholdMinutes'], 60);
+      expect(json['earlyArrivalToleranceMinutes'], 5);
+      expect(json['dwellTimeMinutes'], 3);
+
+      // fromJson roundtrip preserves values
+      final restored = SLAPenalties.fromJson(json);
+      expect(restored, equals(penalties));
+
+      // fromJson backward compat: old JSON without new fields falls back to defaults
+      final oldJson = {
+        'noShowPenaltyMultiplier': 1.5,
+        'delayToleranceMinutes': 10,
+        'delayPenaltyPerMinuteCents': 100,
+        'downgradePenaltyFlatCents': 5000,
+        // new fields absent — should default
+      };
+      final restoredOld = SLAPenalties.fromJson(oldJson);
+      expect(restoredOld.noShowThresholdMinutes, 60);
+      expect(restoredOld.earlyArrivalToleranceMinutes, 5);
+      expect(restoredOld.dwellTimeMinutes, 3);
+
+      // Custom values are stored and restored correctly
+      final custom = SLAPenalties.create(
+        noShowPenaltyMultiplier: 2.0,
+        delayToleranceMinutes: 15,
+        delayPenaltyPerMinute: const Money(200),
+        downgradePenaltyFlat: const Money(10000),
+        noShowThresholdMinutes: 90,
+        earlyArrivalToleranceMinutes: 10,
+        dwellTimeMinutes: 5,
+      );
+      final customJson = custom.toJson();
+      final customRestored = SLAPenalties.fromJson(customJson);
+      expect(customRestored.noShowThresholdMinutes, 90);
+      expect(customRestored.earlyArrivalToleranceMinutes, 10);
+      expect(customRestored.dwellTimeMinutes, 5);
+    });
+
+    test('5.13 — overnight D+1: projected SET ends on next day in UTC', () async {
+      final origin = makeZone(name: 'Origem Noturna');
+      final dest = makeZone(name: 'Destino Noturno', lat: -23.56, lng: -46.64);
+
+      final zoneRepo = InMemoryOperationalZoneRepository();
+      await zoneRepo.save(origin);
+      await zoneRepo.save(dest);
+
+      // Departure 22:00, arrival 02:00 next day (America/Sao_Paulo = UTC-3)
+      // Expected UTC: departure = 01:00 UTC (Mon), arrival = 05:00 UTC (Tue)
+      final overnightPattern = ShiftPattern.create(
+        index: 0,
+        daysOfWeek: [DayOfWeek.monday],
+        departureTimeLocal: '22:00',
+        arrivalTimeLocal: '02:00',
+        timezone: 'America/Sao_Paulo',
+        originZoneId: origin.id,
+        destinationZoneId: dest.id,
+        penalties: makePenalties(),
+      );
+
+      final plan = PlanDeclaration.createWithShiftPatterns(
+        organizationId: orgId,
+        contractId: contractId,
+        declaredAtUtc: DateTime.utc(2026, 3, 1),
+        declaredByUserId: 'user-1',
+        planVersion: 5,
+        originalFileHash: 'overnight-hash',
+        ruleSnapshot: const RuleSnapshot([]),
+        shiftPatterns: [overnightPattern],
+      );
+
+      final service = ShiftProjectionService(
+        planRepo: InMemoryPlanDeclarationRepository(),
+        zoneRepo: zoneRepo,
+        alertRepo: InMemoryOperationalAlertRepository(),
+      );
+
+      // Monday 2026-03-09
+      final sets = await service.projectDays(
+        plan,
+        from: monday,
+        contractualValue: const Money(15000),
+        days: 1,
+      );
+
+      expect(sets.length, 1);
+      final set = sets.first;
+
+      // Start: Monday 22:00 local (UTC-3) = Monday 01:00 UTC (next calendar day)
+      expect(set.scheduledStartTimeUtc.weekday, DateTime.tuesday,
+          reason: 'departure UTC lands on Tuesday (UTC)');
+      expect(set.scheduledStartTimeUtc.hour, 1);
+
+      // End: Tuesday 02:00 local (UTC-3) = Tuesday 05:00 UTC
+      expect(set.scheduledEndTimeUtc.weekday, DateTime.tuesday,
+          reason: 'arrival must be D+1 in local time');
+      expect(set.scheduledEndTimeUtc.hour, 5);
+
+      // End must be after start
+      expect(
+        set.scheduledEndTimeUtc.isAfter(set.scheduledStartTimeUtc),
+        isTrue,
+        reason: 'D+1 arrival must be strictly after departure',
+      );
     });
   });
 }

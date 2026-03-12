@@ -63,13 +63,13 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 304 passing · 9 skipped (E2E sem credenciais) · 0 falhas |
+| Testes | 309 passing · 9 skipped (E2E sem credenciais) · 0 falhas |
 | Análise estática | 0 erros · 67 infos (`prefer_const` — baixa prioridade) |
 | Precisão financeira | `Money` (centavos BIGINT) em todo o stack — invariante enforced ✅ |
 | CI/CD | Não existe (Phase 8) |
 | Ambientes | Dev local único. Sem staging, sem prod. |
 | `strict-casts` | Desabilitado — ~80 issues de `dynamic` nos repos Postgres (Phase 8) |
-| Phase 5 baseline | Implementação 5.3 concluída (Contract aggregate, UI, 62 testes). **Supersedida pelo B2B Refactoring** — aguardando resolução de BLOCKERs (Opção A) antes de escrever código. |
+| Phase 5 baseline | Implementação 5.3 concluída (Contract aggregate, UI, 62 testes). **Supersedida pelo B2B Refactoring** — concluído. Testes manuais (5.10) interrompidos por 6 bugs críticos. **Sprint 5.10 Fase 2 em andamento.** |
 | Banco de dev | **Precisa de reset** antes de aplicar migrations do B2B Refactoring |
 
 ---
@@ -234,7 +234,10 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 > **Migration complementar (Sprint 5.10 Realignment):** `supabase/migrations/20260311000002_operational_zone_business_fields.sql`
 > - Torna `latitude · longitude · radius_meters` nullable (`GeofenceConfiguration` opcional)
 > - Adiciona `type TEXT NOT NULL DEFAULT 'garagem'` e `address TEXT`
-> **⚠️ Ação do PO:** executar **ambas** as migrations no Supabase antes de iniciar Phase 5.10 (testes manuais).
+> **Migration adicional (Sprint 5.10 Fase 2):** `supabase/migrations/20260311000003_operational_zones_add_created_at.sql`
+> - Adiciona `created_at TIMESTAMPTZ NOT NULL DEFAULT now()` à tabela `operational_zones`
+> - Corrige erro `ERROR: 42703: column "created_at" does not exist` ao criar zonas via UI
+> **⚠️ Ação do PO:** executar **as três** migrations no Supabase antes de iniciar Phase 5.10 (testes manuais).
 - `operational_zones` table com RLS (`USING` + `WITH CHECK`) e `ON DELETE RESTRICT` nas FKs de `shift_patterns`
 - `ShiftPattern` como payload JSONB em `plan_declarations` (componente do aggregate — sem tabela independente)
 - Unique constraint de idempotência: `(plan_declaration_id, shift_pattern_index, operational_date)` em `contractual_service_executions`
@@ -248,6 +251,10 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
   - `ZoneType`: `garagem | cliente | apoio`
 - [x] `ShiftPattern` value object (componente de `PlanDeclaration`): `daysOfWeek · arrivalTimeLocal · departureTimeLocal · timezone` validado contra IANA whitelist
 - [x] `SLAPenalties` value object com invariantes financeiros enforced (`Money` fields)
+  - Campos originais: `noShowPenaltyMultiplier · delayToleranceMinutes · delayPenaltyPerMinute · downgradePenaltyFlat`
+  - **Expandido (Sprint 5.10 Fase 2):** `noShowThresholdMinutes (default 60) · earlyArrivalToleranceMinutes (default 5) · dwellTimeMinutes (default 3)`
+  - Backward compat garantida via `fromJson()` com `?? default`. Sem migração SQL — campos vivem no JSONB.
+  - Engine integration dos 3 novos campos: deferred para sprint posterior.
 - [x] `PlanDeclaration` refatorado: aceita `List<ShiftPattern>` na criação
 - [x] `ShiftProjectionService`: projeta SETs determinísticos; snapshots coordenadas da zona; `setId = SHA-256(planDeclarationId + shiftPatternIndex + operationalDate)`
 - [x] `OperationalZoneRepository` interface (domínio puro)
@@ -269,6 +276,9 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 - Rótulos pt-BR: `OperationalZone` → "Zona Operacional" · `ShiftPattern` → "Padrão de Turno" · SET → "Viagem Programada" (sem alteração)
 
 #### [x] 5.10 — Validation Consolidada
+> **⚠️ PRÉ-REQUISITO:** Sprint 5.10 Fase 2 deve estar 100% concluída e migration `20260311000003`
+> confirmada no Supabase dev antes de retomar os testes manuais desta seção.
+>
 > Cobre cenários originais da 5.4 (suspensa) e todos os novos cenários B2B.
 > **QA & SECURITY ENFORCEMENT:** Devido ao Ceticismo In-Memory, testes de idempotência e isolamento (multi-tenant) devem ser validados obrigatoriamente contra o banco de dados físico (Postgres), e a migration 5.6 deve ser confirmada.
 
@@ -292,6 +302,8 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 - [ ] **Isolamento de tenant:** logar como Org A → confirmar que zonas e contratos de Org B não aparecem em nenhuma tela
 - [ ] **Pipeline de avaliação:** SET projetado + telemetria simulada via Realtime → confirmar transição `pending → executed` sem refresh manual
 - [ ] **Alert de gap:** forçar ausência de projeção para uma data → confirmar `OperationalAlert` PROJECTION_GAP aparece no painel
+
+- [ ] **BLOCO 14 — Novos campos SLA:** Wizard Passo 3 exibe 3 grupos com 7 campos totais. Campos `noShowThresholdMinutes · earlyArrivalToleranceMinutes · dwellTimeMinutes` aparecem no JSONB do plano declarado (`SELECT shift_patterns_payload FROM plan_declarations WHERE ...`). Planos antigos (sem os 3 campos) ainda carregam sem erro.
 
 - **Compliance Report:** `docs/governance/compliance/phase5_compliance_report.md`
 
@@ -328,6 +340,60 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 - [x] **TAREFA 3.1:** Tooltip financeiro no campo "Multiplicador No-Show" (`declare_contract_plan_form.dart`)
 - [x] **TAREFA 3.2:** `'LINHA'` → `'ROTA'` no cabeçalho e painel de detalhe (`operational_audit_screen.dart`)
 - [x] **TAREFA 3.3:** Filtro primário por `Contrato` na `BillingCycleReportsScreen` com aviso visual quando agregado
+
+#### [x] Sprint 5.10 Fase 2 — Correções Críticas & Evolução SLAPenalties B2B
+> **Origem:** Sessão do Conselho convocada em 2026-03-11. Testes manuais da Phase 5.10
+> foram interrompidos por 6 bugs críticos. Paralelamente, o PO solicitou expansão do
+> domínio SLA para refletir o mercado real de fretamento corporativo B2B.
+> Aprovado pelo Conselho antes de retomar os testes manuais.
+>
+> **PRÉ-REQUISITO para retomar 5.10:** Esta sprint deve estar 100% concluída e migration
+> `20260311000003` confirmada no Supabase dev antes de reiniciar o checklist de smoke test.
+
+**BLOCO 1 — Correções Críticas (6 itens):**
+
+| Item | Arquivo | Descrição |
+|------|---------|-----------|
+| **A1 [crash]** | `declare_contract_plan_form.dart:201` | `DayOfWeek.sort()` → `TypeError` ao publicar plano. Fix: `p.daysOfWeek.map((d) => d.value).toList()..sort()` |
+| **A2 [SQL]** | `migrations/20260311000003_*.sql` | `column "created_at" does not exist` ao criar zona. Adicionar coluna idempotente. |
+| **C1 [UX]** | `declare_contract_plan_form.dart` | Wizard Passo 1 usa `mockZones` hardcoded. Substituir por `ref.watch(operationalZonesProvider)` com AsyncValue exaustivo. |
+| **C3 [a11y]** | `declare_contract_plan_form.dart` | Contraste ilegível no Passo 4 (`Colors.blue.shade50` + texto branco do tema dark). Fix: `BusFlowColors.info.withValues(alpha: 0.15)` + `BusFlowColors.textPrimary`. |
+| **D1 [UX]** | `operational_zones_screen.dart` | `FlutterMap` sem geocoding gera falsa precisão. Remover mapa, substituir por 3 TextFields (lat/lng/radius) + aviso de obrigatoriedade + ícone `location_off` nas zonas sem geofence. |
+| **E1 [nav]** | `create_contract_form.dart` + `contracts_screen.dart` | Após criar contrato, usuário retorna à lista sem direcionar. Pop com `contractId` + `ref.read(selectedContractIdProvider.notifier).state = contractId`. |
+
+**BLOCO 2 — Evolução de Domínio (1 item, 3 novos campos):**
+
+| Item | Arquivos | Descrição |
+|------|---------|-----------|
+| **B1 [domain]** | `sla_penalties.dart` | Adicionar `noShowThresholdMinutes (int, default 60)`, `earlyArrivalToleranceMinutes (int, default 5)`, `dwellTimeMinutes (int, default 3)`. Backward compat via `fromJson() ?? default`. Sem migração SQL — JSONB absorve. |
+| **B2 [ui]** | `declare_contract_plan_form.dart` | Reorganizar Step 3 em 3 grupos: **Pontualidade e Janelas** · **Falhas Críticas** · **Qualidade da Frota**. 3 novos `TextEditingController`. `_submit()` lê e passa ao `SLAPenalties.create()`. |
+| **B3 [tests]** | `shift_projection_service_test.dart` | Verificar 308 testes passando com defaults. Adicionar 1 teste (5.14) para os novos campos. |
+
+**Status de execução:** ✅ CONCLUÍDA — 309 passing · 9 skipped · 0 falhas
+- [x] A1 [crash] — DayOfWeek.sort() — fix 1 linha
+- [x] A2 [SQL] — migration `20260311000003` criada e aplicada no Supabase dev ✅
+- [x] B1 [domain] — SLAPenalties +3 campos com backward compat
+- [x] B2 [ui] — Step 3 reorganizado em 3 grupos + 3 controllers + _submit() atualizado
+- [x] B3 [tests] — 309 passing + teste 5.14
+- [x] C1 [UX] — zonas reais via `operationalZonesProvider` + aviso de geofence ausente
+- [x] C3 [a11y] — contraste Step 4 corrigido; todo o wizard migrado de `Colors.*` raw para `BusFlowColors.*` (black54 → textSecondary, grey.shade300 → border, red.shade50/200 → error.withValues, orange → warning)
+- [x] D1 [UX] — FlutterMap removido; inputs manuais lat/lng/raio + `location_off` na listagem
+- [x] E1 [nav] — `CreateContractForm.show()` retorna `String?` (contractId); `contracts_screen.dart` seta `selectedContractIdProvider`
+
+**Arquivos modificados:**
+
+| Arquivo | Tipo |
+|---------|------|
+| `lib/domain/sla_audit/sla_penalties.dart` | Domain — 3 novos campos |
+| `lib/features/admin/presentation/screens/declare_contract_plan_form.dart` | UI — crash fix + zonas reais + Step 3 + contraste |
+| `lib/features/admin/presentation/screens/operational_zones_screen.dart` | UI — remoção do mapa + inputs manuais |
+| `lib/features/admin/presentation/screens/create_contract_form.dart` | Nav — retornar contractId |
+| `lib/features/admin/presentation/screens/contracts_screen.dart` | Nav — set selectedContractIdProvider |
+| `test/application/sla_audit/shift_projection_service_test.dart` | Testes — backward compat + teste 5.14 |
+| `supabase/migrations/20260311000003_operational_zones_add_created_at.sql` | SQL — nova migration |
+| `docs/testing/phase5_manual_test_log.csv` | Testes — BLOCO 14 para novos campos SLA |
+
+---
 
 #### [x] B3 — Contractual Risk Radar (Dashboard Pivot)
 > **Definido via Reunião do Conselho (10/Mar):** Pivotar a tela inicial para focar em métricas financeiras e obrigações, eliminando o mapa como componente central diário.
@@ -604,6 +670,9 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
      ✅ B3 Contractual Risk Radar (Pivot)
      ✅ Sprint 5.10 Realignment (domínio · infra · UX)
      ✅ B2 Session Hook Reliability
+[x] Sprint 5.10 Fase 2 — Bug Fixes & SLAPenalties B2B  ✅ CONCLUÍDA
+[ ] 5.10 Validation Consolidada (testes manuais — PRÉ-REQ: aplicar migration 20260311000003 no Supabase dev)
+─────────────────────────────────────────────────────
 [  ] Phase 6  Administration & Tenant Self-Service
 [  ] Phase 7  Evidence & Audit Exports
 [  ] Phase 8  Operational Hardening
@@ -614,16 +683,28 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Trilha B concluída. Próximo passo: Testes Manuais (Phase 5.10) no Supabase dev.**
+**Sprint 5.10 Fase 2 concluída. Próxima ação: Testes Manuais (Phase 5.10).**
 
-B1 ✅ · B2 ✅ · B3 ✅ · Sprint 5.10 Realignment ✅
+**⚠️ Ação obrigatória do PO antes de retomar os testes:**
+1. Aplicar migration `20260311000003` no Supabase dev (SQL Editor):
+   ```sql
+   ALTER TABLE public.operational_zones
+     ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
+   ```
+2. Confirmar que as 3 migrations estão aplicadas: `20260311000000` · `20260311000002` · `20260311000003`
+3. Retomar checklist da Phase 5.10 — BLOCO 14 incluído no CSV
 
-Aplicar migration `20260311000002` no Supabase dev e executar o checklist de smoke test da Phase 5.10.
+| Item | Arquivo | Entrega |
+|------|---------|---------|
+| A1 [crash] | `declare_contract_plan_form.dart:201` | Fix `DayOfWeek.sort()` — 1 linha |
+| A2 [SQL] | `migrations/20260311000003_*.sql` | Coluna `created_at` na tabela `operational_zones` |
+| B1 [domain] | `sla_penalties.dart` | `noShowThresholdMinutes · earlyArrivalToleranceMinutes · dwellTimeMinutes` + backward compat |
+| B2 [ui] | `declare_contract_plan_form.dart` | Step 3 em 3 grupos visuais + 3 controllers + `_submit()` atualizado |
+| B3 [tests] | `shift_projection_service_test.dart` | 308+ passing · teste 5.14 |
+| C1 [UX] | `declare_contract_plan_form.dart` | `operationalZonesProvider` real no Step 1 + aviso de geofence |
+| C3 [a11y] | `declare_contract_plan_form.dart` | Contraste corrigido no Step 4 |
+| D1 [UX] | `operational_zones_screen.dart` | FlutterMap removido + inputs manuais + `location_off` |
+| E1 [nav] | `create_contract_form.dart` + `contracts_screen.dart` | Redirect para `ContractDetailScreen` via `selectedContractIdProvider` |
 
-| Fase | Entrega |
-|------|---------|
-| 5.6 | Migration SQL: `operational_zones` + colunas em `contractual_service_executions` + unique constraint de idempotência |
-| 5.7 | Domain: `OperationalZone` · `ShiftPattern` · `SLAPenalties` · `ShiftProjectionService` · modificações em `PlanDeclaration` e `ContractualServiceExecution` |
-| 5.8 | Engine: `DeclareContractualPlanHandler` integrado ao `ShiftProjectionService` + boot check + gap alerts + repositórios Postgres/InMemory |
-| 5.9 | UI: tela de zonas operacionais + wizard de 4 etapas para declaração de plano |
-| 5.10 | Validation: novos testes (determinismo, idempotência, snapshot, gap) + atualização dos 62 testes da 5.3 + checklist manual |
+**Após Fase 2 concluída:**
+Retomar checklist da Phase 5.10 (Validation Consolidada) — aplicar as três migrations e executar todos os cenários automatizados + testes manuais.

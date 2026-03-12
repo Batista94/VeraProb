@@ -13,6 +13,9 @@ import 'domain_exception.dart';
 /// - [delayToleranceMinutes] — minutes of lateness before the penalty clock starts (≥ 0)
 /// - [delayPenaltyPerMinute] — financial penalty per minute of delay beyond tolerance
 /// - [downgradePenaltyFlat] — flat financial penalty when a lower vehicle category is deployed
+/// - [noShowThresholdMinutes] — delay ceiling (minutes) after which the system auto-classifies as no-show (≥ 0). Default: 60
+/// - [earlyArrivalToleranceMinutes] — early arrival margin (minutes) before it counts as an infraction (≥ 0). Default: 5
+/// - [dwellTimeMinutes] — minimum minutes inside geofence to validate the trip (≥ 0). Default: 3
 class SLAPenalties extends Equatable {
   /// Multiplier applied to contractual value on no-show. Must be ≥ 1.0.
   /// Stored as double because it is a ratio, not a monetary amount.
@@ -29,11 +32,26 @@ class SLAPenalties extends Equatable {
   /// Stored as [Money] (BIGINT cents). Must be > 0.
   final Money downgradePenaltyFlat;
 
+  /// Delay (minutes) after which the engine auto-classifies the execution as no-show.
+  /// Must be ≥ 0. Default: 60.
+  final int noShowThresholdMinutes;
+
+  /// Early arrival tolerance (minutes). Arriving earlier than this margin counts as an
+  /// infraction (disturbs client operations). Must be ≥ 0. Default: 5.
+  final int earlyArrivalToleranceMinutes;
+
+  /// Minimum time (minutes) the vehicle must remain inside the destination geofence
+  /// for the trip to be considered validated. Must be ≥ 0. Default: 3.
+  final int dwellTimeMinutes;
+
   const SLAPenalties._({
     required this.noShowPenaltyMultiplier,
     required this.delayToleranceMinutes,
     required this.delayPenaltyPerMinute,
     required this.downgradePenaltyFlat,
+    required this.noShowThresholdMinutes,
+    required this.earlyArrivalToleranceMinutes,
+    required this.dwellTimeMinutes,
   });
 
   /// Creates [SLAPenalties] with validated invariants.
@@ -44,6 +62,9 @@ class SLAPenalties extends Equatable {
     required int delayToleranceMinutes,
     required Money delayPenaltyPerMinute,
     required Money downgradePenaltyFlat,
+    int noShowThresholdMinutes = 60,
+    int earlyArrivalToleranceMinutes = 5,
+    int dwellTimeMinutes = 3,
   }) {
     if (noShowPenaltyMultiplier < 1.0) {
       throw const DomainException(
@@ -65,12 +86,30 @@ class SLAPenalties extends Equatable {
         'downgradePenaltyFlat must be greater than 0',
       );
     }
+    if (noShowThresholdMinutes < 0) {
+      throw const DomainException(
+        'noShowThresholdMinutes must be >= 0',
+      );
+    }
+    if (earlyArrivalToleranceMinutes < 0) {
+      throw const DomainException(
+        'earlyArrivalToleranceMinutes must be >= 0',
+      );
+    }
+    if (dwellTimeMinutes < 0) {
+      throw const DomainException(
+        'dwellTimeMinutes must be >= 0',
+      );
+    }
 
     return SLAPenalties._(
       noShowPenaltyMultiplier: noShowPenaltyMultiplier,
       delayToleranceMinutes: delayToleranceMinutes,
       delayPenaltyPerMinute: delayPenaltyPerMinute,
       downgradePenaltyFlat: downgradePenaltyFlat,
+      noShowThresholdMinutes: noShowThresholdMinutes,
+      earlyArrivalToleranceMinutes: earlyArrivalToleranceMinutes,
+      dwellTimeMinutes: dwellTimeMinutes,
     );
   }
 
@@ -80,12 +119,18 @@ class SLAPenalties extends Equatable {
     required int delayToleranceMinutes,
     required Money delayPenaltyPerMinute,
     required Money downgradePenaltyFlat,
+    int noShowThresholdMinutes = 60,
+    int earlyArrivalToleranceMinutes = 5,
+    int dwellTimeMinutes = 3,
   }) {
     return SLAPenalties._(
       noShowPenaltyMultiplier: noShowPenaltyMultiplier,
       delayToleranceMinutes: delayToleranceMinutes,
       delayPenaltyPerMinute: delayPenaltyPerMinute,
       downgradePenaltyFlat: downgradePenaltyFlat,
+      noShowThresholdMinutes: noShowThresholdMinutes,
+      earlyArrivalToleranceMinutes: earlyArrivalToleranceMinutes,
+      dwellTimeMinutes: dwellTimeMinutes,
     );
   }
 
@@ -95,9 +140,13 @@ class SLAPenalties extends Equatable {
         'delayToleranceMinutes': delayToleranceMinutes,
         'delayPenaltyPerMinuteCents': delayPenaltyPerMinute.cents,
         'downgradePenaltyFlatCents': downgradePenaltyFlat.cents,
+        'noShowThresholdMinutes': noShowThresholdMinutes,
+        'earlyArrivalToleranceMinutes': earlyArrivalToleranceMinutes,
+        'dwellTimeMinutes': dwellTimeMinutes,
       };
 
   /// Deserializes from JSON stored in [ShiftPattern] JSONB payload.
+  /// New fields use `?? default` for backward compatibility with existing plans.
   factory SLAPenalties.fromJson(Map<String, dynamic> json) {
     return SLAPenalties._(
       noShowPenaltyMultiplier:
@@ -107,6 +156,12 @@ class SLAPenalties extends Equatable {
           Money((json['delayPenaltyPerMinuteCents'] as num).toInt()),
       downgradePenaltyFlat:
           Money((json['downgradePenaltyFlatCents'] as num).toInt()),
+      noShowThresholdMinutes:
+          (json['noShowThresholdMinutes'] as int?) ?? 60,
+      earlyArrivalToleranceMinutes:
+          (json['earlyArrivalToleranceMinutes'] as int?) ?? 5,
+      dwellTimeMinutes:
+          (json['dwellTimeMinutes'] as int?) ?? 3,
     );
   }
 
@@ -116,5 +171,8 @@ class SLAPenalties extends Equatable {
         delayToleranceMinutes,
         delayPenaltyPerMinute,
         downgradePenaltyFlat,
+        noShowThresholdMinutes,
+        earlyArrivalToleranceMinutes,
+        dwellTimeMinutes,
       ];
 }

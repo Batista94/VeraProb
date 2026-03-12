@@ -6,7 +6,7 @@ ID;Categoria;Cenário;Ação;Resultado Esperado;Status;Observações
 0.5;Preparação;Seed Org B;Usuário vinculado à Org ID final ...002;Login com admin_b@teste.com funciona;;ID fixo configurado para teste de isolamento
 1.1;Criação;Form Vazio;Submeter formulário "Novo Contrato" sem preencher nenhum campo;Mensagem de erro exibida — sem crash nem tela branca;;
 1.2;Criação;Datas Inválidas;Preencher Data Fim anterior à Data Início e submeter;Erro de domínio exibido: validUntilUtc must be strictly after validFromUtc;;
-1.3;Criação;Fluxo Feliz;Preencher Nome="Contrato Alpha 2026" Contratante="Logística Express" Vigência=hoje+30d e Salvar;Redirecionado para tela de detalhe com status Rascunho (cinza);;
+1.3;Criação;Fluxo Feliz;Preencher Nome="Contrato Alpha 2026" Contratante="Logística Express" Vigência=hoje+30d e Salvar;Redirecionado automaticamente para tela de detalhe do contrato criado;;
 1.4;Criação;Supabase Check;Verificar linha criada em public.contracts;status=draft organization_id correto campos batem com formulário;;
 2.1;Gestão;Navegação Voltar;Clicar em Voltar na tela de detalhe;Retorna para listagem com contrato Alpha visível;;
 2.2;Gestão;Listagem;Verificar colunas Nome Contratante Vigência na listagem;Dados batem com o que foi digitado;;
@@ -34,3 +34,15 @@ ID;Categoria;Cenário;Ação;Resultado Esperado;Status;Observações
 7.2;Compliance;Hash não nulo;Confirmar original_file_hash em plan_declarations para ambos os planos;Ambas as linhas com hash preenchido;;
 7.3;Compliance;Datas no banco;Confirmar valid_from_utc e valid_until_utc em contracts;Batem com o que foi digitado no formulário;;
 7.4;Compliance;organization_id;Confirmar organization_id em contracts plan_declarations e sla_audit_ledger_v2;Todos com o UUID da Org A — nenhum da Org B;;
+14.1;BLOCO 14 — Novos campos SLA;Step 3 grupos visuais;Abrir wizard de declaração e navegar para Passo 3;Exibir 3 grupos: Pontualidade e Janelas Operacionais | Falhas Críticas | Qualidade da Frota. Total de 7 campos visíveis.;;PRÉ-REQUISITO: Sprint 5.10 Fase 2 concluída
+14.2;BLOCO 14 — Novos campos SLA;Campos com defaults;Verificar valores pré-preenchidos no Passo 3;Tolerância Atraso=15 | Tolerância Antecipação=5 | Tempo Mínimo Permanência=3 | No-Show Mult=1.5 | Teto No-Show=60 | Multa/min=0.50 | Multa Downgrade=50.00;;
+14.3;BLOCO 14 — Novos campos SLA;Publicar plano com novos campos;Publicar plano com valores customizados (ex: Teto No-Show=90 Permanência=5);Plano publicado sem erro. Verificar JSONB em plan_declarations: SELECT shift_patterns_payload FROM plan_declarations ORDER BY created_at DESC LIMIT 1;;
+14.4;BLOCO 14 — Novos campos SLA;JSONB com novos campos;Inspecionar shift_patterns_payload do plano recém-criado no Supabase;JSONB contém chaves noShowThresholdMinutes earlyArrivalToleranceMinutes dwellTimeMinutes com os valores digitados;;
+14.5;BLOCO 14 — Novos campos SLA;Backward compat planos antigos;Verificar que planos existentes (sem os 3 novos campos no JSONB) ainda carregam sem erro;Planos antigos carregam normalmente na UI sem crash. Valores ausentes mostram defaults (60/5/3).;;
+14.6;BLOCO 14 — Novos campos SLA;Step 1 zonas reais;Abrir wizard Passo 1;Lista zonas reais da organização (não "Garagem Central" hardcoded). Zonas sem geofence exibem ícone location_off + aviso inline.;;
+14.7;BLOCO 14 — Novos campos SLA;Criar zona — sem mapa;Clicar em Nova Zona Operacional;Dialog não exibe FlutterMap. Seção Geofence mostra 3 campos: Latitude Longitude e Raio (graus decimais + metros).;;
+14.8;BLOCO 14 — Novos campos SLA;Criar zona — sem geofence;Criar zona sem preencher lat/lng;Zona criada com sucesso. Ícone location_off aparece na listagem. Aviso de que só pode ser referência manual.;;
+14.9;BLOCO 14 — Novos campos SLA;Criar zona — com geofence;Criar zona preenchendo lat=-23.5505 lng=-46.6333 raio=200;Zona criada com geofence. Nenhum ícone de aviso na listagem.;;
+14.10;BLOCO 14 — Novos campos SLA;Contraste Step 4;Navegar para Passo 4 do wizard;Card de confirmação com fundo semi-translúcido azul escuro e texto legível (branco). Sem fundo azul claro com texto invisível.;;
+14.11;BLOCO 14 — Novos campos SLA;Navegação pós-contrato;Criar novo contrato;Após fechar dialog, sistema navega automaticamente para ContractDetailScreen do contrato recém-criado. Sem retorno à lista vazia.;;
+14.12;BLOCO 14 — Novos campos SLA;Publicar sem crash;Completar wizard com zonas reais + ShiftPattern + SLA e clicar Publicar SLA B2B;Sem crash TypeError (DayOfWeek not Comparable). Plano publicado com sucesso.;;
