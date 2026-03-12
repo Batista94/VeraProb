@@ -18,6 +18,8 @@ import 'package:busflow/state/providers/contract_providers.dart';
 import 'package:busflow/state/providers/operational_zone_providers.dart';
 import 'package:busflow/state/providers/sla_providers.dart';
 
+import 'operational_zones_screen.dart';
+
 // ── BR Timezones (curated list for dropdown) ──────────────────
 const _kBrTimezones = [
   'America/Sao_Paulo',
@@ -560,6 +562,26 @@ class _DeclareContractPlanFormState
                 ),
               ),
             ),
+            if (originZone != null && originZone.geofence == null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.edit_location_alt, size: 14),
+                  label: const Text('Configurar Geofence →'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () async {
+                    final saved = await showZoneFormDialog(
+                      context,
+                      existingZone: originZone,
+                    );
+                    if (saved == true) ref.invalidate(operationalZonesProvider);
+                  },
+                ),
+              ),
             const SizedBox(height: 16),
             InputDecorator(
               decoration: const InputDecoration(
@@ -578,6 +600,26 @@ class _DeclareContractPlanFormState
                 ),
               ),
             ),
+            if (destZone != null && destZone.geofence == null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.edit_location_alt, size: 14),
+                  label: const Text('Configurar Geofence →'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () async {
+                    final saved = await showZoneFormDialog(
+                      context,
+                      existingZone: destZone,
+                    );
+                    if (saved == true) ref.invalidate(operationalZonesProvider);
+                  },
+                ),
+              ),
             if (missingGeofence.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
