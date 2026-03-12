@@ -380,143 +380,128 @@ class _CreateZoneDialogState extends ConsumerState<_CreateZoneDialog> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Geofence (avançado) ───────────────────────
-                Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    title: Text(
-                      'Avançado: Configurar Geofence',
-                      style: BusFlowTypography.caption.copyWith(
-                        color: BusFlowColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                // ── Geofence ─────────────────────────────────
+                const Divider(height: 24, color: BusFlowColors.border),
+                Text(
+                  'Geofence',
+                  style: BusFlowTypography.caption.copyWith(
+                    color: BusFlowColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: BusFlowColors.warning.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: BusFlowColors.warning.withValues(alpha: 0.3),
                     ),
-                    subtitle: Text(
-                      _hasGeofenceInput
-                          ? 'Geofence configurado · Raio: ${_radiusController.text} m'
-                          : 'Opcional — obrigatório para auditoria automática de chegada/partida',
-                      style: BusFlowTypography.caption.copyWith(
-                        color: _hasGeofenceInput
-                            ? BusFlowColors.primary
-                            : BusFlowColors.textDisabled,
-                      ),
-                    ),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Warning label
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: BusFlowColors.warning.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: BusFlowColors.warning.withValues(alpha: 0.3),
+                      Icon(Icons.warning_amber_rounded,
+                          size: 16, color: BusFlowColors.warning),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Geofence obrigatório para auditoria automática de chegada/partida '
+                          'pelo motor de avaliação. Zonas sem geofence só podem ser usadas '
+                          'como referência manual.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: BusFlowColors.warning,
                           ),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.warning_amber_rounded,
-                                size: 16, color: BusFlowColors.warning),
-                            const SizedBox(width: 8),
-                            const Expanded(
-                              child: Text(
-                                'Geofence obrigatório para auditoria automática de chegada/partida '
-                                'pelo motor de avaliação. Zonas sem geofence só podem ser usadas '
-                                'como referência manual.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: BusFlowColors.warning,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-                      // Lat / Lng row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _latController,
-                              decoration: const InputDecoration(
-                                labelText: 'Latitude (graus decimais)',
-                                hintText: 'Ex: -23.5505',
-                              ),
-                              keyboardType: const TextInputType.numberWithOptions(
-                                  signed: true, decimal: true),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                    RegExp(r'^-?\d*[.,]?\d*')),
-                              ],
-                              onChanged: (_) => setState(() {}),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) return null;
-                                final parsed = double.tryParse(
-                                    v.trim().replaceAll(',', '.'));
-                                if (parsed == null ||
-                                    parsed < -90 ||
-                                    parsed > 90) {
-                                  return '-90 a 90';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _lngController,
-                              decoration: const InputDecoration(
-                                labelText: 'Longitude (graus decimais)',
-                                hintText: 'Ex: -46.6333',
-                              ),
-                              keyboardType: const TextInputType.numberWithOptions(
-                                  signed: true, decimal: true),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                    RegExp(r'^-?\d*[.,]?\d*')),
-                              ],
-                              onChanged: (_) => setState(() {}),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) return null;
-                                final parsed = double.tryParse(
-                                    v.trim().replaceAll(',', '.'));
-                                if (parsed == null ||
-                                    parsed < -180 ||
-                                    parsed > 180) {
-                                  return '-180 a 180';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Radius
-                      TextFormField(
-                        controller: _radiusController,
+                // Lat / Lng row
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _latController,
                         decoration: const InputDecoration(
-                          labelText: 'Raio (metros)',
-                          hintText: '200',
-                          suffixText: 'm',
+                          labelText: 'Latitude (graus decimais)',
+                          hintText: 'Ex: -23.5505',
                         ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        keyboardType: const TextInputType.numberWithOptions(
+                            signed: true, decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^-?\d*[.,]?\d*')),
+                        ],
                         onChanged: (_) => setState(() {}),
                         validator: (v) {
-                          if (v == null || v.isEmpty) return null;
-                          final n = int.tryParse(v);
-                          if (n == null || n <= 0 || n > 50000) return '1 a 50000 m';
+                          if (v == null || v.trim().isEmpty) return null;
+                          final parsed = double.tryParse(
+                              v.trim().replaceAll(',', '.'));
+                          if (parsed == null || parsed < -90 || parsed > 90) {
+                            return '-90 a 90';
+                          }
                           return null;
                         },
                       ),
-                      const SizedBox(height: 8),
-                    ],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _lngController,
+                        decoration: const InputDecoration(
+                          labelText: 'Longitude (graus decimais)',
+                          hintText: 'Ex: -46.6333',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            signed: true, decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^-?\d*[.,]?\d*')),
+                        ],
+                        onChanged: (_) => setState(() {}),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return null;
+                          final parsed = double.tryParse(
+                              v.trim().replaceAll(',', '.'));
+                          if (parsed == null ||
+                              parsed < -180 ||
+                              parsed > 180) {
+                            return '-180 a 180';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Radius (campo primário obrigatório quando há geofence)
+                TextFormField(
+                  controller: _radiusController,
+                  decoration: const InputDecoration(
+                    labelText: 'Raio (metros) *',
+                    hintText: '200',
+                    suffixText: 'm',
+                    helperText:
+                        'O motor de avaliação usa este raio para detectar chegada/partida.',
                   ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (_) => setState(() {}),
+                  validator: (v) {
+                    // Radius only required when lat/lng provided
+                    if (!_hasGeofenceInput) return null;
+                    if (v == null || v.isEmpty) return 'Obrigatório com geofence';
+                    final n = int.tryParse(v);
+                    if (n == null || n <= 0 || n > 50000) return '1 a 50.000 m';
+                    return null;
+                  },
                 ),
 
                 if (_errorMessage != null) ...[
