@@ -9,7 +9,7 @@ class LiveIndicator extends StatefulWidget {
   const LiveIndicator({
     super.key,
     this.size = 8,
-    this.color = BusFlowColors.onTime,
+    this.color = PactaFlowColors.onTime,
   });
 
   @override

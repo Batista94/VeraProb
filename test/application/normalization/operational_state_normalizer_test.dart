@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:busflow/application/normalization/operational_state_normalizer.dart';
-import 'package:busflow/domain/entities/vehicle_position.dart';
-import 'package:busflow/domain/entities/stop.dart';
-import 'package:busflow/domain/enums/motion_state.dart';
-import 'package:busflow/domain/enums/connectivity_state.dart';
+import 'package:pactaflow/application/normalization/operational_state_normalizer.dart';
+import 'package:pactaflow/domain/entities/vehicle_position.dart';
+import 'package:pactaflow/domain/entities/stop.dart';
+import 'package:pactaflow/domain/enums/motion_state.dart';
+import 'package:pactaflow/domain/enums/connectivity_state.dart';
 
 void main() {
   late OperationalStateNormalizer normalizer;

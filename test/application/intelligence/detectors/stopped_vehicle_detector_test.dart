@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:busflow/application/intelligence/detectors/stopped_vehicle_detector.dart';
-import 'package:busflow/domain/entities/operational_trip.dart';
-import 'package:busflow/domain/enums/trip_status.dart';
+import 'package:pactaflow/application/intelligence/detectors/stopped_vehicle_detector.dart';
+import 'package:pactaflow/domain/entities/operational_trip.dart';
+import 'package:pactaflow/domain/enums/trip_status.dart';
 
 void main() {
   group('StoppedVehicleDetector Rules', () {

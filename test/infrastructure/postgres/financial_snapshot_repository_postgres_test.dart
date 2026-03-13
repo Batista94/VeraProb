@@ -1,6 +1,6 @@
-import 'package:busflow/domain/shared/money.dart';
-import 'package:busflow/domain/sla_audit/contractual_financial_daily_snapshot.dart';
-import 'package:busflow/infrastructure/sla_audit/postgres_contractual_financial_snapshot_repository.dart';
+import 'package:pactaflow/domain/shared/money.dart';
+import 'package:pactaflow/domain/sla_audit/contractual_financial_daily_snapshot.dart';
+import 'package:pactaflow/infrastructure/sla_audit/postgres_contractual_financial_snapshot_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';

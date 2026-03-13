@@ -1,6 +1,6 @@
-# BUSFLOW — ENGINEERING SESSION CONTEXT
+# PactaFlow — ENGINEERING SESSION CONTEXT
 
-BusFlow is an **Automated SLA Compliance & Financial Protection Platform**.
+PactaFlow is an **Automated SLA Compliance & Financial Protection Platform**.
 It acts as an impartial, automated Judge: ingests real-world telemetry, evaluates against contractual rules, and generates immutable financial verdicts.
 The CORE engine is industry-agnostic (MVP: Corporate Charter/Shuttle — Fretamento).
 
@@ -13,7 +13,7 @@ The CORE engine is industry-agnostic (MVP: Corporate Charter/Shuttle — Fretame
 ## DOMAIN GLOSSARY
 | Term | Meaning |
 |---|---|
-| Tenant | Operator company using BusFlow |
+| Tenant | Operator company using PactaFlow |
 | Contractor | Tenant's B2B client (e.g., corporation hiring buses) |
 | Zone | Geofenced physical location (Global: operator-owned / Exclusive: contractor-tied) |
 | Shift | Projected operational execution derived from a contract |

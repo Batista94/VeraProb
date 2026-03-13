@@ -1,9 +1,9 @@
-# BusFlow 🧭
+# PactaFlow 🧭
 Plataforma de Determinismo Operacional e Proteção de Margem para Transporte Corporativo
 
-BusFlow é uma plataforma soberana de auditoria contratual automatizada que transforma execução operacional em evidência determinística e projeção financeira imutável.
+PactaFlow é uma plataforma soberana de auditoria contratual automatizada que transforma execução operacional em evidência determinística e projeção financeira imutável.
 
-Diferente de sistemas tradicionais de monitoramento ou TMS, o BusFlow não apenas rastreia veículos — ele converte telemetria em verdade contratual verificável e impacto financeiro mensurável.
+Diferente de sistemas tradicionais de monitoramento ou TMS, o PactaFlow não apenas rastreia veículos — ele converte telemetria em verdade contratual verificável e impacto financeiro mensurável.
 
 🎯 **Problema que Resolvemos**
 
@@ -14,20 +14,20 @@ Empresas de transporte corporativo e fretado enfrentam:
 - Perda silenciosa de margem
 - Dependência de conferência manual mensal
 
-A maior sangria financeira não está no combustível ou manutenção. está na incerteza da execução contratual. O BusFlow resolve isso criando um pipeline determinístico:
+A maior sangria financeira não está no combustível ou manutenção. está na incerteza da execução contratual. O PactaFlow resolve isso criando um pipeline determinístico:
 
 Telemetria → Normalização Operacional → Avaliação Contratual (SLA Engine) → Ledger Forense Imutável → Projeção Financeira → Proteção de Receita
 
-🧠 **O Que o BusFlow É (e o que NÃO é)**
+🧠 **O Que o PactaFlow É (e o que NÃO é)**
 
-**BusFlow NÃO é:**
+**PactaFlow NÃO é:**
 - Sistema de rastreamento simples
 - Aplicativo de passageiro
 - ERP
 - TMS convencional
 - Dashboard operacional genérico
 
-**BusFlow é:** Uma plataforma que transforma execução física em dinheiro protegido, unindo a linguagem comercial das viações com auditoria automatizada.
+**PactaFlow é:** Uma plataforma que transforma execução física em dinheiro protegido, unindo a linguagem comercial das viações com auditoria automatizada.
 
 🏗 **Arquitetura**
 
@@ -94,13 +94,13 @@ Calcula Receita Total Contratada, Receita Protegida, Receita em Risco, Receita P
 - Sem uso de `DateTime.now()` direto nas regras ou `toLocal()`.
 
 🗺️ **Contractual Risk Radar & OCC (Camada Operacional)**
-Em vez de um mapa genérico de monitoramento de frotas, o BusFlow utiliza um **Contractual Risk Radar**. O topo exibe instantaeamente KPIs financeiros (Receita Protegida vs Risco). O corpo principal é uma *Timeline* organizada por severidade de obrigações (Viagens Programadas), priorizando gargalos (*No-Shows*, *Evidence Gaps*). O mapa atua apenas como uma ferramenta forense estrita de sandbox, acionada somente sob demanda para investigações. O OCC não é o produto final; é a plataforma de triagem para a auditoria contratual.
+Em vez de um mapa genérico de monitoramento de frotas, o PactaFlow utiliza um **Contractual Risk Radar**. O topo exibe instantaeamente KPIs financeiros (Receita Protegida vs Risco). O corpo principal é uma *Timeline* organizada por severidade de obrigações (Viagens Programadas), priorizando gargalos (*No-Shows*, *Evidence Gaps*). O mapa atua apenas como uma ferramenta forense estrita de sandbox, acionada somente sob demanda para investigações. O OCC não é o produto final; é a plataforma de triagem para a auditoria contratual.
 
 🔌 **Telemetria**
 Fluxo reativo via Riverpod: `Raw Telemetry` → `OperationalStateNormalizer` → `Evaluation Engine` → `ExecutionState Repository` → `Projections` → `UI`. Sem polling. Sem acoplamento. Reativo.
 
 💾 **Persistência**
-BusFlow é *persistence-agnostic*. Pode rodar em Supabase, PostgreSQL, SQLite, In-Memory ou qualquer adapter compatível. Infraestrutura não define o domínio.
+PactaFlow é *persistence-agnostic*. Pode rodar em Supabase, PostgreSQL, SQLite, In-Memory ou qualquer adapter compatível. Infraestrutura não define o domínio.
 
 🧪 **Testes**
 Suíte rigorosa de automação de QA cobrindo de ponta-a-ponta:
@@ -126,7 +126,7 @@ Snapshot Financeiro Imutável (Revoke Update/Delete).
 Segregação estrita entre comandos e consultas (CQRS).
 
 📌 Status do Projeto
-O BusFlow consolidou sua fundação Enterprise. O sistema possui um SLA Engine determinístico, persistência imutável em PostgreSQL/Supabase e um pipeline de telemetria com Idempotência Funcional. A infraestrutura está preparada para auditoria financeira profissional com 100% de rastreabilidade.
+O PactaFlow consolidou sua fundação Enterprise. O sistema possui um SLA Engine determinístico, persistência imutável em PostgreSQL/Supabase e um pipeline de telemetria com Idempotência Funcional. A infraestrutura está preparada para auditoria financeira profissional com 100% de rastreabilidade.
 
 🧭 Visão de Futuro
 

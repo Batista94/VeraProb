@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:busflow/features/shared/data/repositories/vehicle_repository.dart';
-import 'package:busflow/features/shared/data/services/gtfs_realtime_service.dart';
-import 'package:busflow/features/shared/domain/entities/vehicle_position.dart';
+import 'package:pactaflow/features/shared/data/repositories/vehicle_repository.dart';
+import 'package:pactaflow/features/shared/data/services/gtfs_realtime_service.dart';
+import 'package:pactaflow/features/shared/domain/entities/vehicle_position.dart';
 
 class MockSupabaseClient extends Mock implements SupabaseClient {}
 

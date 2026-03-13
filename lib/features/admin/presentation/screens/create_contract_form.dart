@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:busflow/application/sla_audit/create_contract_command.dart';
-import 'package:busflow/domain/sla_audit/domain_exception.dart';
-import 'package:busflow/state/providers/auth_providers.dart';
-import 'package:busflow/state/providers/contract_providers.dart';
-import 'package:busflow/core/theme/app_theme.dart';
+import 'package:pactaflow/application/sla_audit/create_contract_command.dart';
+import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
+import 'package:pactaflow/state/providers/auth_providers.dart';
+import 'package:pactaflow/state/providers/contract_providers.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
 
 class CreateContractForm extends ConsumerStatefulWidget {
   const CreateContractForm({super.key});
@@ -67,10 +67,10 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: BusFlowColors.primary,
+              primary: PactaFlowColors.primary,
               onPrimary: Colors.white,
-              surface: BusFlowColors.surfaceElevated,
-              onSurface: BusFlowColors.textPrimary,
+              surface: PactaFlowColors.surfaceElevated,
+              onSurface: PactaFlowColors.textPrimary,
             ),
           ),
           child: child!,
@@ -142,10 +142,10 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
     final isFetchingOrg = ref.watch(organizationIdFetcherProvider).isLoading;
 
     return Dialog(
-      backgroundColor: BusFlowColors.surface,
+      backgroundColor: PactaFlowColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: BusFlowColors.border),
+        side: const BorderSide(color: PactaFlowColors.border),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
@@ -162,19 +162,19 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: BusFlowColors.primary.withValues(alpha: 0.1),
+                        color: PactaFlowColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.description_rounded, color: BusFlowColors.primary, size: 20),
+                      child: const Icon(Icons.description_rounded, color: PactaFlowColors.primary, size: 20),
                     ),
                     const SizedBox(width: 14),
                     Text(
                       'Novo Contrato Operacional',
-                      style: BusFlowTypography.sectionTitle.copyWith(fontSize: 20),
+                      style: PactaFlowTypography.sectionTitle.copyWith(fontSize: 20),
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20, color: BusFlowColors.textDisabled),
+                      icon: const Icon(Icons.close_rounded, size: 20, color: PactaFlowColors.textDisabled),
                       onPressed: () => Navigator.of(context).pop(null),
                     ),
                   ],
@@ -182,7 +182,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                 const SizedBox(height: 12),
                 Text(
                   'Registre os parâmetros regulatórios para auditoria de SLR.',
-                  style: BusFlowTypography.bodySmall,
+                  style: PactaFlowTypography.bodySmall,
                 ),
                 const SizedBox(height: 16),
                 if (isFetchingOrg)
@@ -191,18 +191,18 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: BusFlowColors.error.withValues(alpha: 0.1),
+                      color: PactaFlowColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: BusFlowColors.error.withValues(alpha: 0.3)),
+                      border: Border.all(color: PactaFlowColors.error.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded, color: BusFlowColors.error, size: 18),
+                        const Icon(Icons.warning_amber_rounded, color: PactaFlowColors.error, size: 18),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Sessão sem organização vinculada. Faça logout e login novamente.',
-                            style: BusFlowTypography.bodySmall.copyWith(color: BusFlowColors.error),
+                            style: PactaFlowTypography.bodySmall.copyWith(color: PactaFlowColors.error),
                           ),
                         ),
                       ],
@@ -212,7 +212,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
                 TextFormField(
                   controller: _nameController,
-                  style: BusFlowTypography.bodyMedium,
+                  style: PactaFlowTypography.bodyMedium,
                   decoration: const InputDecoration(
                     labelText: 'Identificação Tributária/Comercial *',
                     hintText: 'Ex: Concessão Norte - Lote 1',
@@ -224,7 +224,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                 
                 TextFormField(
                   controller: _contractorController,
-                  style: BusFlowTypography.bodyMedium,
+                  style: PactaFlowTypography.bodyMedium,
                   decoration: const InputDecoration(
                     labelText: 'Entidade Contratante (Auditor) *',
                     hintText: 'Ex: SPTRANS / Secretaria de Transportes',
@@ -235,7 +235,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                 
                 Text(
                   'CRONOGRAMA DE VIGÊNCIA',
-                  style: BusFlowTypography.kpiLabel,
+                  style: PactaFlowTypography.kpiLabel,
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -263,18 +263,18 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: BusFlowColors.error.withValues(alpha: 0.1),
+                      color: PactaFlowColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: BusFlowColors.error.withValues(alpha: 0.3)),
+                      border: Border.all(color: PactaFlowColors.error.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline_rounded, color: BusFlowColors.error, size: 18),
+                        const Icon(Icons.error_outline_rounded, color: PactaFlowColors.error, size: 18),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             _errorMessage!,
-                            style: const TextStyle(color: BusFlowColors.error, fontSize: 13, fontWeight: FontWeight.w500),
+                            style: const TextStyle(color: PactaFlowColors.error, fontSize: 13, fontWeight: FontWeight.w500),
                           ),
                         ),
                       ],
@@ -288,7 +288,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                   children: [
                     TextButton(
                       onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(null),
-                      child: Text('DESCARTAR', style: BusFlowTypography.badge.copyWith(color: BusFlowColors.textSecondary)),
+                      child: Text('DESCARTAR', style: PactaFlowTypography.badge.copyWith(color: PactaFlowColors.textSecondary)),
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton(
@@ -323,14 +323,14 @@ class _DatePickerField extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: BusFlowColors.surfaceElevated,
+          color: PactaFlowColors.surfaceElevated,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: BusFlowColors.border),
+          border: Border.all(color: PactaFlowColors.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: BusFlowTypography.kpiLabel.copyWith(fontSize: 10)),
+            Text(label, style: PactaFlowTypography.kpiLabel.copyWith(fontSize: 10)),
             const SizedBox(height: 6),
             Row(
               children: [
@@ -339,13 +339,13 @@ class _DatePickerField extends StatelessWidget {
                     value != null
                         ? '${value!.day.toString().padLeft(2, '0')}/${value!.month.toString().padLeft(2, '0')}/${value!.year}'
                         : 'Definir Data',
-                    style: BusFlowTypography.bodyMedium.copyWith(
-                      color: value != null ? BusFlowColors.textPrimary : BusFlowColors.textDisabled,
+                    style: PactaFlowTypography.bodyMedium.copyWith(
+                      color: value != null ? PactaFlowColors.textPrimary : PactaFlowColors.textDisabled,
                       fontWeight: value != null ? FontWeight.w700 : FontWeight.w400,
                     ),
                   ),
                 ),
-                const Icon(Icons.calendar_today_rounded, size: 14, color: BusFlowColors.primary),
+                const Icon(Icons.calendar_today_rounded, size: 14, color: PactaFlowColors.primary),
               ],
             ),
           ],

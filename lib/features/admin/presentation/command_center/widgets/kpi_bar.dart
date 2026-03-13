@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:busflow/core/theme/app_theme.dart';
-import 'package:busflow/state/providers/fleet_providers.dart';
-import 'package:busflow/application/projections/providers/command_center_filter_provider.dart';
-import 'package:busflow/dev/performance_metrics.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/state/providers/fleet_providers.dart';
+import 'package:pactaflow/application/projections/providers/command_center_filter_provider.dart';
+import 'package:pactaflow/dev/performance_metrics.dart';
 
 /// The KPI bar at the top of the Command Center.
 /// Shows key fleet metrics in real-time.
@@ -21,8 +21,8 @@ class KpiBar extends ConsumerWidget {
       child: Container(
         height: 56,
         decoration: const BoxDecoration(
-          color: BusFlowColors.surface,
-          border: Border(bottom: BorderSide(color: BusFlowColors.border)),
+          color: PactaFlowColors.surface,
+          border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
@@ -31,7 +31,7 @@ class KpiBar extends ConsumerWidget {
               icon: Icons.directions_bus,
               value: '${summary.totalActive}',
               label: 'Em Operação',
-              color: BusFlowColors.primary,
+              color: PactaFlowColors.primary,
               isSelected: statusFilter == FleetStatusFilter.active,
               onTap: () => ref
                   .read(commandCenterFilterProvider.notifier)
@@ -42,7 +42,7 @@ class KpiBar extends ConsumerWidget {
               icon: Icons.check_circle_outline,
               value: '${summary.onTime}',
               label: 'No Horário',
-              color: BusFlowColors.onTime,
+              color: PactaFlowColors.onTime,
               isSelected: statusFilter == FleetStatusFilter.onTime,
               onTap: () => ref
                   .read(commandCenterFilterProvider.notifier)
@@ -53,7 +53,7 @@ class KpiBar extends ConsumerWidget {
               icon: Icons.warning_amber_rounded,
               value: '${summary.delayed}',
               label: 'Atrasados',
-              color: BusFlowColors.delayed,
+              color: PactaFlowColors.delayed,
               isSelected: statusFilter == FleetStatusFilter.delayed,
               onTap: () => ref
                   .read(commandCenterFilterProvider.notifier)
@@ -65,8 +65,8 @@ class KpiBar extends ConsumerWidget {
               value: '${summary.alerts}',
               label: 'Alertas',
               color: summary.alerts > 0
-                  ? BusFlowColors.critical
-                  : BusFlowColors.textDisabled,
+                  ? PactaFlowColors.critical
+                  : PactaFlowColors.textDisabled,
               isSelected: statusFilter == FleetStatusFilter.alerts,
               onTap: () => ref
                   .read(commandCenterFilterProvider.notifier)
@@ -77,7 +77,7 @@ class KpiBar extends ConsumerWidget {
               icon: Icons.hail,
               value: '${summary.atStop}',
               label: 'No Ponto',
-              color: BusFlowColors.scheduled,
+              color: PactaFlowColors.scheduled,
               isSelected: statusFilter == FleetStatusFilter.atStop,
               onTap: () => ref
                   .read(commandCenterFilterProvider.notifier)
@@ -89,13 +89,13 @@ class KpiBar extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: BusFlowColors.delayed.withValues(alpha: 0.12),
+                  color: PactaFlowColors.delayed.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   'Atraso médio: ${summary.avgDelayMinutes} min',
-                  style: BusFlowTypography.caption.copyWith(
-                    color: BusFlowColors.delayed,
+                  style: PactaFlowTypography.caption.copyWith(
+                    color: PactaFlowColors.delayed,
                   ),
                 ),
               ),
@@ -110,7 +110,7 @@ class KpiBar extends ConsumerWidget {
       height: 24,
       width: 1,
       margin: const EdgeInsets.symmetric(horizontal: 12),
-      color: BusFlowColors.border,
+      color: PactaFlowColors.border,
     );
   }
 }
@@ -175,7 +175,7 @@ class _KpiChip extends StatelessWidget {
                 ),
                 Text(
                   label,
-                  style: BusFlowTypography.caption.copyWith(
+                  style: PactaFlowTypography.caption.copyWith(
                     fontSize: 10,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
                   ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:busflow/core/theme/app_theme.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
 
 /// A wrapper widget that catches unhandled Flutter errors during the build phase.
 /// Prevents the entire screen from turning into the "Red Screen of Death".
@@ -56,8 +56,8 @@ class ErrorView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: BusFlowColors.background,
-        border: Border.all(color: BusFlowColors.error.withValues(alpha: 0.5)),
+        color: PactaFlowColors.background,
+        border: Border.all(color: PactaFlowColors.error.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -66,7 +66,7 @@ class ErrorView extends StatelessWidget {
         children: [
           const Icon(
             Icons.warning_amber_rounded,
-            color: BusFlowColors.error,
+            color: PactaFlowColors.error,
             size: 48,
           ),
           const SizedBox(height: 16),
@@ -75,7 +75,7 @@ class ErrorView extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: BusFlowColors.textPrimary,
+              color: PactaFlowColors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -84,7 +84,7 @@ class ErrorView extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 12,
-              color: BusFlowColors.textSecondary,
+              color: PactaFlowColors.textSecondary,
               fontFamily: 'monospace',
             ),
             maxLines: 3,

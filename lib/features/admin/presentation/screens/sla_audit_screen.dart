@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:busflow/core/theme/app_theme.dart';
-import 'package:busflow/domain/shared/money.dart';
-import 'package:busflow/state/providers/sla_providers.dart';
-import 'package:busflow/application/sla_audit/projections/sla_execution_item_view.dart';
-import 'package:busflow/domain/sla_audit/execution_status.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/domain/shared/money.dart';
+import 'package:pactaflow/state/providers/sla_providers.dart';
+import 'package:pactaflow/application/sla_audit/projections/sla_execution_item_view.dart';
+import 'package:pactaflow/domain/sla_audit/execution_status.dart';
 import 'widgets/_sla_execution_detail_drawer.dart';
 
 final _currencyFormat = NumberFormat.currency(
@@ -20,7 +20,7 @@ class SlaAuditScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      color: BusFlowColors.background,
+      color: PactaFlowColors.background,
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -28,7 +28,7 @@ class SlaAuditScreen extends ConsumerWidget {
           children: [
             Text(
               'Relatório de Auditoria SLA',
-              style: BusFlowTypography.sectionTitle.copyWith(
+              style: PactaFlowTypography.sectionTitle.copyWith(
                 fontSize: 24,
                 letterSpacing: -0.5,
               ),
@@ -36,7 +36,7 @@ class SlaAuditScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               'Consolidação de evidências forenses e proteção de receita.',
-              style: BusFlowTypography.bodySmall,
+              style: PactaFlowTypography.bodySmall,
             ),
             const SizedBox(height: 24),
             const _SlaSummarySection(),
@@ -63,7 +63,7 @@ class _SlaSummarySection extends ConsumerWidget {
             child: _SummaryCard(
               title: 'CONFORMIDADES',
               value: summary.totalExecuted,
-              color: BusFlowColors.success,
+              color: PactaFlowColors.success,
               percentage: summary.total > 0
                   ? (summary.totalExecuted / summary.total * 100).round()
                   : 0,
@@ -76,7 +76,7 @@ class _SlaSummarySection extends ConsumerWidget {
             child: _SummaryCard(
               title: 'INCONSISTÊNCIAS',
               value: summary.totalEvidenceGap,
-              color: BusFlowColors.warning,
+              color: PactaFlowColors.warning,
               percentage: summary.total > 0
                   ? (summary.totalEvidenceGap / summary.total * 100).round()
                   : 0,
@@ -89,7 +89,7 @@ class _SlaSummarySection extends ConsumerWidget {
             child: _SummaryCard(
               title: 'QUEBRAS DE SLA',
               value: summary.totalNoShow,
-              color: BusFlowColors.error,
+              color: PactaFlowColors.error,
               percentage: summary.total > 0
                   ? (summary.totalNoShow / summary.total * 100).round()
                   : 0,
@@ -127,17 +127,17 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: BusFlowColors.surface,
+        color: PactaFlowColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BusFlowColors.border.withValues(alpha: 0.1)),
+        border: Border.all(color: PactaFlowColors.border.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: BusFlowTypography.kpiLabel.copyWith(
-              color: BusFlowColors.textSecondary,
+            style: PactaFlowTypography.kpiLabel.copyWith(
+              color: PactaFlowColors.textSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -146,8 +146,8 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Text(
                 value.toString(),
-                style: BusFlowTypography.kpiValue.copyWith(
-                  color: BusFlowColors.textPrimary,
+                style: PactaFlowTypography.kpiValue.copyWith(
+                  color: PactaFlowColors.textPrimary,
                   fontSize: 32,
                 ),
               ),
@@ -156,8 +156,8 @@ class _SummaryCard extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   '$percentage%',
-                  style: BusFlowTypography.bodySmall.copyWith(
-                    color: BusFlowColors.textSecondary,
+                  style: PactaFlowTypography.bodySmall.copyWith(
+                    color: PactaFlowColors.textSecondary,
                   ),
                 ),
               ),
@@ -175,14 +175,14 @@ class _SummaryCard extends StatelessWidget {
               children: [
                 Text(
                   revenueLabel,
-                  style: BusFlowTypography.caption.copyWith(
-                    color: BusFlowColors.textSecondary,
+                  style: PactaFlowTypography.caption.copyWith(
+                    color: PactaFlowColors.textSecondary,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _currencyFormat.format(revenueValue.toDouble()),
-                  style: BusFlowTypography.badge.copyWith(
+                  style: PactaFlowTypography.badge.copyWith(
                     color: color,
                     fontSize: 13,
                   ),
@@ -209,17 +209,17 @@ class _SlaExceptionsTable extends ConsumerWidget {
           return Center(
             child: Text(
               'Nenhuma exceção detectada.',
-              style: BusFlowTypography.bodyMedium,
+              style: PactaFlowTypography.bodyMedium,
             ),
           );
         }
 
         return Container(
           decoration: BoxDecoration(
-            color: BusFlowColors.surface,
+            color: PactaFlowColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: BusFlowColors.border.withValues(alpha: 0.1),
+              color: PactaFlowColors.border.withValues(alpha: 0.1),
             ),
           ),
           child: ClipRRect(
@@ -227,7 +227,7 @@ class _SlaExceptionsTable extends ConsumerWidget {
             child: SingleChildScrollView(
               child: DataTable(
                 headingRowColor: WidgetStateProperty.all(
-                  BusFlowColors.textPrimary.withValues(alpha: 0.05),
+                  PactaFlowColors.textPrimary.withValues(alpha: 0.05),
                 ),
                 columns: const [
                   DataColumn(label: Text('Status')),
@@ -244,25 +244,25 @@ class _SlaExceptionsTable extends ConsumerWidget {
                       DataCell(
                         Text(
                           '${_formatTime(item.windowStartUtc)} - ${_formatTime(item.windowEndUtc)}',
-                          style: BusFlowTypography.bodyMedium,
+                          style: PactaFlowTypography.bodyMedium,
                         ),
                       ),
                       DataCell(
                         Text(
                           item.plannedVehicleId ?? 'Any',
-                          style: BusFlowTypography.bodyMedium,
+                          style: PactaFlowTypography.bodyMedium,
                         ),
                       ),
                       DataCell(
                         Text(
                           _currencyFormat.format(item.contractualValue.toDouble()),
-                          style: BusFlowTypography.bodyMedium,
+                          style: PactaFlowTypography.bodyMedium,
                         ),
                       ),
                       DataCell(
                         Text(
                           '${item.setId.substring(0, 8)}...',
-                          style: BusFlowTypography.bodyMedium,
+                          style: PactaFlowTypography.bodyMedium,
                         ),
                       ),
                       DataCell(
@@ -306,8 +306,8 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = status == ExecutionStatus.noShow
-        ? BusFlowColors.error
-        : BusFlowColors.warning;
+        ? PactaFlowColors.error
+        : PactaFlowColors.warning;
 
     final label = status == ExecutionStatus.noShow ? 'Falha' : 'Gargalo';
 
@@ -320,7 +320,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         label.toUpperCase(),
-        style: BusFlowTypography.badge.copyWith(color: color),
+        style: PactaFlowTypography.badge.copyWith(color: color),
       ),
     );
   }

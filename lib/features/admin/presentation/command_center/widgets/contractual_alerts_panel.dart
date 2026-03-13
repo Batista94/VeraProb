@@ -20,9 +20,9 @@ class ContractualAlertsPanel extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: BusFlowColors.surface,
+        color: PactaFlowColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BusFlowColors.border.withValues(alpha: 0.3)),
+        border: Border.all(color: PactaFlowColors.border.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,7 +33,7 @@ class ContractualAlertsPanel extends ConsumerWidget {
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: BusFlowColors.border.withValues(alpha: 0.3),
+                  color: PactaFlowColors.border.withValues(alpha: 0.3),
                 ),
               ),
             ),
@@ -41,14 +41,14 @@ class ContractualAlertsPanel extends ConsumerWidget {
               children: [
                 const Icon(
                   Icons.notifications_active,
-                  color: BusFlowColors.critical,
+                  color: PactaFlowColors.critical,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Alertas Contratuais',
-                  style: BusFlowTypography.sectionTitle.copyWith(
-                    color: BusFlowColors.textPrimary,
+                  style: PactaFlowTypography.sectionTitle.copyWith(
+                    color: PactaFlowColors.textPrimary,
                   ),
                 ),
                 const Spacer(),
@@ -60,16 +60,16 @@ class ContractualAlertsPanel extends ConsumerWidget {
                     ),
                     decoration: BoxDecoration(
                       color: alerts.isNotEmpty
-                          ? BusFlowColors.critical.withValues(alpha: 0.2)
-                          : BusFlowColors.onTime.withValues(alpha: 0.2),
+                          ? PactaFlowColors.critical.withValues(alpha: 0.2)
+                          : PactaFlowColors.onTime.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '${alerts.length}',
                       style: TextStyle(
                         color: alerts.isNotEmpty
-                            ? BusFlowColors.critical
-                            : BusFlowColors.onTime,
+                            ? PactaFlowColors.critical
+                            : PactaFlowColors.onTime,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -82,7 +82,7 @@ class ContractualAlertsPanel extends ConsumerWidget {
                   ),
                   error: (error, _) => const Icon(
                     Icons.error_outline,
-                    color: BusFlowColors.critical,
+                    color: PactaFlowColors.critical,
                     size: 16,
                   ),
                 ),
@@ -102,13 +102,13 @@ class ContractualAlertsPanel extends ConsumerWidget {
                         Icon(
                           Icons.check_circle_outline,
                           size: 48,
-                          color: BusFlowColors.onTime.withValues(alpha: 0.5),
+                          color: PactaFlowColors.onTime.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'Nenhum alerta ativo',
-                          style: BusFlowTypography.bodyMedium.copyWith(
-                            color: BusFlowColors.textSecondary,
+                          style: PactaFlowTypography.bodyMedium.copyWith(
+                            color: PactaFlowColors.textSecondary,
                           ),
                         ),
                       ],
@@ -128,8 +128,8 @@ class ContractualAlertsPanel extends ConsumerWidget {
               error: (error, _) => Center(
                 child: Text(
                   'Erro ao carregar alertas',
-                  style: BusFlowTypography.bodyMedium.copyWith(
-                    color: BusFlowColors.critical,
+                  style: PactaFlowTypography.bodyMedium.copyWith(
+                    color: PactaFlowColors.critical,
                   ),
                 ),
               ),
@@ -154,7 +154,7 @@ class _AlertCard extends ConsumerWidget {
     final formatter = DateFormat('dd/MM HH:mm');
 
     return Card(
-      color: BusFlowColors.background,
+      color: PactaFlowColors.background,
       margin: const EdgeInsets.symmetric(vertical: 4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -202,9 +202,9 @@ class _AlertCard extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       _alertTypeLabel(alert.alertType),
-                      style: BusFlowTypography.bodyMedium.copyWith(
+                      style: PactaFlowTypography.bodyMedium.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: BusFlowColors.textPrimary,
+                        color: PactaFlowColors.textPrimary,
                         fontSize: 13,
                       ),
                     ),
@@ -212,7 +212,7 @@ class _AlertCard extends ConsumerWidget {
                   Text(
                     formatter.format(alert.triggeredAtUtc.toLocal()),
                     style: TextStyle(
-                      color: BusFlowColors.textSecondary,
+                      color: PactaFlowColors.textSecondary,
                       fontSize: 11,
                     ),
                   ),
@@ -226,13 +226,13 @@ class _AlertCard extends ConsumerWidget {
                   Icon(
                     Icons.route,
                     size: 14,
-                    color: BusFlowColors.textSecondary,
+                    color: PactaFlowColors.textSecondary,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     alert.entityId,
                     style: TextStyle(
-                      color: BusFlowColors.textSecondary,
+                      color: PactaFlowColors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -240,14 +240,14 @@ class _AlertCard extends ConsumerWidget {
                   Icon(
                     Icons.description_outlined,
                     size: 14,
-                    color: BusFlowColors.textSecondary,
+                    color: PactaFlowColors.textSecondary,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       alert.contractId,
                       style: TextStyle(
-                        color: BusFlowColors.textSecondary,
+                        color: PactaFlowColors.textSecondary,
                         fontSize: 12,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -274,7 +274,7 @@ class _AlertCard extends ConsumerWidget {
                     icon: const Icon(Icons.search, size: 14),
                     label: const Text('Investigar'),
                     style: TextButton.styleFrom(
-                      foregroundColor: BusFlowColors.secondary,
+                      foregroundColor: PactaFlowColors.secondary,
                       textStyle: const TextStyle(fontSize: 12),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -297,7 +297,7 @@ class _AlertCard extends ConsumerWidget {
                     icon: const Icon(Icons.check, size: 14),
                     label: const Text('Confirmar'),
                     style: TextButton.styleFrom(
-                      foregroundColor: BusFlowColors.onTime,
+                      foregroundColor: PactaFlowColors.onTime,
                       textStyle: const TextStyle(fontSize: 12),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -318,13 +318,13 @@ class _AlertCard extends ConsumerWidget {
   Color _severityColor(String severity) {
     switch (severity) {
       case 'CRITICAL':
-        return BusFlowColors.critical;
+        return PactaFlowColors.critical;
       case 'HIGH':
-        return BusFlowColors.delayed;
+        return PactaFlowColors.delayed;
       case 'WARNING':
         return Colors.orange;
       default:
-        return BusFlowColors.textSecondary;
+        return PactaFlowColors.textSecondary;
     }
   }
 

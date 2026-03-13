@@ -1,8 +1,8 @@
-import 'package:busflow/application/operational_control_service.dart';
-import 'package:busflow/domain/entities/trip_event.dart';
-import 'package:busflow/domain/enums/event_type.dart';
-import 'package:busflow/domain/enums/trip_status.dart';
-import 'package:busflow/domain/entities/operational_trip.dart';
+import 'package:pactaflow/application/operational_control_service.dart';
+import 'package:pactaflow/domain/entities/trip_event.dart';
+import 'package:pactaflow/domain/enums/event_type.dart';
+import 'package:pactaflow/domain/enums/trip_status.dart';
+import 'package:pactaflow/domain/entities/operational_trip.dart';
 
 /// A pure Spy Service that intercepts Mutator calls.
 ///

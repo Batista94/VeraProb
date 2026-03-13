@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:busflow/application/projections/providers/audit_filter_provider.dart';
-import 'package:busflow/application/projections/providers/audit_log_projection_provider.dart';
-import 'package:busflow/application/audit/audit_service.dart';
-import 'package:busflow/core/theme/app_theme.dart';
+import 'package:pactaflow/application/projections/providers/audit_filter_provider.dart';
+import 'package:pactaflow/application/projections/providers/audit_log_projection_provider.dart';
+import 'package:pactaflow/application/audit/audit_service.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
 
 class OperationalAuditScreen extends ConsumerWidget {
   const OperationalAuditScreen({super.key});
@@ -13,13 +13,13 @@ class OperationalAuditScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: BusFlowColors.background,
+      backgroundColor: PactaFlowColors.background,
       appBar: AppBar(
         title: const Text(
           'OCC - Centro de Auditoria Integrada',
           style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1),
         ),
-        backgroundColor: BusFlowColors.surface,
+        backgroundColor: PactaFlowColors.surface,
         centerTitle: false,
         actions: [
           IconButton(
@@ -40,16 +40,16 @@ class OperationalAuditScreen extends ConsumerWidget {
             child: Column(
               children: [
                 _buildFilterBar(context, ref),
-                const Divider(height: 1, color: BusFlowColors.border),
+                const Divider(height: 1, color: PactaFlowColors.border),
                 _buildTableHeader(),
-                const Divider(height: 1, color: BusFlowColors.border),
+                const Divider(height: 1, color: PactaFlowColors.border),
                 Expanded(child: _buildLogTable(ref)),
               ],
             ),
           ),
 
           // Right Side: Master/Detail Panel
-          const VerticalDivider(width: 1, color: BusFlowColors.border),
+          const VerticalDivider(width: 1, color: PactaFlowColors.border),
           const Expanded(flex: 3, child: _AuditSidePanel()),
         ],
       ),
@@ -61,7 +61,7 @@ class OperationalAuditScreen extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: BusFlowColors.surface,
+      color: PactaFlowColors.surface,
       child: Row(
         children: [
           // Just a mockup of OCC dense filters
@@ -91,7 +91,7 @@ class OperationalAuditScreen extends ConsumerWidget {
             icon: const Icon(Icons.clear_all, size: 16),
             label: const Text('Limpar Filtros', style: TextStyle(fontSize: 12)),
             style: TextButton.styleFrom(
-              foregroundColor: BusFlowColors.textSecondary,
+              foregroundColor: PactaFlowColors.textSecondary,
             ),
           ),
         ],
@@ -102,7 +102,7 @@ class OperationalAuditScreen extends ConsumerWidget {
   Widget _buildTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: BusFlowColors.surfaceElevated,
+      color: PactaFlowColors.surfaceElevated,
       child: const Row(
         children: [
           SizedBox(width: 80, child: Text('HORA', style: _headerStyle)),
@@ -129,7 +129,7 @@ class OperationalAuditScreen extends ConsumerWidget {
       error: (err, stack) => Center(
         child: Text(
           'Erro ao carregar auditoria: $err',
-          style: const TextStyle(color: BusFlowColors.error),
+          style: const TextStyle(color: PactaFlowColors.error),
           textAlign: TextAlign.center,
         ),
       ),
@@ -138,7 +138,7 @@ class OperationalAuditScreen extends ConsumerWidget {
           return const Center(
             child: Text(
               'Nenhum registro encontrado',
-              style: TextStyle(color: BusFlowColors.textSecondary),
+              style: TextStyle(color: PactaFlowColors.textSecondary),
             ),
           );
         }
@@ -155,10 +155,10 @@ class OperationalAuditScreen extends ConsumerWidget {
               },
               child: Container(
                 color: isSelected
-                    ? BusFlowColors.primary.withValues(alpha: 0.1)
+                    ? PactaFlowColors.primary.withValues(alpha: 0.1)
                     : (index.isEven
-                          ? BusFlowColors.background
-                          : BusFlowColors.surface),
+                          ? PactaFlowColors.background
+                          : PactaFlowColors.surface),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 8,
@@ -204,7 +204,7 @@ class OperationalAuditScreen extends ConsumerWidget {
                             : const Text(
                                 '-',
                                 style: TextStyle(
-                                  color: BusFlowColors.textSecondary,
+                                  color: PactaFlowColors.textSecondary,
                                 ),
                               ),
                       ),
@@ -218,8 +218,8 @@ class OperationalAuditScreen extends ConsumerWidget {
                         ),
                         decoration: BoxDecoration(
                           color: log.category == 'SYSTEM'
-                              ? BusFlowColors.info.withValues(alpha: 0.2)
-                              : BusFlowColors.warning.withValues(alpha: 0.2),
+                              ? PactaFlowColors.info.withValues(alpha: 0.2)
+                              : PactaFlowColors.warning.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -228,8 +228,8 @@ class OperationalAuditScreen extends ConsumerWidget {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             color: log.category == 'SYSTEM'
-                                ? BusFlowColors.info
-                                : BusFlowColors.warning,
+                                ? PactaFlowColors.info
+                                : PactaFlowColors.warning,
                           ),
                         ),
                       ),
@@ -257,7 +257,7 @@ class OperationalAuditScreen extends ConsumerWidget {
                       child: Text(
                         log.actorName ?? '-',
                         style: _cellStyle.copyWith(
-                          color: BusFlowColors.textSecondary,
+                          color: PactaFlowColors.textSecondary,
                         ),
                       ),
                     ),
@@ -294,12 +294,12 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isActive
-              ? BusFlowColors.primary.withValues(alpha: 0.15)
-              : BusFlowColors.background,
+              ? PactaFlowColors.primary.withValues(alpha: 0.15)
+              : PactaFlowColors.background,
           border: Border.all(
             color: isActive
-                ? BusFlowColors.primary.withValues(alpha: 0.5)
-                : BusFlowColors.border,
+                ? PactaFlowColors.primary.withValues(alpha: 0.5)
+                : PactaFlowColors.border,
           ),
           borderRadius: BorderRadius.circular(16),
         ),
@@ -311,8 +311,8 @@ class _FilterChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 color: isActive
-                    ? BusFlowColors.primary
-                    : BusFlowColors.textSecondary,
+                    ? PactaFlowColors.primary
+                    : PactaFlowColors.textSecondary,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -323,7 +323,7 @@ class _FilterChip extends StatelessWidget {
                 child: Icon(
                   Icons.close,
                   size: 14,
-                  color: BusFlowColors.primary,
+                  color: PactaFlowColors.primary,
                 ),
               ),
             ],
@@ -343,16 +343,16 @@ class _AuditSidePanel extends ConsumerWidget {
 
     if (log == null) {
       return Container(
-        color: BusFlowColors.surface,
+        color: PactaFlowColors.surface,
         child: const Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline, size: 48, color: BusFlowColors.border),
+              Icon(Icons.info_outline, size: 48, color: PactaFlowColors.border),
               SizedBox(height: 16),
               Text(
                 'Selecione um registro para ver os detalhes',
-                style: TextStyle(color: BusFlowColors.textSecondary),
+                style: TextStyle(color: PactaFlowColors.textSecondary),
               ),
             ],
           ),
@@ -361,7 +361,7 @@ class _AuditSidePanel extends ConsumerWidget {
     }
 
     return Container(
-      color: BusFlowColors.surface,
+      color: PactaFlowColors.surface,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,14 +374,14 @@ class _AuditSidePanel extends ConsumerWidget {
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: BusFlowColors.textPrimary,
+                  color: PactaFlowColors.textPrimary,
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.close, size: 20),
                 onPressed: () =>
                     ref.read(selectedAuditLogProvider.notifier).state = null,
-                color: BusFlowColors.textSecondary,
+                color: PactaFlowColors.textSecondary,
               ),
             ],
           ),
@@ -398,13 +398,13 @@ class _AuditSidePanel extends ConsumerWidget {
             value: '${log.actorName ?? 'N/D'} (${log.actorId})',
           ),
 
-          const Divider(height: 32, color: BusFlowColors.border),
+          const Divider(height: 32, color: PactaFlowColors.border),
           const Text(
             'Contexto da Entidade',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: BusFlowColors.textSecondary,
+              color: PactaFlowColors.textSecondary,
             ),
           ),
           const SizedBox(height: 16),
@@ -425,13 +425,13 @@ class _AuditSidePanel extends ConsumerWidget {
             ),
 
           if (log.details != null) ...[
-            const Divider(height: 32, color: BusFlowColors.border),
+            const Divider(height: 32, color: PactaFlowColors.border),
             const Text(
               'Carga Útil / Razão',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: BusFlowColors.textSecondary,
+                color: PactaFlowColors.textSecondary,
               ),
             ),
             const SizedBox(height: 12),
@@ -439,16 +439,16 @@ class _AuditSidePanel extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: BusFlowColors.background,
+                color: PactaFlowColors.background,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: BusFlowColors.border),
+                border: Border.all(color: PactaFlowColors.border),
               ),
               child: Text(
                 log.details!,
                 style: const TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 13,
-                  color: BusFlowColors.textPrimary,
+                  color: PactaFlowColors.textPrimary,
                 ),
               ),
             ),
@@ -483,7 +483,7 @@ class _DetailRow extends StatelessWidget {
               label,
               style: const TextStyle(
                 fontSize: 13,
-                color: BusFlowColors.textSecondary,
+                color: PactaFlowColors.textSecondary,
               ),
             ),
           ),
@@ -492,7 +492,7 @@ class _DetailRow extends StatelessWidget {
               value,
               style: TextStyle(
                 fontSize: 14,
-                color: BusFlowColors.textPrimary,
+                color: PactaFlowColors.textPrimary,
                 fontFamily: isMonospace ? 'monospace' : null,
                 fontWeight: FontWeight.w500,
               ),
@@ -507,8 +507,8 @@ class _DetailRow extends StatelessWidget {
 const _headerStyle = TextStyle(
   fontSize: 11,
   fontWeight: FontWeight.bold,
-  color: BusFlowColors.textSecondary,
+  color: PactaFlowColors.textSecondary,
   letterSpacing: 0.5,
 );
 
-const _cellStyle = TextStyle(fontSize: 13, color: BusFlowColors.textPrimary);
+const _cellStyle = TextStyle(fontSize: 13, color: PactaFlowColors.textPrimary);

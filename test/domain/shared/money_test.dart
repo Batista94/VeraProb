@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:busflow/domain/shared/money.dart';
+import 'package:pactaflow/domain/shared/money.dart';
 
 void main() {
   group('Money Value Object', () {

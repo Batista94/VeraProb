@@ -80,7 +80,7 @@ class AdminShell extends ConsumerWidget {
     final currentDestination = ref.watch(adminDestinationProvider);
 
     return Scaffold(
-      backgroundColor: BusFlowColors.background,
+      backgroundColor: PactaFlowColors.background,
       body: Column(
         children: [
           // ── Top Bar ──────────────────────────────────────
@@ -103,7 +103,7 @@ class AdminShell extends ConsumerWidget {
                 const VerticalDivider(
                   width: 1,
                   thickness: 1,
-                  color: BusFlowColors.border,
+                  color: PactaFlowColors.border,
                 ),
 
                 // ── Content Area ───────────────────────────
@@ -135,9 +135,9 @@ class _TopBar extends StatelessWidget {
     return Container(
       height: 48,
       decoration: const BoxDecoration(
-        color: BusFlowColors.surface,
+        color: PactaFlowColors.surface,
         border: Border(
-          bottom: BorderSide(color: BusFlowColors.border, width: 1),
+          bottom: BorderSide(color: PactaFlowColors.border, width: 1),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -147,7 +147,7 @@ class _TopBar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: BusFlowColors.primary.withValues(alpha: 0.15),
+              color: PactaFlowColors.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Row(
@@ -155,14 +155,14 @@ class _TopBar extends StatelessWidget {
               children: [
                 Icon(
                   Icons.directions_bus,
-                  color: BusFlowColors.primary,
+                  color: PactaFlowColors.primary,
                   size: 18,
                 ),
                 const SizedBox(width: 6),
                 const Text(
-                  'BUSFLOW',
+                  'PactaFlow',
                   style: TextStyle(
-                    color: BusFlowColors.primary,
+                    color: PactaFlowColors.primary,
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                     letterSpacing: 1.5,
@@ -176,9 +176,9 @@ class _TopBar extends StatelessWidget {
 
           Text(
             currentDestination.tooltip.toUpperCase(),
-            style: BusFlowTypography.caption.copyWith(
+            style: PactaFlowTypography.caption.copyWith(
               letterSpacing: 1.0,
-              color: BusFlowColors.textSecondary,
+              color: PactaFlowColors.textSecondary,
             ),
           ),
 
@@ -211,7 +211,7 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isOnline ? BusFlowColors.onTime : BusFlowColors.critical;
+    final color = isOnline ? PactaFlowColors.onTime : PactaFlowColors.critical;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -231,7 +231,7 @@ class _StatusPill extends StatelessWidget {
           const SizedBox(width: 6),
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
-          Text(label, style: BusFlowTypography.caption.copyWith(color: color)),
+          Text(label, style: PactaFlowTypography.caption.copyWith(color: color)),
         ],
       ),
     );
@@ -272,7 +272,7 @@ class _LiveClockState extends State<_LiveClock> {
             fontFamily: 'Roboto Mono, monospace',
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: BusFlowColors.textPrimary,
+            color: PactaFlowColors.textPrimary,
             letterSpacing: 1.0,
           ),
         );
@@ -297,7 +297,7 @@ class _IconSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 56,
-      color: BusFlowColors.surface,
+      color: PactaFlowColors.surface,
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -360,11 +360,11 @@ class _SidebarIcon extends StatelessWidget {
           height: 48,
           decoration: BoxDecoration(
             color: isSelected
-                ? BusFlowColors.primary.withValues(alpha: 0.12)
+                ? PactaFlowColors.primary.withValues(alpha: 0.12)
                 : Colors.transparent,
             border: Border(
               left: BorderSide(
-                color: isSelected ? BusFlowColors.primary : Colors.transparent,
+                color: isSelected ? PactaFlowColors.primary : Colors.transparent,
                 width: 3,
               ),
             ),
@@ -373,8 +373,8 @@ class _SidebarIcon extends StatelessWidget {
             icon,
             size: 22,
             color: isSelected
-                ? BusFlowColors.primary
-                : BusFlowColors.textSecondary,
+                ? PactaFlowColors.primary
+                : PactaFlowColors.textSecondary,
           ),
         ),
       ),

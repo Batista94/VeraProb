@@ -1,4 +1,4 @@
-// BusFlow — Smoke Tests: Pipeline B2B + JSONB + Telemetria (Smokes 1–3)
+// PactaFlow — Smoke Tests: Pipeline B2B + JSONB + Telemetria (Smokes 1–3)
 //
 // Requer Supabase (local ou cloud). Pulados automaticamente sem credenciais.
 //
@@ -27,40 +27,40 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 // Domain
-import 'package:busflow/core/time/brazil_time.dart';
-import 'package:busflow/domain/enums/connectivity_state.dart';
-import 'package:busflow/domain/enums/motion_state.dart';
-import 'package:busflow/domain/entities/vehicle_operational_state.dart';
-import 'package:busflow/domain/shared/money.dart';
-import 'package:busflow/domain/sla_audit/contract.dart';
-import 'package:busflow/domain/sla_audit/contract_repository.dart';
-import 'package:busflow/domain/sla_audit/contract_status.dart';
-import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
-import 'package:busflow/domain/sla_audit/contractual_rule.dart';
-import 'package:busflow/domain/sla_audit/contractual_rule_repository.dart';
-import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
-import 'package:busflow/domain/sla_audit/shift_pattern.dart';
-import 'package:busflow/domain/sla_audit/sla_penalties.dart';
-import 'package:busflow/domain/sla_audit/domain_exception.dart';
-import 'package:busflow/domain/sla_audit/sla_template.dart';
-import 'package:busflow/domain/sla_audit/vehicle_category.dart';
+import 'package:pactaflow/core/time/brazil_time.dart';
+import 'package:pactaflow/domain/enums/connectivity_state.dart';
+import 'package:pactaflow/domain/enums/motion_state.dart';
+import 'package:pactaflow/domain/entities/vehicle_operational_state.dart';
+import 'package:pactaflow/domain/shared/money.dart';
+import 'package:pactaflow/domain/sla_audit/contract.dart';
+import 'package:pactaflow/domain/sla_audit/contract_repository.dart';
+import 'package:pactaflow/domain/sla_audit/contract_status.dart';
+import 'package:pactaflow/domain/sla_audit/contractual_execution_state.dart';
+import 'package:pactaflow/domain/sla_audit/contractual_rule.dart';
+import 'package:pactaflow/domain/sla_audit/contractual_rule_repository.dart';
+import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:pactaflow/domain/sla_audit/shift_pattern.dart';
+import 'package:pactaflow/domain/sla_audit/sla_penalties.dart';
+import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
+import 'package:pactaflow/domain/sla_audit/sla_template.dart';
+import 'package:pactaflow/domain/sla_audit/vehicle_category.dart';
 
 // Application
-import 'package:busflow/application/sla_audit/clone_contract_command.dart';
-import 'package:busflow/application/sla_audit/clone_contract_handler.dart';
-import 'package:busflow/application/sla_audit/contractual_evaluation_engine.dart';
-import 'package:busflow/application/sla_audit/create_contract_command.dart';
-import 'package:busflow/application/sla_audit/create_contract_handler.dart';
-import 'package:busflow/application/sla_audit/declare_contractual_plan_command.dart';
-import 'package:busflow/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:pactaflow/application/sla_audit/clone_contract_command.dart';
+import 'package:pactaflow/application/sla_audit/clone_contract_handler.dart';
+import 'package:pactaflow/application/sla_audit/contractual_evaluation_engine.dart';
+import 'package:pactaflow/application/sla_audit/create_contract_command.dart';
+import 'package:pactaflow/application/sla_audit/create_contract_handler.dart';
+import 'package:pactaflow/application/sla_audit/declare_contractual_plan_command.dart';
+import 'package:pactaflow/application/sla_audit/declare_contractual_plan_handler.dart';
 
 // Infrastructure
-import 'package:busflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
-import 'package:busflow/infrastructure/sla_audit/postgres_contract_repository.dart';
-import 'package:busflow/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
-import 'package:busflow/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
-import 'package:busflow/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
-import 'package:busflow/infrastructure/sla_audit/postgres_sla_template_repository.dart';
+import 'package:pactaflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:pactaflow/infrastructure/sla_audit/postgres_contract_repository.dart';
+import 'package:pactaflow/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
+import 'package:pactaflow/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
+import 'package:pactaflow/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
+import 'package:pactaflow/infrastructure/sla_audit/postgres_sla_template_repository.dart';
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────
 

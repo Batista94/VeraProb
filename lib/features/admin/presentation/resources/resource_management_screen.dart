@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:busflow/core/theme/app_theme.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
 
 /// Placeholder for the Resource Management screen.
 /// Will contain tabs for Drivers, Vehicles, and Routes management.
@@ -9,14 +9,14 @@ class ResourceManagementScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: BusFlowColors.background,
+      color: PactaFlowColors.background,
       child: Column(
         children: [
           // Tab bar
           Container(
             decoration: const BoxDecoration(
-              color: BusFlowColors.surface,
-              border: Border(bottom: BorderSide(color: BusFlowColors.border)),
+              color: PactaFlowColors.surface,
+              border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
             ),
             child: Row(
               children: [
@@ -47,13 +47,13 @@ class ResourceManagementScreen extends StatelessWidget {
                   Icon(
                     Icons.inventory_2_outlined,
                     size: 64,
-                    color: BusFlowColors.scheduled.withValues(alpha: 0.3),
+                    color: PactaFlowColors.scheduled.withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: 16),
                   const Text(
                     'GESTÃO DE RECURSOS',
                     style: TextStyle(
-                      color: BusFlowColors.textSecondary,
+                      color: PactaFlowColors.textSecondary,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 2,
@@ -63,7 +63,7 @@ class ResourceManagementScreen extends StatelessWidget {
                   const Text(
                     'Motoristas, veículos e rotas com status em tempo real',
                     style: TextStyle(
-                      color: BusFlowColors.textDisabled,
+                      color: PactaFlowColors.textDisabled,
                       fontSize: 13,
                     ),
                   ),
@@ -95,7 +95,7 @@ class _Tab extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: isSelected ? BusFlowColors.primary : Colors.transparent,
+            color: isSelected ? PactaFlowColors.primary : Colors.transparent,
             width: 2,
           ),
         ),
@@ -106,16 +106,16 @@ class _Tab extends StatelessWidget {
             icon,
             size: 18,
             color: isSelected
-                ? BusFlowColors.primary
-                : BusFlowColors.textSecondary,
+                ? PactaFlowColors.primary
+                : PactaFlowColors.textSecondary,
           ),
           const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
               color: isSelected
-                  ? BusFlowColors.textPrimary
-                  : BusFlowColors.textSecondary,
+                  ? PactaFlowColors.textPrimary
+                  : PactaFlowColors.textSecondary,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               fontSize: 13,
             ),

@@ -27,19 +27,19 @@ void main() async {
         // FASE 6 — Atomic Switch: runtime now operates on Postgres.
         persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
       ],
-      child: const BusFlowAdminApp(),
+      child: const PactaFlowAdminApp(),
     ),
   );
 }
 
-class BusFlowAdminApp extends ConsumerStatefulWidget {
-  const BusFlowAdminApp({super.key});
+class PactaFlowAdminApp extends ConsumerStatefulWidget {
+  const PactaFlowAdminApp({super.key});
 
   @override
-  ConsumerState<BusFlowAdminApp> createState() => _BusFlowAdminAppState();
+  ConsumerState<PactaFlowAdminApp> createState() => _PactaFlowAdminAppState();
 }
 
-class _BusFlowAdminAppState extends ConsumerState<BusFlowAdminApp> {
+class _PactaFlowAdminAppState extends ConsumerState<PactaFlowAdminApp> {
   @override
   Widget build(BuildContext context) {
     // FASE 8 — Start the ContractualEvaluationSubscriber reactively.
@@ -55,7 +55,7 @@ class _BusFlowAdminAppState extends ConsumerState<BusFlowAdminApp> {
     });
 
     return MaterialApp(
-      title: 'BusFlow — Control Center',
+      title: 'PactaFlow — Control Center',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [

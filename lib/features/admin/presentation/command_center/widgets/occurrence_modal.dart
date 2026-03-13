@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:busflow/core/theme/app_theme.dart';
-import 'package:busflow/domain/enums/event_type.dart';
-import 'package:busflow/state/providers/fleet_providers.dart';
-import 'package:busflow/presentation/shared/trip_status_theme.dart';
-import 'package:busflow/state/providers/authority_providers.dart';
-import 'package:busflow/application/authority/operational_command_bus.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/domain/enums/event_type.dart';
+import 'package:pactaflow/state/providers/fleet_providers.dart';
+import 'package:pactaflow/presentation/shared/trip_status_theme.dart';
+import 'package:pactaflow/state/providers/authority_providers.dart';
+import 'package:pactaflow/application/authority/operational_command_bus.dart';
 
 /// Modal for registering an operational occurrence on a trip.
 ///
@@ -52,7 +52,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: BusFlowColors.surface,
+      backgroundColor: PactaFlowColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Container(
         width: 400,
@@ -66,44 +66,44 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
               children: [
                 Icon(
                   Icons.report_problem_outlined,
-                  color: BusFlowColors.delayed,
+                  color: PactaFlowColors.delayed,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Registrar Ocorrência',
-                    style: BusFlowTypography.sectionTitle,
+                    style: PactaFlowTypography.sectionTitle,
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 18),
                   onPressed: () => Navigator.pop(context, false),
-                  color: BusFlowColors.textSecondary,
+                  color: PactaFlowColors.textSecondary,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Text(widget.tripLabel, style: BusFlowTypography.caption),
-            const Divider(color: BusFlowColors.border, height: 20),
+            Text(widget.tripLabel, style: PactaFlowTypography.caption),
+            const Divider(color: PactaFlowColors.border, height: 20),
 
             // Event Type
-            Text('Tipo de Evento', style: BusFlowTypography.caption),
+            Text('Tipo de Evento', style: PactaFlowTypography.caption),
             const SizedBox(height: 6),
             Container(
               decoration: BoxDecoration(
-                border: Border.all(color: BusFlowColors.border),
+                border: Border.all(color: PactaFlowColors.border),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<EventType>(
                   value: _selectedType,
                   isExpanded: true,
-                  dropdownColor: BusFlowColors.surface,
+                  dropdownColor: PactaFlowColors.surface,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  style: BusFlowTypography.bodyMedium,
+                  style: PactaFlowTypography.bodyMedium,
                   items: EventType.values.map((type) {
                     return DropdownMenuItem(
                       value: type,
@@ -129,27 +129,27 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
             const SizedBox(height: 16),
 
             // Severity
-            Text('Severidade', style: BusFlowTypography.caption),
+            Text('Severidade', style: PactaFlowTypography.caption),
             const SizedBox(height: 6),
             Row(
               children: [
                 _SeverityChip(
                   label: 'Baixa',
-                  color: BusFlowColors.onTime,
+                  color: PactaFlowColors.onTime,
                   isSelected: _severity == 'low',
                   onTap: () => setState(() => _severity = 'low'),
                 ),
                 const SizedBox(width: 6),
                 _SeverityChip(
                   label: 'Média',
-                  color: BusFlowColors.delayed,
+                  color: PactaFlowColors.delayed,
                   isSelected: _severity == 'medium',
                   onTap: () => setState(() => _severity = 'medium'),
                 ),
                 const SizedBox(width: 6),
                 _SeverityChip(
                   label: 'Alta',
-                  color: BusFlowColors.critical,
+                  color: PactaFlowColors.critical,
                   isSelected: _severity == 'high',
                   onTap: () => setState(() => _severity = 'high'),
                 ),
@@ -158,28 +158,28 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
             const SizedBox(height: 16),
 
             // Notes
-            Text('Observação', style: BusFlowTypography.caption),
+            Text('Observação', style: PactaFlowTypography.caption),
             const SizedBox(height: 6),
             TextField(
               controller: _notesController,
               maxLines: 3,
-              style: BusFlowTypography.bodyMedium,
+              style: PactaFlowTypography.bodyMedium,
               decoration: InputDecoration(
                 hintText: 'Descreva a ocorrência...',
-                hintStyle: BusFlowTypography.caption,
+                hintStyle: PactaFlowTypography.caption,
                 filled: true,
-                fillColor: BusFlowColors.background,
+                fillColor: PactaFlowColors.background,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: BusFlowColors.border),
+                  borderSide: const BorderSide(color: PactaFlowColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: BusFlowColors.border),
+                  borderSide: const BorderSide(color: PactaFlowColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
-                  borderSide: BorderSide(color: BusFlowColors.primary),
+                  borderSide: BorderSide(color: PactaFlowColors.primary),
                 ),
                 contentPadding: const EdgeInsets.all(10),
               ),
@@ -194,7 +194,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
                   onPressed: () => Navigator.pop(context, false),
                   child: Text(
                     'Cancelar',
-                    style: TextStyle(color: BusFlowColors.textSecondary),
+                    style: TextStyle(color: PactaFlowColors.textSecondary),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -212,7 +212,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
                       : const Icon(Icons.check, size: 16),
                   label: const Text('Confirmar'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: BusFlowColors.primary,
+                    backgroundColor: PactaFlowColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -251,7 +251,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Acesso Negado: ${e.reason}'),
-            backgroundColor: BusFlowColors.critical,
+            backgroundColor: PactaFlowColors.critical,
           ),
         );
       }
@@ -265,11 +265,11 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
   Color _severityColor(EventType type) {
     switch (type.severity) {
       case EventSeverity.warning:
-        return BusFlowColors.delayed;
+        return PactaFlowColors.delayed;
       case EventSeverity.info:
-        return BusFlowColors.onTime;
+        return PactaFlowColors.onTime;
       case EventSeverity.neutral:
-        return BusFlowColors.textSecondary;
+        return PactaFlowColors.textSecondary;
     }
   }
 }
@@ -299,7 +299,7 @@ class _SeverityChip extends StatelessWidget {
               : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: isSelected ? color : BusFlowColors.border,
+            color: isSelected ? color : PactaFlowColors.border,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -308,7 +308,7 @@ class _SeverityChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? color : BusFlowColors.textSecondary,
+            color: isSelected ? color : PactaFlowColors.textSecondary,
           ),
         ),
       ),

@@ -25,7 +25,7 @@ class AdminLayout extends ConsumerWidget {
     final isWideScreen = MediaQuery.of(context).size.width >= 600;
 
     return Scaffold(
-      backgroundColor: BusFlowColors.background,
+      backgroundColor: PactaFlowColors.background,
       appBar: AppBar(
         title: Row(
           children: [
@@ -33,14 +33,14 @@ class AdminLayout extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [BusFlowColors.primary, BusFlowColors.primary.withValues(alpha: 0.7)],
+                  colors: [PactaFlowColors.primary, PactaFlowColors.primary.withValues(alpha: 0.7)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
-                    color: BusFlowColors.primary.withValues(alpha: 0.2),
+                    color: PactaFlowColors.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -51,12 +51,12 @@ class AdminLayout extends ConsumerWidget {
             if (isWideScreen) ...[
               const SizedBox(width: 16),
               Text(
-                'OCC • BUSFLOW',
-                style: BusFlowTypography.sectionTitle.copyWith(
+                'OCC • PactaFlow',
+                style: PactaFlowTypography.sectionTitle.copyWith(
                   fontSize: 16,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w800,
-                  color: BusFlowColors.textPrimary,
+                  color: PactaFlowColors.textPrimary,
                 ),
               ),
             ],
@@ -71,15 +71,15 @@ class AdminLayout extends ConsumerWidget {
             const SizedBox(width: 8),
           ],
         ),
-        backgroundColor: BusFlowColors.surface,
-        foregroundColor: BusFlowColors.textPrimary,
+        backgroundColor: PactaFlowColors.surface,
+        foregroundColor: PactaFlowColors.textPrimary,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
             decoration: const BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: BusFlowColors.border, width: 0.5),
+                bottom: BorderSide(color: PactaFlowColors.border, width: 0.5),
               ),
             ),
           ),
@@ -91,9 +91,9 @@ class AdminLayout extends ConsumerWidget {
             children: [
               Container(
                   decoration: const BoxDecoration(
-                    color: BusFlowColors.background,
+                    color: PactaFlowColors.background,
                     border: Border(
-                      right: BorderSide(color: BusFlowColors.border),
+                      right: BorderSide(color: PactaFlowColors.border),
                     ),
                   ),
                   child: NavigationRail(
@@ -110,7 +110,7 @@ class AdminLayout extends ConsumerWidget {
                 ),
               Expanded(
                 child: Container(
-                  color: BusFlowColors.background,
+                  color: PactaFlowColors.background,
                   child: IndexedStack(
                     index: selectedIndex,
                     children: children.map((child) => _AnimatedPage(child: child)).toList(),
@@ -149,7 +149,7 @@ class _StressModeToggle extends ConsumerWidget {
     return IconButton(
       icon: Icon(
         isStressMode ? Icons.speed_rounded : Icons.speed_outlined,
-        color: isStressMode ? BusFlowColors.primary : BusFlowColors.textDisabled,
+        color: isStressMode ? PactaFlowColors.primary : PactaFlowColors.textDisabled,
       ),
       tooltip: isStressMode ? 'Desativar Stress Mode' : 'Ativar Stress Mode',
       onPressed: () {
@@ -172,7 +172,7 @@ class _LogoutButton extends StatelessWidget {
     return IconButton(
       icon: const Icon(Icons.logout_rounded),
       tooltip: 'Sair',
-      color: BusFlowColors.textDisabled,
+      color: PactaFlowColors.textDisabled,
       onPressed: () async {
         await Supabase.instance.client.auth.signOut();
         if (context.mounted) {
@@ -214,7 +214,7 @@ class _FeedHealthBadge extends ConsumerWidget {
           const SizedBox(width: 8),
           Text(
             health.label.toUpperCase(),
-            style: BusFlowTypography.badge.copyWith(
+            style: PactaFlowTypography.badge.copyWith(
               color: health.color,
               fontSize: 9,
             ),

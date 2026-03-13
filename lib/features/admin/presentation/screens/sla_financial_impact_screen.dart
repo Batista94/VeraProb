@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:busflow/core/theme/app_theme.dart';
-import 'package:busflow/state/providers/sla_financial_providers.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/state/providers/sla_financial_providers.dart';
 
 final _currencyFormat = NumberFormat.currency(
   locale: 'pt_BR',
@@ -18,7 +18,7 @@ class SlaFinancialImpactScreen extends ConsumerWidget {
     final impactAsync = ref.watch(financialImpactProvider);
 
     return Container(
-      color: BusFlowColors.background,
+      color: PactaFlowColors.background,
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -26,13 +26,13 @@ class SlaFinancialImpactScreen extends ConsumerWidget {
           children: [
             Text(
               'Impacto Financeiro do SLA',
-              style: BusFlowTypography.sectionTitle.copyWith(fontSize: 24),
+              style: PactaFlowTypography.sectionTitle.copyWith(fontSize: 24),
             ),
             const SizedBox(height: 8),
             Text(
               'Visão executiva de proteção de margem contratual',
-              style: BusFlowTypography.bodySmall.copyWith(
-                color: BusFlowColors.textSecondary,
+              style: PactaFlowTypography.bodySmall.copyWith(
+                color: PactaFlowColors.textSecondary,
               ),
             ),
             const SizedBox(height: 32),
@@ -54,18 +54,18 @@ class SlaFinancialImpactScreen extends ConsumerWidget {
                     children: [
                       const Icon(
                         Icons.error_outline,
-                        color: BusFlowColors.error,
+                        color: PactaFlowColors.error,
                         size: 48,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         'Erro ao carregar impacto financeiro',
-                        style: BusFlowTypography.bodyMedium.copyWith(
-                          color: BusFlowColors.error,
+                        style: PactaFlowTypography.bodyMedium.copyWith(
+                          color: PactaFlowColors.error,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text('$err', style: BusFlowTypography.caption),
+                      Text('$err', style: PactaFlowTypography.caption),
                     ],
                   ),
                 ),
@@ -110,26 +110,26 @@ class _FinancialDashboard extends StatelessWidget {
             _KpiCard(
               title: 'Receita Total Contratada',
               value: _currencyFormat.format(totalContractedRevenue),
-              color: BusFlowColors.info,
+              color: PactaFlowColors.info,
               icon: Icons.account_balance_outlined,
             ),
             _KpiCard(
               title: 'Receita Protegida',
               value: _currencyFormat.format(protectedRevenue),
-              color: BusFlowColors.success,
+              color: PactaFlowColors.success,
               icon: Icons.shield_outlined,
             ),
             _KpiCard(
               title: 'Receita em Risco',
               value: _currencyFormat.format(revenueAtRisk),
-              color: BusFlowColors.warning,
+              color: PactaFlowColors.warning,
               icon: Icons.warning_amber_outlined,
               percentage: riskPercentage,
             ),
             _KpiCard(
               title: 'Receita Perdida',
               value: _currencyFormat.format(lostRevenue),
-              color: BusFlowColors.error,
+              color: PactaFlowColors.error,
               icon: Icons.trending_down_outlined,
               percentage: lossPercentage,
             ),
@@ -160,7 +160,7 @@ class _KpiCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: BusFlowColors.surface,
+        color: PactaFlowColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
@@ -183,7 +183,7 @@ class _KpiCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title.toUpperCase(),
-                  style: BusFlowTypography.kpiLabel.copyWith(
+                  style: PactaFlowTypography.kpiLabel.copyWith(
                     letterSpacing: 1.0,
                   ),
                 ),
@@ -198,7 +198,7 @@ class _KpiCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   value,
-                  style: BusFlowTypography.kpiValue.copyWith(
+                  style: PactaFlowTypography.kpiValue.copyWith(
                     color: color,
                     fontSize: 30,
                   ),
@@ -217,7 +217,7 @@ class _KpiCard extends StatelessWidget {
                   ),
                   child: Text(
                     '${percentage!.toStringAsFixed(1)}%',
-                    style: BusFlowTypography.badge.copyWith(
+                    style: PactaFlowTypography.badge.copyWith(
                       color: color,
                       fontSize: 13,
                     ),

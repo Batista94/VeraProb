@@ -1,5 +1,5 @@
 -- ============================================================
--- BusFlow — SLA Audit Hardening Migration
+-- PactaFlow — SLA Audit Hardening Migration
 -- ============================================================
 -- FASE 11: Enforce database-level invariants for the SLA audit domain.
 --

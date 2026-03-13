@@ -2,9 +2,9 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 // ignore: depend_on_referenced_packages
 import 'package:fake_async/fake_async.dart';
-import 'package:busflow/features/shared/data/services/gtfs_realtime_service.dart';
-import 'package:busflow/features/shared/data/repositories/vehicle_repository.dart';
-import 'package:busflow/features/shared/domain/entities/vehicle_position.dart';
+import 'package:pactaflow/features/shared/data/services/gtfs_realtime_service.dart';
+import 'package:pactaflow/features/shared/data/repositories/vehicle_repository.dart';
+import 'package:pactaflow/features/shared/domain/entities/vehicle_position.dart';
 
 void main() {
   group('GtfsRealtimeService', () {

@@ -1,18 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:busflow/application/sla_audit/contractual_evaluation_engine.dart';
-import 'package:busflow/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
-import 'package:busflow/domain/entities/vehicle_operational_state.dart';
-import 'package:busflow/domain/enums/connectivity_state.dart';
-import 'package:busflow/domain/enums/motion_state.dart';
-import 'package:busflow/domain/sla_audit/contractual_execution_state.dart';
-import 'package:busflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
-import 'package:busflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
-import 'package:busflow/domain/sla_audit/execution_status.dart';
-import 'package:busflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
-import 'package:busflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
-import 'package:busflow/domain/sla_audit/plan_declaration.dart';
-import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
-import 'package:busflow/domain/shared/money.dart';
+import 'package:pactaflow/application/sla_audit/contractual_evaluation_engine.dart';
+import 'package:pactaflow/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
+import 'package:pactaflow/domain/entities/vehicle_operational_state.dart';
+import 'package:pactaflow/domain/enums/connectivity_state.dart';
+import 'package:pactaflow/domain/enums/motion_state.dart';
+import 'package:pactaflow/domain/sla_audit/contractual_execution_state.dart';
+import 'package:pactaflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:pactaflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
+import 'package:pactaflow/domain/sla_audit/execution_status.dart';
+import 'package:pactaflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
+import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:pactaflow/domain/sla_audit/plan_declaration.dart';
+import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:pactaflow/domain/shared/money.dart';
 
 void main() {
   group('Query Services Integration Consistency', () {

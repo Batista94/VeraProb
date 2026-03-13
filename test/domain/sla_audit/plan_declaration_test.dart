@@ -1,10 +1,10 @@
-import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
-import 'package:busflow/domain/shared/money.dart';
+import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:pactaflow/domain/shared/money.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:busflow/domain/sla_audit/contractual_plan_declared_event.dart';
-import 'package:busflow/domain/sla_audit/contractual_service_execution.dart';
-import 'package:busflow/domain/sla_audit/domain_exception.dart';
-import 'package:busflow/domain/sla_audit/plan_declaration.dart';
+import 'package:pactaflow/domain/sla_audit/contractual_plan_declared_event.dart';
+import 'package:pactaflow/domain/sla_audit/contractual_service_execution.dart';
+import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
+import 'package:pactaflow/domain/sla_audit/plan_declaration.dart';
 
 void main() {
   // ── Helpers ──────────────────────────────────────────────────

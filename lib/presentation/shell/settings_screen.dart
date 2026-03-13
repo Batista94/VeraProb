@@ -12,7 +12,7 @@ class SettingsScreen extends ConsumerWidget {
     final operatorId = ref.watch(currentOperatorIdProvider);
 
     return Scaffold(
-      backgroundColor: BusFlowColors.background,
+      backgroundColor: PactaFlowColors.background,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -23,15 +23,15 @@ class SettingsScreen extends ConsumerWidget {
                 children: [
                   Text(
                     'CONFIGURAÇÕES DO SISTEMA',
-                    style: BusFlowTypography.sectionTitle.copyWith(
-                      color: BusFlowColors.primary,
+                    style: PactaFlowTypography.sectionTitle.copyWith(
+                      color: PactaFlowColors.primary,
                       letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Gerencie as preferências globais do Centro de Controle.',
-                    style: BusFlowTypography.bodySmall,
+                    style: PactaFlowTypography.bodySmall,
                   ),
                   const SizedBox(height: 32),
 
@@ -93,12 +93,12 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(
           title.toUpperCase(),
-          style: BusFlowTypography.caption.copyWith(
-            color: BusFlowColors.textSecondary,
+          style: PactaFlowTypography.caption.copyWith(
+            color: PactaFlowColors.textSecondary,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const Divider(height: 24, color: BusFlowColors.border),
+        const Divider(height: 24, color: PactaFlowColors.border),
       ],
     );
   }
@@ -121,15 +121,15 @@ class _SettingTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: BusFlowColors.textSecondary),
+          Icon(icon, size: 20, color: PactaFlowColors.textSecondary),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: BusFlowTypography.caption),
+              Text(label, style: PactaFlowTypography.caption),
               Text(
                 value,
-                style: BusFlowTypography.bodyMedium.copyWith(
+                style: PactaFlowTypography.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),

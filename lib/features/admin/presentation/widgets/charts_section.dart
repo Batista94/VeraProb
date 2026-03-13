@@ -16,15 +16,15 @@ class ChartsSection extends StatelessWidget {
           children: [
             Text(
               'Performance de Execução Operacional',
-              style: BusFlowTypography.sectionTitle.copyWith(
-                color: BusFlowColors.textPrimary,
+              style: PactaFlowTypography.sectionTitle.copyWith(
+                color: PactaFlowColors.textPrimary,
                 letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Trips processadas nas últimas 24h (Audit Ledger)',
-              style: BusFlowTypography.caption,
+              style: PactaFlowTypography.caption,
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -36,7 +36,7 @@ class ChartsSection extends StatelessWidget {
                   barTouchData: BarTouchData(
                     enabled: false,
                     touchTooltipData: BarTouchTooltipData(
-                      tooltipBgColor: BusFlowColors.surfaceElevated,
+                      tooltipBgColor: PactaFlowColors.surfaceElevated,
                       tooltipPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       tooltipMargin: 8,
                       getTooltipItem: (
@@ -48,7 +48,7 @@ class ChartsSection extends StatelessWidget {
                         return BarTooltipItem(
                           rod.toY.round().toString(),
                           const TextStyle(
-                            color: BusFlowColors.primary,
+                            color: PactaFlowColors.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         );
@@ -61,8 +61,8 @@ class ChartsSection extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          final style = BusFlowTypography.caption.copyWith(
-                            color: BusFlowColors.textSecondary,
+                          final style = PactaFlowTypography.caption.copyWith(
+                            color: PactaFlowColors.textSecondary,
                             fontWeight: FontWeight.w600,
                           );
                           String text;
@@ -106,28 +106,28 @@ class ChartsSection extends StatelessWidget {
                     BarChartGroupData(
                       x: 0,
                       barRods: [
-                        BarChartRodData(toY: 5, color: BusFlowColors.primary),
+                        BarChartRodData(toY: 5, color: PactaFlowColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),
                     BarChartGroupData(
                       x: 6,
                       barRods: [
-                        BarChartRodData(toY: 12, color: BusFlowColors.primary),
+                        BarChartRodData(toY: 12, color: PactaFlowColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),
                     BarChartGroupData(
                       x: 12,
                       barRods: [
-                        BarChartRodData(toY: 19, color: BusFlowColors.primary),
+                        BarChartRodData(toY: 19, color: PactaFlowColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),
                     BarChartGroupData(
                       x: 18,
                       barRods: [
-                        BarChartRodData(toY: 15, color: BusFlowColors.primary),
+                        BarChartRodData(toY: 15, color: PactaFlowColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),

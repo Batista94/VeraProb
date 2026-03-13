@@ -60,7 +60,7 @@ class TargetRef extends Equatable {
 
   const TargetRef(this.entityType, this.entityId);
 
-  String get urn => 'urn:busflow:$entityType:$entityId';
+  String get urn => 'urn:PactaFlow:$entityType:$entityId';
 
   @override
   List<Object?> get props => [entityType, entityId];

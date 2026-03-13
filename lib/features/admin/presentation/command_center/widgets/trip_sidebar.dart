@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:busflow/core/theme/app_theme.dart';
-import 'package:busflow/domain/entities/operational_trip.dart';
-import 'package:busflow/state/providers/fleet_providers.dart';
-import 'package:busflow/presentation/shared/trip_status_theme.dart';
-import 'package:busflow/application/projections/providers/command_center_filter_provider.dart';
-import 'package:busflow/presentation/shared/widgets/status_badge.dart';
-import 'package:busflow/dev/performance_metrics.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/domain/entities/operational_trip.dart';
+import 'package:pactaflow/state/providers/fleet_providers.dart';
+import 'package:pactaflow/presentation/shared/trip_status_theme.dart';
+import 'package:pactaflow/application/projections/providers/command_center_filter_provider.dart';
+import 'package:pactaflow/presentation/shared/widgets/status_badge.dart';
+import 'package:pactaflow/dev/performance_metrics.dart';
 
 /// Local sidebar state for search and sort (not global — UI-only).
 final _sidebarSearchProvider = StateProvider<String>((ref) => '');
@@ -55,15 +55,15 @@ class TripSidebar extends ConsumerWidget {
       child: Container(
         width: 280,
         decoration: const BoxDecoration(
-          color: BusFlowColors.surface,
-          border: Border(right: BorderSide(color: BusFlowColors.border)),
+          color: PactaFlowColors.surface,
+          border: Border(right: BorderSide(color: PactaFlowColors.border)),
         ),
         child: Column(
           children: [
             // Header
             _SidebarHeader(tripCount: displayTrips.length),
 
-            const Divider(height: 1, color: BusFlowColors.border),
+            const Divider(height: 1, color: PactaFlowColors.border),
 
             // Search + Sort controls
             _SearchSortBar(
@@ -76,7 +76,7 @@ class TripSidebar extends ConsumerWidget {
               },
             ),
 
-            const Divider(height: 1, color: BusFlowColors.border),
+            const Divider(height: 1, color: PactaFlowColors.border),
 
             // Active filter indicator banner
             if (statusFilter != FleetStatusFilter.all)
@@ -96,7 +96,7 @@ class TripSidebar extends ConsumerWidget {
                   : ListView.separated(
                       itemCount: displayTrips.length,
                       separatorBuilder: (_, _) =>
-                          const Divider(height: 1, color: BusFlowColors.border),
+                          const Divider(height: 1, color: PactaFlowColors.border),
                       itemBuilder: (context, index) {
                         final trip = displayTrips[index];
                         return _TripCard(
@@ -149,7 +149,7 @@ class _SidebarHeader extends StatelessWidget {
         children: [
           Text(
             'VIAGENS ATIVAS',
-            style: BusFlowTypography.caption.copyWith(
+            style: PactaFlowTypography.caption.copyWith(
               letterSpacing: 1.0,
               fontWeight: FontWeight.w600,
             ),
@@ -158,13 +158,13 @@ class _SidebarHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
-              color: BusFlowColors.primary.withValues(alpha: 0.15),
+              color: PactaFlowColors.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               '$tripCount',
-              style: BusFlowTypography.caption.copyWith(
-                color: BusFlowColors.primary,
+              style: PactaFlowTypography.caption.copyWith(
+                color: PactaFlowColors.primary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -200,13 +200,13 @@ class _SearchSortBar extends StatelessWidget {
                 onChanged: onSearchChanged,
                 style: const TextStyle(
                   fontSize: 12,
-                  color: BusFlowColors.textPrimary,
+                  color: PactaFlowColors.textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Buscar linha...',
                   hintStyle: TextStyle(
                     fontSize: 12,
-                    color: BusFlowColors.textDisabled,
+                    color: PactaFlowColors.textDisabled,
                   ),
                   prefixIcon: const Icon(Icons.search, size: 16),
                   prefixIconConstraints: const BoxConstraints(
@@ -220,20 +220,20 @@ class _SearchSortBar extends StatelessWidget {
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: BusFlowColors.border),
+                    borderSide: const BorderSide(color: PactaFlowColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: BusFlowColors.border),
+                    borderSide: const BorderSide(color: PactaFlowColors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
                     borderSide: BorderSide(
-                      color: BusFlowColors.primary.withValues(alpha: 0.6),
+                      color: PactaFlowColors.primary.withValues(alpha: 0.6),
                     ),
                   ),
                   filled: true,
-                  fillColor: BusFlowColors.surface,
+                  fillColor: PactaFlowColors.surface,
                 ),
               ),
             ),
@@ -248,12 +248,12 @@ class _SearchSortBar extends StatelessWidget {
               height: 30,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: BusFlowColors.border),
+                border: Border.all(color: PactaFlowColors.border),
               ),
               child: Icon(
                 sortAsc ? Icons.sort_by_alpha : Icons.sort_by_alpha,
                 size: 16,
-                color: BusFlowColors.textSecondary,
+                color: PactaFlowColors.textSecondary,
               ),
             ),
           ),
@@ -282,7 +282,7 @@ class _TripCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         color: isSelected
-            ? BusFlowColors.primary.withValues(alpha: 0.08)
+            ? PactaFlowColors.primary.withValues(alpha: 0.08)
             : Colors.transparent,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,7 +303,7 @@ class _TripCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     trip.routeDisplay,
-                    style: BusFlowTypography.bodySmall.copyWith(
+                    style: PactaFlowTypography.bodySmall.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
@@ -323,23 +323,23 @@ class _TripCard extends StatelessWidget {
                     Icon(
                       Icons.directions_bus,
                       size: 12,
-                      color: BusFlowColors.textDisabled,
+                      color: PactaFlowColors.textDisabled,
                     ),
                     const SizedBox(width: 2),
-                    Text(trip.vehiclePlate!, style: BusFlowTypography.caption),
+                    Text(trip.vehiclePlate!, style: PactaFlowTypography.caption),
                     const SizedBox(width: 8),
                   ],
                   if (trip.driverName != null) ...[
                     Icon(
                       Icons.person,
                       size: 12,
-                      color: BusFlowColors.textDisabled,
+                      color: PactaFlowColors.textDisabled,
                     ),
                     const SizedBox(width: 2),
                     Expanded(
                       child: Text(
                         trip.driverName!,
-                        style: BusFlowTypography.caption,
+                        style: PactaFlowTypography.caption,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -354,13 +354,13 @@ class _TripCard extends StatelessWidget {
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        color: BusFlowColors.delayed.withValues(alpha: 0.15),
+                        color: PactaFlowColors.delayed.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(3),
                       ),
                       child: Text(
                         trip.delayDisplay,
-                        style: BusFlowTypography.caption.copyWith(
-                          color: BusFlowColors.delayed,
+                        style: PactaFlowTypography.caption.copyWith(
+                          color: PactaFlowColors.delayed,
                           fontWeight: FontWeight.w600,
                           fontSize: 10,
                         ),
@@ -389,10 +389,10 @@ class _EmptyState extends StatelessWidget {
             Icon(
               Icons.directions_bus_outlined,
               size: 40,
-              color: BusFlowColors.textDisabled.withValues(alpha: 0.5),
+              color: PactaFlowColors.textDisabled.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 12),
-            Text('Nenhuma viagem ativa', style: BusFlowTypography.bodySmall),
+            Text('Nenhuma viagem ativa', style: PactaFlowTypography.bodySmall),
           ],
         ),
       ),
@@ -421,7 +421,7 @@ class _ActiveFilterBanner extends StatelessWidget {
         color: filterColor.withValues(alpha: 0.08),
         border: Border(
           left: BorderSide(color: filterColor, width: 3),
-          bottom: const BorderSide(color: BusFlowColors.border),
+          bottom: const BorderSide(color: PactaFlowColors.border),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -446,7 +446,7 @@ class _ActiveFilterBanner extends StatelessWidget {
               child: Icon(
                 Icons.close,
                 size: 14,
-                color: BusFlowColors.textSecondary,
+                color: PactaFlowColors.textSecondary,
               ),
             ),
           ),
@@ -458,17 +458,17 @@ class _ActiveFilterBanner extends StatelessWidget {
   Color _colorForFilter(FleetStatusFilter filter) {
     switch (filter) {
       case FleetStatusFilter.active:
-        return BusFlowColors.primary;
+        return PactaFlowColors.primary;
       case FleetStatusFilter.onTime:
-        return BusFlowColors.onTime;
+        return PactaFlowColors.onTime;
       case FleetStatusFilter.delayed:
-        return BusFlowColors.delayed;
+        return PactaFlowColors.delayed;
       case FleetStatusFilter.alerts:
-        return BusFlowColors.critical;
+        return PactaFlowColors.critical;
       case FleetStatusFilter.atStop:
-        return BusFlowColors.scheduled;
+        return PactaFlowColors.scheduled;
       case FleetStatusFilter.all:
-        return BusFlowColors.textSecondary;
+        return PactaFlowColors.textSecondary;
     }
   }
 

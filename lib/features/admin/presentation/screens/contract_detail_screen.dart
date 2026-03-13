@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:busflow/application/sla_audit/projections/contract_detail_view.dart';
-import 'package:busflow/application/sla_audit/projections/sla_execution_item_view.dart';
-import 'package:busflow/domain/sla_audit/contract_status.dart';
-import 'package:busflow/domain/sla_audit/execution_status.dart';
-import 'package:busflow/domain/shared/money.dart';
-import 'package:busflow/state/providers/contract_providers.dart';
+import 'package:pactaflow/application/sla_audit/projections/contract_detail_view.dart';
+import 'package:pactaflow/application/sla_audit/projections/sla_execution_item_view.dart';
+import 'package:pactaflow/domain/sla_audit/contract_status.dart';
+import 'package:pactaflow/domain/sla_audit/execution_status.dart';
+import 'package:pactaflow/domain/shared/money.dart';
+import 'package:pactaflow/state/providers/contract_providers.dart';
 
 import 'declare_contract_plan_form.dart';
 

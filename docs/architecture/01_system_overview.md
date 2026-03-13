@@ -1,14 +1,14 @@
-# System Overview: BusFlow Platform
+# System Overview: PactaFlow Platform
 
-BusFlow is a B2B SaaS platform focused on Operational Determinism and Contractual Margin Protection for the corporate transportation and charter market. 
+PactaFlow is a B2B SaaS platform focused on Operational Determinism and Contractual Margin Protection for the corporate transportation and charter market. 
 
-Unlike traditional fleet tracking (TMS) or B2C mobility apps, BusFlow is singularly focused on converting raw physical telemetry into **verifiable contractual truth** and **immutable financial projections**.
+Unlike traditional fleet tracking (TMS) or B2C mobility apps, PactaFlow is singularly focused on converting raw physical telemetry into **verifiable contractual truth** and **immutable financial projections**.
 
 ## The Problem
 Corporate transportation operators lose millions to technical penalties, billing disputes, and delayed receivables primarily because the execution evidence is disconnected from the contractual rules, requiring massive manual reconciliation.
 
 ## The Solution
-BusFlow establishes an automated pipeline where:
+PactaFlow establishes an automated pipeline where:
 `Telemetry → Normalization → SLA Evaluation Engine → Immutable Forensic Ledger → Financial Projection`
 
 ## Core Architectural Philosophies

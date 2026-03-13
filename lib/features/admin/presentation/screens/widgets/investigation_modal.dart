@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:busflow/core/theme/app_theme.dart';
-import 'package:busflow/domain/sla_audit/evaluation_trace.dart';
-import 'package:busflow/domain/sla_audit/sla_ledger_entry.dart';
-import 'package:busflow/state/providers/investigation_providers.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/domain/sla_audit/evaluation_trace.dart';
+import 'package:pactaflow/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:pactaflow/state/providers/investigation_providers.dart';
 import 'investigation_map_panel.dart';
 
 final _timeFormat = DateFormat('HH:mm:ss');
@@ -31,33 +31,33 @@ class InvestigationModal extends ConsumerWidget {
 
     return Dialog.fullscreen(
       child: Scaffold(
-        backgroundColor: BusFlowColors.background,
+        backgroundColor: PactaFlowColors.background,
         appBar: AppBar(
-          backgroundColor: BusFlowColors.surface,
+          backgroundColor: PactaFlowColors.surface,
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.pop(context),
           ),
           title: Row(
             children: [
-              const Icon(Icons.search, size: 18, color: BusFlowColors.primary),
+              const Icon(Icons.search, size: 18, color: PactaFlowColors.primary),
               const SizedBox(width: 8),
               Text(
                 'Análise Forense de Decisões',
-                style: BusFlowTypography.sectionTitle,
+                style: PactaFlowTypography.sectionTitle,
               ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: BusFlowColors.surfaceElevated,
+                  color: PactaFlowColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: BusFlowColors.border),
+                  border: Border.all(color: PactaFlowColors.border),
                 ),
                 child: Text(
                   'MODO AUDITORIA',
-                  style: BusFlowTypography.caption.copyWith(
-                    color: BusFlowColors.warning,
+                  style: PactaFlowTypography.caption.copyWith(
+                    color: PactaFlowColors.warning,
                     letterSpacing: 1.0,
                     fontWeight: FontWeight.w700,
                   ),
@@ -145,9 +145,9 @@ class _ContextHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: BusFlowColors.surface,
+        color: PactaFlowColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: BusFlowColors.border),
+        border: Border.all(color: PactaFlowColors.border),
       ),
       child: Row(
         children: [
@@ -173,10 +173,10 @@ class _HeaderChip extends StatelessWidget {
       children: [
         Text(
           label,
-          style: BusFlowTypography.caption.copyWith(letterSpacing: 1.2),
+          style: PactaFlowTypography.caption.copyWith(letterSpacing: 1.2),
         ),
         const SizedBox(height: 4),
-        Text(value, style: BusFlowTypography.bodyMedium),
+        Text(value, style: PactaFlowTypography.bodyMedium),
       ],
     );
   }
@@ -199,9 +199,9 @@ class _LedgerTimelinePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: BusFlowColors.surface,
+        color: PactaFlowColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: BusFlowColors.border),
+        border: Border.all(color: PactaFlowColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,15 +210,15 @@ class _LedgerTimelinePanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: BusFlowColors.border)),
+              border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.timeline, size: 16, color: BusFlowColors.info),
+                const Icon(Icons.timeline, size: 16, color: PactaFlowColors.info),
                 const SizedBox(width: 8),
                 Text(
                   'Ledger Operacional',
-                  style: BusFlowTypography.sectionTitle,
+                  style: PactaFlowTypography.sectionTitle,
                 ),
               ],
             ),
@@ -228,13 +228,13 @@ class _LedgerTimelinePanel extends StatelessWidget {
           Expanded(
             child: ledgerAsync.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(color: BusFlowColors.primary),
+                child: CircularProgressIndicator(color: PactaFlowColors.primary),
               ),
               error: (err, _) => Center(
                 child: Text(
                   'Erro ao carregar ledger: $err',
-                  style: BusFlowTypography.bodySmall.copyWith(
-                    color: BusFlowColors.error,
+                  style: PactaFlowTypography.bodySmall.copyWith(
+                    color: PactaFlowColors.error,
                   ),
                 ),
               ),
@@ -243,7 +243,7 @@ class _LedgerTimelinePanel extends StatelessWidget {
                   return Center(
                     child: Text(
                       'Nenhum evento no ledger',
-                      style: BusFlowTypography.bodySmall,
+                      style: PactaFlowTypography.bodySmall,
                     ),
                   );
                 }
@@ -287,8 +287,8 @@ class _TimelineEvent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dotColor = isTriggering
-        ? BusFlowColors.primary
-        : BusFlowColors.border;
+        ? PactaFlowColors.primary
+        : PactaFlowColors.border;
 
     return IntrinsicHeight(
       child: Row(
@@ -306,13 +306,13 @@ class _TimelineEvent extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: dotColor,
                     border: isTriggering
-                        ? Border.all(color: BusFlowColors.primary, width: 2)
+                        ? Border.all(color: PactaFlowColors.primary, width: 2)
                         : null,
                   ),
                 ),
                 if (!isLast)
                   Expanded(
-                    child: Container(width: 1, color: BusFlowColors.border),
+                    child: Container(width: 1, color: PactaFlowColors.border),
                   ),
               ],
             ),
@@ -326,13 +326,13 @@ class _TimelineEvent extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isTriggering
-                    ? BusFlowColors.primary.withValues(alpha: 0.08)
-                    : BusFlowColors.surfaceElevated,
+                    ? PactaFlowColors.primary.withValues(alpha: 0.08)
+                    : PactaFlowColors.surfaceElevated,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                   color: isTriggering
-                      ? BusFlowColors.primary.withValues(alpha: 0.3)
-                      : BusFlowColors.border,
+                      ? PactaFlowColors.primary.withValues(alpha: 0.3)
+                      : PactaFlowColors.border,
                 ),
               ),
               child: Column(
@@ -342,8 +342,8 @@ class _TimelineEvent extends StatelessWidget {
                     children: [
                       Text(
                         _timeFormat.format(entry.occurredAtUtc),
-                        style: BusFlowTypography.caption.copyWith(
-                          color: BusFlowColors.textSecondary,
+                        style: PactaFlowTypography.caption.copyWith(
+                          color: PactaFlowColors.textSecondary,
                         ),
                       ),
                       const Spacer(),
@@ -354,15 +354,15 @@ class _TimelineEvent extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: BusFlowColors.primary.withValues(
+                            color: PactaFlowColors.primary.withValues(
                               alpha: 0.15,
                             ),
                             borderRadius: BorderRadius.circular(3),
                           ),
                           child: Text(
                             'AUDITADO',
-                            style: BusFlowTypography.caption.copyWith(
-                              color: BusFlowColors.primary,
+                            style: PactaFlowTypography.caption.copyWith(
+                              color: PactaFlowColors.primary,
                               fontWeight: FontWeight.w800,
                               fontSize: 9,
                               letterSpacing: 0.8,
@@ -374,7 +374,7 @@ class _TimelineEvent extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     entry.type,
-                    style: BusFlowTypography.bodyMedium.copyWith(
+                    style: PactaFlowTypography.bodyMedium.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -401,9 +401,9 @@ class _EvaluationTracePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: BusFlowColors.surface,
+        color: PactaFlowColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: BusFlowColors.border),
+        border: Border.all(color: PactaFlowColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,19 +412,19 @@ class _EvaluationTracePanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: BusFlowColors.border)),
+              border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.gavel,
                   size: 16,
-                  color: BusFlowColors.secondary,
+                  color: PactaFlowColors.secondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Rastreabilidade Forense',
-                  style: BusFlowTypography.sectionTitle,
+                  style: PactaFlowTypography.sectionTitle,
                 ),
               ],
             ),
@@ -434,13 +434,13 @@ class _EvaluationTracePanel extends StatelessWidget {
           Expanded(
             child: tracesAsync.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(color: BusFlowColors.primary),
+                child: CircularProgressIndicator(color: PactaFlowColors.primary),
               ),
               error: (err, _) => Center(
                 child: Text(
                   'Erro ao carregar traces: $err',
-                  style: BusFlowTypography.bodySmall.copyWith(
-                    color: BusFlowColors.error,
+                  style: PactaFlowTypography.bodySmall.copyWith(
+                    color: PactaFlowColors.error,
                   ),
                 ),
               ),
@@ -473,19 +473,19 @@ class _NoTraceState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.info_outline, size: 48, color: BusFlowColors.textDisabled),
+          Icon(Icons.info_outline, size: 48, color: PactaFlowColors.textDisabled),
           const SizedBox(height: 16),
           Text(
             'Nenhuma rastreabilidade disponível',
-            style: BusFlowTypography.sectionTitle,
+            style: PactaFlowTypography.sectionTitle,
           ),
           const SizedBox(height: 8),
           Text(
             'Esta obrigação pode ter sido processada antes\n'
             'da ativação do sistema de rastreabilidade.',
             textAlign: TextAlign.center,
-            style: BusFlowTypography.bodySmall.copyWith(
-              color: BusFlowColors.textSecondary,
+            style: PactaFlowTypography.bodySmall.copyWith(
+              color: PactaFlowColors.textSecondary,
             ),
           ),
         ],
@@ -508,9 +508,9 @@ class _TraceCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: BusFlowColors.surfaceElevated,
+        color: PactaFlowColors.surfaceElevated,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: BusFlowColors.border),
+        border: Border.all(color: PactaFlowColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,25 +519,25 @@ class _TraceCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: BusFlowColors.border)),
+              border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
             ),
             child: Row(
               children: [
                 _MetaChip(
                   icon: Icons.memory,
                   label: trace.engineVersion,
-                  color: BusFlowColors.secondary,
+                  color: PactaFlowColors.secondary,
                 ),
                 const SizedBox(width: 12),
                 _MetaChip(
                   icon: Icons.access_time,
                   label: _dateFormat.format(trace.evaluatedAtUtc),
-                  color: BusFlowColors.textSecondary,
+                  color: PactaFlowColors.textSecondary,
                 ),
                 const Spacer(),
                 Text(
                   '${trace.decisions.length} regra(s)',
-                  style: BusFlowTypography.caption,
+                  style: PactaFlowTypography.caption,
                 ),
               ],
             ),
@@ -571,7 +571,7 @@ class _MetaChip extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(label, style: BusFlowTypography.bodySmall.copyWith(color: color)),
+        Text(label, style: PactaFlowTypography.bodySmall.copyWith(color: color)),
       ],
     );
   }
@@ -592,15 +592,15 @@ class _DecisionRow extends StatelessWidget {
     final isPass =
         decision.outcome == 'PASS' || decision.outcome == 'BINDING_CONFIRMED';
     final outcomeColor = isPenalty
-        ? BusFlowColors.error
+        ? PactaFlowColors.error
         : isPass
-        ? BusFlowColors.success
-        : BusFlowColors.info;
+        ? PactaFlowColors.success
+        : PactaFlowColors.info;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: BusFlowColors.border)),
+        border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -611,13 +611,13 @@ class _DecisionRow extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: BusFlowColors.info.withValues(alpha: 0.1),
+                  color: PactaFlowColors.info.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(3),
                 ),
                 child: Text(
                   'P${decision.rulePriority}',
-                  style: BusFlowTypography.badge.copyWith(
-                    color: BusFlowColors.info,
+                  style: PactaFlowTypography.badge.copyWith(
+                    color: PactaFlowColors.info,
                     fontSize: 10,
                   ),
                 ),
@@ -626,7 +626,7 @@ class _DecisionRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   decision.ruleType,
-                  style: BusFlowTypography.bodyMedium.copyWith(
+                  style: PactaFlowTypography.bodyMedium.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -639,7 +639,7 @@ class _DecisionRow extends StatelessWidget {
                 ),
                 child: Text(
                   decision.outcome,
-                  style: BusFlowTypography.badge.copyWith(color: outcomeColor),
+                  style: PactaFlowTypography.badge.copyWith(color: outcomeColor),
                 ),
               ),
             ],
@@ -652,19 +652,19 @@ class _DecisionRow extends StatelessWidget {
             children: [
               Text(
                 'Regra: ${decision.ruleId.substring(0, 8)}…',
-                style: BusFlowTypography.caption,
+                style: PactaFlowTypography.caption,
               ),
               const SizedBox(width: 16),
               Text(
                 'Versão: v${decision.ruleVersion}',
-                style: BusFlowTypography.caption,
+                style: PactaFlowTypography.caption,
               ),
               if (decision.financialImpactCents != null) ...[
                 const Spacer(),
                 Text(
                   'Impacto: R\$ ${(decision.financialImpactCents! / 100).toStringAsFixed(2)}',
-                  style: BusFlowTypography.bodySmall.copyWith(
-                    color: BusFlowColors.error,
+                  style: PactaFlowTypography.bodySmall.copyWith(
+                    color: PactaFlowColors.error,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -679,7 +679,7 @@ class _DecisionRow extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: BusFlowColors.background,
+                color: PactaFlowColors.background,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Column(
@@ -687,7 +687,7 @@ class _DecisionRow extends StatelessWidget {
                 children: [
                    Text(
                     'PROVA DOCUMENTAL',
-                    style: BusFlowTypography.caption.copyWith(
+                    style: PactaFlowTypography.caption.copyWith(
                       letterSpacing: 1.0,
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
@@ -701,13 +701,13 @@ class _DecisionRow extends StatelessWidget {
                         children: [
                           Text(
                             '${e.key}: ',
-                            style: BusFlowTypography.caption.copyWith(
-                              color: BusFlowColors.textSecondary,
+                            style: PactaFlowTypography.caption.copyWith(
+                              color: PactaFlowColors.textSecondary,
                             ),
                           ),
                           Text(
                             '${e.value}',
-                            style: BusFlowTypography.bodySmall.copyWith(
+                            style: PactaFlowTypography.bodySmall.copyWith(
                               fontFamily: 'monospace',
                             ),
                           ),

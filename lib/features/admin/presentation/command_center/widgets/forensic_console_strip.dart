@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:busflow/application/projections/providers/forensic_ledger_provider.dart';
-import 'package:busflow/core/theme/app_theme.dart';
+import 'package:pactaflow/application/projections/providers/forensic_ledger_provider.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
 
 /// Activity Console Strip (SOC/NOC Style)
 ///
@@ -182,7 +182,7 @@ class _LoadingConsole extends StatelessWidget {
         height: 12,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: BusFlowColors.primary,
+          color: PactaFlowColors.primary,
         ),
       ),
     );

@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:busflow/domain/entities/raw_telemetry_ping.dart';
-import 'package:busflow/domain/entities/vehicle_position.dart';
-import 'package:busflow/application/intelligence/telemetry_normalizer.dart';
+import 'package:pactaflow/domain/entities/raw_telemetry_ping.dart';
+import 'package:pactaflow/domain/entities/vehicle_position.dart';
+import 'package:pactaflow/application/intelligence/telemetry_normalizer.dart';
 
 /// Service acting as a bridge for Telemetry.
 /// In Sprint 5, this uses Dart Streams in-memory to connect the Driver App

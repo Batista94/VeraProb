@@ -1,5 +1,5 @@
 -- ============================================================
--- BusFlow Core Schema Recovery Migration
+-- PactaFlow Core Schema Recovery Migration
 -- Target: Recover missing tables (drivers, routes, trips_audit)
 -- ============================================================
 

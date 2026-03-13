@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:busflow/core/theme/app_theme.dart';
-import 'package:busflow/state/providers/fleet_providers.dart';
-import 'package:busflow/application/projections/providers/command_center_filter_provider.dart';
-import 'package:busflow/state/providers/authority_providers.dart';
-import 'package:busflow/application/authority/operational_command_bus.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/state/providers/fleet_providers.dart';
+import 'package:pactaflow/application/projections/providers/command_center_filter_provider.dart';
+import 'package:pactaflow/state/providers/authority_providers.dart';
+import 'package:pactaflow/application/authority/operational_command_bus.dart';
 
 /// State to control the visibility of the new Alerts Triade Drawer.
 final isAlertsDrawerOpenProvider = StateProvider<bool>((ref) => false);
@@ -22,9 +22,9 @@ class AlertsTriadeDrawer extends ConsumerWidget {
     return Container(
       width: 340,
       decoration: BoxDecoration(
-        color: BusFlowColors.surface,
+        color: PactaFlowColors.surface,
         border: const Border(
-          left: BorderSide(color: BusFlowColors.border, width: 1),
+          left: BorderSide(color: PactaFlowColors.border, width: 1),
         ),
       ),
       child: Column(
@@ -34,9 +34,9 @@ class AlertsTriadeDrawer extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              color: BusFlowColors.background,
+              color: PactaFlowColors.background,
               border: Border(
-                bottom: BorderSide(color: BusFlowColors.border, width: 1),
+                bottom: BorderSide(color: PactaFlowColors.border, width: 1),
               ),
             ),
             child: Row(
@@ -46,14 +46,14 @@ class AlertsTriadeDrawer extends ConsumerWidget {
                   children: [
                     Icon(
                       Icons.warning_amber_rounded,
-                      color: BusFlowColors.critical,
+                      color: PactaFlowColors.critical,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Triagem de Alertas',
-                      style: BusFlowTypography.sectionTitle.copyWith(
-                        color: BusFlowColors.textPrimary,
+                      style: PactaFlowTypography.sectionTitle.copyWith(
+                        color: PactaFlowColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -62,7 +62,7 @@ class AlertsTriadeDrawer extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(
                     Icons.close,
-                    color: BusFlowColors.textSecondary,
+                    color: PactaFlowColors.textSecondary,
                     size: 20,
                   ),
                   onPressed: () {
@@ -83,8 +83,8 @@ class AlertsTriadeDrawer extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Text(
                 '${alertTrips.length} ALERTA${alertTrips.length > 1 ? 'S' : ''} ATIVO${alertTrips.length > 1 ? 'S' : ''}',
-                style: BusFlowTypography.badge.copyWith(
-                  color: BusFlowColors.critical,
+                style: PactaFlowTypography.badge.copyWith(
+                  color: PactaFlowColors.critical,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -100,13 +100,13 @@ class AlertsTriadeDrawer extends ConsumerWidget {
                         Icon(
                           Icons.check_circle_outline,
                           size: 48,
-                          color: BusFlowColors.onTime.withValues(alpha: 0.5),
+                          color: PactaFlowColors.onTime.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Nenhum alerta pendente',
-                          style: BusFlowTypography.bodyMedium.copyWith(
-                            color: BusFlowColors.textSecondary,
+                          style: PactaFlowTypography.bodyMedium.copyWith(
+                            color: PactaFlowColors.textSecondary,
                           ),
                         ),
                       ],
@@ -171,19 +171,19 @@ class _AlertCard extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? BusFlowColors.surfaceElevated
-              : BusFlowColors.surface,
+              ? PactaFlowColors.surfaceElevated
+              : PactaFlowColors.surface,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
-                ? BusFlowColors.critical.withValues(alpha: 0.5)
-                : BusFlowColors.border,
+                ? PactaFlowColors.critical.withValues(alpha: 0.5)
+                : PactaFlowColors.border,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: BusFlowColors.critical.withValues(alpha: 0.1),
+                    color: PactaFlowColors.critical.withValues(alpha: 0.1),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
@@ -221,7 +221,7 @@ class _AlertCard extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       trip.routeDisplay,
-                      style: BusFlowTypography.sectionTitle.copyWith(
+                      style: PactaFlowTypography.sectionTitle.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -229,8 +229,8 @@ class _AlertCard extends ConsumerWidget {
                 ),
                 Text(
                   trip.delaySeconds > 0 ? trip.delayDisplay : 'Imediato',
-                  style: BusFlowTypography.caption.copyWith(
-                    color: BusFlowColors.critical,
+                  style: PactaFlowTypography.caption.copyWith(
+                    color: PactaFlowColors.critical,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -240,7 +240,7 @@ class _AlertCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: BusFlowColors.background,
+                color: PactaFlowColors.background,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
@@ -248,14 +248,14 @@ class _AlertCard extends ConsumerWidget {
                   Icon(
                     Icons.info_outline,
                     size: 14,
-                    color: BusFlowColors.textSecondary,
+                    color: PactaFlowColors.textSecondary,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Operador requerido. Acompanhando última posição do veículo para auditoria.',
-                      style: BusFlowTypography.caption.copyWith(
-                        color: BusFlowColors.textSecondary,
+                      style: PactaFlowTypography.caption.copyWith(
+                        color: PactaFlowColors.textSecondary,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -271,10 +271,10 @@ class _AlertCard extends ConsumerWidget {
                   icon: const Icon(Icons.check, size: 14),
                   label: const Text('Resolver (OK)'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BusFlowColors.onTime.withValues(
+                    backgroundColor: PactaFlowColors.onTime.withValues(
                       alpha: 0.2,
                     ),
-                    foregroundColor: BusFlowColors.onTime,
+                    foregroundColor: PactaFlowColors.onTime,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -298,7 +298,7 @@ class _AlertCard extends ConsumerWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Acesso Negado: ${e.reason}'),
-                            backgroundColor: BusFlowColors.critical,
+                            backgroundColor: PactaFlowColors.critical,
                           ),
                         );
                       }

@@ -1,6 +1,6 @@
-import 'package:busflow/domain/enums/trip_status.dart';
-import 'package:busflow/domain/enums/connectivity_state.dart';
-import 'package:busflow/domain/enums/route_adherence.dart';
+import 'package:pactaflow/domain/enums/trip_status.dart';
+import 'package:pactaflow/domain/enums/connectivity_state.dart';
+import 'package:pactaflow/domain/enums/route_adherence.dart';
 
 /// Operational attention level for a vehicle in the Command Center.
 ///

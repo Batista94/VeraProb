@@ -1,5 +1,5 @@
 -- ============================================================
--- BusFlow Operational Control Center — Database Schema v2
+-- PactaFlow Operational Control Center — Database Schema v2
 -- ============================================================
 -- Requires: PostGIS extension
 -- Target: Supabase (PostgreSQL 15+ with PostGIS)

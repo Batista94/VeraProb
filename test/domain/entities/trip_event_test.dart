@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:busflow/domain/entities/trip_event.dart';
-import 'package:busflow/domain/enums/event_type.dart';
-import 'package:busflow/domain/enums/trip_status.dart';
+import 'package:pactaflow/domain/entities/trip_event.dart';
+import 'package:pactaflow/domain/enums/event_type.dart';
+import 'package:pactaflow/domain/enums/trip_status.dart';
 
 void main() {
   group('TripEvent Domain Rules', () {

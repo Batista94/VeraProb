@@ -1,5 +1,5 @@
 -- ============================================================
--- BusFlow — Phase 5 B2B Refactoring: Database Foundation
+-- PactaFlow — Phase 5 B2B Refactoring: Database Foundation
 -- ============================================================
 -- REASON:
 --   Phase 5 baseline (5.3) stored raw GPS coordinates and absolute

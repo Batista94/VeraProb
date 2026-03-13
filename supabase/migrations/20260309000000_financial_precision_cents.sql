@@ -1,5 +1,5 @@
 -- ============================================================
--- BusFlow — Financial Precision: contractual_value → BIGINT cents
+-- PactaFlow — Financial Precision: contractual_value → BIGINT cents
 -- ============================================================
 -- REASON:
 --   Storing monetary values as DOUBLE PRECISION violates the

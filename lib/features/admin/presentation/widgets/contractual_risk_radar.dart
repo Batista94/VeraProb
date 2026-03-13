@@ -36,21 +36,21 @@ class ContractualRiskRadar extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: BusFlowColors.warning.withValues(alpha: 0.1),
+            color: PactaFlowColors.warning.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.radar, color: BusFlowColors.warning),
+          child: const Icon(Icons.radar, color: PactaFlowColors.warning),
         ),
         const SizedBox(width: 16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Radar de Risco Contratual', style: BusFlowTypography.kpiValue.copyWith(fontSize: 22)),
+            Text('Radar de Risco Contratual', style: PactaFlowTypography.kpiValue.copyWith(fontSize: 22)),
             const SizedBox(height: 4),
             Text(
               'Acompanhamento de SLA operacional e impacto financeiro',
-              style: BusFlowTypography.bodyMedium.copyWith(
-                color: BusFlowColors.textSecondary,
+              style: PactaFlowTypography.bodyMedium.copyWith(
+                color: PactaFlowColors.textSecondary,
               ),
             ),
           ],
@@ -73,11 +73,11 @@ class _FinancialKpiRow extends ConsumerWidget {
 
     return impactAsync.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(color: BusFlowColors.primary),
+        child: CircularProgressIndicator(color: PactaFlowColors.primary),
       ),
       error: (err, _) => Text(
         'Erro ao carregar KPIs financeiros: $err',
-        style: BusFlowTypography.bodySmall.copyWith(color: BusFlowColors.error),
+        style: PactaFlowTypography.bodySmall.copyWith(color: PactaFlowColors.error),
       ),
       data: (impact) {
         return Row(
@@ -86,7 +86,7 @@ class _FinancialKpiRow extends ConsumerWidget {
               child: _KpiCard(
                 title: 'Receita Protegida',
                 value: 'R\$ ${(impact.protectedRevenue.cents / 100).toStringAsFixed(2)}',
-                color: BusFlowColors.success,
+                color: PactaFlowColors.success,
                 icon: Icons.shield,
               ),
             ),
@@ -95,7 +95,7 @@ class _FinancialKpiRow extends ConsumerWidget {
               child: _KpiCard(
                 title: 'Receita em Risco (Atrasos)',
                 value: 'R\$ ${(impact.revenueAtRisk.cents / 100).toStringAsFixed(2)}',
-                color: BusFlowColors.warning,
+                color: PactaFlowColors.warning,
                 icon: Icons.warning_amber_rounded,
               ),
             ),
@@ -104,7 +104,7 @@ class _FinancialKpiRow extends ConsumerWidget {
               child: _KpiCard(
                 title: 'SLA Violado (Penalty)',
                 value: 'R\$ ${(impact.lostRevenue.cents / 100).toStringAsFixed(2)}',
-                color: BusFlowColors.error,
+                color: PactaFlowColors.error,
                 icon: Icons.gavel,
               ),
             ),
@@ -133,9 +133,9 @@ class _KpiCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: BusFlowColors.surfaceElevated,
+        color: PactaFlowColors.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BusFlowColors.border),
+        border: Border.all(color: PactaFlowColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,7 +146,7 @@ class _KpiCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: BusFlowTypography.caption.copyWith(
+                style: PactaFlowTypography.caption.copyWith(
                   letterSpacing: 0.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -156,7 +156,7 @@ class _KpiCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: BusFlowTypography.kpiValue.copyWith(
+            style: PactaFlowTypography.kpiValue.copyWith(
               color: color,
               fontWeight: FontWeight.w700,
             ),
@@ -180,9 +180,9 @@ class _RiskFeedList extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: BusFlowColors.surface,
+        color: PactaFlowColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BusFlowColors.border),
+        border: Border.all(color: PactaFlowColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,20 +190,20 @@ class _RiskFeedList extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: BusFlowColors.border)),
+              border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.list_alt, size: 18, color: BusFlowColors.info),
+                const Icon(Icons.list_alt, size: 18, color: PactaFlowColors.info),
                 const SizedBox(width: 8),
                 Text(
                   'Viagens Programadas (Turnos)',
-                  style: BusFlowTypography.sectionTitle,
+                  style: PactaFlowTypography.sectionTitle,
                 ),
                 const Spacer(),
                 Text(
                   'Ordenado por Severidade',
-                  style: BusFlowTypography.caption,
+                  style: PactaFlowTypography.caption,
                 ),
               ],
             ),
@@ -212,7 +212,7 @@ class _RiskFeedList extends ConsumerWidget {
             loading: () => const Padding(
               padding: EdgeInsets.all(24.0),
               child: Center(
-                child: CircularProgressIndicator(color: BusFlowColors.primary),
+                child: CircularProgressIndicator(color: PactaFlowColors.primary),
               ),
             ),
             error: (err, _) => Padding(
@@ -220,8 +220,8 @@ class _RiskFeedList extends ConsumerWidget {
               child: Center(
                 child: Text(
                   'Erro ao carregar feed: $err',
-                  style: BusFlowTypography.bodySmall.copyWith(
-                    color: BusFlowColors.error,
+                  style: PactaFlowTypography.bodySmall.copyWith(
+                    color: PactaFlowColors.error,
                   ),
                 ),
               ),
@@ -233,7 +233,7 @@ class _RiskFeedList extends ConsumerWidget {
                   child: Center(
                     child: Text(
                       'Nenhuma viagem programada para hoje',
-                      style: BusFlowTypography.bodyMedium,
+                      style: PactaFlowTypography.bodyMedium,
                     ),
                   ),
                 );
@@ -268,13 +268,13 @@ class _FeedNodeItem extends StatelessWidget {
   Color _getSeverityColor() {
     switch (node.severity) {
       case DashboardFeedSeverity.critical:
-        return BusFlowColors.error;
+        return PactaFlowColors.error;
       case DashboardFeedSeverity.warning:
-        return BusFlowColors.warning;
+        return PactaFlowColors.warning;
       case DashboardFeedSeverity.pending:
-        return BusFlowColors.info;
+        return PactaFlowColors.info;
       case DashboardFeedSeverity.onTime:
-        return BusFlowColors.success;
+        return PactaFlowColors.success;
     }
   }
 
@@ -299,7 +299,7 @@ class _FeedNodeItem extends StatelessWidget {
                     color: color,
                     border: Border.all(
                       color: node.severity == DashboardFeedSeverity.critical
-                          ? BusFlowColors.error.withValues(alpha: 0.5)
+                          ? PactaFlowColors.error.withValues(alpha: 0.5)
                           : Colors.transparent,
                       width: 2,
                     ),
@@ -307,7 +307,7 @@ class _FeedNodeItem extends StatelessWidget {
                 ),
                 if (!isLast)
                   Expanded(
-                    child: Container(width: 2, color: BusFlowColors.border),
+                    child: Container(width: 2, color: PactaFlowColors.border),
                   ),
               ],
             ),
@@ -346,9 +346,9 @@ class _FeedNodeItem extends StatelessWidget {
                           children: [
                             Text(
                               _timeFormat.format(node.execution.windowStartUtc.toLocal()),
-                              style: BusFlowTypography.bodyMedium.copyWith(
+                              style: PactaFlowTypography.bodyMedium.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: BusFlowColors.textPrimary,
+                                color: PactaFlowColors.textPrimary,
                               ),
                             ),
                             const Spacer(),
@@ -363,7 +363,7 @@ class _FeedNodeItem extends StatelessWidget {
                               ),
                               child: Text(
                                 node.execution.status.name.toUpperCase(),
-                                style: BusFlowTypography.badge.copyWith(
+                                style: PactaFlowTypography.badge.copyWith(
                                   color: color,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -374,9 +374,9 @@ class _FeedNodeItem extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           'SET ID: ${node.execution.setId.substring(0, 8)}...',
-                          style: BusFlowTypography.caption.copyWith(
+                          style: PactaFlowTypography.caption.copyWith(
                             fontFamily: 'monospace',
-                            color: BusFlowColors.textSecondary,
+                            color: PactaFlowColors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -385,11 +385,11 @@ class _FeedNodeItem extends StatelessWidget {
                             const Icon(
                               Icons.attach_money,
                               size: 14,
-                              color: BusFlowColors.textSecondary,
+                              color: PactaFlowColors.textSecondary,
                             ),
                             Text(
                               'R\$ ${(node.execution.contractualValue.cents / 100).toStringAsFixed(2)}',
-                              style: BusFlowTypography.bodySmall,
+                              style: PactaFlowTypography.bodySmall,
                             ),
                             if (node.activeAlerts.isNotEmpty) ...[
                               const Spacer(),
@@ -397,7 +397,7 @@ class _FeedNodeItem extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 '${node.activeAlerts.length} ${node.activeAlerts.length == 1 ? 'Alerta' : 'Alertas'}',
-                                style: BusFlowTypography.caption.copyWith(color: color),
+                                style: PactaFlowTypography.caption.copyWith(color: color),
                               ),
                             ],
                           ],

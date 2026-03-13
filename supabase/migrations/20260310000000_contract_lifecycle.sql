@@ -1,5 +1,5 @@
 -- ============================================================
--- BusFlow — Phase 5: Contract & Plan Lifecycle Management
+-- PactaFlow — Phase 5: Contract & Plan Lifecycle Management
 -- ============================================================
 -- REASON:
 --   The evaluation engine (Phases 0–4) operates over a `contractId`

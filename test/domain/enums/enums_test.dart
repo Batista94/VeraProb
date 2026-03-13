@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:busflow/domain/enums/motion_state.dart';
-import 'package:busflow/domain/enums/connectivity_state.dart';
-import 'package:busflow/domain/enums/route_adherence.dart';
-import 'package:busflow/domain/enums/trip_status.dart';
+import 'package:pactaflow/domain/enums/motion_state.dart';
+import 'package:pactaflow/domain/enums/connectivity_state.dart';
+import 'package:pactaflow/domain/enums/route_adherence.dart';
+import 'package:pactaflow/domain/enums/trip_status.dart';
 
 void main() {
   group('Enums Domain Tests', () {

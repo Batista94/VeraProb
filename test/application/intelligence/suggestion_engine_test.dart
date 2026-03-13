@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:busflow/application/intelligence/suggestion_engine.dart';
-import 'package:busflow/domain/entities/operational_trip.dart';
-import 'package:busflow/domain/entities/operational_warning.dart';
-import 'package:busflow/domain/enums/trip_status.dart';
+import 'package:pactaflow/application/intelligence/suggestion_engine.dart';
+import 'package:pactaflow/domain/entities/operational_trip.dart';
+import 'package:pactaflow/domain/entities/operational_warning.dart';
+import 'package:pactaflow/domain/enums/trip_status.dart';
 
 void main() {
   group('SuggestionEngine Rules', () {

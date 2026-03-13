@@ -1,11 +1,11 @@
-# BusFlow: Strategic Context & Business Architecture Bootstrap
+# PactaFlow: Strategic Context & Business Architecture Bootstrap
 
-This document serves as the canonical entry point for any engineering session, AI agent, or product stakeholder interacting with the BusFlow repository. It defines the platform's true north: its business purpose, market differentiators, and operational rules.
+This document serves as the canonical entry point for any engineering session, AI agent, or product stakeholder interacting with the PactaFlow repository. It defines the platform's true north: its business purpose, market differentiators, and operational rules.
 
 ---
 
 ## 1. Platform Purpose & The "Core" Vision
-BusFlow is an **Automated SLA Compliance & Financial Protection Platform**. 
+PactaFlow is an **Automated SLA Compliance & Financial Protection Platform**. 
 Its primary objective is to eliminate the gap between a signed B2B contract and physical operation execution. It acts as an impartial, automated "Judge" that ingests real-world events, evaluates them against strict contractual rules, and generates immutable financial projections (penalties or approvals).
 
 While the current MVP (Vertical 1) is applied to **Corporate Charter and Shuttle Services (Fretamento)**, the CORE engine is industry-agnostic. It is designed to be easily replicated to other verticals (Construction Logistics, Facilities Management, Waste Collection) where SLA breaches result in financial loss.
@@ -23,7 +23,7 @@ While the current MVP (Vertical 1) is applied to **Corporate Charter and Shuttle
 - **Dynamic SLA Templates:** Reusable rule sets (e.g., "15-min tolerance for arrival", "100% penalty for no-show") that can be attached to any contract.
 
 ### The "Blue Ocean" (Unaddressed Pain Points - Our True Gold)
-- **The Burden of Proof (Immutable Ledger):** In B2B, disputes over SLA breaches take weeks of email back-and-forth. BusFlow generates *cryptographic-like proof* of execution. If a penalty is applied, the system provides an irrefutable, unalterable trail of exactly *why*, *when*, and *where* it failed.
+- **The Burden of Proof (Immutable Ledger):** In B2B, disputes over SLA breaches take weeks of email back-and-forth. PactaFlow generates *cryptographic-like proof* of execution. If a penalty is applied, the system provides an irrefutable, unalterable trail of exactly *why*, *when*, and *where* it failed.
 - **Predictive Penalty Alerting (Future):** Instead of reporting a failure at the end of the month, the system warns the operator *before* the breach (e.g., "Vehicle is delayed; SLA breach and $500 penalty in 4 minutes. Take action.").
 - **Client Transparency Portal (Future):** Giving the end-client a restricted view of their own SLAs, eliminating the need for the operator to manually generate compliance reports.
 

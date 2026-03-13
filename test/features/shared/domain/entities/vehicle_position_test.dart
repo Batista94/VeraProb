@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:busflow/features/shared/domain/entities/vehicle_position.dart';
+import 'package:pactaflow/features/shared/domain/entities/vehicle_position.dart';
 
 void main() {
   group('VehiclePosition Entity', () {

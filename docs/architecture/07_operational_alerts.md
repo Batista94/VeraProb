@@ -69,9 +69,9 @@ ACTIVE → ACKNOWLEDGED → RESOLVED
 
 | Severity | Color | Description |
 |---|---|---|
-| CRITICAL | `BusFlowColors.critical` | Immediate contractual breach requiring operator action |
-| HIGH | `BusFlowColors.delayed` | Financial penalty applied, needs review |
-| WARNING | `BusFlowColors.warning` | Incomplete evidence, manual investigation recommended |
+| CRITICAL | `PactaFlowColors.critical` | Immediate contractual breach requiring operator action |
+| HIGH | `PactaFlowColors.delayed` | Financial penalty applied, needs review |
+| WARNING | `PactaFlowColors.warning` | Incomplete evidence, manual investigation recommended |
 
 ## 5. Storage Model
 

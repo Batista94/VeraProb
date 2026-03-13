@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Operational color system for BusFlow Control Center.
+/// Operational color system for PactaFlow Control Center.
 ///
 /// Designed for 24/7 operations: dark base reduces eye strain,
 /// status colors follow industry standards for transport control rooms.
-class BusFlowColors {
-  BusFlowColors._();
+class PactaFlowColors {
+  PactaFlowColors._();
 
   // ── Premium Dark Theme (Deep Navy/Obsidian) ────────────────
   static const Color background = Color(0xFF121212); // Softer than pure black
@@ -42,8 +42,8 @@ class BusFlowColors {
 ///
 /// All paddings and gaps in the OCC must use these constants —
 /// never raw pixel values — to maintain mathematical alignment.
-class BusFlowSpacing {
-  BusFlowSpacing._();
+class PactaFlowSpacing {
+  PactaFlowSpacing._();
 
   static const double xs  = 4.0;
   static const double sm  = 8.0;
@@ -61,8 +61,8 @@ class BusFlowSpacing {
 }
 
 /// Operational typography for dense information display.
-class BusFlowTypography {
-  BusFlowTypography._();
+class PactaFlowTypography {
+  PactaFlowTypography._();
 
   // Use Inter as the premium bridge between UI and Data
   static TextStyle get base => GoogleFonts.inter();
@@ -70,14 +70,14 @@ class BusFlowTypography {
   static TextStyle get kpiValue => base.copyWith(
     fontSize: 28,
     fontWeight: FontWeight.w700,
-    color: BusFlowColors.textPrimary,
+    color: PactaFlowColors.textPrimary,
     letterSpacing: -0.7,
   );
 
   static TextStyle get kpiLabel => base.copyWith(
     fontSize: 11,
     fontWeight: FontWeight.w600,
-    color: BusFlowColors.textSecondary,
+    color: PactaFlowColors.textSecondary,
     letterSpacing: 0.8,
     textBaseline: TextBaseline.alphabetic,
   );
@@ -85,26 +85,26 @@ class BusFlowTypography {
   static TextStyle get sectionTitle => base.copyWith(
     fontSize: 14,
     fontWeight: FontWeight.w700,
-    color: BusFlowColors.textPrimary,
+    color: PactaFlowColors.textPrimary,
     letterSpacing: 0.2,
   );
 
   static TextStyle get bodyMedium => base.copyWith(
     fontSize: 13,
     fontWeight: FontWeight.w400,
-    color: BusFlowColors.textPrimary,
+    color: PactaFlowColors.textPrimary,
   );
 
   static TextStyle get bodySmall => base.copyWith(
     fontSize: 12,
     fontWeight: FontWeight.w400,
-    color: BusFlowColors.textSecondary,
+    color: PactaFlowColors.textSecondary,
   );
 
   static TextStyle get caption => base.copyWith(
     fontSize: 11,
     fontWeight: FontWeight.w500,
-    color: BusFlowColors.textDisabled,
+    color: PactaFlowColors.textDisabled,
   );
 
   static TextStyle get badge => base.copyWith(
@@ -118,19 +118,19 @@ class BusFlowTypography {
   static TextStyle get dataValue => base.copyWith(
     fontSize: 15,
     fontWeight: FontWeight.w600,
-    color: BusFlowColors.textPrimary,
+    color: PactaFlowColors.textPrimary,
   );
 
   /// For form field labels and section sub-headers inside forms.
   static TextStyle get fieldLabel => base.copyWith(
     fontSize: 11,
     fontWeight: FontWeight.w500,
-    color: BusFlowColors.textSecondary,
+    color: PactaFlowColors.textSecondary,
     letterSpacing: 0.4,
   );
 }
 
-/// Main theme configuration for the BusFlow admin panel.
+/// Main theme configuration for the PactaFlow admin panel.
 class AppTheme {
   AppTheme._();
 
@@ -138,73 +138,73 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.dark,
     fontFamily: GoogleFonts.inter().fontFamily,
-    scaffoldBackgroundColor: BusFlowColors.background,
+    scaffoldBackgroundColor: PactaFlowColors.background,
     colorScheme: const ColorScheme.dark(
-      primary: BusFlowColors.primary,
-      secondary: BusFlowColors.secondary,
-      surface: BusFlowColors.surface,
-      error: BusFlowColors.error,
+      primary: PactaFlowColors.primary,
+      secondary: PactaFlowColors.secondary,
+      surface: PactaFlowColors.surface,
+      error: PactaFlowColors.error,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
-      onSurface: BusFlowColors.textPrimary,
+      onSurface: PactaFlowColors.textPrimary,
       onError: Colors.white,
-      surfaceContainer: BusFlowColors.surface,
-      surfaceContainerHigh: BusFlowColors.surfaceElevated,
+      surfaceContainer: PactaFlowColors.surface,
+      surfaceContainerHigh: PactaFlowColors.surfaceElevated,
     ),
     textTheme: GoogleFonts.interTextTheme(const TextTheme(
-      headlineMedium: TextStyle(color: BusFlowColors.textPrimary, fontWeight: FontWeight.bold),
-      titleLarge: TextStyle(color: BusFlowColors.textPrimary, fontWeight: FontWeight.w600),
-      bodyMedium: TextStyle(color: BusFlowColors.textPrimary),
-      bodySmall: TextStyle(color: BusFlowColors.textSecondary),
+      headlineMedium: TextStyle(color: PactaFlowColors.textPrimary, fontWeight: FontWeight.bold),
+      titleLarge: TextStyle(color: PactaFlowColors.textPrimary, fontWeight: FontWeight.w600),
+      bodyMedium: TextStyle(color: PactaFlowColors.textPrimary),
+      bodySmall: TextStyle(color: PactaFlowColors.textSecondary),
     )),
     appBarTheme: const AppBarTheme(
-      backgroundColor: BusFlowColors.surface,
-      foregroundColor: BusFlowColors.textPrimary,
+      backgroundColor: PactaFlowColors.surface,
+      foregroundColor: PactaFlowColors.textPrimary,
       elevation: 0,
       centerTitle: false,
       toolbarHeight: 64, // Slightly taller for premium feel
     ),
     cardTheme: CardThemeData(
-      color: BusFlowColors.surface,
+      color: PactaFlowColors.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: BusFlowColors.border, width: 1),
+        side: const BorderSide(color: PactaFlowColors.border, width: 1),
       ),
       margin: EdgeInsets.zero,
     ),
     dividerTheme: const DividerThemeData(
-      color: BusFlowColors.border,
+      color: PactaFlowColors.border,
       thickness: 1,
       space: 1,
     ),
     iconTheme: const IconThemeData(
-      color: BusFlowColors.textSecondary,
+      color: PactaFlowColors.textSecondary,
       size: 20,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: BusFlowColors.background, // Nested feel
+      fillColor: PactaFlowColors.background, // Nested feel
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: BusFlowColors.border),
+        borderSide: const BorderSide(color: PactaFlowColors.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: BusFlowColors.border),
+        borderSide: const BorderSide(color: PactaFlowColors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: BusFlowColors.primary, width: 1.5),
+        borderSide: const BorderSide(color: PactaFlowColors.primary, width: 1.5),
       ),
-      labelStyle: TextStyle(color: BusFlowColors.textSecondary, fontSize: 13),
-      hintStyle: TextStyle(color: BusFlowColors.textDisabled, fontSize: 13),
+      labelStyle: TextStyle(color: PactaFlowColors.textSecondary, fontSize: 13),
+      hintStyle: TextStyle(color: PactaFlowColors.textDisabled, fontSize: 13),
       isDense: true,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: BusFlowColors.primary,
+        backgroundColor: PactaFlowColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -213,56 +213,56 @@ class AppTheme {
       ),
     ),
     navigationRailTheme: NavigationRailThemeData(
-      backgroundColor: BusFlowColors.background, // Match background so it blends natively
-      indicatorColor: BusFlowColors.primary.withValues(alpha: 0.15),
-      selectedIconTheme: const IconThemeData(color: BusFlowColors.primary, size: 24),
-      unselectedIconTheme: const IconThemeData(color: BusFlowColors.textDisabled, size: 24),
+      backgroundColor: PactaFlowColors.background, // Match background so it blends natively
+      indicatorColor: PactaFlowColors.primary.withValues(alpha: 0.15),
+      selectedIconTheme: const IconThemeData(color: PactaFlowColors.primary, size: 24),
+      unselectedIconTheme: const IconThemeData(color: PactaFlowColors.textDisabled, size: 24),
       selectedLabelTextStyle: const TextStyle(
-        color: BusFlowColors.textPrimary,
+        color: PactaFlowColors.textPrimary,
         fontWeight: FontWeight.w600,
         fontSize: 13,
       ),
       unselectedLabelTextStyle: const TextStyle(
-        color: BusFlowColors.textDisabled,
+        color: PactaFlowColors.textDisabled,
         fontWeight: FontWeight.w500,
         fontSize: 13,
       ),
     ),
     datePickerTheme: DatePickerThemeData(
-      backgroundColor: BusFlowColors.surfaceElevated,
-      headerBackgroundColor: BusFlowColors.surface,
-      headerForegroundColor: BusFlowColors.textPrimary,
+      backgroundColor: PactaFlowColors.surfaceElevated,
+      headerBackgroundColor: PactaFlowColors.surface,
+      headerForegroundColor: PactaFlowColors.textPrimary,
       surfaceTintColor: Colors.transparent, // Disable Material 3 subtle tint parsing
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: BusFlowColors.border, width: 1),
+        side: const BorderSide(color: PactaFlowColors.border, width: 1),
       ),
-      dayStyle: BusFlowTypography.bodyMedium,
-      weekdayStyle: BusFlowTypography.caption,
-      yearStyle: BusFlowTypography.bodyMedium,
-      todayBorder: const BorderSide(color: BusFlowColors.primary),
-      todayForegroundColor: WidgetStateProperty.all(BusFlowColors.primary),
+      dayStyle: PactaFlowTypography.bodyMedium,
+      weekdayStyle: PactaFlowTypography.caption,
+      yearStyle: PactaFlowTypography.bodyMedium,
+      todayBorder: const BorderSide(color: PactaFlowColors.primary),
+      todayForegroundColor: WidgetStateProperty.all(PactaFlowColors.primary),
       dayOverlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return BusFlowColors.primary;
+          return PactaFlowColors.primary;
         }
         return null; // Defer to default
       }),
       dayForegroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return BusFlowColors.background; // Dark text on bright primary
+          return PactaFlowColors.background; // Dark text on bright primary
         }
-        return BusFlowColors.textPrimary;
+        return PactaFlowColors.textPrimary;
       }),
-      cancelButtonStyle: TextButton.styleFrom(foregroundColor: BusFlowColors.textSecondary),
-      confirmButtonStyle: TextButton.styleFrom(foregroundColor: BusFlowColors.primary),
+      cancelButtonStyle: TextButton.styleFrom(foregroundColor: PactaFlowColors.textSecondary),
+      confirmButtonStyle: TextButton.styleFrom(foregroundColor: PactaFlowColors.primary),
     ),
   );
 
   static final lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    colorSchemeSeed: BusFlowColors.primary,
+    colorSchemeSeed: PactaFlowColors.primary,
     fontFamily: GoogleFonts.inter().fontFamily,
   );
 }

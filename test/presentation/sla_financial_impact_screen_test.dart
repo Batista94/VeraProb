@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:busflow/application/sla_audit/projections/contractual_financial_impact.dart';
-import 'package:busflow/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
-import 'package:busflow/domain/shared/money.dart';
-import 'package:busflow/features/admin/presentation/screens/sla_financial_impact_screen.dart';
-import 'package:busflow/state/providers/sla_financial_providers.dart';
-import 'package:busflow/state/providers/auth_providers.dart';
+import 'package:pactaflow/application/sla_audit/projections/contractual_financial_impact.dart';
+import 'package:pactaflow/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
+import 'package:pactaflow/domain/shared/money.dart';
+import 'package:pactaflow/features/admin/presentation/screens/sla_financial_impact_screen.dart';
+import 'package:pactaflow/state/providers/sla_financial_providers.dart';
+import 'package:pactaflow/state/providers/auth_providers.dart';
 
 /// Fake implementation for widget testing.
 class FakeFinancialImpactQueryService

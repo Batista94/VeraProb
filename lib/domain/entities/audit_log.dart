@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 /// Represents an immutable record of a manual intervention or automated critical
-/// action within the BusFlow operational environment.
+/// action within the PactaFlow operational environment.
 ///
 /// Used for legal accountability, operational review, and debugging.
 class AuditLog extends Equatable {

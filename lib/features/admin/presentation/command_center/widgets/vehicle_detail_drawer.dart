@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:busflow/core/theme/app_theme.dart';
-import 'package:busflow/domain/entities/operational_trip.dart';
-import 'package:busflow/domain/sla_audit/sla_ledger_entry.dart';
-import 'package:busflow/presentation/shared/trip_status_theme.dart';
-import 'package:busflow/domain/enums/trip_status.dart';
-import 'package:busflow/domain/entities/operational_suggestion.dart';
-import 'package:busflow/application/intelligence/suggestion_engine.dart';
-import 'package:busflow/state/providers/fleet_providers.dart';
-import 'package:busflow/presentation/shared/widgets/status_badge.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/domain/entities/operational_trip.dart';
+import 'package:pactaflow/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:pactaflow/presentation/shared/trip_status_theme.dart';
+import 'package:pactaflow/domain/enums/trip_status.dart';
+import 'package:pactaflow/domain/entities/operational_suggestion.dart';
+import 'package:pactaflow/application/intelligence/suggestion_engine.dart';
+import 'package:pactaflow/state/providers/fleet_providers.dart';
+import 'package:pactaflow/presentation/shared/widgets/status_badge.dart';
 import 'occurrence_modal.dart';
-import 'package:busflow/domain/authority/commands/trips/update_trip_status_command.dart';
+import 'package:pactaflow/domain/authority/commands/trips/update_trip_status_command.dart';
 import '../utils/ui_command_dispatcher.dart';
 
 /// Detailed vehicle/trip drawer shown when an operator selects a trip.
@@ -37,8 +37,8 @@ class VehicleDetailDrawer extends ConsumerWidget {
     return Container(
       width: 340,
       decoration: const BoxDecoration(
-        color: BusFlowColors.surface,
-        border: Border(left: BorderSide(color: BusFlowColors.border)),
+        color: PactaFlowColors.surface,
+        border: Border(left: BorderSide(color: PactaFlowColors.border)),
         boxShadow: [
           BoxShadow(
             color: Colors.black26,
@@ -61,18 +61,18 @@ class VehicleDetailDrawer extends ConsumerWidget {
                   // Info Section
                   _InfoSection(trip: trip),
 
-                  const Divider(height: 1, color: BusFlowColors.border),
+                  const Divider(height: 1, color: PactaFlowColors.border),
 
                   // Intelligent Suggestion
                   if (suggestion != null) ...[
                     _SuggestionSection(suggestion: suggestion, tripId: trip.id),
-                    const Divider(height: 1, color: BusFlowColors.border),
+                    const Divider(height: 1, color: PactaFlowColors.border),
                   ],
 
                   // Action Buttons
                   _ActionsSection(trip: trip),
 
-                  const Divider(height: 1, color: BusFlowColors.border),
+                  const Divider(height: 1, color: PactaFlowColors.border),
 
                   // Event Timeline
                   eventsAsync.when(
@@ -110,7 +110,7 @@ class _DrawerHeader extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: trip.status.color.withValues(alpha: 0.08),
-        border: const Border(bottom: BorderSide(color: BusFlowColors.border)),
+        border: const Border(bottom: BorderSide(color: PactaFlowColors.border)),
       ),
       child: Row(
         children: [
@@ -129,7 +129,7 @@ class _DrawerHeader extends StatelessWidget {
               children: [
                 Text(
                   trip.routeDisplay,
-                  style: BusFlowTypography.sectionTitle,
+                  style: PactaFlowTypography.sectionTitle,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
@@ -140,8 +140,8 @@ class _DrawerHeader extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         trip.delayDisplay,
-                        style: BusFlowTypography.caption.copyWith(
-                          color: BusFlowColors.delayed,
+                        style: PactaFlowTypography.caption.copyWith(
+                          color: PactaFlowColors.delayed,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -154,7 +154,7 @@ class _DrawerHeader extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.close, size: 18),
             onPressed: onClose,
-            color: BusFlowColors.textSecondary,
+            color: PactaFlowColors.textSecondary,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -229,16 +229,16 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: BusFlowColors.textDisabled),
+          Icon(icon, size: 14, color: PactaFlowColors.textDisabled),
           const SizedBox(width: 8),
           SizedBox(
             width: 100,
-            child: Text(label, style: BusFlowTypography.caption),
+            child: Text(label, style: PactaFlowTypography.caption),
           ),
           Expanded(
             child: Text(
               value,
-              style: BusFlowTypography.bodyMedium,
+              style: PactaFlowTypography.bodyMedium,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -284,18 +284,18 @@ class _SuggestionSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: BusFlowColors.primary.withValues(alpha: 0.05),
+      color: PactaFlowColors.primary.withValues(alpha: 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb, color: BusFlowColors.primary, size: 18),
+              Icon(Icons.lightbulb, color: PactaFlowColors.primary, size: 18),
               const SizedBox(width: 8),
               Text(
                 'SUGESTÃO DO SISTEMA',
-                style: BusFlowTypography.caption.copyWith(
-                  color: BusFlowColors.primary,
+                style: PactaFlowTypography.caption.copyWith(
+                  color: PactaFlowColors.primary,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
@@ -305,12 +305,12 @@ class _SuggestionSection extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             suggestion.title,
-            style: BusFlowTypography.bodyMedium.copyWith(
+            style: PactaFlowTypography.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
-          Text(suggestion.description, style: BusFlowTypography.caption),
+          Text(suggestion.description, style: PactaFlowTypography.caption),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -319,7 +319,7 @@ class _SuggestionSection extends ConsumerWidget {
               icon: Icon(suggestion.action.icon, size: 16),
               label: Text(suggestion.actionLabel),
               style: FilledButton.styleFrom(
-                backgroundColor: BusFlowColors.primary,
+                backgroundColor: PactaFlowColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 10),
               ),
@@ -347,7 +347,7 @@ class _ActionsSection extends ConsumerWidget {
         children: [
           Text(
             'AÇÕES OPERACIONAIS',
-            style: BusFlowTypography.caption.copyWith(
+            style: PactaFlowTypography.caption.copyWith(
               letterSpacing: 1.0,
               fontWeight: FontWeight.w600,
             ),
@@ -361,7 +361,7 @@ class _ActionsSection extends ConsumerWidget {
                 child: _ActionButton(
                   icon: Icons.check_circle_outline,
                   label: 'Regularizar',
-                  color: BusFlowColors.onTime,
+                  color: PactaFlowColors.onTime,
                   enabled:
                       trip.status == TripStatus.delayed ||
                       trip.status == TripStatus.interrupted,
@@ -374,7 +374,7 @@ class _ActionsSection extends ConsumerWidget {
                 child: _ActionButton(
                   icon: Icons.report_problem_outlined,
                   label: 'Ocorrência',
-                  color: BusFlowColors.delayed,
+                  color: PactaFlowColors.delayed,
                   enabled: true,
                   onTap: () => _showOccurrenceModal(context, ref),
                 ),
@@ -390,7 +390,7 @@ class _ActionsSection extends ConsumerWidget {
                 child: _ActionButton(
                   icon: Icons.refresh,
                   label: 'Redespachar',
-                  color: BusFlowColors.scheduled,
+                  color: PactaFlowColors.scheduled,
                   enabled: trip.status.isActive,
                   onTap: () => _dispatchStatusUpdate(
                     context,
@@ -404,7 +404,7 @@ class _ActionsSection extends ConsumerWidget {
                 child: _ActionButton(
                   icon: Icons.pause_circle_outline,
                   label: 'Interromper',
-                  color: BusFlowColors.critical,
+                  color: PactaFlowColors.critical,
                   enabled:
                       trip.status == TripStatus.enRoute ||
                       trip.status == TripStatus.atStop ||
@@ -487,15 +487,15 @@ class _ActionsSection extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: BusFlowColors.surface,
-        title: Text(title, style: BusFlowTypography.sectionTitle),
-        content: Text(message, style: BusFlowTypography.bodyMedium),
+        backgroundColor: PactaFlowColors.surface,
+        title: Text(title, style: PactaFlowTypography.sectionTitle),
+        content: Text(message, style: PactaFlowTypography.bodyMedium),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Não',
-              style: TextStyle(color: BusFlowColors.textSecondary),
+              style: TextStyle(color: PactaFlowColors.textSecondary),
             ),
           ),
           FilledButton(
@@ -505,8 +505,8 @@ class _ActionsSection extends ConsumerWidget {
             },
             style: FilledButton.styleFrom(
               backgroundColor: destructive
-                  ? BusFlowColors.critical
-                  : BusFlowColors.primary,
+                  ? PactaFlowColors.critical
+                  : PactaFlowColors.primary,
             ),
             child: Text(destructive ? 'Sim, Cancelar' : 'Confirmar'),
           ),
@@ -533,7 +533,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = enabled ? color : BusFlowColors.textDisabled;
+    final effectiveColor = enabled ? color : PactaFlowColors.textDisabled;
 
     return Material(
       color: Colors.transparent,
@@ -588,7 +588,7 @@ class _EventTimeline extends StatelessWidget {
         children: [
           Text(
             'HISTÓRICO DE EVIDÊNCIAS FORENSES',
-            style: BusFlowTypography.caption.copyWith(
+            style: PactaFlowTypography.caption.copyWith(
               letterSpacing: 1.0,
               fontWeight: FontWeight.w600,
             ),
@@ -600,7 +600,7 @@ class _EventTimeline extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
                 'Nenhum evento registrado no Ledger',
-                style: BusFlowTypography.bodySmall,
+                style: PactaFlowTypography.bodySmall,
               ),
             )
           else
@@ -633,7 +633,7 @@ class _EventTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _eventColor(entry),
                   shape: BoxShape.circle,
-                  border: Border.all(color: BusFlowColors.surface, width: 2),
+                  border: Border.all(color: PactaFlowColors.surface, width: 2),
                   boxShadow: [
                     BoxShadow(
                       color: _eventColor(entry).withValues(alpha: 0.5),
@@ -645,7 +645,7 @@ class _EventTile extends StatelessWidget {
               Container(
                 width: 2,
                 height: 24, // Fixed height instead of Expanded
-                color: BusFlowColors.border,
+                color: PactaFlowColors.border,
                 margin: const EdgeInsets.symmetric(vertical: 4),
               ),
             ],
@@ -666,25 +666,25 @@ class _EventTile extends StatelessWidget {
                     Expanded(
                       child: Text(
                         _eventLabel(entry),
-                        style: BusFlowTypography.caption.copyWith(
+                        style: PactaFlowTypography.caption.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: BusFlowColors.textPrimary,
+                          color: PactaFlowColors.textPrimary,
                         ),
                       ),
                     ),
                     Text(
                       _formatTime(entry.occurredAtUtc.toLocal()),
-                      style: BusFlowTypography.caption.copyWith(fontSize: 10),
+                      style: PactaFlowTypography.caption.copyWith(fontSize: 10),
                     ),
                   ],
                 ),
-                Text(_eventSummary(entry), style: BusFlowTypography.caption),
+                Text(_eventSummary(entry), style: PactaFlowTypography.caption),
                 if (entry.payload['notes'] != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
                       entry.payload['notes'] as String,
-                      style: BusFlowTypography.caption.copyWith(
+                      style: PactaFlowTypography.caption.copyWith(
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -757,14 +757,14 @@ class _EventTile extends StatelessWidget {
       case 'TRIP_INTERRUPTED':
       case 'TRIP_CANCELLED':
       case 'NO_SHOW_DECLARED':
-        return BusFlowColors.critical;
+        return PactaFlowColors.critical;
       case 'OCCURRENCE_REGISTERED':
       case 'EVIDENCE_GAP_DECLARED':
-        return BusFlowColors.delayed;
+        return PactaFlowColors.delayed;
       case 'EXECUTION_BOUND':
-        return BusFlowColors.onTime;
+        return PactaFlowColors.onTime;
       default:
-        return BusFlowColors.textSecondary;
+        return PactaFlowColors.textSecondary;
     }
   }
 

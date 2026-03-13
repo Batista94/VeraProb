@@ -18,8 +18,8 @@ class NotificationService {
   Future<void> showNotification(String title, String body) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-          'busflow_channel', // channelId
-          'BusFlow Notifications', // channelName
+          'PactaFlow_channel', // channelId
+          'PactaFlow Notifications', // channelName
           channelDescription: 'Notificações de chegada de ônibus',
           importance: Importance.max,
           priority: Priority.high,

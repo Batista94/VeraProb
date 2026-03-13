@@ -5,7 +5,7 @@
 **Context:** Trilha B3 (Dashboard Pivot)
 
 ## Context
-The BusFlow Operations Control Center (OCC) dashboard originally featured a real-time, icon-heavy Heatmap (`HeatmapSection`). The UX/Operations Council identified that this visual approach caused high cognitive load for B2B shuttle operators, who need to focus on contractual obligations (Shift Patterns) and financial impact, rather than geographical commodity maps. 
+The PactaFlow Operations Control Center (OCC) dashboard originally featured a real-time, icon-heavy Heatmap (`HeatmapSection`). The UX/Operations Council identified that this visual approach caused high cognitive load for B2B shuttle operators, who need to focus on contractual obligations (Shift Patterns) and financial impact, rather than geographical commodity maps. 
 
 ## Alternatives Considered
 - **Keep Heatmap & Enhance Filters:** Adds complexity but does not solve the root issue that maps prioritize "where" over "how much" (financial impact).

@@ -1,4 +1,4 @@
-# BusFlow — Roadmap Estratégico
+# PactaFlow — Roadmap Estratégico
 
 ## Contexto do Projeto
 
@@ -319,11 +319,11 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 
 #### [~] B1 — Padronização Visual (OCC)
 > **Nota (2026-03-12):** O item "Alinhamento e Consistência" é parcialmente absorvido pela
-> Sprint 5.11 (E1 `BusFlowSpacing` + E2 tipografia + E3 substituição de px raw nos formulários).
+> Sprint 5.11 (E1 `PactaFlowSpacing` + E2 tipografia + E3 substituição de px raw nos formulários).
 > Os 3 itens abaixo **NÃO** estão cobertos pela Sprint 5.11 e devem ser executados antes de
 > emitir o Compliance Report da Phase 5.10 (qualquer inconsistência visual nos formulários
 > enviesará o julgamento do smoke test manual).
-- [x] **Alinhamento e Consistência:** Absorvido pela Sprint 5.11 (BusFlowSpacing, tipografia, grid 8px nos formulários de Zona e Contrato).
+- [x] **Alinhamento e Consistência:** Absorvido pela Sprint 5.11 (PactaFlowSpacing, tipografia, grid 8px nos formulários de Zona e Contrato).
 - [x] **Responsividade:** AppBar adapta título e FeedHealthBadge por breakpoint (≥600px); NavigationRail compacto (72px icon-only) substitui BottomNavBar em telas estreitas — elimina crash de 9 itens além do limite do Flutter.
 - [x] **Stress Mode Toggle:** `_StressModeToggle` já presente na AppBar do `AdminLayout` desde Sprint 5.10. Confirmado como ítem estale.
 - [x] **Localization (pt-BR):** `flutter_localizations` + delegates + `Locale('pt', 'BR')` já configurados em `main.dart`. Confirmado como ítem estale.
@@ -367,7 +367,7 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 | **A1 [crash]** | `declare_contract_plan_form.dart:201` | `DayOfWeek.sort()` → `TypeError` ao publicar plano. Fix: `p.daysOfWeek.map((d) => d.value).toList()..sort()` |
 | **A2 [SQL]** | `migrations/20260311000003_*.sql` | `column "created_at" does not exist` ao criar zona. Adicionar coluna idempotente. |
 | **C1 [UX]** | `declare_contract_plan_form.dart` | Wizard Passo 1 usa `mockZones` hardcoded. Substituir por `ref.watch(operationalZonesProvider)` com AsyncValue exaustivo. |
-| **C3 [a11y]** | `declare_contract_plan_form.dart` | Contraste ilegível no Passo 4 (`Colors.blue.shade50` + texto branco do tema dark). Fix: `BusFlowColors.info.withValues(alpha: 0.15)` + `BusFlowColors.textPrimary`. |
+| **C3 [a11y]** | `declare_contract_plan_form.dart` | Contraste ilegível no Passo 4 (`Colors.blue.shade50` + texto branco do tema dark). Fix: `PactaFlowColors.info.withValues(alpha: 0.15)` + `PactaFlowColors.textPrimary`. |
 | **D1 [UX]** | `operational_zones_screen.dart` | `FlutterMap` sem geocoding gera falsa precisão. Remover mapa, substituir por 3 TextFields (lat/lng/radius) + aviso de obrigatoriedade + ícone `location_off` nas zonas sem geofence. |
 | **E1 [nav]** | `create_contract_form.dart` + `contracts_screen.dart` | Após criar contrato, usuário retorna à lista sem direcionar. Pop com `contractId` + `ref.read(selectedContractIdProvider.notifier).state = contractId`. |
 
@@ -386,7 +386,7 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 - [x] B2 [ui] — Step 3 reorganizado em 3 grupos + 3 controllers + _submit() atualizado
 - [x] B3 [tests] — 309 passing + teste 5.14
 - [x] C1 [UX] — zonas reais via `operationalZonesProvider` + aviso de geofence ausente
-- [x] C3 [a11y] — contraste Step 4 corrigido; todo o wizard migrado de `Colors.*` raw para `BusFlowColors.*` (black54 → textSecondary, grey.shade300 → border, red.shade50/200 → error.withValues, orange → warning)
+- [x] C3 [a11y] — contraste Step 4 corrigido; todo o wizard migrado de `Colors.*` raw para `PactaFlowColors.*` (black54 → textSecondary, grey.shade300 → border, red.shade50/200 → error.withValues, orange → warning)
 - [x] D1 [UX] — FlutterMap removido; inputs manuais lat/lng/raio + `location_off` na listagem
 - [x] E1 [nav] — `CreateContractForm.show()` retorna `String?` (contractId); `contracts_screen.dart` seta `selectedContractIdProvider`
 
@@ -436,9 +436,9 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 - [x] **D2** `cloneContractHandlerProvider` (`Provider<CloneContractHandler>`) em `contract_providers.dart`
 
 **FASE E — Design System:** ✅ CONCLUÍDA
-- [x] **E1** `BusFlowSpacing` classe de constantes (base 8px: xs=4, sm=8, md=16, lg=24, xl=32, xxl=48) em `app_theme.dart`
-- [x] **E2** `BusFlowTypography.dataValue` (15px w600 textPrimary) + `BusFlowTypography.fieldLabel` (11px w500 textSecondary) em `app_theme.dart`
-- [x] **E3** Substituir valores px raw por `BusFlowSpacing.*` nos arquivos modificados nas fases F/G/H
+- [x] **E1** `PactaFlowSpacing` classe de constantes (base 8px: xs=4, sm=8, md=16, lg=24, xl=32, xxl=48) em `app_theme.dart`
+- [x] **E2** `PactaFlowTypography.dataValue` (15px w600 textPrimary) + `PactaFlowTypography.fieldLabel` (11px w500 textSecondary) em `app_theme.dart`
+- [x] **E3** Substituir valores px raw por `PactaFlowSpacing.*` nos arquivos modificados nas fases F/G/H
 
 **FASE F — UI — Wizard de Contrato (`declare_contract_plan_form.dart`):** ✅ CONCLUÍDA
 - [x] **F1 [chips]** Step 2 — substituir `Checkbox` por `FilterChip` em `Wrap` para dias da semana (responde a `Space`)
@@ -471,7 +471,7 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 - [x] Caminho feliz do Wizard: máx 4 campos visíveis por step (Opções Avançadas fechadas por padrão)
 - [x] Template SLA preenche Step 3 em 1 clique
 - [x] Clone de contrato persiste `cloned_from_contract_id` (validado por testes de domínio)
-- [x] `BusFlowSpacing` usado em todos os arquivos F/G/H; 0 `Colors.*` raw em código novo
+- [x] `PactaFlowSpacing` usado em todos os arquivos F/G/H; 0 `Colors.*` raw em código novo
 - [x] `dataValue` e `fieldLabel` aplicados nos formulários refatorados
 - [x] 2 novos arquivos de teste: `sla_template_test.dart` e `operational_zone_test.dart`
 
@@ -693,7 +693,7 @@ Pull Request →
 
 Push main →
   todos os passos acima
-  deploy automático → Staging (busflow-staging no Supabase)
+  deploy automático → Staging (PactaFlow-staging no Supabase)
 
 Tag vX.Y.Z →
   todos acima
@@ -701,7 +701,7 @@ Tag vX.Y.Z →
 ```
 
 #### [ ] 8.2 — Separação de Ambientes
-- 3 projetos Supabase: `busflow-dev` · `busflow-staging` · `busflow-prod`
+- 3 projetos Supabase: `PactaFlow-dev` · `PactaFlow-staging` · `PactaFlow-prod`
 - Processo de promoção de migrations: dev → staging → prod (nunca pular)
 - `--dart-define` injetados por ambiente no CI (sem `.env` em pipeline)
 - Dados de teste **nunca** chegam em prod
@@ -753,12 +753,12 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 #### [ ] D1 — Documentação de Produto
 - Landing page com proposta de valor (ledger imutável vs. TMS tradicionais)
 - Guia de onboarding para novos clientes (do signup ao primeiro SLA auditado)
-- Guia de integração de telemetria (como conectar GPS/IoT existente ao BusFlow)
+- Guia de integração de telemetria (como conectar GPS/IoT existente ao PactaFlow)
 - Changelog público com versionamento semântico
 
 #### [ ] D2 — Modelo Comercial
 - Definir pricing: por veículo/mês · por organização · por execução auditada
-- Contrato de prestação SaaS (termos de uso + SLA do próprio BusFlow)
+- Contrato de prestação SaaS (termos de uso + SLA do próprio PactaFlow)
 - Política de privacidade LGPD (obrigatório — plataforma processa dados de motoristas e operadores)
 - Processo de cobrança: Stripe ou similar integrado ao ciclo de onboarding
 
@@ -818,8 +818,8 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
      ✅ Fase B — Domain (SlaTemplate · CloneContract · OperationalZone.contractorLabel)
      ✅ Fase C — Infra Postgres
      ✅ Fase D — Riverpod Providers
-     ✅ Fase E1/E2 — Design System (BusFlowSpacing · dataValue · fieldLabel)
-     ✅ Fase E3 — BusFlowSpacing nos arquivos de UI
+     ✅ Fase E1/E2 — Design System (PactaFlowSpacing · dataValue · fieldLabel)
+     ✅ Fase E3 — PactaFlowSpacing nos arquivos de UI
      ✅ Fase F — Wizard UI (chips · defaults · funil · template · disclosure · teclado)
      ✅ Fase G — Zona UI (contractor_label · geofence disclosure · teclado)
      ✅ Fase H — Contratos UI (botão Clonar)

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:busflow/application/sla_audit/clone_contract_command.dart';
-import 'package:busflow/application/sla_audit/projections/contract_summary_view.dart';
-import 'package:busflow/domain/sla_audit/contract_status.dart';
-import 'package:busflow/domain/sla_audit/domain_exception.dart';
-import 'package:busflow/state/providers/auth_providers.dart';
-import 'package:busflow/state/providers/contract_providers.dart';
-import 'package:busflow/core/theme/app_theme.dart';
+import 'package:pactaflow/application/sla_audit/clone_contract_command.dart';
+import 'package:pactaflow/application/sla_audit/projections/contract_summary_view.dart';
+import 'package:pactaflow/domain/sla_audit/contract_status.dart';
+import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
+import 'package:pactaflow/state/providers/auth_providers.dart';
+import 'package:pactaflow/state/providers/contract_providers.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
 
 import 'create_contract_form.dart';
 import 'contract_detail_screen.dart';
@@ -53,13 +53,13 @@ class _ContractListView extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: BusFlowColors.textPrimary,
+                      color: PactaFlowColors.textPrimary,
                       letterSpacing: -1,
                     ),
                   ),
                   Text(
                     'Controle de vigência e conformidade SLA',
-                    style: TextStyle(color: BusFlowColors.textSecondary, fontSize: 14),
+                    style: TextStyle(color: PactaFlowColors.textSecondary, fontSize: 14),
                   ),
                 ],
               ),
@@ -91,7 +91,7 @@ class _ContractListView extends ConsumerWidget {
               ),
               _FilterChip(
                 label: 'Rascunhos',
-                color: BusFlowColors.neutral,
+                color: PactaFlowColors.neutral,
                 selected: activeFilter == ContractStatus.draft,
                 onSelected: (_) => ref
                     .read(contractStatusFilterProvider.notifier)
@@ -99,7 +99,7 @@ class _ContractListView extends ConsumerWidget {
               ),
               _FilterChip(
                 label: 'Ativos',
-                color: BusFlowColors.success,
+                color: PactaFlowColors.success,
                 selected: activeFilter == ContractStatus.active,
                 onSelected: (_) => ref
                     .read(contractStatusFilterProvider.notifier)
@@ -107,7 +107,7 @@ class _ContractListView extends ConsumerWidget {
               ),
               _FilterChip(
                 label: 'Encerrados',
-                color: BusFlowColors.error,
+                color: PactaFlowColors.error,
                 selected: activeFilter == ContractStatus.closed,
                 onSelected: (_) => ref
                     .read(contractStatusFilterProvider.notifier)
@@ -127,7 +127,7 @@ class _ContractListView extends ConsumerWidget {
               error: (e, _) => Center(
                 child: Text(
                   'Erro ao carregar contratos: $e',
-                  style: const TextStyle(color: BusFlowColors.error),
+                  style: const TextStyle(color: PactaFlowColors.error),
                 ),
               ),
             ),
@@ -152,11 +152,11 @@ class _ContractTable extends ConsumerWidget {
             scrollDirection: Axis.horizontal,
             child: DataTable(
             columnSpacing: 24,
-            headingRowColor: WidgetStateProperty.all(BusFlowColors.surfaceElevated),
+            headingRowColor: WidgetStateProperty.all(PactaFlowColors.surfaceElevated),
             headingTextStyle: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 13,
-              color: BusFlowColors.textSecondary,
+              color: PactaFlowColors.textSecondary,
               letterSpacing: 0.5,
             ),
             dataRowMaxHeight: 64,
@@ -187,14 +187,14 @@ class _ContractTable extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, color: BusFlowColors.textPrimary)),
+              Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, color: PactaFlowColors.textPrimary)),
               if (c.activePlanVersion > 0)
-                Text('Plano v${c.activePlanVersion}', style: const TextStyle(fontSize: 11, color: BusFlowColors.textSecondary)),
+                Text('Plano v${c.activePlanVersion}', style: const TextStyle(fontSize: 11, color: PactaFlowColors.textSecondary)),
             ],
           ),
         ),
-        DataCell(Text(c.contractorName, style: const TextStyle(color: BusFlowColors.textPrimary))),
-        DataCell(Text(vigencia, style: const TextStyle(fontSize: 12, color: BusFlowColors.textSecondary))),
+        DataCell(Text(c.contractorName, style: const TextStyle(color: PactaFlowColors.textPrimary))),
+        DataCell(Text(vigencia, style: const TextStyle(fontSize: 12, color: PactaFlowColors.textSecondary))),
         DataCell(_StatusChip(status: c.status)),
         DataCell(_SlaHealthBar(percentage: c.slaHealthPercentage)),
         DataCell(
@@ -289,8 +289,8 @@ class _ContractTable extends ConsumerWidget {
                                 : 'Início da vigência *',
                             style: TextStyle(
                               color: validFrom != null
-                                  ? BusFlowColors.textPrimary
-                                  : BusFlowColors.textSecondary,
+                                  ? PactaFlowColors.textPrimary
+                                  : PactaFlowColors.textSecondary,
                             ),
                           ),
                           onPressed: () => pickDate(isFrom: true),
@@ -306,8 +306,8 @@ class _ContractTable extends ConsumerWidget {
                                 : 'Fim da vigência *',
                             style: TextStyle(
                               color: validUntil != null
-                                  ? BusFlowColors.textPrimary
-                                  : BusFlowColors.textSecondary,
+                                  ? PactaFlowColors.textPrimary
+                                  : PactaFlowColors.textSecondary,
                             ),
                           ),
                           onPressed: () => pickDate(isFrom: false),
@@ -319,7 +319,7 @@ class _ContractTable extends ConsumerWidget {
                     const SizedBox(height: 12),
                     Text(errorMsg!,
                         style: const TextStyle(
-                            color: BusFlowColors.error, fontSize: 12)),
+                            color: PactaFlowColors.error, fontSize: 12)),
                   ],
                 ],
               ),
@@ -420,7 +420,7 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? BusFlowColors.primary;
+    final effectiveColor = color ?? PactaFlowColors.primary;
     return FilterChip(
       label: Text(label),
       selected: selected,
@@ -428,11 +428,11 @@ class _FilterChip extends StatelessWidget {
       selectedColor: effectiveColor.withValues(alpha: 0.2),
       checkmarkColor: effectiveColor,
       labelStyle: TextStyle(
-        color: selected ? effectiveColor : BusFlowColors.textSecondary,
+        color: selected ? effectiveColor : PactaFlowColors.textSecondary,
         fontWeight: selected ? FontWeight.bold : FontWeight.normal,
       ),
       side: BorderSide(
-        color: selected ? effectiveColor : BusFlowColors.border,
+        color: selected ? effectiveColor : PactaFlowColors.border,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
@@ -446,9 +446,9 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      ContractStatus.draft => ('RASCUNHO', BusFlowColors.neutral),
-      ContractStatus.active => ('ATIVO', BusFlowColors.success),
-      ContractStatus.closed => ('ENCERRADO', BusFlowColors.error),
+      ContractStatus.draft => ('RASCUNHO', PactaFlowColors.neutral),
+      ContractStatus.active => ('ATIVO', PactaFlowColors.success),
+      ContractStatus.closed => ('ENCERRADO', PactaFlowColors.error),
     };
 
     return Container(
@@ -473,7 +473,7 @@ class _SlaHealthBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = percentage.clamp(0.0, 100.0);
-    final color = pct >= 90 ? BusFlowColors.success : pct >= 70 ? BusFlowColors.warning : BusFlowColors.error;
+    final color = pct >= 90 ? PactaFlowColors.success : pct >= 70 ? PactaFlowColors.warning : PactaFlowColors.error;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -491,7 +491,7 @@ class _SlaHealthBar extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: pct / 100,
                   minHeight: 4,
-                  backgroundColor: BusFlowColors.border,
+                  backgroundColor: PactaFlowColors.border,
                   valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
               ),
@@ -511,13 +511,13 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.description_outlined, size: 80, color: BusFlowColors.border),
+          Icon(Icons.description_outlined, size: 80, color: PactaFlowColors.border),
           const SizedBox(height: 24),
           const Text('Nenhum contrato encontrado', 
-            style: TextStyle(color: BusFlowColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: PactaFlowColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           const Text('Crie um novo contrato para iniciar a auditoria de SLA.', 
-            style: TextStyle(color: BusFlowColors.textSecondary)),
+            style: TextStyle(color: PactaFlowColors.textSecondary)),
         ],
       ),
     );

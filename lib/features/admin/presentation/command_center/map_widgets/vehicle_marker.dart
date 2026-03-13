@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:busflow/domain/enums/trip_status.dart';
-import 'package:busflow/domain/enums/motion_state.dart';
-import 'package:busflow/application/projections/models/attention_state.dart';
-import 'package:busflow/presentation/shared/trip_status_theme.dart';
+import 'package:pactaflow/domain/enums/trip_status.dart';
+import 'package:pactaflow/domain/enums/motion_state.dart';
+import 'package:pactaflow/application/projections/models/attention_state.dart';
+import 'package:pactaflow/presentation/shared/trip_status_theme.dart';
 
 /// A map marker representing a vehicle, colored by trip status.
 ///

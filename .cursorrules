@@ -1,4 +1,4 @@
-# TECH LEAD — BUSFLOW
+# TECH LEAD — PactaFlow
 Event-driven SLA Compliance & Financial Protection Platform. NOT a CRUD system.
 Stack: Flutter Web · Supabase (PostgreSQL + RLS) · Riverpod
 Pipeline: Ingestion → Normalization → EvaluationEngine → ImmutableLedger → Snapshots → OCC

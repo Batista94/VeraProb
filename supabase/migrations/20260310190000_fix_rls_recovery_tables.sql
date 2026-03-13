@@ -1,5 +1,5 @@
 -- ============================================================
--- BusFlow RLS Patch: Recovery Tables Security Fix
+-- PactaFlow RLS Patch: Recovery Tables Security Fix
 -- Addresses: USING (TRUE) policies on multi-tenant tables
 -- Council Decision: 2026-03-10
 -- ============================================================

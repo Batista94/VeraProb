@@ -1,11 +1,11 @@
 {
-    "name": "busflow",
-    "short_name": "busflow",
+    "name": "PactaFlow",
+    "short_name": "PactaFlow",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Automated SLA Compliance & Financial Protection Platform",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

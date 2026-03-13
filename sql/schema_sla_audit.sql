@@ -1,5 +1,5 @@
 -- ============================================================
--- BusFlow Operational Control Center — SLA Audit Schema
+-- PactaFlow Operational Control Center — SLA Audit Schema
 -- ============================================================
 -- Extension of schema.sql for the SLA Audit Domain
 -- Target: Supabase (PostgreSQL 15+)

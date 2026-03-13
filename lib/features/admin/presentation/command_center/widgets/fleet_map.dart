@@ -3,13 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:busflow/core/config/constants.dart';
-import 'package:busflow/core/theme/app_theme.dart';
-import 'package:busflow/state/providers/fleet_providers.dart';
-import 'package:busflow/application/projections/providers/fleet_status_projection_provider.dart';
-import 'package:busflow/application/projections/providers/command_center_filter_provider.dart';
-import 'package:busflow/application/projections/providers/fleet_attention_projection_provider.dart';
-import 'package:busflow/dev/performance_metrics.dart';
+import 'package:pactaflow/core/config/constants.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/state/providers/fleet_providers.dart';
+import 'package:pactaflow/application/projections/providers/fleet_status_projection_provider.dart';
+import 'package:pactaflow/application/projections/providers/command_center_filter_provider.dart';
+import 'package:pactaflow/application/projections/providers/fleet_attention_projection_provider.dart';
+import 'package:pactaflow/dev/performance_metrics.dart';
 import '../map_widgets/animated_vehicle_marker.dart';
 
 /// The main fleet map for the Command Center.
@@ -83,7 +83,7 @@ class _FleetMapState extends ConsumerState<FleetMap> {
             initialZoom: AppConstants.defaultZoom,
             minZoom: 10,
             maxZoom: 18,
-            backgroundColor: BusFlowColors.background,
+            backgroundColor: PactaFlowColors.background,
             onPositionChanged: (position, hasGesture) {
               final zoom = position.zoom;
               final shouldShowLabels = zoom >= 14.0;
@@ -111,7 +111,7 @@ class _FleetMapState extends ConsumerState<FleetMap> {
             // Dark tile layer
             TileLayer(
               urlTemplate: _buildTileUrl(),
-              userAgentPackageName: 'com.busflow.admin',
+              userAgentPackageName: 'com.PactaFlow.admin',
               tileBuilder: _darkTileBuilder,
             ),
 
@@ -206,7 +206,7 @@ class _FleetMapState extends ConsumerState<FleetMap> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: BusFlowColors.surface.withValues(alpha: 0.9),
+                color: PactaFlowColors.surface.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
@@ -217,11 +217,11 @@ class _FleetMapState extends ConsumerState<FleetMap> {
                     height: 12,
                     child: CircularProgressIndicator(
                       strokeWidth: 1.5,
-                      color: BusFlowColors.primary,
+                      color: PactaFlowColors.primary,
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Text('Carregando...', style: BusFlowTypography.caption),
+                  Text('Carregando...', style: PactaFlowTypography.caption),
                 ],
               ),
             ),
@@ -273,7 +273,7 @@ class _MapControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: BusFlowColors.surface.withValues(alpha: 0.9),
+      color: PactaFlowColors.surface.withValues(alpha: 0.9),
       borderRadius: BorderRadius.circular(4),
       child: InkWell(
         onTap: onTap,
@@ -283,9 +283,9 @@ class _MapControlButton extends StatelessWidget {
           height: 32,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: BusFlowColors.border),
+            border: Border.all(color: PactaFlowColors.border),
           ),
-          child: Icon(icon, size: 16, color: BusFlowColors.textSecondary),
+          child: Icon(icon, size: 16, color: PactaFlowColors.textSecondary),
         ),
       ),
     );

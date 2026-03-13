@@ -72,15 +72,15 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BusFlowColors.background,
+      backgroundColor: PactaFlowColors.background,
       body: Center(
         child: Container(
           width: 340,
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: BusFlowColors.surface,
+            color: PactaFlowColors.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: BusFlowColors.border),
+            border: Border.all(color: PactaFlowColors.border),
             boxShadow: [
               BoxShadow(
                 blurRadius: 40,
@@ -94,13 +94,13 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: BusFlowColors.primary.withValues(alpha: 0.1),
+                  color: PactaFlowColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
                   size: 48,
-                  color: BusFlowColors.primary,
+                  color: PactaFlowColors.primary,
                 ),
               ),
               const SizedBox(height: 24),
@@ -109,7 +109,7 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: BusFlowColors.textPrimary,
+                  color: PactaFlowColors.textPrimary,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -117,7 +117,7 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
               const Text(
                 'Plataforma de Auditoria SLA',
                 style: TextStyle(
-                  color: BusFlowColors.textSecondary,
+                  color: PactaFlowColors.textSecondary,
                   fontSize: 14,
                 ),
               ),
@@ -125,7 +125,7 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: BusFlowColors.textPrimary),
+                style: const TextStyle(color: PactaFlowColors.textPrimary),
                 decoration: const InputDecoration(
                   labelText: 'E-mail Corporativo',
                   prefixIcon: Icon(Icons.email_outlined),
@@ -136,7 +136,7 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
                 controller: _passwordController,
                 obscureText: true,
                 style: const TextStyle(
-                  color: BusFlowColors.textPrimary,
+                  color: PactaFlowColors.textPrimary,
                   letterSpacing: 4,
                 ),
                 decoration: InputDecoration(
@@ -155,7 +155,7 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
                     : ElevatedButton(
                         onPressed: _signIn,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: BusFlowColors.primary,
+                          backgroundColor: PactaFlowColors.primary,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),

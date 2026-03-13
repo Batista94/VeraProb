@@ -86,7 +86,7 @@ class ExportService {
         build: (context) => [
           pw.Header(
             level: 0,
-            child: pw.Text('Relatório de Ciclo de Faturamento - BusFlow'),
+            child: pw.Text('Relatório de Ciclo de Faturamento - PactaFlow'),
           ),
           pw.Paragraph(text: 'Organização: ${report.organizationId}'),
           pw.Paragraph(

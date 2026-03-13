@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = busflow
+PRODUCT_NAME = PactaFlow
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.busflow.busflow
+PRODUCT_BUNDLE_IDENTIFIER = com.PactaFlow.PactaFlow
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.busflow. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.PactaFlow. All rights reserved.

@@ -1,6 +1,6 @@
 # Multi-Tenant Architecture Design
 
-This document specifies the technical architecture for transforming the BusFlow platform into a strict B2B multi-tenant environment. It defines the boundaries across the storage, compute, and presentation layers.
+This document specifies the technical architecture for transforming the PactaFlow platform into a strict B2B multi-tenant environment. It defines the boundaries across the storage, compute, and presentation layers.
 
 ## 1. Tenant Boundary (The `organization_id` Key)
 The fundamental isolation primitive is the `organization_id`. It acts as the partition key across the entire platform.

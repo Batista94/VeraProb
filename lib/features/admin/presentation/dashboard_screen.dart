@@ -55,9 +55,9 @@ class DashboardScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: BusFlowColors.surface,
+                        color: PactaFlowColors.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: BusFlowColors.border),
+                        border: Border.all(color: PactaFlowColors.border),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.2),
@@ -67,7 +67,7 @@ class DashboardScreen extends ConsumerWidget {
                         ],
                       ),
                       child: const Icon(Icons.analytics_rounded, 
-                        size: 32, color: BusFlowColors.primary),
+                        size: 32, color: PactaFlowColors.primary),
                     ),
                     const SizedBox(width: 20),
                     Column(
@@ -75,7 +75,7 @@ class DashboardScreen extends ConsumerWidget {
                       children: [
                         Text(
                           'Painel de Controle',
-                          style: BusFlowTypography.kpiValue.copyWith(
+                          style: PactaFlowTypography.kpiValue.copyWith(
                             fontSize: 32,
                             height: 1.1,
                           ),
@@ -87,15 +87,15 @@ class DashboardScreen extends ConsumerWidget {
                               width: 8,
                               height: 8,
                               decoration: const BoxDecoration(
-                                color: BusFlowColors.onTime,
+                                color: PactaFlowColors.onTime,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Operação em Tempo Real • Receita Protegida',
-                              style: BusFlowTypography.bodySmall.copyWith(
-                                color: BusFlowColors.textSecondary,
+                              style: PactaFlowTypography.bodySmall.copyWith(
+                                color: PactaFlowColors.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

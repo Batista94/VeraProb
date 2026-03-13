@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:busflow/application/sla_audit/declare_contractual_plan_command.dart';
-import 'package:busflow/core/theme/app_theme.dart';
-import 'package:busflow/domain/sla_audit/domain_exception.dart';
-import 'package:busflow/domain/sla_audit/operational_zone.dart';
-import 'package:busflow/domain/sla_audit/shift_pattern.dart';
-import 'package:busflow/domain/sla_audit/sla_penalties.dart';
-import 'package:busflow/domain/sla_audit/vehicle_category.dart';
-import 'package:busflow/domain/shared/money.dart';
-import 'package:busflow/state/providers/auth_providers.dart';
-import 'package:busflow/state/providers/contract_providers.dart';
-import 'package:busflow/state/providers/operational_zone_providers.dart';
-import 'package:busflow/state/providers/sla_providers.dart';
-import 'package:busflow/state/providers/sla_template_providers.dart';
+import 'package:pactaflow/application/sla_audit/declare_contractual_plan_command.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
+import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
+import 'package:pactaflow/domain/sla_audit/shift_pattern.dart';
+import 'package:pactaflow/domain/sla_audit/sla_penalties.dart';
+import 'package:pactaflow/domain/sla_audit/vehicle_category.dart';
+import 'package:pactaflow/domain/shared/money.dart';
+import 'package:pactaflow/state/providers/auth_providers.dart';
+import 'package:pactaflow/state/providers/contract_providers.dart';
+import 'package:pactaflow/state/providers/operational_zone_providers.dart';
+import 'package:pactaflow/state/providers/sla_providers.dart';
+import 'package:pactaflow/state/providers/sla_template_providers.dart';
 
 import '../widgets/zone_type_ahead_field.dart';
 
@@ -567,7 +567,7 @@ class _DeclareContractPlanFormState
         padding: const EdgeInsets.all(16),
         child: Text(
           'Erro ao carregar zonas operacionais: $e',
-          style: const TextStyle(color: BusFlowColors.error),
+          style: const TextStyle(color: PactaFlowColors.error),
         ),
       ),
       data: (zones) {
@@ -593,9 +593,9 @@ class _DeclareContractPlanFormState
           children: [
             const Text(
               'Selecione as zonas operacionais (geofences) que delineiam esta rota B2B.',
-              style: TextStyle(color: BusFlowColors.textSecondary),
+              style: TextStyle(color: PactaFlowColors.textSecondary),
             ),
-            const SizedBox(height: BusFlowSpacing.md),
+            const SizedBox(height: PactaFlowSpacing.md),
             ZoneTypeAheadField(
               key: ValueKey('origin_$_selectedOriginZoneId'),
               label: 'Zona de Partida',
@@ -611,7 +611,7 @@ class _DeclareContractPlanFormState
               }),
               onGeofenceConfigured: () => setState(() {}),
             ),
-            const SizedBox(height: BusFlowSpacing.md),
+            const SizedBox(height: PactaFlowSpacing.md),
             ZoneTypeAheadField(
               key: ValueKey('destination_$_selectedDestinationZoneId'),
               label: 'Zona de Chegada (Destino)',
@@ -651,7 +651,7 @@ class _DeclareContractPlanFormState
           _confirmedShiftDrafts.isEmpty
               ? 'Configure o padrão de recorrência: dias, horários, fuso e categoria de veículo exigida.'
               : 'Turno ${_confirmedShiftDrafts.length + 1} de ${_confirmedShiftDrafts.length + 1} — configure o turno de Retorno.',
-          style: const TextStyle(color: BusFlowColors.textSecondary),
+          style: const TextStyle(color: PactaFlowColors.textSecondary),
         ),
         const SizedBox(height: 20),
 
@@ -689,7 +689,7 @@ class _DeclareContractPlanFormState
               child: ListTile(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: BusFlowColors.border),
+                  side: const BorderSide(color: PactaFlowColors.border),
                 ),
                 leading: const Icon(Icons.flight_takeoff),
                 title: const Text('Horário de Partida'),
@@ -712,7 +712,7 @@ class _DeclareContractPlanFormState
               child: ListTile(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: BusFlowColors.border),
+                  side: const BorderSide(color: PactaFlowColors.border),
                 ),
                 leading: const Icon(Icons.flight_land),
                 title: const Text('Horário de Chegada'),
@@ -782,9 +782,9 @@ class _DeclareContractPlanFormState
       children: [
         const Text(
           'Cláusulas contratuais B2B. Configure os ofensores financeiros e janelas operacionais.',
-          style: TextStyle(color: BusFlowColors.textSecondary),
+          style: TextStyle(color: PactaFlowColors.textSecondary),
         ),
-        const SizedBox(height: BusFlowSpacing.md),
+        const SizedBox(height: PactaFlowSpacing.md),
 
         // F4 — Aplicar Template SLA
         OutlinedButton.icon(
@@ -804,7 +804,7 @@ class _DeclareContractPlanFormState
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     'Erro ao carregar templates: $e',
-                    style: const TextStyle(color: BusFlowColors.error),
+                    style: const TextStyle(color: PactaFlowColors.error),
                   ),
                 ),
                 data: (templates) {
@@ -862,7 +862,7 @@ class _DeclareContractPlanFormState
             );
           },
         ),
-        const SizedBox(height: BusFlowSpacing.md),
+        const SizedBox(height: PactaFlowSpacing.md),
 
         // Valor base (fora dos grupos SLA)
         TextField(
@@ -877,14 +877,14 @@ class _DeclareContractPlanFormState
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(_delayToleranceFocus),
         ),
-        const SizedBox(height: BusFlowSpacing.lg),
+        const SizedBox(height: PactaFlowSpacing.lg),
 
         // ── Grupo 1: Pontualidade ──────────────────────────────
         _SectionHeader(
           icon: Icons.schedule,
           label: 'Pontualidade e Janelas Operacionais',
         ),
-        const SizedBox(height: BusFlowSpacing.sm),
+        const SizedBox(height: PactaFlowSpacing.sm),
         TextField(
           controller: _delayToleranceController,
           focusNode: _delayToleranceFocus,
@@ -898,14 +898,14 @@ class _DeclareContractPlanFormState
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(_noShowMultiplierFocus),
         ),
-        const SizedBox(height: BusFlowSpacing.lg),
+        const SizedBox(height: PactaFlowSpacing.lg),
 
         // ── Grupo 2: Falhas Críticas ───────────────────────────
         _SectionHeader(
           icon: Icons.warning_amber_rounded,
           label: 'Falhas Críticas (Cláusulas de Penalidade)',
         ),
-        const SizedBox(height: BusFlowSpacing.sm),
+        const SizedBox(height: PactaFlowSpacing.sm),
         TextField(
           controller: _noShowMultiplierController,
           focusNode: _noShowMultiplierFocus,
@@ -926,11 +926,11 @@ class _DeclareContractPlanFormState
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(_delayMinuteValueFocus),
         ),
-        const SizedBox(height: BusFlowSpacing.lg),
+        const SizedBox(height: PactaFlowSpacing.lg),
 
         // ── Grupo 3: Qualidade da Frota ────────────────────────
         _SectionHeader(icon: Icons.directions_bus, label: 'Qualidade da Frota'),
-        const SizedBox(height: BusFlowSpacing.sm),
+        const SizedBox(height: PactaFlowSpacing.sm),
         Row(
           children: [
             Expanded(
@@ -950,7 +950,7 @@ class _DeclareContractPlanFormState
                     FocusScope.of(context).requestFocus(_downgradeValueFocus),
               ),
             ),
-            const SizedBox(width: BusFlowSpacing.sm),
+            const SizedBox(width: PactaFlowSpacing.sm),
             Expanded(
               child: TextField(
                 controller: _downgradeValueController,
@@ -969,7 +969,7 @@ class _DeclareContractPlanFormState
             ),
           ],
         ),
-        const SizedBox(height: BusFlowSpacing.md),
+        const SizedBox(height: PactaFlowSpacing.md),
 
         // F5 — ExpansionTile: Opções Avançadas
         ExpansionTile(
@@ -979,9 +979,9 @@ class _DeclareContractPlanFormState
           children: [
             Padding(
               padding: const EdgeInsets.only(
-                left: BusFlowSpacing.md,
-                right: BusFlowSpacing.md,
-                bottom: BusFlowSpacing.md,
+                left: PactaFlowSpacing.md,
+                right: PactaFlowSpacing.md,
+                bottom: PactaFlowSpacing.md,
               ),
               child: Column(
                 children: [
@@ -1003,7 +1003,7 @@ class _DeclareContractPlanFormState
                           ).requestFocus(_dwellTimeFocus),
                         ),
                       ),
-                      const SizedBox(width: BusFlowSpacing.sm),
+                      const SizedBox(width: PactaFlowSpacing.sm),
                       Expanded(
                         child: TextField(
                           controller: _dwellTimeController,
@@ -1020,7 +1020,7 @@ class _DeclareContractPlanFormState
                           ).requestFocus(_noShowThresholdFocus),
                         ),
                       ),
-                      const SizedBox(width: BusFlowSpacing.sm),
+                      const SizedBox(width: PactaFlowSpacing.sm),
                       Expanded(
                         child: TextField(
                           controller: _noShowThresholdController,
@@ -1098,7 +1098,7 @@ class _DeclareContractPlanFormState
       children: [
         const Text(
           'Revise todos os turnos antes de assinar. Após publicado, este plano não poderá ser alterado — uma nova versão precisará ser declarada.',
-          style: TextStyle(color: BusFlowColors.textSecondary),
+          style: TextStyle(color: PactaFlowColors.textSecondary),
         ),
         const SizedBox(height: 16),
 
@@ -1115,11 +1115,11 @@ class _DeclareContractPlanFormState
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Card(
-              color: BusFlowColors.info.withValues(alpha: 0.10),
+              color: PactaFlowColors.info.withValues(alpha: 0.10),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: const BorderSide(color: BusFlowColors.border),
+                side: const BorderSide(color: PactaFlowColors.border),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -1132,14 +1132,14 @@ class _DeclareContractPlanFormState
                         const Icon(
                           Icons.directions_bus,
                           size: 16,
-                          color: BusFlowColors.info,
+                          color: PactaFlowColors.info,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           label,
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: BusFlowColors.textPrimary,
+                            color: PactaFlowColors.textPrimary,
                           ),
                         ),
                       ],
@@ -1169,7 +1169,7 @@ class _DeclareContractPlanFormState
                       label: 'Categoria exigida',
                       value: d.requiredVehicleCategory.label,
                     ),
-                    const Divider(height: 20, color: BusFlowColors.border),
+                    const Divider(height: 20, color: PactaFlowColors.border),
 
                     // SLA
                     _ReviewRow(
@@ -1212,7 +1212,7 @@ class _DeclareContractPlanFormState
               const Icon(
                 Icons.fingerprint,
                 size: 14,
-                color: BusFlowColors.textDisabled,
+                color: PactaFlowColors.textDisabled,
               ),
               const SizedBox(width: 6),
               Text(
@@ -1220,7 +1220,7 @@ class _DeclareContractPlanFormState
                 style: const TextStyle(
                   fontSize: 11,
                   fontFamily: 'monospace',
-                  color: BusFlowColors.textDisabled,
+                  color: PactaFlowColors.textDisabled,
                 ),
               ),
             ],
@@ -1232,7 +1232,7 @@ class _DeclareContractPlanFormState
         const Text(
           '⚠️ Após publicado, este Padrão de Turno não poderá ser modificado diretamente. Uma nova versão do plano precisará ser declarada.',
           style: TextStyle(
-            color: BusFlowColors.warning,
+            color: PactaFlowColors.warning,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -1272,7 +1272,7 @@ class _DeclareContractPlanFormState
                           widget.contractName,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: BusFlowColors.textSecondary,
+                            color: PactaFlowColors.textSecondary,
                           ),
                         ),
                       ],
@@ -1287,17 +1287,17 @@ class _DeclareContractPlanFormState
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: BusFlowColors.info.withValues(alpha: 0.15),
+                        color: PactaFlowColors.info.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: BusFlowColors.info.withValues(alpha: 0.4),
+                          color: PactaFlowColors.info.withValues(alpha: 0.4),
                         ),
                       ),
                       child: Text(
                         '${_confirmedShiftDrafts.length + 1} turnos',
                         style: const TextStyle(
                           fontSize: 11,
-                          color: BusFlowColors.info,
+                          color: PactaFlowColors.info,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1318,17 +1318,17 @@ class _DeclareContractPlanFormState
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: BusFlowColors.error.withValues(alpha: 0.1),
+                    color: PactaFlowColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: BusFlowColors.error.withValues(alpha: 0.3),
+                      color: PactaFlowColors.error.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.error_outline,
-                        color: BusFlowColors.error,
+                        color: PactaFlowColors.error,
                         size: 16,
                       ),
                       const SizedBox(width: 8),
@@ -1336,7 +1336,7 @@ class _DeclareContractPlanFormState
                         child: Text(
                           _errorMessage!,
                           style: const TextStyle(
-                            color: BusFlowColors.error,
+                            color: PactaFlowColors.error,
                             fontSize: 13,
                           ),
                         ),
@@ -1460,14 +1460,14 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: BusFlowColors.info),
+        Icon(icon, size: 16, color: PactaFlowColors.info),
         const SizedBox(width: 8),
         Text(
           label,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 13,
-            color: BusFlowColors.info,
+            color: PactaFlowColors.info,
           ),
         ),
         const SizedBox(width: 8),
@@ -1495,7 +1495,7 @@ class _ReviewRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: BusFlowColors.textSecondary),
+          Icon(icon, size: 14, color: PactaFlowColors.textSecondary),
           const SizedBox(width: 6),
           SizedBox(
             width: 130,
@@ -1503,7 +1503,7 @@ class _ReviewRow extends StatelessWidget {
               label,
               style: const TextStyle(
                 fontSize: 12,
-                color: BusFlowColors.textSecondary,
+                color: PactaFlowColors.textSecondary,
               ),
             ),
           ),
@@ -1512,7 +1512,7 @@ class _ReviewRow extends StatelessWidget {
               value,
               style: const TextStyle(
                 fontSize: 12,
-                color: BusFlowColors.textPrimary,
+                color: PactaFlowColors.textPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),
