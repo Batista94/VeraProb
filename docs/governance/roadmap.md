@@ -63,14 +63,14 @@ sido testada manualmente em Supabase real, incluir no smoke test de Phase 5.
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 309 passing · 9 skipped (E2E sem credenciais) · 0 falhas |
+| Testes | 340 passing · 16 skipped · 0 falhas ✅ |
 | Análise estática | 0 erros · 67 infos (`prefer_const` — baixa prioridade) |
 | Precisão financeira | `Money` (centavos BIGINT) em todo o stack — invariante enforced ✅ |
 | CI/CD | Não existe (Phase 8) |
 | Ambientes | Dev local único. Sem staging, sem prod. |
 | `strict-casts` | Desabilitado — ~80 issues de `dynamic` nos repos Postgres (Phase 8) |
-| Phase 5 baseline | Implementação 5.3 concluída (Contract aggregate, UI, 62 testes). **Supersedida pelo B2B Refactoring** — concluído. Testes manuais (5.10) interrompidos por 6 bugs críticos. **Sprint 5.10 Fase 2 em andamento.** |
-| Banco de dev | **Precisa de reset** antes de aplicar migrations do B2B Refactoring |
+| Sprint 5.11 | **CONCLUÍDA** — Fases A-I implementadas (Wizard refatorado, Clona Contrato, Templates SLA, Contractor Label). |
+| Banco de dev | Todas as migrations aplicadas — `20260311000000` · `20260311000002` · `20260311000003` · `20260312000001` · `20260312000002` · `20260312000003` ✅ |
 
 ---
 
@@ -275,11 +275,16 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
   4. Revisão e publicação: resumo com projeção de X viagens nos próximos 7 dias, aviso de imutabilidade do plano
 - Rótulos pt-BR: `OperationalZone` → "Zona Operacional" · `ShiftPattern` → "Padrão de Turno" · SET → "Viagem Programada" (sem alteração)
 
-#### [x] 5.10 — Validation Consolidada
-> **⚠️ PRÉ-REQUISITO:** Sprint 5.10 Fase 2 deve estar 100% concluída e migration `20260311000003`
-> confirmada no Supabase dev antes de retomar os testes manuais desta seção.
+#### [ ] 5.12 — Final Operational Validation
+> **Renomeado de "5.10 Validation Consolidada" em 2026-03-12.** O fluxo de cadastro prévio de
+> zonas foi considerado burocrático pelo PO e substituído pelo fluxo Just-in-Time (Sprint 5.12).
+> A validação manual agora cobre o fluxo completo **com criação inline de zonas**.
 >
-> Cobre cenários originais da 5.4 (suspensa) e todos os novos cenários B2B.
+> **⚠️ PRÉ-REQUISITO:** Sprint 5.12 (Fases B e C) **100% concluída** + `flutter test` verde +
+> migrations `20260311000003` + `20260312000001/2/3` confirmadas no Supabase dev.
+> A validação manual ocorre sobre a interface **final** — sem regressão pós-5.12.
+>
+> Cobre cenários originais da 5.4 (suspensa), todos os cenários B2B, e o novo fluxo JIT.
 > **QA & SECURITY ENFORCEMENT:** Devido ao Ceticismo In-Memory, testes de idempotência e isolamento (multi-tenant) devem ser validados obrigatoriamente contra o banco de dados físico (Postgres), e a migration 5.6 deve ser confirmada.
 
 **Cenários automatizados:**
@@ -295,8 +300,8 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 
 **⚠️ Testes Manuais Obrigatórios (Supabase dev ativo):**
 - [ ] **Smoke test de UI existente (fases 3 e 4):** `InvestigationModal` e `ContractualAlertsPanel` renderizam sem erro com dados reais
-- [ ] **Criar zona operacional** via OCC → confirmar que aparece na listagem com `organization_id` correto no Supabase
-- [ ] **Criar contrato + declarar plano** com ShiftPattern → confirmar que SETs projetados aparecem na aba Execuções com status `pending`
+- [ ] **Criar zona operacional inline** no Wizard Passo 1 (JIT) → confirmar que aparece na listagem de Zonas Operacionais com `organization_id` e `contractor_label` corretos no Supabase
+- [ ] **Criar contrato + declarar plano** com ShiftPattern (incluindo zona criada inline) → confirmar que SETs projetados aparecem na aba Execuções com status `pending`
 - [ ] **Determinismo de projeção:** declarar mesmo plano duas vezes → confirmar IDs de SETs idênticos, sem duplicatas no banco
 - [ ] **Snapshot de zona:** alterar coordenadas de uma zona → confirmar que SETs anteriores mantêm coordenadas originais
 - [ ] **Isolamento de tenant:** logar como Org A → confirmar que zonas e contratos de Org B não aparecem em nenhuma tela
@@ -313,10 +318,15 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 > **Por que agora:** Antecipado a pedido do Tech Lead. Para garantir que o Smoke Test manual seja executado sobre uma interface "Enterprise" sólida, com baixo estresse visual e navegação limpa.
 
 #### [~] B1 — Padronização Visual (OCC)
-- [ ] **Alinhamento e Consistência:** Unificar alinhamento de textos (Dashboards vs. Listagens).
-- [ ] **Responsividade:** Garantir que AppBar, Sidebar e Tabelas adaptem-se a resoluções desktop variadas.
-- [ ] **Stress Mode Toggle:** Mover o overlay de performance para um botão sob demanda na AppBar.
-- [ ] **Localization (pt-BR):** Configurar `flutter_localizations` para que calendários e mensagens de sistema falem a língua do operador.
+> **Nota (2026-03-12):** O item "Alinhamento e Consistência" é parcialmente absorvido pela
+> Sprint 5.11 (E1 `BusFlowSpacing` + E2 tipografia + E3 substituição de px raw nos formulários).
+> Os 3 itens abaixo **NÃO** estão cobertos pela Sprint 5.11 e devem ser executados antes de
+> emitir o Compliance Report da Phase 5.10 (qualquer inconsistência visual nos formulários
+> enviesará o julgamento do smoke test manual).
+- [x] **Alinhamento e Consistência:** Absorvido pela Sprint 5.11 (BusFlowSpacing, tipografia, grid 8px nos formulários de Zona e Contrato).
+- [x] **Responsividade:** AppBar adapta título e FeedHealthBadge por breakpoint (≥600px); NavigationRail compacto (72px icon-only) substitui BottomNavBar em telas estreitas — elimina crash de 9 itens além do limite do Flutter.
+- [x] **Stress Mode Toggle:** `_StressModeToggle` já presente na AppBar do `AdminLayout` desde Sprint 5.10. Confirmado como ítem estale.
+- [x] **Localization (pt-BR):** `flutter_localizations` + delegates + `Locale('pt', 'BR')` já configurados em `main.dart`. Confirmado como ítem estale.
 
 #### [x] B2 — Session Hook Reliability
 - [x] **Fallback de Organização:** `organizationIdFetcherProvider` já implementado em `auth_providers.dart` — consulta `public.user_roles` quando `org_id` ausente no JWT. `currentOrganizationIdProvider` tenta JWT primeiro, cai no fallback assíncrono automaticamente.
@@ -392,6 +402,114 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 | `test/application/sla_audit/shift_projection_service_test.dart` | Testes — backward compat + teste 5.14 |
 | `supabase/migrations/20260311000003_operational_zones_add_created_at.sql` | SQL — nova migration |
 | `docs/testing/phase5_manual_test_log.csv` | Testes — BLOCO 14 para novos campos SLA |
+
+---
+
+#### [~] Sprint 5.11 — Anti-Fatigue & UX Excellence
+> **Origem:** Redesenho Estratégico determinado pelo PO em 2026-03-12. Objetivo: erradicar a
+> fadiga do operador nos fluxos de Cadastros (Zonas e Contratos). Conselho Completo convocado.
+> Council Review concluído e plano aprovado. Fases A–E concluídas em 2026-03-12.
+
+**Migrations aplicadas no Supabase dev (PO confirmou):**
+
+| Migration | Arquivo | Status |
+|-----------|---------|--------|
+| `20260312000001` | `sla_templates.sql` | ✅ Aplicada |
+| `20260312000002` | `contracts_clone_field.sql` | ✅ Aplicada |
+| `20260312000003` | `operational_zones_contractor_label.sql` | ✅ Aplicada |
+
+**FASE A — DB:** ✅ 3 migrations executadas e confirmadas pelo PO
+
+**FASE B — Domain & Application:** ✅ CONCLUÍDA
+- [x] **B1 [domain]** `SlaTemplate` entity + `SlaTemplateRepository` interface + `InMemorySlaTemplateRepository`
+- [x] **B2 [command]** `CloneContractCommand` + `CloneContractHandler` — cria `draft`; `organization_id` do JWT; `cloned_from_contract_id` como campo de auditoria imutável
+- [x] **B3 [domain]** `OperationalZone.create()` e `reconstitute()` aceitam `contractorLabel: String?`
+- [x] **B4 [domain]** `Contract.createClone()` factory + `clonedFromContractId` field + `Contract.reconstitute()` atualizado
+
+**FASE C — Infrastructure (Postgres):** ✅ CONCLUÍDA
+- [x] **C1** `PostgresSlaTemplateRepository` — CRUD org-scoped
+- [x] **C2** `PostgresContractRepository` — salva/lê `cloned_from_contract_id`
+- [x] **C3** `PostgresOperationalZoneRepository` — salva/lê `contractor_label`
+
+**FASE D — State (Riverpod):** ✅ CONCLUÍDA
+- [x] **D1** `slaTemplatesProvider` (FutureProvider — lista org-scoped) em `sla_template_providers.dart`
+- [x] **D2** `cloneContractHandlerProvider` (`Provider<CloneContractHandler>`) em `contract_providers.dart`
+
+**FASE E — Design System:** ✅ CONCLUÍDA
+- [x] **E1** `BusFlowSpacing` classe de constantes (base 8px: xs=4, sm=8, md=16, lg=24, xl=32, xxl=48) em `app_theme.dart`
+- [x] **E2** `BusFlowTypography.dataValue` (15px w600 textPrimary) + `BusFlowTypography.fieldLabel` (11px w500 textSecondary) em `app_theme.dart`
+- [x] **E3** Substituir valores px raw por `BusFlowSpacing.*` nos arquivos modificados nas fases F/G/H
+
+**FASE F — UI — Wizard de Contrato (`declare_contract_plan_form.dart`):** ✅ CONCLUÍDA
+- [x] **F1 [chips]** Step 2 — substituir `Checkbox` por `FilterChip` em `Wrap` para dias da semana (responde a `Space`)
+- [x] **F2 [defaults]** Step 2 — `initState` pre-seleciona `America/Sao_Paulo` e `VehicleCategory.standard`
+- [x] **F3 [funnel]** Step 1 — zonas agrupadas: "Cliente: X" (zonas com `contractor_label` == `contractorName` do contrato) acima de "Outras Zonas"
+- [x] **F4 [template]** Step 3 — botão "Aplicar Template" no topo do step; abre bottom sheet com lista de `slaTemplatesProvider`; ao selecionar, preenche todos os controllers do Step 3
+- [x] **F5 [disclosure]** Step 3 — `ExpansionTile("Opções Avançadas")` engloba `noShowThresholdMinutes`, `earlyArrivalToleranceMinutes`, `dwellTimeMinutes`
+- [x] **F6 [keyboard]** `FocusNode` chain em todos os `TextFormField`; `onFieldSubmitted` avança ao próximo campo ou step; `Enter` no Step 4 aciona `_submit()`; `Escape` com confirmação
+
+**FASE G — UI — Formulário de Zona (`operational_zones_screen.dart`):** ✅ CONCLUÍDA
+- [x] **G1 [label]** Campo `contractor_label` (opcional) no formulário de criação/edição de zona
+- [x] **G2 [disclosure]** Geofence (lat/lng/radius) em `ExpansionTile("Configuração de Geofence")` — opcional na criação
+- [x] **G3 [keyboard]** FocusNode chain + Enter no último campo submete o formulário
+
+**FASE H — UI — Tela de Contratos (`contracts_screen.dart`):** ✅ CONCLUÍDA
+- [x] **H1** Botão "Clonar" no menu de ações de cada contrato (ícone `content_copy_rounded`)
+- [x] **H2** Ao clonar, abrir `CreateContractForm` pré-preenchido + navegar para o rascunho criado
+
+**FASE I — Testes automatizados:** ✅ CONCLUÍDA
+- [x] `CloneContractHandler` — 9 testes (happy path · tenant isolation · invariantes de domínio) — 323 passing
+- [x] Unit tests: `SlaTemplate.create()` (name validation, org isolation)
+- [x] Unit tests: `OperationalZone.create()` com `contractorLabel` (trim, null quando vazio)
+- [x] `flutter test` — 340 passing ✅
+- [x] Novos arquivos: `sla_template_test.dart` (6 casos) e `operational_zone_test.dart` (10 casos)
+
+**Critérios de Done:**
+- [x] 3 migrations executadas e confirmadas pelo PO no Supabase dev
+- [x] `flutter test` — 340 passing · 0 falhas ✅
+- [x] Wizard navegável completamente via `Tab`/`Enter` sem mouse
+- [x] Caminho feliz do Wizard: máx 4 campos visíveis por step (Opções Avançadas fechadas por padrão)
+- [x] Template SLA preenche Step 3 em 1 clique
+- [x] Clone de contrato persiste `cloned_from_contract_id` (validado por testes de domínio)
+- [x] `BusFlowSpacing` usado em todos os arquivos F/G/H; 0 `Colors.*` raw em código novo
+- [x] `dataValue` e `fieldLabel` aplicados nos formulários refatorados
+- [x] 2 novos arquivos de teste: `sla_template_test.dart` e `operational_zone_test.dart`
+
+**Compliance Report:** `docs/governance/compliance/phase5_11_compliance_report.md`
+
+---
+
+#### [ ] Sprint 5.12 — Just-in-Time Operational Awareness
+> **Origem:** PO determinou em 2026-03-12 que o fluxo de cadastro prévio de zonas é burocrático.
+> Substituído por cadastro inline no Wizard de Contrato sem sair do contexto.
+> Design Spec e Council Review concluídos em 2026-03-12 antes do início da implementação.
+
+**Objetivo:** Operador cadastra `OperationalZone` inline no Passo 1 do Wizard de Contrato.
+`contractorLabel` herdado automaticamente de `contract.contractorName`. Sem nova migration SQL —
+`contractor_label` já existe (`20260312000003`). Sem `CompositeCommand` — zonas são recursos
+organizacionais independentes; criação eager via `saveZone()` existente é suficiente.
+
+**FASE A — Design Spec & Council Review:** ✅ CONCLUÍDA (2026-03-12)
+
+**FASE B — UI:** [ ] Em andamento
+- [x] `operational_zones_screen.dart` — extensão `ZoneTypeUi` tornada pública/nomeada
+- [x] `zone_type_ahead_field.dart` — widget `ZoneTypeAheadField` criado (autocomplete + mini-form inline + geofence warning)
+- [x] `declare_contract_plan_form.dart` — `_buildStep1()` substituído; `_selectedOriginZone`/`_selectedDestinationZone` adicionados; `_resetForReturnShift()` atualizado
+- [ ] Revisão visual no browser (smoke rápido)
+
+**FASE C — Testes automatizados:** [ ] Pendente
+- [ ] `test/features/admin/presentation/widgets/zone_type_ahead_field_test.dart` — filtro unitário + widget tests
+
+**FASE D — 5.12 Final Operational Validation:** [ ] Bloqueada até Fases B e C concluídas
+> Ver seção "5.12 Final Operational Validation" abaixo.
+
+**Critérios de Done:**
+- [ ] `flutter test` — ≥ 340 passing · 0 falhas
+- [ ] Digitar nome inexistente no campo de zona → `'+ Criar zona "X"'` visível no overlay
+- [ ] Zona criada inline aparece na aba Zonas Operacionais com `contractorLabel` correto
+- [ ] Swap origem↔destino (return shift): texto nos dois campos trocado corretamente
+- [ ] Geofence hard block inalterado: zona sem geofence bloqueia avanço ao Passo 2
+- [ ] Zona existente selecionável normalmente (sem regressão)
 
 ---
 
@@ -652,7 +770,7 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 [✅] Phase 4  Operational Alerts
 [✅] Trilha A Correções Críticas de Débito Técnico (A1 testes · A2 lints · A3 segredos · A4 precisão financeira)
 ─────────────────────────────────────────────────────
-[x] Phase 5  Contract & Plan Lifecycle Management (B2B Refactoring)
+[~] Phase 5  Contract & Plan Lifecycle Management (B2B Refactoring)  ← em andamento
      ✅ 5.1 Design Spec (baseline)
      ✅ 5.2 Council Review (baseline)
      ✅ 5.3 Implementation (baseline — supersedida)
@@ -661,21 +779,42 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
      ✅ Design Spec B2B (OperationalZone · ShiftPattern · SLAPenalties)
      ✅ Council Review B2B (4 BLOCKERs · Opção A selecionada)
      ✅ 5.5 Blocker Resolution
-     ✅ 5.6 Database Foundation
+     ✅ 5.6 Database Foundation (migrations 000000 · 000002 · 000003)
      ✅ 5.7 Domain Refactoring
      ✅ 5.8 Engine & Projection Upgrade
      ✅ 5.9 UI Overhaul
 ✅ Trilha B UI/UX Standardization & Session Reliability
      ✅ B1 Padronização Visual (OCC)
+           ✅ Alinhamento e Consistência → absorvido por Sprint 5.11
+           ✅ Responsividade (AppBar · Sidebar · NavigationRail compacto)
+           ✅ Stress Mode Toggle (já na AppBar — ítem estale confirmado)
+           ✅ Localization pt-BR (já configurado em main.dart — ítem estale confirmado)
+     ✅ B2 Session Hook Reliability
      ✅ B3 Contractual Risk Radar (Pivot)
      ✅ Sprint 5.10 Realignment (domínio · infra · UX)
-     ✅ B2 Session Hook Reliability
-[x] Sprint 5.10 Fase 2 — Bug Fixes & SLAPenalties B2B  ✅ CONCLUÍDA
-[ ] 5.10 Validation Consolidada (testes manuais — PRÉ-REQ: aplicar migration 20260311000003 no Supabase dev)
+     ✅ Sprint 5.10 Fase 2 — Bug Fixes & SLAPenalties B2B
+[x] Sprint 5.11 Anti-Fatigue & UX Excellence           ← CONCLUÍDA
+     ✅ Fase A — DB (3 migrations)
+     ✅ Fase B — Domain (SlaTemplate · CloneContract · OperationalZone.contractorLabel)
+     ✅ Fase C — Infra Postgres
+     ✅ Fase D — Riverpod Providers
+     ✅ Fase E1/E2 — Design System (BusFlowSpacing · dataValue · fieldLabel)
+     ✅ Fase E3 — BusFlowSpacing nos arquivos de UI
+     ✅ Fase F — Wizard UI (chips · defaults · funil · template · disclosure · teclado)
+     ✅ Fase G — Zona UI (contractor_label · geofence disclosure · teclado)
+     ✅ Fase H — Contratos UI (botão Clonar)
+     ✅ Fase I — Testes (340 passing)
+─ ─ ─  antes de 5.10 Validation  ─ ─ ─
+     ✅ B1 remanescente: Responsividade · Stress Mode Toggle · Localization pt-BR
+─────────────────────────────────────────────────────
+[ ] 5.10 Validation Consolidada (testes manuais)
+     PRÉ-REQ: Sprint 5.11 concluída + B1 remanescente + migrations 000000–000003 + 20260312000001–3 ✅
 ─────────────────────────────────────────────────────
 [  ] Phase 6  Administration & Tenant Self-Service
+       ⚠️  Phase 6 introduz `Contractor` aggregate → migrar `contractor_label TEXT` para FK real
 [  ] Phase 7  Evidence & Audit Exports
 [  ] Phase 8  Operational Hardening
+       `PostgresSlaTemplateRepository` — strict types aplicados (Sprint 5.11)
 [  ] Trilha D Lançamento
 ```
 
@@ -683,28 +822,21 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Sprint 5.10 Fase 2 concluída. Próxima ação: Testes Manuais (Phase 5.10).**
+**Sprint 5.11 concluída. Próxima ação: 5.10 Validation (Testes Manuais de Fumaça).**
 
-**⚠️ Ação obrigatória do PO antes de retomar os testes:**
-1. Aplicar migration `20260311000003` no Supabase dev (SQL Editor):
-   ```sql
-   ALTER TABLE public.operational_zones
-     ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
-   ```
-2. Confirmar que as 3 migrations estão aplicadas: `20260311000000` · `20260311000002` · `20260311000003`
-3. Retomar checklist da Phase 5.10 — BLOCO 14 incluído no CSV
+### Sequência imediata
 
-| Item | Arquivo | Entrega |
-|------|---------|---------|
-| A1 [crash] | `declare_contract_plan_form.dart:201` | Fix `DayOfWeek.sort()` — 1 linha |
-| A2 [SQL] | `migrations/20260311000003_*.sql` | Coluna `created_at` na tabela `operational_zones` |
-| B1 [domain] | `sla_penalties.dart` | `noShowThresholdMinutes · earlyArrivalToleranceMinutes · dwellTimeMinutes` + backward compat |
-| B2 [ui] | `declare_contract_plan_form.dart` | Step 3 em 3 grupos visuais + 3 controllers + `_submit()` atualizado |
-| B3 [tests] | `shift_projection_service_test.dart` | 308+ passing · teste 5.14 |
-| C1 [UX] | `declare_contract_plan_form.dart` | `operationalZonesProvider` real no Step 1 + aviso de geofence |
-| C3 [a11y] | `declare_contract_plan_form.dart` | Contraste corrigido no Step 4 |
-| D1 [UX] | `operational_zones_screen.dart` | FlutterMap removido + inputs manuais + `location_off` |
-| E1 [nav] | `create_contract_form.dart` + `contracts_screen.dart` | Redirect para `ContractDetailScreen` via `selectedContractIdProvider` |
+```
+1. [ ] 5.10 Validation     — Testes manuais (smoke test completo com Supabase dev ativo)
+2. [ ] Phase 6             — Administration & Tenant Self-Service
+3. [ ] Phase 7             — Evidence & Audit Exports
+```
 
-**Após Fase 2 concluída:**
-Retomar checklist da Phase 5.10 (Validation Consolidada) — aplicar as três migrations e executar todos os cenários automatizados + testes manuais.
+### Atenção: itens que PODEM afetar trabalho já concluído
+
+| Risco | Fase futura | Mitigação já documentada |
+|-------|-------------|--------------------------|
+| `Contractor` aggregate (Phase 6) pode exigir migrar `contractor_label TEXT` → FK | Phase 6.3 | Documentado como migração planejada; `contractor_label` é tag temporária por design |
+| B1 Localization pt-BR altera widgets de calendário usados no Wizard | ~~B1 remanescente~~ | ✅ Resolvido — localization já configurada, smoke test pode prosseguir |
+| `PostgresSlaTemplateRepository` usava `dynamic` | ~~Phase 8.4~~ | ✅ Corrigido em Sprint 5.11 — `List<Map<String,dynamic>>` strict |
+| `supabase_smoke_test.dart:2.2` falha por falta de inicialização de timezone em teste puro | ~~Débito técnico~~ | ✅ Corrigido em Sprint 5.11 — `setUpAll` incondicional chama `BrazilTime.ensureInitialized()` |

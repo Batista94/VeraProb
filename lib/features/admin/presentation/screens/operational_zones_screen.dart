@@ -31,7 +31,7 @@ Future<bool?> showZoneFormDialog(
 
 // ── ZoneType extensions ──────────────────────────────────────
 
-extension on ZoneType {
+extension ZoneTypeUi on ZoneType {
   String get label => switch (this) {
         ZoneType.garagem => 'Garagem',
         ZoneType.cliente => 'Cliente',
@@ -296,6 +296,7 @@ class _ZoneFormDialog extends ConsumerStatefulWidget {
 class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _contractorLabelController = TextEditingController();
   final _addressController = TextEditingController();
   final _radiusController = TextEditingController(text: '200');
   final _mapController = MapController();
@@ -312,6 +313,12 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
   Timer? _debounce;
   bool _isSearching = false;
 
+  // G3 — FocusNodes
+  final FocusNode _nameFocus = FocusNode();
+  final FocusNode _contractorLabelFocus = FocusNode();
+  final FocusNode _addressFocus = FocusNode();
+  final FocusNode _radiusFocus = FocusNode();
+
   static const _defaultCenter = LatLng(-23.5505, -46.6333);
   static const _defaultZoom = 11.0;
   static const _pinZoom = 15.0;
@@ -322,6 +329,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
     final zone = widget.existingZone;
     if (zone != null) {
       _nameController.text = zone.name;
+      _contractorLabelController.text = zone.contractorLabel ?? '';
       _addressController.text = zone.address ?? '';
       _selectedType = zone.type;
       if (zone.geofence != null) {
@@ -335,8 +343,13 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
   @override
   void dispose() {
     _nameController.dispose();
+    _contractorLabelController.dispose();
     _addressController.dispose();
     _radiusController.dispose();
+    _nameFocus.dispose();
+    _contractorLabelFocus.dispose();
+    _addressFocus.dispose();
+    _radiusFocus.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -441,6 +454,10 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
         );
       }
 
+      final contractorLabel = _contractorLabelController.text.trim().isEmpty
+          ? null
+          : _contractorLabelController.text.trim();
+
       final OperationalZone zone;
       if (widget.existingZone != null) {
         // EDIT: reconstitute with existing ID (repo will UPDATE via UPSERT)
@@ -452,6 +469,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           address: _addressController.text.trim().isEmpty
               ? null
               : _addressController.text.trim(),
+          contractorLabel: contractorLabel,
           geofence: geofence,
         );
       } else {
@@ -463,6 +481,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           address: _addressController.text.trim().isEmpty
               ? null
               : _addressController.text.trim(),
+          contractorLabel: contractorLabel,
           geofence: geofence,
         );
       }
@@ -567,6 +586,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
         // ── Nome ──────────────────────────────────────────
         TextFormField(
           controller: _nameController,
+          focusNode: _nameFocus,
           decoration: const InputDecoration(
             labelText: 'Nome da Zona *',
             hintText: 'Ex: Garagem Central, Portaria Sul',
@@ -574,12 +594,30 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           validator: (v) =>
               (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
           autofocus: widget.existingZone == null,
+          onFieldSubmitted: (_) =>
+              FocusScope.of(context).requestFocus(_contractorLabelFocus),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Contratante / Cliente ──────────────────────────
+        TextFormField(
+          controller: _contractorLabelController,
+          focusNode: _contractorLabelFocus,
+          decoration: const InputDecoration(
+            labelText: 'Contratante / Cliente (opcional)',
+            hintText: 'Ex: Empresa ABC',
+            helperText:
+                'Agrupa esta zona no Wizard de Plano para o contratante informado.',
+          ),
+          onFieldSubmitted: (_) =>
+              FocusScope.of(context).requestFocus(_addressFocus),
         ),
         const SizedBox(height: 16),
 
         // ── Endereço com autocomplete Nominatim ───────────
         TextFormField(
           controller: _addressController,
+          focusNode: _addressFocus,
           decoration: InputDecoration(
             labelText: 'Endereço',
             hintText: 'Digite para buscar e geolocalizar...',
@@ -638,110 +676,136 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
 
         const SizedBox(height: 16),
 
-        // ── Geofence ──────────────────────────────────────
-        const Divider(height: 24, color: BusFlowColors.border),
-        Text(
-          'GEOFENCE',
-          style: BusFlowTypography.caption.copyWith(
-            color: BusFlowColors.textSecondary,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
+        // G2 — Geofence ExpansionTile
+        ExpansionTile(
+          leading: Icon(
+            Icons.radar,
+            color: _lat != null
+                ? BusFlowColors.success
+                : BusFlowColors.textSecondary,
           ),
-        ),
-        const SizedBox(height: 10),
-
-        // Lat/lng — read-only display (never exposed as text fields)
-        if (_lat != null && _lng != null)
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: BusFlowColors.success.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                  color: BusFlowColors.success.withValues(alpha: 0.35)),
+          title: const Text('Configuração de Geofence'),
+          subtitle: Text(
+            _lat != null ? 'Configurado' : 'Não configurado',
+            style: TextStyle(
+              color: _lat != null
+                  ? BusFlowColors.success
+                  : BusFlowColors.textSecondary,
+              fontSize: 12,
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.my_location,
-                    size: 14, color: BusFlowColors.success),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${_lat!.toStringAsFixed(6)}, ${_lng!.toStringAsFixed(6)}',
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      color: BusFlowColors.success,
-                      fontWeight: FontWeight.w600,
+          ),
+          initiallyExpanded: _lat != null,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                  left: 16, right: 16, bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Lat/lng — read-only display
+                  if (_lat != null && _lng != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: BusFlowColors.success.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: BusFlowColors.success
+                                .withValues(alpha: 0.35)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.my_location,
+                              size: 14, color: BusFlowColors.success),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${_lat!.toStringAsFixed(6)}, ${_lng!.toStringAsFixed(6)}',
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                                color: BusFlowColors.success,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => setState(() {
+                              _lat = null;
+                              _lng = null;
+                            }),
+                            style: TextButton.styleFrom(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text('Limpar',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: BusFlowColors.textSecondary)),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color:
+                            BusFlowColors.warning.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: BusFlowColors.warning
+                                .withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.touch_app_outlined,
+                              size: 16, color: BusFlowColors.warning),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Busque um endereço ou clique no mapa para '
+                              'definir as coordenadas do geofence.',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: BusFlowColors.warning),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () =>
-                      setState(() {
-                        _lat = null;
-                        _lng = null;
-                      }),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text('Limpar',
-                      style: TextStyle(
-                          fontSize: 11, color: BusFlowColors.textSecondary)),
-                ),
-              ],
-            ),
-          )
-        else
-          Container(
-            padding: const EdgeInsets.all(10),
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: BusFlowColors.warning.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                  color: BusFlowColors.warning.withValues(alpha: 0.3)),
-            ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.touch_app_outlined,
-                    size: 16, color: BusFlowColors.warning),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Busque um endereço ou clique no mapa para definir '
-                    'as coordenadas do geofence.',
-                    style:
-                        TextStyle(fontSize: 11, color: BusFlowColors.warning),
-                  ),
-                ),
-              ],
-            ),
-          ),
 
-        // ── Raio ──────────────────────────────────────────
-        TextFormField(
-          controller: _radiusController,
-          decoration: const InputDecoration(
-            labelText: 'Raio de Detecção',
-            suffixText: 'm',
-            helperText:
-                'Distância usada pelo motor para detectar chegada/partida.',
-          ),
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) {
-            if (_lat == null) return null; // geofence not set — no radius needed
-            if (v == null || v.isEmpty) return 'Obrigatório com geofence';
-            final n = int.tryParse(v);
-            if (n == null || n <= 0 || n > 50000) return '1 a 50.000 m';
-            return null;
-          },
+                  // ── Raio ────────────────────────────────
+                  TextFormField(
+                    controller: _radiusController,
+                    focusNode: _radiusFocus,
+                    decoration: const InputDecoration(
+                      labelText: 'Raio de Detecção',
+                      suffixText: 'm',
+                      helperText:
+                          'Distância usada pelo motor para detectar chegada/partida.',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (v) {
+                      if (_lat == null) return null;
+                      if (v == null || v.isEmpty) return 'Obrigatório com geofence';
+                      final n = int.tryParse(v);
+                      if (n == null || n <= 0 || n > 50000) return '1 a 50.000 m';
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
