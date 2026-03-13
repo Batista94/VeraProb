@@ -1,169 +1,33 @@
-# PactaFlow 🧭
-Plataforma de Determinismo Operacional e Proteção de Margem para Transporte Corporativo
+# PactaFlow
 
-PactaFlow é uma plataforma soberana de auditoria contratual automatizada que transforma execução operacional em evidência determinística e projeção financeira imutável.
+**The Source of Truth for B2B Contractual Compliance.**
 
-Diferente de sistemas tradicionais de monitoramento ou TMS, o PactaFlow não apenas rastreia veículos — ele converte telemetria em verdade contratual verificável e impacto financeiro mensurável.
+PactaFlow is a high-performance, event-driven platform designed to eliminate the friction between signed B2B contracts and real-world operational execution. It acts as an automated, impartial "Judge" that monitors service levels (SLAs), protects financial margins, and generates immutable evidence for auditing.
 
-🎯 **Problema que Resolvemos**
+---
 
-Empresas de transporte corporativo e fretado enfrentam:
-- Desconexão total entre o Acordo Comercial (Linhas/Turnos) e a Execução Física (Telemetria)
-- Glosas técnicas recorrentes e disputas de faturamento
-- Aumento do DSO (Days Sales Outstanding)
-- Perda silenciosa de margem
-- Dependência de conferência manual mensal
+## 🎯 Value Proposition
 
-A maior sangria financeira não está no combustível ou manutenção. está na incerteza da execução contratual. O PactaFlow resolve isso criando um pipeline determinístico:
+In complex B2B operations, the "Burden of Proof" often results in administrative fatigue and financial leakage. PactaFlow solves this by transforming raw operational data into **Verifiable Contractual Truth**.
 
-Telemetria → Normalização Operacional → Avaliação Contratual (SLA Engine) → Ledger Forense Imutável → Projeção Financeira → Proteção de Receita
+- **Financial Protection:** Real-time monitoring of SLA breaches and automatic penalty calculation.
+- **Immutable Ledger:** Every operational event and financial verdict is recorded in an append-only, tamper-proof system of record.
+- **Zero-Friction UX:** Just-in-Time (JIT) master data management designed for high-stakes dispatching environments.
+- **Multi-Tenant Sovereignty:** Enterprise-grade data isolation ensuring absolute privacy between different contractors and operations.
 
-🧠 **O Que o PactaFlow É (e o que NÃO é)**
+## 🏗️ Technical Architecture
 
-**PactaFlow NÃO é:**
-- Sistema de rastreamento simples
-- Aplicativo de passageiro
-- ERP
-- TMS convencional
-- Dashboard operacional genérico
+Built for reliability, scalability, and deterministic results:
 
-**PactaFlow é:** Uma plataforma que transforma execução física em dinheiro protegido, unindo a linguagem comercial das viações com auditoria automatizada.
+* **Frontend:** Flutter Web/Mobile (Operations Control Center - OCC).
+* **State Management:** Robust architecture powered by Riverpod.
+* **Backend:** High-performance infrastructure with Supabase & PostgreSQL.
+* **Security:** Multi-layer protection with Row-Level Security (RLS) and custom JWT claims.
+* **Engine:** Deterministic Evaluation Engine for contractual rule replay.
 
-🏗 **Arquitetura**
+## 🚀 Vertical Applications
 
-### Princípios Fundamentais
-- Domain-Driven Design (DDD)
-- CQRS (Command Query Responsibility Segregation)
-- Domain Sovereignty
-- Infraestrutura como Adapter
-- Append-only forensic logging
-- Determinismo financeiro
-
-### Camadas
-
-1️⃣ **Domain Layer (Soberana)**
-- Contém: `PlanDeclaration`, `ShiftPattern` (Padrões de Turno), `OperationalZone` (Zonas Nomeadas), `ContractualServiceExecution`, `ContractualExecutionState`, `ExecutionStatus`, `Domain Events`, `Money` (Value Object financeiro).
-- Nenhuma regra de negócio existe na UI.
-- Nenhuma dependência de infraestrutura contamina o domínio.
-
-2️⃣ **Application Layer**
-- `ContractualEvaluationEngine`, `ContractualEvaluationSubscriber`, `SnapshotGenerator`, `FinancialClosingService`, Query Services (Impacto, Tendência).
-- Responsável por orquestrar fluxo sem violar DDD.
-
-3️⃣ **Infrastructure Layer**
-- Repositórios in-memory (para testes)
-- Adapters opcionais (Supabase, Postgres, etc.)
-- Timezone handling (`America/Sao_Paulo`)
-- Integração com telemetria
-- Infraestrutura é detalhe de implementação.
-
-4️⃣ **Admin Web (OCC + SLA)**
-- Inclui: CommandCenter (mapa operacional), Console Forense, SLA Audit Screen, Financial Impact Dashboard, Financial Trend.
-
-🛡 **SLA Audit Engine**
-
-O coração do sistema. Diferente de hardwares de rastreamento genéricos, nosso motor compreende a linguagem do negócio B2B (Fretamento Contínuo). Ele detecta automaticamente o status da operação cruzando telemetria com as regras comerciais de:
-- **Padrões de Turno (Shift Patterns):** Projeção automática de dias úteis e horários esperados (ex: Seg-Sex, 07:00).
-- **Zonas Operacionais:** Conversão nos bastidores de plantas e portarias para polígonos auditáveis (Geofence), isolando o operador de coordenadas complexas.
-- **Multas por Atraso (Delay Penalty):** Avaliação determinística de janelas de tolerância contratuais e permanência mínima (dwell time).
-- **No-Show (Não Comparecimento):** Penalização automática de viagens não realizadas.
-- **Downgrade de Frota:** Desconto financeiro quando um veículo de categoria inferior ao contratado realiza a linha.
-
-Tudo isso baseado em matemática determinística e sweep automático de obrigações expiradas. Sem heurísticas subjetivas. Sem interpretação humana.
-
-💰 **Camada Financeira**
-
-### Money VO
-Todos os cálculos financeiros utilizam `Money` (cents-based), eliminando problemas de floating point.
-
-### Financial Impact Projection
-Calcula Receita Total Contratada, Receita Protegida, Receita em Risco, Receita Perdida (com multa) e seus respectivos percentuais.
-
-### Snapshot Financeiro Diário
-- Baseado no dia operacional do Brasil (`America/Sao_Paulo`)
-- Persistido em UTC
-- Imutável / Idempotente
-- Pronto para ambiente enterprise
-- Snapshots não recalculam retroativamente, garantindo auditabilidade financeira.
-
-🕒 **Estratégia Temporal**
-- Armazenamento sempre em UTC
-- Conversão para Brasil apenas na UI
-- `statusLastUpdatedAtUtc` rastreia transições
-- Dia operacional baseado em timezone explícito
-- Sem uso de `DateTime.now()` direto nas regras ou `toLocal()`.
-
-🗺️ **Contractual Risk Radar & OCC (Camada Operacional)**
-Em vez de um mapa genérico de monitoramento de frotas, o PactaFlow utiliza um **Contractual Risk Radar**. O topo exibe instantaeamente KPIs financeiros (Receita Protegida vs Risco). O corpo principal é uma *Timeline* organizada por severidade de obrigações (Viagens Programadas), priorizando gargalos (*No-Shows*, *Evidence Gaps*). O mapa atua apenas como uma ferramenta forense estrita de sandbox, acionada somente sob demanda para investigações. O OCC não é o produto final; é a plataforma de triagem para a auditoria contratual.
-
-🔌 **Telemetria**
-Fluxo reativo via Riverpod: `Raw Telemetry` → `OperationalStateNormalizer` → `Evaluation Engine` → `ExecutionState Repository` → `Projections` → `UI`. Sem polling. Sem acoplamento. Reativo.
-
-💾 **Persistência**
-PactaFlow é *persistence-agnostic*. Pode rodar em Supabase, PostgreSQL, SQLite, In-Memory ou qualquer adapter compatível. Infraestrutura não define o domínio.
-
-🧪 **Testes**
-Suíte rigorosa de automação de QA cobrindo de ponta-a-ponta:
-- Cobertura de 100% no Core Engine e regras de SLA.
-- Testes de **Event Replay** (Event Sourcing integrity).
-- Testes de **Resiliência e Reconexão** Realtime.
-- Testes de **Idempotência** e proteção contra "Poison Pills".
-- Validação de imutabilidade via banco (Postgres Hardening).
-- Execução: `flutter test`
-
-🚀 **Como Executar (Admin Web)**
-```bash
-flutter run -d chrome -t lib/main.dart --web-port 8080
-
-🔒 Segurança
-
-PIN Lock no Admin via Environment Variables.
-
-Forensic Ledger Append-Only (RLS Hardening).
-
-Snapshot Financeiro Imutável (Revoke Update/Delete).
-
-Segregação estrita entre comandos e consultas (CQRS).
-
-📌 Status do Projeto
-O PactaFlow consolidou sua fundação Enterprise. O sistema possui um SLA Engine determinístico, persistência imutável em PostgreSQL/Supabase e um pipeline de telemetria com Idempotência Funcional. A infraestrutura está preparada para auditoria financeira profissional com 100% de rastreabilidade.
-
-🧭 Visão de Futuro
-
-Painel de tendências históricas (Trends) e Analytics preditivo.
-
-Integração nativa com protocolos GTFS-Realtime e gateways IoT.
-
-Exportação de evidências forenses e relatórios fiscais.
-
-APIs B2B para integração direta com ERPs (SAP, Totvs, Oracle).
-
-Expansão do sistema de alertas via Webhooks.
-
-📚 Documentação & Governança do Repositório
-
-Todo o contexto arquitetural, regras de engenharia e histórico de governança residem duravelmente na pasta docs/ dentro do próprio repositório. O acesso à documentação é estruturado da seguinte forma:
-
-docs/architecture/
-
-01_system_overview.md
-
-02_event_pipeline.md
-
-03_multi_tenant_foundation.md
-
-04_contract_rules_engine.md
-
-05_occ_operational_model.md
-
-docs/governance/
-
-lifecycle_framework.md (Governança Ágil do Conselho de Engenharia)
-
-docs/governance/compliance/
-
-Relatórios de Validação e Auditorias
-
-docs/runbooks/
-
-Procedimentos Operacionais (ex: operational_testing.md)
+While the core engine is industry-agnostic, PactaFlow is currently optimized for:
+1.  **Corporate Shuttle & Charter Logistics:** Monitoring arrival windows, route compliance, and fleet quality.
+2.  **Infrastructure & Facilities:** (In development) - Monitoring service delivery and vendor compliance.
+3.  **Industrial Logistics:** (In development) - Tracking material flow and contractual milestones.
