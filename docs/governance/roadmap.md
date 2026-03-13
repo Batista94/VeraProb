@@ -479,28 +479,46 @@ Council Review conduzido com red teaming cruzado (Architect · Senior Eng · QA/
 
 ---
 
-#### [ ] Sprint 5.12 — Just-in-Time Operational Awareness
-> **Origem:** PO determinou em 2026-03-12 que o fluxo de cadastro prévio de zonas é burocrático.
-> Substituído por cadastro inline no Wizard de Contrato sem sair do contexto.
-> Design Spec e Council Review concluídos em 2026-03-12 antes do início da implementação.
+#### [~] Sprint 5.12 — Just-in-Time Operational Awareness
+> **Origem:** PO determinou em 2026-03-13. Quatro bugs identificados em produção dev motivaram
+> uma pivotagem de abordagem: mini-form inline descartado em favor do `showZoneFormDialog` nativo
+> (mapa + Nominatim já existentes). Sem nova migration SQL.
 
-**Objetivo:** Operador cadastra `OperationalZone` inline no Passo 1 do Wizard de Contrato.
-`contractorLabel` herdado automaticamente de `contract.contractorName`. Sem nova migration SQL —
-`contractor_label` já existe (`20260312000003`). Sem `CompositeCommand` — zonas são recursos
-organizacionais independentes; criação eager via `saveZone()` existente é suficiente.
+**Objetivo:** UX Fadiga Zero via modal nativo + blindagem de tenant no autocomplete de zonas.
+
+**Pivotagem (2026-03-13):** Mini-form inline com lat/lng manual descartado. Botão "+ Criar zona"
+abre diretamente `showZoneFormDialog` — reutiliza mapa + Nominatim sem duplicação de código.
+`filterZones` reescrito com 3º parâmetro `currentContractor` para blindar vazamento de tenant.
+`organizationId` e `onSaveZone` removidos de `ZoneTypeAheadField` (não mais necessários).
+
+**4 bugs corrigidos:**
+
+| Bug | Solução |
+|-----|---------|
+| UX Fadiga Zero | Mini-form inline → `showZoneFormDialog` (modal nativo) |
+| Vazamento de Tenant | `filterZones` filtra zonas por `contractorLabel` |
+| Stale Ref | Removido `organizationId`/`onSaveZone` — callbacks injetados pelo pai |
+| Overflow Visual | `DataTable` em `contracts_screen.dart` envolta em `SingleChildScrollView(Axis.horizontal)` |
 
 **FASE A — Design Spec & Council Review:** ✅ CONCLUÍDA (2026-03-12)
 
-**FASE B — UI:** [ ] Em andamento
-- [x] `operational_zones_screen.dart` — extensão `ZoneTypeUi` tornada pública/nomeada
-- [x] `zone_type_ahead_field.dart` — widget `ZoneTypeAheadField` criado (autocomplete + mini-form inline + geofence warning)
-- [x] `declare_contract_plan_form.dart` — `_buildStep1()` substituído; `_selectedOriginZone`/`_selectedDestinationZone` adicionados; `_resetForReturnShift()` atualizado
+**FASE B — UI:** ✅ CONCLUÍDA (2026-03-13)
+- [x] `contracts_screen.dart` — `DataTable` envolta em `SingleChildScrollView(scrollDirection: Axis.horizontal)` (overflow corrigido)
+- [x] `operational_zones_screen.dart` — extensão `ZoneTypeUi` já pública/nomeada (confirmado)
+- [x] `zone_type_ahead_field.dart` — mini-form removido; `filterZones` com parâmetro `currentContractor`; criação via `showZoneFormDialog`; `organizationId`/`onSaveZone` removidos do construtor
+- [x] `declare_contract_plan_form.dart` — `organizationId`/`onSaveZone` removidos das chamadas; `_selectedOriginZone`/`_selectedDestinationZone` e swap em `_resetForReturnShift()` já presentes
 - [ ] Revisão visual no browser (smoke rápido)
 
-**FASE C — Testes automatizados:** [ ] Pendente
-- [ ] `test/features/admin/presentation/widgets/zone_type_ahead_field_test.dart` — filtro unitário + widget tests
+**FASE C — Testes automatizados:** ✅ CONCLUÍDA (2026-03-13)
+- [x] `test/features/admin/presentation/widgets/zone_type_ahead_field_test.dart` — `filterZones` com 3 parâmetros; testes de isolamento de tenant; widget tests sem mini-form
 
-**FASE D — 5.12 Final Operational Validation:** [ ] Bloqueada até Fases B e C concluídas
+**Critérios de Done:**
+- [x] Scroll horizontal na tabela de contratos (overflow corrigido)
+- [x] Zonas de contratante X não aparecem na busca de contratante Y (`filterZones` com contractor)
+- [x] `flutter test` verde (sem regressões)
+- [ ] Revisão visual no browser confirmada pelo PO
+
+**FASE D — 5.12 Final Operational Validation:** [ ] Bloqueada até revisão visual confirmada
 > Ver seção "5.12 Final Operational Validation" abaixo.
 
 **Critérios de Done:**
@@ -510,6 +528,8 @@ organizacionais independentes; criação eager via `saveZone()` existente é suf
 - [ ] Swap origem↔destino (return shift): texto nos dois campos trocado corretamente
 - [ ] Geofence hard block inalterado: zona sem geofence bloqueia avanço ao Passo 2
 - [ ] Zona existente selecionável normalmente (sem regressão)
+- [ ] Zona criada via modal é auto-selecionada no campo (sem redigitar)
+- [ ] Autocomplete de Contratante em Zonas Operacionais sugere nomes de contratos existentes
 
 ---
 
