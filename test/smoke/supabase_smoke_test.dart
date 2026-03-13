@@ -41,9 +41,13 @@ import 'package:busflow/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:busflow/domain/sla_audit/rule_snapshot.dart';
 import 'package:busflow/domain/sla_audit/shift_pattern.dart';
 import 'package:busflow/domain/sla_audit/sla_penalties.dart';
+import 'package:busflow/domain/sla_audit/domain_exception.dart';
+import 'package:busflow/domain/sla_audit/sla_template.dart';
 import 'package:busflow/domain/sla_audit/vehicle_category.dart';
 
 // Application
+import 'package:busflow/application/sla_audit/clone_contract_command.dart';
+import 'package:busflow/application/sla_audit/clone_contract_handler.dart';
 import 'package:busflow/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:busflow/application/sla_audit/create_contract_command.dart';
 import 'package:busflow/application/sla_audit/create_contract_handler.dart';
@@ -56,6 +60,7 @@ import 'package:busflow/infrastructure/sla_audit/postgres_contract_repository.da
 import 'package:busflow/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
 import 'package:busflow/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
+import 'package:busflow/infrastructure/sla_audit/postgres_sla_template_repository.dart';
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────
 
@@ -174,6 +179,14 @@ void main() {
   // Estado compartilhado entre grupos 1 → 2 → 3
   String? declaredPlanId;
   String? smokeSetId;
+
+  // Initialize IANA timezone database unconditionally so that pure-domain
+  // tests (Smoke 2.1–2.3) that call ShiftPattern.create() can run even
+  // without Supabase credentials.  BrazilTime.ensureInitialized() is
+  // idempotent, so the second call inside the credentials block is a no-op.
+  setUpAll(() {
+    BrazilTime.ensureInitialized();
+  });
 
   if (hasCredentials) {
     setUpAll(() async {
@@ -541,6 +554,155 @@ void main() {
         expect(stateT2.boundVehicleId, 'smoke-vehicle-001');
         expect(stateT2.bindingTimestampUtc, bindTime);
       });
+    },
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // SMOKE 5 — Sprint 5.11: Clone de Contrato + SLA Templates (DB)
+  // ──────────────────────────────────────────────────────────────────────────
+  group(
+    'Smoke 5: Clone de Contrato + SLA Templates (5.11)',
+    skip: hasCredentials
+        ? false
+        : 'Credenciais Supabase ausentes.',
+    () {
+      String? sourceContractId;
+      String? cloneContractId;
+      String? templateId;
+      late PostgresSlaTemplateRepository templateRepo;
+      late CloneContractHandler cloneHandler;
+
+      setUpAll(() {
+        templateRepo = PostgresSlaTemplateRepository(client);
+        cloneHandler = CloneContractHandler(
+          contractRepository: contractRepo,
+          ledger: ledgerRepo,
+        );
+      });
+
+      test('5.1 — Clone cria draft com clonedFromContractId correto', () async {
+        // Cria contrato-fonte real no banco
+        final source = await createHandler.handle(
+          CreateContractCommand(
+            organizationId: orgId,
+            name: 'Smoke Source $runId',
+            contractorName: 'SPTRANS Source Corp',
+            validFromUtc: DateTime.utc(2026, 1, 1),
+            validUntilUtc: DateTime.utc(2026, 12, 31),
+          ),
+        );
+        sourceContractId = source.id;
+
+        final clone = await cloneHandler.handle(
+          CloneContractCommand(
+            organizationId: orgId,
+            sourceContractId: source.id,
+            name: 'Smoke Clone $runId',
+            contractorName: source.contractorName,
+          ),
+          validFromUtc: DateTime.utc(2026, 7, 1),
+          validUntilUtc: DateTime.utc(2026, 12, 31),
+        );
+        cloneContractId = clone.id;
+
+        expect(clone.id, isNotEmpty);
+        expect(clone.status, ContractStatus.draft,
+            reason: 'Clone nasce como draft');
+        expect(clone.organizationId, orgId,
+            reason: 'organization_id do JWT, nunca do contrato-fonte');
+        expect(clone.clonedFromContractId, source.id,
+            reason: 'Auditoria: campo aponta para o contrato de origem');
+      });
+
+      test('5.2 — Clone cross-tenant rejeitado com DomainException', () async {
+        await expectLater(
+          () => cloneHandler.handle(
+            CloneContractCommand(
+              organizationId: orgId,
+              sourceContractId: const Uuid().v4(), // ID inexistente nesta org
+              name: 'Smoke Malicious Clone',
+              contractorName: 'Evil Corp',
+            ),
+            validFromUtc: DateTime.utc(2026, 7, 1),
+            validUntilUtc: DateTime.utc(2026, 12, 31),
+          ),
+          throwsA(isA<DomainException>()),
+          reason: 'Source não encontrado na org → DomainException',
+        );
+      });
+
+      test('5.3 — [db] cloned_from_contract_id persistido no Supabase',
+          () async {
+        expect(cloneContractId, isNotNull,
+            reason: 'Dependência: Smoke 5.1 deve passar primeiro');
+        expect(sourceContractId, isNotNull);
+
+        final row = await client
+            .from('contracts')
+            .select('cloned_from_contract_id, status, organization_id')
+            .eq('id', cloneContractId!)
+            .single();
+
+        expect(row['cloned_from_contract_id'], sourceContractId,
+            reason: 'Campo de auditoria persistido corretamente');
+        expect(row['status'], 'draft');
+        expect(row['organization_id'], orgId);
+      });
+
+      test('5.4 — SlaTemplate save + findByOrganization round-trip', () async {
+        final template = SlaTemplate.create(
+          organizationId: orgId,
+          name: 'Smoke Template $runId',
+          description: 'Template criado pelo smoke 5.11',
+          penalties: SLAPenalties.create(
+            noShowPenaltyMultiplier: 1.5,
+            delayToleranceMinutes: 5,
+            delayPenaltyPerMinute: const Money(100),
+            downgradePenaltyFlat: const Money(20000),
+            noShowThresholdMinutes: 30,
+            earlyArrivalToleranceMinutes: 2,
+            dwellTimeMinutes: 3,
+          ),
+        );
+        templateId = template.id;
+
+        await templateRepo.save(template);
+
+        final list = await templateRepo.findByOrganization(orgId);
+        final saved = list.where((t) => t.id == template.id).firstOrNull;
+
+        expect(saved, isNotNull, reason: 'Template persistido e recuperado');
+        expect(saved!.name, 'Smoke Template $runId');
+        expect(saved.organizationId, orgId);
+        expect(saved.description, 'Template criado pelo smoke 5.11');
+      });
+
+      test(
+        '5.5 — [db] penalties_payload JSONB preserva todos os 7 campos SLA',
+        () async {
+          expect(templateId, isNotNull,
+              reason: 'Dependência: Smoke 5.4 deve passar primeiro');
+
+          final row = await client
+              .from('sla_templates')
+              .select('penalties_payload, organization_id')
+              .eq('id', templateId!)
+              .single();
+
+          expect(row['organization_id'], orgId,
+              reason: 'Isolamento de tenant — organization_id correto');
+
+          final p = row['penalties_payload'] as Map<String, dynamic>;
+          expect(p['noShowThresholdMinutes'], 30,
+              reason: 'Campo Sprint 5.10 persistido no template');
+          expect(p['earlyArrivalToleranceMinutes'], 2);
+          expect(p['dwellTimeMinutes'], 3);
+          expect(p['noShowPenaltyMultiplier'], 1.5);
+          expect(p['delayToleranceMinutes'], 5);
+          expect(p['delayPenaltyPerMinuteCents'], 100);
+          expect(p['downgradePenaltyFlatCents'], 20000);
+        },
+      );
     },
   );
 

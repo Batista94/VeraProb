@@ -38,6 +38,28 @@ class BusFlowColors {
   static const info = scheduled;
 }
 
+/// Spacing constants based on an 8px grid.
+///
+/// All paddings and gaps in the OCC must use these constants —
+/// never raw pixel values — to maintain mathematical alignment.
+class BusFlowSpacing {
+  BusFlowSpacing._();
+
+  static const double xs  = 4.0;
+  static const double sm  = 8.0;
+  static const double md  = 16.0;
+  static const double lg  = 24.0;
+  static const double xl  = 32.0;
+  static const double xxl = 48.0;
+
+  /// Standard padding for form sections and dialog bodies.
+  static const EdgeInsets sectionPadding = EdgeInsets.all(md);
+
+  /// Compact padding for cards and list items.
+  static const EdgeInsets cardPadding =
+      EdgeInsets.symmetric(horizontal: md, vertical: sm);
+}
+
 /// Operational typography for dense information display.
 class BusFlowTypography {
   BusFlowTypography._();
@@ -89,6 +111,22 @@ class BusFlowTypography {
     fontSize: 10,
     fontWeight: FontWeight.w700,
     letterSpacing: 0.5,
+  );
+
+  /// For contractual data values: contract name, monetary amounts, dates.
+  /// Heavier than body to signal "this is a fact, not a label".
+  static TextStyle get dataValue => base.copyWith(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    color: BusFlowColors.textPrimary,
+  );
+
+  /// For form field labels and section sub-headers inside forms.
+  static TextStyle get fieldLabel => base.copyWith(
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    color: BusFlowColors.textSecondary,
+    letterSpacing: 0.4,
   );
 }
 

@@ -12,17 +12,18 @@ import 'package:busflow/core/theme/app_theme.dart';
 import 'package:busflow/domain/sla_audit/domain_exception.dart';
 import 'package:busflow/domain/sla_audit/operational_zone.dart';
 import 'package:busflow/state/providers/auth_providers.dart';
+import 'package:busflow/state/providers/contract_providers.dart';
 import 'package:busflow/state/providers/operational_zone_providers.dart';
 
 // ── Public API ───────────────────────────────────────────────
 
 /// Opens the zone create/edit dialog.
-/// Returns true when the zone was saved successfully, false/null otherwise.
-Future<bool?> showZoneFormDialog(
+/// Returns the saved [OperationalZone] on success, null on cancel.
+Future<OperationalZone?> showZoneFormDialog(
   BuildContext context, {
   OperationalZone? existingZone,
 }) {
-  return showDialog<bool>(
+  return showDialog<OperationalZone>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _ZoneFormDialog(existingZone: existingZone),
@@ -72,7 +73,7 @@ class OperationalZonesScreen extends ConsumerWidget {
                 label: const Text('Nova Zona Operacional'),
                 onPressed: () async {
                   final saved = await showZoneFormDialog(context);
-                  if (saved == true) ref.invalidate(operationalZonesProvider);
+                  if (saved != null) ref.invalidate(operationalZonesProvider);
                 },
               ),
             ],
@@ -100,7 +101,7 @@ class OperationalZonesScreen extends ConsumerWidget {
               data: (zones) => zones.isEmpty
                   ? _EmptyState(onCreateTap: () async {
                       final saved = await showZoneFormDialog(context);
-                      if (saved == true) {
+                      if (saved != null) {
                         ref.invalidate(operationalZonesProvider);
                       }
                     })
@@ -212,7 +213,7 @@ class _ZoneList extends ConsumerWidget {
                 onPressed: () async {
                   final saved =
                       await showZoneFormDialog(context, existingZone: z);
-                  if (saved == true) ref.invalidate(operationalZonesProvider);
+                  if (saved != null) ref.invalidate(operationalZonesProvider);
                 },
               ),
             ],
@@ -487,7 +488,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
       }
 
       await saveZone(zone, ref);
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) Navigator.of(context).pop(zone);
     } on DomainException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (e) {
@@ -555,7 +556,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
         const Spacer(),
         IconButton(
           icon: const Icon(Icons.close, size: 18),
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(context).pop(null),
         ),
       ],
     );
@@ -600,17 +601,40 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
         const SizedBox(height: 16),
 
         // ── Contratante / Cliente ──────────────────────────
-        TextFormField(
-          controller: _contractorLabelController,
-          focusNode: _contractorLabelFocus,
-          decoration: const InputDecoration(
-            labelText: 'Contratante / Cliente (opcional)',
-            hintText: 'Ex: Empresa ABC',
-            helperText:
-                'Agrupa esta zona no Wizard de Plano para o contratante informado.',
-          ),
-          onFieldSubmitted: (_) =>
-              FocusScope.of(context).requestFocus(_addressFocus),
+        Builder(
+          builder: (context) {
+            final options =
+                ref.watch(contractorNamesProvider).valueOrNull ?? const <String>[];
+            return Autocomplete<String>(
+              initialValue:
+                  TextEditingValue(text: _contractorLabelController.text),
+              optionsBuilder: (v) {
+                if (v.text.isEmpty) return options;
+                final lower = v.text.toLowerCase();
+                return options.where((n) => n.toLowerCase().contains(lower));
+              },
+              displayStringForOption: (o) => o,
+              fieldViewBuilder: (ctx, ctrl, focusNode, onSubmitted) {
+                ctrl.addListener(() => _contractorLabelController.text = ctrl.text);
+                return TextFormField(
+                  controller: ctrl,
+                  focusNode: _contractorLabelFocus,
+                  decoration: const InputDecoration(
+                    labelText: 'Contratante / Cliente (opcional)',
+                    hintText: 'Ex: Empresa ABC',
+                    helperText:
+                        'Agrupa esta zona no Wizard de Plano para o contratante informado.',
+                  ),
+                  onFieldSubmitted: (_) =>
+                      FocusScope.of(context).requestFocus(_addressFocus),
+                );
+              },
+              onSelected: (v) {
+                _contractorLabelController.text = v;
+                setState(() {});
+              },
+            );
+          },
         ),
         const SizedBox(height: 16),
 
@@ -927,7 +951,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             TextButton(
               onPressed: _isSubmitting
                   ? null
-                  : () => Navigator.of(context).pop(false),
+                  : () => Navigator.of(context).pop(null),
               child: const Text('Cancelar'),
             ),
             const SizedBox(width: 12),

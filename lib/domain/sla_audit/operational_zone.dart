@@ -39,6 +39,12 @@ class GeofenceConfiguration extends Equatable {
 /// projection time.** Updating a zone after projection does NOT retroactively
 /// change historical SETs, preserving replay determinism.
 ///
+/// **[contractorLabel]:** Optional free-text tag linking this zone to a
+/// client/contractor name. Used by the Wizard to group zones belonging to
+/// the current contract's contractor at the top of the selection list.
+/// This is NOT a FK — it is a display/grouping hint. A proper FK to a
+/// `Contractor` aggregate will be introduced in Phase 6.
+///
 /// Equality is based exclusively on [id].
 class OperationalZone extends Equatable {
   final String id;
@@ -46,6 +52,15 @@ class OperationalZone extends Equatable {
   final String name;
   final ZoneType type;
   final String? address;
+
+  /// Optional grouping label matching a contractor/client name.
+  /// Null means the zone is not associated with any specific client.
+  ///
+  // TODO(phase-6): migrate contractorLabel TEXT → FK to Contractor aggregate
+  // once the Gestão de Clientes module is introduced (Phase 6.3).
+  // Migration: ADD COLUMN contractor_id UUID REFERENCES contractors(id),
+  // then backfill via name-match and DROP COLUMN contractor_label.
+  final String? contractorLabel;
 
   /// Optional geofence. Null means "no geofence configured yet".
   /// Never defaults to 0.0/0.0 — that coordinate is geographically valid
@@ -58,6 +73,7 @@ class OperationalZone extends Equatable {
     required this.name,
     required this.type,
     this.address,
+    this.contractorLabel,
     this.geofence,
   });
 
@@ -69,6 +85,7 @@ class OperationalZone extends Equatable {
     required String name,
     required ZoneType type,
     String? address,
+    String? contractorLabel,
     GeofenceConfiguration? geofence,
   }) {
     if (organizationId.isEmpty) {
@@ -87,6 +104,7 @@ class OperationalZone extends Equatable {
       name: name,
       type: type,
       address: address,
+      contractorLabel: contractorLabel?.trim().isEmpty ?? true ? null : contractorLabel?.trim(),
       geofence: geofence,
     );
   }
@@ -98,6 +116,7 @@ class OperationalZone extends Equatable {
     required String name,
     required ZoneType type,
     String? address,
+    String? contractorLabel,
     GeofenceConfiguration? geofence,
   }) {
     return OperationalZone._(
@@ -106,6 +125,7 @@ class OperationalZone extends Equatable {
       name: name,
       type: type,
       address: address,
+      contractorLabel: contractorLabel,
       geofence: geofence,
     );
   }
@@ -141,4 +161,7 @@ class OperationalZone extends Equatable {
 
   @override
   List<Object?> get props => [id];
+
+  @override
+  String toString() => 'OperationalZone($name, type: ${type.name})';
 }

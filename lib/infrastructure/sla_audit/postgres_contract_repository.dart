@@ -33,6 +33,7 @@ class PostgresContractRepository implements ContractRepository {
       'closed_at_utc': contract.closedAtUtc?.toIso8601String(),
       'closed_by_user_id': contract.closedByUserId,
       'close_reason': contract.closeReason,
+      'cloned_from_contract_id': contract.clonedFromContractId,
     });
   }
 
@@ -95,6 +96,7 @@ class PostgresContractRepository implements ContractRepository {
           : null,
       closedByUserId: row['closed_by_user_id'] as String?,
       closeReason: row['close_reason'] as String?,
+      clonedFromContractId: row['cloned_from_contract_id'] as String?,
     );
   }
 }

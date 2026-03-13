@@ -50,6 +50,10 @@ class Contract extends Equatable {
   final String? closedByUserId;
   final String? closeReason;
 
+  /// Audit field: UUID of the source contract when created via cloning.
+  /// Null for contracts created directly. Immutable after creation.
+  final String? clonedFromContractId;
+
   // ── Internal events ───────────────────────────────────────
   final List<DomainEvent> _domainEvents;
 
@@ -69,6 +73,7 @@ class Contract extends Equatable {
     this.closedAtUtc,
     this.closedByUserId,
     this.closeReason,
+    this.clonedFromContractId,
     required List<DomainEvent> domainEvents,
   }) : _domainEvents = domainEvents;
 
@@ -137,6 +142,66 @@ class Contract extends Equatable {
     );
   }
 
+  // ── Factory: createClone ──────────────────────────────────
+  /// Creates a new [Contract] draft as a clone of an existing contract.
+  ///
+  /// Identical to [create] but records [clonedFromContractId] as an
+  /// immutable audit reference. The [organizationId] must come from the
+  /// authenticated JWT — never from the source contract.
+  ///
+  /// Throws [DomainException] if any invariant is violated.
+  static Contract createClone({
+    required String organizationId,
+    required String name,
+    required String contractorName,
+    String? description,
+    required DateTime validFromUtc,
+    required DateTime validUntilUtc,
+    required String clonedFromContractId,
+  }) {
+    if (organizationId.isEmpty) {
+      throw const DomainException('organizationId must not be empty');
+    }
+    if (name.trim().isEmpty) {
+      throw const DomainException('name must not be empty');
+    }
+    if (contractorName.trim().isEmpty) {
+      throw const DomainException('contractorName must not be empty');
+    }
+    if (!validUntilUtc.isAfter(validFromUtc)) {
+      throw const DomainException(
+        'validUntilUtc must be strictly after validFromUtc',
+      );
+    }
+
+    final id = const Uuid().v4();
+    final now = DateTime.now().toUtc();
+
+    final event = ContractCreatedEvent(
+      organizationId: organizationId,
+      occurredAtUtc: now,
+      contractId: id,
+      name: name,
+      contractorName: contractorName,
+      validFromUtc: validFromUtc,
+      validUntilUtc: validUntilUtc,
+    );
+
+    return Contract._(
+      id: id,
+      organizationId: organizationId,
+      name: name,
+      contractorName: contractorName,
+      description: description,
+      validFromUtc: validFromUtc,
+      validUntilUtc: validUntilUtc,
+      status: ContractStatus.draft,
+      createdAtUtc: now,
+      clonedFromContractId: clonedFromContractId,
+      domainEvents: [event],
+    );
+  }
+
   // ── Factory: reconstitute ─────────────────────────────────
   /// Reconstitutes a [Contract] from persistence.
   ///
@@ -155,6 +220,7 @@ class Contract extends Equatable {
     DateTime? closedAtUtc,
     String? closedByUserId,
     String? closeReason,
+    String? clonedFromContractId,
   }) {
     return Contract._(
       id: id,
@@ -170,6 +236,7 @@ class Contract extends Equatable {
       closedAtUtc: closedAtUtc,
       closedByUserId: closedByUserId,
       closeReason: closeReason,
+      clonedFromContractId: clonedFromContractId,
       domainEvents: const [], // RECONSTITUTION: no events emitted
     );
   }
@@ -313,5 +380,6 @@ class Contract extends Equatable {
     closedAtUtc,
     closedByUserId,
     closeReason,
+    clonedFromContractId,
   ];
 }

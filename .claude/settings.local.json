@@ -19,7 +19,13 @@
       "Bash(flutter build:*)",
       "Bash(head -30 grep -n \"contract_id\\\\|CREATE TABLE plan_declarations\\\\|ADD COLUMN\" \"c:/Projects/MVP - Bus/supabase/migrations/20260305171000_multi_tenancy_foundation.sql\")",
       "Bash(sed -i \"s/import ''screens\\\\/billing_cycle_reports_screen.dart'';/import ''screens\\\\/operational_zones_screen.dart'';\\\\nimport ''screens\\\\/billing_cycle_reports_screen.dart'';/\" lib/features/admin/presentation/admin_home.dart)",
-      "Bash(sed -i \"s/        BillingCycleReportsScreen\\(\\),/        OperationalZonesScreen\\(\\),\\\\n        BillingCycleReportsScreen\\(\\),/\" lib/features/admin/presentation/admin_home.dart)"
+      "Bash(sed -i \"s/        BillingCycleReportsScreen\\(\\),/        OperationalZonesScreen\\(\\),\\\\n        BillingCycleReportsScreen\\(\\),/\" lib/features/admin/presentation/admin_home.dart)",
+      "Bash(find \"C:/Projects/MVP - Bus/docs\" -name \"adr*\" -o -name \"ADR*\" 2>/dev/null | head -10)",
+      "Bash(python3 -c \"\nimport csv\nwith open\\('C:/Projects/MVP - Bus/docs/testing/phase5_manual_test_log.csv', encoding='utf-8'\\) as f:\n    reader = csv.reader\\(f, delimiter=';'\\)\n    rows = list\\(reader\\)\n    tests = [r for r in rows if r[0] and r[0][0].isdigit\\(\\)]\n    print\\(f'Total linhas: {len\\(rows\\)}'\\)\n    print\\(f'Casos de teste: {len\\(tests\\)}'\\)\n    for t in tests:\n        print\\(f'  {t[0]:6} | {t[1]:25} | {t[2]}'\\)\n\")",
+      "Bash(ls \"C:\\\\Projects\\\\MVP - Bus\\\\docs\\\\testing\"\" 2>/dev/null || echo \"EMPTY OR NOT FOUND \")",
+      "Bash(npx supabase:*)",
+      "Bash(find \"c:/Projects/MVP - Bus/test\" -type f -name \"*.dart\" -exec grep -l \"buildWidget\\\\|ProviderScope\\\\|setUp\\\\|tearDown\" {})",
+      "Bash(flutter pub:*)"
     ]
   }
 }

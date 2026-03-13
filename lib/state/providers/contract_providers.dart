@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/sla_audit/clone_contract_handler.dart';
 import '../../application/sla_audit/close_contract_handler.dart';
 import '../../application/sla_audit/create_contract_handler.dart';
 import '../../application/sla_audit/declare_contractual_plan_handler.dart';
@@ -36,6 +37,13 @@ final contractualRuleRepositoryProvider = Provider<ContractualRuleRepository>((
 
 final createContractHandlerProvider = Provider<CreateContractHandler>((ref) {
   return CreateContractHandler(
+    contractRepository: ref.watch(contractRepositoryProvider),
+    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+  );
+});
+
+final cloneContractHandlerProvider = Provider<CloneContractHandler>((ref) {
+  return CloneContractHandler(
     contractRepository: ref.watch(contractRepositoryProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
   );
@@ -125,3 +133,19 @@ final contractDetailProvider = FutureProvider.family<ContractDetailView?, String
     );
   },
 );
+
+/// Unique sorted contractor names across all contracts for this org.
+/// Used by the zone form's contractor label Autocomplete.
+final contractorNamesProvider = FutureProvider<List<String>>((ref) async {
+  final organizationId = ref.watch(currentOrganizationIdProvider);
+  if (organizationId == null) return [];
+  final service = ref.watch(contractQueryServiceProvider);
+  final contracts = await service.listContracts(organizationId: organizationId);
+  final names = contracts
+      .map((c) => c.contractorName)
+      .where((n) => n.trim().isNotEmpty)
+      .toSet()
+      .toList()
+    ..sort();
+  return names;
+});

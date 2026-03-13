@@ -48,20 +48,24 @@ class AdminLayout extends ConsumerWidget {
               ),
               child: const Icon(Icons.hub_rounded, color: Colors.white, size: 20),
             ),
-            const SizedBox(width: 16),
-            Text(
-              'OCC • BUSFLOW',
-              style: BusFlowTypography.sectionTitle.copyWith(
-                fontSize: 16,
-                letterSpacing: 1.5,
-                fontWeight: FontWeight.w800,
-                color: BusFlowColors.textPrimary,
+            if (isWideScreen) ...[
+              const SizedBox(width: 16),
+              Text(
+                'OCC • BUSFLOW',
+                style: BusFlowTypography.sectionTitle.copyWith(
+                  fontSize: 16,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.w800,
+                  color: BusFlowColors.textPrimary,
+                ),
               ),
-            ),
+            ],
             const Spacer(),
             const _StressModeToggle(),
-            const SizedBox(width: 16),
-            const _FeedHealthBadge(),
+            if (isWideScreen) ...[
+              const SizedBox(width: 16),
+              const _FeedHealthBadge(),
+            ],
             const SizedBox(width: 8),
             const _LogoutButton(),
             const SizedBox(width: 8),
@@ -85,22 +89,21 @@ class AdminLayout extends ConsumerWidget {
         children: [
           Row(
             children: [
-              if (isWideScreen)
-                Container(
+              Container(
                   decoration: const BoxDecoration(
-                    color: BusFlowColors.background, // Match rail theme
+                    color: BusFlowColors.background,
                     border: Border(
                       right: BorderSide(color: BusFlowColors.border),
                     ),
                   ),
                   child: NavigationRail(
                     extended: isWideScreen,
+                    minWidth: 72,
                     minExtendedWidth: 220,
                     selectedIndex: selectedIndex,
                     onDestinationSelected: (index) {
                       ref.read(adminIndexProvider.notifier).state = index;
                     },
-                    // Label type cannot be defined when extended is true
                     useIndicator: true,
                     destinations: destinations,
                   ),
@@ -120,25 +123,6 @@ class AdminLayout extends ConsumerWidget {
             const PerformanceOverlayHud(),
         ],
       ),
-      bottomNavigationBar: isWideScreen
-          ? null
-          : BottomNavigationBar(
-              currentIndex: selectedIndex,
-              onTap: (index) {
-                ref.read(adminIndexProvider.notifier).state = index;
-              },
-              backgroundColor: BusFlowColors.surface,
-              selectedItemColor: BusFlowColors.primary,
-              unselectedItemColor: BusFlowColors.textDisabled,
-              type: BottomNavigationBarType.fixed,
-              items: destinations.map((d) {
-                return BottomNavigationBarItem(
-                  icon: d.icon,
-                  activeIcon: d.selectedIcon,
-                  label: (d.label as Text).data,
-                );
-              }).toList(),
-            ),
     );
   }
 }

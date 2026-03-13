@@ -555,7 +555,6 @@ class _DeclareContractPlanFormState
 
   Widget _buildStep1() {
     final zonesAsync = ref.watch(operationalZonesProvider);
-    final orgId = ref.read(currentOrganizationIdProvider) ?? '';
 
     return zonesAsync.when(
       loading: () => const Center(
@@ -604,8 +603,6 @@ class _DeclareContractPlanFormState
               zones: sortedZones,
               selectedZone: _selectedOriginZone,
               contractorName: widget.contractorName,
-              organizationId: orgId,
-              onSaveZone: (zone) => saveZone(zone, ref),
               onInvalidateZones: () async =>
                   ref.invalidate(operationalZonesProvider),
               onChanged: (zone) => setState(() {
@@ -622,8 +619,6 @@ class _DeclareContractPlanFormState
               zones: sortedZones,
               selectedZone: _selectedDestinationZone,
               contractorName: widget.contractorName,
-              organizationId: orgId,
-              onSaveZone: (zone) => saveZone(zone, ref),
               onInvalidateZones: () async =>
                   ref.invalidate(operationalZonesProvider),
               onChanged: (zone) => setState(() {

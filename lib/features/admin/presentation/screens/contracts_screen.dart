@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:busflow/application/sla_audit/clone_contract_command.dart';
 import 'package:busflow/application/sla_audit/projections/contract_summary_view.dart';
 import 'package:busflow/domain/sla_audit/contract_status.dart';
+import 'package:busflow/domain/sla_audit/domain_exception.dart';
+import 'package:busflow/state/providers/auth_providers.dart';
 import 'package:busflow/state/providers/contract_providers.dart';
 import 'package:busflow/core/theme/app_theme.dart';
 
@@ -145,7 +148,9 @@ class _ContractTable extends ConsumerWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: SingleChildScrollView(
-          child: DataTable(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
             columnSpacing: 24,
             headingRowColor: WidgetStateProperty.all(BusFlowColors.surfaceElevated),
             headingTextStyle: const TextStyle(
@@ -164,6 +169,7 @@ class _ContractTable extends ConsumerWidget {
               DataColumn(label: Text('SAÚDE SLA')),
               DataColumn(label: Text('')),
             ],
+          ),
           ),
         ),
       ),
@@ -192,21 +198,209 @@ class _ContractTable extends ConsumerWidget {
         DataCell(_StatusChip(status: c.status)),
         DataCell(_SlaHealthBar(percentage: c.slaHealthPercentage)),
         DataCell(
-          TextButton(
-            onPressed: () {
-              ref.read(selectedContractIdProvider.notifier).state = c.id;
-            },
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Gerenciar'),
-                SizedBox(width: 4),
-                Icon(Icons.chevron_right, size: 16),
-              ],
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.copy_outlined, size: 18),
+                tooltip: 'Clonar contrato',
+                onPressed: () => _showCloneDialog(context, ref, c),
+              ),
+              TextButton(
+                onPressed: () {
+                  ref.read(selectedContractIdProvider.notifier).state = c.id;
+                },
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Gerenciar'),
+                    SizedBox(width: 4),
+                    Icon(Icons.chevron_right, size: 16),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _showCloneDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ContractSummaryView c,
+  ) async {
+    final nameController = TextEditingController(text: '${c.name} (Cópia)');
+    DateTime? validFrom;
+    DateTime? validUntil;
+    String? errorMsg;
+    bool isSubmitting = false;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          Future<void> pickDate({required bool isFrom}) async {
+            final picked = await showDatePicker(
+              context: ctx,
+              initialDate: DateTime.now(),
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2035),
+            );
+            if (picked != null) {
+              setDialogState(() {
+                if (isFrom) {
+                  validFrom = picked;
+                } else {
+                  validUntil = picked;
+                }
+                errorMsg = null;
+              });
+            }
+          }
+
+          return AlertDialog(
+            title: const Text('Clonar Contrato'),
+            content: SizedBox(
+              width: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome do novo contrato',
+                      border: OutlineInputBorder(),
+                    ),
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.calendar_today, size: 16),
+                          label: Text(
+                            validFrom != null
+                                ? _dateFormat.format(validFrom!)
+                                : 'Início da vigência *',
+                            style: TextStyle(
+                              color: validFrom != null
+                                  ? BusFlowColors.textPrimary
+                                  : BusFlowColors.textSecondary,
+                            ),
+                          ),
+                          onPressed: () => pickDate(isFrom: true),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.calendar_today, size: 16),
+                          label: Text(
+                            validUntil != null
+                                ? _dateFormat.format(validUntil!)
+                                : 'Fim da vigência *',
+                            style: TextStyle(
+                              color: validUntil != null
+                                  ? BusFlowColors.textPrimary
+                                  : BusFlowColors.textSecondary,
+                            ),
+                          ),
+                          onPressed: () => pickDate(isFrom: false),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (errorMsg != null) ...[
+                    const SizedBox(height: 12),
+                    Text(errorMsg!,
+                        style: const TextStyle(
+                            color: BusFlowColors.error, fontSize: 12)),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        if (nameController.text.trim().isEmpty) {
+                          setDialogState(() =>
+                              errorMsg = 'Informe o nome do contrato.');
+                          return;
+                        }
+                        if (validFrom == null || validUntil == null) {
+                          setDialogState(() =>
+                              errorMsg = 'Defina as datas de início e fim.');
+                          return;
+                        }
+                        if (!validUntil!.isAfter(validFrom!)) {
+                          setDialogState(() =>
+                              errorMsg = 'A data de fim deve ser após o início.');
+                          return;
+                        }
+
+                        setDialogState(() => isSubmitting = true);
+                        try {
+                          final orgId =
+                              ref.read(currentOrganizationIdProvider);
+                          if (orgId == null) {
+                            throw const DomainException(
+                                'Sessão expirada. Faça login novamente.');
+                          }
+                          final cmd = CloneContractCommand(
+                            organizationId: orgId,
+                            sourceContractId: c.id,
+                            name: nameController.text.trim(),
+                            contractorName: c.contractorName,
+                            description: null,
+                          );
+                          final handler =
+                              ref.read(cloneContractHandlerProvider);
+                          final newContract = await handler.handle(
+                            cmd,
+                            validFromUtc: validFrom!.toUtc(),
+                            validUntilUtc: validUntil!.toUtc(),
+                          );
+                          ref.invalidate(contractListProvider);
+                          if (ctx.mounted) Navigator.of(ctx).pop();
+                          ref
+                              .read(selectedContractIdProvider.notifier)
+                              .state = newContract.id;
+                        } on DomainException catch (e) {
+                          setDialogState(() {
+                            errorMsg = e.message;
+                            isSubmitting = false;
+                          });
+                        } catch (e) {
+                          setDialogState(() {
+                            errorMsg = 'Erro inesperado: $e';
+                            isSubmitting = false;
+                          });
+                        }
+                      },
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Clonar'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

@@ -98,6 +98,7 @@ class _DetailView extends ConsumerWidget {
                       ref,
                       contractId: s.id,
                       contractName: s.name,
+                      contractorName: s.contractorName,
                     );
                     if (declared == true) {
                       ref.invalidate(contractDetailProvider(s.id));

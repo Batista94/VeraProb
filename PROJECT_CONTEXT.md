@@ -1,69 +1,75 @@
-# BusFlow: Project Context Bootstrap
+# BusFlow: Strategic Context & Business Architecture Bootstrap
 
-This document serves as the canonical entry point and bootstrap context for any engineering session or AI agent interacting with the BusFlow repository. It provides a map of the platform's purpose, architecture, and governance.
+This document serves as the canonical entry point for any engineering session, AI agent, or product stakeholder interacting with the BusFlow repository. It defines the platform's true north: its business purpose, market differentiators, and operational rules.
 
 ---
 
-## 1. Platform Purpose
-BusFlow is an **event-driven operational intelligence platform** designed for monitoring and auditing contractual transportation operations. It transforms raw physical telemetry (GPS/IoT) into verifiable contractual truth and immutable financial projections, ensuring operational determinism for B2B shuttle and charter services.
+## 1. Platform Purpose & The "Core" Vision
+BusFlow is an **Automated SLA Compliance & Financial Protection Platform**. 
+Its primary objective is to eliminate the gap between a signed B2B contract and physical operation execution. It acts as an impartial, automated "Judge" that ingests real-world events, evaluates them against strict contractual rules, and generates immutable financial projections (penalties or approvals).
 
-## 2. Core Architecture (The Operational Pipeline)
-The system follows a strict linear pipeline to guarantee data integrity:
+While the current MVP (Vertical 1) is applied to **Corporate Charter and Shuttle Services (Fretamento)**, the CORE engine is industry-agnostic. It is designed to be easily replicated to other verticals (Construction Logistics, Facilities Management, Waste Collection) where SLA breaches result in financial loss.
 
-**Event Ingestion** (GPS/State)  
-→ **Normalization** (Smoothing/Deduplication)  
-→ **Subscriber** (Stream Dispatcher)  
-→ **Evaluation Engine** (Contractual Logic)  
-→ **Immutable Ledger** (System of Record)  
-→ **Execution States** (Operational Truth)  
-→ **Financial Snapshots** (Margin Projection)  
-→ **Query Services** (Read Models)  
-→ **Operations Control Center (OCC)** (Real-time Monitoring & Investigation)
+## 2. Market Positioning & Differentiators
 
-## 3. Architectural Invariants
-- **Immutable Event Ledger:** All operational events are append-only. No `UPDATE` or `DELETE` allowed.
-- **Deterministic Evaluation Engine:** Logic executes pure algorithms based on fixed parameters to ensure reproducible results.
-- **Financial Precision:** Currency is handled using **integer cents** (BIGINT) to avoid floating-point errors.
-- **Domain Sovereignty:** Business logic is isolated from infrastructure and UI (DDD).
-- **Read-only OCC:** The Command Center monitors and acknowledges; it never alters historical execution state.
-- **Idempotent Event Processing:** Redundant events are ignored by the engine without side effects.
+### The Basics (Table Stakes - What everyone has)
+- Digital contract registry and basic route/zone mapping.
+- GPS telemetry ingestion.
+- Standard billing reports (Planned vs. Executed).
 
-## 4. Technology Stack
-- **Frontend:** Flutter (Mobile/Web)
-- **State Management:** Riverpod
-- **Backend-as-a-Service:** Supabase
-- **Database:** PostgreSQL (with RLS, HASH Partitioning, and custom JWT Hooks)
-- **Realtime:** WebSockets/WAL Replication for telemetry and OCC updates.
+### The Advanced (What makes us highly competitive)
+- **Strict Multi-Tenant Isolation:** Complete data privacy. A contractor (Client A) cannot see the zones, routes, or assets of another contractor (Client B), enforced at the database level.
+- **Just-in-Time (JIT) Master Data:** "Zero-Friction UX" that allows dispatchers to create operational assets (like Geofences) *inline* during contract creation, without breaking their workflow.
+- **Dynamic SLA Templates:** Reusable rule sets (e.g., "15-min tolerance for arrival", "100% penalty for no-show") that can be attached to any contract.
 
-## 5. Multi-Tenant Model
-Isolation is enforced from the bottom up via the `organization_id`. 
-- **DB Boundary:** PostgreSQL Row-Level Security (RLS) policies restrict data access based on the `org_id` claim in the user's JWT.
-- **Compute Boundary:** The Evaluation Engine resolves rule configurations based on the tenant's context.
+### The "Blue Ocean" (Unaddressed Pain Points - Our True Gold)
+- **The Burden of Proof (Immutable Ledger):** In B2B, disputes over SLA breaches take weeks of email back-and-forth. BusFlow generates *cryptographic-like proof* of execution. If a penalty is applied, the system provides an irrefutable, unalterable trail of exactly *why*, *when*, and *where* it failed.
+- **Predictive Penalty Alerting (Future):** Instead of reporting a failure at the end of the month, the system warns the operator *before* the breach (e.g., "Vehicle is delayed; SLA breach and $500 penalty in 4 minutes. Take action.").
+- **Client Transparency Portal (Future):** Giving the end-client a restricted view of their own SLAs, eliminating the need for the operator to manually generate compliance reports.
 
-## 6. Governance Model
-The Engineering Council enforces a strict development lifecycle. This council is composed of specialized AI personas that review every design and implementation:
-- **Chief Architect:** Structural integrity, DDD, and core vs. module separation.
-- **Senior Engineer:** Tech stack (Flutter/Riverpod/Supabase), Clean Architecture, and performance.
-- **UX & Operations Director:** Human-system interaction, OCC workflows, and provenance.
-- **QA & Security Lead:** RLS enforcement, tenant isolation, and idempotency.
+## 3. End-to-End Business Rules & Lifecycle
+Every contract in the platform follows a strict, end-to-end lifecycle. Engineering decisions must respect this flow:
 
-The lifecycle consists of:
-1. **Design Specification** (Architectural Draft)
-2. **Council Review** (Validation of Invariants)
-3. **Implementation** (Code Execution)
-4. **Validation** (E2E/Scenario Testing)
-5. **Compliance Report** (Durable Proof of Work)
+### Phase A: Negotiation & Setup (The Rules)
+1. **Contractor Onboarding:** The client (tenant's customer) is registered.
+2. **Zone Mapping:** Physical locations (garages, client gates) are mapped via Geofencing. Zones can be *Global* (owned by the operator) or *Exclusive* (tied strictly to a specific Contractor).
+3. **Contract Drafting:** A digital contract is created, linking the Contractor, the Operational Zones (Routes/Plans), and the Financial Rules (SLA Templates and Penalties).
+
+### Phase B: Execution & Telemetry (The Real World)
+1. **Shift Projection:** The system projects exactly what *should* happen today based on the contract (e.g., Bus must arrive at Zone X at 08:00 AM).
+2. **Ingestion:** Telemetry (GPS, check-ins) flows into the system. 
+3. **Normalization:** The system cleans the noisy data (GPS bounces) into deterministic events (e.g., `ENTERED_ZONE_X`).
+
+### Phase C: The Evaluation Engine (The Judge)
+1. The Engine compares Phase B (Reality) against Phase A (The Rules).
+2. **Idempotency:** The Engine is deterministic. Running the same physical event against the same rule will always yield the exact same financial result.
+
+### Phase D: Adjudication & Settlement (The Ledger)
+1. **Immutable State:** The Engine outputs a verdict (e.g., `COMPLIANT` or `BREACHED_DELAY`).
+2. **Financial Impact:** If breached, the specific financial penalty is automatically calculated and recorded in an append-only ledger. No `UPDATE` or `DELETE` is permitted.
+3. **Billing Output:** At the end of the cycle, the aggregated ledger generates the indisputable invoice and compliance report.
+
+## 4. Architectural Invariants (Business-Driven)
+To support the business goals, the architecture must strictly enforce:
+- **Domain Sovereignty:** The business logic (SLA rules, penalty calculation) is completely isolated from the UI and external APIs.
+- **Read-only OCC (Operations Control Center):** Human dispatchers can monitor and acknowledge issues, but they *cannot* edit the historical execution state to hide a breach.
+- **Integer Finance:** All currency is handled using integer cents to prevent floating-point rounding errors during penalty calculations.
+
+## 5. Technology Stack Summary
+*(For AI Agents: Do not violate these constraints during implementation)*
+- **Frontend:** Flutter (Mobile/Web) + Riverpod (State Management)
+- **Backend/DB:** Supabase (PostgreSQL) with strict Row-Level Security (RLS) and custom JWT Hooks for Tenant Isolation.
+
+## 6. Governance Model & AI Personas
+The Engineering Council reviews all code to ensure it aligns with the business vision:
+- **Chief Architect:** Ensures the "CORE" remains industry-agnostic and modular.
+- **Senior Engineer:** Enforces Clean Architecture and framework best practices.
+- **UX Director:** Defends the "Zero-Friction" and "Just-in-Time" operator experience.
+- **QA Lead:** Guarantees Tenant Isolation (data security) and Ledger Immutability.
 
 ## 7. Current System State
-- **Phase 0 to 4:** (Completed) - Stabilization, Multi-Tenancy, Rules Engine, Investigation Traces, and Operational Alerts.
-- **Phase 5: Contract & Plan Lifecycle (B2B Refactoring):** (In Progress) - Design and Code implementation finished. Currently executing **Trilha B (UI/UX Standardization & Dashboard Pivot)** before commencing manual validation (Phase 5.10).
-- **Phase 6: Admin & Tenant Self-Service** (Planned) - RBAC, invitations, and asset onboarding.
-- **Phase 7: Evidence & Audit Exports** (Planned) - Compliance aggregation and CSV/PDF exports.
-
-## 8. Documentation Map
-For deeper technical details, refer to the `docs/` hierarchy:
-- [`docs/council`](./docs/council/): AI Persona definitions (Architect, Senior Engineer, UX Director, QA Lead).
-- [`docs/architecture`](./docs/architecture/): System overview, pipeline details, and feature designs (01 to 09).
-- [`docs/governance`](./docs/governance/): Framework, B2B strategy, and the Strategic Roadmap.
-- [`docs/governance/compliance`](./docs/governance/compliance/): Validation reports and security audits.
-- [`docs/runbooks`](./docs/runbooks/): Database bootstrap and operational testing procedures.
+- **Phase 0 to 4:** (Completed) - Base stabilization, Engine Rules, Immutable Ledger foundation.
+- **Phase 5 (B2B Refactoring):** (In Progress)
+  - **Sprint 5.11:** (Completed) - Wizard refactoring, Contract Cloning, SLA Templates.
+  - **Sprint 5.12:** (In Progress) - "Just-in-Time" master data creation (Zero-Friction UX) and strict Tenant Isolation on search fields.
+- **Phase 6 (Admin & Master Data):** (Planned) - Contractor aggregates, RBAC (Gerente vs. Operador profiles).
