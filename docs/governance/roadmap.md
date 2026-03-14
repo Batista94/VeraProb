@@ -13,7 +13,8 @@
 | Ambientes | Dev local único. Sem staging, sem prod. |
 | `strict-casts` | Desabilitado — ~80 issues de `dynamic` nos repos Postgres (Phase 8) |
 | Sprint 5.11 | **CONCLUÍDA** — Fases A-I implementadas (Wizard refatorado, Clona Contrato, Templates SLA, Contractor Label). |
-| Banco de dev | Todas as migrations aplicadas — `20260311000000` · `20260311000002` · `20260311000003` · `20260312000001` · `20260312000002` · `20260312000003` ✅ |
+| Sprint 5.12 Phase D | **CONCLUÍDA** — Refinamento, UTC, Schema e Segurança RLS. ✅ |
+| Banco de dev | Todas as migrations aplicadas — `20260311000000` · `20260311000002` · `20260311000003` · `20260312000001` · `20260312000002` · `20260312000003` · `20260313000001` ✅ |
 
 ---
 
@@ -28,65 +29,65 @@
 > zonas foi considerado burocrático pelo PO e substituído pelo fluxo Just-in-Time (Sprint 5.12).
 > A validação manual agora cobre o fluxo completo **com criação inline de zonas**.
 >
-> **⚠️ PRÉ-REQUISITO:** Sprint 5.12 (Fases B e C) **100% concluída** + `flutter test` verde +
-> migrations `20260311000003` + `20260312000001/2/3` confirmadas no Supabase dev.
-> A validação manual ocorre sobre a interface **final** — sem regressão pós-5.12.
->
-> Cobre cenários originais da 5.4 (suspensa), todos os cenários B2B, e o novo fluxo JIT.
-> **QA & SECURITY ENFORCEMENT:** Devido ao Ceticismo In-Memory, testes de idempotência e isolamento (multi-tenant) devem ser validados obrigatoriamente contra o banco de dados físico (Postgres), e a migration 5.6 deve ser confirmada.
-
-**Cenários automatizados:**
-- Cenário 5.1: Plano declarado com `ShiftPattern` gera ledger entry `PLAN_DECLARED` — mesmo comportamento da API
-- Cenário 5.2: Plano publicado não pode ser editado — nova versão deve ser declarada
-- Cenário 5.3: (**Postgres RLS**) Operador de Org A não vê contratos nem zonas de Org B nem via API
-- Cenário 5.4: Contrato encerrado não aceita novos planos
-- Cenário 5.5: `ShiftProjectionService` projeta mesmo SET para mesma data + mesmo ShiftPattern (determinismo)
-- Cenário 5.6: (**Postgres Idempotency**) Projeção executada 2× gera 1 SET, não 2 (validação de unique constraint no banco físico)
-- Cenário 5.7: Atualizar coordenadas de `OperationalZone` não altera SETs já projetados (snapshot enforced)
-- Cenário 5.8: `ShiftPattern` com timezone inválida lança `DomainException` antes de qualquer persistência
-- Cenário 5.9: Gap detection gera `OperationalAlert` CRITICAL quando dia esperado não tem SETs projetados
-
-**⚠️ Testes Manuais Obrigatórios (Supabase dev ativo):**
-- [ ] **Smoke test de UI existente (fases 3 e 4):** `InvestigationModal` e `ContractualAlertsPanel` renderizam sem erro com dados reais
-- [ ] **Criar zona operacional inline** no Wizard Passo 1 (JIT) → confirmar que aparece na listagem de Zonas Operacionais com `organization_id` e `contractor_label` corretos no Supabase
-- [ ] **Criar contrato + declarar plano** com ShiftPattern (incluindo zona criada inline) → confirmar que SETs projetados aparecem na aba Execuções com status `pending`
-- [ ] **Determinismo de projeção:** declarar mesmo plano duas vezes → confirmar IDs de SETs idênticos, sem duplicatas no banco
-- [ ] **Snapshot de zona:** alterar coordenadas de uma zona → confirmar que SETs anteriores mantêm coordenadas originais
-- [ ] **Isolamento de tenant:** logar como Org A → confirmar que zonas e contratos de Org B não aparecem em nenhuma tela
-- [ ] **Pipeline de avaliação:** SET projetado + telemetria simulada via Realtime → confirmar transição `pending → executed` sem refresh manual
-- [ ] **Alert de gap:** forçar ausência de projeção para uma data → confirmar `OperationalAlert` PROJECTION_GAP aparece no painel
-
-- [ ] **BLOCO 14 — Novos campos SLA:** Wizard Passo 3 exibe 3 grupos com 7 campos totais. Campos `noShowThresholdMinutes · earlyArrivalToleranceMinutes · dwellTimeMinutes` aparecem no JSONB do plano declarado (`SELECT shift_patterns_payload FROM plan_declarations WHERE ...`). Planos antigos (sem os 3 campos) ainda carregam sem erro.
-
-- **Compliance Report:** `docs/governance/compliance/phase5_compliance_report.md`
+> **⚠️ BLOQUEADOR (BLOCO 1):** Esta fase só pode ser assinada após a resolução total do [Bloco 1](#bloco-1--bloqueante-integridade-e-seguranca).
 
 ---
 
-#### [ ] Sprint 5.12 Phase D — Refinement & Security Hotfixes
-> **Origem:** Auditoria interna e feedback técnico (2026-03-13). 
-> Aborda débitos técnicos de precisão financeira, sincronização UTC e segurança RLS.
+### BLOCO 1 — BLOQUEANTE: Integridade e Segurança
+**Gerado:** 2026-03-14 | **Source:** Manual test debrief post-Sprint 5.12
+*Deve ser 100% resolvido antes que os Blocos 2–4 da Sprint 5.13 possam ser implementados.*
 
-- [ ] **Step 1 (UI Fix):** `ZoneTypeAheadField` — Corrigir rebuild síncrono e listener duplicado em `fieldViewBuilder` usando `initialValue` no Autocomplete.
-- [ ] **Step 2 (UTC):** Garantir `.toUtc()` no `InMemoryPolicyEvaluator` e `VehiclePosition.isStale()`.
-- [ ] **Step 3 (Doc):** Atualizar `sql/schema_sla_audit.sql` para refletir `contractual_value_cents BIGINT` (stale ref fix).
-- [ ] **Step 4 (SQL - BLOCKING):** Migration `20260313000001` (CSE Tenant Isolation). **Aguardando PO executar no SQL Editor.**
-- [ ] **Step 5 (Infra):** Incluir `organization_id` nos inserts de `contractual_service_executions` em `PostgresPlanDeclarationRepository`.
+#### 1.1 — Auditoria RLS: organization_id em contractual_service_executions
+- **Persona:** `qa_security`
+- **Finding:** `postgres_plan_declaration_repository.dart:60` inclui `organization_id`, mas foi observada injeção incorreta em testes manuais.
+- **Action:** Auditar caminhos de update/upsert em `postgres_plan_declaration_repository.dart` e `postgres_contractual_execution_state_repository.dart`. Validar política RLS no banco.
+- **Files:** `lib/infrastructure/sla_audit/postgres_plan_declaration_repository.dart`, `lib/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart`
 
-#### [ ] 5.12 Final Operational Validation
+#### 1.2 — Precisão Financeira: double → Money/int (Penalidades)
+- **Persona:** `architect` + `qa_security`
+- **Finding:** `sla_penalties.dart:22` usa `double` para multiplicadores, criando ambiguidade.
+- **Ruling:** Usar **basis points (int)** (ex: 150 = 1.5×).
+- **Implementação:** `SLAPenalties.noShowPenaltyMultiplierBps: int`. `Money.multiplyByBps(int bps)`.
+- **Files:** `lib/domain/sla_audit/sla_penalties.dart`, `lib/domain/value_objects/money.dart`
 
-**Critérios de Done:**
-- [ ] `flutter test` — ≥ 340 passing · 0 falhas
-- [ ] Digitar nome inexistente no campo de zona → `'+ Criar zona "X"'` visível no overlay
-- [ ] Zona criada inline aparece na aba Zonas Operacionais com `contractorLabel` correto
-- [ ] Swap origem↔destino (return shift): texto nos dois campos trocado corretamente
-- [ ] Geofence hard block inalterado: zona sem geofence bloqueia avanço ao Passo 2
-- [ ] Zona existente selecionável normalmente (sem regressão)
-- [ ] Zona criada via modal é auto-selecionada no campo (sem redigitar)
-- [ ] Autocomplete de Contratante em Zonas Operacionais sugere nomes de contratos existentes
+#### 1.3 — Soberania de Domínio: Remover Flutter Primitives
+- **Persona:** `architect`
+- **Finding:** `incident_lifecycle_status.dart` importa `flutter/material.dart` para getters de cor.
+- **Action:** Remover import e getters do enum. Criar mapper na camada de apresentação.
+- **Files:** `lib/domain/enums/incident_lifecycle_status.dart`, `lib/features/shared/mappers/incident_status_ui_mapper.dart` [NEW]
+
+#### 1.4 — Padronização UTC: DateTime.now() → toUtc()
+- **Persona:** `qa_security`
+- **Finding:** Violasções em `AuditService`, `Detectors`, `Normalizer`, etc.
+- **Action:** Substituição sistemática de `DateTime.now()` por `DateTime.now().toUtc()` nas camadas de domínio e aplicação. Injetar `Clock` onde necessário para testes.
+
+---
+
+### Sprint 5.13 — Post-Validation Hardening
+**Planejável em paralelo ao Bloco 1, mas implementável apenas após sua conclusão.**
+
+#### BLOCO 2 — Taxonomia de Zonas e Isolamento de Ativos
+- **2.1 — Zone Taxonomy:** `enum ZoneScope { global, exclusive }`. Migração SQL necessária para coluna `zone_scope`.
+- **2.2 — Contextual Zone Filter:** `ZoneTypeAheadField` filtra por `ZoneScope` (global + contratante X).
+- **2.3 — JIT Inline Zone Creation:** Corrigir trava do botão Cancelar no modal.
+- **2.4 — Zero-Friction Zone Field:** Permitir limpar campo, editar inline e swap origem/destino.
+- **Personas:** `architect`, `senior_engineer`, `ux_operations`
+
+#### BLOCO 3 — Fluxo de Declaração B2B
+- **3.1 — Stepper Clicável:** Implementar `onStepTapped`. Permitir voltar, bloquear avanço não validado.
+- **3.2 — Contexto no Step 2:** Exibir banner "Origem → Destino" durante configuração de horários.
+- **3.3 — Ciclo Industrial:** Suporte a Return Shifts em datas específicas ou semanas diferentes (`weekOffset`).
+- **Personas:** `senior_engineer`, `ux_operations`, `architect`
+
+#### BLOCO 4 — Compliance e Penalidades
+- **4.1 — Step 3 Refinement:** Renomear para "Acordo de Penalidades". Adicionar campo `gracePeriodMinutes`.
+- **4.2 — Step 4: Exposição de Risco Financeiro:** Novo resumo calculado antes de publicar (Receita Protegida, Exposição Máx no-show, Penalidade máx por viagem).
+- **Personas:** `Full Council`, `ux_operations`, `senior_engineer`
 
 ---
 
 ### [ ] Phase 6 — Administration & Tenant Self-Service
+
 
 **Por que depois de Phase 5:** Com a jornada do operador completa (Phase 5), a próxima barreira
 é escalar: cada novo cliente hoje requer intervenção manual do desenvolvedor para ser cadastrado.
@@ -311,14 +312,7 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 - Monitoramento intensivo durante o piloto (Sentry + contato direto)
 - Coleta estruturada de feedback a cada 2 semanas
 - **Critério de saída do beta:** zero incidentes críticos em 30 dias corridos
-- Ajustes de produto incorporados antes do lançamento geral
-
-**O que observar durante o beta (testes de aceitação do usuário):**
-- [ ] Operador consegue criar contrato e declarar plano **sem auxílio do desenvolvedor**
-- [ ] Alertas operacionais aparecem no tempo esperado após telemetria processada
-- [ ] Relatório exportado é aceito pelo cliente final do operador (contratante do transporte)
-- [ ] Nenhum dado de um cliente beta vaza para outro (verificar via Sentry + logs)
-- [ ] Performance aceitável com volume real de veículos (sem Page freezes, sem timeouts visíveis)
+- Ajustes de produto incorporados antes do lançamento
 
 ---
 
@@ -326,19 +320,20 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ```
 ─────────────────────────────────────────────────────
+[x] Sprint 5.12 Phase D — Refinement & Security Hotfixes (INV-2 · INV-3 · INV-6)
+     [x] Step 1 UI Rebuild Fix
+     [x] Step 2 UTC Standardization
+     [x] Step 3 Stale Schema Doc
+     [x] Step 4 SQL Migration (Tenant Isolation)
+     [x] Step 5 Infra Org Isolation
 ─────────────────────────────────────────────────────
-[ ] Sprint 5.12 Phase D — Refinement & Security Hotfixes (INV-2 · INV-3 · INV-6)
-     [ ] Step 1 UI Rebuild Fix
-     [ ] Step 2 UTC Standardization
-     [ ] Step 3 Stale Schema Doc
-     [ ] Step 4 SQL Migration (Tenant Isolation)
-     [ ] Step 5 Infra Org Isolation
+[ ] 5.12 Final Operational Validation (Final Sign-off)
+     PRÉ-REQ: Bloco 1 (Audit & Security) 100% resolvido ✅
 ─────────────────────────────────────────────────────
-[ ] 5.12 Final Operational Validation (testes manuais)
-     PRÉ-REQ: Sprint 5.11 concluída + B1 remanescente + Sprint 5.12 Phase D concluída + migrations ✅
+[  ] Sprint 5.13 — Post-Validation Hardening (Blocos 2, 3 e 4)
 ─────────────────────────────────────────────────────
 [  ] Phase 6  Administration & Tenant Self-Service
-       ⚠️  Phase 6 introduz `Contractor` aggregate → migrar `contractor_label TEXT` para FK real
+        ⚠️  Phase 6 introduz `Contractor` aggregate → migrar `contractor_label TEXT` para FK real
 [  ] Phase 7  Evidence & Audit Exports
 [  ] Phase 8  Operational Hardening
        `PostgresSlaTemplateRepository` — strict types aplicados (Sprint 5.11)
@@ -349,14 +344,13 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Sprint 5.11 concluída. Próxima ação: 5.10 Validation (Testes Manuais de Fumaça).**
+**Sprint 5.12 Phase D concluída. Próxima ação: 5.12 Final Validation (Testes Manuais de Fumaça).**
 
 ### Sequência imediata
 
 ```
-1. [ ] 5.12 Phase D Refinement — Hotfixes críticos (INV-2, INV-3, INV-6)
-2. [ ] 5.12 Final Validation   — Testes manuais (smoke test completo)
-3. [ ] Phase 6                — Administration & Tenant Self-Service
+1. [ ] 5.12 Final Validation   — Testes manuais (ver guia: manual_test_plan.md)
+2. [ ] Phase 6                — Administration & Tenant Self-Service
 ```
 
 ### Atenção: itens que PODEM afetar trabalho já concluído
