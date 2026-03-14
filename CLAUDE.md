@@ -4,6 +4,9 @@ PactaFlow is an **Automated SLA Compliance & Financial Protection Platform**.
 It acts as an impartial, automated Judge: ingests real-world telemetry, evaluates against contractual rules, and generates immutable financial verdicts.
 The CORE engine is industry-agnostic (MVP: Corporate Charter/Shuttle — Fretamento).
 
+**Stack:** Flutter Web · Supabase (PostgreSQL + RLS) · Riverpod
+> This is an event-driven SLA Compliance platform — NOT a CRUD system.
+
 **Pipeline:** Ingestion → Normalization → Subscriber → EvaluationEngine → ImmutableLedger → FinancialSnapshots → QueryServices → OCC
 
 **Current State:** Phase 5 (B2B Refactoring) — Sprint 5.12 in progress (JIT master data, Zero-Friction UX, Tenant Isolation on search fields).
@@ -44,7 +47,9 @@ The CORE engine is industry-agnostic (MVP: Corporate Charter/Shuttle — Fretame
 - Before any implementation: present a **Proposed Action Plan** and wait for PO authorization.
 - For any DB change: provide the exact pure SQL block and **BLOCK progress** until PO confirms: *"SQL executado no SQL Editor do Supabase"*.
 - Definition of Done: code compiles + tests pass + SQL applied + Compliance Report generated.
-- Signal new invariant candidates with: 🚨 PROPOSED NEW INVARIANT 🚨
+- Signal new invariant candidates with: 🚨 PROPOSED NEW INVARIANT
+- When a new invariant is approved by PO: update the NON-NEGOTIABLE INVARIANTS section in this file (CLAUDE.md) directly.
+- Proactively signal Milestone Gates (see ENVIRONMENT & GOVERNANCE) when criteria are met — do not wait for PO to ask.
 
 ---
 
@@ -83,6 +88,13 @@ When 2+ personas are invoked:
 ---
 
 ## ENVIRONMENT & GOVERNANCE
-- **Bootstrap Phase:** Rapid iteration, in-memory testing, manual Supabase migrations.
-- **Milestone Alert:** Notify when core is stable to plan Staging/CI-CD transition.
+- **Current Environment:** Local dev — Bootstrap Phase. Rapid iteration, in-memory testing, manual Supabase migrations.
+- **Context:** Solo founder building from home. Goal: production-grade B2B SaaS product.
 - **RBAC (Phase 6):** Prepare for `Gerente` vs. `Operador` profiles — avoid hardcoding role assumptions now.
+
+### Milestone Gates (YOU must proactively signal when reached)
+| Gate | Criteria | Signal |
+|---|---|---|
+| **Homologation Ready** | All Phase 5 invariants passing · No open 🚨 · Core flows tested manually | 🏁 READY FOR HOMOLOGATION |
+| **CI/CD Ready** | Stable schema · RLS validated · Test coverage >60% · No manual migration debt | 🏗️ READY FOR CI/CD PLANNING |
+| **Product Launch Ready** | Multi-tenant isolation audited · RBAC implemented · Error monitoring in place | 🚀 READY FOR FIRST TENANT |
