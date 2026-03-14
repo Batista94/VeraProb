@@ -518,8 +518,18 @@ abre diretamente `showZoneFormDialog` — reutiliza mapa + Nominatim sem duplica
 - [x] `flutter test` verde (sem regressões)
 - [ ] Revisão visual no browser confirmada pelo PO
 
-**FASE D — 5.12 Final Operational Validation:** [ ] Bloqueada até revisão visual confirmada
-> Ver seção "5.12 Final Operational Validation" abaixo.
+
+#### [ ] Sprint 5.12 Phase D — Refinement & Security Hotfixes
+> **Origem:** Auditoria interna e feedback técnico (2026-03-13). 
+> Aborda débitos técnicos de precisão financeira, sincronização UTC e segurança RLS.
+
+- [ ] **Step 1 (UI Fix):** `ZoneTypeAheadField` — Corrigir rebuild síncrono e listener duplicado em `fieldViewBuilder` usando `initialValue` no Autocomplete.
+- [ ] **Step 2 (UTC):** Garantir `.toUtc()` no `InMemoryPolicyEvaluator` e `VehiclePosition.isStale()`.
+- [ ] **Step 3 (Doc):** Atualizar `sql/schema_sla_audit.sql` para refletir `contractual_value_cents BIGINT` (stale ref fix).
+- [ ] **Step 4 (SQL - BLOCKING):** Migration `20260313000001` (CSE Tenant Isolation). **Aguardando PO executar no SQL Editor.**
+- [ ] **Step 5 (Infra):** Incluir `organization_id` nos inserts de `contractual_service_executions` em `PostgresPlanDeclarationRepository`.
+
+#### [ ] 5.12 Final Operational Validation
 
 **Critérios de Done:**
 - [ ] `flutter test` — ≥ 340 passing · 0 falhas
@@ -827,8 +837,16 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 ─ ─ ─  antes de 5.10 Validation  ─ ─ ─
      ✅ B1 remanescente: Responsividade · Stress Mode Toggle · Localization pt-BR
 ─────────────────────────────────────────────────────
-[ ] 5.10 Validation Consolidada (testes manuais)
-     PRÉ-REQ: Sprint 5.11 concluída + B1 remanescente + migrations 000000–000003 + 20260312000001–3 ✅
+─────────────────────────────────────────────────────
+[ ] Sprint 5.12 Phase D — Refinement & Security Hotfixes (INV-2 · INV-3 · INV-6)
+     [ ] Step 1 UI Rebuild Fix
+     [ ] Step 2 UTC Standardization
+     [ ] Step 3 Stale Schema Doc
+     [ ] Step 4 SQL Migration (Tenant Isolation)
+     [ ] Step 5 Infra Org Isolation
+─────────────────────────────────────────────────────
+[ ] 5.12 Final Operational Validation (testes manuais)
+     PRÉ-REQ: Sprint 5.11 concluída + B1 remanescente + Sprint 5.12 Phase D concluída + migrations ✅
 ─────────────────────────────────────────────────────
 [  ] Phase 6  Administration & Tenant Self-Service
        ⚠️  Phase 6 introduz `Contractor` aggregate → migrar `contractor_label TEXT` para FK real
@@ -847,9 +865,9 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 ### Sequência imediata
 
 ```
-1. [ ] 5.10 Validation     — Testes manuais (smoke test completo com Supabase dev ativo)
-2. [ ] Phase 6             — Administration & Tenant Self-Service
-3. [ ] Phase 7             — Evidence & Audit Exports
+1. [ ] 5.12 Phase D Refinement — Hotfixes críticos (INV-2, INV-3, INV-6)
+2. [ ] 5.12 Final Validation   — Testes manuais (smoke test completo)
+3. [ ] Phase 6                — Administration & Tenant Self-Service
 ```
 
 ### Atenção: itens que PODEM afetar trabalho já concluído
