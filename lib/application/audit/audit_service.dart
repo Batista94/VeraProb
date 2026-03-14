@@ -52,7 +52,7 @@ class InMemoryAuditService implements AuditService {
       oldValue: oldValue,
       newValue: newValue,
       reason: reason,
-      timestamp: DateTime.now(),
+      timestamp: DateTime.now().toUtc(),
     );
 
     _logs.add(log);

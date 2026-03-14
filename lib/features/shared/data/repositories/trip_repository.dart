@@ -16,7 +16,7 @@ class TripRepositoryMock implements ITripRepository {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       driverId: driverId,
       routeId: routeId,
-      startTime: DateTime.now(),
+      startTime: DateTime.now().toUtc(),
       status: 'active',
     );
     _trips.add(trip);
@@ -29,7 +29,7 @@ class TripRepositoryMock implements ITripRepository {
     final index = _trips.indexWhere((t) => t.id == tripId);
     if (index != -1) {
       _trips[index] = _trips[index].copyWith(
-        endTime: DateTime.now(),
+        endTime: DateTime.now().toUtc(),
         status: 'completed',
       );
     }

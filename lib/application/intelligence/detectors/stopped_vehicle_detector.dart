@@ -30,7 +30,7 @@ class StoppedVehicleDetector extends SituationDetector {
   ) {
     // 1. Check real operational state from the Normalization Layer
     if (state != null && state.motionState == MotionState.stopped) {
-      final minutesStopped = DateTime.now()
+      final minutesStopped = DateTime.now().toUtc()
           .difference(state.stateChangedAt)
           .inMinutes;
       // Only warn if stopped for a significant time based on business logic
@@ -41,7 +41,7 @@ class StoppedVehicleDetector extends SituationDetector {
           type: 'vehicle_stopped',
           message: 'Veículo Parado na Via: $minutesStopped min',
           severityScore: 40,
-          detectedAt: DateTime.now(),
+          detectedAt: DateTime.now().toUtc(),
         );
       }
     }
@@ -53,7 +53,7 @@ class StoppedVehicleDetector extends SituationDetector {
         type: 'vehicle_stopped',
         message: 'Veículo Interrompido',
         severityScore: 50,
-        detectedAt: DateTime.now(),
+        detectedAt: DateTime.now().toUtc(),
       );
     }
 

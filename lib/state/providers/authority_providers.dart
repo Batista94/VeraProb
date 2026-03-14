@@ -27,7 +27,7 @@ final mockAuthorizationContextProvider = StateProvider<AuthorizationContext>((
   return AuthorizationContext(
     actorId: const ActorId('mock_operator_id_123'),
     roleId: const RoleId('supervisor'),
-    capturedAt: DateTime.now(),
+    capturedAt: DateTime.now().toUtc(),
   );
 });
 

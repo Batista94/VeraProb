@@ -263,7 +263,7 @@ class FleetSimulationService {
       fromStatus: fromStatus,
       toStatus: toStatus,
       metadata: metadata,
-      createdAt: DateTime.now(),
+      createdAt: DateTime.now().toUtc(),
     );
     _eventLog.putIfAbsent(tripId, () => []);
     _eventLog[tripId]!.insert(0, event); // Newest first
@@ -495,7 +495,7 @@ class _SimulatedTrip {
       longitude: currentLng,
       speed: speed,
       heading: _calculateHeading(),
-      timestamp: DateTime.now(),
+      timestamp: DateTime.now().toUtc(),
       source: 'api_public',
       routeName: corridor.shortName,
       vehiclePlate: vehiclePlate,

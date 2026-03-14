@@ -6,6 +6,7 @@ import 'package:pactaflow/application/projections/providers/audit_filter_provide
 import 'package:pactaflow/application/projections/providers/audit_log_projection_provider.dart';
 import 'package:pactaflow/application/audit/audit_service.dart';
 import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:pactaflow/features/shared/mappers/incident_status_ui_mapper.dart';
 
 class OperationalAuditScreen extends ConsumerWidget {
   const OperationalAuditScreen({super.key});
@@ -183,12 +184,12 @@ class OperationalAuditScreen extends ConsumerWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: log.lifecycleStatus!.color.withValues(
+                                  color: IncidentStatusUiMapper.colorFor(log.lifecycleStatus!).withValues(
                                     alpha: 0.15,
                                   ),
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color: log.lifecycleStatus!.color
+                                    color: IncidentStatusUiMapper.colorFor(log.lifecycleStatus!)
                                         .withValues(alpha: 0.5),
                                   ),
                                 ),
@@ -197,7 +198,7 @@ class OperationalAuditScreen extends ConsumerWidget {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: log.lifecycleStatus!.color,
+                                    color: IncidentStatusUiMapper.colorFor(log.lifecycleStatus!),
                                   ),
                                 ),
                               )

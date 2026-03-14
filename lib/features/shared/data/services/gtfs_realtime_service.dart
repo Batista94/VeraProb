@@ -43,7 +43,7 @@ class GtfsRealtimeService implements IVehiclePositionService {
         longitude: -46.633308 + (random.nextDouble() * 0.01 - 0.005),
         speed: random.nextDouble() * 60,
         heading: random.nextDouble() * 360,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.now().toUtc(),
         source: 'api_public',
         routeName: dest,
       );

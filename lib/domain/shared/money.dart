@@ -29,6 +29,12 @@ class Money extends Equatable {
     return Money((cents * multiplier).round());
   }
 
+  /// Multiplies by a basis-points integer (e.g., 150 = 1.5×, 200 = 2.0×).
+  /// Preferred over [operator *] for penalty multipliers — avoids float ambiguity.
+  Money multiplyByBps(int bps) {
+    return Money((cents * bps) ~/ 100);
+  }
+
   @override
   List<Object?> get props => [cents];
 }

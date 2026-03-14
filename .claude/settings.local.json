@@ -26,7 +26,18 @@
       "Bash(npx supabase:*)",
       "Bash(find \"c:/Projects/MVP - Bus/test\" -type f -name \"*.dart\" -exec grep -l \"buildWidget\\\\|ProviderScope\\\\|setUp\\\\|tearDown\" {})",
       "Bash(flutter pub:*)",
-      "Bash(find \"C:\\\\Projects\\\\PactaFlow\\\\supabase\\\\migrations\" -type f -name \"*.sql\" 2>/dev/null | sort)"
+      "Bash(find \"C:\\\\Projects\\\\PactaFlow\\\\supabase\\\\migrations\" -type f -name \"*.sql\" 2>/dev/null | sort)",
+      "Bash(taskkill //F //IM dart.exe //T)",
+      "Bash(taskkill //F //IM flutter.exe //T)",
+      "Bash(DART_VM_OPTIONS=\"--old_gen_heap_size=4096\" flutter test test/application/sla_audit/shift_projection_service_test.dart test/application/sla_audit/b2b_domain_test.dart --reporter=compact)",
+      "Bash(flutter config:*)",
+      "Bash(powershell -Command \"\\(Get-CimInstance Win32_OperatingSystem | Select-Object FreePhysicalMemory, TotalVisibleMemorySize | ForEach-Object { ''Free: '' + [math]::Round\\($_FreePhysicalMemory/1MB, 1\\) + '' GB / Total: '' + [math]::Round\\($_TotalVisibleMemorySize/1MB, 1\\) + '' GB'' }\\)\")",
+      "Bash(powershell -Command \"Get-CimInstance Win32_OperatingSystem | Select-Object @{N=''''FreeMB'''';E={[math]::Round\\($_reePhysicalMemory/1KB\\)}}, @{N=''''TotalMB'''';E={[math]::Round\\($_otalVisibleMemorySize/1KB\\)}}\")",
+      "Bash(wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /VALUE)",
+      "Bash(wmic OS get FreePhysicalMemory)",
+      "Bash(wmic OS get TotalVisibleMemorySize)",
+      "Bash(cmd //C \"set DART_VM_OPTIONS=--old_gen_heap_size=8192 && flutter test test/application/sla_audit/shift_projection_service_test.dart test/application/sla_audit/b2b_domain_test.dart --reporter=compact\")",
+      "Bash(find c:ProjectsPactaFlowlib -name *zone* -type f)"
     ]
   }
 }

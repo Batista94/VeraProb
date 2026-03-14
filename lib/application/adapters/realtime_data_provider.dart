@@ -102,7 +102,7 @@ class RealtimeDataProvider implements IOperationalDataProvider {
       _positionBuffer[position.tripId] = position;
 
       // 2. Evict stale entries (TTL)
-      final now = DateTime.now();
+      final now = DateTime.now().toUtc();
       _positionBuffer.removeWhere(
         (_, pos) => now.difference(pos.timestamp) > _positionTtl,
       );

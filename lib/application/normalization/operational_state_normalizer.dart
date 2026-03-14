@@ -70,7 +70,7 @@ class OperationalStateNormalizer {
     List<Stop> knownStops = const [],
     DateTime? now,
   }) {
-    final currentTime = now ?? DateTime.now();
+    final currentTime = now ?? DateTime.now().toUtc();
     final results = <VehicleOperationalState>[];
 
     // Index known stops for fast geofencing lookup

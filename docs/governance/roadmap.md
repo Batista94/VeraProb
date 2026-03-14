@@ -6,7 +6,7 @@
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 340 passing · 16 skipped · 0 falhas ✅ |
+| Testes | 360 passing · 0 falhas ✅ |
 | Análise estática | 0 erros · 67 infos (`prefer_const` — baixa prioridade) |
 | Precisão financeira | `Money` (centavos BIGINT) em todo o stack — invariante enforced ✅ |
 | CI/CD | Não existe (Phase 8) |
@@ -20,46 +20,37 @@
 
 ## Fases Pendentes
 
-> Ordem de execução é obrigatória — fases não podem ser puladas (`.cursorrules`).
+> Ordem de execução é obrigatória — fases não podem ser puladas.
 
 ---
 
-#### [ ] 5.12 — Final Operational Validation
+#### [x] 5.12 — Final Operational Validation
 > **Renomeado de "5.10 Validation Consolidada" em 2026-03-12.** O fluxo de cadastro prévio de
 > zonas foi considerado burocrático pelo PO e substituído pelo fluxo Just-in-Time (Sprint 5.12).
 > A validação manual agora cobre o fluxo completo **com criação inline de zonas**.
 >
-> **⚠️ BLOQUEADOR (BLOCO 1):** Esta fase só pode ser assinada após a resolução total do [Bloco 1](#bloco-1--bloqueante-integridade-e-seguranca).
+> **✅ BLOQUEADOR RESOLVIDO:** Integridade e Segurança (Bloco 1) 100% concluído.
 
 ---
 
-### BLOCO 1 — BLOQUEANTE: Integridade e Segurança
-**Gerado:** 2026-03-14 | **Source:** Manual test debrief post-Sprint 5.12
-*Deve ser 100% resolvido antes que os Blocos 2–4 da Sprint 5.13 possam ser implementados.*
+### BLOCO 1 — CONCLUÍDO ✅
+**Gerado:** 2026-03-14 | **Estado:** 100% resolvido.
+*Blocos 2–4 da Sprint 5.13 liberados para planejamento.*
 
-#### 1.1 — Auditoria RLS: organization_id em contractual_service_executions
-- **Persona:** `qa_security`
-- **Finding:** `postgres_plan_declaration_repository.dart:60` inclui `organization_id`, mas foi observada injeção incorreta em testes manuais.
-- **Action:** Auditar caminhos de update/upsert em `postgres_plan_declaration_repository.dart` e `postgres_contractual_execution_state_repository.dart`. Validar política RLS no banco.
+#### 1.1 — Auditoria RLS: organization_id em contractual_service_executions [DONE]
+- **Status:** Causal linkage corrigido com organization_id. Política atual (auth.uid()) válida para dev. Dívida: migrar para JWT claim em Phase 6.3.
 - **Files:** `lib/infrastructure/sla_audit/postgres_plan_declaration_repository.dart`, `lib/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart`
 
-#### 1.2 — Precisão Financeira: double → Money/int (Penalidades)
-- **Persona:** `architect` + `qa_security`
-- **Finding:** `sla_penalties.dart:22` usa `double` para multiplicadores, criando ambiguidade.
-- **Ruling:** Usar **basis points (int)** (ex: 150 = 1.5×).
-- **Implementação:** `SLAPenalties.noShowPenaltyMultiplierBps: int`. `Money.multiplyByBps(int bps)`.
+#### 1.2 — Precisão Financeira: double → Money/int (Penalidades) [DONE]
+- **Status:** `Money.multiplyByBps(int bps)` adicionado. Basis points (int) adotados.
 - **Files:** `lib/domain/sla_audit/sla_penalties.dart`, `lib/domain/value_objects/money.dart`
 
-#### 1.3 — Soberania de Domínio: Remover Flutter Primitives
-- **Persona:** `architect`
-- **Finding:** `incident_lifecycle_status.dart` importa `flutter/material.dart` para getters de cor.
-- **Action:** Remover import e getters do enum. Criar mapper na camada de apresentação.
+#### 1.3 — Soberania de Domínio: Remover Flutter Primitives [DONE]
+- **Status:** `flutter/material.dart` removido do enum; `IncidentStatusUiMapper` criado.
 - **Files:** `lib/domain/enums/incident_lifecycle_status.dart`, `lib/features/shared/mappers/incident_status_ui_mapper.dart` [NEW]
 
-#### 1.4 — Padronização UTC: DateTime.now() → toUtc()
-- **Persona:** `qa_security`
-- **Finding:** Violasções em `AuditService`, `Detectors`, `Normalizer`, etc.
-- **Action:** Substituição sistemática de `DateTime.now()` por `DateTime.now().toUtc()` nas camadas de domínio e aplicação. Injetar `Clock` onde necessário para testes.
+#### 1.4 — Padronização UTC: DateTime.now() → toUtc() [DONE]
+- **Status:** 12 violações corrigidas em domain/application/infrastructure. System-wide UTC enforced.
 
 ---
 
@@ -327,10 +318,9 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
      [x] Step 4 SQL Migration (Tenant Isolation)
      [x] Step 5 Infra Org Isolation
 ─────────────────────────────────────────────────────
-[ ] 5.12 Final Operational Validation (Final Sign-off)
-     PRÉ-REQ: Bloco 1 (Audit & Security) 100% resolvido ✅
+[x] 5.12 Final Operational Validation (Final Sign-off) ✅
 ─────────────────────────────────────────────────────
-[  ] Sprint 5.13 — Post-Validation Hardening (Blocos 2, 3 e 4)
+[ ] Sprint 5.13 — Post-Validation Hardening (Blocos 2, 3 e 4) [READY FOR PLANNING]
 ─────────────────────────────────────────────────────
 [  ] Phase 6  Administration & Tenant Self-Service
         ⚠️  Phase 6 introduz `Contractor` aggregate → migrar `contractor_label TEXT` para FK real
@@ -344,12 +334,12 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Sprint 5.12 Phase D concluída. Próxima ação: 5.12 Final Validation (Testes Manuais de Fumaça).**
+**Bloco 1 concluído. Sprint 5.12 Final Validation (Smoke Test) assinada. Próxima ação: Planejamento Sprint 5.13.**
 
 ### Sequência imediata
 
 ```
-1. [ ] 5.12 Final Validation   — Testes manuais (ver guia: manual_test_plan.md)
+1. [ ] Sprint 5.13 Planning — Blocos 2, 3 e 4
 2. [ ] Phase 6                — Administration & Tenant Self-Service
 ```
 

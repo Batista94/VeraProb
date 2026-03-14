@@ -34,7 +34,7 @@ class OffRouteDetector extends SituationDetector {
         type: 'off_route',
         message: 'Desvio de Rota Detectado',
         severityScore: 30, // Moderate severity
-        detectedAt: DateTime.now(),
+        detectedAt: DateTime.now().toUtc(),
         metadata: {'distance_to_route': state.distanceToRoute},
       );
     }

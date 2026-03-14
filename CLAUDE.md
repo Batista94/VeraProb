@@ -39,6 +39,7 @@ The CORE engine is industry-agnostic (MVP: Corporate Charter/Shuttle — Fretame
 7. **DETERMINISTIC REPLAY** — Replaying the same event against the same rule always yields the same result. Rules must be versioned.
 8. **OCC READ-ONLY** — Dispatchers monitor and acknowledge. They never mutate execution state or ledger.
 9. **ZERO-TRUST INGESTION** — Engine deduces state from telemetry Facts. No human command changes a state directly.
+10. **RLS TENANT CLAIM** — All RLS tenant isolation policies must use `auth.jwt() ->> 'organization_id'`, never `auth.uid()`. The pattern `organization_id = auth.uid()` is a bootstrap antipattern that breaks with ≥ 2 users per organization. Requires JWT customization hook (Phase 6).
 
 ---
 

@@ -24,11 +24,12 @@ class PostgresContractualExecutionStateRepository
 
   @override
   Future<void> save(ContractualExecutionState state) async {
-    // 1. Ensure Causal Linkage (SET must exist)
+    // 1. Ensure Causal Linkage (SET must exist AND belong to same tenant)
     final setExists = await _client
         .from('contractual_service_executions')
         .select('set_id')
         .eq('set_id', state.setId)
+        .eq('organization_id', state.organizationId)
         .maybeSingle();
 
     if (setExists == null) {

@@ -235,7 +235,6 @@ class MockAlertRepo implements OperationalAlertRepository {
   Future<void> update(OperationalAlert alert) async {}
   @override
   Future<List<OperationalAlert>> findByEntityId(String entityId) async => [];
-  @override
   Future<List<OperationalAlert>> findByOrganization(
     String orgId, {
     String? severity,

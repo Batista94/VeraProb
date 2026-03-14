@@ -28,7 +28,7 @@ class SignalLossDetector extends SituationDetector {
     if (state == null) return null;
 
     if (state.connectivityState == ConnectivityState.signalLost) {
-      final secondsSincePing = DateTime.now()
+      final secondsSincePing = DateTime.now().toUtc()
           .difference(state.lastRawPingAt)
           .inSeconds;
 
@@ -37,7 +37,7 @@ class SignalLossDetector extends SituationDetector {
         type: 'signal_lost',
         message: 'Perda de Sinal GPS: >${secondsSincePing}s',
         severityScore: 40, // High severity
-        detectedAt: DateTime.now(),
+        detectedAt: DateTime.now().toUtc(),
         metadata: {
           'last_ping_at': state.lastRawPingAt.toIso8601String(),
           'seconds_offline': secondsSincePing,
