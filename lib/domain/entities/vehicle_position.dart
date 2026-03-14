@@ -30,7 +30,7 @@ class VehiclePosition extends Equatable {
 
   /// Whether this position is considered stale (older than threshold)
   bool isStale({Duration threshold = const Duration(minutes: 2)}) {
-    return DateTime.now().difference(timestamp) > threshold;
+    return DateTime.now().toUtc().difference(timestamp) > threshold;
   }
 
   factory VehiclePosition.fromJson(Map<String, dynamic> json) {

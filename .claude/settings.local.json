@@ -25,7 +25,8 @@
       "Bash(ls \"C:\\\\Projects\\\\MVP - Bus\\\\docs\\\\testing\"\" 2>/dev/null || echo \"EMPTY OR NOT FOUND \")",
       "Bash(npx supabase:*)",
       "Bash(find \"c:/Projects/MVP - Bus/test\" -type f -name \"*.dart\" -exec grep -l \"buildWidget\\\\|ProviderScope\\\\|setUp\\\\|tearDown\" {})",
-      "Bash(flutter pub:*)"
+      "Bash(flutter pub:*)",
+      "Bash(find \"C:\\\\Projects\\\\PactaFlow\\\\supabase\\\\migrations\" -type f -name \"*.sql\" 2>/dev/null | sort)"
     ]
   }
 }

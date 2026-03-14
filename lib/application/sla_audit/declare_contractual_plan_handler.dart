@@ -42,11 +42,11 @@ class DeclareContractualPlanHandler {
     required ContractualRuleRepository ruleRepository,
     required ContractRepository contractRepository,
     ShiftProjectionService? projectionService,
-  })  : _repository = repository,
-        _ledger = ledger,
-        _ruleRepository = ruleRepository,
-        _contractRepository = contractRepository,
-        _projectionService = projectionService;
+  }) : _repository = repository,
+       _ledger = ledger,
+       _ruleRepository = ruleRepository,
+       _contractRepository = contractRepository,
+       _projectionService = projectionService;
 
   /// Handles the command by creating the aggregate, persisting it,
   /// and appending all domain events to the ledger.
@@ -151,7 +151,11 @@ class DeclareContractualPlanHandler {
         from: command.declaredAtUtc,
         contractualValue: Money(command.contractualValueCents),
       );
-      await _repository.saveProjectedSets(plan.id, projected);
+      await _repository.saveProjectedSets(
+        plan.id,
+        projected,
+        organizationId: plan.organizationId,
+      );
     }
 
     // 4. Append plan domain events to the ledger

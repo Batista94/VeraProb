@@ -36,7 +36,7 @@ CREATE TABLE public.contractual_service_executions (
     end_longitude DOUBLE PRECISION NOT NULL,
     end_radius_meters INTEGER NOT NULL,
     planned_vehicle_id TEXT, -- Nullable (can be any vehicle)
-    contractual_value DOUBLE PRECISION NOT NULL CHECK (contractual_value > 0),
+    contractual_value_cents BIGINT NOT NULL CHECK (contractual_value_cents > 0),
     no_show_penalty_multiplier DOUBLE PRECISION NOT NULL CHECK (no_show_penalty_multiplier >= 1.0)
 );
 
@@ -57,9 +57,9 @@ CREATE TABLE public.execution_states (
     start_longitude DOUBLE PRECISION NOT NULL,
     start_radius_meters INTEGER NOT NULL,
     planned_vehicle_id TEXT,
-    contractual_value DOUBLE PRECISION NOT NULL,
+    contractual_value_cents BIGINT NOT NULL,
     no_show_penalty_multiplier DOUBLE PRECISION NOT NULL,
-    
+
     window_start_utc TIMESTAMPTZ NOT NULL,
     window_end_utc TIMESTAMPTZ NOT NULL,
     

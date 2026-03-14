@@ -12,7 +12,8 @@ class InMemoryPlanDeclarationRepository implements PlanDeclarationRepository {
 
   /// Projected SETs indexed by planDeclarationId.
   /// Keyed by setId within each plan for idempotency.
-  final Map<String, Map<String, ContractualServiceExecution>> _projectedSets = {};
+  final Map<String, Map<String, ContractualServiceExecution>> _projectedSets =
+      {};
 
   @override
   Future<void> save(PlanDeclaration plan) async {
@@ -31,14 +32,17 @@ class InMemoryPlanDeclarationRepository implements PlanDeclarationRepository {
   }) async {
     final results = _store.values
         .where(
-          (p) => p.organizationId == organizationId && p.contractId == contractId,
+          (p) =>
+              p.organizationId == organizationId && p.contractId == contractId,
         )
         .toList();
     return UnmodifiableListView(results);
   }
 
   @override
-  Future<List<PlanDeclaration>> findByOrganization(String organizationId) async {
+  Future<List<PlanDeclaration>> findByOrganization(
+    String organizationId,
+  ) async {
     final results = _store.values
         .where((p) => p.organizationId == organizationId)
         .toList();
@@ -48,8 +52,9 @@ class InMemoryPlanDeclarationRepository implements PlanDeclarationRepository {
   @override
   Future<void> saveProjectedSets(
     String planDeclarationId,
-    List<ContractualServiceExecution> sets,
-  ) async {
+    List<ContractualServiceExecution> sets, {
+    required String organizationId,
+  }) async {
     final bucket = _projectedSets.putIfAbsent(planDeclarationId, () => {});
     for (final set in sets) {
       bucket.putIfAbsent(set.setId, () => set); // idempotent: ignore duplicates

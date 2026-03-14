@@ -33,6 +33,7 @@ abstract class PlanDeclarationRepository {
   /// Called by [DeclareContractualPlanHandler] after eager 30-day projection.
   Future<void> saveProjectedSets(
     String planDeclarationId,
-    List<ContractualServiceExecution> sets,
-  );
+    List<ContractualServiceExecution> sets, {
+    required String organizationId,
+  });
 }

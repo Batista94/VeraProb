@@ -39,7 +39,7 @@ class InMemoryPolicyEvaluator implements AuthorityPolicyEvaluator {
       policyVersion: 'mock_v1_0.0',
       result: result,
       reason: reason,
-      occurredAt: DateTime.now(),
+      occurredAt: DateTime.now().toUtc(),
       contextSnapshot: context.toJson(),
     );
   }

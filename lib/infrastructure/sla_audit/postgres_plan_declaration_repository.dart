@@ -47,8 +47,9 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
       'rule_snapshot_jsonb': plan.ruleSnapshot.toJson(),
       // B2B plans: persist the full ShiftPattern array for audit & JSONB integrity
       if (plan.shiftPatterns.isNotEmpty)
-        'shift_patterns_payload':
-            plan.shiftPatterns.map((p) => p.toJson()).toList(),
+        'shift_patterns_payload': plan.shiftPatterns
+            .map((p) => p.toJson())
+            .toList(),
     });
 
     // 3. Persist Child Entities (Service Executions)
@@ -56,6 +57,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
       return {
         'set_id': s.setId,
         'plan_declaration_id': plan.id,
+        'organization_id': plan.organizationId,
         'scheduled_start_time_utc': s.scheduledStartTimeUtc.toIso8601String(),
         'scheduled_end_time_utc': s.scheduledEndTimeUtc.toIso8601String(),
         'start_latitude': s.startLatitude,
@@ -103,7 +105,9 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
   }
 
   @override
-  Future<List<PlanDeclaration>> findByOrganization(String organizationId) async {
+  Future<List<PlanDeclaration>> findByOrganization(
+    String organizationId,
+  ) async {
     final List<dynamic> data = await _client
         .from('plan_declarations')
         .select('*, contractual_service_executions(*)')
@@ -116,14 +120,16 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
   @override
   Future<void> saveProjectedSets(
     String planDeclarationId,
-    List<ContractualServiceExecution> sets,
-  ) async {
+    List<ContractualServiceExecution> sets, {
+    required String organizationId,
+  }) async {
     if (sets.isEmpty) return;
 
     final data = sets.map((s) {
       return {
         'set_id': s.setId,
         'plan_declaration_id': planDeclarationId,
+        'organization_id': organizationId,
         'scheduled_start_time_utc': s.scheduledStartTimeUtc.toIso8601String(),
         'scheduled_end_time_utc': s.scheduledEndTimeUtc.toIso8601String(),
         'start_latitude': s.startLatitude,
@@ -139,8 +145,8 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         'destination_zone_id': s.destinationZoneId,
         'operational_date': s.operationalDate != null
             ? '${s.operationalDate!.year}-'
-                '${s.operationalDate!.month.toString().padLeft(2, '0')}-'
-                '${s.operationalDate!.day.toString().padLeft(2, '0')}'
+                  '${s.operationalDate!.month.toString().padLeft(2, '0')}-'
+                  '${s.operationalDate!.day.toString().padLeft(2, '0')}'
             : null,
         'shift_pattern_index': s.shiftPatternIndex,
         'delay_tolerance_minutes': s.delayToleranceMinutes,
@@ -193,8 +199,11 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
     final shiftPatternsJson = data['shift_patterns_payload'];
     final shiftPatterns = shiftPatternsJson != null
         ? (shiftPatternsJson as List<dynamic>)
-            .map((p) => ShiftPattern.fromJson(Map<String, dynamic>.from(p as Map)))
-            .toList()
+              .map(
+                (p) =>
+                    ShiftPattern.fromJson(Map<String, dynamic>.from(p as Map)),
+              )
+              .toList()
         : <ShiftPattern>[];
 
     return PlanDeclaration.reconstitute(

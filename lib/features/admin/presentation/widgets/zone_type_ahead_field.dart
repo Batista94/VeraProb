@@ -21,15 +21,15 @@ List<OperationalZone> filterZones(
   var filtered = zones
       .where(
         (z) =>
-            z.contractorLabel == null ||
-            z.contractorLabel == currentContractor,
+            z.contractorLabel == null || z.contractorLabel == currentContractor,
       )
       .toList();
 
   if (query.isNotEmpty) {
     final lower = query.toLowerCase();
-    filtered =
-        filtered.where((z) => z.name.toLowerCase().contains(lower)).toList();
+    filtered = filtered
+        .where((z) => z.name.toLowerCase().contains(lower))
+        .toList();
   }
   return filtered;
 }
@@ -139,7 +139,8 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
   /// Shows "+ Criar zona 'X'" below the field when no exact name match exists.
   Widget _buildCreateButton() {
     final query = _textController.text.trim();
-    final hasExactMatch = query.isNotEmpty &&
+    final hasExactMatch =
+        query.isNotEmpty &&
         widget.zones.any((z) => z.name.toLowerCase() == query.toLowerCase());
     if (hasExactMatch) return const SizedBox.shrink();
 
@@ -163,6 +164,7 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
 
   Widget _buildAutocomplete() {
     return Autocomplete<OperationalZone>(
+      initialValue: TextEditingValue(text: widget.selectedZone?.name ?? ''),
       optionsBuilder: (textEditingValue) {
         return filterZones(
           widget.zones,
@@ -172,10 +174,6 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
       },
       displayStringForOption: (zone) => zone.name,
       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
-        if (controller.text.isEmpty && _textController.text.isNotEmpty) {
-          controller.text = _textController.text;
-        }
-        controller.addListener(() => _textController.text = controller.text);
 
         final selectedZone = widget.selectedZone;
         final hasGeofence = selectedZone?.geofence != null;
@@ -197,6 +195,7 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
                   )
                 : null,
           ),
+          onChanged: (v) => _textController.text = v,
           onFieldSubmitted: (_) => onSubmitted(),
         );
       },
@@ -216,24 +215,29 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
                 itemBuilder: (context, index) {
                   final zone = optionList[index];
                   final hasGeo = zone.geofence != null;
-                  final isContractor = widget.contractorName.isNotEmpty &&
+                  final isContractor =
+                      widget.contractorName.isNotEmpty &&
                       zone.contractorLabel == widget.contractorName;
 
                   return ListTile(
                     leading: Icon(
                       hasGeo ? Icons.location_on : Icons.location_off,
                       size: 18,
-                      color:
-                          hasGeo ? PactaFlowColors.onTime : PactaFlowColors.warning,
+                      color: hasGeo
+                          ? PactaFlowColors.onTime
+                          : PactaFlowColors.warning,
                     ),
                     title: Text(zone.name),
                     trailing: isContractor
                         ? Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: PactaFlowSpacing.xs, vertical: 2),
+                              horizontal: PactaFlowSpacing.xs,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color:
-                                  PactaFlowColors.primary.withValues(alpha: 0.15),
+                              color: PactaFlowColors.primary.withValues(
+                                alpha: 0.15,
+                              ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -276,10 +280,7 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
           visualDensity: VisualDensity.compact,
         ),
         onPressed: () async {
-          final saved = await showZoneFormDialog(
-            context,
-            existingZone: zone,
-          );
+          final saved = await showZoneFormDialog(context, existingZone: zone);
           if (saved != null) {
             await widget.onInvalidateZones();
             widget.onGeofenceConfigured?.call();
