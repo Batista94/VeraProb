@@ -8,8 +8,8 @@ import '../screens/operational_zones_screen.dart';
 // ── Filter helper (top-level for testability) ─────────────────
 
 /// Filters [zones] visible to [currentContractor]:
-/// - zones with no [OperationalZone.contractorLabel] (shared) are always included
-/// - zones with a label are only included when the label matches [currentContractor]
+/// - [ZoneScope.global] zones (no contractor label) are always included
+/// - [ZoneScope.exclusive] zones are only included when their label matches [currentContractor]
 ///
 /// Then applies a case-insensitive substring match on [query] (when non-empty).
 /// Preserves the input order — sorting is the caller's responsibility.
@@ -21,7 +21,8 @@ List<OperationalZone> filterZones(
   var filtered = zones
       .where(
         (z) =>
-            z.contractorLabel == null || z.contractorLabel == currentContractor,
+            z.scope == ZoneScope.global ||
+            z.contractorLabel == currentContractor,
       )
       .toList();
 
@@ -186,12 +187,25 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
             border: const OutlineInputBorder(),
             prefixIcon: Icon(widget.prefixIcon),
             suffixIcon: selectedZone != null
-                ? Icon(
-                    hasGeofence ? Icons.location_on : Icons.location_off,
-                    size: 18,
-                    color: hasGeofence
-                        ? PactaFlowColors.onTime
-                        : PactaFlowColors.warning,
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        hasGeofence ? Icons.location_on : Icons.location_off,
+                        size: 18,
+                        color: hasGeofence
+                            ? PactaFlowColors.onTime
+                            : PactaFlowColors.warning,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          widget.onChanged(null);
+                          controller.clear();
+                          focusNode.unfocus();
+                        },
+                      ),
+                    ],
                   )
                 : null,
           ),

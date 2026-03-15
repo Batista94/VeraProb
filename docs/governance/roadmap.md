@@ -58,10 +58,10 @@
 **Planejável em paralelo ao Bloco 1, mas implementável apenas após sua conclusão.**
 
 #### BLOCO 2 — Taxonomia de Zonas e Isolamento de Ativos
-- **2.1 — Zone Taxonomy:** `enum ZoneScope { global, exclusive }`. Migração SQL necessária para coluna `zone_scope`.
-- **2.2 — Contextual Zone Filter:** `ZoneTypeAheadField` filtra por `ZoneScope` (global + contratante X).
-- **2.3 — JIT Inline Zone Creation:** Corrigir trava do botão Cancelar no modal.
-- **2.4 — Zero-Friction Zone Field:** Permitir limpar campo, editar inline e swap origem/destino.
+- **[DONE] 2.1 — Zone Taxonomy:** `enum ZoneScope { global, exclusive }` + getter `scope` em `OperationalZone`. Migration `20260315000001_zone_scope.sql` aplicada (coluna gerada + index + constraint).
+- **[DONE] 2.2 — Contextual Zone Filter:** `filterZones()` em `ZoneTypeAheadField` usa `z.scope == ZoneScope.global` — semântica formal aplicada.
+- **[DONE] 2.3 — JIT Inline Zone Creation:** Botão Cancelar sempre habilitado. `_isCancelled` flag + `mounted` guard em `_submit()` — sem race condition.
+- **[DONE] 2.4 — Zero-Friction Zone Field:** Clear button (X) no `ZoneTypeAheadField`. Swap `Icons.swap_vert` entre origem/destino no Step 1.
 - **Personas:** `architect`, `senior_engineer`, `ux_operations`
 
 #### BLOCO 3 — Fluxo de Declaração B2B
@@ -334,7 +334,7 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Bloco 1 concluído. Sprint 5.12 Final Validation (Smoke Test) assinada. Próxima ação: Planejamento Sprint 5.13.**
+**Sprint 5.13 Bloco 2 completo (2.1–2.4). Próxima ação: Bloco 3 — Fluxo de Declaração B2B.**
 
 ### Sequência imediata
 

@@ -307,6 +307,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
   double? _lng;
 
   bool _isSubmitting = false;
+  bool _isCancelled = false;
   String? _errorMessage;
 
   // Nominatim address search state
@@ -488,13 +489,18 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
       }
 
       await saveZone(zone, ref);
-      if (mounted) Navigator.of(context).pop(zone);
+      if (!mounted || _isCancelled) return;
+      Navigator.of(context).pop(zone);
     } on DomainException catch (e) {
+      if (!mounted || _isCancelled) return;
       setState(() => _errorMessage = e.message);
     } catch (e) {
+      if (!mounted || _isCancelled) return;
       setState(() => _errorMessage = 'Erro inesperado: $e');
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted && !_isCancelled) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -949,9 +955,10 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             TextButton(
-              onPressed: _isSubmitting
-                  ? null
-                  : () => Navigator.of(context).pop(null),
+              onPressed: () {
+                _isCancelled = true;
+                Navigator.of(context).pop(null);
+              },
               child: const Text('Cancelar'),
             ),
             const SizedBox(width: 12),

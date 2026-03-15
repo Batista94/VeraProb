@@ -107,23 +107,27 @@ void main() {
           containsAllInOrder(['Garagem Central', 'Portaria Sul', 'Apoio Leste']));
     });
 
-    test('zona sem contractorLabel é visível para qualquer contratante', () {
+    test('ZoneScope.global (sem contractorLabel) é visível para qualquer contratante', () {
       final shared = _makeZone('Zona Compartilhada');
+      expect(shared.scope, ZoneScope.global);
       final result = filterZones([shared], '', 'ACME');
       expect(result, contains(shared));
     });
 
-    test('zona de outro contratante é excluída', () {
+    test('ZoneScope.exclusive de outro contratante é excluída', () {
       final zoneAcme = _makeZone('Garagem ACME', contractorLabel: 'ACME Corp');
       final zoneOther =
           _makeZone('Portaria Beta', contractorLabel: 'Beta Ltda');
+      expect(zoneAcme.scope, ZoneScope.exclusive);
+      expect(zoneOther.scope, ZoneScope.exclusive);
       final result = filterZones([zoneAcme, zoneOther], '', 'ACME Corp');
       expect(result.map((z) => z.name), contains('Garagem ACME'));
       expect(result.map((z) => z.name), isNot(contains('Portaria Beta')));
     });
 
-    test('zona do contratante correto é incluída', () {
+    test('ZoneScope.exclusive do contratante correto é incluída', () {
       final zone = _makeZone('Garagem ACME', contractorLabel: 'ACME Corp');
+      expect(zone.scope, ZoneScope.exclusive);
       final result = filterZones([zone], '', 'ACME Corp');
       expect(result, contains(zone));
     });
@@ -272,6 +276,31 @@ void main() {
 
       expect(find.text('Garagem ACME'), findsOneWidget);
       expect(find.text('Portaria Beta'), findsNothing);
+    });
+
+    testWidgets('exibe botão de limpar (X) quando zona está selecionada e limpa ao clicar', (tester) async {
+      final zone = _makeZone('Garagem', geofence: _kGeo);
+      OperationalZone? selected = zone;
+
+      await tester.pumpWidget(_buildTestWidget(
+        zones: [zone],
+        selectedZone: selected,
+        onChanged: (z) => selected = z,
+      ));
+
+      // Verifica se o ícone de limpar está presente
+      expect(find.byIcon(Icons.clear), findsOneWidget);
+
+      // Clica no botão de limpar
+      await tester.tap(find.byIcon(Icons.clear));
+      await tester.pump();
+
+      // Verifica se onChanged foi chamado com null
+      expect(selected, isNull);
+      
+      // Verifica se o texto do controller foi limpo (implicitamente pelo pump se o controller for re-renderizado ou se verificarmos o TextField)
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller?.text, isEmpty);
     });
   });
 }

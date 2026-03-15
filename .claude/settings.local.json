@@ -37,7 +37,8 @@
       "Bash(wmic OS get FreePhysicalMemory)",
       "Bash(wmic OS get TotalVisibleMemorySize)",
       "Bash(cmd //C \"set DART_VM_OPTIONS=--old_gen_heap_size=8192 && flutter test test/application/sla_audit/shift_projection_service_test.dart test/application/sla_audit/b2b_domain_test.dart --reporter=compact\")",
-      "Bash(find c:ProjectsPactaFlowlib -name *zone* -type f)"
+      "Bash(find c:ProjectsPactaFlowlib -name *zone* -type f)",
+      "Bash(find /c/Projects/PactaFlow -type f -name *zone*)"
     ]
   }
 }

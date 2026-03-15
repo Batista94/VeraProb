@@ -6,6 +6,17 @@ import 'domain_exception.dart';
 /// Business classification of an [OperationalZone].
 enum ZoneType { garagem, cliente, apoio }
 
+/// Ownership taxonomy of an [OperationalZone].
+///
+/// - [global]: operator-owned zone visible to all contractors.
+/// - [exclusive]: zone scoped to a specific contractor (identified by
+///   [OperationalZone.contractorLabel] in Phase 5; will migrate to a proper
+///   FK on the `Contractor` aggregate in Phase 6).
+///
+/// Derived from [OperationalZone.contractorLabel] — no separate DB column
+/// needed in the domain layer (DB uses a generated column `zone_scope`).
+enum ZoneScope { global, exclusive }
+
 /// Optional geofence configuration for an [OperationalZone].
 ///
 /// When present, the engine may use proximity checks against lat/lng.
@@ -61,6 +72,13 @@ class OperationalZone extends Equatable {
   // Migration: ADD COLUMN contractor_id UUID REFERENCES contractors(id),
   // then backfill via name-match and DROP COLUMN contractor_label.
   final String? contractorLabel;
+
+  /// Ownership scope derived from [contractorLabel].
+  ///
+  /// [ZoneScope.global] when no contractor is associated;
+  /// [ZoneScope.exclusive] when tied to a specific contractor.
+  ZoneScope get scope =>
+      contractorLabel == null ? ZoneScope.global : ZoneScope.exclusive;
 
   /// Optional geofence. Null means "no geofence configured yet".
   /// Never defaults to 0.0/0.0 — that coordinate is geographically valid

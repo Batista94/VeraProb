@@ -147,6 +147,40 @@ void main() {
     });
   });
 
+  // ── ZoneScope getter ──────────────────────────────────────
+
+  group('ZoneScope getter', () {
+    test('zona sem contractorLabel tem scope global', () {
+      final z = OperationalZone.create(
+        organizationId: 'org-1',
+        name: 'Garagem Central',
+        type: ZoneType.garagem,
+      );
+      expect(z.scope, ZoneScope.global);
+    });
+
+    test('zona com contractorLabel tem scope exclusive', () {
+      final z = OperationalZone.create(
+        organizationId: 'org-1',
+        name: 'Portaria ACME',
+        type: ZoneType.cliente,
+        contractorLabel: 'ACME Corp',
+      );
+      expect(z.scope, ZoneScope.exclusive);
+    });
+
+    test('contractorLabel vazio (normalizado para null) → scope global', () {
+      final z = OperationalZone.create(
+        organizationId: 'org-1',
+        name: 'Zona',
+        type: ZoneType.apoio,
+        contractorLabel: '   ',
+      );
+      expect(z.contractorLabel, isNull);
+      expect(z.scope, ZoneScope.global);
+    });
+  });
+
   // ── OperationalZone.reconstitute ──────────────────────────
 
   group('OperationalZone.reconstitute', () {

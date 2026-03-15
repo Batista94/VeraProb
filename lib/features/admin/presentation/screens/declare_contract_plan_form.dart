@@ -611,7 +611,23 @@ class _DeclareContractPlanFormState
               }),
               onGeofenceConfigured: () => setState(() {}),
             ),
-            const SizedBox(height: PactaFlowSpacing.md),
+            Center(
+              child: IconButton(
+                icon: const Icon(Icons.swap_vert, color: PactaFlowColors.primary),
+                tooltip: 'Inverter Origem/Destino',
+                onPressed: () {
+                  setState(() {
+                    final tmpZone = _selectedOriginZone;
+                    _selectedOriginZone = _selectedDestinationZone;
+                    _selectedDestinationZone = tmpZone;
+
+                    final tmpId = _selectedOriginZoneId;
+                    _selectedOriginZoneId = _selectedDestinationZoneId;
+                    _selectedDestinationZoneId = tmpId;
+                  });
+                },
+              ),
+            ),
             ZoneTypeAheadField(
               key: ValueKey('destination_$_selectedDestinationZoneId'),
               label: 'Zona de Chegada (Destino)',
