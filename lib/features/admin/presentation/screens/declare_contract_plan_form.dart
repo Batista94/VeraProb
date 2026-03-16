@@ -603,13 +603,15 @@ class _DeclareContractPlanFormState
               zones: sortedZones,
               selectedZone: _selectedOriginZone,
               contractorName: widget.contractorName,
-              onInvalidateZones: () async =>
-                  ref.invalidate(operationalZonesProvider),
+              onInvalidateZones: () =>
+                  ref.refresh(operationalZonesProvider.future),
               onChanged: (zone) => setState(() {
                 _selectedOriginZone = zone;
                 _selectedOriginZoneId = zone?.id;
               }),
-              onGeofenceConfigured: () => setState(() {}),
+              onGeofenceConfigured: (zone) => setState(() {
+                _selectedOriginZone = zone;
+              }),
             ),
             Center(
               child: IconButton(
@@ -635,13 +637,15 @@ class _DeclareContractPlanFormState
               zones: sortedZones,
               selectedZone: _selectedDestinationZone,
               contractorName: widget.contractorName,
-              onInvalidateZones: () async =>
-                  ref.invalidate(operationalZonesProvider),
+              onInvalidateZones: () =>
+                  ref.refresh(operationalZonesProvider.future),
               onChanged: (zone) => setState(() {
                 _selectedDestinationZone = zone;
                 _selectedDestinationZoneId = zone?.id;
               }),
-              onGeofenceConfigured: () => setState(() {}),
+              onGeofenceConfigured: (zone) => setState(() {
+                _selectedDestinationZone = zone;
+              }),
             ),
           ],
         );

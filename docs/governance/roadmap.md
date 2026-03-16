@@ -64,6 +64,27 @@
 - **[DONE] 2.4 — Zero-Friction Zone Field:** Clear button (X) no `ZoneTypeAheadField`. Swap `Icons.swap_vert` entre origem/destino no Step 1.
 - **Personas:** `architect`, `senior_engineer`, `ux_operations`
 
+#### BLOCO 5 — Regression Fixes (Pré-requisito para Blocos 3 e 4)
+> **Encontrado em:** Testes manuais pós-Bloco 2 (2026-03-15). Bug 5.1 é bloqueante — impede publicação de qualquer plano B2B.
+
+- **[ ] 5.1 — RLS Fix: contractual_service_executions (BLOQUEANTE)**
+  - Política atual usa bootstrap antipattern `auth.uid()` (INV-10 violado). Org UUID ≠ User UUID em qualquer tenant real → 42501 em todos os publishes B2B.
+  - **Ação:** Migration `20260316000001_cse_rls_fix.sql` — DROP policy atual + CREATE com `(auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid`.
+  - **PO confirmar nome da política atual via Supabase Dashboard antes de executar.**
+  - **Files:** `supabase/migrations/20260316000001_cse_rls_fix.sql` [NEW]
+
+- **[DONE] 5.2 — Geofence Callback: estado visual não atualiza após configurar geofence ✅**
+  - `onGeofenceConfigured` é `VoidCallback` — descarta o objeto `saved` retornado pelo modal. `selectedZone` no pai fica com objeto antigo (sem geofence). Ícone e aviso não atualizam.
+  - **Ação:** Alterar assinatura para `ValueChanged<OperationalZone>`, propagar `saved` ao pai para atualizar `_selectedOriginZone`/`_selectedDestinationZone`.
+  - **Files:** `lib/features/admin/presentation/widgets/zone_type_ahead_field.dart`, `lib/features/admin/presentation/screens/declare_contract_plan_form.dart`
+
+- **[DONE] 5.3 — JIT Stale Data: zona criada não aparece no autocomplete após limpar ✅**
+  - `onInvalidateZones` retorna imediatamente após `ref.invalidate()` sem aguardar o refetch. Botão "+ Criar zona" re-aparece para nomes parciais (exact-match vs contains), permitindo tentativa de criar zona duplicada.
+  - **Ação:** `onInvalidateZones` deve ser `Future<void>` que aguarda o provider resolver. Após criação JIT, manter zona selecionada (não forçar `onChanged(null)`).
+  - **Files:** `lib/features/admin/presentation/widgets/zone_type_ahead_field.dart`, `lib/features/admin/presentation/screens/declare_contract_plan_form.dart`
+
+- **Personas:** `qa_security` (5.1), `senior_engineer` + `ux_operations` (5.2, 5.3)
+
 #### BLOCO 3 — Fluxo de Declaração B2B
 - **3.1 — Stepper Clicável:** Implementar `onStepTapped`. Permitir voltar, bloquear avanço não validado.
 - **3.2 — Contexto no Step 2:** Exibir banner "Origem → Destino" durante configuração de horários.
@@ -320,7 +341,10 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 ─────────────────────────────────────────────────────
 [x] 5.12 Final Operational Validation (Final Sign-off) ✅
 ─────────────────────────────────────────────────────
-[ ] Sprint 5.13 — Post-Validation Hardening (Blocos 2, 3 e 4) [READY FOR PLANNING]
+[ ] Sprint 5.13 — Post-Validation Hardening (Blocos 2, 3 e 4) [BLOCO 2 DONE]
+     ⚠️  Bloco 5 adicionado: 3 bugs encontrados em testes manuais (5.1 BLOQUEANTE)
+     [x] Bloco 2 (2.1–2.4)
+     [ ] Bloco 5: 5.1 RLS Fix (bloqueante) · [DONE] 5.2 Geofence callback · [DONE] 5.3 JIT stale
 ─────────────────────────────────────────────────────
 [  ] Phase 6  Administration & Tenant Self-Service
         ⚠️  Phase 6 introduz `Contractor` aggregate → migrar `contractor_label TEXT` para FK real
@@ -334,13 +358,17 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Sprint 5.13 Bloco 2 completo (2.1–2.4). Próxima ação: Bloco 3 — Fluxo de Declaração B2B.**
+**Sprint 5.13 Bloco 2 completo (2.1–2.4). Testes manuais identificaram 3 bugs — Bloco 5 adicionado como pré-requisito para Blocos 3 e 4.**
 
 ### Sequência imediata
 
 ```
-1. [ ] Sprint 5.13 Planning — Blocos 2, 3 e 4
-2. [ ] Phase 6                — Administration & Tenant Self-Service
+1. [ ] Sprint 5.13 Bloco 5 — Regression Fixes (BLOQUEANTE: 5.1 primeiro)
+   1a. [ ] PO confirma nome da RLS policy atual via Supabase Dashboard
+   1b. [ ] SQL 5.1 executado e confirmado
+   1c. [x] Bugs 5.2 e 5.3 implementados (sem SQL) [DONE]
+2. [ ] Sprint 5.13 Blocos 3 e 4
+3. [ ] Phase 6                — Administration & Tenant Self-Service
 ```
 
 ### Atenção: itens que PODEM afetar trabalho já concluído

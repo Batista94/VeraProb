@@ -47,8 +47,8 @@ List<OperationalZone> filterZones(
 /// [showZoneFormDialog] (map + Nominatim) instead of an inline mini-form.
 ///
 /// After a zone is created via the modal, [onInvalidateZones] is called so
-/// the parent can reload the provider, and [onChanged] is called with `null`
-/// so the operator selects the freshly created zone from the autocomplete.
+/// the parent can reload the provider, and [onChanged] is called with the
+/// freshly created zone so it is immediately selected.
 ///
 /// Use [key: ValueKey(selectedZone?.id)] in the parent so that Flutter
 /// reconstructs this widget when the selection is swapped externally
@@ -70,13 +70,12 @@ class ZoneTypeAheadField extends StatefulWidget {
   /// Invalidates the zones cache after the modal creates/edits a zone.
   final Future<void> Function() onInvalidateZones;
 
-  /// Called when the user selects an existing zone or after zone creation
-  /// (with `null` — caller should re-select from autocomplete).
+  /// Called when the user selects an existing zone or after zone creation.
   final ValueChanged<OperationalZone?> onChanged;
 
   /// Called after the operator configures a geofence via [showZoneFormDialog]
-  /// so the parent can trigger a UI refresh.
-  final VoidCallback? onGeofenceConfigured;
+  /// with the updated zone object.
+  final ValueChanged<OperationalZone>? onGeofenceConfigured;
 
   const ZoneTypeAheadField({
     super.key,
@@ -297,7 +296,7 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
           final saved = await showZoneFormDialog(context, existingZone: zone);
           if (saved != null) {
             await widget.onInvalidateZones();
-            widget.onGeofenceConfigured?.call();
+            widget.onGeofenceConfigured?.call(saved);
           }
         },
       ),

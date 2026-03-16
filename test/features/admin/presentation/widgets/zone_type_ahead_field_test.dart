@@ -38,7 +38,7 @@ Widget _buildTestWidget({
   OperationalZone? selectedZone,
   String contractorName = '',
   ValueChanged<OperationalZone?>? onChanged,
-  VoidCallback? onGeofenceConfigured,
+  ValueChanged<OperationalZone>? onGeofenceConfigured,
 }) {
   final repository = InMemoryOperationalZoneRepository();
   return ProviderScope(
