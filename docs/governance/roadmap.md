@@ -24,163 +24,109 @@
 
 ---
 
-#### [x] 5.12 — Final Operational Validation
-> **Renomeado de "5.10 Validation Consolidada" em 2026-03-12.** O fluxo de cadastro prévio de
-> zonas foi considerado burocrático pelo PO e substituído pelo fluxo Just-in-Time (Sprint 5.12).
-> A validação manual agora cobre o fluxo completo **com criação inline de zonas**.
->
-> **✅ BLOQUEADOR RESOLVIDO:** Integridade e Segurança (Bloco 1) 100% concluído.
+## Fases Concluídas
+
+- [x] **Sprint 5.11**: Wizard Refactor, Templates SLA, Contractor Label.
+- [x] **Phase 5.12**: Final Operational Validation & Security Hotfixes.
+- [x] **Sprint 5.13 — Bloco 1**: Core Integrity & Security Hardening.
+- [x] **Sprint 5.13 — Bloco 2**: Zone Taxonomy & JIT Creation.
+- [x] **Sprint 5.13 — Bloco 5**: Regression Fixes (RLS, Callbacks, Stale Data).
 
 ---
 
-### BLOCO 1 — CONCLUÍDO ✅
-**Gerado:** 2026-03-14 | **Estado:** 100% resolvido.
-*Blocos 2–4 da Sprint 5.13 liberados para planejamento.*
+### Sprint 5.13 — Post-Validation Hardening (Pendentes)
 
-#### 1.1 — Auditoria RLS: organization_id em contractual_service_executions [DONE]
-- **Status:** Causal linkage corrigido with organization_id. Política atual (auth.uid()) válida para dev. Dívida: migrar para JWT claim em Phase 6.3.
-- **Files:** `lib/infrastructure/sla_audit/postgres_plan_declaration_repository.dart`, `lib/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart`
-
-#### 1.2 — Precisão Financeira: double → Money/int (Penalidades) [DONE]
-- **Status:** `Money.multiplyByBps(int bps)` adicionado. Basis points (int) adotados.
-- **Files:** `lib/domain/sla_audit/sla_penalties.dart`, `lib/domain/value_objects/money.dart`
-
-#### 1.3 — Soberania de Domínio: Remover Flutter Primitives [DONE]
-- **Status:** `flutter/material.dart` removido do enum; `IncidentStatusUiMapper` criado.
-- **Files:** `lib/domain/enums/incident_lifecycle_status.dart`, `lib/features/shared/mappers/incident_status_ui_mapper.dart` [NEW]
-
-#### 1.4 — Padronização UTC: DateTime.now() → toUtc() [DONE]
-- **Status:** 12 violações corrigidas em domain/application/infrastructure. System-wide UTC enforced.
-
----
-
-### Sprint 5.13 — Post-Validation Hardening
-**Planejável em paralelo ao Bloco 1, mas implementável apenas após sua conclusão.**
-
-#### BLOCO 2 — Taxonomia de Zonas e Isolamento de Ativos
-- **[DONE] 2.1 — Zone Taxonomy:** `enum ZoneScope { global, exclusive }` + getter `scope` em `OperationalZone`. Migration `20260315000001_zone_scope.sql` aplicada (coluna gerada + index + constraint).
-- **[DONE] 2.2 — Contextual Zone Filter:** `filterZones()` em `ZoneTypeAheadField` usa `z.scope == ZoneScope.global` — semântica formal aplicada.
-- **[DONE] 2.3 — JIT Inline Zone Creation:** Botão Cancelar sempre habilitado. `_isCancelled` flag + `mounted` guard em `_submit()` — sem race condition.
-- **[DONE] 2.4 — Zero-Friction Zone Field:** Clear button (X) no `ZoneTypeAheadField`. Swap `Icons.swap_vert` entre origem/destino no Step 1.
-- **Personas:** `architect`, `senior_engineer`, `ux_operations`
-
-#### BLOCO 5 — Regression Fixes (Pré-requisito para Blocos 3 e 4)
-> **Encontrado em:** Testes manuais pós-Bloco 2 (2026-03-15). Bug 5.1 é bloqueante — impede publicação de qualquer plano B2B.
-
-- **[ ] 5.1 — RLS Fix: contractual_service_executions (BLOQUEANTE)**
-  - Política atual usa bootstrap antipattern `auth.uid()` (INV-10 violado). Org UUID ≠ User UUID em qualquer tenant real → 42501 em todos os publishes B2B.
-  - **Ação:** Migration `20260316000001_cse_rls_fix.sql` — DROP policy atual + CREATE com `(auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid`.
-  - **PO confirmar nome da política atual via Supabase Dashboard antes de executar.**
-  - **Files:** `supabase/migrations/20260316000001_cse_rls_fix.sql` [NEW]
-
-- **[DONE] 5.2 — Geofence Callback: estado visual não atualiza após configurar geofence ✅**
-  - `onGeofenceConfigured` é `VoidCallback` — descarta o objeto `saved` retornado pelo modal. `selectedZone` no pai fica com objeto antigo (sem geofence). Ícone e aviso não atualizam.
-  - **Ação:** Alterar assinatura para `ValueChanged<OperationalZone>`, propagar `saved` ao pai para atualizar `_selectedOriginZone`/`_selectedDestinationZone`.
-  - **Files:** `lib/features/admin/presentation/widgets/zone_type_ahead_field.dart`, `lib/features/admin/presentation/screens/declare_contract_plan_form.dart`
-
-- **[DONE] 5.3 — JIT Stale Data: zona criada não aparece no autocomplete após limpar ✅**
-  - `onInvalidateZones` retorna imediatamente após `ref.invalidate()` sem aguardar o refetch. Botão "+ Criar zona" re-aparece para nomes parciais (exact-match vs contains), permitindo tentativa de criar zona duplicada.
-  - **Ação:** `onInvalidateZones` deve ser `Future<void>` que aguarda o provider resolver. Após criação JIT, manter zona selecionada (não forçar `onChanged(null)`).
-  - **Files:** `lib/features/admin/presentation/widgets/zone_type_ahead_field.dart`, `lib/features/admin/presentation/screens/declare_contract_plan_form.dart`
-
-- **Personas:** `qa_security` (5.1), `senior_engineer` + `ux_operations` (5.2, 5.3)
-
-#### BLOCO 6 — Evidence Locker
-- **6.1 — Evidence Locker Domain:** Entidade `TelemetryEvidence` com campos: `latitude · longitude · satellites · timestampUtc · verdictId`. Gerar `integrityHash = SHA-256(lat+lng+satellites+timestamp+verdictId)`.
-  - **Design:** Modelagem da entidade imutável de evidência e contrato de hashing.
-  - **Review:** Revisão do algoritmo SHA-256 e colunas necessárias para defesa jurídica.
-  - **Implementation:** Criar classe `TelemetryEvidence` e serviço de geração de hash.
-  - **Validation:** Testar colisão e integridade do hash gerado.
-- **6.2 — Persistence:** Tabela `telemetry_evidences` append-only, RLS org-scoped, FK para `ledger_entries`. Hash verificável para defesa jurídica em contestações.
-  - **Design:** Schema SQL da tabela `telemetry_evidences` com restrições append-only.
-  - **Review:** Validar políticas RLS para isolamento total entre orgs na visualização de evidências.
-  - **Implementation:** Criar migration Postgres e repositório de persistência.
-  - **Validation:** Tentar deletar/editar linha existente (deve falhar) e verificar integridade do hash via SQL.
-- **Personas:** `architect`, `qa_security`
-
-#### BLOCO 3 — Fluxo de Declaração B2B
+#### BLOCO 3 — Fluxo de Declaração B2B [PENDENTE] 🏗️
 - **3.1 — Stepper Clicável:** Implementar `onStepTapped`. Permitir voltar, bloquear avanço não validado.
 - **3.2 — Contexto no Step 2:** Exibir banner "Origem → Destino" durante configuração de horários.
 - **3.3 — Ciclo Industrial:** Suporte a Return Shifts em datas específicas ou semanas diferentes (`weekOffset`).
 - **Personas:** `senior_engineer`, `ux_operations`, `architect`
 
-#### BLOCO 4 — Compliance e Penalidades
+#### BLOCO 4 — Compliance e Penalidades [PENDENTE] 🏗️
 - **4.1 — Step 3 Refinement:** Renomear para "Acordo de Penalidades". Adicionar campo `gracePeriodMinutes`.
 - **4.2 — Step 4: Exposição de Risco Financeiro:** Novo resumo calculado antes de publicar (Receita Protegida, Exposição Máx no-show, Penalidade máx por viagem).
-- **4.3 — Contexto Financeiro de Auditoria:** Adicionar campos `baseTripValue (Money)` e `contractFinancialCeiling (Money)` ao SLA. Calcular `marginErosionPercent` em tempo real (penalidade / baseTripValue × 100). Adicionar `gracePeriodMinutes` — multa retroativa só aplicada após janela de carência.
-  - **Design:** Definir `baseTripValue` e `contractFinancialCeiling` na entidade SLA. Mapear lógica de `marginErosionPercent`.
-  - **Review:** Validar fórmula (penalidade / baseTripValue) e impacto da janela de carência retroativa.
-  - **Implementation:** Adicionar campos ao `SLAPenalties` e lógica de cálculo em tempo real no Step 3 do Wizard.
-  - **Validation:** Testar cálculo de margem e aplicação de multa após minutos de carência em cenários reais.
+- **4.3 — Contexto Financeiro de Auditoria:** Adicionar campos `baseTripValue (Money)` e `contractFinancialCeiling (Money)` ao SLA. Calcular `marginErosionPercent` em tempo real.
 - **Personas:** `Full Council`, `ux_operations`, `senior_engineer`
+
+#### BLOCO 6 — Evidence Locker [PENDENTE] 🛡️
+- **6.1 — Evidence Locker Domain:** Entidade `TelemetryEvidence` com hashing SHA-256.
+- **6.2 — Persistence:** Tabela `telemetry_evidences` append-only com integridade verificável.
+- **Personas:** `architect`, `qa_security`
 
 ---
 
 ### [ ] Phase 6 — Administration & Tenant Self-Service
 
-**Por que depois de Phase 5:** Com a jornada do operador completa (Phase 5), a próxima barreira
-é escalar: cada novo cliente hoje requer intervenção manual do desenvolvedor para ser cadastrado.
-Phase 6 torna o produto auto-suficiente para N tenants.
+**Context:**
+Phase 5 (B2B Refactoring) is completing Sprint 5.13. The remaining business scale blocker is: every new client requires manual developer intervention to onboard. Phase 6 makes the product self-sufficient for N tenants — any transport company self-registers, configures SLA rules, invites their team, and starts operating. This phase also closes the critical JWT infrastructure gap.
 
-**Objetivo:** Qualquer empresa de transporte pode se cadastrar, configurar suas regras SLA,
-convidar sua equipe e começar a operar — sem nenhuma intervenção do desenvolvedor.
+**Prerequisite:** Sprint 5.13 Blocos 3, 4, 6 complete before Phase 6 starts.
 
-#### [ ] 6.1 — Design Specification
-**Artefato:** `docs/architecture/10_administration_tenant_onboarding_design.md`
+#### BLOCO 1 — JWT Infrastructure & Auth Foundation
+- [x] 1.1 Activate `custom_access_token_hook` in Supabase (Auth -> Hooks)
+- [x] 1.2 Audit all migrations for RLS JWT path → unify to `(auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid`
+- [x] 1.3 Refactor `UserRole` enum: 4 → 3 (admin, operator, auditor); update `currentUserRoleProvider`
+- [x] 1.4 Enrich `organizations` table: add `timezone`, `currency_code`, `logo_url`
+- [ ] 1.5 Seed `user_roles` for bootstrap dev user as `TENANT_ADMIN`
+- **SQL:** `20260317000001_rls_jwt_path_unification.sql`, `20260317000002_organizations_enrichment.sql`
 
-Cobrir obrigatoriamente:
-- **Organization Management:** criação de organização, fuso horário, moeda, logo
-- **RBAC model:** 3 roles — `Admin` (configuração total) · `Operator` (OCC + contratos) · `Auditor` (read-only + exports)
-- **User invitation flow:** convite por email via Supabase Auth, aceite com criação de senha
-- **Rule Configuration Studio:** editor visual para parâmetros SLA (`min_dwell_seconds`, geofence radius, tolerâncias)
-- **Asset onboarding:** cadastro de veículos, motoristas, rotas via UI
-- **First Run flow:** jornada completa do zero até primeiro plano avaliado
-- **Permissões por role:** mapeamento de cada ação a qual role pode executar
-- **Approval Workflow:** Contrato não transita automaticamente para `active`. Introduzir status `awaiting_contractor_acceptance`. Sistema gera link de revisão para o contratante (ex: Caterpillar) validar zonas e regras SLA e assinar digitalmente o aceite.
-  - **Design:** Máquina de estados do contrato e fluxo de link público/privado para aceitação.
-  - **Review:** Validar segurança do link de revisão e validade da assinatura digital.
-  - **Implementation:** Adicionar status ao enum e criar serviço de geração de token de revisão.
-  - **Validation:** Simular fluxo de aceite externo e mudança de estado para `active`.
+#### BLOCO 2 — Contractor Aggregate & Zone FK Migration
+- [x] 2.1 Create `Contractor` domain entity (`contractor.dart`)
+- [x] 2.2 `CREATE TABLE contractors` with RLS + index on `organization_id`
+- [x] 2.3 Add `contractor_id` FK to `operational_zones`; deprecate `contractor_label`
+- [x] 2.4 Update `OperationalZone.scope` to use `contractorId`
+- [x] 2.5 `ContractorRepository` port + Postgres impl
+- **SQL:** `20260318000001_contractors_table.sql`, `20260318000002_zones_contractor_fk.sql`
 
-#### [ ] 6.2 — Council Review
-Validar antes de implementar:
-- Tenant recém-criado não acessa dados de tenants existentes em nenhum momento
-- `Operator` recebe 403 ao tentar acessar endpoints de configuração de regras
-- `Auditor` não consegue acionar nenhuma escrita — nem diretamente, nem via UI
-- Rule Studio não edita versões de regras já referenciadas em planos ativos (imutabilidade retroativa)
-- `organization_id` de qualquer novo recurso derivado do JWT do usuário autenticado, nunca de campo livre
+#### BLOCO 3 — RBAC Guards & Permission Layer
+- [x] 3.1 `RbacGuard` widget for UI gating
+- [x] 3.2 Define `UserPermission` enum and role mapping
+- [x] 3.3 `RbacService` (pure Dart) for permission checks
+- [x] 3.4 Gate `AdminShell` sidebar destinations
+- [ ] 3.5 Inject `RbacService` into `CloseContractHandler`
 
-#### [ ] 6.3 — Implementation
-- **SQL:** `organizations`, `user_organization_memberships`, `invitations`, RLS por role, policies por recurso
-- **Domain:** `OrganizationMembership`, `UserRole`, `Invitation`, `RuleConfiguration`
-- **Application:** `InviteUserCommand`, `AcceptInvitationCommand`, `ConfigureRuleSetCommand`, `RevokeAccessCommand`
-- **Infrastructure:** Repositórios Postgres + Supabase Auth hooks para role injection no JWT
-- **Presentation:**
-  - Admin Panel (settings da org, lista de usuários, convites pendentes)
-  - Rule Configuration Studio (formulário visual por tipo de regra SLA)
-  - Asset Manager (veículos, motoristas, rotas com CRUD completo)
+#### BLOCO 4 — Admin Panel & Org Management UI
+- [x] 4.1 Add `orgSettings` + `userManagement` to `AdminShell`
+- [ ] 4.2 Organization Settings Screen (CRUD)
+- [ ] 4.3 User Management Screen (List, Role Change, Remove)
+- [x] 4.4 `PostgresUserManagementQueryService` with `get_org_members` RPC
+- [ ] 4.5 Contractor Management Screen (CRUD)
+- **SQL:** `20260319000001_org_management_rpc.sql`
 
-#### [ ] 6.4 — Validation
+#### BLOCO 5 — User Invitation Flow
+- [x] 5.1 `CREATE TABLE invitations` (token-based)
+- [x] 5.2 `Invitation` domain entity
+- [ ] 5.3 `InviteUserCommand` + `InviteUserHandler`
+- [ ] 5.4 `AcceptInvitationCommand` + handler (Public UI)
+- [ ] 5.5 `RevokeAccessCommand` + handler
+- **SQL:** `20260320000001_invitations.sql`
 
-**Cenários automatizados:**
-- Cenário 6.1: Org A criada via UI não enxerga dados de Org B em nenhuma query
-- Cenário 6.2: Role `Operator` — tenta editar regra SLA → 403; acessa OCC → 200
-- Cenário 6.3: Role `Auditor` — tenta declarar plano → 403; visualiza relatório → 200
-- Cenário 6.4: Regra alterada hoje não muda resultado de snapshot já fechado (deterministic replay)
+#### BLOCO 6 — Contract Approval Workflow
+- [x] 6.1 `awaiting_contractor_acceptance` state in `ContractStatus`
+- [ ] 6.2 DB migration for `contracts_status_check` constraint
+- [ ] 6.3 `CREATE TABLE contract_review_tokens` (public review link)
+- [ ] 6.4 `SubmitContractForApprovalCommand` + `AcceptByContractorCommand`
+- [ ] 6.5 Public Review Page (`/review-contract?token=...`)
+- **SQL:** `20260321000001_contract_approval_workflow.sql`
 
-**⚠️ Testes Manuais Obrigatórios (não automatizáveis por natureza):**
-> RBAC real, convite por email e First Run requerem sessão de browser com usuário autenticado.
-> Estes cenários NÃO podem ser cobertos por `flutter test`.
+#### BLOCO 7 — Rule Configuration Studio
+- [ ] 7.1 Implement `PostgresContractualRuleRepository.saveRule()`
+- [ ] 7.2 Rule Studio Screen: Visual parameters editor
+- [ ] 7.3 Rule Immutability Logic: creating new versions for active plans
+- [ ] 7.4 Version history panel (Read-only)
 
-- [ ] **Convite por email:** Admin convida novo usuário → verificar que email chega, link funciona, usuário cria senha e é associado à org correta no JWT
-- [ ] **RBAC — Operator:** logar como `Operator` → tentar acessar Admin Panel → confirmar que é bloqueado ou que botões de configuração estão ausentes/desabilitados
-- [ ] **RBAC — Auditor:** logar como `Auditor` → tentar declarar plano → confirmar que ação não está disponível; acessar relatórios → confirmar que funciona
-- [ ] **RBAC — Admin:** logar como `Admin` → verificar que todas as seções estão acessíveis
-- [ ] **Rule Configuration Studio:** criar regra SLA via formulário visual → confirmar que nova versão de regra aparece no histórico, não substitui a anterior
-- [ ] **Regra imutável:** editar regra referenciada por plano ativo → confirmar que UI bloqueia ou cria nova versão separada
-- [ ] **First Run completo (Cenário 6.5):** org criada → usuário convidado → regra configurada → plano declarado → avaliação executada → verificar cada etapa no Supabase dashboard
+#### BLOCO 8 — Asset Manager (Vehicles, Drivers, Routes)
+- [ ] 8.1 Asset Manager Screen (Tabbed CRUD)
+- [ ] 8.2 Audit `Vehicle`, `TransitRoute` for `organization_id` isolation
+- [ ] 8.3 `Driver` domain entity + `drivers` table
+- **SQL:** `20260322000001_asset_org_isolation.sql`, `20260322000002_drivers_table.sql`
 
-- **Compliance Report:** `docs/governance/compliance/phase6_compliance_report.md`
+#### BLOCO 9 — First Run Flow & Phase 6 Validation
+- [ ] 9.1 Public Organization Self-Registration (`/register`)
+- [ ] 9.2 First Run Wizard (Guided 5-step flow)
+- [ ] 9.3 Automated Scenarios (Isolation, RBAC, Immutability)
+- [ ] 9.4 Compliance Report: `docs/governance/compliance/phase6_compliance_report.md`
+- **SQL:** `20260323000001_org_registration_rpc.sql`
 
 ---
 
@@ -218,7 +164,7 @@ Cobrir obrigatoriamente:
 Validar antes de implementar:
 - Jobs de aggregation operam sobre snapshots imutáveis, não sobre o ledger bruto
 - Export CSV/PDF derivado dos snapshots do período — replay produz o mesmo arquivo
-- `pg_cron` jobs incluem `organization_id` explícito — sem scans globais
+- `pg_cron` jobs include `organization_id` explícito — sem scans globais
 - Relatório exportado não pode ser alterado após gerado
 
 #### [ ] 7.3 — Implementation
@@ -372,27 +318,24 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Visão Geral de Execução
 
-```
-─────────────────────────────────────────────────────
-[x] Sprint 5.12 Phase D — Refinement & Security Hotfixes (INV-2 · INV-3 · INV-6)
-     [x] Step 1 UI Rebuild Fix
-     [x] Step 2 UTC Standardization
-     [x] Step 3 Stale Schema Doc
-     [x] Step 4 SQL Migration (Tenant Isolation)
-     [x] Step 5 Infra Org Isolation
 ─────────────────────────────────────────────────────
 [x] 5.12 Final Operational Validation (Final Sign-off) ✅
 ─────────────────────────────────────────────────────
-[ ] Sprint 5.13 — Post-Validation Hardening (Blocos 2, 3 e 4) [BLOCO 2 DONE]
-     ⚠️  Bloco 5 adicionado: 3 bugs encontrados em testes manuais (5.1 BLOQUEANTE)
-     [x] Bloco 2 (2.1–2.4)
-     [ ] Bloco 5: 5.1 RLS Fix (bloqueante) · [DONE] 5.2 Geofence callback · [DONE] 5.3 JIT stale
+[x] Sprint 5.13 — Post-Validation Hardening (Blocos 1, 2 e 5) ✅
+      [x] Bloco 1: Core Integrity & Security
+      [x] Bloco 2: Taxonomy & JIT Zones
+      [x] Bloco 5: Regression Fixes (5.1 BLOQUEANTE Resolvido)
+─────────────────────────────────────────────────────
+[ ] Sprint 5.13 — Business Flow (Blocos 3 e 4) 🏗️
+      [ ] Bloco 3: Fluxo de Declaração B2B (Wizard Stepper)
+      [ ] Bloco 4: Penalidades e Exposição de Risco
+─────────────────────────────────────────────────────
+[ ] Sprint 5.13 — Hardening Forense (Bloco 6) 🛡️
+      [ ] Bloco 6: Evidence Locker & SHA-256 integrity
 ─────────────────────────────────────────────────────
 [  ] Phase 6  Administration & Tenant Self-Service
-        ⚠️  Phase 6 introduz `Contractor` aggregate → migrar `contractor_label TEXT` para FK real
 [  ] Phase 7  Evidence & Audit Exports
 [  ] Phase 8  Operational Hardening
-       `PostgresSlaTemplateRepository` — strict types aplicados (Sprint 5.11)
 [  ] Trilha D Lançamento
 ```
 
@@ -400,17 +343,14 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Sprint 5.13 Bloco 2 completo (2.1–2.4). Testes manuais identificaram 3 bugs — Bloco 5 adicionado como pré-requisito para Blocos 3 e 4.**
+**Sprint 5.13 Blocos 1, 2 e 5 concluídos. Ingestão B2B e Lógica de Penalidades liberadas.**
 
 ### Sequência imediata
 
 ```
-1. [ ] Sprint 5.13 Bloco 5 — Regression Fixes (BLOQUEANTE: 5.1 primeiro)
-   1a. [ ] PO confirma nome da RLS policy atual via Supabase Dashboard
-   1b. [ ] SQL 5.1 executado e confirmado
-   1c. [x] Bugs 5.2 e 5.3 implementados (sem SQL) [DONE]
-2. [ ] Sprint 5.13 Blocos 3 e 4
-3. [ ] Phase 6                — Administration & Tenant Self-Service
+1. [ ] Sprint 5.13 Bloco 3 — Fluxo de Declaração B2B (Stepper Clicável)
+2. [ ] Sprint 5.13 Bloco 4 — Compliance e Penalidades (Wizard Step 4)
+3. [ ] Sprint 5.13 Bloco 6 — Evidence Locker (Hardening Forense)
 ```
 
 ### Atenção: itens que PODEM afetar trabalho já concluído

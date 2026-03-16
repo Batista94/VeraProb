@@ -265,4 +265,13 @@ class AppTheme {
     colorSchemeSeed: PactaFlowColors.primary,
     fontFamily: GoogleFonts.inter().fontFamily,
   );
+
+  // ── Helpers for custom widgets ──────────────────────────
+  static Color get primaryColor => PactaFlowColors.primary;
+  static Color get surfaceColor => PactaFlowColors.background;
+  static Gradient get primaryGradient => const LinearGradient(
+        colors: [PactaFlowColors.primary, PactaFlowColors.secondary],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
 }

@@ -406,6 +406,7 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
       ContractStatus.draft => ('Rascunho', Colors.blueGrey),
+      ContractStatus.awaitingContractorAcceptance => ('Aguardando Aceite', Colors.blue),
       ContractStatus.active => ('Ativo', Colors.green),
       ContractStatus.closed => ('Encerrado', Colors.red),
     };

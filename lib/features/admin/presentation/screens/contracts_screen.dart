@@ -98,6 +98,14 @@ class _ContractListView extends ConsumerWidget {
                     .state = ContractStatus.draft,
               ),
               _FilterChip(
+                label: 'Aguardando Aceite',
+                color: Colors.blue,
+                selected: activeFilter == ContractStatus.awaitingContractorAcceptance,
+                onSelected: (_) => ref
+                    .read(contractStatusFilterProvider.notifier)
+                    .state = ContractStatus.awaitingContractorAcceptance,
+              ),
+              _FilterChip(
                 label: 'Ativos',
                 color: PactaFlowColors.success,
                 selected: activeFilter == ContractStatus.active,
@@ -447,6 +455,7 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
       ContractStatus.draft => ('RASCUNHO', PactaFlowColors.neutral),
+      ContractStatus.awaitingContractorAcceptance => ('AGUARDANDO ACEITE', Colors.blue),
       ContractStatus.active => ('ATIVO', PactaFlowColors.success),
       ContractStatus.closed => ('ENCERRADO', PactaFlowColors.error),
     };

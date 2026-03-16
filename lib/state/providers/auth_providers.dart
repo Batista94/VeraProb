@@ -58,7 +58,7 @@ final currentUserRoleProvider = Provider<UserRole>((ref) {
   final roleString = metadata?['role'] as String?;
 
   if (roleString == 'TENANT_ADMIN') return UserRole.admin;
-  if (roleString == 'AUDITOR') return UserRole.systemManager;
+  if (roleString == 'AUDITOR') return UserRole.auditor;
   return UserRole.operator;
 });
 
