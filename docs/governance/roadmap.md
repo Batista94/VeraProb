@@ -38,7 +38,7 @@
 *Blocos 2–4 da Sprint 5.13 liberados para planejamento.*
 
 #### 1.1 — Auditoria RLS: organization_id em contractual_service_executions [DONE]
-- **Status:** Causal linkage corrigido com organization_id. Política atual (auth.uid()) válida para dev. Dívida: migrar para JWT claim em Phase 6.3.
+- **Status:** Causal linkage corrigido with organization_id. Política atual (auth.uid()) válida para dev. Dívida: migrar para JWT claim em Phase 6.3.
 - **Files:** `lib/infrastructure/sla_audit/postgres_plan_declaration_repository.dart`, `lib/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart`
 
 #### 1.2 — Precisão Financeira: double → Money/int (Penalidades) [DONE]
@@ -85,6 +85,19 @@
 
 - **Personas:** `qa_security` (5.1), `senior_engineer` + `ux_operations` (5.2, 5.3)
 
+#### BLOCO 6 — Evidence Locker
+- **6.1 — Evidence Locker Domain:** Entidade `TelemetryEvidence` com campos: `latitude · longitude · satellites · timestampUtc · verdictId`. Gerar `integrityHash = SHA-256(lat+lng+satellites+timestamp+verdictId)`.
+  - **Design:** Modelagem da entidade imutável de evidência e contrato de hashing.
+  - **Review:** Revisão do algoritmo SHA-256 e colunas necessárias para defesa jurídica.
+  - **Implementation:** Criar classe `TelemetryEvidence` e serviço de geração de hash.
+  - **Validation:** Testar colisão e integridade do hash gerado.
+- **6.2 — Persistence:** Tabela `telemetry_evidences` append-only, RLS org-scoped, FK para `ledger_entries`. Hash verificável para defesa jurídica em contestações.
+  - **Design:** Schema SQL da tabela `telemetry_evidences` com restrições append-only.
+  - **Review:** Validar políticas RLS para isolamento total entre orgs na visualização de evidências.
+  - **Implementation:** Criar migration Postgres e repositório de persistência.
+  - **Validation:** Tentar deletar/editar linha existente (deve falhar) e verificar integridade do hash via SQL.
+- **Personas:** `architect`, `qa_security`
+
 #### BLOCO 3 — Fluxo de Declaração B2B
 - **3.1 — Stepper Clicável:** Implementar `onStepTapped`. Permitir voltar, bloquear avanço não validado.
 - **3.2 — Contexto no Step 2:** Exibir banner "Origem → Destino" durante configuração de horários.
@@ -94,12 +107,16 @@
 #### BLOCO 4 — Compliance e Penalidades
 - **4.1 — Step 3 Refinement:** Renomear para "Acordo de Penalidades". Adicionar campo `gracePeriodMinutes`.
 - **4.2 — Step 4: Exposição de Risco Financeiro:** Novo resumo calculado antes de publicar (Receita Protegida, Exposição Máx no-show, Penalidade máx por viagem).
+- **4.3 — Contexto Financeiro de Auditoria:** Adicionar campos `baseTripValue (Money)` e `contractFinancialCeiling (Money)` ao SLA. Calcular `marginErosionPercent` em tempo real (penalidade / baseTripValue × 100). Adicionar `gracePeriodMinutes` — multa retroativa só aplicada após janela de carência.
+  - **Design:** Definir `baseTripValue` e `contractFinancialCeiling` na entidade SLA. Mapear lógica de `marginErosionPercent`.
+  - **Review:** Validar fórmula (penalidade / baseTripValue) e impacto da janela de carência retroativa.
+  - **Implementation:** Adicionar campos ao `SLAPenalties` e lógica de cálculo em tempo real no Step 3 do Wizard.
+  - **Validation:** Testar cálculo de margem e aplicação de multa após minutos de carência em cenários reais.
 - **Personas:** `Full Council`, `ux_operations`, `senior_engineer`
 
 ---
 
 ### [ ] Phase 6 — Administration & Tenant Self-Service
-
 
 **Por que depois de Phase 5:** Com a jornada do operador completa (Phase 5), a próxima barreira
 é escalar: cada novo cliente hoje requer intervenção manual do desenvolvedor para ser cadastrado.
@@ -119,6 +136,11 @@ Cobrir obrigatoriamente:
 - **Asset onboarding:** cadastro de veículos, motoristas, rotas via UI
 - **First Run flow:** jornada completa do zero até primeiro plano avaliado
 - **Permissões por role:** mapeamento de cada ação a qual role pode executar
+- **Approval Workflow:** Contrato não transita automaticamente para `active`. Introduzir status `awaiting_contractor_acceptance`. Sistema gera link de revisão para o contratante (ex: Caterpillar) validar zonas e regras SLA e assinar digitalmente o aceite.
+  - **Design:** Máquina de estados do contrato e fluxo de link público/privado para aceitação.
+  - **Review:** Validar segurança do link de revisão e validade da assinatura digital.
+  - **Implementation:** Adicionar status ao enum e criar serviço de geração de token de revisão.
+  - **Validation:** Simular fluxo de aceite externo e mudança de estado para `active`.
 
 #### [ ] 6.2 — Council Review
 Validar antes de implementar:
@@ -186,6 +208,11 @@ Cobrir obrigatoriamente:
 - **Provenance chain:** relatório exportado referencia `snapshotIds` e `ledgerEntryIds` — rastreável ao evento original
 - **Imutabilidade:** relatórios gerados são read-only — qualquer regeneração cria nova versão, nunca sobrescreve
 - **Tenant scoping:** jobs `pg_cron` processam 1 `organization_id` por vez — sem cross-tenant analytics
+- **Portal de Transparência do Contratante:** Dashboard executivo de acesso restrito ao contratante. KPIs: `Receita Protegida` vs `Multas Recuperadas`. Download autônomo de relatórios de conformidade e evidências sem intervenção do operador.
+  - **Design:** Wireframe do dashboard externo e tokens de acesso por contratante.
+  - **Review:** Garantir que contratante acesse apenas seus próprios contratos (Zero Trust).
+  - **Implementation:** Criar rotas de apresentação e aggregators financeiros específicos.
+  - **Validation:** Smoke test de login de contratante e exportação autônoma de CSV.
 
 #### [ ] 7.2 — Council Review
 Validar antes de implementar:
@@ -204,6 +231,11 @@ Validar antes de implementar:
   - Tela de relatórios mensais de compliance
   - Export PDF para auditoria
   - Executive Dashboard com KPIs por período
+  - Portal de Transparência (Dashboard executivo + export autônomo)
+    - **Design:** (Conforme especificado em 7.1)
+    - **Review:** Validar consistência dos KPIs financeiros entre portal e admin.
+    - **Implementation:** Implementar UI do dashboard de transparência.
+    - **Validation:** Confirmar que download de evidências funciona via link direto do portal.
 
 #### [ ] 7.4 — Validation
 
@@ -295,6 +327,16 @@ Tag vX.Y.Z →
 - Definir RPO/RTO para dados financeiros (meta: RPO ≤ 1h · RTO ≤ 4h)
 - Testar restore em ambiente isolado ao menos 1× antes do lançamento
 
+#### [ ] 8.7 — Auditoria de Integridade de Telemetria (Anti-Spoofing)
+- **Detectar Fake GPS:** saltos lógicos de posição (velocidade física impossível entre dois pontos)
+- **Detectar sinal manipulado:** baixo número de satélites + coordenadas fixas por longo período
+- **Engine invalida evidências suspeitas com flag `TELEMETRY_INTEGRITY_VIOLATION` antes de emitir veredito**
+  - **Design:** Algoritmo de detecção de anomalias cinemáticas e limite de satélites.
+  - **Review:** Validar impacto de falso-positivos em áreas de sombra de GPS.
+  - **Implementation:** Integrar engine de anti-spoofing no pipeline de avaliação.
+  - **Validation:** Testar com datasets de spoofing conhecido e verificar flags no vederito.
+- **Personas:** `qa_security`, `architect`
+
 ---
 
 ### [ ] Trilha D — Lançamento
@@ -318,7 +360,7 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 - Processo de cobrança: Stripe ou similar integrado ao ciclo de onboarding
 
 #### [ ] D3 — Piloto Beta Controlado
-> **Este é o maior teste manual do produto** — realizado por usuários reais, não pelo desenvolvedor.
+> **Este é o maior teste manual do produto** — realizado por usuários reais, not pelo desenvolvedor.
 
 - Selecionar 2–3 clientes reais com contratos de transporte ativos
 - Monitoramento intensivo durante o piloto (Sentry + contato direto)
