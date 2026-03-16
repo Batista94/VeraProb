@@ -50,6 +50,8 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         'shift_patterns_payload': plan.shiftPatterns
             .map((p) => p.toJson())
             .toList(),
+      if (plan.cycleAnchorDateUtc != null)
+        'cycle_anchor_date_utc': plan.cycleAnchorDateUtc!.toIso8601String(),
     });
 
     // 3. Persist Child Entities (Service Executions)
@@ -219,6 +221,9 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
       ),
       services: services,
       shiftPatterns: shiftPatterns,
+      cycleAnchorDateUtc: data['cycle_anchor_date_utc'] != null
+          ? DateTime.parse(data['cycle_anchor_date_utc'] as String).toUtc()
+          : null,
     );
   }
 }

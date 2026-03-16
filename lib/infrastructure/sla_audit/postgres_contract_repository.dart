@@ -4,6 +4,7 @@ import '../../core/config/supabase_client.dart';
 import '../../domain/sla_audit/contract.dart';
 import '../../domain/sla_audit/contract_repository.dart';
 import '../../domain/sla_audit/contract_status.dart';
+import '../../domain/shared/money.dart';
 
 /// Postgres implementation of [ContractRepository].
 ///
@@ -34,6 +35,7 @@ class PostgresContractRepository implements ContractRepository {
       'closed_by_user_id': contract.closedByUserId,
       'close_reason': contract.closeReason,
       'cloned_from_contract_id': contract.clonedFromContractId,
+      'financial_ceiling_cents': contract.financialCeiling?.cents,
     });
   }
 
@@ -97,6 +99,9 @@ class PostgresContractRepository implements ContractRepository {
       closedByUserId: row['closed_by_user_id'] as String?,
       closeReason: row['close_reason'] as String?,
       clonedFromContractId: row['cloned_from_contract_id'] as String?,
+      financialCeiling: row['financial_ceiling_cents'] != null
+          ? Money((row['financial_ceiling_cents'] as num).toInt())
+          : null,
     );
   }
 }

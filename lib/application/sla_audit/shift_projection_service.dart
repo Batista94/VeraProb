@@ -12,6 +12,7 @@ import '../../domain/sla_audit/operational_zone_repository.dart';
 import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/shift_pattern.dart';
+import '../../domain/sla_audit/week_cycle.dart';
 import '../../domain/shared/money.dart';
 
 /// Application service responsible for projecting [ContractualServiceExecution]
@@ -79,6 +80,15 @@ class ShiftProjectionService {
 
       for (final pattern in plan.shiftPatterns) {
         if (!pattern.runsOn(dateOnly.weekday)) continue;
+
+        // Industrial cycle filter: skip dates outside the pattern's week slot.
+        if (pattern.weekCycle != WeekCycle.everyWeek) {
+          final anchor = plan.cycleAnchorDateUtc;
+          if (anchor == null) continue; // guard — should not happen after validation
+          final daysDiff = dateOnly.difference(anchor).inDays;
+          final weekIndex = ((daysDiff ~/ 7) % 4 + 4) % 4;
+          if (weekIndex != pattern.weekCycle.index - 1) continue;
+        }
 
         final set = await _projectOneSet(
           plan: plan,

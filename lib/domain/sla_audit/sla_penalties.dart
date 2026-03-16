@@ -44,6 +44,16 @@ class SLAPenalties extends Equatable {
   /// for the trip to be considered validated. Must be ≥ 0. Default: 3.
   final int dwellTimeMinutes;
 
+  /// Base financial value of a single trip under this shift pattern.
+  ///
+  /// Used for financial risk summary (Receita Protegida, Exposição No-Show)
+  /// and margin erosion calculations. Stored as [Money] (BIGINT cents — INV-2).
+  /// Must be > 0.
+  ///
+  /// Backward compat: absent in JSONB payloads before Bloco 4.3 sprint →
+  /// defaults to [Money.zero] via [fromJson] fallback.
+  final Money baseTripValue;
+
   const SLAPenalties._({
     required this.noShowPenaltyMultiplier,
     required this.delayToleranceMinutes,
@@ -52,6 +62,7 @@ class SLAPenalties extends Equatable {
     required this.noShowThresholdMinutes,
     required this.earlyArrivalToleranceMinutes,
     required this.dwellTimeMinutes,
+    required this.baseTripValue,
   });
 
   /// Creates [SLAPenalties] with validated invariants.
@@ -65,6 +76,7 @@ class SLAPenalties extends Equatable {
     int noShowThresholdMinutes = 60,
     int earlyArrivalToleranceMinutes = 5,
     int dwellTimeMinutes = 3,
+    Money baseTripValue = const Money(0),
   }) {
     if (noShowPenaltyMultiplier < 1.0) {
       throw const DomainException(
@@ -101,6 +113,9 @@ class SLAPenalties extends Equatable {
         'dwellTimeMinutes must be >= 0',
       );
     }
+    if (baseTripValue.cents < 0) {
+      throw const DomainException('baseTripValue must be >= 0');
+    }
 
     return SLAPenalties._(
       noShowPenaltyMultiplier: noShowPenaltyMultiplier,
@@ -110,6 +125,7 @@ class SLAPenalties extends Equatable {
       noShowThresholdMinutes: noShowThresholdMinutes,
       earlyArrivalToleranceMinutes: earlyArrivalToleranceMinutes,
       dwellTimeMinutes: dwellTimeMinutes,
+      baseTripValue: baseTripValue,
     );
   }
 
@@ -122,6 +138,7 @@ class SLAPenalties extends Equatable {
     int noShowThresholdMinutes = 60,
     int earlyArrivalToleranceMinutes = 5,
     int dwellTimeMinutes = 3,
+    Money baseTripValue = const Money(0),
   }) {
     return SLAPenalties._(
       noShowPenaltyMultiplier: noShowPenaltyMultiplier,
@@ -131,6 +148,7 @@ class SLAPenalties extends Equatable {
       noShowThresholdMinutes: noShowThresholdMinutes,
       earlyArrivalToleranceMinutes: earlyArrivalToleranceMinutes,
       dwellTimeMinutes: dwellTimeMinutes,
+      baseTripValue: baseTripValue,
     );
   }
 
@@ -143,6 +161,7 @@ class SLAPenalties extends Equatable {
         'noShowThresholdMinutes': noShowThresholdMinutes,
         'earlyArrivalToleranceMinutes': earlyArrivalToleranceMinutes,
         'dwellTimeMinutes': dwellTimeMinutes,
+        'baseTripValueCents': baseTripValue.cents,
       };
 
   /// Deserializes from JSON stored in [ShiftPattern] JSONB payload.
@@ -162,6 +181,9 @@ class SLAPenalties extends Equatable {
           (json['earlyArrivalToleranceMinutes'] as int?) ?? 5,
       dwellTimeMinutes:
           (json['dwellTimeMinutes'] as int?) ?? 3,
+      // Backward compat: absent in JSONB before Bloco 4.3 → Money(0).
+      baseTripValue:
+          Money((json['baseTripValueCents'] as num?)?.toInt() ?? 0),
     );
   }
 
@@ -174,5 +196,6 @@ class SLAPenalties extends Equatable {
         noShowThresholdMinutes,
         earlyArrivalToleranceMinutes,
         dwellTimeMinutes,
+        baseTripValue,
       ];
 }

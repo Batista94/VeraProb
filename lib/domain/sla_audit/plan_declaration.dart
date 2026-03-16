@@ -9,6 +9,7 @@ import 'domain_event.dart';
 import 'domain_exception.dart';
 import 'rule_snapshot.dart';
 import 'shift_pattern.dart';
+import 'week_cycle.dart';
 
 /// Aggregate Root representing the formal, immutable, and auditable
 /// declaration of a contractual operational plan.
@@ -37,6 +38,15 @@ class PlanDeclaration extends Equatable {
   final String originalFileHash;
   final RuleSnapshot ruleSnapshot;
 
+  /// Anchor date for industrial week-cycle calculations.
+  ///
+  /// Non-null when any [ShiftPattern] in this plan has a [WeekCycle] other
+  /// than [WeekCycle.everyWeek]. [ShiftProjectionService] uses this as the
+  /// reference point for `weeksSinceAnchor % 4` filtering.
+  ///
+  /// Must be UTC (INV-3). Null for standard weekly plans.
+  final DateTime? cycleAnchorDateUtc;
+
   // ── Internal collections ──────────────────────────────────
   final List<ContractualServiceExecution> _services;
   final List<ShiftPattern> _shiftPatterns;
@@ -53,6 +63,7 @@ class PlanDeclaration extends Equatable {
     required this.planVersion,
     required this.originalFileHash,
     required this.ruleSnapshot,
+    this.cycleAnchorDateUtc,
     required List<ContractualServiceExecution> services,
     required List<ShiftPattern> shiftPatterns,
     required List<DomainEvent> domainEvents,
@@ -153,6 +164,7 @@ class PlanDeclaration extends Equatable {
     required String originalFileHash,
     required RuleSnapshot ruleSnapshot,
     required List<ShiftPattern> shiftPatterns,
+    DateTime? cycleAnchorDateUtc,
   }) {
     _validateCommon(contractId, declaredByUserId, originalFileHash, declaredAtUtc);
     if (shiftPatterns.isEmpty) {
@@ -164,6 +176,20 @@ class PlanDeclaration extends Equatable {
     if (indices.length != shiftPatterns.length) {
       throw const DomainException(
         'ShiftPattern indices must be unique within a PlanDeclaration',
+      );
+    }
+
+    // Validate: cycleAnchorDateUtc required when any pattern uses a non-weekly cycle
+    final hasCycledPattern = shiftPatterns
+        .any((p) => p.weekCycle != WeekCycle.everyWeek);
+    if (hasCycledPattern && cycleAnchorDateUtc == null) {
+      throw const DomainException(
+        'cycleAnchorDateUtc is required when any ShiftPattern uses a non-weekly WeekCycle.',
+      );
+    }
+    if (cycleAnchorDateUtc != null && !cycleAnchorDateUtc.isUtc) {
+      throw const DomainException(
+        'cycleAnchorDateUtc must be UTC (INV-3). Call .toUtc() before passing.',
       );
     }
 
@@ -187,6 +213,7 @@ class PlanDeclaration extends Equatable {
       planVersion: planVersion,
       originalFileHash: originalFileHash,
       ruleSnapshot: ruleSnapshot,
+      cycleAnchorDateUtc: cycleAnchorDateUtc,
       services: const [],
       shiftPatterns: List.unmodifiable(shiftPatterns),
       domainEvents: [event],
@@ -208,6 +235,7 @@ class PlanDeclaration extends Equatable {
     required RuleSnapshot ruleSnapshot,
     required List<ContractualServiceExecution> services,
     List<ShiftPattern> shiftPatterns = const [],
+    DateTime? cycleAnchorDateUtc,
   }) {
     return PlanDeclaration._(
       id: id,
@@ -218,6 +246,7 @@ class PlanDeclaration extends Equatable {
       planVersion: planVersion,
       originalFileHash: originalFileHash,
       ruleSnapshot: ruleSnapshot,
+      cycleAnchorDateUtc: cycleAnchorDateUtc,
       services: List.unmodifiable(services),
       shiftPatterns: List.unmodifiable(shiftPatterns),
       domainEvents: const [],
@@ -277,6 +306,7 @@ class PlanDeclaration extends Equatable {
         planVersion,
         originalFileHash,
         ruleSnapshot,
+        cycleAnchorDateUtc,
         _services,
         _shiftPatterns,
       ];

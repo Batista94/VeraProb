@@ -4,6 +4,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'domain_exception.dart';
 import 'sla_penalties.dart';
 import 'vehicle_category.dart';
+import 'week_cycle.dart';
 
 /// Days of the week, aligned with Dart's [DateTime.weekday] constants.
 /// Monday = 1, Sunday = 7.
@@ -72,6 +73,17 @@ class ShiftPattern extends Equatable {
   /// reconstituting from JSONB payloads created before this field existed.
   final VehicleCategory requiredVehicleCategory;
 
+  /// Industrial week cycle for this shift pattern.
+  ///
+  /// [WeekCycle.everyWeek] = runs every matching weekday (default).
+  /// [WeekCycle.weekA]/[weekB]/[weekC]/[weekD] = fires on the corresponding
+  /// week within a 4-week rotating cycle anchored to
+  /// [PlanDeclaration.cycleAnchorDateUtc].
+  ///
+  /// Backward compat: absent in JSONB payloads before this sprint → defaults
+  /// to [WeekCycle.everyWeek] via [WeekCycle.fromJson].
+  final WeekCycle weekCycle;
+
   const ShiftPattern._({
     required this.index,
     required this.daysOfWeek,
@@ -82,6 +94,7 @@ class ShiftPattern extends Equatable {
     required this.destinationZoneId,
     required this.penalties,
     required this.requiredVehicleCategory,
+    required this.weekCycle,
   });
 
   /// Creates a [ShiftPattern] with validated invariants.
@@ -98,6 +111,7 @@ class ShiftPattern extends Equatable {
     required String destinationZoneId,
     required SLAPenalties penalties,
     VehicleCategory requiredVehicleCategory = VehicleCategory.conventional,
+    WeekCycle weekCycle = WeekCycle.everyWeek,
   }) {
     if (index < 0) {
       throw const DomainException('ShiftPattern index must be >= 0');
@@ -136,6 +150,7 @@ class ShiftPattern extends Equatable {
       destinationZoneId: destinationZoneId,
       penalties: penalties,
       requiredVehicleCategory: requiredVehicleCategory,
+      weekCycle: weekCycle,
     );
   }
 
@@ -150,6 +165,7 @@ class ShiftPattern extends Equatable {
     required String destinationZoneId,
     required SLAPenalties penalties,
     VehicleCategory requiredVehicleCategory = VehicleCategory.conventional,
+    WeekCycle weekCycle = WeekCycle.everyWeek,
   }) {
     return ShiftPattern._(
       index: index,
@@ -161,6 +177,7 @@ class ShiftPattern extends Equatable {
       destinationZoneId: destinationZoneId,
       penalties: penalties,
       requiredVehicleCategory: requiredVehicleCategory,
+      weekCycle: weekCycle,
     );
   }
 
@@ -183,6 +200,7 @@ class ShiftPattern extends Equatable {
         'destinationZoneId': destinationZoneId,
         'penalties': penalties.toJson(),
         'requiredVehicleCategory': requiredVehicleCategory.toJson(),
+        'weekCycle': weekCycle.toJson(),
       };
 
   factory ShiftPattern.fromJson(Map<String, dynamic> json) {
@@ -205,6 +223,8 @@ class ShiftPattern extends Equatable {
       requiredVehicleCategory: VehicleCategory.fromJson(
         json['requiredVehicleCategory'] as String?,
       ),
+      // Backward compat: absent in plans before WeekCycle sprint → everyWeek.
+      weekCycle: WeekCycle.fromJson(json['weekCycle'] as String?),
     );
   }
 
@@ -256,5 +276,6 @@ class ShiftPattern extends Equatable {
         destinationZoneId,
         penalties,
         requiredVehicleCategory,
+        weekCycle,
       ];
 }

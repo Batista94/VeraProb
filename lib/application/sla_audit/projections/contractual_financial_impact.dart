@@ -17,6 +17,12 @@ class ContractualFinancialImpact extends Equatable {
   final double riskPercentage;
   final double lossPercentage;
 
+  /// Penalty erosion relative to the contract's financial ceiling.
+  ///
+  /// `lostRevenue / financialCeiling × 100`. Null when no ceiling is set.
+  /// > 100% means the ceiling has been exceeded.
+  final double? marginErosionPercent;
+
   const ContractualFinancialImpact({
     this.contractId,
     required this.generatedAtUtc,
@@ -26,6 +32,7 @@ class ContractualFinancialImpact extends Equatable {
     required this.lostRevenue,
     required this.riskPercentage,
     required this.lossPercentage,
+    this.marginErosionPercent,
   });
 
   @override
@@ -38,5 +45,6 @@ class ContractualFinancialImpact extends Equatable {
     lostRevenue,
     riskPercentage,
     lossPercentage,
+    marginErosionPercent,
   ];
 }

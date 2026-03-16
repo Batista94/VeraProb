@@ -45,6 +45,18 @@ class ContractualFinancialImpactQueryServicePostgres
       );
     }
 
+    // Load financial ceiling for marginErosionPercent (contract-scoped only).
+    int? ceilingCents;
+    if (contractId != null) {
+      final contractRow = await _client
+          .from('contracts')
+          .select('financial_ceiling_cents')
+          .eq('organization_id', organizationId)
+          .eq('id', contractId)
+          .maybeSingle();
+      ceilingCents = contractRow?['financial_ceiling_cents'] as int?;
+    }
+
     // Identify superseded snapshots (those referenced by another snapshot's previous_snapshot_id)
     final supersededIds = rows
         .where((row) => row['previous_snapshot_id'] != null)
@@ -59,6 +71,12 @@ class ContractualFinancialImpactQueryServicePostgres
     // Rows are already ordered descending, so the very first active row is the latest
     final latest = activeRows.first;
 
+    final lostRevenueCents =
+        (latest['lost_revenue_cents'] as num).toInt();
+    final marginErosionPercent = (ceilingCents != null && ceilingCents > 0)
+        ? lostRevenueCents / ceilingCents * 100.0
+        : null;
+
     return ContractualFinancialImpact(
       contractId: contractId,
       generatedAtUtc: DateTime.parse(latest['closed_at_utc'] as String).toUtc(),
@@ -69,9 +87,10 @@ class ContractualFinancialImpactQueryServicePostgres
         (latest['protected_revenue_cents'] as num).toInt(),
       ),
       revenueAtRisk: Money((latest['revenue_at_risk_cents'] as num).toInt()),
-      lostRevenue: Money((latest['lost_revenue_cents'] as num).toInt()),
+      lostRevenue: Money(lostRevenueCents),
       riskPercentage: (latest['risk_percentage'] as num).toDouble(),
       lossPercentage: (latest['loss_percentage'] as num).toDouble(),
+      marginErosionPercent: marginErosionPercent,
     );
   }
 }

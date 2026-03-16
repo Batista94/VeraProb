@@ -7,6 +7,7 @@ import 'contract_events.dart';
 import 'contract_status.dart';
 import 'domain_event.dart';
 import 'domain_exception.dart';
+import '../shared/money.dart';
 
 /// Aggregate Root representing a formal contractual agreement between
 /// the operating organization and a contractor.
@@ -54,6 +55,13 @@ class Contract extends Equatable {
   /// Null for contracts created directly. Immutable after creation.
   final String? clonedFromContractId;
 
+  /// Maximum cumulative penalty cap for this contract (INV-2: BIGINT cents).
+  ///
+  /// When set, [ContractualFinancialImpactQueryService] computes
+  /// `marginErosionPercent = totalPenalties / financialCeiling × 100`.
+  /// Null = no cap defined.
+  final Money? financialCeiling;
+
   // ── Internal events ───────────────────────────────────────
   final List<DomainEvent> _domainEvents;
 
@@ -74,6 +82,7 @@ class Contract extends Equatable {
     this.closedByUserId,
     this.closeReason,
     this.clonedFromContractId,
+    this.financialCeiling,
     required List<DomainEvent> domainEvents,
   }) : _domainEvents = domainEvents;
 
@@ -221,6 +230,7 @@ class Contract extends Equatable {
     String? closedByUserId,
     String? closeReason,
     String? clonedFromContractId,
+    Money? financialCeiling,
   }) {
     return Contract._(
       id: id,
@@ -237,6 +247,7 @@ class Contract extends Equatable {
       closedByUserId: closedByUserId,
       closeReason: closeReason,
       clonedFromContractId: clonedFromContractId,
+      financialCeiling: financialCeiling,
       domainEvents: const [], // RECONSTITUTION: no events emitted
     );
   }
@@ -280,6 +291,7 @@ class Contract extends Equatable {
       closedAtUtc: closedAtUtc,
       closedByUserId: closedByUserId,
       closeReason: closeReason,
+      financialCeiling: financialCeiling,
       domainEvents: [event],
     );
   }
@@ -335,6 +347,7 @@ class Contract extends Equatable {
       closedAtUtc: now,
       closedByUserId: closedByUserId,
       closeReason: reason,
+      financialCeiling: financialCeiling,
       domainEvents: [event],
     );
   }
@@ -381,5 +394,6 @@ class Contract extends Equatable {
     closedByUserId,
     closeReason,
     clonedFromContractId,
+    financialCeiling,
   ];
 }
