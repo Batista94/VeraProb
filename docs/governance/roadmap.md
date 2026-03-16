@@ -14,53 +14,38 @@
 | `strict-casts` | Desabilitado — ~80 issues de `dynamic` nos repos Postgres (Phase 8) |
 | Sprint 5.11 | **CONCLUÍDA** — Fases A-I implementadas (Wizard refatorado, Clona Contrato, Templates SLA, Contractor Label). |
 | Sprint 5.12 Phase D | **CONCLUÍDA** — Refinamento, UTC, Schema e Segurança RLS. ✅ |
-| Banco de dev | Todas as migrations aplicadas — `20260311000000` · `20260311000002` · `20260311000003` · `20260312000001` · `20260312000002` · `20260312000003` · `20260313000001` ✅ |
-
----
+| Banco de dev | Todas as migrations aplicadas — `20260311000000` · `20260311000002` · `20260311000003` · `20260312000001` · `20260312000002` · `20260312---
 
 ## Fases Pendentes
 
-> Ordem de execução é obrigatória — fases não podem ser puladas.
+### [ ] Sprint 5.13 — Post-Validation Hardening (IMEDIATO) 🏗️
 
----
+> **Nota:** Estes blocos são pré-requisitos para a ativação funcional da Phase 6.
 
-## Fases Concluídas
-
-- [x] **Sprint 5.11**: Wizard Refactor, Templates SLA, Contractor Label.
-- [x] **Phase 5.12**: Final Operational Validation & Security Hotfixes.
-- [x] **Sprint 5.13 — Bloco 1**: Core Integrity & Security Hardening.
-- [x] **Sprint 5.13 — Bloco 2**: Zone Taxonomy & JIT Creation.
-- [x] **Sprint 5.13 — Bloco 5**: Regression Fixes (RLS, Callbacks, Stale Data).
-
----
-
-### Sprint 5.13 — Post-Validation Hardening (Pendentes)
-
-#### BLOCO 3 — Fluxo de Declaração B2B [PENDENTE] 🏗️
-- **3.1 — Stepper Clicável:** Implementar `onStepTapped`. Permitir voltar, bloquear avanço não validado.
-- **3.2 — Contexto no Step 2:** Exibir banner "Origem → Destino" durante configuração de horários.
-- **3.3 — Ciclo Industrial:** Suporte a Return Shifts em datas específicas ou semanas diferentes (`weekOffset`).
+#### BLOCO 3 — Fluxo de Declaração B2B 🏗️
+- [ ] **3.1 — Stepper Clicável:** Implementar `onStepTapped`. Permitir voltar, bloquear avanço não validado.
+- [ ] **3.2 — Contexto no Step 2:** Exibir banner "Origem → Destino" durante configuração de horários.
+- [ ] **3.3 — Ciclo Industrial:** Suporte a Return Shifts em datas específicas ou semanas diferentes (`weekOffset`).
 - **Personas:** `senior_engineer`, `ux_operations`, `architect`
 
-#### BLOCO 4 — Compliance e Penalidades [PENDENTE] 🏗️
-- **4.1 — Step 3 Refinement:** Renomear para "Acordo de Penalidades". Adicionar campo `gracePeriodMinutes`.
-- **4.2 — Step 4: Exposição de Risco Financeiro:** Novo resumo calculado antes de publicar (Receita Protegida, Exposição Máx no-show, Penalidade máx por viagem).
-- **4.3 — Contexto Financeiro de Auditoria:** Adicionar campos `baseTripValue (Money)` e `contractFinancialCeiling (Money)` ao SLA. Calcular `marginErosionPercent` em tempo real.
+#### BLOCO 4 — Compliance e Penalidades 🏗️
+- [ ] **4.1 — Step 3 Refinement:** Renomear para "Acordo de Penalidades". Adicionar campo `gracePeriodMinutes`.
+- [ ] **4.2 — Step 4: Exposição de Risco Financeiro:** Novo resumo calculado antes de publicar (Receita Protegida, Exposição Máx no-show, Penalidade máx por viagem).
+- [ ] **4.3 — Contexto Financeiro de Auditoria:** Adicionar campos `baseTripValue (Money)` e `contractFinancialCeiling (Money)` ao SLA. Calcular `marginErosionPercent` em tempo real.
 - **Personas:** `Full Council`, `ux_operations`, `senior_engineer`
 
-#### BLOCO 6 — Evidence Locker [PENDENTE] 🛡️
-- **6.1 — Evidence Locker Domain:** Entidade `TelemetryEvidence` com hashing SHA-256.
-- **6.2 — Persistence:** Tabela `telemetry_evidences` append-only com integridade verificável.
+#### BLOCO 6 — Evidence Locker 🛡️
+- [ ] **6.1 — Evidence Locker Domain:** Entidade `TelemetryEvidence` com hashing SHA-256.
+- [ ] **6.2 — Persistence:** Tabela `telemetry_evidences` append-only com integridade verificável.
 - **Personas:** `architect`, `qa_security`
 
 ---
 
-### [ ] Phase 6 — Administration & Tenant Self-Service
+### [ ] Phase 6 — Administration & Tenant Self-Service (Fundação Implementada) 🚀
 
 **Context:**
-Phase 5 (B2B Refactoring) is completing Sprint 5.13. The remaining business scale blocker is: every new client requires manual developer intervention to onboard. Phase 6 makes the product self-sufficient for N tenants — any transport company self-registers, configures SLA rules, invites their team, and starts operating. This phase also closes the critical JWT infrastructure gap.
-
-**Prerequisite:** Sprint 5.13 Blocos 3, 4, 6 complete before Phase 6 starts.
+Phase 5 (B2B Refactoring) is completing Sprint 5.13. Phase 6 makes the product self-sufficient for N tenants. 
+*Status:* Fundação técnica (JWT, RBAC, Contractors) implementada. Ativação depende da conclusão da Sprint 5.13.
 
 #### BLOCO 1 — JWT Infrastructure & Auth Foundation
 - [x] 1.1 Activate `custom_access_token_hook` in Supabase (Auth -> Hooks)
@@ -126,6 +111,8 @@ Phase 5 (B2B Refactoring) is completing Sprint 5.13. The remaining business scal
 - [ ] 9.2 First Run Wizard (Guided 5-step flow)
 - [ ] 9.3 Automated Scenarios (Isolation, RBAC, Immutability)
 - [ ] 9.4 Compliance Report: `docs/governance/compliance/phase6_compliance_report.md`
+- **SQL:** `20260323000001_org_registration_rpc.sql`
+ [ ] 9.4 Compliance Report: `docs/governance/compliance/phase6_compliance_report.md`
 - **SQL:** `20260323000001_org_registration_rpc.sql`
 
 ---
