@@ -122,6 +122,9 @@ class DeclareContractPlanForm extends ConsumerStatefulWidget {
 class _DeclareContractPlanFormState
     extends ConsumerState<DeclareContractPlanForm> {
   int _currentStep = 0;
+  /// Tracks the furthest step the user has successfully reached.
+  /// Steps beyond this are shown as [StepState.disabled] and block forward taps.
+  int _highestStepReached = 0;
   bool _isSubmitting = false;
   String? _errorMessage;
 
@@ -320,79 +323,128 @@ class _DeclareContractPlanFormState
 
   // ── Stepper Navigation ───────────────────────────────────────
 
+  /// Validates Step 0 (Zonas). Returns an error message, or null if valid.
+  String? _validateStep0() {
+    if (_selectedOriginZoneId == null || _selectedDestinationZoneId == null) {
+      return 'Selecione a Zona de Partida e a Zona de Chegada para continuar.';
+    }
+    if (_selectedOriginZoneId == _selectedDestinationZoneId) {
+      return 'A Zona de Partida e Chegada devem ser diferentes.';
+    }
+    // ── GEOFENCE HARD BLOCK ─────────────────────────────────────
+    // The engine is blind without coordinates + radius. Do NOT allow
+    // advancing to the shift pattern step if any zone lacks a geofence.
+    final zones = ref.read(operationalZonesProvider).valueOrNull ?? [];
+    final originZone = zones.where((z) => z.id == _selectedOriginZoneId).firstOrNull;
+    final destZone = zones.where((z) => z.id == _selectedDestinationZoneId).firstOrNull;
+    final missingNames = [
+      if (originZone?.geofence == null) originZone?.name ?? 'Zona de Partida',
+      if (destZone?.geofence == null) destZone?.name ?? 'Zona de Chegada',
+    ];
+    if (missingNames.isNotEmpty) {
+      return 'BLOQUEIO DE AUDITORIA: ${missingNames.join(' e ')} não possui '
+          'geofence configurado (Latitude, Longitude e Raio). '
+          'Acesse Zonas Operacionais → edite a zona → preencha os campos de '
+          'Geofence antes de continuar.';
+    }
+    return null;
+  }
+
+  /// Validates Step 1 (Turno). Returns an error message, or null if valid.
+  String? _validateStep1() {
+    if (_selectedDays.isEmpty) {
+      return 'Selecione ao menos um dia da semana para o turno.';
+    }
+    if (_arrivalTime == null || _departureTime == null) {
+      return 'Defina os horários de Chegada e Partida do turno.';
+    }
+    return null;
+  }
+
+  /// Validates Step 2 (SLA / Ofensores de Margem). Returns an error message, or null if valid.
+  String? _validateStep2() {
+    final baseVal = _parseReaisToCents(_baseValueController.text);
+    if (baseVal <= 0) {
+      return 'O valor base da viagem contratada não pode ser zero.';
+    }
+    return null;
+  }
+
   void _onStepContinue() {
+    String? error;
     if (_currentStep == 0) {
-      if (_selectedOriginZoneId == null || _selectedDestinationZoneId == null) {
-        setState(
-          () => _errorMessage =
-              'Selecione a Zona de Partida e a Zona de Chegada para continuar.',
-        );
-        return;
-      }
-      if (_selectedOriginZoneId == _selectedDestinationZoneId) {
-        setState(
-          () => _errorMessage =
-              'A Zona de Partida e Chegada devem ser diferentes.',
-        );
-        return;
-      }
-      // ── GEOFENCE HARD BLOCK ───────────────────────────────────
-      // The engine is blind without coordinates + radius. Do NOT allow
-      // advancing to the shift pattern step if any zone lacks a geofence.
-      final zones = ref.read(operationalZonesProvider).valueOrNull ?? [];
-      final originZone = zones
-          .where((z) => z.id == _selectedOriginZoneId)
-          .firstOrNull;
-      final destZone = zones
-          .where((z) => z.id == _selectedDestinationZoneId)
-          .firstOrNull;
-      final missingNames = [
-        if (originZone?.geofence == null) originZone?.name ?? 'Zona de Partida',
-        if (destZone?.geofence == null) destZone?.name ?? 'Zona de Chegada',
-      ];
-      if (missingNames.isNotEmpty) {
-        setState(
-          () => _errorMessage =
-              'BLOQUEIO DE AUDITORIA: ${missingNames.join(' e ')} não possui '
-              'geofence configurado (Latitude, Longitude e Raio). '
-              'Acesse Zonas Operacionais → edite a zona → preencha os campos de '
-              'Geofence antes de continuar.',
-        );
-        return;
-      }
+      error = _validateStep0();
     } else if (_currentStep == 1) {
-      if (_selectedDays.isEmpty) {
-        setState(
-          () => _errorMessage =
-              'Selecione ao menos um dia da semana para o turno.',
-        );
-        return;
-      }
-      if (_arrivalTime == null || _departureTime == null) {
-        setState(
-          () => _errorMessage =
-              'Defina os horários de Chegada e Partida do turno.',
-        );
-        return;
-      }
+      error = _validateStep1();
     } else if (_currentStep == 2) {
-      final baseVal = _parseReaisToCents(_baseValueController.text);
-      if (baseVal <= 0) {
-        setState(
-          () => _errorMessage =
-              'O valor base da viagem contratada não pode ser zero.',
-        );
-        return;
-      }
+      error = _validateStep2();
+    }
+
+    if (error != null) {
+      setState(() => _errorMessage = error);
+      return;
     }
 
     setState(() {
       _errorMessage = null;
       if (_currentStep < 3) {
         _currentStep++;
+        if (_currentStep > _highestStepReached) {
+          _highestStepReached = _currentStep;
+        }
       } else {
         _submit();
       }
+    });
+  }
+
+  /// Handles tapping a step indicator directly.
+  ///
+  /// Back navigation is always allowed. Forward navigation requires all
+  /// intermediate steps to pass validation. Steps beyond [_highestStepReached]
+  /// are locked until the user progresses linearly.
+  void _onStepTapped(int step) {
+    if (step == _currentStep) return;
+
+    // Back navigation — always allowed.
+    if (step < _currentStep) {
+      setState(() {
+        _errorMessage = null;
+        _currentStep = step;
+      });
+      return;
+    }
+
+    // Forward skip — only to steps already reached.
+    if (step > _highestStepReached) {
+      // Validate intermediate steps sequentially up to the target.
+      for (var i = _currentStep; i < step; i++) {
+        String? error;
+        if (i == 0) {
+          error = _validateStep0();
+        } else if (i == 1) {
+          error = _validateStep1();
+        } else if (i == 2) {
+          error = _validateStep2();
+        }
+        if (error != null) {
+          setState(() => _errorMessage = error);
+          return;
+        }
+      }
+      // All intermediate steps passed — allow and mark highest reached.
+      setState(() {
+        _errorMessage = null;
+        _currentStep = step;
+        if (step > _highestStepReached) _highestStepReached = step;
+      });
+      return;
+    }
+
+    // Target is within already-reached range — jump freely.
+    setState(() {
+      _errorMessage = null;
+      _currentStep = step;
     });
   }
 
@@ -664,6 +716,12 @@ class _DeclareContractPlanFormState
       7: 'Dom',
     };
 
+    final originName = _selectedOriginZone?.name ?? _selectedOriginZoneId ?? '—';
+    final destName = _selectedDestinationZone?.name ?? _selectedDestinationZoneId ?? '—';
+    // For return shifts, display the current turn's direction (zones were swapped).
+    final turnIndex = _confirmedShiftDrafts.length;
+    final isReturnShift = turnIndex > 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -673,7 +731,67 @@ class _DeclareContractPlanFormState
               : 'Turno ${_confirmedShiftDrafts.length + 1} de ${_confirmedShiftDrafts.length + 1} — configure o turno de Retorno.',
           style: const TextStyle(color: PactaFlowColors.textSecondary),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
+
+        // ── Origem → Destino context banner ──────────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: PactaFlowColors.info.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: PactaFlowColors.info.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Row(
+            children: [
+              if (isReturnShift) ...[
+                Text(
+                  'Turno de Retorno ${turnIndex + 1}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: PactaFlowColors.info,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Text('·', style: TextStyle(color: PactaFlowColors.textDisabled)),
+                const SizedBox(width: 10),
+              ],
+              const Icon(Icons.business, size: 14, color: PactaFlowColors.textSecondary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  originName,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: PactaFlowColors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(Icons.arrow_forward, size: 14, color: PactaFlowColors.info),
+              ),
+              const Icon(Icons.location_on, size: 14, color: PactaFlowColors.textSecondary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  destName,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: PactaFlowColors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
 
         // ── Dias da semana ────────────────────────────────────
         const Text(
@@ -1371,6 +1489,7 @@ class _DeclareContractPlanFormState
                 currentStep: _currentStep,
                 onStepContinue: _onStepContinue,
                 onStepCancel: _onStepCancel,
+                onStepTapped: _onStepTapped,
                 controlsBuilder: (context, details) {
                   final isLastStep = _currentStep == 3;
                   final isStep3 = _currentStep == 2;
@@ -1438,7 +1557,9 @@ class _DeclareContractPlanFormState
                         ? StepState.complete
                         : _currentStep == 1
                         ? StepState.editing
-                        : StepState.indexed,
+                        : _highestStepReached >= 1
+                        ? StepState.indexed
+                        : StepState.disabled,
                   ),
                   Step(
                     title: const Text('Ofensores de Margem'),
@@ -1448,7 +1569,9 @@ class _DeclareContractPlanFormState
                         ? StepState.complete
                         : _currentStep == 2
                         ? StepState.editing
-                        : StepState.indexed,
+                        : _highestStepReached >= 2
+                        ? StepState.indexed
+                        : StepState.disabled,
                   ),
                   Step(
                     title: const Text('Revisão'),
@@ -1456,7 +1579,9 @@ class _DeclareContractPlanFormState
                     isActive: _currentStep >= 3,
                     state: _currentStep == 3
                         ? StepState.editing
-                        : StepState.indexed,
+                        : _highestStepReached >= 3
+                        ? StepState.indexed
+                        : StepState.disabled,
                   ),
                 ],
               ),

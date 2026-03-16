@@ -7,13 +7,14 @@
 | Aspecto | Estado |
 |---------|--------|
 | Testes | 360 passing · 0 falhas ✅ |
-| Análise estática | 0 erros · 67 infos (`prefer_const` — baixa prioridade) |
+| Análise estática | 0 erros · 75 infos (`prefer_const` — baixa prioridade) |
 | Precisão financeira | `Money` (centavos BIGINT) em todo o stack — invariante enforced ✅ |
 | CI/CD | Não existe (Phase 8) |
 | Ambientes | Dev local único. Sem staging, sem prod. |
 | `strict-casts` | Desabilitado — ~80 issues de `dynamic` nos repos Postgres (Phase 8) |
 | Sprint 5.11 | **CONCLUÍDA** — Fases A-I implementadas (Wizard refatorado, Clona Contrato, Templates SLA, Contractor Label). |
 | Sprint 5.12 Phase D | **CONCLUÍDA** — Refinamento, UTC, Schema e Segurança RLS. ✅ |
+| Sprint 5.13 (parcial) | **EM PROGRESSO** — Tasks 0, 1, 2, 7 concluídas. Tasks 3, 4, 5, 6, 8 pendentes. |
 | Banco de dev | Todas as migrations aplicadas — `20260311000000` · `20260311000002` · `20260311000003` · `20260312000001` · `20260312000002` · `20260312---
 
 ## Fases Pendentes
@@ -23,21 +24,24 @@
 > **Nota:** Estes blocos são pré-requisitos para a ativação funcional da Phase 6.
 
 #### BLOCO 3 — Fluxo de Declaração B2B 🏗️
-- [ ] **3.1 — Stepper Clicável:** Implementar `onStepTapped`. Permitir voltar, bloquear avanço não validado.
-- [ ] **3.2 — Contexto no Step 2:** Exibir banner "Origem → Destino" durante configuração de horários.
-- [ ] **3.3 — Ciclo Industrial:** Suporte a Return Shifts em datas específicas ou semanas diferentes (`weekOffset`).
+- [x] **3.1 — Stepper Clicável:** `onStepTapped` implementado. Back navigation livre · forward com validação por etapa · `_highestStepReached` controla `StepState.disabled`.
+- [x] **3.2 — Contexto no Step 2:** Banner "Origem → Destino" exibido no topo do Step 2, com indicador de turno de retorno.
+- [ ] **3.3 — Ciclo Industrial:** Suporte a Return Shifts com `WeekCycle` enum (`everyWeek/weekA/weekB/weekC/weekD`). Aguarda PO ruling + SQL Block A.
 - **Personas:** `senior_engineer`, `ux_operations`, `architect`
 
 #### BLOCO 4 — Compliance e Penalidades 🏗️
-- [ ] **4.1 — Step 3 Refinement:** Renomear para "Acordo de Penalidades". Adicionar campo `gracePeriodMinutes`.
+- [ ] **4.1 — Step 3 Refinement:** Renomear para "Acordo de Penalidades". Adicionar campo `gracePeriodMinutes`. *(próxima task)*
 - [ ] **4.2 — Step 4: Exposição de Risco Financeiro:** Novo resumo calculado antes de publicar (Receita Protegida, Exposição Máx no-show, Penalidade máx por viagem).
-- [ ] **4.3 — Contexto Financeiro de Auditoria:** Adicionar campos `baseTripValue (Money)` e `contractFinancialCeiling (Money)` ao SLA. Calcular `marginErosionPercent` em tempo real.
+- [ ] **4.3 — Contexto Financeiro de Auditoria:** `baseTripValue (Money)` em `SLAPenalties` + `contractFinancialCeiling (Money)` no `Contract`. Calcular `marginErosionPercent` em tempo real. Aguarda PO ruling + SQL Block B.
 - **Personas:** `Full Council`, `ux_operations`, `senior_engineer`
 
 #### BLOCO 6 — Evidence Locker 🛡️
-- [ ] **6.1 — Evidence Locker Domain:** Entidade `TelemetryEvidence` com hashing SHA-256.
-- [ ] **6.2 — Persistence:** Tabela `telemetry_evidences` append-only com integridade verificável.
+- [x] **6.1 — Evidence Locker Domain:** Entidade `TelemetryEvidence` com SHA-256 `contentHash` + `chainHash` em cadeia. `verifyIntegrity()` detecta adulteração. Repositório port append-only.
+- [ ] **6.2 — Persistence:** Tabela `telemetry_evidences` append-only + RLS + REVOKE UPDATE/DELETE. Aguarda confirmação pgcrypto + SQL Block C.
 - **Personas:** `architect`, `qa_security`
+
+#### INV-4 FIX ✅
+- [x] `vehicle_status.dart` — Flutter import removido, getters `.color`/`.icon` extraídos para `VehicleStatusUiMapper` (camada de apresentação).
 
 ---
 
