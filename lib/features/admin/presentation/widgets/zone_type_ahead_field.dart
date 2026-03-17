@@ -115,11 +115,13 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
 
   Future<void> _triggerCreationDialog() async {
     final zone = await showZoneFormDialog(context);
-    if (zone != null) {
-      await widget.onInvalidateZones();
-      _textController.text = zone.name;
-      widget.onChanged(zone);
-    }
+    if (!mounted || zone == null) return;
+    // Select the zone immediately, before the async provider refresh.
+    // This prevents the parent from rebuilding without a selection while
+    // the provider transitions through its loading state.
+    _textController.text = zone.name;
+    widget.onChanged(zone);
+    await widget.onInvalidateZones();
   }
 
   // ── Build ─────────────────────────────────────────────────────
@@ -294,10 +296,9 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
         ),
         onPressed: () async {
           final saved = await showZoneFormDialog(context, existingZone: zone);
-          if (saved != null) {
-            await widget.onInvalidateZones();
-            widget.onGeofenceConfigured?.call(saved);
-          }
+          if (!mounted || saved == null) return;
+          widget.onGeofenceConfigured?.call(saved);
+          await widget.onInvalidateZones();
         },
       ),
     );

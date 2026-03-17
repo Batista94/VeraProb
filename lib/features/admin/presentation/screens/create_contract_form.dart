@@ -197,6 +197,29 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                   'Registre os parâmetros regulatórios para auditoria de SLR.',
                   style: PactaFlowTypography.bodySmall,
                 ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: PactaFlowColors.primary.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: PactaFlowColors.primary.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 15, color: PactaFlowColors.primary.withValues(alpha: 0.8)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Após criar o contrato, declare o Plano Operacional para vincular templates SLA e turnos.',
+                          style: PactaFlowTypography.bodySmall.copyWith(
+                            color: PactaFlowColors.primary.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
                 if (isFetchingOrg)
                   const LinearProgressIndicator()

@@ -37,6 +37,7 @@ Phase 5 (B2B Refactoring) is completing Sprint 5.13. Phase 6 makes the product s
 - [x] 1.3 Refactor `UserRole` enum: 4 → 3 (admin, operator, auditor); update `currentUserRoleProvider`
 - [x] 1.4 Enrich `organizations` table: add `timezone`, `currency_code`, `logo_url`
 - [x] 1.5 Seed `user_roles` for bootstrap dev user as `TENANT_ADMIN`
+- [ ] 1.6 **Audit Fix**: Update `custom_access_token_hook` to use SQL `NULL` instead of `'null'` string for cast safety.
 - **SQL:** `20260317000001_rls_jwt_path_unification.sql`, `20260317000002_organizations_enrichment.sql`
 
 #### BLOCO 2 — Contractor Aggregate & Zone FK Migration
@@ -91,6 +92,8 @@ Phase 5 (B2B Refactoring) is completing Sprint 5.13. Phase 6 makes the product s
 - [ ] 7.2 Rule Studio Screen: Visual parameters editor
 - [ ] 7.3 Rule Immutability Logic: creating new versions for active plans
 - [ ] 7.4 Version history panel (Read-only)
+- [ ] 7.5 **Audit Fix**: Implement `gracePeriodMinutes` logic in `ContractualEvaluationEngine` (Bridge DNA gap).
+- [ ] 7.6 **Maverick Priority**: Implement "Financial Impact Simulation" UI — visualize margin protection while editing rules.
 
 #### BLOCO 8 — Asset Manager (Vehicles, Drivers, Routes)
 - [ ] 8.1 Asset Manager Screen (Tabbed CRUD)
@@ -103,6 +106,7 @@ Phase 5 (B2B Refactoring) is completing Sprint 5.13. Phase 6 makes the product s
 - [ ] 9.2 First Run Wizard (Guided 5-step flow)
 - [ ] 9.3 Automated Scenarios (Isolation, RBAC, Immutability)
 - [ ] 9.4 Compliance Report: `docs/governance/compliance/phase6_compliance_report.md`
+- [ ] 9.5 **UX Polish**: Add `semanticsLabel` to critical icons and implement premium transitions for the "Digital Judge" feel.
 - **SQL:** `20260323000001_org_registration_rpc.sql`
  [ ] 9.4 Compliance Report: `docs/governance/compliance/phase6_compliance_report.md`
 - **SQL:** `20260323000001_org_registration_rpc.sql`

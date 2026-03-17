@@ -234,7 +234,6 @@ class _SlaExceptionsTable extends ConsumerWidget {
                   DataColumn(label: Text('Janela')),
                   DataColumn(label: Text('Veículo Planejado')),
                   DataColumn(label: Text('Valor')),
-                  DataColumn(label: Text('SET ID')),
                   DataColumn(label: Text('Ação')),
                 ],
                 rows: exceptions.map((item) {
@@ -249,19 +248,16 @@ class _SlaExceptionsTable extends ConsumerWidget {
                       ),
                       DataCell(
                         Text(
-                          item.plannedVehicleId ?? 'Any',
-                          style: PactaFlowTypography.bodyMedium,
+                          item.plannedVehicleId ?? 'Sem veículo',
+                          style: item.plannedVehicleId == null
+                              ? PactaFlowTypography.bodyMedium.copyWith(
+                                  color: PactaFlowColors.textDisabled)
+                              : PactaFlowTypography.bodyMedium,
                         ),
                       ),
                       DataCell(
                         Text(
                           _currencyFormat.format(item.contractualValue.toDouble()),
-                          style: PactaFlowTypography.bodyMedium,
-                        ),
-                      ),
-                      DataCell(
-                        Text(
-                          '${item.setId.substring(0, 8)}...',
                           style: PactaFlowTypography.bodyMedium,
                         ),
                       ),

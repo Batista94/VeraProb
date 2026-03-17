@@ -163,11 +163,13 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       );
     } catch (e) {
       if (mounted) {
+        final raw = e.toString();
+        final isUnauthorized = raw.contains('Unauthorized') || raw.contains('unauthorized');
+        final msg = isUnauthorized
+            ? 'Permissão negada. Faça logout e login novamente para atualizar suas credenciais.'
+            : raw.replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(msg), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -180,7 +182,8 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     final s = widget.detail.summary;
     final canDeclarePlan = s.status != ContractStatus.closed &&
         s.status != ContractStatus.awaitingContractorAcceptance;
-    final canSubmitForApproval = s.status == ContractStatus.draft;
+    final noPlan = s.status == ContractStatus.draft && s.activePlanVersion == 0;
+    final canSubmitForApproval = s.status == ContractStatus.draft && s.activePlanVersion > 0;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -244,7 +247,8 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                       contractorName: s.contractorName,
                     );
                     if (declared == true) {
-                      ref.invalidate(contractDetailProvider(s.id));
+                      // ignore: unused_result
+                      await ref.refresh(contractDetailProvider(s.id).future);
                       ref.invalidate(contractListProvider);
                     }
                   },
@@ -283,6 +287,30 @@ class _DetailViewState extends ConsumerState<_DetailView> {
             ],
           ),
           const SizedBox(height: 16),
+
+          // ── No-plan guidance banner ───────────────────────────
+          if (noPlan)
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.amber, size: 18),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Nenhum Plano Operacional declarado. Declare um plano antes de enviar para aprovação.',
+                      style: TextStyle(fontSize: 13, color: Colors.amber),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // ── Tabs ─────────────────────────────────────────────
           Expanded(
@@ -354,7 +382,6 @@ class _ExecutionsTab extends StatelessWidget {
           headingTextStyle: const TextStyle(
               fontWeight: FontWeight.w600, fontSize: 12),
           columns: const [
-            DataColumn(label: Text('SET ID')),
             DataColumn(label: Text('Status')),
             DataColumn(label: Text('Janela')),
             DataColumn(label: Text('Veículo')),
@@ -370,14 +397,17 @@ class _ExecutionsTab extends StatelessWidget {
     final window =
         '${_dateTimeFormat.format(e.windowStartUtc.toLocal())} – ${_dateTimeFormat.format(e.windowEndUtc.toLocal())}';
     return DataRow(cells: [
-      DataCell(
-        SelectableText('${e.setId.substring(0, 8)}…',
-            style: const TextStyle(fontSize: 11, fontFamily: 'monospace')),
-      ),
       DataCell(_ExecutionStatusChip(status: e.status)),
       DataCell(Text(window, style: const TextStyle(fontSize: 11))),
-      DataCell(Text(e.boundVehicleId ?? e.plannedVehicleId ?? '—',
-          style: const TextStyle(fontSize: 12))),
+      DataCell(Text(
+        e.boundVehicleId ?? e.plannedVehicleId ?? 'Sem veículo',
+        style: TextStyle(
+          fontSize: 12,
+          color: (e.boundVehicleId == null && e.plannedVehicleId == null)
+              ? Colors.grey.shade400
+              : null,
+        ),
+      )),
       DataCell(Text(
         _currencyFormat.format(e.contractualValue.toDouble()),
         style: const TextStyle(fontSize: 12),
