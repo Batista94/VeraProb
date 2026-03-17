@@ -65,9 +65,14 @@ Wait for PO ruling before proceeding.
 
 ---
 
-## THE ENGINEERING COUNCIL
-Personas in `docs/council/`. Invocation is YOUR responsibility — do not wait for the PO to ask.
-Always name the persona explicitly in your response.
+### Invocation & Skills
+Personas files are in `docs/council/`. Specialized agent capabilities are in `.claude/skills/`.
+Invocation is YOUR responsibility — do not wait for the PO to ask. Always name the persona explicitly in your response.
+
+| Resource Type | Location |
+|---|---|
+| Council Personas | `docs/council/[persona].md` |
+| Agent Skills | `.claude/skills/[skill-name]/SKILL.md` |
 
 ### Invocation Matrix
 | Trigger | Invoke |
