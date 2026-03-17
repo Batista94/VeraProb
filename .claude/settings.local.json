@@ -47,7 +47,9 @@
       "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/firecrawl c:/Projects/PactaFlow/.claude/skills/)",
       "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/supabase-postgres-best-practices c:/Projects/PactaFlow/.claude/skills/)",
       "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/systematic-debugging c:/Projects/PactaFlow/.claude/skills/)",
-      "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/test-driven-development c:/Projects/PactaFlow/.claude/skills/)"
+      "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/test-driven-development c:/Projects/PactaFlow/.claude/skills/)",
+      "Bash(grep -E \"\\\\.\\(dart\\)$\")",
+      "Bash(xargs basename:*)"
     ]
   }
 }

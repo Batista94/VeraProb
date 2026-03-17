@@ -10,6 +10,7 @@ import '../../application/sla_audit/projections/contract_query_service_in_memory
 import '../../application/sla_audit/projections/contract_summary_view.dart';
 import '../../application/sla_audit/shift_projection_service.dart';
 import '../../domain/sla_audit/contract_status.dart';
+import '../../domain/services/rbac_service.dart';
 import '../../domain/sla_audit/contractual_rule_repository.dart';
 import '../../infrastructure/persistence/persistence_mode.dart';
 import '../../infrastructure/persistence/persistence_provider.dart';
@@ -53,6 +54,7 @@ final closeContractHandlerProvider = Provider<CloseContractHandler>((ref) {
   return CloseContractHandler(
     contractRepository: ref.watch(contractRepositoryProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    rbac: RbacService(),
   );
 });
 

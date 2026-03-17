@@ -29,6 +29,8 @@ import 'package:pactaflow/application/sla_audit/projections/contract_query_servi
 import 'package:pactaflow/application/sla_audit/shift_projection_service.dart';
 import 'package:pactaflow/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:pactaflow/domain/sla_audit/contractual_rule.dart';
+import 'package:pactaflow/domain/enums/user_role.dart';
+import 'package:pactaflow/domain/services/rbac_service.dart';
 import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
 import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
 import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
@@ -99,6 +101,7 @@ void main() {
     closeHandler = CloseContractHandler(
       contractRepository: contractRepo,
       ledger: ledger,
+      rbac: RbacService(),
     );
     planHandler = DeclareContractualPlanHandler(
       repository: planRepo,
@@ -446,6 +449,7 @@ void main() {
           contractId: contract.id,
           closedByUserId: 'user-1',
           reason: 'Período encerrado.',
+          callerRole: UserRole.admin,
         ));
 
         final ledgerCountBeforeRejection = ledger.entries.length;
@@ -488,6 +492,7 @@ void main() {
           contractId: contract.id,
           closedByUserId: 'admin-1',
           reason: 'Cancelado antes de operar.',
+          callerRole: UserRole.admin,
         ));
 
         expect(

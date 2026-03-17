@@ -10,6 +10,9 @@ import 'screens/sla_audit_screen.dart';
 import 'screens/sla_financial_impact_screen.dart';
 import 'screens/operational_zones_screen.dart';
 import 'screens/billing_cycle_reports_screen.dart';
+import 'screens/org_settings_screen.dart';
+import 'screens/user_management_screen.dart';
+import 'screens/contractor_management_screen.dart';
 
 class AdminHome extends StatelessWidget {
   const AdminHome({super.key});
@@ -63,6 +66,21 @@ class AdminHome extends StatelessWidget {
           selectedIcon: Icon(Icons.summarize),
           label: Text('Relatórios'),
         ),
+        NavigationRailDestination(
+          icon: Icon(Icons.business_outlined),
+          selectedIcon: Icon(Icons.business),
+          label: Text('Organização'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.manage_accounts_outlined),
+          selectedIcon: Icon(Icons.manage_accounts),
+          label: Text('Usuários'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.handshake_outlined),
+          selectedIcon: Icon(Icons.handshake),
+          label: Text('Contratantes'),
+        ),
       ],
       children: [
         DashboardScreen(),
@@ -74,6 +92,9 @@ class AdminHome extends StatelessWidget {
         SlaFinancialImpactScreen(),
         OperationalZonesScreen(),
         BillingCycleReportsScreen(),
+        OrgSettingsScreen(),
+        UserManagementScreen(),
+        ContractorManagementScreen(),
       ],
     );
   }

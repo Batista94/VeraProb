@@ -43,6 +43,15 @@ class PostgresContractorRepository implements ContractorRepository {
     });
   }
 
+  @override
+  Future<void> delete(String organizationId, String id) async {
+    await _client
+        .from('contractors')
+        .delete()
+        .eq('organization_id', organizationId)
+        .eq('id', id);
+  }
+
   Contractor _fromMap(Map<String, dynamic> map) {
     return Contractor(
       id: map['id'] as String,

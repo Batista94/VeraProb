@@ -26,6 +26,8 @@ import 'package:pactaflow/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:pactaflow/domain/sla_audit/contractual_rule.dart';
 import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
 import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:pactaflow/domain/enums/user_role.dart';
+import 'package:pactaflow/domain/services/rbac_service.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
@@ -51,6 +53,7 @@ void main() {
       closeHandler = CloseContractHandler(
         contractRepository: contractRepo,
         ledger: ledger,
+        rbac: RbacService(),
       );
       planHandler = DeclareContractualPlanHandler(
         repository: planRepo,
@@ -153,6 +156,7 @@ void main() {
         contractId: contract.id,
         closedByUserId: userId,
         reason: 'Contract period ended.',
+        callerRole: UserRole.admin,
       ));
 
       expect(closed.status, ContractStatus.closed,
@@ -235,6 +239,7 @@ void main() {
           contractId: contractA.id,
           closedByUserId: 'user-b',
           reason: 'Attempted cross-tenant close',
+          callerRole: UserRole.admin,
         )),
         throwsA(isA<DomainException>()),
         reason: 'CloseContractHandler must enforce tenant isolation',

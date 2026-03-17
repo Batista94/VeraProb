@@ -3,6 +3,8 @@ import 'package:pactaflow/application/sla_audit/create_contract_command.dart';
 import 'package:pactaflow/application/sla_audit/create_contract_handler.dart';
 import 'package:pactaflow/application/sla_audit/close_contract_command.dart';
 import 'package:pactaflow/application/sla_audit/close_contract_handler.dart';
+import 'package:pactaflow/domain/enums/user_role.dart';
+import 'package:pactaflow/domain/services/rbac_service.dart';
 import 'package:pactaflow/domain/sla_audit/contract_status.dart';
 import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_contract_repository.dart';
@@ -24,6 +26,7 @@ void main() {
     closeHandler = CloseContractHandler(
       contractRepository: repository,
       ledger: ledger,
+      rbac: RbacService(),
     );
   });
 
@@ -42,6 +45,7 @@ void main() {
         contractId: created.id,
         closedByUserId: 'user-1',
         reason: 'Cancelled',
+        callerRole: UserRole.operator,
       ));
 
       expect(closed.status, ContractStatus.closed);
@@ -61,11 +65,12 @@ void main() {
 
     test('throws DomainException when contract not found', () async {
       expect(
-        () => closeHandler.handle(CloseContractCommand(
+        () => closeHandler.handle(const CloseContractCommand(
           organizationId: 'org-1',
           contractId: 'non-existent',
           closedByUserId: 'user-1',
           reason: 'Done',
+          callerRole: UserRole.operator,
         )),
         throwsA(isA<DomainException>()),
       );
@@ -86,6 +91,7 @@ void main() {
           contractId: created.id,
           closedByUserId: 'user-1',
           reason: 'Done',
+          callerRole: UserRole.operator,
         )),
         throwsA(isA<DomainException>()),
       );
@@ -105,6 +111,7 @@ void main() {
         contractId: created.id,
         closedByUserId: 'user-1',
         reason: 'First close',
+        callerRole: UserRole.operator,
       ));
 
       expect(
@@ -113,6 +120,7 @@ void main() {
           contractId: created.id,
           closedByUserId: 'user-1',
           reason: 'Second close',
+          callerRole: UserRole.operator,
         )),
         throwsA(isA<DomainException>()),
       );
@@ -133,6 +141,7 @@ void main() {
           contractId: created.id,
           closedByUserId: '',
           reason: 'Done',
+          callerRole: UserRole.operator,
         )),
         throwsA(isA<DomainException>()),
       );
@@ -153,9 +162,67 @@ void main() {
           contractId: created.id,
           closedByUserId: 'user-1',
           reason: '   ',
+          callerRole: UserRole.operator,
         )),
         throwsA(isA<DomainException>()),
       );
+    });
+
+    // ── RBAC ──────────────────────────────────────────────────────────────
+
+    test('RBAC: auditor is rejected before any I/O', () async {
+      expect(
+        () => closeHandler.handle(const CloseContractCommand(
+          organizationId: 'org-1',
+          contractId: 'any-id',
+          closedByUserId: 'user-auditor',
+          reason: 'Attempt',
+          callerRole: UserRole.auditor,
+        )),
+        throwsA(isA<DomainException>()),
+      );
+      // Ledger must remain empty — RBAC check fires before repository I/O
+      expect(ledger.entries, isEmpty);
+    });
+
+    test('RBAC: operator is authorized to close contracts', () async {
+      final created = await createHandler.handle(CreateContractCommand(
+        organizationId: 'org-1',
+        name: 'Contract E',
+        contractorName: 'Empresa E',
+        validFromUtc: DateTime.utc(2026, 1, 1),
+        validUntilUtc: DateTime.utc(2026, 12, 31),
+      ));
+
+      final closed = await closeHandler.handle(CloseContractCommand(
+        organizationId: 'org-1',
+        contractId: created.id,
+        closedByUserId: 'user-operator',
+        reason: 'Closed by operator',
+        callerRole: UserRole.operator,
+      ));
+
+      expect(closed.status, ContractStatus.closed);
+    });
+
+    test('RBAC: admin is authorized to close contracts', () async {
+      final created = await createHandler.handle(CreateContractCommand(
+        organizationId: 'org-1',
+        name: 'Contract F',
+        contractorName: 'Empresa F',
+        validFromUtc: DateTime.utc(2026, 1, 1),
+        validUntilUtc: DateTime.utc(2026, 12, 31),
+      ));
+
+      final closed = await closeHandler.handle(CloseContractCommand(
+        organizationId: 'org-1',
+        contractId: created.id,
+        closedByUserId: 'user-admin',
+        reason: 'Closed by admin',
+        callerRole: UserRole.admin,
+      ));
+
+      expect(closed.status, ContractStatus.closed);
     });
   });
 }

@@ -6,7 +6,7 @@
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 385 passing · 0 falhas ✅ |
+| Testes | 404 passing · 0 falhas ✅ |
 | Análise estática | 0 erros · 75 infos |
 | Precisão financeira | `Money` (centavos BIGINT) — Enforced ✅ |
 | Sprint 5.11 - 5.12 | **CONCLUÍDAS** — JIT Master Data, RLS, UTC. |
@@ -35,7 +35,7 @@ Phase 5 (B2B Refactoring) is completing Sprint 5.13. Phase 6 makes the product s
 - [x] 1.2 Audit all migrations for RLS JWT path → unify to `(auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid`
 - [x] 1.3 Refactor `UserRole` enum: 4 → 3 (admin, operator, auditor); update `currentUserRoleProvider`
 - [x] 1.4 Enrich `organizations` table: add `timezone`, `currency_code`, `logo_url`
-- [ ] 1.5 Seed `user_roles` for bootstrap dev user as `TENANT_ADMIN`
+- [x] 1.5 Seed `user_roles` for bootstrap dev user as `TENANT_ADMIN`
 - **SQL:** `20260317000001_rls_jwt_path_unification.sql`, `20260317000002_organizations_enrichment.sql`
 
 #### BLOCO 2 — Contractor Aggregate & Zone FK Migration
@@ -51,14 +51,14 @@ Phase 5 (B2B Refactoring) is completing Sprint 5.13. Phase 6 makes the product s
 - [x] 3.2 Define `UserPermission` enum and role mapping
 - [x] 3.3 `RbacService` (pure Dart) for permission checks
 - [x] 3.4 Gate `AdminShell` sidebar destinations
-- [ ] 3.5 Inject `RbacService` into `CloseContractHandler`
+- [x] 3.5 Inject `RbacService` into `CloseContractHandler`
 
 #### BLOCO 4 — Admin Panel & Org Management UI
 - [x] 4.1 Add `orgSettings` + `userManagement` to `AdminShell`
-- [ ] 4.2 Organization Settings Screen (CRUD)
-- [ ] 4.3 User Management Screen (List, Role Change, Remove)
+- [x] 4.2 Organization Settings Screen (CRUD)
+- [x] 4.3 User Management Screen (List, Role Change, Remove)
 - [x] 4.4 `PostgresUserManagementQueryService` with `get_org_members` RPC
-- [ ] 4.5 Contractor Management Screen (CRUD)
+- [x] 4.5 Contractor Management Screen (CRUD)
 - **SQL:** `20260319000001_org_management_rpc.sql`
 
 #### BLOCO 5 — User Invitation Flow
