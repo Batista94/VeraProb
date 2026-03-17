@@ -1,8 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/sla_audit/accept_by_contractor_handler.dart';
 import '../../application/sla_audit/clone_contract_handler.dart';
 import '../../application/sla_audit/close_contract_handler.dart';
+import '../../application/sla_audit/contract_approval_command_service.dart';
 import '../../application/sla_audit/create_contract_handler.dart';
+import '../../application/sla_audit/submit_contract_for_approval_handler.dart';
+import '../../infrastructure/sla_audit/postgres_contract_approval_command_service.dart';
+import '../../infrastructure/sla_audit/postgres_contract_review_token_query_service.dart';
 import '../../application/sla_audit/declare_contractual_plan_handler.dart';
 import '../../application/sla_audit/projections/contract_detail_view.dart';
 import '../../application/sla_audit/projections/contract_query_service.dart';
@@ -55,6 +60,40 @@ final closeContractHandlerProvider = Provider<CloseContractHandler>((ref) {
     contractRepository: ref.watch(contractRepositoryProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
     rbac: RbacService(),
+  );
+});
+
+// ── Contract Approval ────────────────────────────────────────
+
+final contractApprovalCommandServiceProvider =
+    Provider<ContractApprovalCommandService>((ref) {
+  return PostgresContractApprovalCommandService(
+    ref.watch(supabaseClientProvider),
+  );
+});
+
+final submitContractForApprovalHandlerProvider =
+    Provider<SubmitContractForApprovalHandler>((ref) {
+  return SubmitContractForApprovalHandler(
+    contractRepository: ref.watch(contractRepositoryProvider),
+    approvalService: ref.watch(contractApprovalCommandServiceProvider),
+    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    rbac: RbacService(),
+  );
+});
+
+final acceptByContractorHandlerProvider =
+    Provider<AcceptByContractorHandler>((ref) {
+  return AcceptByContractorHandler(
+    approvalService: ref.watch(contractApprovalCommandServiceProvider),
+    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+  );
+});
+
+final contractReviewTokenQueryServiceProvider =
+    Provider<PostgresContractReviewTokenQueryService>((ref) {
+  return PostgresContractReviewTokenQueryService(
+    ref.watch(supabaseClientProvider),
   );
 });
 

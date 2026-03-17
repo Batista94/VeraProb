@@ -7,6 +7,8 @@ import 'core/time/brazil_time.dart';
 import 'features/shared/providers.dart';
 import 'features/shared/widgets/error_boundary.dart';
 import 'features/admin/presentation/lock_screen.dart';
+import 'features/admin/presentation/screens/accept_invite_screen.dart';
+import 'features/admin/presentation/screens/review_contract_screen.dart';
 import 'core/config/supabase_client.dart';
 import 'infrastructure/persistence/persistence_mode.dart';
 import 'infrastructure/persistence/persistence_provider.dart';
@@ -22,6 +24,14 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
 
+  // Phase 6 — Detect public deep links on Flutter Web startup.
+  final uri = Uri.base;
+  final queryToken = uri.queryParameters['token'];
+  final isInviteRoute =
+      uri.path.contains('accept-invite') && queryToken != null;
+  final isReviewContractRoute =
+      uri.path.contains('review-contract') && queryToken != null;
+
   runApp(
     ProviderScope(
       overrides: [
@@ -29,13 +39,23 @@ void main() async {
         // FASE 6 — Atomic Switch: runtime now operates on Postgres.
         persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
       ],
-      child: const PactaFlowAdminApp(),
+      child: PactaFlowAdminApp(
+        inviteToken: isInviteRoute ? queryToken : null,
+        reviewContractToken: isReviewContractRoute ? queryToken : null,
+      ),
     ),
   );
 }
 
 class PactaFlowAdminApp extends ConsumerStatefulWidget {
-  const PactaFlowAdminApp({super.key});
+  final String? inviteToken;
+  final String? reviewContractToken;
+
+  const PactaFlowAdminApp({
+    super.key,
+    this.inviteToken,
+    this.reviewContractToken,
+  });
 
   @override
   ConsumerState<PactaFlowAdminApp> createState() => _PactaFlowAdminAppState();
@@ -69,7 +89,11 @@ class _PactaFlowAdminAppState extends ConsumerState<PactaFlowAdminApp> {
         Locale('pt', 'BR'),
       ],
       locale: const Locale('pt', 'BR'),
-      home: const ErrorBoundary(child: AdminLockScreen()),
+      home: widget.reviewContractToken != null
+          ? ReviewContractScreen(token: widget.reviewContractToken!)
+          : widget.inviteToken != null
+              ? AcceptInviteScreen(token: widget.inviteToken!)
+              : const ErrorBoundary(child: AdminLockScreen()),
     );
   }
 }

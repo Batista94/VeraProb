@@ -1,14 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/supabase_client.dart';
+import '../../domain/admin/invitation.dart';
 import '../../domain/admin/organization.dart';
 import '../../domain/admin/organization_repository.dart';
 import '../../infrastructure/admin/postgres_organization_repository.dart';
 import '../../infrastructure/admin/postgres_user_management_command_service.dart';
 import '../../infrastructure/admin/postgres_user_management_query_service.dart';
+import '../../infrastructure/admin/postgres_invitation_command_service.dart';
+import '../../infrastructure/admin/postgres_invitation_query_service.dart';
 import '../../application/admin/user_management_command_service.dart';
+import '../../application/admin/invitation_command_service.dart';
 import '../../application/admin/update_org_settings_handler.dart';
 import '../../application/admin/change_user_role_handler.dart';
 import '../../application/admin/remove_member_handler.dart';
+import '../../application/admin/invite_user_handler.dart';
+import '../../application/admin/accept_invitation_handler.dart';
+import '../../application/admin/revoke_invitation_handler.dart';
 import 'auth_providers.dart';
 
 /// Provider for the organization repository implementation.
@@ -58,4 +65,39 @@ final removeMemberHandlerProvider = Provider<RemoveMemberHandler>((ref) {
     commandService: ref.watch(userManagementCommandServiceProvider),
     queryService: ref.watch(userManagementQueryServiceProvider),
   );
+});
+
+// ── Invitation providers ─────────────────────────────────────────────────────
+
+/// Provider for the invitation command service (RPCs).
+final invitationCommandServiceProvider = Provider<InvitationCommandService>((ref) {
+  return PostgresInvitationCommandService(supabase);
+});
+
+/// Provider for the invitation query service (read-side).
+final invitationQueryServiceProvider = Provider<PostgresInvitationQueryService>((ref) {
+  return PostgresInvitationQueryService(supabase);
+});
+
+/// Future provider for all invitations of the current organization.
+final orgInvitationsProvider = FutureProvider<List<Invitation>>((ref) async {
+  ref.watch(authStateProvider);
+  final orgId = ref.watch(currentOrganizationIdProvider);
+  if (orgId == null) return [];
+  return ref.watch(invitationQueryServiceProvider).listByOrganization(orgId);
+});
+
+/// Provider for the invite user handler.
+final inviteUserHandlerProvider = Provider<InviteUserHandler>((ref) {
+  return InviteUserHandler(ref.watch(invitationCommandServiceProvider));
+});
+
+/// Provider for the accept invitation handler.
+final acceptInvitationHandlerProvider = Provider<AcceptInvitationHandler>((ref) {
+  return AcceptInvitationHandler(ref.watch(invitationCommandServiceProvider));
+});
+
+/// Provider for the revoke invitation handler.
+final revokeInvitationHandlerProvider = Provider<RevokeInvitationHandler>((ref) {
+  return RevokeInvitationHandler(ref.watch(invitationCommandServiceProvider));
 });

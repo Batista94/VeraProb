@@ -9,7 +9,7 @@ The CORE engine is industry-agnostic (MVP: Corporate Charter/Shuttle — Fretame
 
 **Pipeline:** Ingestion → Normalization → Subscriber → EvaluationEngine → ImmutableLedger → FinancialSnapshots → QueryServices → OCC
 
-**Current State:** Phase 5 (B2B Refactoring) — Sprint 5.12 in progress (JIT master data, Zero-Friction UX, Tenant Isolation on search fields).
+**Current State:** Phase 6 (Administration & Tenant Self-Service) — **CONCLUÍDA**. Implementação de RBAC, Gestão de Organização, Convites e Workflow de Aprovação de Contratos.
 
 ---
 

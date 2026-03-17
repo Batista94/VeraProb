@@ -49,7 +49,9 @@
       "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/systematic-debugging c:/Projects/PactaFlow/.claude/skills/)",
       "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/test-driven-development c:/Projects/PactaFlow/.claude/skills/)",
       "Bash(grep -E \"\\\\.\\(dart\\)$\")",
-      "Bash(xargs basename:*)"
+      "Bash(xargs basename:*)",
+      "Bash(find /c/Projects/PactaFlow/lib/domain -type f -name *.dart)",
+      "Bash(find /c/Projects/PactaFlow/supabase/migrations -type f -name *contract* -o -name *invitation*)"
     ]
   }
 }

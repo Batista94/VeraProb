@@ -53,8 +53,8 @@ All non-trivial changes must be reviewed by the specialized personas in `docs/co
 *   **Phase 5 (B2B Refactoring):** Advanced state. 
     *   *Completed:* SLA Templates, Contract Cloning, JIT Zones/Contractors.
     *   *Current Focus:* Financial Protection Engine (Teto Financeiro, Grace Period).
-*   **Phase 6 (Administration):** Planned.
-    *   *Topics:* Advanced RBAC, Custom JWT Claims for Tenant Isolation, Consolidated Financial Dashboard.
+*   **Phase 6 (Administration):** **CONCLUÍDA**.
+    *   *Implementado:* Advanced RBAC, Custom JWT Claims (Org ID), Dashboard Consolidado, Convites de Usuários e Aprovação de Contratos.
 
 ---
 *Last updated: March 16, 2026 — Sprint 5.12+ (Financial Protection Expansion)*

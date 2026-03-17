@@ -1,0 +1,117 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:pactaflow/application/sla_audit/accept_by_contractor_command.dart';
+import 'package:pactaflow/application/sla_audit/accept_by_contractor_handler.dart';
+import 'package:pactaflow/application/sla_audit/contract_approval_command_service.dart';
+import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
+import 'package:pactaflow/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:pactaflow/domain/sla_audit/sla_ledger_entry.dart';
+
+// ── Mocks ────────────────────────────────────────────────────────────────────
+
+class MockSlaAuditLedgerRepository extends Mock
+    implements SlaAuditLedgerRepository {}
+
+/// Fake for ContractApprovalCommandService — avoids mocktail incompatibility
+/// with Dart record return types.
+class _FakeApprovalService extends Fake
+    implements ContractApprovalCommandService {
+  int acceptCallCount = 0;
+  String? lastToken;
+  bool shouldThrow = false;
+
+  @override
+  Future<void> submitForApproval({
+    required String contractId,
+    required String organizationId,
+    required String tokenId,
+    required String token,
+    required DateTime expiresAtUtc,
+  }) async {}
+
+  @override
+  Future<({String contractId, String organizationId})> acceptByContractor({
+    required String token,
+  }) async {
+    if (shouldThrow) {
+      throw Exception('Token not found, expired, or already used');
+    }
+    acceptCallCount++;
+    lastToken = token;
+    return (contractId: 'contract-1', organizationId: 'org-1');
+  }
+}
+
+// ── Tests ────────────────────────────────────────────────────────────────────
+
+void main() {
+  late _FakeApprovalService approvalService;
+  late MockSlaAuditLedgerRepository ledger;
+  late AcceptByContractorHandler handler;
+
+  setUpAll(() {
+    registerFallbackValue(
+      SlaLedgerEntry(
+        organizationId: 'org-1',
+        type: 'TEST',
+        contractId: 'contract-1',
+        planVersion: 0,
+        occurredAtUtc: DateTime.now(),
+        payload: {},
+      ),
+    );
+  });
+
+  setUp(() {
+    approvalService = _FakeApprovalService();
+    ledger = MockSlaAuditLedgerRepository();
+    handler = AcceptByContractorHandler(
+      approvalService: approvalService,
+      ledger: ledger,
+    );
+
+    when(() => ledger.append(any())).thenAnswer((_) async => 'entry-id');
+  });
+
+  group('AcceptByContractorHandler', () {
+    test('Token vazio — lança DomainException sem chamar o RPC', () async {
+      await expectLater(
+        () => handler.handle(const AcceptByContractorCommand(token: '')),
+        throwsA(isA<DomainException>()),
+      );
+      expect(approvalService.acceptCallCount, 0);
+      verifyNever(() => ledger.append(any()));
+    });
+
+    test('Token só espaços — lança DomainException sem chamar o RPC', () async {
+      await expectLater(
+        () => handler.handle(const AcceptByContractorCommand(token: '   ')),
+        throwsA(isA<DomainException>()),
+      );
+      expect(approvalService.acceptCallCount, 0);
+      verifyNever(() => ledger.append(any()));
+    });
+
+    test('Token válido — RPC chamado 1x, ledger appendado 1x', () async {
+      const token = 'valid-token-uuid';
+
+      await handler.handle(const AcceptByContractorCommand(token: token));
+
+      expect(approvalService.acceptCallCount, 1);
+      expect(approvalService.lastToken, token);
+      verify(() => ledger.append(any())).called(1);
+    });
+
+    test('RPC lança (token expirado) — exceção propaga ao caller', () async {
+      approvalService.shouldThrow = true;
+
+      await expectLater(
+        () => handler.handle(
+          const AcceptByContractorCommand(token: 'expired-token'),
+        ),
+        throwsA(isA<Exception>()),
+      );
+      verifyNever(() => ledger.append(any()));
+    });
+  });
+}

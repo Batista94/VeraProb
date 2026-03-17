@@ -42,16 +42,4 @@ While the core engine is industry-agnostic, PactaFlow is currently optimized for
 3.  **Facilities Management:** Service delivery validation and vendor compliance.
 
 ---
-
-## 👥 Engineering Council & Governance
-
-The project follows a strict governance model where every major decision is debated by the **Engineering Council**:
-
-- **Chief Architect:** Enforces structural integrity and industry-agnosticism.
-- **Senior Engineer:** Guarantees technical excellence and performance.
-- **QA & Security:** Audits multi-tenant isolation and ledger immutability.
-- **UX Operations:** Defends the dispatcher's "Zero-Friction" workflow.
-- **Business Maverick:** Aligns engineering effort with ROI and market dominance.
-
----
 © 2026 PactaFlow — *Generating Truth from Telemetry.*

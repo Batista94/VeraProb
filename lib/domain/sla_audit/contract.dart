@@ -12,9 +12,10 @@ import '../shared/money.dart';
 /// Aggregate Root representing a formal contractual agreement between
 /// the operating organization and a contractor.
 ///
-/// **Lifecycle:** `draft → active → closed`
-/// - [draft]: created, awaiting first plan declaration.
-/// - [active]: first plan declared — operational.
+/// **Lifecycle:** `draft → awaitingContractorAcceptance → active → closed`
+/// - [draft]: created, awaiting submission or plan declaration.
+/// - [awaitingContractorAcceptance]: submitted for contractor review via token.
+/// - [active]: contractor accepted (or plan declared directly from draft).
 /// - [closed]: terminal — no further plans accepted.
 ///
 /// **Immutability:** Core identity and organizational fields are final.
@@ -30,6 +31,7 @@ import '../shared/money.dart';
 /// - [organizationId] is set at creation and never changes.
 /// - [validFromUtc] must be strictly before [validUntilUtc].
 /// - A [closed] contract cannot receive new plans.
+/// - A [awaitingContractorAcceptance] contract cannot receive new plans.
 class Contract extends Equatable {
   // ── Identity ──────────────────────────────────────────────
   /// UUID v4 generated internally. Immutable.
@@ -50,6 +52,10 @@ class Contract extends Equatable {
   final DateTime? closedAtUtc;
   final String? closedByUserId;
   final String? closeReason;
+
+  /// Timestamp when the contract was submitted for contractor approval.
+  /// Null until [submitForApproval] is called. (INV-3: UTC)
+  final DateTime? submittedForApprovalAtUtc;
 
   /// Audit field: UUID of the source contract when created via cloning.
   /// Null for contracts created directly. Immutable after creation.
@@ -81,6 +87,7 @@ class Contract extends Equatable {
     this.closedAtUtc,
     this.closedByUserId,
     this.closeReason,
+    this.submittedForApprovalAtUtc,
     this.clonedFromContractId,
     this.financialCeiling,
     required List<DomainEvent> domainEvents,
@@ -231,6 +238,7 @@ class Contract extends Equatable {
     DateTime? closedAtUtc,
     String? closedByUserId,
     String? closeReason,
+    DateTime? submittedForApprovalAtUtc,
     String? clonedFromContractId,
     Money? financialCeiling,
   }) {
@@ -248,6 +256,7 @@ class Contract extends Equatable {
       closedAtUtc: closedAtUtc,
       closedByUserId: closedByUserId,
       closeReason: closeReason,
+      submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
       domainEvents: const [], // RECONSTITUTION: no events emitted
@@ -256,18 +265,105 @@ class Contract extends Equatable {
 
   // ── State transitions ─────────────────────────────────────
 
+  /// Transitions the contract from [draft] to [awaitingContractorAcceptance].
+  ///
+  /// Called by [SubmitContractForApprovalHandler]. Returns a new [Contract]
+  /// instance with updated status and a [ContractSubmittedForApprovalEvent]
+  /// in [domainEvents].
+  ///
+  /// Throws [DomainException] if the contract is not in [draft].
+  Contract submitForApproval({required String reviewToken}) {
+    if (status != ContractStatus.draft) {
+      throw DomainException(
+        'Cannot submit contract in status "$status" for approval. '
+        'Only draft contracts can be submitted.',
+      );
+    }
+
+    final now = DateTime.now().toUtc();
+    final event = ContractSubmittedForApprovalEvent(
+      organizationId: organizationId,
+      occurredAtUtc: now,
+      contractId: id,
+      reviewToken: reviewToken,
+      submittedAtUtc: now,
+    );
+
+    return Contract._(
+      id: id,
+      organizationId: organizationId,
+      name: name,
+      contractorName: contractorName,
+      description: description,
+      validFromUtc: validFromUtc,
+      validUntilUtc: validUntilUtc,
+      status: ContractStatus.awaitingContractorAcceptance,
+      createdAtUtc: createdAtUtc,
+      submittedForApprovalAtUtc: now,
+      clonedFromContractId: clonedFromContractId,
+      financialCeiling: financialCeiling,
+      domainEvents: [event],
+    );
+  }
+
+  /// Transitions the contract from [awaitingContractorAcceptance] to [active].
+  ///
+  /// Called by [AcceptByContractorHandler] after the contractor accepts via
+  /// the public review link. Token possession is the authorization.
+  ///
+  /// Returns a new [Contract] instance with updated status and a
+  /// [ContractAcceptedByContractorEvent] in [domainEvents].
+  ///
+  /// Throws [DomainException] if status is not [awaitingContractorAcceptance].
+  Contract acceptByContractor({required String reviewToken}) {
+    if (status != ContractStatus.awaitingContractorAcceptance) {
+      throw DomainException(
+        'Cannot accept contract in status "$status". '
+        'Only contracts awaiting contractor acceptance can be accepted.',
+      );
+    }
+
+    final now = DateTime.now().toUtc();
+    final event = ContractAcceptedByContractorEvent(
+      organizationId: organizationId,
+      occurredAtUtc: now,
+      contractId: id,
+      reviewToken: reviewToken,
+      acceptedAtUtc: now,
+    );
+
+    return Contract._(
+      id: id,
+      organizationId: organizationId,
+      name: name,
+      contractorName: contractorName,
+      description: description,
+      validFromUtc: validFromUtc,
+      validUntilUtc: validUntilUtc,
+      status: ContractStatus.active,
+      createdAtUtc: createdAtUtc,
+      activatedAtUtc: now,
+      submittedForApprovalAtUtc: submittedForApprovalAtUtc,
+      clonedFromContractId: clonedFromContractId,
+      financialCeiling: financialCeiling,
+      domainEvents: [event],
+    );
+  }
+
   /// Transitions the contract from [draft] to [active].
   ///
   /// Called automatically by [DeclareContractualPlanHandler] when the
-  /// first plan is declared. Returns a new [Contract] instance with
-  /// updated status and a [ContractActivatedEvent] in [domainEvents].
+  /// first plan is declared on a draft contract (fast-path: no approval
+  /// flow required). Returns a new [Contract] instance with updated status
+  /// and a [ContractActivatedEvent] in [domainEvents].
   ///
   /// Throws [DomainException] if the contract is not in [draft].
   Contract activate() {
     if (status != ContractStatus.draft) {
       throw DomainException(
         'Cannot activate contract in status "$status". '
-        'Only draft contracts can be activated.',
+        'Only draft contracts can be activated via plan declaration. '
+        'Contracts awaiting acceptance must go through acceptByContractor().',
       );
     }
 
@@ -293,6 +389,8 @@ class Contract extends Equatable {
       closedAtUtc: closedAtUtc,
       closedByUserId: closedByUserId,
       closeReason: closeReason,
+      submittedForApprovalAtUtc: submittedForApprovalAtUtc,
+      clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
       domainEvents: [event],
     );
@@ -349,6 +447,8 @@ class Contract extends Equatable {
       closedAtUtc: now,
       closedByUserId: closedByUserId,
       closeReason: reason,
+      submittedForApprovalAtUtc: submittedForApprovalAtUtc,
+      clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
       domainEvents: [event],
     );
@@ -365,16 +465,27 @@ class Contract extends Equatable {
   /// Returns `true` if the contract is in [ContractStatus.closed].
   bool get isClosed => status == ContractStatus.closed;
 
+  /// Returns `true` if awaiting contractor acceptance.
+  bool get isAwaitingAcceptance =>
+      status == ContractStatus.awaitingContractorAcceptance;
+
   // ── Guard methods ─────────────────────────────────────────
 
   /// Asserts that this contract can accept a new [PlanDeclaration].
   ///
   /// Called by [DeclareContractualPlanHandler] before creating a plan.
-  /// Throws [DomainException] if the contract is [closed].
+  /// Throws [DomainException] if the contract is [closed] or
+  /// [awaitingContractorAcceptance] (must be accepted first).
   void assertCanReceivePlan() {
     if (status == ContractStatus.closed) {
       throw DomainException(
         'Contract "$name" is closed and cannot receive new plans.',
+      );
+    }
+    if (status == ContractStatus.awaitingContractorAcceptance) {
+      throw DomainException(
+        'Contract "$name" is awaiting contractor acceptance '
+        'and cannot receive new plans until accepted.',
       );
     }
   }
@@ -395,6 +506,7 @@ class Contract extends Equatable {
     closedAtUtc,
     closedByUserId,
     closeReason,
+    submittedForApprovalAtUtc,
     clonedFromContractId,
     financialCeiling,
   ];

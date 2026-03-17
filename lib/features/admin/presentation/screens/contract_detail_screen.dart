@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:pactaflow/application/sla_audit/projections/contract_detail_view.dart';
 import 'package:pactaflow/application/sla_audit/projections/sla_execution_item_view.dart';
+import 'package:pactaflow/application/sla_audit/submit_contract_for_approval_command.dart';
 import 'package:pactaflow/domain/sla_audit/contract_status.dart';
 import 'package:pactaflow/domain/sla_audit/execution_status.dart';
 import 'package:pactaflow/domain/shared/money.dart';
+import 'package:pactaflow/state/providers/auth_providers.dart';
 import 'package:pactaflow/state/providers/contract_providers.dart';
 
 import 'declare_contract_plan_form.dart';
@@ -44,15 +47,140 @@ class ContractDetailScreen extends ConsumerWidget {
   }
 }
 
-class _DetailView extends ConsumerWidget {
+class _DetailView extends ConsumerStatefulWidget {
   final ContractDetailView detail;
 
   const _DetailView({required this.detail});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = detail.summary;
-    final canDeclarePlan = s.status != ContractStatus.closed;
+  ConsumerState<_DetailView> createState() => _DetailViewState();
+}
+
+class _DetailViewState extends ConsumerState<_DetailView> {
+  bool _submitting = false;
+
+  Future<void> _submitForApproval(BuildContext context) async {
+    final s = widget.detail.summary;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Enviar para Aprovação'),
+        content: Text(
+          'Deseja enviar o contrato "${s.name}" para aprovação do contratante?\n\n'
+          'Um link de revisão será gerado e o contrato ficará bloqueado até o aceite.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Enviar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _submitting = true);
+
+    try {
+      final orgId = ref.read(currentOrganizationIdProvider);
+      final userId = ref.read(currentOperatorIdProvider);
+      final role = ref.read(currentUserRoleProvider);
+
+      if (orgId == null || userId == null) {
+        throw Exception('Sessão inválida. Faça login novamente.');
+      }
+
+      final token = await ref
+          .read(submitContractForApprovalHandlerProvider)
+          .handle(SubmitContractForApprovalCommand(
+            organizationId: orgId,
+            contractId: s.id,
+            callerUserId: userId,
+            callerRole: role,
+          ));
+
+      ref.invalidate(contractDetailProvider(s.id));
+      ref.invalidate(contractListProvider);
+
+      if (!mounted) return;
+
+      // Build the review link based on current window location
+      final reviewLink =
+          '${Uri.base.origin}/review-contract?token=$token';
+
+      await showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Link de Revisão Gerado'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Compartilhe o link abaixo com o contratante.\n'
+                'Válido por 30 dias.',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: SelectableText(
+                  reviewLink,
+                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton.icon(
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text('Copiar Link'),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: reviewLink));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Link copiado!')),
+                );
+              },
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Fechar'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.detail.summary;
+    final canDeclarePlan = s.status != ContractStatus.closed &&
+        s.status != ContractStatus.awaitingContractorAcceptance;
+    final canSubmitForApproval = s.status == ContractStatus.draft;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -88,6 +216,21 @@ class _DetailView extends ConsumerWidget {
               ),
               _StatusChip(status: s.status),
               const SizedBox(width: 16),
+              if (canSubmitForApproval)
+                OutlinedButton.icon(
+                  icon: _submitting
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send_outlined, size: 16),
+                  label: const Text('Enviar para Aprovação'),
+                  onPressed: _submitting
+                      ? null
+                      : () => _submitForApproval(context),
+                ),
+              if (canSubmitForApproval) const SizedBox(width: 8),
               if (canDeclarePlan)
                 FilledButton.icon(
                   icon: const Icon(Icons.playlist_add_check, size: 16),
@@ -161,8 +304,8 @@ class _DetailView extends ConsumerWidget {
                     child: TabBarView(
                       children: [
                         _ExecutionsTab(
-                            executions: detail.recentExecutions),
-                        _FinancialTab(financialSummary: detail.financialSummary),
+                            executions: widget.detail.recentExecutions),
+                        _FinancialTab(financialSummary: widget.detail.financialSummary),
                       ],
                     ),
                   ),

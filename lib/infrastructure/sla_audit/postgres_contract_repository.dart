@@ -36,6 +36,8 @@ class PostgresContractRepository implements ContractRepository {
       'close_reason': contract.closeReason,
       'cloned_from_contract_id': contract.clonedFromContractId,
       'financial_ceiling_cents': contract.financialCeiling?.cents,
+      'submitted_for_approval_at_utc':
+          contract.submittedForApprovalAtUtc?.toIso8601String(),
     });
   }
 
@@ -98,6 +100,11 @@ class PostgresContractRepository implements ContractRepository {
           : null,
       closedByUserId: row['closed_by_user_id'] as String?,
       closeReason: row['close_reason'] as String?,
+      submittedForApprovalAtUtc: row['submitted_for_approval_at_utc'] != null
+          ? DateTime.parse(
+              row['submitted_for_approval_at_utc'] as String,
+            ).toUtc()
+          : null,
       clonedFromContractId: row['cloned_from_contract_id'] as String?,
       financialCeiling: row['financial_ceiling_cents'] != null
           ? Money((row['financial_ceiling_cents'] as num).toInt())

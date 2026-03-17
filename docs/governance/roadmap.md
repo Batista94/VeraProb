@@ -11,6 +11,7 @@
 | Precisão financeira | `Money` (centavos BIGINT) — Enforced ✅ |
 | Sprint 5.11 - 5.12 | **CONCLUÍDAS** — JIT Master Data, RLS, UTC. |
 | Sprint 5.13 | **CONCLUÍDA** — Teto Financeiro, Carência (Grace Period) e Risk KPIs. ✅ |
+| Phase 6 | **CONCLUÍDA** — Administration, RBAC, Invitations e Approval Workflow. ✅ |
 | Banco de dev | Todas as migrations aplicadas — `2d31eaf2...` |
 
 ## Fases Pendentes
@@ -64,18 +65,26 @@ Phase 5 (B2B Refactoring) is completing Sprint 5.13. Phase 6 makes the product s
 #### BLOCO 5 — User Invitation Flow
 - [x] 5.1 `CREATE TABLE invitations` (token-based)
 - [x] 5.2 `Invitation` domain entity
-- [ ] 5.3 `InviteUserCommand` + `InviteUserHandler`
-- [ ] 5.4 `AcceptInvitationCommand` + handler (Public UI)
-- [ ] 5.5 `RevokeAccessCommand` + handler
-- **SQL:** `20260320000001_invitations.sql`
+- [x] 5.3 `InviteUserCommand` + `InviteUserHandler`
+- [x] 5.4 `AcceptInvitationCommand` + handler (Public UI)
+- [x] 5.5 `RevokeAccessCommand` + handler
+- **SQL:** `20260320000001_invitations.sql`, `20260320000002_invitation_rpcs.sql`
 
-#### BLOCO 6 — Contract Approval Workflow
+#### BLOCO 6 — Contract Approval Workflow ✅
 - [x] 6.1 `awaiting_contractor_acceptance` state in `ContractStatus`
-- [ ] 6.2 DB migration for `contracts_status_check` constraint
-- [ ] 6.3 `CREATE TABLE contract_review_tokens` (public review link)
-- [ ] 6.4 `SubmitContractForApprovalCommand` + `AcceptByContractorCommand`
-- [ ] 6.5 Public Review Page (`/review-contract?token=...`)
+- [x] 6.2 DB migration for `contracts_status_check` constraint
+- [x] 6.3 `CREATE TABLE contract_review_tokens` (public review link)
+- [x] 6.4 `SubmitContractForApprovalCommand` + `AcceptByContractorCommand`
+- [x] 6.5 Public Review Page (`/review-contract?token=...`)
 - **SQL:** `20260321000001_contract_approval_workflow.sql`
+
+**Resumo do Bloco 6:**
+*   **SQL:** Adição de coluna, CHECK constraint, tabela `contract_review_tokens` e 3 RPCs.
+*   **Domain:** Métodos `submitForApproval()` e `acceptByContractor()` no Aggregate de Contrato. Novos eventos e repositório de tokens.
+*   **Application:** Port e Handlers para o fluxo de aprovação. Mapeamento no `SlaLedgerMapper`.
+*   **Infrastructure:** Implementações Postgres para serviços de comando e consulta de tokens.
+*   **UI:** Página de review pública e integração na tela de detalhes do contrato.
+*   **Testes:** 12 novos testes (8 submit, 4 accept) com 100% de aprovação.
 
 #### BLOCO 7 — Rule Configuration Studio
 - [ ] 7.1 Implement `PostgresContractualRuleRepository.saveRule()`

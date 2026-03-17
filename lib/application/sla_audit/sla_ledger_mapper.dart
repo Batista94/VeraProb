@@ -166,6 +166,36 @@ class SlaLedgerMapper {
       );
     }
 
+    if (event is ContractSubmittedForApprovalEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'CONTRACT_SUBMITTED_FOR_APPROVAL',
+        setId: null,
+        contractId: event.contractId,
+        planVersion: 0,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'submitted_at_utc': event.submittedAtUtc.toIso8601String(),
+          'review_token': event.reviewToken,
+        },
+      );
+    }
+
+    if (event is ContractAcceptedByContractorEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'CONTRACT_ACCEPTED_BY_CONTRACTOR',
+        setId: null,
+        contractId: event.contractId,
+        planVersion: 0,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'accepted_at_utc': event.acceptedAtUtc.toIso8601String(),
+          'review_token': event.reviewToken,
+        },
+      );
+    }
+
     // Generic fallback for unknown events
     return SlaLedgerEntry(
       organizationId: event.organizationId,

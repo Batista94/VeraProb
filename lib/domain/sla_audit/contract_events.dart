@@ -49,3 +49,35 @@ class ContractClosedEvent extends DomainEvent {
     required this.reason,
   });
 }
+
+/// Emitted when a [Contract] is submitted for contractor approval.
+/// Status transitions: draft → awaitingContractorAcceptance.
+class ContractSubmittedForApprovalEvent extends DomainEvent {
+  final String contractId;
+  final String reviewToken;
+  final DateTime submittedAtUtc;
+
+  const ContractSubmittedForApprovalEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.contractId,
+    required this.reviewToken,
+    required this.submittedAtUtc,
+  });
+}
+
+/// Emitted when a contractor accepts a contract via the review token link.
+/// Status transitions: awaitingContractorAcceptance → active.
+class ContractAcceptedByContractorEvent extends DomainEvent {
+  final String contractId;
+  final String reviewToken;
+  final DateTime acceptedAtUtc;
+
+  const ContractAcceptedByContractorEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.contractId,
+    required this.reviewToken,
+    required this.acceptedAtUtc,
+  });
+}
