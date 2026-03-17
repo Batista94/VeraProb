@@ -34,6 +34,10 @@ class ContractSummaryView extends Equatable {
   /// Returns 0.0 if no SETs exist.
   final double slaHealthPercentage;
 
+  /// Maximum cumulative penalty cap for this contract (INV-2: cents).
+  /// Required for Step 4 Relative Risk calculation.
+  final int? financialCeilingCents;
+
   const ContractSummaryView({
     required this.id,
     required this.name,
@@ -47,6 +51,7 @@ class ContractSummaryView extends Equatable {
     required this.activePlanVersion,
     required this.totalSetsInProgress,
     required this.slaHealthPercentage,
+    this.financialCeilingCents,
   });
 
   @override
@@ -63,5 +68,6 @@ class ContractSummaryView extends Equatable {
         activePlanVersion,
         totalSetsInProgress,
         slaHealthPercentage,
+        financialCeilingCents,
       ];
 }

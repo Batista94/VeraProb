@@ -40,7 +40,14 @@
       "Bash(find c:ProjectsPactaFlowlib -name *zone* -type f)",
       "Bash(find /c/Projects/PactaFlow -type f -name *zone*)",
       "Bash(find /c/Projects/PactaFlow/docs/council -type f -name *.md)",
-      "Bash(find /c/Projects/PactaFlow/docs/governance -type f -name *.md)"
+      "Bash(find /c/Projects/PactaFlow/docs/governance -type f -name *.md)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/database-schema-design c:/Projects/PactaFlow/.claude/skills/)",
+      "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/firecrawl c:/Projects/PactaFlow/.claude/skills/)",
+      "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/supabase-postgres-best-practices c:/Projects/PactaFlow/.claude/skills/)",
+      "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/systematic-debugging c:/Projects/PactaFlow/.claude/skills/)",
+      "Bash(cp -r c:/Projects/PactaFlow/.agents/skills/test-driven-development c:/Projects/PactaFlow/.claude/skills/)"
     ]
   }
 }

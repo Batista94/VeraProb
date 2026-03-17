@@ -147,6 +147,7 @@ class ContractQueryServiceInMemory implements ContractQueryService {
       activePlanVersion: activePlanVersion,
       totalSetsInProgress: totalSetsInProgress,
       slaHealthPercentage: slaHealthPercentage,
+      financialCeilingCents: contract.financialCeiling?.cents,
     );
   }
 }

@@ -16,6 +16,7 @@ import 'domain_exception.dart';
 /// - [noShowThresholdMinutes] — delay ceiling (minutes) after which the system auto-classifies as no-show (≥ 0). Default: 60
 /// - [earlyArrivalToleranceMinutes] — early arrival margin (minutes) before it counts as an infraction (≥ 0). Default: 5
 /// - [dwellTimeMinutes] — minimum minutes inside geofence to validate the trip (≥ 0). Default: 3
+/// - [gracePeriodMinutes] — buffer window (minutes) after scheduled start before engine starts checking infractions (≥ 0). Default: 0
 class SLAPenalties extends Equatable {
   /// Multiplier applied to contractual value on no-show. Must be ≥ 1.0.
   /// Stored as double because it is a ratio, not a monetary amount.
@@ -44,6 +45,10 @@ class SLAPenalties extends Equatable {
   /// for the trip to be considered validated. Must be ≥ 0. Default: 3.
   final int dwellTimeMinutes;
 
+  /// Buffer window (minutes) after scheduled start before engine starts checking infractions.
+  /// Must be ≥ 0. Default: 0.
+  final int gracePeriodMinutes;
+
   /// Base financial value of a single trip under this shift pattern.
   ///
   /// Used for financial risk summary (Receita Protegida, Exposição No-Show)
@@ -62,6 +67,7 @@ class SLAPenalties extends Equatable {
     required this.noShowThresholdMinutes,
     required this.earlyArrivalToleranceMinutes,
     required this.dwellTimeMinutes,
+    required this.gracePeriodMinutes,
     required this.baseTripValue,
   });
 
@@ -76,6 +82,7 @@ class SLAPenalties extends Equatable {
     int noShowThresholdMinutes = 60,
     int earlyArrivalToleranceMinutes = 5,
     int dwellTimeMinutes = 3,
+    int gracePeriodMinutes = 0,
     Money baseTripValue = const Money(0),
   }) {
     if (noShowPenaltyMultiplier < 1.0) {
@@ -113,6 +120,11 @@ class SLAPenalties extends Equatable {
         'dwellTimeMinutes must be >= 0',
       );
     }
+    if (gracePeriodMinutes < 0) {
+      throw const DomainException(
+        'gracePeriodMinutes must be >= 0',
+      );
+    }
     if (baseTripValue.cents < 0) {
       throw const DomainException('baseTripValue must be >= 0');
     }
@@ -125,6 +137,7 @@ class SLAPenalties extends Equatable {
       noShowThresholdMinutes: noShowThresholdMinutes,
       earlyArrivalToleranceMinutes: earlyArrivalToleranceMinutes,
       dwellTimeMinutes: dwellTimeMinutes,
+      gracePeriodMinutes: gracePeriodMinutes,
       baseTripValue: baseTripValue,
     );
   }
@@ -138,6 +151,7 @@ class SLAPenalties extends Equatable {
     int noShowThresholdMinutes = 60,
     int earlyArrivalToleranceMinutes = 5,
     int dwellTimeMinutes = 3,
+    int gracePeriodMinutes = 0,
     Money baseTripValue = const Money(0),
   }) {
     return SLAPenalties._(
@@ -148,6 +162,7 @@ class SLAPenalties extends Equatable {
       noShowThresholdMinutes: noShowThresholdMinutes,
       earlyArrivalToleranceMinutes: earlyArrivalToleranceMinutes,
       dwellTimeMinutes: dwellTimeMinutes,
+      gracePeriodMinutes: gracePeriodMinutes,
       baseTripValue: baseTripValue,
     );
   }
@@ -161,6 +176,7 @@ class SLAPenalties extends Equatable {
         'noShowThresholdMinutes': noShowThresholdMinutes,
         'earlyArrivalToleranceMinutes': earlyArrivalToleranceMinutes,
         'dwellTimeMinutes': dwellTimeMinutes,
+        'gracePeriodMinutes': gracePeriodMinutes,
         'baseTripValueCents': baseTripValue.cents,
       };
 
@@ -181,6 +197,7 @@ class SLAPenalties extends Equatable {
           (json['earlyArrivalToleranceMinutes'] as int?) ?? 5,
       dwellTimeMinutes:
           (json['dwellTimeMinutes'] as int?) ?? 3,
+      gracePeriodMinutes: (json['gracePeriodMinutes'] as int?) ?? 0,
       // Backward compat: absent in JSONB before Bloco 4.3 → Money(0).
       baseTripValue:
           Money((json['baseTripValueCents'] as num?)?.toInt() ?? 0),
@@ -196,6 +213,7 @@ class SLAPenalties extends Equatable {
         noShowThresholdMinutes,
         earlyArrivalToleranceMinutes,
         dwellTimeMinutes,
+        gracePeriodMinutes,
         baseTripValue,
       ];
 }

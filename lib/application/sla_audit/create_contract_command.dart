@@ -13,6 +13,10 @@ class CreateContractCommand {
   final DateTime validFromUtc;
   final DateTime validUntilUtc;
 
+  /// Maximum cumulative penalty cap, in cents (INV-2: BIGINT).
+  /// Null when no ceiling is negotiated — disables Risco Relativo KPI.
+  final int? financialCeilingCents;
+
   const CreateContractCommand({
     required this.organizationId,
     required this.name,
@@ -20,5 +24,6 @@ class CreateContractCommand {
     this.description,
     required this.validFromUtc,
     required this.validUntilUtc,
+    this.financialCeilingCents,
   });
 }

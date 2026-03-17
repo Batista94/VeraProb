@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
+import 'core/time/brazil_time.dart';
 import 'features/shared/providers.dart';
 import 'features/shared/widgets/error_boundary.dart';
 import 'features/admin/presentation/lock_screen.dart';
@@ -14,6 +15,7 @@ import 'state/providers/auth_providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  BrazilTime.ensureInitialized(); // timezone DB must be ready before ShiftPattern.create()
 
   // FASE 0 - Passively initialize Supabase. No overrides or dependencies created.
   await SupabaseConfig.initialize();

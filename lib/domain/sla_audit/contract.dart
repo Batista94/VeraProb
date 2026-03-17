@@ -105,6 +105,7 @@ class Contract extends Equatable {
     String? description,
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
+    Money? financialCeiling,
   }) {
     // ── Validate invariants ─────────────────────────────────
     if (organizationId.isEmpty) {
@@ -147,6 +148,7 @@ class Contract extends Equatable {
       validUntilUtc: validUntilUtc,
       status: ContractStatus.draft,
       createdAtUtc: now,
+      financialCeiling: financialCeiling,
       domainEvents: [event],
     );
   }

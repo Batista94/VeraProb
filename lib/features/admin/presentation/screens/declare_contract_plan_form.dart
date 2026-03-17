@@ -12,6 +12,7 @@ import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
 import 'package:pactaflow/domain/sla_audit/shift_pattern.dart';
 import 'package:pactaflow/domain/sla_audit/sla_penalties.dart';
 import 'package:pactaflow/domain/sla_audit/vehicle_category.dart';
+import 'package:pactaflow/domain/sla_audit/week_cycle.dart';
 import 'package:pactaflow/domain/shared/money.dart';
 import 'package:pactaflow/state/providers/auth_providers.dart';
 import 'package:pactaflow/state/providers/contract_providers.dart';
@@ -58,6 +59,8 @@ class _ShiftDraftSnapshot {
   final int noShowThresholdMinutes;
   final int delayPenaltyCentsPerMinute;
   final int downgradePenaltyCents;
+  final int gracePeriodMinutes;
+  final WeekCycle weekCycle;
 
   const _ShiftDraftSnapshot({
     required this.originZoneId,
@@ -77,6 +80,8 @@ class _ShiftDraftSnapshot {
     required this.noShowThresholdMinutes,
     required this.delayPenaltyCentsPerMinute,
     required this.downgradePenaltyCents,
+    required this.gracePeriodMinutes,
+    required this.weekCycle,
   });
 }
 
@@ -143,6 +148,7 @@ class _DeclareContractPlanFormState
   TimeOfDay? _departureTime;
   String _timezone = 'America/Sao_Paulo';
   VehicleCategory _requiredVehicleCategory = VehicleCategory.conventional;
+  WeekCycle _weekCycle = WeekCycle.everyWeek;
 
   // ── Step 3: SLA & Penalidades ────────────────────────────────
   final TextEditingController _baseValueController = TextEditingController();
@@ -155,6 +161,9 @@ class _DeclareContractPlanFormState
       TextEditingController(text: '5');
   final TextEditingController _dwellTimeController = TextEditingController(
     text: '3',
+  );
+  final TextEditingController _gracePeriodController = TextEditingController(
+    text: '0',
   );
 
   // Grupo 2 — Falhas Críticas
@@ -179,6 +188,7 @@ class _DeclareContractPlanFormState
   final FocusNode _earlyArrivalFocus = FocusNode();
   final FocusNode _dwellTimeFocus = FocusNode();
   final FocusNode _noShowThresholdFocus = FocusNode();
+  final FocusNode _gracePeriodFocus = FocusNode();
 
   @override
   void initState() {
@@ -191,6 +201,7 @@ class _DeclareContractPlanFormState
     _noShowThresholdController.addListener(_clearError);
     _delayMinuteValueController.addListener(_clearError);
     _downgradeValueController.addListener(_clearError);
+    _gracePeriodController.addListener(_clearError);
   }
 
   void _clearError() {
@@ -207,6 +218,7 @@ class _DeclareContractPlanFormState
     _noShowThresholdController.dispose();
     _delayMinuteValueController.dispose();
     _downgradeValueController.dispose();
+    _gracePeriodController.dispose();
     _baseValueFocus.dispose();
     _delayToleranceFocus.dispose();
     _noShowMultiplierFocus.dispose();
@@ -215,6 +227,7 @@ class _DeclareContractPlanFormState
     _earlyArrivalFocus.dispose();
     _dwellTimeFocus.dispose();
     _noShowThresholdFocus.dispose();
+    _gracePeriodFocus.dispose();
     super.dispose();
   }
 
@@ -290,6 +303,8 @@ class _DeclareContractPlanFormState
         _delayMinuteValueController.text,
       ),
       downgradePenaltyCents: _parseReaisToCents(_downgradeValueController.text),
+      gracePeriodMinutes: int.tryParse(_gracePeriodController.text) ?? 0,
+      weekCycle: _weekCycle,
     );
   }
 
@@ -319,6 +334,8 @@ class _DeclareContractPlanFormState
     _noShowThresholdController.text = '60';
     _delayMinuteValueController.text = '0,50';
     _downgradeValueController.text = '50,00';
+    _gracePeriodController.text = '0';
+    _weekCycle = WeekCycle.everyWeek;
   }
 
   // ── Stepper Navigation ───────────────────────────────────────
@@ -515,6 +532,7 @@ class _DeclareContractPlanFormState
       noShowThresholdMinutes: d.noShowThresholdMinutes,
       earlyArrivalToleranceMinutes: d.earlyArrivalToleranceMinutes,
       dwellTimeMinutes: d.dwellTimeMinutes,
+      gracePeriodMinutes: d.gracePeriodMinutes,
     );
     return ShiftPattern.create(
       index: index,
@@ -526,6 +544,7 @@ class _DeclareContractPlanFormState
       destinationZoneId: d.destinationZoneId,
       penalties: penalties,
       requiredVehicleCategory: d.requiredVehicleCategory,
+      weekCycle: d.weekCycle,
     );
   }
 
@@ -908,6 +927,42 @@ class _DeclareContractPlanFormState
             () => _requiredVehicleCategory = v ?? _requiredVehicleCategory,
           ),
         ),
+        const SizedBox(height: 16),
+
+        // ── Ciclo de Recorrência (WeekCycle) ──────────────────
+        DropdownButtonFormField<WeekCycle>(
+          value: _weekCycle,
+          decoration: const InputDecoration(
+            labelText: 'Ciclo de Recorrência *',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.repeat),
+            helperText:
+                'Define se o turno roda toda semana ou em semanas específicas do ciclo industrial.',
+          ),
+          items: [
+            const DropdownMenuItem(
+              value: WeekCycle.everyWeek,
+              child: Text('Toda Semana'),
+            ),
+            const DropdownMenuItem(
+              value: WeekCycle.weekA,
+              child: Text('Semana A (1/4)'),
+            ),
+            const DropdownMenuItem(
+              value: WeekCycle.weekB,
+              child: Text('Semana B (2/4)'),
+            ),
+            const DropdownMenuItem(
+              value: WeekCycle.weekC,
+              child: Text('Semana C (3/4)'),
+            ),
+            const DropdownMenuItem(
+              value: WeekCycle.weekD,
+              child: Text('Semana D (4/4)'),
+            ),
+          ],
+          onChanged: (v) => setState(() => _weekCycle = v ?? _weekCycle),
+        ),
       ],
     );
   }
@@ -919,7 +974,7 @@ class _DeclareContractPlanFormState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Cláusulas contratuais B2B. Configure os ofensores financeiros e janelas operacionais.',
+          'Acordo de penalidades e janelas operacionais para garantir o nível de serviço.',
           style: TextStyle(color: PactaFlowColors.textSecondary),
         ),
         const SizedBox(height: PactaFlowSpacing.md),
@@ -989,6 +1044,8 @@ class _DeclareContractPlanFormState
                                 .toString();
                             _dwellTimeController.text = p.dwellTimeMinutes
                                 .toString();
+                            _gracePeriodController.text = p.gracePeriodMinutes
+                                .toString();
                           });
                           Navigator.of(ctx).pop();
                         },
@@ -1032,6 +1089,21 @@ class _DeclareContractPlanFormState
             suffixText: ' min',
             border: OutlineInputBorder(),
             isDense: true,
+          ),
+          onSubmitted: (_) =>
+              FocusScope.of(context).requestFocus(_gracePeriodFocus),
+        ),
+        const SizedBox(height: PactaFlowSpacing.md),
+        TextField(
+          controller: _gracePeriodController,
+          focusNode: _gracePeriodFocus,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Carência Pré-Avaliação (min)',
+            suffixText: ' min',
+            border: OutlineInputBorder(),
+            isDense: true,
+            helperText: 'Janela de espera após o horário previsto antes de iniciar checagem.',
           ),
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(_noShowMultiplierFocus),
@@ -1235,9 +1307,13 @@ class _DeclareContractPlanFormState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Revise todos os turnos antes de assinar. Após publicado, este plano não poderá ser alterado — uma nova versão precisará ser declarada.',
+          'Resumo de exposição financeira e revisão detalhada dos turnos antes da publicação.',
           style: TextStyle(color: PactaFlowColors.textSecondary),
         ),
+        const SizedBox(height: 16),
+
+        _buildRiskSummary(allTurns),
+
         const SizedBox(height: 16),
 
         // ── Turn cards ────────────────────────────────────────
@@ -1319,7 +1395,7 @@ class _DeclareContractPlanFormState
                       icon: Icons.timer,
                       label: 'Pontualidade',
                       value:
-                          'Atraso: ${d.delayToleranceMinutes} min  ·  Antecipação: ${d.earlyArrivalToleranceMinutes} min  ·  Permanência mín: ${d.dwellTimeMinutes} min',
+                          'Carência: ${d.gracePeriodMinutes} min  ·  Atraso: ${d.delayToleranceMinutes} min  ·  Antecipação: ${d.earlyArrivalToleranceMinutes} min  ·  Permanência mín: ${d.dwellTimeMinutes} min',
                     ),
                     _ReviewRow(
                       icon: Icons.warning_amber_rounded,
@@ -1374,6 +1450,133 @@ class _DeclareContractPlanFormState
             fontWeight: FontWeight.bold,
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildRiskSummary(List<_ShiftDraftSnapshot> allTurns) {
+    if (allTurns.isEmpty) return const SizedBox.shrink();
+
+    // ── Contract access (for financialCeiling) ────────────────
+    final contractDetailAsync = ref.watch(contractDetailProvider(widget.contractId));
+    final contract = contractDetailAsync.valueOrNull?.summary;
+    final financialCeilingCents = contract?.financialCeilingCents;
+
+    // ── Pre-calculate totals ──────────────────────────────────
+    int totalProtectedRevenueCents = 0;
+    int totalMaxNoShowExposureCents = 0;
+    int absoluteMaxPenaltyPerTripCents = 0;
+
+    for (final d in allTurns) {
+      // 4.33 weeks/month on avg; cyclic turns run only 1 week every 4.
+      final multiplier = d.weekCycle == WeekCycle.everyWeek ? 4.33 : 1.083;
+      final tripsPerMonth = d.selectedDays.length * multiplier;
+
+      final revenue = (d.baseValueCents * tripsPerMonth).round();
+      final noShowExposure =
+          (d.baseValueCents * d.noShowMultiplier * tripsPerMonth).round();
+
+      // Trip ceiling: max between full no-show or max delay pen before no-show conversion
+      final noShowPenalty = (d.baseValueCents * d.noShowMultiplier).round();
+      final delayPenaltyCeiling = d.delayPenaltyCentsPerMinute * d.noShowThresholdMinutes;
+      final maxTripPenalty = noShowPenalty > delayPenaltyCeiling
+          ? noShowPenalty
+          : delayPenaltyCeiling;
+
+      totalProtectedRevenueCents += revenue;
+      totalMaxNoShowExposureCents += noShowExposure;
+      if (maxTripPenalty > absoluteMaxPenaltyPerTripCents) {
+        absoluteMaxPenaltyPerTripCents = maxTripPenalty;
+      }
+    }
+
+    double? relativeRisk;
+    if (financialCeilingCents != null && financialCeilingCents > 0) {
+      relativeRisk = (totalMaxNoShowExposureCents / financialCeilingCents) * 100;
+    }
+
+    final hasBaseTripValue = allTurns.any((d) => d.baseValueCents > 0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!hasBaseTripValue)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: const [
+                Icon(Icons.info_outline, size: 14, color: PactaFlowColors.warning),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Configure o Valor Base por Viagem no Step 3 para habilitar os KPIs financeiros.',
+                    style: TextStyle(fontSize: 12, color: PactaFlowColors.warning),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        Row(
+          children: [
+            Expanded(
+              child: _KpiCard(
+                icon: Icons.shield_outlined,
+                label: 'Receita Protegida',
+                value: _formatCents(totalProtectedRevenueCents),
+                period: '/mês',
+                tooltip: 'Soma dos valores contratuais por viagem × volume mensal projetado.',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _KpiCard(
+                icon: Icons.warning_amber_rounded,
+                label: 'Exposição No-Show',
+                value: _formatCents(totalMaxNoShowExposureCents),
+                period: '/mês',
+                tooltip: 'Risco máximo em caso de 100% de falha No-Show em todos os turnos.',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _KpiCard(
+                icon: Icons.money_off,
+                label: 'Penalidade Máx.',
+                value: _formatCents(absoluteMaxPenaltyPerTripCents),
+                period: '/viagem',
+                tooltip: 'Maior penalidade possível em um único evento (No-Show ou Atraso Crítico).',
+              ),
+            ),
+            if (relativeRisk != null) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: _KpiCard(
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: 'Risco Relativo',
+                  value: '${relativeRisk.toStringAsFixed(1)}%',
+                  period: 'do teto',
+                  tooltip: 'Percentual do Teto Financeiro ocupado pela exposição máxima de No-Show mensal.',
+                ),
+              ),
+            ] else ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: _KpiCard(
+                  icon: Icons.lock_outline,
+                  label: 'Risco Relativo',
+                  value: '—',
+                  tooltip: 'Configure o Teto Financeiro no contrato para habilitar este indicador.',
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Divider(height: 32, color: PactaFlowColors.border),
       ],
     );
   }
@@ -1562,7 +1765,7 @@ class _DeclareContractPlanFormState
                         : StepState.disabled,
                   ),
                   Step(
-                    title: const Text('Ofensores de Margem'),
+                    title: const Text('Acordo de Penalidades'),
                     content: _buildStep3(),
                     isActive: _currentStep >= 2,
                     state: _currentStep > 2
@@ -1574,7 +1777,7 @@ class _DeclareContractPlanFormState
                         : StepState.disabled,
                   ),
                   Step(
-                    title: const Text('Revisão'),
+                    title: const Text('Exposição de Risco'),
                     content: _buildStep4(),
                     isActive: _currentStep >= 3,
                     state: _currentStep == 3
@@ -1594,6 +1797,84 @@ class _DeclareContractPlanFormState
 }
 
 // ── Support widgets ───────────────────────────────────────────
+
+class _KpiCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String? period;
+  final String? tooltip;
+
+  const _KpiCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.period,
+    this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: PactaFlowColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: PactaFlowColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: PactaFlowColors.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: PactaFlowColors.textSecondary,
+                ),
+              ),
+              if (tooltip != null) ...[
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: tooltip!,
+                  child: const Icon(Icons.help_outline, size: 12, color: PactaFlowColors.textDisabled),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: PactaFlowColors.textPrimary,
+                ),
+              ),
+              if (period != null) ...[
+                const SizedBox(width: 4),
+                Text(
+                  period!,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: PactaFlowColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _SectionHeader extends StatelessWidget {
   final IconData icon;

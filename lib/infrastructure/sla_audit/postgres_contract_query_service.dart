@@ -78,7 +78,7 @@ class PostgresContractQueryService implements ContractQueryService {
         .order('window_start_utc', ascending: false)
         .limit(200);
 
-    final recentExecutions = stateRows.map((s) {
+    var recentExecutions = stateRows.map((s) {
       final statusStr = s['status'] as String;
       return SlaExecutionItemView(
         setId: s['set_id'] as String,
@@ -101,6 +101,64 @@ class PostgresContractQueryService implements ContractQueryService {
             (s['no_show_penalty_multiplier'] as num).toDouble(),
       );
     }).toList();
+
+    // Merge projected SETs from contractual_service_executions.
+    // These are visible immediately after plan declaration, before any telemetry
+    // arrives. SETs already present in execution_states are skipped (already merged).
+    final List<dynamic> planIdRows = await _client
+        .from('plan_declarations')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .eq('contract_id', contractId);
+
+    final planIds = planIdRows.map((r) => r['id'] as String).toList();
+
+    if (planIds.isNotEmpty) {
+      final evaluatedSetIds = recentExecutions.map((e) => e.setId).toSet();
+
+      final List<dynamic> projectedRows = await _client
+          .from('contractual_service_executions')
+          .select()
+          .inFilter('plan_declaration_id', planIds)
+          .order('scheduled_start_time_utc', ascending: true)
+          .limit(500);
+
+      final projected = projectedRows
+          .where((s) => !evaluatedSetIds.contains(s['set_id'] as String))
+          .map(
+            (s) => SlaExecutionItemView(
+              setId: s['set_id'] as String,
+              contractId: contractId,
+              status: ExecutionStatus.pending,
+              windowStartUtc: DateTime.parse(
+                s['scheduled_start_time_utc'] as String,
+              ).toUtc(),
+              windowEndUtc: DateTime.parse(
+                s['scheduled_end_time_utc'] as String,
+              ).toUtc(),
+              plannedVehicleId: s['planned_vehicle_id'] as String?,
+              boundVehicleId: null,
+              boundAtUtc: null,
+              startLatitude: (s['start_latitude'] as num).toDouble(),
+              startLongitude: (s['start_longitude'] as num).toDouble(),
+              startRadiusMeters: (s['start_radius_meters'] as num).toInt(),
+              contractualValue: Money(
+                (s['contractual_value_cents'] as num).toInt(),
+              ),
+              noShowPenaltyMultiplier:
+                  (s['no_show_penalty_multiplier'] as num).toDouble(),
+            ),
+          )
+          .toList();
+
+      if (projected.isNotEmpty) {
+        final merged = [...recentExecutions, ...projected];
+        merged.sort(
+          (a, b) => b.windowStartUtc.compareTo(a.windowStartUtc),
+        );
+        recentExecutions = merged;
+      }
+    }
 
     // Financial summary
     final financialSummary = await _slaExecutionQueryService.getSummary(
@@ -169,6 +227,7 @@ class PostgresContractQueryService implements ContractQueryService {
       activePlanVersion: activePlanVersion,
       totalSetsInProgress: pendingCount,
       slaHealthPercentage: slaHealthPercentage,
+      financialCeilingCents: (row['financial_ceiling_cents'] as num?)?.toInt(),
     );
   }
 }

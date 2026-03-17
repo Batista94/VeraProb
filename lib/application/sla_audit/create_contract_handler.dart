@@ -1,6 +1,7 @@
 import '../../domain/sla_audit/contract.dart';
 import '../../domain/sla_audit/contract_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import '../../domain/shared/money.dart';
 import 'create_contract_command.dart';
 import 'sla_ledger_mapper.dart';
 
@@ -37,6 +38,9 @@ class CreateContractHandler {
       description: command.description,
       validFromUtc: command.validFromUtc,
       validUntilUtc: command.validUntilUtc,
+      financialCeiling: command.financialCeilingCents != null
+          ? Money(command.financialCeilingCents!)
+          : null,
     );
 
     // 2. Persist aggregate

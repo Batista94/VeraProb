@@ -91,6 +91,7 @@ class ContractualEvaluationEngine {
     );
 
     for (final state in eligible) {
+      // TODO(grace-period): filter SETs in grace period when execution_states column is ready
       final rules = await _getRuleSnapshot(
         state.contractId,
         state.planVersion,

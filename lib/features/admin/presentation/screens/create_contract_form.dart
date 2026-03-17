@@ -27,6 +27,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
   final _nameController = TextEditingController();
   final _contractorController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _financialCeilingController = TextEditingController();
 
   DateTime? _validFrom;
   DateTime? _validUntil;
@@ -40,6 +41,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
     _nameController.addListener(_clearError);
     _contractorController.addListener(_clearError);
     _descriptionController.addListener(_clearError);
+    _financialCeilingController.addListener(_clearError);
   }
 
   void _clearError() {
@@ -53,6 +55,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
     _nameController.dispose();
     _contractorController.dispose();
     _descriptionController.dispose();
+    _financialCeilingController.dispose();
     super.dispose();
   }
 
@@ -113,6 +116,12 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
     try {
       final handler = ref.read(createContractHandlerProvider);
+      final rawCeiling = _financialCeilingController.text.trim();
+      final financialCeilingCents = rawCeiling.isEmpty
+          ? null
+          : ((double.tryParse(rawCeiling.replaceAll(',', '.')) ?? 0.0) * 100)
+              .round();
+
       final contract = await handler.handle(
         CreateContractCommand(
           organizationId: organizationId,
@@ -123,6 +132,10 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
               : _descriptionController.text.trim(),
           validFromUtc: _validFrom!,
           validUntilUtc: _validUntil!,
+          financialCeilingCents:
+              (financialCeilingCents != null && financialCeilingCents > 0)
+                  ? financialCeilingCents
+                  : null,
         ),
       );
 
@@ -256,6 +269,24 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                       ),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 24),
+                Text(
+                  'PROTEÇÃO FINANCEIRA',
+                  style: PactaFlowTypography.kpiLabel,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _financialCeilingController,
+                  style: PactaFlowTypography.bodyMedium,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Teto Financeiro (opcional)',
+                    hintText: 'Ex: 50000,00',
+                    prefixText: 'R\$ ',
+                    helperText: 'Limite máximo de penalidades acumuladas. Habilita o KPI Risco Relativo.',
+                  ),
                 ),
 
                 if (_errorMessage != null) ...[
