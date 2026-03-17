@@ -16,94 +16,22 @@
 
 ## Fases Pendentes
 
-### [x] Sprint 5.13 — Post-Validation Hardening & Business Flow (CONCLUÍDA) ✅
-Implementação final da camada financeira de B2B e Evidence Locker.
-- **Bloco 3:** Stepper Clicável, Banner de Contexto e Ciclo Industrial (`WeekCycle`).
-- **Bloco 4:** Acordo de Penalidades, `gracePeriodMinutes`, Teto Financeiro e Resumo de Exposição de Risco.
-- **Bloco 6:** Evidence Locker com SHA-256 e integridade de cadeia.
-- **Fixes:** Remoção de imports Flutter no domínio (INV-4).
+### [x] Phase 5 — B2B Refactoring & Foundation (CONCLUÍDA) ✅
+*   **Resultados:** JIT Master Data, RLS, Teto Financeiro, Carência e Evidence Locker validados.
 
 ---
 
 ### [ ] Phase 6 — Administration & Tenant Self-Service 🚀
 
-**Context:**
-Phase 5 (B2B Refactoring) is completing Sprint 5.13. Phase 6 makes the product self-sufficient for N tenants. 
-*Status:* Fundação técnica (JWT, RBAC, Contractors) implementada. Ativação depende da conclusão da Sprint 5.13.
+#### BLOCOS 1 a 7 — CONCLUÍDOS ✅
+*Arquivamento de tarefas concluídas para otimização de contexto.*
 
-#### BLOCO 1 — JWT Infrastructure & Auth Foundation
-- [x] 1.1 Activate `custom_access_token_hook` in Supabase (Auth -> Hooks)
-- [x] 1.2 Audit all migrations for RLS JWT path → unify to `(auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid`
-- [x] 1.3 Refactor `UserRole` enum: 4 → 3 (admin, operator, auditor); update `currentUserRoleProvider`
-- [x] 1.4 Enrich `organizations` table: add `timezone`, `currency_code`, `logo_url`
-- [x] 1.5 Seed `user_roles` for bootstrap dev user as `TENANT_ADMIN`
-- [x] 1.6 **Audit Fix**: Update `custom_access_token_hook` to use SQL `NULL` instead of `'null'` string for cast safety. ✅
-- **SQL:** `20260317000001_rls_jwt_path_unification.sql`, `20260317000002_organizations_enrichment.sql`
-
-#### BLOCO 2 — Contractor Aggregate & Zone FK Migration
-- [x] 2.1 Create `Contractor` domain entity (`contractor.dart`)
-- [x] 2.2 `CREATE TABLE contractors` with RLS + index on `organization_id`
-- [x] 2.3 Add `contractor_id` FK to `operational_zones`; deprecate `contractor_label`
-- [x] 2.4 Update `OperationalZone.scope` to use `contractorId`
-- [x] 2.5 `ContractorRepository` port + Postgres impl
-- **SQL:** `20260318000001_contractors_table.sql`, `20260318000002_zones_contractor_fk.sql`
-
-#### BLOCO 3 — RBAC Guards & Permission Layer
-- [x] 3.1 `RbacGuard` widget for UI gating
-- [x] 3.2 Define `UserPermission` enum and role mapping
-- [x] 3.3 `RbacService` (pure Dart) for permission checks
-- [x] 3.4 Gate `AdminShell` sidebar destinations
-- [x] 3.5 Inject `RbacService` into `CloseContractHandler`
-
-#### BLOCO 4 — Admin Panel & Org Management UI
-- [x] 4.1 Add `orgSettings` + `userManagement` to `AdminShell`
-- [x] 4.2 Organization Settings Screen (CRUD)
-- [x] 4.3 User Management Screen (List, Role Change, Remove)
-- [x] 4.4 `PostgresUserManagementQueryService` with `get_org_members` RPC
-- [x] 4.5 Contractor Management Screen (CRUD)
-- **SQL:** `20260319000001_org_management_rpc.sql`
-
-#### BLOCO 5 — User Invitation Flow
-- [x] 5.1 `CREATE TABLE invitations` (token-based)
-- [x] 5.2 `Invitation` domain entity
-- [x] 5.3 `InviteUserCommand` + `InviteUserHandler`
-- [x] 5.4 `AcceptInvitationCommand` + handler (Public UI)
-- [x] 5.5 `RevokeAccessCommand` + handler
-- **SQL:** `20260320000001_invitations.sql`, `20260320000002_invitation_rpcs.sql`
-
-#### BLOCO 6 — Contract Approval Workflow ✅
-- [x] 6.1 `awaiting_contractor_acceptance` state in `ContractStatus`
-- [x] 6.2 DB migration for `contracts_status_check` constraint
-- [x] 6.3 `CREATE TABLE contract_review_tokens` (public review link)
-- [x] 6.4 `SubmitContractForApprovalCommand` + `AcceptByContractorCommand`
-- [x] 6.5 Public Review Page (`/review-contract?token=...`)
-- **SQL:** `20260321000001_contract_approval_workflow.sql`
-
-**Resumo do Bloco 6:**
-*   **SQL:** Adição de coluna, CHECK constraint, tabela `contract_review_tokens` e 3 RPCs.
-*   **Domain:** Métodos `submitForApproval()` e `acceptByContractor()` no Aggregate de Contrato. Novos eventos e repositório de tokens.
-*   **Application:** Port e Handlers para o fluxo de aprovação. Mapeamento no `SlaLedgerMapper`.
-*   **Infrastructure:** Implementações Postgres para serviços de comando e consulta de tokens.
-*   **UI:** Página de review pública e integração na tela de detalhes do contrato.
-*   **Testes:** 12 novos testes (8 submit, 4 accept) com 100% de aprovação.
-
-#### BLOCO 7 — Rule Configuration Studio ✅
-- [x] 7.1 `UpdateContractualRuleCommand` + `UpdateContractualRuleHandler` (Application layer)
-- [x] 7.2 Rule Studio Screen: Visual parameters editor por tipo de regra
-- [x] 7.3 Rule Immutability Logic: RPC atômica `update_contractual_rule` (close + insert na mesma transação)
-- [x] 7.4 Version history panel (Read-only, por tipo de regra)
-- [x] 7.5 **Audit Fix**: `gracePeriodMinutes` implementado no `ContractualEvaluationEngine` via `_planCache` (Challenger — sem migration)
-- [x] 7.6 **Maverick Priority**: Financial Impact Simulation integrada ao `_RuleEditDialog` (simulação qualitativa com diff de parâmetros)
-- **SQL:** `20260324000001_rule_studio_rpcs.sql` (constraint fix + 2 RPCs)
-- **Testes:** +11 testes (8 handler + 3 grace period engine) · Total: 438 passing
-
-**Resumo do Bloco 7:**
-*   **SQL:** Migration fix para chaves de configuração e implementação das RPCs de versionamento e update atômico.
-*   **Application:** Command e Handler com suporte a RBAC e validação de parâmetros. Interface `RuleStudioCommandService`.
-*   **Infrastructure:** Adapter Supabase via RPC para garantir imutabilidade e versionamento na edição de regras.
-*   **UI:** `RuleStudioScreen` com edição in-place, visual history e simulação de impacto financeiro qualitativo.
-*   **Engine:** Suporte a `gracePeriodMinutes` (Carência) via cache de planos, fechando gap de auditoria Maverick.
-*   **Testes:** Cobertura de 438 testes com 0 falhas, incluindo validações de regras e carência.
+*   **1-3 Foundation:** RLS JWT Path unification, `Contractor` Aggregate, `RbacService` & guards.
+*   **4-5 Management:** CRM de Organizações, Membros e Contractors. Fluxo de convite via token.
+*   **6 Approval:** Workflow de aprovação de contratos com tokens de review público.
+*   **7 Rule Studio:** Edição atômica de regras, versionamento, simulação de impacto e `gracePeriod`.
+*   **SQL:** Migrations 20260317... a 20260324... aplicadas e validadas.
+*   **Testes:** 438 passing (100% Green).
 
 #### BLOCO 8 — Asset Manager (Vehicles, Drivers, Routes)
 - [ ] 8.1 Asset Manager Screen (Tabbed CRUD)
