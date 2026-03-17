@@ -6,7 +6,7 @@
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 360 passing · 0 falhas ✅ |
+| Testes | 378 passing · 0 falhas ✅ |
 | Análise estática | 0 erros · 75 infos (`prefer_const` — baixa prioridade) |
 | Precisão financeira | `Money` (centavos BIGINT) em todo o stack — invariante enforced ✅ |
 | CI/CD | Não existe (Phase 8) |
@@ -14,7 +14,7 @@
 | `strict-casts` | Desabilitado — ~80 issues de `dynamic` nos repos Postgres (Phase 8) |
 | Sprint 5.11 | **CONCLUÍDA** — Fases A-I implementadas (Wizard refatorado, Clona Contrato, Templates SLA, Contractor Label). |
 | Sprint 5.12 Phase D | **CONCLUÍDA** — Refinamento, UTC, Schema e Segurança RLS. ✅ |
-| Sprint 5.13 (parcial) | **EM PROGRESSO** — Tasks 0, 1, 2, 7 concluídas. Tasks 3, 4, 5, 6, 8 pendentes. |
+| Sprint 5.13 (quase completa) | **EM PROGRESSO** — Tasks 0, 1, 2, 3, 6, 7, 8 concluídas. SQLs A/B/C aplicados. Pendentes: Tasks 4 (gracePeriodMinutes) e 5 (Risk Summary). |
 | Banco de dev | Todas as migrations aplicadas — `20260311000000` · `20260311000002` · `20260311000003` · `20260312000001` · `20260312000002` · `20260312---
 
 ## Fases Pendentes
@@ -23,21 +23,21 @@
 
 > **Nota:** Estes blocos são pré-requisitos para a ativação funcional da Phase 6.
 
-#### BLOCO 3 — Fluxo de Declaração B2B 🏗️
+#### BLOCO 3 — Fluxo de Declaração B2B ✅
 - [x] **3.1 — Stepper Clicável:** `onStepTapped` implementado. Back navigation livre · forward com validação por etapa · `_highestStepReached` controla `StepState.disabled`.
 - [x] **3.2 — Contexto no Step 2:** Banner "Origem → Destino" exibido no topo do Step 2, com indicador de turno de retorno.
-- [ ] **3.3 — Ciclo Industrial:** Suporte a Return Shifts com `WeekCycle` enum (`everyWeek/weekA/weekB/weekC/weekD`). Aguarda PO ruling + SQL Block A.
+- [x] **3.3 — Ciclo Industrial:** `WeekCycle` enum (`everyWeek/weekA/weekB/weekC/weekD`) · `cycleAnchorDateUtc` em `PlanDeclaration` · filtragem `weeksSinceAnchor % 4` em `ShiftProjectionService` · SQL Block A aplicado ✅
 - **Personas:** `senior_engineer`, `ux_operations`, `architect`
 
 #### BLOCO 4 — Compliance e Penalidades 🏗️
-- [ ] **4.1 — Step 3 Refinement:** Renomear para "Acordo de Penalidades". Adicionar campo `gracePeriodMinutes`. *(próxima task)*
-- [ ] **4.2 — Step 4: Exposição de Risco Financeiro:** Novo resumo calculado antes de publicar (Receita Protegida, Exposição Máx no-show, Penalidade máx por viagem).
-- [ ] **4.3 — Contexto Financeiro de Auditoria:** `baseTripValue (Money)` em `SLAPenalties` + `contractFinancialCeiling (Money)` no `Contract`. Calcular `marginErosionPercent` em tempo real. Aguarda PO ruling + SQL Block B.
+- [ ] **4.1 — Step 3 Refinement:** Renomear para "Acordo de Penalidades". Adicionar campo `gracePeriodMinutes` a `SLAPenalties` + `EvaluationEngine`. *(próxima task — sem SQL)*
+- [ ] **4.2 — Step 4: Exposição de Risco Financeiro:** Resumo KPIs calculado antes de publicar (Receita Protegida, Exposição Máx no-show, Penalidade máx por viagem, Risco Relativo %). *(depende de 4.1)*
+- [x] **4.3 — Contexto Financeiro de Auditoria:** `baseTripValue: Money` em `SLAPenalties` (JSONB) · `financialCeiling: Money?` no `Contract` · `marginErosionPercent` em `ContractualFinancialImpact` · SQL Block B aplicado ✅
 - **Personas:** `Full Council`, `ux_operations`, `senior_engineer`
 
-#### BLOCO 6 — Evidence Locker 🛡️
+#### BLOCO 6 — Evidence Locker ✅
 - [x] **6.1 — Evidence Locker Domain:** Entidade `TelemetryEvidence` com SHA-256 `contentHash` + `chainHash` em cadeia. `verifyIntegrity()` detecta adulteração. Repositório port append-only.
-- [ ] **6.2 — Persistence:** Tabela `telemetry_evidences` append-only + RLS + REVOKE UPDATE/DELETE. Aguarda confirmação pgcrypto + SQL Block C.
+- [x] **6.2 — Persistence:** `InMemoryTelemetryEvidenceRepository` + `PostgresTelemetryEvidenceRepository` · tabela `telemetry_evidences` com `GENERATED ALWAYS AS chain_hash` (pgcrypto) · RLS · REVOKE UPDATE/DELETE · SQL Block C aplicado ✅
 - **Personas:** `architect`, `qa_security`
 
 #### INV-4 FIX ✅
@@ -317,12 +317,14 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
       [x] Bloco 2: Taxonomy & JIT Zones
       [x] Bloco 5: Regression Fixes (5.1 BLOQUEANTE Resolvido)
 ─────────────────────────────────────────────────────
-[ ] Sprint 5.13 — Business Flow (Blocos 3 e 4) 🏗️
-      [ ] Bloco 3: Fluxo de Declaração B2B (Wizard Stepper)
-      [ ] Bloco 4: Penalidades e Exposição de Risco
+[x] Sprint 5.13 — Business Flow (Blocos 3, 4.3 e 6) ✅
+      [x] Bloco 3: Fluxo de Declaração B2B (Stepper + Banner + WeekCycle)
+      [x] Bloco 4.3: baseTripValue + financialCeiling + marginErosionPercent
+      [x] Bloco 6: Evidence Locker — domínio + repos + tabela + RLS
 ─────────────────────────────────────────────────────
-[ ] Sprint 5.13 — Hardening Forense (Bloco 6) 🛡️
-      [ ] Bloco 6: Evidence Locker & SHA-256 integrity
+[ ] Sprint 5.13 — Finalização (Tasks 4 e 5) 🏗️
+      [ ] Task 4: gracePeriodMinutes (SLAPenalties + EvaluationEngine + UI)
+      [ ] Task 5: Risk Summary Step 4 (KPIs financeiros no wizard)
 ─────────────────────────────────────────────────────
 [  ] Phase 6  Administration & Tenant Self-Service
 [  ] Phase 7  Evidence & Audit Exports
@@ -334,14 +336,14 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Próximo passo
 
-**Sprint 5.13 Blocos 1, 2 e 5 concluídos. Ingestão B2B e Lógica de Penalidades liberadas.**
+**Sprint 5.13 Blocos 3, 4.3, 6 concluídos (SQLs A/B/C aplicados). Apenas Tasks 4 e 5 restantes — ambas sem SQL.**
 
 ### Sequência imediata
 
 ```
-1. [ ] Sprint 5.13 Bloco 3 — Fluxo de Declaração B2B (Stepper Clicável)
-2. [ ] Sprint 5.13 Bloco 4 — Compliance e Penalidades (Wizard Step 4)
-3. [ ] Sprint 5.13 Bloco 6 — Evidence Locker (Hardening Forense)
+1. [ ] Task 4: gracePeriodMinutes — SLAPenalties + EvaluationEngine + UI (sem SQL)
+2. [ ] Task 5: Risk Summary Step 4 — KPIs financeiros no wizard (depende Task 4)
+3. [ ] Phase 6 activation após Sprint 5.13 completa
 ```
 
 ### Atenção: itens que PODEM afetar trabalho já concluído
