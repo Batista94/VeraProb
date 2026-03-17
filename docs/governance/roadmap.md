@@ -12,7 +12,8 @@
 | Sprint 5.11 - 5.12 | **CONCLUÍDAS** — JIT Master Data, RLS, UTC. |
 | Sprint 5.13 | **CONCLUÍDA** — Teto Financeiro, Carência (Grace Period) e Risk KPIs. ✅ |
 | Phase 6 | **CONCLUÍDA** — Administration, RBAC, Invitations e Approval Workflow. ✅ |
-| Banco de dev | Todas as migrations aplicadas — `2d31eaf2...` |
+| Bloco 8 | **CONCLUÍDO** — Asset Manager, `organization_id` isolation, tabbed CRUD. ✅ |
+| Banco de dev | Todas as migrations aplicadas — `20260322...` |
 
 ## Fases Pendentes
 
@@ -23,21 +24,16 @@
 
 ### [ ] Phase 6 — Administration & Tenant Self-Service 🚀
 
-#### BLOCOS 1 a 7 — CONCLUÍDOS ✅
+#### BLOCOS 1 a 8 — CONCLUÍDOS ✅
 *Arquivamento de tarefas concluídas para otimização de contexto.*
 
 *   **1-3 Foundation:** RLS JWT Path unification, `Contractor` Aggregate, `RbacService` & guards.
 *   **4-5 Management:** CRM de Organizações, Membros e Contractors. Fluxo de convite via token.
 *   **6 Approval:** Workflow de aprovação de contratos com tokens de review público.
 *   **7 Rule Studio:** Edição atômica de regras, versionamento, simulação de impacto e `gracePeriod`.
-*   **SQL:** Migrations 20260317... a 20260324... aplicadas e validadas.
+*   **8 Asset Manager:** `organization_id` em `drivers`, `routes`, `vehicles` (nova tabela). RLS tenant isolation. `VehiclesTab`, `RoutesTab`, `ResourceManagementScreen` tabbed CRUD. 438 passing.
+*   **SQL:** Migrations 20260317... a 20260322... aplicadas e validadas.
 *   **Testes:** 438 passing (100% Green).
-
-#### BLOCO 8 — Asset Manager (Vehicles, Drivers, Routes)
-- [ ] 8.1 Asset Manager Screen (Tabbed CRUD)
-- [ ] 8.2 Audit `Vehicle`, `TransitRoute` for `organization_id` isolation
-- [ ] 8.3 `Driver` domain entity + `drivers` table
-- **SQL:** `20260322000001_asset_org_isolation.sql`, `20260322000002_drivers_table.sql`
 
 #### BLOCO 9 — First Run Flow & Phase 6 Validation
 - [ ] 9.1 Public Organization Self-Registration (`/register`)

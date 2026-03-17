@@ -668,6 +668,7 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
     try {
       final newDriver = Driver(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
+        organizationId: '', // injected by repository from JWT on INSERT
         name: _nameController.text.trim(),
         licenseNumber: _cnhController.text.trim(),
       );

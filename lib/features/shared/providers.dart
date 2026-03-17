@@ -10,6 +10,10 @@ import 'domain/entities/driver.dart';
 import 'data/repositories/driver_repository_impl.dart';
 import 'data/repositories/trip_repository.dart';
 import 'data/repositories/trip_repository_impl.dart';
+import '../assets/data/repositories/vehicle_asset_repository.dart';
+import '../assets/data/repositories/vehicle_asset_repository_impl.dart';
+import '../assets/data/repositories/transit_route_repository.dart';
+import '../assets/data/repositories/transit_route_repository_impl.dart';
 
 // Services
 final gtfsServiceProvider = Provider((ref) => GtfsRealtimeService());
@@ -48,6 +52,14 @@ final searchQueryStreamProvider = StreamProvider<String>((ref) async* {
 
 final tripRepositoryProvider = Provider<ITripRepository>((ref) {
   return TripRepositoryImpl(supabase);
+});
+
+final vehicleAssetRepositoryProvider = Provider<IVehicleAssetRepository>((ref) {
+  return VehicleAssetRepositoryImpl(supabase);
+});
+
+final transitRouteRepositoryProvider = Provider<ITransitRouteRepository>((ref) {
+  return TransitRouteRepositoryImpl(supabase);
 });
 
 final vehiclePositionsStreamProvider = StreamProvider<List<VehiclePosition>>((

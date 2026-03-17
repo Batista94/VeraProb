@@ -8,27 +8,33 @@ abstract class IDriverRepository {
 }
 
 class DriverRepositoryMock implements IDriverRepository {
+  static const _devOrgId = 'dev-org-mock';
+
   final List<Driver> _drivers = [
     const Driver(
       id: '1',
+      organizationId: _devOrgId,
       name: 'João Silva',
       licenseNumber: '12345678900',
       status: DriverStatus.active,
     ),
     const Driver(
       id: '2',
+      organizationId: _devOrgId,
       name: 'Maria Oliveira',
       licenseNumber: '98765432100',
       status: DriverStatus.active,
     ),
     const Driver(
       id: '3',
+      organizationId: _devOrgId,
       name: 'Carlos Santos',
       licenseNumber: '11122233344',
       status: DriverStatus.inactive,
     ),
     const Driver(
       id: '4',
+      organizationId: _devOrgId,
       name: 'Ana Pereira',
       licenseNumber: '55566677788',
       status: DriverStatus.active,

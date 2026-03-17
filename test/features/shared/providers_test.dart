@@ -23,6 +23,7 @@ class FakeDriverRepository implements IDriverRepository {
   Future<List<Driver>> getDrivers() async => [
     const Driver(
       id: '1',
+      organizationId: 'test-org',
       name: 'Test',
       licenseNumber: '111',
       status: DriverStatus.active,
@@ -100,6 +101,7 @@ void main() {
 
       const testDriver = Driver(
         id: '1',
+        organizationId: 'test-org',
         name: 'Test',
         licenseNumber: '111',
         status: DriverStatus.active,

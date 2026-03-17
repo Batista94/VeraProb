@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 /// A transit route, normalized from GTFS or manually created.
 class TransitRoute extends Equatable {
   final String id;
+  final String organizationId;
   final String? gtfsRouteId;
   final String shortName;
   final String longName;
@@ -15,6 +16,7 @@ class TransitRoute extends Equatable {
 
   const TransitRoute({
     required this.id,
+    required this.organizationId,
     this.gtfsRouteId,
     required this.shortName,
     required this.longName,
@@ -29,6 +31,7 @@ class TransitRoute extends Equatable {
 
   TransitRoute copyWith({
     String? id,
+    String? organizationId,
     String? gtfsRouteId,
     String? shortName,
     String? longName,
@@ -39,6 +42,7 @@ class TransitRoute extends Equatable {
   }) {
     return TransitRoute(
       id: id ?? this.id,
+      organizationId: organizationId ?? this.organizationId,
       gtfsRouteId: gtfsRouteId ?? this.gtfsRouteId,
       shortName: shortName ?? this.shortName,
       longName: longName ?? this.longName,
@@ -52,6 +56,7 @@ class TransitRoute extends Equatable {
   factory TransitRoute.fromJson(Map<String, dynamic> json) {
     return TransitRoute(
       id: json['id'] as String,
+      organizationId: json['organization_id'] as String,
       gtfsRouteId: json['gtfs_route_id'] as String?,
       shortName: json['short_name'] as String? ?? json['name'] as String? ?? '',
       longName: json['long_name'] as String? ?? '',
@@ -65,7 +70,7 @@ class TransitRoute extends Equatable {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'organization_id': organizationId,
       'gtfs_route_id': gtfsRouteId,
       'short_name': shortName,
       'long_name': longName,
@@ -77,6 +82,7 @@ class TransitRoute extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    organizationId,
     gtfsRouteId,
     shortName,
     longName,

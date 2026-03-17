@@ -60,6 +60,7 @@ void main() {
     testWidgets('renders Rows with Data', (tester) async {
       final driver = const Driver(
         id: '1',
+        organizationId: 'test-org',
         name: 'João Silva',
         licenseNumber: '111',
       );

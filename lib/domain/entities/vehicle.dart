@@ -4,6 +4,7 @@ import '../enums/vehicle_status.dart';
 /// A vehicle (bus) in the fleet.
 class Vehicle extends Equatable {
   final String id;
+  final String organizationId;
   final String plate;
   final String? model;
   final int capacity;
@@ -16,6 +17,7 @@ class Vehicle extends Equatable {
 
   const Vehicle({
     required this.id,
+    required this.organizationId,
     required this.plate,
     this.model,
     required this.capacity,
@@ -32,6 +34,7 @@ class Vehicle extends Equatable {
 
   Vehicle copyWith({
     String? id,
+    String? organizationId,
     String? plate,
     String? model,
     int? capacity,
@@ -42,6 +45,7 @@ class Vehicle extends Equatable {
   }) {
     return Vehicle(
       id: id ?? this.id,
+      organizationId: organizationId ?? this.organizationId,
       plate: plate ?? this.plate,
       model: model ?? this.model,
       capacity: capacity ?? this.capacity,
@@ -56,6 +60,7 @@ class Vehicle extends Equatable {
   factory Vehicle.fromJson(Map<String, dynamic> json) {
     return Vehicle(
       id: json['id'] as String,
+      organizationId: json['organization_id'] as String,
       plate: json['plate'] as String,
       model: json['model'] as String?,
       capacity: json['capacity'] as int,
@@ -70,7 +75,7 @@ class Vehicle extends Equatable {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'organization_id': organizationId,
       'plate': plate,
       'model': model,
       'capacity': capacity,
@@ -79,5 +84,5 @@ class Vehicle extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, plate, model, capacity, status];
+  List<Object?> get props => [id, organizationId, plate, model, capacity, status];
 }
