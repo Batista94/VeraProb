@@ -7,6 +7,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/sla_audit/contractual_rule.dart';
 import '../../../../state/providers/auth_providers.dart';
 import '../../../../state/providers/rule_studio_providers.dart';
+import '../../../../presentation/shared/widgets/pactaflow_header.dart';
+import '../../../../presentation/shared/widgets/pactaflow_chip.dart';
 
 // ── Screen ───────────────────────────────────────────────────────────────────
 
@@ -36,8 +38,19 @@ class RuleStudioScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Header(contractName: contractName),
-            const SizedBox(height: 24),
+            PactaFlowHeader(
+              icon: Icons.tune_rounded,
+              title: 'Rule Configuration Studio',
+              subtitle: contractName,
+              actions: [
+                const PactaFlowChip(
+                  label: 'TENANT_ADMIN',
+                  color: PactaFlowColors.primary,
+                  outline: true,
+                ),
+              ],
+            ),
+            const SizedBox(height: PactaFlowSpacing.lg),
             Expanded(
               child: activeRulesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -52,44 +65,6 @@ class RuleStudioScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ── Header ───────────────────────────────────────────────────────────────────
-
-class _Header extends StatelessWidget {
-  const _Header({required this.contractName});
-  final String contractName;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(Icons.tune_rounded, size: 28, color: PactaFlowColors.primary),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Rule Configuration Studio',
-                style: PactaFlowTypography.sectionTitle),
-            Text(contractName,
-                style: PactaFlowTypography.bodyMedium
-                    .copyWith(color: PactaFlowColors.textSecondary)),
-          ],
-        ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: PactaFlowColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: PactaFlowColors.primary.withValues(alpha: 0.3)),
-          ),
-          child: const Text('TENANT_ADMIN',
-              style: TextStyle(fontSize: 11, color: PactaFlowColors.primary)),
-        ),
-      ],
     );
   }
 }
@@ -219,30 +194,14 @@ class _RuleCard extends ConsumerWidget {
                 ),
               ),
               if (activeRule != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: PactaFlowColors.onTime.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text('Ativa',
-                      style: TextStyle(
-                          fontSize: 10,
-                          color: PactaFlowColors.onTime,
-                          fontWeight: FontWeight.w600)),
+                const PactaFlowChip(
+                  label: 'Ativa',
+                  color: PactaFlowColors.onTime,
                 )
               else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: PactaFlowColors.warning.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text('Não configurada',
-                      style: TextStyle(
-                          fontSize: 10,
-                          color: PactaFlowColors.warning,
-                          fontWeight: FontWeight.w600)),
+                const PactaFlowChip(
+                  label: 'Não configurada',
+                  color: PactaFlowColors.warning,
                 ),
             ],
           ),
@@ -472,9 +431,10 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
         ],
       ),
-      content: SizedBox(
-        width: 440,
-        child: Column(
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -518,6 +478,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
           ],
         ),
       ),
+    ),
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(),

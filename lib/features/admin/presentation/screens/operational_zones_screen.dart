@@ -14,6 +14,8 @@ import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
 import 'package:pactaflow/state/providers/auth_providers.dart';
 import 'package:pactaflow/state/providers/contract_providers.dart';
 import 'package:pactaflow/state/providers/operational_zone_providers.dart';
+import 'package:pactaflow/presentation/shared/widgets/pactaflow_header.dart';
+import 'package:pactaflow/presentation/shared/widgets/pactaflow_chip.dart';
 
 // ── Public API ───────────────────────────────────────────────
 
@@ -61,13 +63,11 @@ class OperationalZonesScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.place_outlined,
-                  size: 28, color: PactaFlowColors.primary),
-              const SizedBox(width: 12),
-              Text('Zonas Operacionais', style: PactaFlowTypography.sectionTitle),
-              const Spacer(),
+          PactaFlowHeader(
+            icon: Icons.place_outlined,
+            title: 'Zonas Operacionais',
+            subtitle: 'Garagens, clientes e pontos de apoio.',
+            actions: [
               FilledButton.icon(
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Nova Zona Operacional'),
@@ -78,7 +78,7 @@ class OperationalZonesScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: PactaFlowSpacing.md),
           Text(
             'Garagens, clientes e pontos de apoio usados como origem/destino '
             'nas viagens programadas. Geofence (coordenadas + raio) é obrigatório '
@@ -230,18 +230,10 @@ class _TypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: PactaFlowColors.border),
-      ),
-      child: Text(
-        label,
-        style: PactaFlowTypography.caption
-            .copyWith(color: PactaFlowColors.textSecondary),
-      ),
+    return PactaFlowChip(
+      label: label,
+      color: PactaFlowColors.primary,
+      outline: true,
     );
   }
 }
@@ -524,17 +516,20 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: 380,
+                    Expanded(
+                      flex: 2,
                       child: Form(
                         key: _formKey,
                         child: SingleChildScrollView(
+                          padding: const EdgeInsets.only(right: 16),
                           child: _buildFormFields(),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildMap()),
+                    Expanded(
+                      flex: 3,
+                      child: _buildMap(),
+                    ),
                   ],
                 ),
               ),
@@ -574,7 +569,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
       children: [
         // ── Tipo ──────────────────────────────────────────
         DropdownButtonFormField<ZoneType>(
-          value: _selectedType,
+          initialValue: _selectedType,
           decoration: const InputDecoration(labelText: 'Tipo *'),
           items: ZoneType.values
               .map((t) => DropdownMenuItem(

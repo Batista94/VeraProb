@@ -11,6 +11,9 @@ import 'package:pactaflow/domain/sla_audit/execution_status.dart';
 import 'package:pactaflow/domain/shared/money.dart';
 import 'package:pactaflow/state/providers/auth_providers.dart';
 import 'package:pactaflow/state/providers/contract_providers.dart';
+import 'package:pactaflow/presentation/shared/widgets/pactaflow_header.dart';
+import 'package:pactaflow/presentation/shared/widgets/pactaflow_chip.dart';
+import 'package:pactaflow/core/theme/app_theme.dart';
 
 import 'declare_contract_plan_form.dart';
 
@@ -114,6 +117,8 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       final reviewLink =
           '${Uri.base.origin}/review-contract?token=$token';
 
+      if (!context.mounted) return;
+
       await showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -191,35 +196,14 @@ class _DetailViewState extends ConsumerState<_DetailView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Back button + header ─────────────────────────────
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back),
-                tooltip: 'Voltar para lista',
-                onPressed: () =>
-                    ref.read(selectedContractIdProvider.notifier).state = null,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      s.name,
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.w700),
-                    ),
-                    Text(
-                      s.contractorName,
-                      style: TextStyle(
-                          fontSize: 13, color: Colors.grey.shade600),
-                    ),
-                  ],
-                ),
-              ),
-              _StatusChip(status: s.status),
-              const SizedBox(width: 16),
-              if (canSubmitForApproval)
+          PactaFlowHeader(
+            icon: Icons.description_outlined,
+            title: s.name,
+            subtitle: s.contractorName,
+            actions: [
+               _StatusChip(status: s.status),
+               const SizedBox(width: PactaFlowSpacing.md),
+               if (canSubmitForApproval)
                 OutlinedButton.icon(
                   icon: _submitting
                       ? const SizedBox(
@@ -233,7 +217,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                       ? null
                       : () => _submitForApproval(context),
                 ),
-              if (canSubmitForApproval) const SizedBox(width: 8),
+              if (canSubmitForApproval) const SizedBox(width: PactaFlowSpacing.sm),
               if (canDeclarePlan)
                 FilledButton.icon(
                   icon: const Icon(Icons.playlist_add_check, size: 16),
@@ -427,29 +411,28 @@ class _FinancialTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 16,
         children: [
           _KpiCard(
             label: 'Receita Protegida',
             value: financialSummary.protectedRevenue,
-            color: Colors.green,
+            color: PactaFlowColors.onTime,
             icon: Icons.check_circle_outline,
           ),
-          const SizedBox(width: 16),
           _KpiCard(
             label: 'Receita em Risco',
             value: financialSummary.revenueAtRisk,
-            color: Colors.orange,
+            color: PactaFlowColors.warning,
             icon: Icons.warning_amber_outlined,
           ),
-          const SizedBox(width: 16),
           _KpiCard(
             label: 'Receita Perdida',
             value: financialSummary.lostRevenue,
-            color: Colors.red,
+            color: PactaFlowColors.error,
             icon: Icons.money_off_outlined,
           ),
-          const SizedBox(width: 16),
           _CountCard(
             label: 'Execuções',
             executed: financialSummary.totalExecuted,
@@ -478,7 +461,8 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return SizedBox(
+      width: 220, // Base width for wrap items
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -491,7 +475,7 @@ class _KpiCard extends StatelessWidget {
                   Icon(icon, size: 16, color: color),
                   const SizedBox(width: 6),
                   Text(label,
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      style: const TextStyle(fontSize: 12, color: PactaFlowColors.textSecondary)),
                 ],
               ),
               const SizedBox(height: 8),
@@ -524,7 +508,8 @@ class _CountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return SizedBox(
+      width: 220, // Base width for wrap items
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -533,12 +518,12 @@ class _CountCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  style: const TextStyle(fontSize: 12, color: PactaFlowColors.textSecondary)),
               const SizedBox(height: 8),
-              _countRow('Executados', executed, Colors.green),
-              _countRow('Pendentes', pending, Colors.blue),
-              _countRow('No-show', noShow, Colors.red),
-              _countRow('Gap evidência', gap, Colors.orange),
+              _countRow('Executados', executed, PactaFlowColors.onTime),
+              _countRow('Pendentes', pending, PactaFlowColors.scheduled),
+              _countRow('No-show', noShow, PactaFlowColors.error),
+              _countRow('Gap evidência', gap, PactaFlowColors.warning),
             ],
           ),
         ),
@@ -577,25 +562,19 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (status) {
-      ContractStatus.draft => ('Rascunho', Colors.blueGrey),
-      ContractStatus.awaitingContractorAcceptance => ('Aguardando Aceite', Colors.blue),
-      ContractStatus.active => ('Ativo', Colors.green),
-      ContractStatus.closed => ('Encerrado', Colors.red),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-            color: color, fontSize: 12, fontWeight: FontWeight.w600),
-      ),
+    return PactaFlowChip(
+      label: switch (status) {
+        ContractStatus.draft => 'Rascunho',
+        ContractStatus.awaitingContractorAcceptance => 'Aguardando Aceite',
+        ContractStatus.active => 'Ativo',
+        ContractStatus.closed => 'Encerrado',
+      },
+      color: switch (status) {
+        ContractStatus.draft => PactaFlowColors.neutral,
+        ContractStatus.awaitingContractorAcceptance => PactaFlowColors.info,
+        ContractStatus.active => PactaFlowColors.success,
+        ContractStatus.closed => PactaFlowColors.error,
+      },
     );
   }
 }

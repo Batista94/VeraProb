@@ -51,7 +51,8 @@
       "Bash(grep -E \"\\\\.\\(dart\\)$\")",
       "Bash(xargs basename:*)",
       "Bash(find /c/Projects/PactaFlow/lib/domain -type f -name *.dart)",
-      "Bash(find /c/Projects/PactaFlow/supabase/migrations -type f -name *contract* -o -name *invitation*)"
+      "Bash(find /c/Projects/PactaFlow/supabase/migrations -type f -name *contract* -o -name *invitation*)",
+      "Bash(git stash:*)"
     ]
   }
 }
