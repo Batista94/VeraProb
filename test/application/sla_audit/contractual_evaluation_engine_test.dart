@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:pactaflow/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:pactaflow/domain/entities/vehicle_operational_state.dart';
 import 'package:pactaflow/domain/enums/motion_state.dart';
@@ -8,6 +9,10 @@ import 'package:pactaflow/domain/sla_audit/contractual_execution_state.dart';
 import 'package:pactaflow/domain/sla_audit/execution_status.dart';
 import 'package:pactaflow/domain/sla_audit/plan_declaration.dart';
 import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:pactaflow/domain/sla_audit/shift_pattern.dart';
+import 'package:pactaflow/domain/sla_audit/sla_penalties.dart';
+import 'package:pactaflow/domain/sla_audit/vehicle_category.dart';
+import 'package:pactaflow/domain/sla_audit/week_cycle.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
@@ -15,6 +20,10 @@ import 'package:pactaflow/infrastructure/sla_audit/in_memory_evaluation_trace_re
 import 'package:pactaflow/domain/shared/money.dart';
 
 void main() {
+  setUpAll(() {
+    tz_data.initializeTimeZones();
+  });
+
   // ── Shared fixtures ──────────────────────────────────────
   late InMemoryContractualExecutionStateRepository repo;
   late InMemoryPlanDeclarationRepository planRepo;
@@ -385,5 +394,141 @@ void main() {
         expect(ledger.entries, hasLength(1));
       },
     );
+
+    // ── 7.5: Grace Period ─────────────────────────────────────
+
+    group('gracePeriodMinutes (7.5)', () {
+      /// Seeds a plan with a ShiftPattern that has [gracePeriodMinutes].
+      Future<void> seedPlanWithGracePeriod(
+        String contractId,
+        int version,
+        int gracePeriodMinutes,
+      ) async {
+        final pattern = ShiftPattern.create(
+          index: 0,
+          daysOfWeek: [DayOfWeek.monday],
+          arrivalTimeLocal: '07:00',
+          departureTimeLocal: '06:00',
+          timezone: 'America/Sao_Paulo',
+          originZoneId: 'zone-origin',
+          destinationZoneId: 'zone-dest',
+          penalties: SLAPenalties.create(
+            noShowPenaltyMultiplier: 1.5,
+            delayToleranceMinutes: 5,
+            delayPenaltyPerMinute: Money.fromDouble(1.0),
+            downgradePenaltyFlat: Money.fromDouble(50.0),
+            gracePeriodMinutes: gracePeriodMinutes,
+            baseTripValue: Money.fromDouble(100.0),
+          ),
+          requiredVehicleCategory: VehicleCategory.conventional,
+          weekCycle: WeekCycle.everyWeek,
+        );
+        final declaration = PlanDeclaration.createWithShiftPatterns(
+          organizationId: 'org-1',
+          contractId: contractId,
+          planVersion: version,
+          declaredAtUtc: DateTime.utc(2026, 1, 1),
+          declaredByUserId: 'user-1',
+          originalFileHash: 'hash-grace',
+          ruleSnapshot: const RuleSnapshot([]),
+          shiftPatterns: [pattern],
+        );
+        await planRepo.save(declaration);
+      }
+
+      test('SET inside grace period is skipped — no binding occurs', () async {
+        // windowStart = 06:00. Grace period = 10 min. Telemetry arrives at 06:05.
+        const contractId = 'c-grace';
+        final windowStart = DateTime.utc(2026, 3, 1, 6, 0);
+        await seedPlanWithGracePeriod(contractId, 1, 10);
+
+        final state = makeExecState(
+          contractId: contractId,
+          windowStart: windowStart,
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await repo.save(state);
+
+        // Telemetry inside geofence, but within grace window (06:05 < 06:00 + 10min)
+        final duringGrace = DateTime.utc(2026, 3, 1, 6, 5);
+        await engine.processVehicleState(
+          makeVehicleState(),
+          nowUtc: duringGrace,
+          organizationId: 'org-1',
+        );
+
+        final s = await repo.findBySetId(state.setId);
+        expect(s!.status, ExecutionStatus.pending,
+            reason: 'SET should remain pending during grace period');
+        expect(ledger.entries, isEmpty);
+      });
+
+      test('SET after grace period is evaluated — binding occurs normally', () async {
+        // windowStart = 06:00. Grace period = 5 min. Telemetry arrives after 06:05.
+        const contractId = 'c-after-grace';
+        final windowStart = DateTime.utc(2026, 3, 1, 6, 0);
+        await seedPlanWithGracePeriod(contractId, 1, 5);
+
+        final state = makeExecState(
+          contractId: contractId,
+          windowStart: windowStart,
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await repo.save(state);
+
+        // t0: first ping after grace ends — 06:06
+        final afterGrace = DateTime.utc(2026, 3, 1, 6, 6, 0);
+        await engine.processVehicleState(
+          makeVehicleState(),
+          nowUtc: afterGrace,
+          organizationId: 'org-1',
+        );
+
+        // t31: 31s later — dwell satisfied, binding should occur
+        final t31 = DateTime.utc(2026, 3, 1, 6, 6, 31);
+        await engine.processVehicleState(
+          makeVehicleState(),
+          nowUtc: t31,
+          organizationId: 'org-1',
+        );
+
+        final s = await repo.findBySetId(state.setId);
+        expect(s!.status, ExecutionStatus.executed,
+            reason: 'SET should be bound after grace period expires');
+      });
+
+      test('grace period 0 — SET evaluated immediately (no suppression)', () async {
+        // Grace period = 0 means the engine evaluates from windowStart.
+        const contractId = 'c-no-grace';
+        final windowStart = DateTime.utc(2026, 3, 1, 6, 0);
+        await seedPlanWithGracePeriod(contractId, 1, 0);
+
+        final state = makeExecState(
+          contractId: contractId,
+          windowStart: windowStart,
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await repo.save(state);
+
+        // t0: immediately at window start
+        final t0 = DateTime.utc(2026, 3, 1, 6, 0, 0);
+        await engine.processVehicleState(
+          makeVehicleState(),
+          nowUtc: t0,
+          organizationId: 'org-1',
+        );
+
+        final t31 = DateTime.utc(2026, 3, 1, 6, 0, 31);
+        await engine.processVehicleState(
+          makeVehicleState(),
+          nowUtc: t31,
+          organizationId: 'org-1',
+        );
+
+        final s = await repo.findBySetId(state.setId);
+        expect(s!.status, ExecutionStatus.executed,
+            reason: 'With grace=0, engine should bind immediately after dwell');
+      });
+    });
   });
 }

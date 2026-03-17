@@ -1,0 +1,18 @@
+Bloco 7 — Concluído ✅
+
+438 testes · 0 falhas · 0 warnings
+
+Resumo do que foi entregue
+
+Item | Artefato
+--- | ---
+SQL | 20260324000001_rule_studio_rpcs.sql — fix do constraint rule_config_schema_check + RPC atômica update_contractual_rule + RPC get_rule_version_history
+7.1 + 7.3 | UpdateContractualRuleCommand + UpdateContractualRuleHandler — RBAC, validação de config, delegação para RuleStudioCommandService
+Atomicidade | RuleStudioCommandService (port) + PostgresRuleStudioCommandService (impl via RPC)
+7.2 + 7.4 | RuleStudioScreen — 4 rule cards editáveis + version history panel por tipo colapsável
+7.5 | Engine: gracePeriodMinutes via _planCache — sem migration; fallback conservativo para planos com padrões divergentes
+7.6 | _ImpactSimulationPanel integrado ao dialog de edição — simulação qualitativa com diff de parâmetros e indicadores de direção de impacto
+Acesso | Botão "Configurar Regras" no ContractDetailScreen (visível em contratos active ou draft com plano)
+Testes | +11 novos: 8 para o handler (RBAC, config keys, versioning) + 3 para grace period no engine
+
+Bug crítico corrigido: rule_config_schema_check usava chaves divergentes das que o engine lê em runtime — min_coverage_pct vs min_dwell_seconds, multiplier_value vs penalty_amount_cents. Qualquer tentativa de inserir regras válidas seria rejeitada pelo DB antes desta migration.

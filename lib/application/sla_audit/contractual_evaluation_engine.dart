@@ -91,12 +91,25 @@ class ContractualEvaluationEngine {
     );
 
     for (final state in eligible) {
-      // TODO(grace-period): filter SETs in grace period when execution_states column is ready
       final rules = await _getRuleSnapshot(
         state.contractId,
         state.planVersion,
         state.organizationId,
       );
+
+      // Grace period: skip SETs whose buffer window has not yet elapsed.
+      // Grace period is read from the cached plan's shift patterns (Challenger approach —
+      // no schema migration required). When all patterns share the same value, that value
+      // is used. When patterns differ, we fall back to 0 (most conservative — engine
+      // starts checking immediately, no false passes).
+      final cacheKey = '${state.contractId}_${state.planVersion}';
+      final gracePeriodMinutes = _getGracePeriodMinutes(_planCache[cacheKey]);
+      if (gracePeriodMinutes > 0 &&
+          now.isBefore(
+            state.windowStartUtc.add(Duration(minutes: gracePeriodMinutes)),
+          )) {
+        continue;
+      }
 
       // Deterministic deterministic execution order
       final sortedRules = rules.rules.toList()
@@ -304,6 +317,22 @@ class ContractualEvaluationEngine {
         await _alertRepo.save(alert);
       }
     }
+  }
+
+  // ── Grace Period Helper ──────────────────────────────────
+
+  /// Returns the grace period (minutes) to apply before the engine starts
+  /// evaluating a SET. Reads from the cached [PlanDeclaration] shift patterns.
+  ///
+  /// Contract: if all shift patterns share the same [gracePeriodMinutes] value,
+  /// that value is returned. If patterns differ (edge case), returns 0 to avoid
+  /// incorrectly suppressing evaluation for any SET.
+  int _getGracePeriodMinutes(PlanDeclaration? plan) {
+    if (plan == null || plan.shiftPatterns.isEmpty) return 0;
+    final values = plan.shiftPatterns
+        .map((p) => p.penalties.gracePeriodMinutes)
+        .toSet();
+    return values.length == 1 ? values.first : 0;
   }
 
   // ── Haversine ───────────────────────────────────────────

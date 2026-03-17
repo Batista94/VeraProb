@@ -6,7 +6,7 @@
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 404 passing · 0 falhas ✅ |
+| Testes | 438 passing · 0 falhas ✅ |
 | Análise estática | 0 erros · 75 infos |
 | Precisão financeira | `Money` (centavos BIGINT) — Enforced ✅ |
 | Sprint 5.11 - 5.12 | **CONCLUÍDAS** — JIT Master Data, RLS, UTC. |
@@ -37,7 +37,7 @@ Phase 5 (B2B Refactoring) is completing Sprint 5.13. Phase 6 makes the product s
 - [x] 1.3 Refactor `UserRole` enum: 4 → 3 (admin, operator, auditor); update `currentUserRoleProvider`
 - [x] 1.4 Enrich `organizations` table: add `timezone`, `currency_code`, `logo_url`
 - [x] 1.5 Seed `user_roles` for bootstrap dev user as `TENANT_ADMIN`
-- [ ] 1.6 **Audit Fix**: Update `custom_access_token_hook` to use SQL `NULL` instead of `'null'` string for cast safety.
+- [x] 1.6 **Audit Fix**: Update `custom_access_token_hook` to use SQL `NULL` instead of `'null'` string for cast safety. ✅
 - **SQL:** `20260317000001_rls_jwt_path_unification.sql`, `20260317000002_organizations_enrichment.sql`
 
 #### BLOCO 2 — Contractor Aggregate & Zone FK Migration
@@ -87,13 +87,23 @@ Phase 5 (B2B Refactoring) is completing Sprint 5.13. Phase 6 makes the product s
 *   **UI:** Página de review pública e integração na tela de detalhes do contrato.
 *   **Testes:** 12 novos testes (8 submit, 4 accept) com 100% de aprovação.
 
-#### BLOCO 7 — Rule Configuration Studio
-- [ ] 7.1 Implement `PostgresContractualRuleRepository.saveRule()`
-- [ ] 7.2 Rule Studio Screen: Visual parameters editor
-- [ ] 7.3 Rule Immutability Logic: creating new versions for active plans
-- [ ] 7.4 Version history panel (Read-only)
-- [ ] 7.5 **Audit Fix**: Implement `gracePeriodMinutes` logic in `ContractualEvaluationEngine` (Bridge DNA gap).
-- [ ] 7.6 **Maverick Priority**: Implement "Financial Impact Simulation" UI — visualize margin protection while editing rules.
+#### BLOCO 7 — Rule Configuration Studio ✅
+- [x] 7.1 `UpdateContractualRuleCommand` + `UpdateContractualRuleHandler` (Application layer)
+- [x] 7.2 Rule Studio Screen: Visual parameters editor por tipo de regra
+- [x] 7.3 Rule Immutability Logic: RPC atômica `update_contractual_rule` (close + insert na mesma transação)
+- [x] 7.4 Version history panel (Read-only, por tipo de regra)
+- [x] 7.5 **Audit Fix**: `gracePeriodMinutes` implementado no `ContractualEvaluationEngine` via `_planCache` (Challenger — sem migration)
+- [x] 7.6 **Maverick Priority**: Financial Impact Simulation integrada ao `_RuleEditDialog` (simulação qualitativa com diff de parâmetros)
+- **SQL:** `20260324000001_rule_studio_rpcs.sql` (constraint fix + 2 RPCs)
+- **Testes:** +11 testes (8 handler + 3 grace period engine) · Total: 438 passing
+
+**Resumo do Bloco 7:**
+*   **SQL:** Migration fix para chaves de configuração e implementação das RPCs de versionamento e update atômico.
+*   **Application:** Command e Handler com suporte a RBAC e validação de parâmetros. Interface `RuleStudioCommandService`.
+*   **Infrastructure:** Adapter Supabase via RPC para garantir imutabilidade e versionamento na edição de regras.
+*   **UI:** `RuleStudioScreen` com edição in-place, visual history e simulação de impacto financeiro qualitativo.
+*   **Engine:** Suporte a `gracePeriodMinutes` (Carência) via cache de planos, fechando gap de auditoria Maverick.
+*   **Testes:** Cobertura de 438 testes com 0 falhas, incluindo validações de regras e carência.
 
 #### BLOCO 8 — Asset Manager (Vehicles, Drivers, Routes)
 - [ ] 8.1 Asset Manager Screen (Tabbed CRUD)
