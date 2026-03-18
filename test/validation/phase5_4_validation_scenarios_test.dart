@@ -27,7 +27,9 @@ import 'package:pactaflow/application/sla_audit/declare_contractual_plan_handler
 import 'package:pactaflow/application/sla_audit/contractual_service_input.dart';
 import 'package:pactaflow/application/sla_audit/projections/contract_query_service_in_memory.dart';
 import 'package:pactaflow/application/sla_audit/shift_projection_service.dart';
+import 'package:pactaflow/domain/admin/i_active_vehicle_repository.dart';
 import 'package:pactaflow/domain/sla_audit/contractual_rule_repository.dart';
+import 'package:pactaflow/domain/sla_audit/operational_zone_repository.dart';
 import 'package:pactaflow/domain/sla_audit/contractual_rule.dart';
 import 'package:pactaflow/domain/enums/user_role.dart';
 import 'package:pactaflow/domain/services/rbac_service.dart';
@@ -108,6 +110,8 @@ void main() {
       ledger: ledger,
       ruleRepository: _StubRuleRepository(),
       contractRepository: contractRepo,
+      zoneRepository: _StubZoneRepository(),
+      vehicleRepository: _StubVehicleRepository(),
     );
   });
 
@@ -600,6 +604,8 @@ void main() {
           ledger: b2bLedger,
           ruleRepository: _StubRuleRepository(),
           contractRepository: b2bContractRepo,
+          zoneRepository: zoneRepo,
+          vehicleRepository: _StubVehicleRepository(),
           projectionService: projectionService,
         );
 
@@ -661,4 +667,25 @@ void main() {
       },
     );
   });
+}
+
+// ── INV-18 stubs ─────────────────────────────────────────────────────────────
+// These satisfy the Engine Activation Gate for lifecycle tests that pre-date
+// INV-18 and do not exercise the zone/vehicle gate directly.
+
+class _StubZoneRepository implements OperationalZoneRepository {
+  @override
+  Future<List<OperationalZone>> findByOrganization(String organizationId) async =>
+      [OperationalZone.create(organizationId: organizationId, name: 'Stub', type: ZoneType.garagem)];
+
+  @override
+  Future<OperationalZone?> findById(String id, {required String organizationId}) async => null;
+
+  @override
+  Future<void> save(OperationalZone zone) async {}
+}
+
+class _StubVehicleRepository implements IActiveVehicleRepository {
+  @override
+  Future<int> countActiveByOrganization(String organizationId) async => 1;
 }

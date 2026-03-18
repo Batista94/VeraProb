@@ -35,7 +35,7 @@ void main() {
 
   ContractualFinancialDailySnapshot makeSnapshot({
     required DateTime date,
-    int lastLedgerEntryId = 100,
+    String? lastLedgerEntryId = '100',
     Money totalRevenue = const Money(100000),
   }) {
     return ContractualFinancialDailySnapshot.create(
@@ -120,9 +120,9 @@ void main() {
 
     test('reportLedgerBoundary = max(snapshot.lastLedgerEntryId) across snapshots', () async {
       // Three snapshots with different lastLedgerEntryIds
-      await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 1), lastLedgerEntryId: 42));
-      await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 2), lastLedgerEntryId: 99));
-      await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 3), lastLedgerEntryId: 71));
+      await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 1), lastLedgerEntryId: '42'));
+      await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 2), lastLedgerEntryId: '99'));
+      await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 3), lastLedgerEntryId: '71'));
 
       final sealed = await service.createDraftAndSeal(
         organizationId: orgId,
@@ -135,7 +135,7 @@ void main() {
         attestationHeader: makeHeader(),
       );
 
-      expect(sealed.reportLedgerBoundary, equals(99));
+      expect(sealed.reportLedgerBoundary, equals('71'));
     });
 
     test('reportLedgerBoundary = 0 when all snapshots have null lastLedgerEntryId', () async {
@@ -169,11 +169,11 @@ void main() {
         attestationHeader: makeHeader(),
       );
 
-      expect(sealed.reportLedgerBoundary, equals(0));
+      expect(sealed.reportLedgerBoundary, isNull);
     });
 
     test('same inputs → identical packageHash (determinism)', () async {
-      await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 1), lastLedgerEntryId: 50));
+      await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 1), lastLedgerEntryId: '50'));
 
       final sealed1 = await service.createDraftAndSeal(
         organizationId: orgId,

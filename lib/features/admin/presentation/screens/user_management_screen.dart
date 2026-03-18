@@ -422,6 +422,7 @@ class _PendingInvitationTile extends StatelessWidget {
       UserRole.admin => 'Administrador',
       UserRole.operator => 'Operador',
       UserRole.auditor => 'Auditor',
+      UserRole.contractorViewer => 'Visualizador Contratante',
     };
     final expiryStr = invitation.expiresAtUtc.toLocal().toString().split(
       '.',

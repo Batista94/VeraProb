@@ -47,7 +47,7 @@ void main() async {
             executedCount: 80,
             noShowCount: 5,
             evidenceGapCount: 15,
-            lastLedgerEntryId: 442,
+            lastLedgerEntryId: '442',
           );
 
           // Mutates to executed state to test bindings
@@ -68,7 +68,7 @@ void main() async {
           expect(loaded.totalContractedRevenue.cents, 1000000);
           expect(loaded.riskPercentage, 15.0); // 1.5k over 10k
           expect(loaded.lossPercentage, 5.0); // 500 over 10k
-          expect(loaded.lastLedgerEntryId, 442);
+          expect(loaded.lastLedgerEntryId, '442');
           expect(loaded.previousSnapshotId, isNull);
         },
       );
@@ -96,7 +96,7 @@ void main() async {
             executedCount: 50,
             noShowCount: 0,
             evidenceGapCount: 50,
-            lastLedgerEntryId: 990,
+            lastLedgerEntryId: '990',
           );
 
           await repository.save(originalSnapshot);
@@ -116,7 +116,7 @@ void main() async {
             executedCount: 80,
             noShowCount: 0,
             evidenceGapCount: 20,
-            lastLedgerEntryId: 1050,
+            lastLedgerEntryId: '1050',
             previousSnapshotId: originalSnapshot.id,
             reprocessingReason: 'Late operator check-in',
           );

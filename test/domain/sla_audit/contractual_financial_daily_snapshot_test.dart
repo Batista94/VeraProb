@@ -19,7 +19,7 @@ void main() {
         executedCount: 8,
         noShowCount: 1,
         evidenceGapCount: 1,
-        lastLedgerEntryId: 1,
+        lastLedgerEntryId: '1',
       );
 
       expect(snapshot.contractId, 'c-1');
@@ -45,7 +45,7 @@ void main() {
         executedCount: 10,
         noShowCount: 0,
         evidenceGapCount: 0,
-        lastLedgerEntryId: 1,
+        lastLedgerEntryId: '1',
       );
 
       expect(snapshot.operationalDateUtc, DateTime.utc(2026, 3, 1));
@@ -66,7 +66,7 @@ void main() {
         executedCount: 5,
         noShowCount: 2,
         evidenceGapCount: 3,
-        lastLedgerEntryId: 1,
+        lastLedgerEntryId: '1',
       );
 
       expect(snapshot.riskPercentage, 30.0);
@@ -88,7 +88,7 @@ void main() {
         executedCount: 0,
         noShowCount: 0,
         evidenceGapCount: 0,
-        lastLedgerEntryId: 1,
+        lastLedgerEntryId: '1',
       );
 
       expect(snapshot.riskPercentage, 0.0);
@@ -110,7 +110,7 @@ void main() {
         executedCount: 10,
         noShowCount: 0,
         evidenceGapCount: 0,
-        lastLedgerEntryId: 1,
+        lastLedgerEntryId: '1',
       );
 
       // Different id means different instance but same value semantics
@@ -131,7 +131,7 @@ void main() {
         executedCount: 8,
         noShowCount: 1,
         evidenceGapCount: 1,
-        lastLedgerEntryId: 1,
+        lastLedgerEntryId: '1',
       );
       expect(snapshot.riskPercentage, 30.0);
     });

@@ -155,7 +155,10 @@ Validar antes de implementar:
 ### [ ] Phase 8 — Operational Hardening
 
 **Por que depois de Phase 7:** O hardening operacional prepara o produto para receber tráfego real.
-Executá-lo antes de ter todas as features ser#### [ ] 8.1 — Systemic UX, Hard Gates & Dual-Key RLS
+Executá-lo antes de ter todas as features seriam contraproducente.
+
+#### [/] 8.1 — Systemic UX, Hard Gates & Dual-Key RLS (Partial)
+
 
 **Fonte da Verdade:** [`docs/architecture/12_systemic_user_journeys.md`](../architecture/12_systemic_user_journeys.md)
 
@@ -163,7 +166,7 @@ Executá-lo antes de ter todas as features ser#### [ ] 8.1 — Systemic UX, Hard
 
 **Invariantes ratificadas:** INV-18 · INV-19 · INV-20
 
-##### [ ] 8.1.1 — Hard Gate: Engine Activation (INV-18)
+##### [x] 8.1.1 — Hard Gate: Engine Activation (INV-18) ✅
 - **Domain/Application:** Adicionar guard em `DeclareContractualPlanHandler` (`lib/application/sla_audit/declare_contractual_plan_handler.dart`)
   - `operationalZoneRepository.countByOrg(organizationId) > 0` → throw `DomainException('No operational zones configured for this organization')`
   - Se shift-based: `vehicleRepository.countActive(organizationId) > 0` → throw `DomainException('No active vehicles found for this organization')`
@@ -176,7 +179,7 @@ Executá-lo antes de ter todas as features ser#### [ ] 8.1 — Systemic UX, Hard
   - Após salvar, injeta o novo contractor no campo sem fechar o formulário pai
 - **Invariante:** O formulário pai nunca perde estado durante a criação de dependência
 
-##### [ ] 8.1.3 — Dual-Key RLS para CONTRACTOR_VIEWER (INV-20)
+##### [x] 8.1.3 — Dual-Key RLS para CONTRACTOR_VIEWER (INV-20) ✅
 - **SQL — Migration:** `[timestamp]_contractor_viewer_role.sql`
   - Adicionar coluna `contractor_id UUID REFERENCES contractors(id)` em `user_roles`
   - Atualizar `custom_access_token_hook` para injetar `app_metadata.contractor_id` quando `role = 'CONTRACTOR_VIEWER'`
@@ -190,7 +193,7 @@ Executá-lo antes de ter todas as features ser#### [ ] 8.1 — Systemic UX, Hard
   ```
 - **BLOCKER:** PO deve confirmar *"SQL executado no SQL Editor do Supabase"* antes da implementação Flutter
 
-##### [ ] 8.1.4 — Correção de JWT Path em `audit_packages` (Technical Debt)
+##### [x] 8.1.4 — Correção de JWT Path em audit_packages (Technical Debt) ✅
 - **SQL:** Corrigir RLS de `audit_packages` de `(auth.jwt() ->> 'organization_id')::uuid` para `(auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid` (alinhar com INV-10)
 - **Arquivo:** `supabase/migrations/20260401000001_audit_packages.sql` (linha 108-115)
 - **Nota:** Executar ANTES de 8.1.3 para evitar conflito de políticas
@@ -340,12 +343,12 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 ─────────────────────────────────────────────────────
 [x] Phase 7.5 — Financial Defense & Shadow Mode 🛡️ ✅
 ─────────────────────────────────────────────────────
-[ ] Phase 8 — Operational Hardening (NEXT)
+[ ] Phase 8 — Operational Hardening (PARTIAL)
 ─────────────────────────────────────────────────────
 
 ### Próximo passo: Phase 8 — Operational Hardening
 Preparar o fluxo sistêmico e a infraestrutura para produção real.
-1. [ ] 8.1 Systemic UX, Hard Gates & Dual-Key RLS (INV-18, INV-19, INV-20)
+1. [/] 8.1 Systemic UX, Hard Gates & Dual-Key RLS (Partial: 8.1.1, 8.1.3, 8.1.4 ✅)
 2. [ ] 8.2 CI/CD Pipeline
 3. [ ] 8.3 Separação de Ambientes
 4. [ ] 8.4 Observabilidade (Sentry/PostHog)

@@ -10,10 +10,19 @@ enum UserRole {
   operator,
 
   /// Read-only access. Can view dashboards, reports, and audit trails.
-  auditor;
+  auditor,
+
+  /// External contractor read-only access. Scoped to a single contractor via
+  /// dual-key JWT isolation (INV-20). Cannot access any tenant-internal data.
+  /// JWT carries both org_id and contractor_id claims.
+  contractorViewer;
 
   /// Returns true if this role has equal or greater privileges than the [requiredRole].
+  ///
+  /// [contractorViewer] has no privileges in the tenant-internal hierarchy —
+  /// it operates in a separate, contractor-scoped access domain.
   bool hasPermission(UserRole requiredRole) {
+    if (this == UserRole.contractorViewer) return false;
     if (this == UserRole.admin) return true;
     if (this == UserRole.operator) {
       return requiredRole == UserRole.operator ||
@@ -31,6 +40,8 @@ enum UserRole {
         return 'Operador';
       case UserRole.auditor:
         return 'Auditor';
+      case UserRole.contractorViewer:
+        return 'Visualizador Contratante';
     }
   }
 }

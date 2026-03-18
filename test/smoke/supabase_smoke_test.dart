@@ -53,6 +53,9 @@ import 'package:pactaflow/application/sla_audit/create_contract_command.dart';
 import 'package:pactaflow/application/sla_audit/create_contract_handler.dart';
 import 'package:pactaflow/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:pactaflow/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:pactaflow/domain/sla_audit/operational_zone_repository.dart';
+import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
+import 'package:pactaflow/infrastructure/admin/in_memory_active_vehicle_repository.dart';
 
 // Infrastructure
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
@@ -109,6 +112,30 @@ class _SmokeContractStub implements ContractRepository {
     ContractStatus? status,
   }) async =>
       [];
+}
+
+class _StubZoneRepository implements OperationalZoneRepository {
+  @override
+  Future<List<OperationalZone>> findByOrganization(
+    String organizationId,
+  ) async =>
+      [
+        OperationalZone.create(
+          organizationId: organizationId,
+          name: 'Stub',
+          type: ZoneType.garagem,
+        ),
+      ];
+
+  @override
+  Future<OperationalZone?> findById(
+    String id, {
+    required String organizationId,
+  }) async =>
+      null;
+
+  @override
+  Future<void> save(OperationalZone zone) async {}
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -210,6 +237,10 @@ void main() {
         // Stub em memória — ativa o contrato no domínio sem exigir upsert
         contractRepository:
             _SmokeContractStub(contractId: contractId, orgId: orgId),
+        zoneRepository: _StubZoneRepository(),
+        vehicleRepository: InMemoryActiveVehicleRepository(
+          countsByOrg: {orgId: 1},
+        ),
       );
 
       engine = ContractualEvaluationEngine(

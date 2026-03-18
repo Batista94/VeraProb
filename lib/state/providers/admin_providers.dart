@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/supabase_client.dart';
+import '../../domain/admin/i_active_vehicle_repository.dart';
 import '../../domain/admin/invitation.dart';
 import '../../domain/admin/organization.dart';
 import '../../domain/admin/organization_repository.dart';
+import '../../infrastructure/admin/postgres_active_vehicle_repository.dart';
 import '../../infrastructure/admin/postgres_organization_repository.dart';
 import '../../infrastructure/admin/postgres_user_management_command_service.dart';
 import '../../infrastructure/admin/postgres_user_management_query_service.dart';
@@ -17,6 +19,13 @@ import '../../application/admin/invite_user_handler.dart';
 import '../../application/admin/accept_invitation_handler.dart';
 import '../../application/admin/revoke_invitation_handler.dart';
 import 'auth_providers.dart';
+
+/// Provider for the active vehicle repository (INV-18: Engine Activation Gate).
+final activeVehicleRepositoryProvider = Provider<IActiveVehicleRepository>((
+  ref,
+) {
+  return PostgresActiveVehicleRepository(supabase);
+});
 
 /// Provider for the organization repository implementation.
 final organizationRepositoryProvider = Provider<OrganizationRepository>((ref) {

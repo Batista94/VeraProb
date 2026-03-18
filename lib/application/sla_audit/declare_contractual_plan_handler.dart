@@ -1,8 +1,10 @@
+import '../../domain/admin/i_active_vehicle_repository.dart';
 import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/contract_repository.dart';
 import '../../domain/sla_audit/contractual_rule_repository.dart';
 import '../../domain/sla_audit/contractual_service_execution.dart';
 import '../../domain/sla_audit/domain_exception.dart';
+import '../../domain/sla_audit/operational_zone_repository.dart';
 import '../../domain/sla_audit/plan_declaration.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
@@ -24,6 +26,10 @@ import 'sla_ledger_mapper.dart';
 /// - [PlanDeclaration.createWithShiftPatterns()] — B2B mode
 /// - [ShiftProjectionService.projectDays()] — eager 30-day SET projection (B2B)
 ///
+/// INV-18 (Engine Activation Gate) is enforced here before any persistence:
+/// - At least one [OperationalZone] must exist for the organization.
+/// - For shift-based plans, at least one active vehicle must also exist.
+///
 /// If any [DomainException] is thrown during creation, nothing is persisted.
 class DeclareContractualPlanHandler {
   final PlanDeclarationRepository _repository;
@@ -31,9 +37,15 @@ class DeclareContractualPlanHandler {
   final ContractualRuleRepository _ruleRepository;
   final ContractRepository _contractRepository;
 
+  /// Required for INV-18: verifies spatial context before engine activation.
+  final OperationalZoneRepository _zoneRepository;
+
+  /// Required for INV-18: verifies active vehicle availability for shift-based plans.
+  final IActiveVehicleRepository _vehicleRepository;
+
   /// Optional projection service. When provided, B2B shift-based plans eagerly
   /// project SETs for the next 30 days immediately after declaration (B1 decision).
-  /// Null = projection disabled (backwards compatible — used in tests without zone repos).
+  /// Null = projection disabled (backwards compatible — used in tests without projection).
   final ShiftProjectionService? _projectionService;
 
   DeclareContractualPlanHandler({
@@ -41,11 +53,15 @@ class DeclareContractualPlanHandler {
     required SlaAuditLedgerRepository ledger,
     required ContractualRuleRepository ruleRepository,
     required ContractRepository contractRepository,
+    required OperationalZoneRepository zoneRepository,
+    required IActiveVehicleRepository vehicleRepository,
     ShiftProjectionService? projectionService,
   }) : _repository = repository,
        _ledger = ledger,
        _ruleRepository = ruleRepository,
        _contractRepository = contractRepository,
+       _zoneRepository = zoneRepository,
+       _vehicleRepository = vehicleRepository,
        _projectionService = projectionService;
 
   /// Handles the command by creating the aggregate, persisting it,
@@ -73,6 +89,25 @@ class DeclareContractualPlanHandler {
       throw const DomainException(
         'contractualValueCents must be > 0 for shift-based plans',
       );
+    }
+
+    // INV-18: Engine Activation Gate — spatial context is mandatory.
+    // The engine cannot produce spatial SLA evaluations without at least one
+    // geofenced zone. For shift-based plans, an active vehicle is also required.
+    final zones = await _zoneRepository.findByOrganization(command.organizationId);
+    if (zones.isEmpty) {
+      throw const DomainException(
+        'No operational zones configured for this organization',
+      );
+    }
+    if (isShiftBased) {
+      final activeVehicleCount = await _vehicleRepository
+          .countActiveByOrganization(command.organizationId);
+      if (activeVehicleCount == 0) {
+        throw const DomainException(
+          'No active vehicles found for this organization',
+        );
+      }
     }
 
     // 0. Validate Contract exists and can receive a plan (Phase 5)

@@ -41,7 +41,7 @@ void main() {
         executedCount: 17,
         noShowCount: noShowCount,
         evidenceGapCount: evidenceGapCount,
-        lastLedgerEntryId: 100,
+        lastLedgerEntryId: '100',
       );
 
   CanonicalFact makeCanonicalFact({

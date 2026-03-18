@@ -37,7 +37,7 @@ void main() {
       executedCount: 7,
       noShowCount: 1,
       evidenceGapCount: 2,
-      lastLedgerEntryId: 100,
+      lastLedgerEntryId: '100',
     );
   }
 

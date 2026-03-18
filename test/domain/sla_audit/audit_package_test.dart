@@ -16,7 +16,7 @@ void main() {
   ContractualFinancialDailySnapshot makeSnapshot({
     String orgId = 'org-abc',
     String? contractId = 'contract-1',
-    int lastLedgerEntryId = 100,
+    String? lastLedgerEntryId = '100',
     int executed = 8,
     int noShow = 2,
     int totalObligations = 10,
@@ -68,7 +68,7 @@ void main() {
 
   AuditPackage makeDraft({
     String orgId = 'org-abc',
-    int reportLedgerBoundary = 100,
+    String? reportLedgerBoundary = '100',
   }) =>
       AuditPackage.createDraft(
         organizationId: orgId,
@@ -92,8 +92,8 @@ void main() {
     });
 
     test('sets reportLedgerBoundary from argument', () {
-      final draft = makeDraft(reportLedgerBoundary: 4471);
-      expect(draft.reportLedgerBoundary, 4471);
+      final draft = makeDraft(reportLedgerBoundary: '4471');
+      expect(draft.reportLedgerBoundary, '4471');
     });
 
     test('derives snapshotIds from report', () {
@@ -105,7 +105,7 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         report: report,
-        reportLedgerBoundary: 100,
+        reportLedgerBoundary: '100',
         engineVersionAtGeneration: '1.0.0',
         generatedByUserId: 'user-1',
         attestationHeader: makeAttestation(),
@@ -122,7 +122,7 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         report: report,
-        reportLedgerBoundary: 100,
+        reportLedgerBoundary: '100',
         engineVersionAtGeneration: '1.0.0',
         generatedByUserId: 'user-1',
         attestationHeader: makeAttestation(),
@@ -149,7 +149,7 @@ void main() {
           periodStartUtc: DateTime.utc(2026, 3, 31),
           periodEndUtc: DateTime.utc(2026, 3, 1),
           report: makeReport(),
-          reportLedgerBoundary: 100,
+          reportLedgerBoundary: '100',
           engineVersionAtGeneration: '1.0.0',
           generatedByUserId: 'user-1',
           attestationHeader: makeAttestation(),
@@ -167,7 +167,7 @@ void main() {
           periodStartUtc: DateTime(2026, 3, 1), // local time
           periodEndUtc: periodEnd,
           report: makeReport(),
-          reportLedgerBoundary: 100,
+          reportLedgerBoundary: '100',
           engineVersionAtGeneration: '1.0.0',
           generatedByUserId: 'user-1',
           attestationHeader: makeAttestation(),
@@ -198,15 +198,15 @@ void main() {
     });
 
     test('same inputs produce byte-identical packageHash (determinism)', () {
-      final draft = makeDraft(reportLedgerBoundary: 999);
+      final draft = makeDraft(reportLedgerBoundary: '999');
       final sealed1 = draft.seal();
       final sealed2 = draft.seal();
       expect(sealed1.packageHash, equals(sealed2.packageHash));
     });
 
     test('different reportLedgerBoundary produces different hash', () {
-      final sealed1 = makeDraft(reportLedgerBoundary: 100).seal();
-      final sealed2 = makeDraft(reportLedgerBoundary: 200).seal();
+      final sealed1 = makeDraft(reportLedgerBoundary: '100').seal();
+      final sealed2 = makeDraft(reportLedgerBoundary: '200').seal();
       expect(sealed1.packageHash, isNot(equals(sealed2.packageHash)));
     });
 
@@ -379,9 +379,9 @@ void main() {
   // ── Reportledger boundary: max across multiple snapshots ───────────────────
   group('reportLedgerBoundary semantics', () {
     test('max across snapshots is the correct boundary', () {
-      final snap1 = makeSnapshot(lastLedgerEntryId: 4210);
-      final snap2 = makeSnapshot(lastLedgerEntryId: 4471);
-      final snap3 = makeSnapshot(lastLedgerEntryId: 4318);
+      final snap1 = makeSnapshot(lastLedgerEntryId: '4210');
+      final snap2 = makeSnapshot(lastLedgerEntryId: '4471');
+      final snap3 = makeSnapshot(lastLedgerEntryId: '4318');
 
       final report = BillingCycleReport.create(
         organizationId: 'org-abc',
@@ -394,8 +394,8 @@ void main() {
         generatedAtUtc: generatedAt,
       );
 
-      // The service computes max — test that the value is accepted correctly
-      final maxBoundary = [4210, 4471, 4318].reduce((a, b) => a > b ? a : b);
+      // The caller computes max and passes it — test that the value is accepted correctly
+      const maxBoundary = '4471';
       final draft = AuditPackage.createDraft(
         organizationId: 'org-abc',
         contractId: 'contract-1',
@@ -408,7 +408,7 @@ void main() {
         generatedByUserId: 'user-1',
         attestationHeader: makeAttestation(),
       );
-      expect(draft.reportLedgerBoundary, 4471);
+      expect(draft.reportLedgerBoundary, '4471');
     });
   });
 }

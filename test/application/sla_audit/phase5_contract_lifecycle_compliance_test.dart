@@ -28,6 +28,9 @@ import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
 import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
 import 'package:pactaflow/domain/enums/user_role.dart';
 import 'package:pactaflow/domain/services/rbac_service.dart';
+import 'package:pactaflow/domain/admin/i_active_vehicle_repository.dart';
+import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
+import 'package:pactaflow/domain/sla_audit/operational_zone_repository.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
@@ -60,6 +63,8 @@ void main() {
         ledger: ledger,
         ruleRepository: _MockRuleRepository(),
         contractRepository: contractRepo,
+        zoneRepository: _StubZoneRepository(),
+        vehicleRepository: _StubVehicleRepository(),
       );
     });
 
@@ -275,4 +280,23 @@ class _MockRuleRepository implements ContractualRuleRepository {
 
   @override
   Future<void> saveRule(ContractualRule rule) async {}
+}
+
+/// Satisfies the INV-18 zone gate for any org without polluting lifecycle tests.
+class _StubZoneRepository implements OperationalZoneRepository {
+  @override
+  Future<List<OperationalZone>> findByOrganization(String organizationId) async =>
+      [OperationalZone.create(organizationId: organizationId, name: 'Stub', type: ZoneType.garagem)];
+
+  @override
+  Future<OperationalZone?> findById(String id, {required String organizationId}) async => null;
+
+  @override
+  Future<void> save(OperationalZone zone) async {}
+}
+
+/// Satisfies the INV-18 vehicle gate for any org without polluting lifecycle tests.
+class _StubVehicleRepository implements IActiveVehicleRepository {
+  @override
+  Future<int> countActiveByOrganization(String organizationId) async => 1;
 }

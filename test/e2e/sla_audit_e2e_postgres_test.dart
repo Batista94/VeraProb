@@ -28,6 +28,9 @@ import 'package:pactaflow/infrastructure/sla_audit/postgres_sla_execution_query_
 import 'package:pactaflow/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import 'package:pactaflow/domain/shared/money.dart';
+import 'package:pactaflow/domain/sla_audit/operational_zone_repository.dart';
+import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
+import 'package:pactaflow/infrastructure/admin/in_memory_active_vehicle_repository.dart';
 
 // ── Database Integrity Helpers ───────────────────────────
 
@@ -81,7 +84,7 @@ void main() {
   final operationalDateUtc = DateTime.utc(2026, 3, 3); // Normalized to 00:00Z
 
   String? sharedSetId;
-  int? originalSnapshotLedgerEntryId;
+  String? originalSnapshotLedgerEntryId;
   String? originalSnapshotId;
 
   // ── Setup & Teardown ─────────────────────────────────────
@@ -113,6 +116,10 @@ void main() {
       ledger: ledgerRepo,
       ruleRepository: MockContractualRuleRepository(),
       contractRepository: MockContractRepository(),
+      zoneRepository: _StubZoneRepository(),
+      vehicleRepository: InMemoryActiveVehicleRepository(
+        countsByOrg: {'org-1': 1},
+      ),
     );
 
     evaluationEngine = ContractualEvaluationEngine(
@@ -594,4 +601,28 @@ class MockContractRepository implements ContractRepository {
   }) async {
     return [];
   }
+}
+
+class _StubZoneRepository implements OperationalZoneRepository {
+  @override
+  Future<List<OperationalZone>> findByOrganization(
+    String organizationId,
+  ) async =>
+      [
+        OperationalZone.create(
+          organizationId: organizationId,
+          name: 'Stub',
+          type: ZoneType.garagem,
+        ),
+      ];
+
+  @override
+  Future<OperationalZone?> findById(
+    String id, {
+    required String organizationId,
+  }) async =>
+      null;
+
+  @override
+  Future<void> save(OperationalZone zone) async {}
 }

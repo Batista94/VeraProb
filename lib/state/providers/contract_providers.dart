@@ -23,6 +23,7 @@ import '../../infrastructure/sla_audit/in_memory_contractual_rule_repository.dar
 import '../../infrastructure/sla_audit/postgres_contract_query_service.dart';
 import '../../infrastructure/sla_audit/postgres_contractual_rule_repository.dart';
 import '../../infrastructure/providers/supabase_provider.dart';
+import 'admin_providers.dart';
 import 'auth_providers.dart';
 import 'operational_zone_providers.dart';
 import 'sla_providers.dart';
@@ -114,6 +115,8 @@ final declareContractualPlanHandlerProvider =
         ledger: ref.watch(slaAuditLedgerRepositoryProvider),
         ruleRepository: ref.watch(contractualRuleRepositoryProvider),
         contractRepository: ref.watch(contractRepositoryProvider),
+        zoneRepository: ref.watch(operationalZoneRepositoryProvider),
+        vehicleRepository: ref.watch(activeVehicleRepositoryProvider),
         projectionService: ref.watch(shiftProjectionServiceProvider),
       );
     });

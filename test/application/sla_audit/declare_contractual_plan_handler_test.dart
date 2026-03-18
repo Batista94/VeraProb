@@ -8,26 +8,61 @@ import 'package:pactaflow/domain/sla_audit/contract_status.dart';
 import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
 import 'package:pactaflow/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:pactaflow/domain/sla_audit/contractual_rule.dart';
+import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
 import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
+import 'package:pactaflow/domain/sla_audit/shift_pattern.dart';
+import 'package:pactaflow/domain/sla_audit/sla_penalties.dart';
+import 'package:pactaflow/domain/shared/money.dart';
+import 'package:pactaflow/infrastructure/admin/in_memory_active_vehicle_repository.dart';
+import 'package:pactaflow/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
+const _orgId = 'org-1';
 
 void main() {
   // ── Shared fixtures ──────────────────────────────────────
   late InMemoryPlanDeclarationRepository repository;
   late InMemorySlaAuditLedgerRepository ledger;
+  late InMemoryOperationalZoneRepository zoneRepository;
   late DeclareContractualPlanHandler handler;
 
-  setUp(() {
-    repository = InMemoryPlanDeclarationRepository();
-    ledger = InMemorySlaAuditLedgerRepository();
-    handler = DeclareContractualPlanHandler(
+  /// Creates a handler with a pre-populated zone (INV-18 happy path).
+  /// [activeVehicleCount] controls the vehicle gate for shift-based tests.
+  /// [zones] overrides the default zone repository when provided.
+  DeclareContractualPlanHandler makeHandler({
+    int activeVehicleCount = 1,
+    InMemoryOperationalZoneRepository? zones,
+  }) {
+    return DeclareContractualPlanHandler(
       repository: repository,
       ledger: ledger,
       ruleRepository: MockContractualRuleRepository(),
       contractRepository: MockContractRepository(),
+      zoneRepository: zones ?? zoneRepository,
+      vehicleRepository: InMemoryActiveVehicleRepository(
+        countsByOrg: {_orgId: activeVehicleCount},
+      ),
     );
+  }
+
+  setUp(() async {
+    tz.initializeTimeZones();
+    repository = InMemoryPlanDeclarationRepository();
+    ledger = InMemorySlaAuditLedgerRepository();
+    zoneRepository = InMemoryOperationalZoneRepository();
+
+    // Pre-populate one zone so the INV-18 gate passes in all baseline tests.
+    await zoneRepository.save(
+      OperationalZone.create(
+        organizationId: _orgId,
+        name: 'Garagem Central',
+        type: ZoneType.garagem,
+      ),
+    );
+
+    handler = makeHandler();
   });
 
   ContractualServiceInput makeInput({
@@ -67,7 +102,7 @@ void main() {
     List<ContractualServiceInput>? services,
   }) {
     return DeclareContractualPlanCommand(
-      organizationId: 'org-1',
+      organizationId: _orgId,
       contractId: contractId,
       declaredByUserId: userId,
       planVersion: version,
@@ -134,7 +169,7 @@ void main() {
         ),
       );
 
-      final results = await repository.findByContract('c-1', organizationId: 'org-1');
+      final results = await repository.findByContract('c-1', organizationId: _orgId);
       expect(results, hasLength(2));
       expect(results.every((p) => p.contractId == 'c-1'), isTrue);
     });
@@ -150,7 +185,7 @@ void main() {
         );
 
         // Repository should be empty
-        final found = await repository.findByContract('', organizationId: 'org-1');
+        final found = await repository.findByContract('', organizationId: _orgId);
         expect(found, isEmpty);
 
         // Ledger should be empty
@@ -175,6 +210,90 @@ void main() {
 
       // Ledger received 2 events: PLAN_DECLARED + CONTRACT_ACTIVATED
       expect(ledger.entries, hasLength(2));
+    });
+
+    // ── INV-18: Engine Activation Gate ───────────────────
+    group('INV-18 Engine Activation Gate', () {
+      test(
+        'throws DomainException when no operational zones exist for the org',
+        () async {
+          final emptyZones = InMemoryOperationalZoneRepository();
+          final handlerWithNoZones = makeHandler(zones: emptyZones);
+
+          await expectLater(
+            () => handlerWithNoZones.handle(makeCommand()),
+            throwsA(
+              isA<DomainException>().having(
+                (e) => e.message,
+                'message',
+                'No operational zones configured for this organization',
+              ),
+            ),
+          );
+
+          // Nothing persisted — gate fired before any write
+          final found = await repository.findByContract(
+            'contract-1',
+            organizationId: _orgId,
+          );
+          expect(found, isEmpty);
+          expect(ledger.entries, isEmpty);
+        },
+      );
+
+      test(
+        'throws DomainException when shift-based plan declared with no active vehicles',
+        () async {
+          final handlerNoVehicles = makeHandler(activeVehicleCount: 0);
+
+          // Build a minimal but valid ShiftPattern (zone IDs only need to be non-empty;
+          // existence is not validated at command time — that happens at projection time).
+          final pattern = ShiftPattern.create(
+            index: 0,
+            daysOfWeek: [DayOfWeek.monday],
+            departureTimeLocal: '07:00',
+            arrivalTimeLocal: '08:00',
+            timezone: 'America/Sao_Paulo',
+            originZoneId: 'zone-origin',
+            destinationZoneId: 'zone-destination',
+            penalties: SLAPenalties.create(
+              noShowPenaltyMultiplier: 1.0,
+              delayToleranceMinutes: 15,
+              delayPenaltyPerMinute: const Money(100),
+              downgradePenaltyFlat: const Money(5000),
+            ),
+          );
+
+          final shiftCommand = DeclareContractualPlanCommand(
+            organizationId: _orgId,
+            contractId: 'contract-1',
+            declaredByUserId: 'user-1',
+            planVersion: 1,
+            originalFileHash: 'hash',
+            declaredAtUtc: DateTime.utc(2026, 2, 25),
+            shiftPatterns: [pattern],
+            contractualValueCents: 10000,
+          );
+
+          await expectLater(
+            () => handlerNoVehicles.handle(shiftCommand),
+            throwsA(
+              isA<DomainException>().having(
+                (e) => e.message,
+                'message',
+                'No active vehicles found for this organization',
+              ),
+            ),
+          );
+
+          final found = await repository.findByContract(
+            'contract-1',
+            organizationId: _orgId,
+          );
+          expect(found, isEmpty);
+          expect(ledger.entries, isEmpty);
+        },
+      );
     });
   });
 }

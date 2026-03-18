@@ -28,7 +28,7 @@ void main() {
 
   ContractualFinancialDailySnapshot makeSnapshot({
     required DateTime date,
-    int? lastLedgerEntryId = 100,
+    String? lastLedgerEntryId = '100',
   }) =>
       ContractualFinancialDailySnapshot.create(
         organizationId: orgId,
@@ -74,7 +74,7 @@ void main() {
       periodStartUtc: periodStart,
       periodEndUtc: periodEnd,
       report: report,
-      reportLedgerBoundary: 100,
+      reportLedgerBoundary: '100',
       engineVersionAtGeneration: '7.1.0-test',
       generatedByUserId: 'user-admin-1',
       attestationHeader: makeHeader(),
@@ -247,7 +247,7 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         report: report,
-        reportLedgerBoundary: 100,
+        reportLedgerBoundary: '100',
         engineVersionAtGeneration: '7.1.0-test',
         generatedByUserId: 'user-admin-1',
         attestationHeader: makeHeader(),
@@ -292,7 +292,7 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         billingCycleReportId: report.id,
-        reportLedgerBoundary: 100,
+        reportLedgerBoundary: '100',
         snapshotIds: const [],
         totalContractedRevenue: const Money(0),
         protectedRevenue: const Money(0),

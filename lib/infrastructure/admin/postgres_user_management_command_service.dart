@@ -43,6 +43,8 @@ class PostgresUserManagementCommandService
         return 'OPERATOR';
       case UserRole.auditor:
         return 'AUDITOR';
+      case UserRole.contractorViewer:
+        return 'CONTRACTOR_VIEWER';
     }
   }
 }
