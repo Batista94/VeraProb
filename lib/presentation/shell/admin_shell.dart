@@ -116,7 +116,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -151,7 +151,7 @@ class _AdminSidebar extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
         border: Border(
-          right: BorderSide(color: Colors.black.withOpacity(0.05), width: 1),
+          right: BorderSide(color: Colors.black.withValues(alpha: 0.05), width: 1),
         ),
       ),
       child: Column(
@@ -165,7 +165,7 @@ class _AdminSidebar extends ConsumerWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.3),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -252,7 +252,7 @@ class _SidebarIcon extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppTheme.primaryColor.withOpacity(0.1)
+                  ? AppTheme.primaryColor.withValues(alpha: 0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
             ),

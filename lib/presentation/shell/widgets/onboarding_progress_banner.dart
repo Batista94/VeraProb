@@ -106,7 +106,7 @@ class _SlimBar extends StatelessWidget {
                 children: [
                   Text(
                     'Configuração  $completedCount/${prerequisites.length}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: PactaFlowColors.textSecondary,

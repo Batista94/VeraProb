@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:html' as html;
+import 'package:universal_html/html.dart' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -66,6 +66,7 @@ class _BillingCycleReportsScreenState
         ..click();
       html.Url.revokeObjectUrl(url);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Relatório CSV baixado com sucesso! 📊')),
       );
@@ -97,6 +98,7 @@ class _BillingCycleReportsScreenState
         ..click();
       html.Url.revokeObjectUrl(url);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Relatório PDF gerado com sucesso! 📄')),
       );

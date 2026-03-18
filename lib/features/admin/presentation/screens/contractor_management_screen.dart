@@ -91,7 +91,7 @@ class ContractorManagementScreen extends ConsumerWidget {
 
                   return ListView.separated(
                     itemCount: contractors.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (context, index) =>
                         const Divider(color: PactaFlowColors.border),
                     itemBuilder: (context, index) {
                       final contractor = contractors[index];
