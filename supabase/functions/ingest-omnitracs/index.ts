@@ -12,6 +12,14 @@
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import * as Sentry from "npm:@sentry/deno@^8";
+
+// ── Sentry init (no-op if SENTRY_DSN is not set) ───────────────────────────
+Sentry.init({
+  dsn: Deno.env.get("SENTRY_DSN") ?? "",
+  environment: Deno.env.get("APP_ENV") ?? "dev",
+  tracesSampleRate: 0.2,
+});
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -79,6 +87,18 @@ function classifyIntegrity(
 // ── Main Handler ───────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request): Promise<Response> => {
+  return await Sentry.withScope(async () => {
+    try {
+      return await handleRequest(req);
+    } catch (err) {
+      Sentry.captureException(err);
+      console.error("[ingest-omnitracs] Unhandled error:", err);
+      return Response.json({ error: "Internal server error" }, { status: 500 });
+    }
+  });
+});
+
+async function handleRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       headers: {
@@ -285,4 +305,4 @@ Deno.serve(async (req: Request): Promise<Response> => {
     } as IngestResult,
     { status: 200 },
   );
-});
+}

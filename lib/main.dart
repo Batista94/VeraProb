@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'core/config/environment.dart';
 import 'core/theme/app_theme.dart';
 import 'core/time/brazil_time.dart';
@@ -15,6 +16,8 @@ import 'features/admin/presentation/screens/review_contract_screen.dart';
 import 'core/config/supabase_client.dart';
 import 'infrastructure/persistence/persistence_mode.dart';
 import 'infrastructure/persistence/persistence_provider.dart';
+import 'infrastructure/observability/sentry_observer.dart';
+import 'infrastructure/observability/analytics_service.dart';
 import 'state/providers/sla_providers.dart';
 import 'state/providers/auth_providers.dart';
 
@@ -37,6 +40,9 @@ void main() async {
   // FASE 0 - Passively initialize Supabase. No overrides or dependencies created.
   await SupabaseConfig.initialize();
 
+  // 8.4 — Initialize PostHog analytics (no-op in dev).
+  await AnalyticsService.initialize();
+
   final prefs = await SharedPreferences.getInstance();
 
   // Phase 6 — Detect public deep links on Flutter Web startup.
@@ -47,18 +53,25 @@ void main() async {
   final isReviewContractRoute =
       uri.path.contains('review-contract') && queryToken != null;
 
-  runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        // FASE 6 — Atomic Switch: runtime now operates on Postgres.
-        persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
-      ],
-      child: PactaFlowAdminApp(
-        inviteToken: isInviteRoute ? queryToken : null,
-        reviewContractToken: isReviewContractRoute ? queryToken : null,
-      ),
-    ),
+  // 8.4 — Sentry wraps the entire app startup.
+  // initSentry is a no-op in dev or when SENTRY_DSN is not set.
+  await initSentry(
+    appRunner: () async {
+      runApp(
+        ProviderScope(
+          observers: const [SentryRiverpodObserver()],
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            // FASE 6 — Atomic Switch: runtime now operates on Postgres.
+            persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
+          ],
+          child: PactaFlowAdminApp(
+            inviteToken: isInviteRoute ? queryToken : null,
+            reviewContractToken: isReviewContractRoute ? queryToken : null,
+          ),
+        ),
+      );
+    },
   );
 }
 
@@ -93,6 +106,8 @@ class _PactaFlowAdminAppState extends ConsumerState<PactaFlowAdminApp> {
       title: 'PactaFlow — Control Center',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
+      // 8.4 — Sentry route tracking (no-op when Sentry is disabled in dev)
+      navigatorObservers: [SentryNavigatorObserver()],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

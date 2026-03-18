@@ -55,8 +55,23 @@ class EnvironmentConfig {
   /// Enable Sentry error reporting in staging and production.
   static bool get sentryEnabled => isStaging || isProd;
 
-  /// Sentry DSN — injected per environment.
+  /// Sentry DSN — injected per environment via --dart-define=SENTRY_DSN=...
   static const sentryDsn = String.fromEnvironment('SENTRY_DSN');
+
+  /// Sentry environment tag (matches AppEnvironment label).
+  static String get sentryEnvironment => _envName;
+
+  /// Enable PostHog product analytics in staging and production.
+  static bool get posthogEnabled => isStaging || isProd;
+
+  /// PostHog API key — injected via --dart-define=POSTHOG_KEY=...
+  static const posthogKey = String.fromEnvironment('POSTHOG_KEY');
+
+  /// PostHog host — defaults to EU cloud. Override for self-hosted or US.
+  static const posthogHost = String.fromEnvironment(
+    'POSTHOG_HOST',
+    defaultValue: 'https://app.posthog.com',
+  );
 
   // ── Map Config ───────────────────────────────────────
   static const mapTilerKey = String.fromEnvironment(

@@ -14,12 +14,22 @@ analyzer:
     # Treat dead code as a warning (not an error, to avoid blocking builds).
     dead_code: warning
 
-  # NOTE: strict-casts and strict-raw-types are intentionally NOT enabled here.
-  # Enabling them reveals ~80 type-safety issues in the infrastructure layer
-  # where JSON Map<dynamic, dynamic> values from Postgres are assigned to typed
-  # fields without explicit casts. These are real issues that will be addressed
-  # in Phase 7 (Operational Hardening) under a dedicated type-safety pass.
-  # Enabling them now would block the build without adding immediate safety value.
+  # ── Phase 8.5 — Strict-Casts (Challenger: iterative activation) ────────────
+  # strict-casts, strict-inference, and strict-raw-types are NOT globally enabled
+  # here to preserve CI green status during the iterative fix pass.
+  #
+  # Activation plan (layer-by-layer, per architect ruling):
+  #   ✅ Domain layer   — must be 0 dynamic violations (INV-4: Domain Sovereignty)
+  #   🔄 Infra layer    — ~80 violations from JSON Map<dynamic,dynamic> casts;
+  #                        catalogued by scripts/audit_dynamic_types.sh
+  #   🔄 Presentation   — pending infra completion
+  #
+  # Run `bash scripts/audit_dynamic_types.sh` to generate a full report
+  # by layer before enabling. Enable per-layer as violations are resolved.
+  # language:
+  #   strict-casts: true
+  #   strict-inference: true
+  #   strict-raw-types: true
 
 linter:
   rules:

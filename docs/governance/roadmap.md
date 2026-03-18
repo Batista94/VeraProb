@@ -12,7 +12,7 @@
 | Sprint 5.11 - 5.13 | **CONCLUÍDAS** — JIT Master Data, RLS, Teto Financeiro. ✅ |
 | Phase 6 & 6.5 | **CONCLUÍDAS** — Admin, RBAC, Operational Resilience. ✅ |
 | Phase 7 & 7.5 | **CONCLUÍDAS** — Audit Exports, Financial Defense. ✅ |
-| Bloco 8.1, 8.2 & 8.3 | **CONCLUÍDOS** — UX Hard Gates, CI/CD Pipeline, Environment Separation. ✅ |
+| Bloco 8.1 - 8.5 | **CONCLUÍDOS** — UX Hard Gates, CI/CD, Env, Obs, Hardening. ✅ |
 | Banco de dev | Todas as migrations aplicadas — `20260325...` |
 
 ---
@@ -27,11 +27,11 @@
 - **Artefatos:** `.github/workflows/ci.yml` · `.github/workflows/deploy_staging.yml` · `.github/workflows/deploy_prod.yml`
 - Automação de `flutter analyze`, `flutter test` e deploy para Staging/Prod com gate humano em prod.
 
-#### [ ] 8.4 — Observabilidade
+#### [x] 8.4 — Observabilidade ✅
 - Integração Sentry (Flutter + Edge Functions) e PostHog.
 - Logging estruturado e alertas de performance/erro.
 
-#### [ ] 8.5 — Segurança (Hardening Final)
+#### [x] 8.5 — Segurança (Hardening Final) ✅
 - `strict-casts: true` e correção de tipos `dynamic`.
 - Field-level masking para PII e remoção de políticas Public Read remanescentes.
 
@@ -65,6 +65,8 @@
 ## Fases Concluídas (Histórico Resumido)
 
 - **Phase 8.2 — CI/CD Pipeline** ✅: Workflows GitHub Actions (`ci.yml`, `deploy_staging.yml`, `deploy_prod.yml`) com gate humano em prod.
+- **Phase 8.5 — Segurança (Hardening Final)** ✅: `strict-casts: true`, correção de `dynamic` e PII masking em SQL.
+- **Phase 8.4 — Observabilidade** ✅: Integração Sentry e PostHog configurada para todos os ambientes.
 - **Phase 8.3 — Separação de Ambientes** ✅: Suporte multi-env configurado (`--dart-define` + `.env`).
 - **Phase 8.1 — Systemic UX & Hard Gates** ✅: Invariantes INV-18/19/20 e refatoração visual.
 - **Phase 7.5 — Financial Defense** ✅: Shadow Mode e Blindagem Forense PostgreSQL.
@@ -80,7 +82,7 @@
 ─────────────────────────────────────────────────────
 [x] Phase 5, 6, 6.5, 7, 7.5 ✅
 ─────────────────────────────────────────────────────
-[x] Phase 8.1, 8.2 & 8.3 COMPLETE ✅
+[x] Phase 8.1 - 8.5 COMPLETE ✅
 ─────────────────────────────────────────────────────
-[ ] Phase 8.4 - 8.8 PENDING
+[ ] Phase 8.6 - 8.8 PENDING
 ─────────────────────────────────────────────────────

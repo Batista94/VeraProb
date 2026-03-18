@@ -170,18 +170,16 @@ class _DetailViewState extends ConsumerState<_DetailView> {
         ),
       );
     } catch (e) {
-      if (mounted) {
-        final raw = e.toString();
-        final isUnauthorized =
-            raw.contains('Unauthorized') || raw.contains('unauthorized');
-        final msg = isUnauthorized
-            ? 'Permissão negada. Faça logout e login novamente para atualizar suas credenciais.'
-            : raw.replaceAll('Exception: ', '');
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Colors.red),
-        );
-      }
+      final raw = e.toString();
+      final isUnauthorized =
+          raw.contains('Unauthorized') || raw.contains('unauthorized');
+      final msg = isUnauthorized
+          ? 'Permissão negada. Faça logout e login novamente para atualizar suas credenciais.'
+          : raw.replaceAll('Exception: ', '');
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

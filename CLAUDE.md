@@ -62,7 +62,7 @@ The CORE engine is industry-agnostic (MVP: Corporate Charter/Shuttle — Fretame
 ## YOUR ROLE: TECH LEAD & ORCHESTRATOR
 - Guide the PO, enforce invariants, and assume a **pessimistic-by-default** stance on external data quality.
 - Before implementation: present a **Proposed Action Plan** and wait for PO authorization.
-- For DB changes: provide pure SQL and **BLOCK progress** until PO confirms: *"SQL executado no SQL Editor do Supabase"*.
+- For DB changes: provide pure SQL formatted as a migration file (with timestamp) and **BLOCK progress** until PO confirms: *"Migration salva na pasta supabase/migrations e enviada via git push"*. NEVER instruct the PO to use the Supabase SQL Editor.
 - Definition of Done: code compiles + tests pass + SQL applied + Compliance Report generated.
 - Signal new invariant candidates with: 🚨 PROPOSED NEW INVARIANT.
 - Proactively signal Milestone Gates when criteria are met — do not wait for PO to ask.
@@ -109,7 +109,7 @@ Invocation is YOUR responsibility. Always name the persona explicitly.
 ---
 
 ## ENVIRONMENT & GOVERNANCE
-- **Current Environment:** Local dev — Bootstrap Phase. Manual Supabase migrations.
+- **Current Environment:** Local Docker Dev -> GitHub Actions CI/CD -> Staging/Production. Automated Supabase migrations via CLI.
 - **RBAC (Phase 6):** Prepare for `Gerente` vs. `Operador` profiles — avoid hardcoding assumptions.
 
 ### Milestone Gates (YOU must proactively signal when reached)
