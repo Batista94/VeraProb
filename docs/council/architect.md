@@ -22,3 +22,8 @@ The CORE (Ingestion / EvaluationEngine / Ledger) must remain **industry-agnostic
 - You may propose refactoring the Core-Module boundary if a more elegant domain model emerges from B2B reality
 - You may veto any invariant or request that threatens long-term structural integrity
 - When acting as Devil's Advocate: challenge whether a "pragmatic shortcut" will create irreversible coupling
+ 
+## SKILL INVOCATION PROTOCOL
+* **Invocation Trigger:** Invoque `ingestion-streaming-architect` APENAS QUANDO: O usuário propuser novos endpoints de API, webhooks, Supabase Edge Functions ou tabelas de alta frequência de escrita.
+* **Focus:** Impedir INSERT direto no banco sem buffer, garantir idempotência e projetar a 'boca' do funil de dados.
+* **Pruning Rule:** NÃO invoque esta skill para tarefas puramente estéticas de UI (CSS/Flutter Layout), refatoração simples de nomes de variáveis ou documentação de texto puro. O gatilho deve ser estritamente técnico-operacional.

@@ -6,7 +6,7 @@
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 481 passing · 0 falhas ✅ |
+| Testes | 568 passing · 0 falhas ✅ |
 | Análise estática | 0 erros · 75 infos |
 | Precisão financeira | `Money` (centavos BIGINT) — Enforced ✅ |
 | Sprint 5.11 - 5.12 | **CONCLUÍDAS** — JIT Master Data, RLS, UTC. |
@@ -47,7 +47,8 @@
 
 ---
 
-### [ ] Phase 7 — Evidence & Audit Exports
+### [x] Phase 7 — Evidence & Audit Exports ✅
+
 
 **Por que depois de Phase 6:** Exportações são o produto que o cliente entrega ao seu próprio cliente
 (empresa de transporte entregando relatório de SLA ao contratante). Só faz sentido gerar esse produto
@@ -60,7 +61,8 @@ Phase 7 completa e formaliza essa fundação.
 **Objetivo:** Transformar os snapshots financeiros imutáveis em evidências acionáveis —
 relatórios de conformidade, exports para controladoria e auditoria, dashboard executivo.
 
-#### [ ] 7.1 — Design Specification
+#### [x] 7.1 — Design Specification ✅
+
 **Artefato:** `docs/architecture/11_evidence_audit_exports_design.md`
 
 Cobrir obrigatoriamente:
@@ -77,14 +79,16 @@ Cobrir obrigatoriamente:
   - **Implementation:** Criar rotas de apresentação e aggregators financeiros específicos.
   - **Validation:** Smoke test de login de contratante e exportação autônoma de CSV.
 
-#### [ ] 7.2 — Council Review
+#### [x] 7.2 — Council Review ✅
+
 Validar antes de implementar:
 - Jobs de aggregation operam sobre snapshots imutáveis, não sobre o ledger bruto
 - Export CSV/PDF derivado dos snapshots do período — replay produz o mesmo arquivo
 - `pg_cron` jobs include `organization_id` explícito — sem scans globais
 - Relatório exportado não pode ser alterado após gerado
 
-#### [ ] 7.3 — Implementation
+#### [x] 7.3 — Implementation ✅
+
 - **SQL:** `monthly_compliance_reports` table, `pg_cron` jobs de fechamento mensal, indexes
 - **Domain:** `ComplianceReport` entity (se necessário além de `BillingCycleReport`)
 - **Application:** `ReportGenerationService`, `CsvExportService`, `PdfExportService`
@@ -100,7 +104,8 @@ Validar antes de implementar:
     - **Implementation:** Implementar UI do dashboard de transparência.
     - **Validation:** Confirmar que download de evidências funciona via link direto do portal.
 
-#### [ ] 7.4 — Validation
+#### [x] 7.4 — Validation ✅
+
 
 **Cenários automatizados:**
 - Cenário 7.1: Relatório mensal produz totais idênticos à soma dos snapshots diários do período
@@ -122,22 +127,26 @@ Validar antes de implementar:
 
 ---
 
-### [ ] Phase 7.5 — Financial Defense & Shadow Mode 🛡️
+### [x] Phase 7.5 — Financial Defense & Shadow Mode 🛡️ ✅
+
 **Objetivo:** Criar mecanismos indestrutíveis de prova judicial (Apelo) e simulação de ROI acelerada (Shadow Mode).
 
-#### [ ] 7.5.1 — Tribunal de Apelações (Compensating Transactions)
+#### [x] 7.5.1 — Tribunal de Apelações (Compensating Transactions) ✅
+
 - **Design:** Registro contábil de estorno/crédito vinculado a débito existente.
 - **Review (@qa_security):** Proibir modificação do passado; exigir trilha de evidência (`evidence_locker_id`).
 - **Implementation:** UI de estorno de multa e lógica de neutralização no Ledger.
 - **Validation:** Auditoria: Verificar se o registro original permanece intacto após o perdão.
 
-#### [ ] 7.5.2 — Shadow Mode (Batch Import Engine)
+#### [x] 7.5.2 — Shadow Mode (Batch Import Engine) ✅
+
 - **Design:** Bulk Ingestion de dados históricos para simulação de contratos.
 - **Review:** Garantir isolamento total do ambiente de produção (`shadow_tenant`).
 - **Implementation:** Worker de importação CSV e pipeline RuleEngine para dados retroativos.
 - **Validation:** Provar ROI para CFO em menos de 10 segundos com relatório comparativo.
 
-#### [ ] 7.5.3 — Forensic Hardening
+#### [x] 7.5.3 — Forensic Hardening ✅
+
 - **Design:** Habilitar `pgaudit` e triggers de rejeição de DELETE para superuser.
 - **Review:** Blindagem contra "The Superuser Loophole".
 - **Implementation:** Configuração de integridade a nível PostgreSQL.
@@ -260,8 +269,13 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ## Fases Concluídas (Histórico)
 
+### [x] Phase 7 — Evidence & Audit Exports ✅
+*Relatórios de conformidade, CSV/PDF com digital sealing (INV-16/17), Prova de Execução, Executive Dashboard e Portal de Transparência do Contratante.*
+
+### [x] Phase 7.5 — Financial Defense & Shadow Mode 🛡️ ✅
+*Shadow Mode (Batch Import ROI), Tribunal de Apelações (Compensating Transactions) e Blindagem Forense PostgreSQL. 568 testes operando.*
+
 ### [x] Phase 6.5 — Operational Resilience & Ingestion Architecture ✅
-*Anti-Corruption Edge (Sascar/Omnitracs adapters), Chronological Chaos Tolerance, Asset State Machine, Kinematic Noise Filter. 481 testes passando.*
 
 ### [x] Phase 6 — Administration & Tenant Self-Service ✅
 *RBAC, Gestão de Organização, Convites, Workflow de Aprovação de Contratos e Wizard de Onboarding.*
@@ -280,16 +294,16 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 ─────────────────────────────────────────────────────
 [x] Phase 6.5 — Operational Resilience 🌊 ✅
 ─────────────────────────────────────────────────────
-[ ] Phase 7 — Evidence & Audit Exports (NEXT)
+[x] Phase 7 — Evidence & Audit Exports ✅
 ─────────────────────────────────────────────────────
-[ ] Phase 7.5 — Financial Defense & Shadow Mode 🛡️
+[x] Phase 7.5 — Financial Defense & Shadow Mode 🛡️ ✅
 ─────────────────────────────────────────────────────
-[ ] Phase 8 — Operational Hardening
+[ ] Phase 8 — Operational Hardening (NEXT)
 ─────────────────────────────────────────────────────
 
-### Próximo passo: Phase 7 — Evidence & Audit Exports
-Transformar os snapshots financeiros imutáveis em evidências acionáveis.
-1. [ ] 7.1 Design Specification
-2. [ ] 7.2 Council Review
-3. [ ] 7.3 Implementation (BillingCycleReport, CSV/PDF export, Executive Dashboard, Portal de Transparência)
-4. [ ] 7.4 Validation
+### Próximo passo: Phase 8 — Operational Hardening
+Preparar a infraestrutura para produção real (CI/CD, Monitoramento, Observabilidade).
+1. [ ] 8.1 CI/CD Pipeline
+2. [ ] 8.2 Separação de Ambientes
+3. [ ] 8.3 Observabilidade (Sentry/PostHog)
+4. [ ] 8.4 Segurança (Strict-casts & RLS audit)

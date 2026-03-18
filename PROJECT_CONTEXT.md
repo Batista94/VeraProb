@@ -55,7 +55,11 @@ All non-trivial changes must be reviewed by the specialized personas in `docs/co
 *   **Phase 6 (Administration & Assets):** **CONCLUÍDA** (Sub-blocos 1-8).
     *   *Implementado:* Advanced RBAC, Custom JWT Claims (Org ID), Dashboard Consolidado, Convites de Usuários, Aprovação de Contratos e **Asset Manager** (Drivers, Routes, Vehicles com isolamento RLS).
 *   **Phase 6.5 (Ingestion & Resilience):** **CONCLUÍDA**.
-    *   *Realizado:* Ingestão resiliente (Sascar/Omnitracs), Anti-Corruption Edge, Chaos Tolerance (Late Arrival, Ordering), Asset State Machine e Kinematic Filtering. 481 testes passando. ✅
+    *   *Realizado:* Ingestão resiliente (Sascar/Omnitracs), Anti-Corruption Edge, Chaos Tolerance (Late Arrival, Ordering), Asset State Machine e Kinematic Filtering.
+*   **Phase 7 (Evidence & Audit):** **CONCLUÍDA**.
+    *   *Feitos:* Audit Sealing (INV-16/17), Prova de Execução (Audit Packages), Dashboards Executivos e Portal do Contratante.
+*   **Phase 7.5 (Financial Defense & Shadow Mode):** **CONCLUÍDA**.
+    *   *Implementado:* Shadow Mode (ROI Simulator), Tribunal de Apelações e Hardening Forense DB-level. 568 testes operando. ✅
 
 ---
-*Last updated: March 17, 2026 — Phase 6.5 (Ingestion & Resilience)*
+*Last updated: March 17, 2026 — Phase 7.5 (Financial Defense & Shadow Mode)*
