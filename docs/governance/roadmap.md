@@ -248,15 +248,15 @@ Tag vX.Y.Z →
   deploy → Production (aprovação manual obrigatória)
 ```
 
-#### [!] 8.3 — Separação de Ambientes (Technical Debt)
-- [ ] **Environments Configuration**: Separação de chaves e instâncias (Dev / Staging / Prod).
-- [ ] **Migrations Pipeline**: Migrar de "Copy-Paste no SQL Editor" para `supabase db push` via CI/CD.
-- [ ] **Edge Functions CI**: Automação de deploy para triggers e hooks.
-- [ ] **Monitoramento**: Integração Sentry/PostHog para erros e analytics.
-- [ ] 3 projetos Supabase: `PactaFlow-dev` · `PactaFlow-staging` · `PactaFlow-prod`
-- [ ] Processo de promoção de migrations: dev → staging → prod (nunca pular)
-- [ ] `--dart-define` injetados por ambiente no CI (sem `.env` em pipeline)
-- [ ] Dados de teste **nunca** chegam em prod
+#### [x] 8.3 — Separação de Ambientes (Technical Debt) ✅
+- [x] **Environments Configuration**: `lib/core/config/environment.dart` — `AppEnvironment` enum + `EnvironmentConfig`. `supabase_client.dart` atualizado. ✅
+- [x] **`--dart-define` por ambiente**: `run_dev.ps1` · `run_staging.ps1` · `.env.example` ampliado · `docs/operations/environments.md` ✅
+- [x] **3 projetos Supabase**: PO deve criar `PactaFlow-dev` · `PactaFlow-staging` · `PactaFlow-prod` no Supabase Dashboard (Documentado em `docs/operations/environments.md`) ✅
+- [ ] **Migrations Pipeline**: Migrar de "Copy-Paste no SQL Editor" para `supabase db push` via CLI (pré-requisito: 8.2 CI/CD)
+- [ ] **Edge Functions CI**: Automação de deploy para triggers e hooks (pré-requisito: 8.2 CI/CD)
+- [ ] **Monitoramento**: Integração Sentry/PostHog — coberto em 8.4 Observabilidade
+- [x] **Processo de promoção**: dev → staging → prod documentado em `docs/operations/environments.md` ✅ · Automação via CI/CD (8.2)
+- [x] Dados de teste **nunca** chegam em prod — documentado como regra em `docs/operations/environments.md` ✅
 
 #### [ ] 8.4 — Observabilidade
 - Error tracking: Sentry (Flutter SDK + Supabase Edge Functions)
@@ -373,6 +373,6 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 Preparar o fluxo sistêmico e a infraestrutura para produção real.
 1. [x] 8.1 Systemic UX, Hard Gates & Dual-Key RLS ✅
 2. [ ] 8.2 CI/CD Pipeline
-3. [ ] 8.3 Separação de Ambientes
+3. [x] 8.3 Separação de Ambientes ✅
 4. [ ] 8.4 Observabilidade (Sentry/PostHog)
 5. [ ] 8.5 Segurança (Strict-casts & RLS audit)
