@@ -104,7 +104,7 @@ final contractualFinancialClosingServiceProvider =
 /// The provider layer adapts the Riverpod [StreamProvider] into a raw
 /// [Stream], ensuring the subscriber never depends on Riverpod.
 final contractualEvaluationSubscriberProvider =
-    Provider<ContractualEvaluationSubscriber>((ref) {
+    Provider<ContractualEvaluationSubscriber?>((ref) {
       // Adapt: build raw Stream from the same sources as normalizedStateProvider,
       // bypassing the deprecated .stream accessor.
       final adapter = ref.watch(operationalDataProvider);
@@ -116,17 +116,23 @@ final contractualEvaluationSubscriberProvider =
 
       final organizationId = ref.watch(currentOrganizationIdProvider);
       if (organizationId == null) {
-        throw StateError('Organization ID is missing for SLA Subscriber');
+        return null;
       }
 
-      return ContractualEvaluationSubscriber(
+      final sub = ContractualEvaluationSubscriber(
         engine: ref.watch(contractualEvaluationEngineProvider),
         vehicleStream: vehicleStream,
         sweepInterval: const Duration(minutes: 1),
         organizationId: organizationId,
         closingService: ref.watch(contractualFinancialClosingServiceProvider),
       );
+
+      // Automatic cleanup when provider is disposed (INV-3 / INV-0)
+      ref.onDispose(() => sub.stop());
+
+      return sub;
     });
+
 
 // ── Query Service ───────────────────────────────────────────
 

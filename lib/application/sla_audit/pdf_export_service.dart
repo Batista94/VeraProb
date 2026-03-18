@@ -205,7 +205,7 @@ class PdfExportService {
                   '${s.noShowCount}',
                   '${s.evidenceGapCount}',
                   '${compliance.toStringAsFixed(1)}%',
-                  '${s.lastLedgerEntryId ?? "-"}',
+                  (s.lastLedgerEntryId ?? "-"),
                 ];
               }).toList(),
             ),

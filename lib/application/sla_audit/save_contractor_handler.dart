@@ -16,7 +16,7 @@ class SaveContractorHandler {
   SaveContractorHandler({required ContractorRepository repository})
     : _repository = repository;
 
-  Future<void> handle(SaveContractorCommand command) async {
+  Future<Contractor> handle(SaveContractorCommand command) async {
     // 1. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageContractors)) {
       throw Exception(
@@ -55,5 +55,6 @@ class SaveContractorHandler {
 
     // 3. Persist (Repository handles upsert)
     await _repository.save(contractor);
+    return contractor;
   }
 }

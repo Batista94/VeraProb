@@ -238,7 +238,7 @@ void main() {
         contractRepository:
             _SmokeContractStub(contractId: contractId, orgId: orgId),
         zoneRepository: _StubZoneRepository(),
-        vehicleRepository: InMemoryActiveVehicleRepository(
+        vehicleRepository: const InMemoryActiveVehicleRepository(
           countsByOrg: {orgId: 1},
         ),
       );

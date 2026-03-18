@@ -157,7 +157,7 @@ Validar antes de implementar:
 **Por que depois de Phase 7:** O hardening operacional prepara o produto para receber tráfego real.
 Executá-lo antes de ter todas as features seriam contraproducente.
 
-#### [/] 8.1 — Systemic UX, Hard Gates & Dual-Key RLS (Partial)
+#### [x] 8.1 — Systemic UX, Hard Gates & Dual-Key RLS ✅
 
 
 **Fonte da Verdade:** [`docs/architecture/12_systemic_user_journeys.md`](../architecture/12_systemic_user_journeys.md)
@@ -172,7 +172,7 @@ Executá-lo antes de ter todas as features seriam contraproducente.
   - Se shift-based: `vehicleRepository.countActive(organizationId) > 0` → throw `DomainException('No active vehicles found for this organization')`
 - **Testes:** 2 novos testes unitários no handler (zona ausente → exception, veículo ausente em shift-based → exception)
 
-##### [ ] 8.1.2 — Hard Gate: On-The-Fly Contractor Creation (INV-19)
+##### [x] 8.1.2 — Hard Gate: On-The-Fly Contractor Creation (INV-19) ✅
 - **Flutter:** Adicionar `ContractorSelectorField` (typeahead) em `CreateContractForm` (`lib/features/admin/presentation/screens/create_contract_form.dart`)
   - Se lista vazia ou nome não encontrado → exibir "+ Criar '[nome]' como Contractor"
   - Abre `SaveContractorModal` como `showDialog()` overlay — NÃO navega
@@ -198,14 +198,37 @@ Executá-lo antes de ter todas as features seriam contraproducente.
 - **Arquivo:** `supabase/migrations/20260401000001_audit_packages.sql` (linha 108-115)
 - **Nota:** Executar ANTES de 8.1.3 para evitar conflito de políticas
 
-##### [ ] 8.1.5 — OnboardingProgressBanner (UX)
+##### [x] 8.1.5 — OnboardingProgressBanner (UX) ✅
 - **Flutter:** Novo widget `OnboardingProgressBanner` em `lib/presentation/shell/admin_shell.dart`
   - Exibe: Zonas ✓/✗ · Contractors ✓/✗ · Veículos ✓/✗ · SLA Template ✓/✗
   - Itens clicáveis → navegam para tela correspondente
   - Desaparece automaticamente quando todos os 4 pré-requisitos satisfeitos
   - Providers: `operationalZonesProvider`, `contractorListProvider`, `vehicleListProvider`, `activeRulesProvider`
 
-**Personas:** `senior_engineer` (8.1.1, 8.1.2, 8.1.5) · `qa_security` (8.1.3, 8.1.4)
+##### [x] 8.1.6 — UX Refactoring & Visual Enterprise Standard ✅
+**Auditoria visual Phase 8.1 — resultado: UI aparenta protótipo, não SaaS B2B Enterprise.**
+
+###### Cluster 1 — Onboarding Banner (8.1.5 Refinement)
+- Itens com ✓ não devem ser clicáveis nem ter hover state → desabilitar `onTap` quando `isFulfilled`
+- Substituir card intrusivo por top bar slim (strip de ~48px) que não desloca layout
+- Auto-hide ao cumprir os 4 requisitos: já implementado via `SizedBox.shrink()` ✅
+
+###### Cluster 2 — Hierarquia Visual / Acessibilidade WCAG
+- Auditar contraste de `textSecondary` sobre `background` (target: WCAG AA ≥ 4.5:1)
+- Inputs "boxy": adicionar whitespace interno e border-radius suave no `InputDecorationTheme` (`app_theme.dart`)
+- **Bug 2.2:** `_DatePickerField` e todos os campos de data devem ter `floatingLabelBehavior: FloatingLabelBehavior.always` — evitar sobreposição hint/label (`create_contract_form.dart`)
+
+###### Cluster 3 — Sidebar / Navegação / Resiliência (AdminLayout)
+- **Bug VETADO:** clicar na mesma rota atual redireciona para Dashboard (index 0) — comportamento inaceitável
+  → Fix: `if (index == selectedIndex) return;` (no-op) em `onDestinationSelected` (`admin_layout.dart:119`)
+- **Bug 1.2:** overflow em telas menores → `SingleChildScrollView` já envolve o `NavigationRail` ✅
+- **Bug 1.3:** `_InternalBackButton` já existe para contratos ✅ · auditar drawers de detalhe restantes
+
+###### Cluster 4 — Formulários e Modais
+- **Bug 2.1:** formatação BRL inconsistente → unificar em `NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$ ')` — eliminar `_formatCents()` manual em `declare_contract_plan_form.dart`
+- **Bug 2.3:** modais quebram em altura baixa → `SingleChildScrollView` em `occurrence_modal.dart` · `maxHeight` responsivo em `declare_contract_plan_form.dart`
+
+**Personas:** `senior_engineer` (8.1.1, 8.1.2, 8.1.5, 8.1.6) · `qa_security` (8.1.3, 8.1.4) · `ux_operations` (8.1.6)
 
 #### [ ] 8.2 — CI/CD Pipeline
 **Artefatos:** `.github/workflows/ci.yml` · `.github/workflows/deploy.yml`
@@ -343,12 +366,12 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 ─────────────────────────────────────────────────────
 [x] Phase 7.5 — Financial Defense & Shadow Mode 🛡️ ✅
 ─────────────────────────────────────────────────────
-[ ] Phase 8 — Operational Hardening (PARTIAL)
+[x] Phase 8 — Operational Hardening (Sprint 8.1 COMPLETE) ✅
 ─────────────────────────────────────────────────────
 
 ### Próximo passo: Phase 8 — Operational Hardening
 Preparar o fluxo sistêmico e a infraestrutura para produção real.
-1. [/] 8.1 Systemic UX, Hard Gates & Dual-Key RLS (Partial: 8.1.1, 8.1.3, 8.1.4 ✅)
+1. [x] 8.1 Systemic UX, Hard Gates & Dual-Key RLS ✅
 2. [ ] 8.2 CI/CD Pipeline
 3. [ ] 8.3 Separação de Ambientes
 4. [ ] 8.4 Observabilidade (Sentry/PostHog)

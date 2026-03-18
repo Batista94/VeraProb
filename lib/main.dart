@@ -69,12 +69,10 @@ class _PactaFlowAdminAppState extends ConsumerState<PactaFlowAdminApp> {
     // This prevents the StateError on startup when use is not logged in.
     ref.listen(currentOrganizationIdProvider, (previous, next) {
       if (next != null) {
-        ref.read(contractualEvaluationSubscriberProvider).start();
-      } else {
-        // If logged out, we should stop the subscriber to clear resources
-        ref.read(contractualEvaluationSubscriberProvider).stop();
+        ref.read(contractualEvaluationSubscriberProvider)?.start();
       }
     });
+
 
     return MaterialApp(
       title: 'PactaFlow — Control Center',
