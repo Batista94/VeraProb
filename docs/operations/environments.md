@@ -95,15 +95,21 @@ supabase db push --project-ref SEU_PROJECT_REF_PROD
 - Credenciais como **GitHub Actions Secrets**
 - Nomes padronizados:
 
-| Secret Name | Descrição |
-|---|---|
-| `SUPABASE_URL_STAGING` | URL do projeto PactaFlow-staging |
-| `SUPABASE_KEY_STAGING` | Anon key do PactaFlow-staging |
-| `SUPABASE_URL_PROD` | URL do projeto PactaFlow-prod |
-| `SUPABASE_KEY_PROD` | Anon key do PactaFlow-prod |
-| `SENTRY_DSN_STAGING` | DSN do Sentry para staging |
-| `SENTRY_DSN_PROD` | DSN do Sentry para produção |
-| `MAPTILER_KEY` | Chave única do MapTiler (compartilhada entre envs) |
+| Secret Name | Descrição | Status |
+|---|---|---|
+| `SUPABASE_URL_STAGING` | URL do projeto PactaFlow-staging | ✅ Cadastrado |
+| `SUPABASE_ANON_KEY_STAGING` | Anon key do PactaFlow-staging | ✅ Cadastrado |
+| `SUPABASE_URL_PROD` | URL do projeto PactaFlow-prod | ✅ Cadastrado |
+| `SUPABASE_ANON_KEY_PROD` | Anon key do PactaFlow-prod | ✅ Cadastrado |
+| `SUPABASE_PROJECT_REF_STAGING` | Reference ID do projeto staging (para `supabase db push`) | ⚠️ A cadastrar |
+| `SUPABASE_PROJECT_REF_PROD` | Reference ID do projeto prod (para `supabase db push`) | ⚠️ A cadastrar |
+| `SUPABASE_ACCESS_TOKEN` | Token de acesso pessoal da Supabase CLI | ⚠️ A cadastrar |
+| `SENTRY_DSN_STAGING` | DSN do Sentry para staging | Fase 8.4 |
+| `SENTRY_DSN_PROD` | DSN do Sentry para produção | Fase 8.4 |
+| `MAPTILER_KEY` | Chave única do MapTiler (compartilhada entre envs) | Fase 8.4 |
+
+> [!NOTE]
+> O nome canônico é `SUPABASE_ANON_KEY_*` (com `ANON_KEY`), não `SUPABASE_KEY_*`. Todos os workflows de CI/CD usam este padrão.
 
 ### Injeção Manual via --dart-define
 ```powershell
@@ -113,6 +119,9 @@ flutter build web `
   --dart-define=SUPABASE_KEY=eyJ... `
   --dart-define=SENTRY_DSN=https://...
 ```
+
+> [!CAUTION]
+> Nunca interpoler secrets diretamente no `run:` de um GitHub Actions step. Use sempre `env:` para receber o secret e referencie a variável de ambiente no shell (`"$VAR"`). Isso impede que o valor apareça em logs de verbose mode.
 
 ---
 

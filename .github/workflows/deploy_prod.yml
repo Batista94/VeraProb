@@ -1,0 +1,110 @@
+name: Deploy — Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type DEPLOY-PROD to confirm production deployment"
+        required: true
+        default: ""
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false   # Never cancel an in-flight prod deploy
+
+jobs:
+  # ─────────────────────────────────────────────────────────
+  # Guard: only allow explicit confirmation on manual trigger
+  # ─────────────────────────────────────────────────────────
+  guard:
+    name: Manual Confirmation Guard
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Verify confirmation input
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "DEPLOY-PROD" ]; then
+            echo "❌ Confirmation does not match. Abort."
+            exit 1
+          fi
+          echo "✅ Confirmation accepted. Proceeding to deploy."
+
+  # ─────────────────────────────────────────────────────────
+  # Gate: requires human approval via GitHub Environment
+  # ─────────────────────────────────────────────────────────
+  migrate-prod:
+    name: Apply Migrations → Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [guard]
+    if: always() && (needs.guard.result == 'success' || github.event_name == 'push')
+    environment: production   # ← GitHub required_reviewers gate — blocks here
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Push migrations to Production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase db push --project-ref "$PROJECT_REF"
+
+  build-prod:
+    name: Build Web → Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: migrate-prod
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.32.x"
+          channel: stable
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create stub .env
+        run: echo "# CI stub — credentials injected via dart-define" > .env
+
+      - name: Build Web (Production)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          flutter build web \
+            --dart-define=ENV=prod \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_KEY="$SUPABASE_KEY" \
+            --release
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build-prod
+          path: build/web/
+          retention-days: 30
