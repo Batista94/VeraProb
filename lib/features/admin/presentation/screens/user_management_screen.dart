@@ -31,9 +31,16 @@ class UserManagementScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.people_outline, size: 28, color: PactaFlowColors.primary),
+                const Icon(
+                  Icons.people_outline,
+                  size: 28,
+                  color: PactaFlowColors.primary,
+                ),
                 const SizedBox(width: 12),
-                Text('Gestão de Usuários', style: PactaFlowTypography.sectionTitle),
+                Text(
+                  'Gestão de Usuários',
+                  style: PactaFlowTypography.sectionTitle,
+                ),
                 const Spacer(),
                 FilledButton.icon(
                   icon: const Icon(Icons.person_add_outlined, size: 18),
@@ -45,7 +52,9 @@ class UserManagementScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               'Gerencie os membros da sua organização e suas permissões de acesso.',
-              style: PactaFlowTypography.bodyMedium.copyWith(color: PactaFlowColors.textSecondary),
+              style: PactaFlowTypography.bodyMedium.copyWith(
+                color: PactaFlowColors.textSecondary,
+              ),
             ),
             const SizedBox(height: 32),
             Expanded(
@@ -53,7 +62,8 @@ class UserManagementScreen extends ConsumerWidget {
                 children: [
                   // ── Active members ───────────────────────────────────────
                   membersAsync.when(
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Center(
                       child: Text(
                         'Erro ao carregar membros: $e',
@@ -62,19 +72,27 @@ class UserManagementScreen extends ConsumerWidget {
                     ),
                     data: (members) => Column(
                       children: List.generate(members.length * 2 - 1, (i) {
-                        if (i.isOdd) return const Divider(color: PactaFlowColors.border);
+                        if (i.isOdd)
+                          return const Divider(color: PactaFlowColors.border);
                         final member = members[i ~/ 2];
                         final isSelf = member.userId == currentUserId;
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: PactaFlowColors.primary.withValues(alpha: 0.1),
+                            backgroundColor: PactaFlowColors.primary.withValues(
+                              alpha: 0.1,
+                            ),
                             child: Text(
                               member.email[0].toUpperCase(),
                               style: const TextStyle(
-                                  color: PactaFlowColors.primary, fontWeight: FontWeight.bold),
+                                color: PactaFlowColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                          title: Text(member.email, style: PactaFlowTypography.kpiLabel),
+                          title: Text(
+                            member.email,
+                            style: PactaFlowTypography.kpiLabel,
+                          ),
                           subtitle: Text(
                             'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
                             style: PactaFlowTypography.caption,
@@ -88,35 +106,61 @@ class UserManagementScreen extends ConsumerWidget {
                                   underline: const SizedBox(),
                                   items: const [
                                     DropdownMenuItem(
-                                        value: 'TENANT_ADMIN', child: Text('Administrador')),
+                                      value: 'TENANT_ADMIN',
+                                      child: Text('Administrador'),
+                                    ),
                                     DropdownMenuItem(
-                                        value: 'OPERATOR', child: Text('Operador')),
+                                      value: 'OPERATOR',
+                                      child: Text('Operador'),
+                                    ),
                                     DropdownMenuItem(
-                                        value: 'AUDITOR', child: Text('Auditor')),
+                                      value: 'AUDITOR',
+                                      child: Text('Auditor'),
+                                    ),
                                   ],
-                                  onChanged: (newRole) =>
-                                      _changeRole(context, ref, member.userId, newRole!),
+                                  onChanged: (newRole) => _changeRole(
+                                    context,
+                                    ref,
+                                    member.userId,
+                                    newRole!,
+                                  ),
                                 )
                               else
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: PactaFlowColors.surface,
                                     borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: PactaFlowColors.border),
+                                    border: Border.all(
+                                      color: PactaFlowColors.border,
+                                    ),
                                   ),
-                                  child: const Text('Você (Admin)',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold, fontSize: 12)),
+                                  child: const Text(
+                                    'Você (Admin)',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
                               const SizedBox(width: 16),
                               if (!isSelf)
                                 IconButton(
-                                  icon: const Icon(Icons.person_remove_outlined,
-                                      color: PactaFlowColors.error, size: 20),
+                                  icon: const Icon(
+                                    Icons.person_remove_outlined,
+                                    color: PactaFlowColors.error,
+                                    size: 20,
+                                  ),
                                   tooltip: 'Remover membro',
-                                  onPressed: () =>
-                                      _confirmRemove(context, ref, member.userId, member.email),
+                                  onPressed: () => _confirmRemove(
+                                    context,
+                                    ref,
+                                    member.userId,
+                                    member.email,
+                                  ),
                                 ),
                             ],
                           ),
@@ -130,7 +174,9 @@ class UserManagementScreen extends ConsumerWidget {
                     loading: () => const SizedBox.shrink(),
                     error: (err, st) => const SizedBox.shrink(),
                     data: (invitations) {
-                      final pending = invitations.where((i) => i.isActive).toList();
+                      final pending = invitations
+                          .where((i) => i.isActive)
+                          .toList();
                       if (pending.isEmpty) return const SizedBox.shrink();
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,18 +186,26 @@ class UserManagementScreen extends ConsumerWidget {
                           const SizedBox(height: 16),
                           Row(
                             children: [
-                              const Icon(Icons.mail_outline,
-                                  size: 20, color: PactaFlowColors.textSecondary),
+                              const Icon(
+                                Icons.mail_outline,
+                                size: 20,
+                                color: PactaFlowColors.textSecondary,
+                              ),
                               const SizedBox(width: 8),
-                              Text('Convites Pendentes (${pending.length})',
-                                  style: PactaFlowTypography.kpiLabel),
+                              Text(
+                                'Convites Pendentes (${pending.length})',
+                                style: PactaFlowTypography.kpiLabel,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
-                          ...pending.map((inv) => _PendingInvitationTile(
-                                invitation: inv,
-                                onRevoke: () => _revokeInvitation(context, ref, inv),
-                              )),
+                          ...pending.map(
+                            (inv) => _PendingInvitationTile(
+                              invitation: inv,
+                              onRevoke: () =>
+                                  _revokeInvitation(context, ref, inv),
+                            ),
+                          ),
                         ],
                       );
                     },
@@ -173,7 +227,11 @@ class UserManagementScreen extends ConsumerWidget {
   }
 
   Future<void> _changeRole(
-      BuildContext context, WidgetRef ref, String userId, String newRoleString) async {
+    BuildContext context,
+    WidgetRef ref,
+    String userId,
+    String newRoleString,
+  ) async {
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final callerRole = ref.read(currentUserRoleProvider);
@@ -187,42 +245,56 @@ class UserManagementScreen extends ConsumerWidget {
         newRole = UserRole.auditor;
       }
 
-      await ref.read(changeUserRoleHandlerProvider).handle(ChangeUserRoleCommand(
-            organizationId: orgId!,
-            callerRole: callerRole,
-            targetUserId: userId,
-            newRole: newRole,
-          ));
+      await ref
+          .read(changeUserRoleHandlerProvider)
+          .handle(
+            ChangeUserRoleCommand(
+              organizationId: orgId!,
+              callerRole: callerRole,
+              targetUserId: userId,
+              newRole: newRole,
+            ),
+          );
       ref.invalidate(orgMembersProvider);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Permissão atualizada.'),
-              backgroundColor: PactaFlowColors.success),
+            content: Text('Permissão atualizada.'),
+            backgroundColor: PactaFlowColors.success,
+          ),
         );
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'), backgroundColor: PactaFlowColors.error),
+          SnackBar(
+            content: Text('Erro: $e'),
+            backgroundColor: PactaFlowColors.error,
+          ),
         );
       }
     }
   }
 
   Future<void> _confirmRemove(
-      BuildContext context, WidgetRef ref, String userId, String email) async {
+    BuildContext context,
+    WidgetRef ref,
+    String userId,
+    String email,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Remover Membro'),
         content: Text(
-            'Deseja realmente remover o usuário $email da organização? Esta ação removerá todo o acesso dele.'),
+          'Deseja realmente remover o usuário $email da organização? Esta ação removerá todo o acesso dele.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: PactaFlowColors.error),
@@ -237,26 +309,32 @@ class UserManagementScreen extends ConsumerWidget {
         final orgId = ref.read(currentOrganizationIdProvider);
         final callerRole = ref.read(currentUserRoleProvider);
 
-        await ref.read(removeMemberHandlerProvider).handle(RemoveMemberCommand(
-              organizationId: orgId!,
-              callerRole: callerRole,
-              targetUserId: userId,
-            ));
+        await ref
+            .read(removeMemberHandlerProvider)
+            .handle(
+              RemoveMemberCommand(
+                organizationId: orgId!,
+                callerRole: callerRole,
+                targetUserId: userId,
+              ),
+            );
         ref.invalidate(orgMembersProvider);
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content: Text('Membro removido.'),
-                backgroundColor: PactaFlowColors.success),
+              content: Text('Membro removido.'),
+              backgroundColor: PactaFlowColors.success,
+            ),
           );
         }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(e.toString().replaceAll('Exception: ', '')),
-                backgroundColor: PactaFlowColors.error),
+              content: Text(e.toString().replaceAll('Exception: ', '')),
+              backgroundColor: PactaFlowColors.error,
+            ),
           );
         }
       }
@@ -264,17 +342,22 @@ class UserManagementScreen extends ConsumerWidget {
   }
 
   Future<void> _revokeInvitation(
-      BuildContext context, WidgetRef ref, Invitation invitation) async {
+    BuildContext context,
+    WidgetRef ref,
+    Invitation invitation,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Revogar Convite'),
         content: Text(
-            'Deseja revogar o convite enviado para ${invitation.email}? O link ficará inválido imediatamente.'),
+          'Deseja revogar o convite enviado para ${invitation.email}? O link ficará inválido imediatamente.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: PactaFlowColors.error),
@@ -289,24 +372,32 @@ class UserManagementScreen extends ConsumerWidget {
         final orgId = ref.read(currentOrganizationIdProvider);
         final callerRole = ref.read(currentUserRoleProvider);
 
-        await ref.read(revokeInvitationHandlerProvider).handle(RevokeInvitationCommand(
-              organizationId: orgId!,
-              callerRole: callerRole,
-              invitationId: invitation.id,
-            ));
+        await ref
+            .read(revokeInvitationHandlerProvider)
+            .handle(
+              RevokeInvitationCommand(
+                organizationId: orgId!,
+                callerRole: callerRole,
+                invitationId: invitation.id,
+              ),
+            );
         ref.invalidate(orgInvitationsProvider);
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content: Text('Convite revogado.'),
-                backgroundColor: PactaFlowColors.success),
+              content: Text('Convite revogado.'),
+              backgroundColor: PactaFlowColors.success,
+            ),
           );
         }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro: $e'), backgroundColor: PactaFlowColors.error),
+            SnackBar(
+              content: Text('Erro: $e'),
+              backgroundColor: PactaFlowColors.error,
+            ),
           );
         }
       }
@@ -320,7 +411,10 @@ class _PendingInvitationTile extends StatelessWidget {
   final Invitation invitation;
   final VoidCallback onRevoke;
 
-  const _PendingInvitationTile({required this.invitation, required this.onRevoke});
+  const _PendingInvitationTile({
+    required this.invitation,
+    required this.onRevoke,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -329,14 +423,18 @@ class _PendingInvitationTile extends StatelessWidget {
       UserRole.operator => 'Operador',
       UserRole.auditor => 'Auditor',
     };
-    final expiryStr =
-        invitation.expiresAtUtc.toLocal().toString().split('.')[0];
+    final expiryStr = invitation.expiresAtUtc.toLocal().toString().split(
+      '.',
+    )[0];
 
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: PactaFlowColors.warning.withValues(alpha: 0.1),
-        child: const Icon(Icons.hourglass_empty_outlined,
-            color: PactaFlowColors.warning, size: 18),
+        child: const Icon(
+          Icons.hourglass_empty_outlined,
+          color: PactaFlowColors.warning,
+          size: 18,
+        ),
       ),
       title: Text(invitation.email, style: PactaFlowTypography.kpiLabel),
       subtitle: Text(
@@ -344,7 +442,11 @@ class _PendingInvitationTile extends StatelessWidget {
         style: PactaFlowTypography.caption,
       ),
       trailing: IconButton(
-        icon: const Icon(Icons.cancel_outlined, color: PactaFlowColors.error, size: 20),
+        icon: const Icon(
+          Icons.cancel_outlined,
+          color: PactaFlowColors.error,
+          size: 20,
+        ),
         tooltip: 'Revogar convite',
         onPressed: onRevoke,
       ),
@@ -412,9 +514,18 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
                 initialValue: _selectedRole,
                 decoration: const InputDecoration(labelText: 'Perfil'),
                 items: const [
-                  DropdownMenuItem(value: UserRole.admin, child: Text('Administrador')),
-                  DropdownMenuItem(value: UserRole.operator, child: Text('Operador')),
-                  DropdownMenuItem(value: UserRole.auditor, child: Text('Auditor')),
+                  DropdownMenuItem(
+                    value: UserRole.admin,
+                    child: Text('Administrador'),
+                  ),
+                  DropdownMenuItem(
+                    value: UserRole.operator,
+                    child: Text('Operador'),
+                  ),
+                  DropdownMenuItem(
+                    value: UserRole.auditor,
+                    child: Text('Auditor'),
+                  ),
                 ],
                 onChanged: (r) => setState(() => _selectedRole = r!),
               ),
@@ -433,7 +544,11 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
               : const Text('Enviar Convite'),
         ),
       ],
@@ -467,8 +582,9 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
             const SizedBox(height: 8),
             Text(
               'O link expira em 7 dias.',
-              style: PactaFlowTypography.caption
-                  .copyWith(color: PactaFlowColors.textSecondary),
+              style: PactaFlowTypography.caption.copyWith(
+                color: PactaFlowColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -479,9 +595,9 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
           label: const Text('Copiar Link'),
           onPressed: () {
             Clipboard.setData(ClipboardData(text: inviteUrl));
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Link copiado!')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Link copiado!')));
           },
         ),
         FilledButton(
@@ -501,13 +617,17 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
       final callerRole = widget.parentRef.read(currentUserRoleProvider);
       final userId = widget.parentRef.read(currentOperatorIdProvider);
 
-      final token = await ref.read(inviteUserHandlerProvider).handle(InviteUserCommand(
-            organizationId: orgId!,
-            callerRole: callerRole,
-            invitedByUserId: userId ?? '',
-            email: _emailController.text,
-            roleToAssign: _selectedRole,
-          ));
+      final token = await ref
+          .read(inviteUserHandlerProvider)
+          .handle(
+            InviteUserCommand(
+              organizationId: orgId!,
+              callerRole: callerRole,
+              invitedByUserId: userId ?? '',
+              email: _emailController.text,
+              roleToAssign: _selectedRole,
+            ),
+          );
 
       widget.parentRef.invalidate(orgInvitationsProvider);
       setState(() {
@@ -519,7 +639,9 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Erro: $e'), backgroundColor: PactaFlowColors.error),
+            content: Text('Erro: $e'),
+            backgroundColor: PactaFlowColors.error,
+          ),
         );
       }
     }

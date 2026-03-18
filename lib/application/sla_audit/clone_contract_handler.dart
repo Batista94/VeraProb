@@ -24,8 +24,8 @@ class CloneContractHandler {
   CloneContractHandler({
     required ContractRepository contractRepository,
     required SlaAuditLedgerRepository ledger,
-  })  : _contractRepository = contractRepository,
-        _ledger = ledger;
+  }) : _contractRepository = contractRepository,
+       _ledger = ledger;
 
   /// Returns the newly created [Contract] draft.
   ///

@@ -4,7 +4,7 @@ import 'change_user_role_command.dart';
 import 'user_management_command_service.dart';
 
 /// Application handler for changing a user's role.
-/// 
+///
 /// RBAC: Requires [UserPermission.canManageUsers].
 class ChangeUserRoleHandler {
   final UserManagementCommandService _commandService;
@@ -15,7 +15,9 @@ class ChangeUserRoleHandler {
   Future<void> handle(ChangeUserRoleCommand command) async {
     // 1. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageUsers)) {
-      throw Exception('Unauthorized: Caller identifies as ${command.callerRole} but needs canManageUsers permission');
+      throw Exception(
+        'Unauthorized: Caller identifies as ${command.callerRole} but needs canManageUsers permission',
+      );
     }
 
     // 2. Delegate to command service (RPC)

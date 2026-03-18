@@ -39,12 +39,12 @@ class Organization extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        timezone,
-        currencyCode,
-        logoUrl,
-        isActive,
-        createdAt,
-      ];
+    id,
+    name,
+    timezone,
+    currencyCode,
+    logoUrl,
+    isActive,
+    createdAt,
+  ];
 }

@@ -75,10 +75,9 @@ class OperationalZone extends Equatable {
   ///
   /// [ZoneScope.global] when no contractor is associated;
   /// [ZoneScope.exclusive] when tied to a specific contractor.
-  ZoneScope get scope =>
-      (contractorId != null || contractorLabel != null)
-          ? ZoneScope.exclusive
-          : ZoneScope.global;
+  ZoneScope get scope => (contractorId != null || contractorLabel != null)
+      ? ZoneScope.exclusive
+      : ZoneScope.global;
 
   /// Optional geofence. Null means "no geofence configured yet".
   /// Never defaults to 0.0/0.0 — that coordinate is geographically valid
@@ -125,7 +124,9 @@ class OperationalZone extends Equatable {
       type: type,
       address: address,
       contractorId: contractorId,
-      contractorLabel: contractorLabel?.trim().isEmpty ?? true ? null : contractorLabel?.trim(),
+      contractorLabel: contractorLabel?.trim().isEmpty ?? true
+          ? null
+          : contractorLabel?.trim(),
       geofence: geofence,
     );
   }
@@ -176,9 +177,7 @@ class OperationalZone extends Equatable {
 
   static void _validateRadius(int value) {
     if (value <= 0 || value > 50000) {
-      throw const DomainException(
-        'radiusMeters must be between 1 and 50000',
-      );
+      throw const DomainException('radiusMeters must be between 1 and 50000');
     }
   }
 

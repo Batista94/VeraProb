@@ -3,7 +3,8 @@ import '../../application/admin/user_management_command_service.dart';
 import '../../domain/enums/user_role.dart';
 
 /// PostgreSQL implementation of [UserManagementCommandService] using Supabase RPCs.
-class PostgresUserManagementCommandService implements UserManagementCommandService {
+class PostgresUserManagementCommandService
+    implements UserManagementCommandService {
   final SupabaseClient _client;
 
   PostgresUserManagementCommandService(this._client);
@@ -16,11 +17,11 @@ class PostgresUserManagementCommandService implements UserManagementCommandServi
   }) async {
     // Role mapping for SQL: admin -> TENANT_ADMIN, operator -> OPERATOR, auditor -> AUDITOR
     final dbRole = _mapRoleToDb(newRole);
-    
-    await _client.rpc('update_member_role', params: {
-      'p_target_user_id': targetUserId,
-      'p_new_role': dbRole,
-    });
+
+    await _client.rpc(
+      'update_member_role',
+      params: {'p_target_user_id': targetUserId, 'p_new_role': dbRole},
+    );
   }
 
   @override
@@ -28,9 +29,10 @@ class PostgresUserManagementCommandService implements UserManagementCommandServi
     required String organizationId,
     required String targetUserId,
   }) async {
-    await _client.rpc('remove_member', params: {
-      'p_target_user_id': targetUserId,
-    });
+    await _client.rpc(
+      'remove_member',
+      params: {'p_target_user_id': targetUserId},
+    );
   }
 
   String _mapRoleToDb(UserRole role) {

@@ -6,28 +6,32 @@ import '../../domain/sla_audit/contractor_repository.dart';
 import 'save_contractor_command.dart';
 
 /// Application handler for creating or updating a contractor.
-/// 
+///
 /// RBAC: Requires [UserPermission.canManageContractors].
 class SaveContractorHandler {
   final ContractorRepository _repository;
   final RbacService _rbac = RbacService();
   final _uuid = const Uuid();
 
-  SaveContractorHandler({
-    required ContractorRepository repository,
-  }) : _repository = repository;
+  SaveContractorHandler({required ContractorRepository repository})
+    : _repository = repository;
 
   Future<void> handle(SaveContractorCommand command) async {
     // 1. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageContractors)) {
-      throw Exception('Unauthorized: Caller identifies as ${command.callerRole} but needs canManageContractors permission');
+      throw Exception(
+        'Unauthorized: Caller identifies as ${command.callerRole} but needs canManageContractors permission',
+      );
     }
 
     // 2. Prepare aggregate (reuse ID if provided for update, else generate new UUID)
     Contractor contractor;
-    
+
     if (command.id != null) {
-      final existing = await _repository.findById(command.organizationId, command.id!);
+      final existing = await _repository.findById(
+        command.organizationId,
+        command.id!,
+      );
       if (existing == null) {
         throw Exception('Contractor not found: ${command.id}');
       }

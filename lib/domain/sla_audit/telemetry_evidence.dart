@@ -205,7 +205,10 @@ class TelemetryEvidence extends Equatable {
     );
     if (recomputedContent != contentHash) return false;
 
-    final recomputedChain = _computeChainHash(contentHash, previousEvidenceHash);
+    final recomputedChain = _computeChainHash(
+      contentHash,
+      previousEvidenceHash,
+    );
     return recomputedChain == chainHash;
   }
 

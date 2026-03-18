@@ -46,13 +46,19 @@ class CsvExportService {
     buffer.writeln('# Package ID:      ${package.id}');
     buffer.writeln('# Package Hash:    SHA-256:${package.packageHash}');
     buffer.writeln('# Ledger Boundary: Entry #${package.reportLedgerBoundary}');
-    buffer.writeln('# Issuing Org:     ${h.tenantName} (CNPJ: ${h.tenantCnpj ?? "N/A"})');
-    buffer.writeln('# Contractor:      ${h.contractorName} (CNPJ: ${h.contractorCnpj ?? "N/A"})');
+    buffer.writeln(
+      '# Issuing Org:     ${h.tenantName} (CNPJ: ${h.tenantCnpj ?? "N/A"})',
+    );
+    buffer.writeln(
+      '# Contractor:      ${h.contractorName} (CNPJ: ${h.contractorCnpj ?? "N/A"})',
+    );
     buffer.writeln(
       '# Period:          ${package.periodStartUtc.toIso8601String()} to '
       '${package.periodEndUtc.toIso8601String()} UTC',
     );
-    buffer.writeln('# Generated:       ${package.generatedAtUtc.toIso8601String()} UTC');
+    buffer.writeln(
+      '# Generated:       ${package.generatedAtUtc.toIso8601String()} UTC',
+    );
     buffer.writeln('#                  by ${package.generatedByUserId}');
     buffer.writeln('# Engine:          ${h.engineVersion}');
     buffer.writeln('# Schema:          ${package.schemaVersion}');
@@ -60,12 +66,7 @@ class CsvExportService {
     buffer.writeln('# ${h.immutabilityStatement}');
     buffer.writeln('#');
     buffer.writeln(
-      '# ${h.verificationInstructions(
-        organizationId: package.organizationId,
-        contractScope: contractScope,
-        periodStart: package.periodStartUtc.toIso8601String(),
-        periodEnd: package.periodEndUtc.toIso8601String(),
-      )}',
+      '# ${h.verificationInstructions(organizationId: package.organizationId, contractScope: contractScope, periodStart: package.periodStartUtc.toIso8601String(), periodEnd: package.periodEndUtc.toIso8601String())}',
     );
     buffer.writeln('#');
     buffer.writeln('# ${h.legalNotice}');

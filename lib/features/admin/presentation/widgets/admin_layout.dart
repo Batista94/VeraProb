@@ -33,7 +33,10 @@ class AdminLayout extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [PactaFlowColors.primary, PactaFlowColors.primary.withValues(alpha: 0.7)],
+                  colors: [
+                    PactaFlowColors.primary,
+                    PactaFlowColors.primary.withValues(alpha: 0.7),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -46,7 +49,11 @@ class AdminLayout extends ConsumerWidget {
                   ),
                 ],
               ),
-              child: const Icon(Icons.hub_rounded, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.hub_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
             if (isWideScreen) ...[
               const SizedBox(width: 16),
@@ -90,30 +97,32 @@ class AdminLayout extends ConsumerWidget {
           Row(
             children: [
               Container(
-                  decoration: const BoxDecoration(
-                    color: PactaFlowColors.background,
-                    border: Border(
-                      right: BorderSide(color: PactaFlowColors.border),
-                    ),
-                  ),
-                  child: NavigationRail(
-                    extended: isWideScreen,
-                    minWidth: 72,
-                    minExtendedWidth: 220,
-                    selectedIndex: selectedIndex,
-                    onDestinationSelected: (index) {
-                      ref.read(adminIndexProvider.notifier).state = index;
-                    },
-                    useIndicator: true,
-                    destinations: destinations,
+                decoration: const BoxDecoration(
+                  color: PactaFlowColors.background,
+                  border: Border(
+                    right: BorderSide(color: PactaFlowColors.border),
                   ),
                 ),
+                child: NavigationRail(
+                  extended: isWideScreen,
+                  minWidth: 72,
+                  minExtendedWidth: 220,
+                  selectedIndex: selectedIndex,
+                  onDestinationSelected: (index) {
+                    ref.read(adminIndexProvider.notifier).state = index;
+                  },
+                  useIndicator: true,
+                  destinations: destinations,
+                ),
+              ),
               Expanded(
                 child: Container(
                   color: PactaFlowColors.background,
                   child: IndexedStack(
                     index: selectedIndex,
-                    children: children.map((child) => _AnimatedPage(child: child)).toList(),
+                    children: children
+                        .map((child) => _AnimatedPage(child: child))
+                        .toList(),
                   ),
                 ),
               ),
@@ -149,7 +158,9 @@ class _StressModeToggle extends ConsumerWidget {
     return IconButton(
       icon: Icon(
         isStressMode ? Icons.speed_rounded : Icons.speed_outlined,
-        color: isStressMode ? PactaFlowColors.primary : PactaFlowColors.textDisabled,
+        color: isStressMode
+            ? PactaFlowColors.primary
+            : PactaFlowColors.textDisabled,
       ),
       tooltip: isStressMode ? 'Desativar Stress Mode' : 'Ativar Stress Mode',
       onPressed: () {
@@ -157,7 +168,8 @@ class _StressModeToggle extends ConsumerWidget {
           ref.read(stressScenarioProvider.notifier).state = null;
         } else {
           // Use a predefined scenario instead of a raw string
-          ref.read(stressScenarioProvider.notifier).state = StressScenarioConfig.extreme250();
+          ref.read(stressScenarioProvider.notifier).state =
+              StressScenarioConfig.extreme250();
         }
       },
     );

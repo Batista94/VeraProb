@@ -23,10 +23,10 @@ class PostgresRuleStudioCommandService implements RuleStudioCommandService {
     final result = await _client.rpc(
       'update_contractual_rule',
       params: {
-        'p_contract_id':      contractId,
-        'p_old_rule_id':      oldRuleId,
-        'p_rule_type':        ruleType.value,
-        'p_new_config':       newConfig,
+        'p_contract_id': contractId,
+        'p_old_rule_id': oldRuleId,
+        'p_rule_type': ruleType.value,
+        'p_new_config': newConfig,
         'p_evaluation_order': evaluationOrder,
       },
     );

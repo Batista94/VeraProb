@@ -5,7 +5,7 @@
 ///
 /// State machine:
 /// ```
-///   create() → [draft] → submit() → [awaitingContractorAcceptance] → activate() → [active] 
+///   create() → [draft] → submit() → [awaitingContractorAcceptance] → activate() → [active]
 ///   ...or [draft] → activate() → [active] (admin override)
 ///   [active] → close() → [closed]
 /// ```

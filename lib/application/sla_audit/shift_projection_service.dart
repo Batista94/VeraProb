@@ -46,9 +46,9 @@ class ShiftProjectionService {
     required PlanDeclarationRepository planRepo,
     required OperationalZoneRepository zoneRepo,
     required OperationalAlertRepository alertRepo,
-  })  : _planRepo = planRepo,
-        _zoneRepo = zoneRepo,
-        _alertRepo = alertRepo;
+  }) : _planRepo = planRepo,
+       _zoneRepo = zoneRepo,
+       _alertRepo = alertRepo;
 
   // ── Public API ────────────────────────────────────────────
 
@@ -84,7 +84,8 @@ class ShiftProjectionService {
         // Industrial cycle filter: skip dates outside the pattern's week slot.
         if (pattern.weekCycle != WeekCycle.everyWeek) {
           final anchor = plan.cycleAnchorDateUtc;
-          if (anchor == null) continue; // guard — should not happen after validation
+          if (anchor == null)
+            continue; // guard — should not happen after validation
           final daysDiff = dateOnly.difference(anchor).inDays;
           final weekIndex = ((daysDiff ~/ 7) % 4 + 4) % 4;
           if (weekIndex != pattern.weekCycle.index - 1) continue;
@@ -125,7 +126,12 @@ class ShiftProjectionService {
 
     for (final plan in shiftPlans) {
       // Project future days
-      await projectDays(plan, from: now, contractualValue: contractualValue, days: days);
+      await projectDays(
+        plan,
+        from: now,
+        contractualValue: contractualValue,
+        days: days,
+      );
 
       // Alert for past gaps
       await detectAndAlertGaps(plan, asOf: now);

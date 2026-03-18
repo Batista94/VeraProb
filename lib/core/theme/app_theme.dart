@@ -10,20 +10,22 @@ class PactaFlowColors {
 
   // ── Premium Dark Theme (Deep Navy/Obsidian) ────────────────
   static const Color background = Color(0xFF121212); // Softer than pure black
-  static const Color surface = Color(0xFF1E1E24);    // Deep modern slate
-  static const Color surfaceElevated = Color(0xFF2B2B36); // Noticeable elevation
+  static const Color surface = Color(0xFF1E1E24); // Deep modern slate
+  static const Color surfaceElevated = Color(
+    0xFF2B2B36,
+  ); // Noticeable elevation
   static const Color border = Color(0xFF333340);
 
   // ── Status Colors (CFO & Ops Friendly, Desaturated for Dark Mode) ─
-  static const Color onTime = Color(0xFF10B981);    // Emerald Green
-  static const Color delayed = Color(0xFFFBBF24);   // Desaturated Amber
-  static const Color critical = Color(0xFFF87171);  // Desaturated Rose Red
+  static const Color onTime = Color(0xFF10B981); // Emerald Green
+  static const Color delayed = Color(0xFFFBBF24); // Desaturated Amber
+  static const Color critical = Color(0xFFF87171); // Desaturated Rose Red
   static const Color scheduled = Color(0xFF60A5FA); // Desaturated Royal Blue
   static const Color neutral = Color(0xFF64748B);
 
   // ── High-Impact Accents ─────────────────────────────────
   // A calmer, more premium teal.
-  static const Color primary = Color(0xFF2DD4BF);   
+  static const Color primary = Color(0xFF2DD4BF);
   static const Color secondary = Color(0xFF818CF8); // Desaturated Indigo
 
   // ── Premium Text Hierarchy ──────────────────────────────
@@ -45,19 +47,21 @@ class PactaFlowColors {
 class PactaFlowSpacing {
   PactaFlowSpacing._();
 
-  static const double xs  = 4.0;
-  static const double sm  = 8.0;
-  static const double md  = 16.0;
-  static const double lg  = 24.0;
-  static const double xl  = 32.0;
+  static const double xs = 4.0;
+  static const double sm = 8.0;
+  static const double md = 16.0;
+  static const double lg = 24.0;
+  static const double xl = 32.0;
   static const double xxl = 48.0;
 
   /// Standard padding for form sections and dialog bodies.
   static const EdgeInsets sectionPadding = EdgeInsets.all(md);
 
   /// Compact padding for cards and list items.
-  static const EdgeInsets cardPadding =
-      EdgeInsets.symmetric(horizontal: md, vertical: sm);
+  static const EdgeInsets cardPadding = EdgeInsets.symmetric(
+    horizontal: md,
+    vertical: sm,
+  );
 }
 
 /// Operational typography for dense information display.
@@ -151,12 +155,20 @@ class AppTheme {
       surfaceContainer: PactaFlowColors.surface,
       surfaceContainerHigh: PactaFlowColors.surfaceElevated,
     ),
-    textTheme: GoogleFonts.interTextTheme(const TextTheme(
-      headlineMedium: TextStyle(color: PactaFlowColors.textPrimary, fontWeight: FontWeight.bold),
-      titleLarge: TextStyle(color: PactaFlowColors.textPrimary, fontWeight: FontWeight.w600),
-      bodyMedium: TextStyle(color: PactaFlowColors.textPrimary),
-      bodySmall: TextStyle(color: PactaFlowColors.textSecondary),
-    )),
+    textTheme: GoogleFonts.interTextTheme(
+      const TextTheme(
+        headlineMedium: TextStyle(
+          color: PactaFlowColors.textPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        titleLarge: TextStyle(
+          color: PactaFlowColors.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyMedium: TextStyle(color: PactaFlowColors.textPrimary),
+        bodySmall: TextStyle(color: PactaFlowColors.textSecondary),
+      ),
+    ),
     appBarTheme: const AppBarTheme(
       backgroundColor: PactaFlowColors.surface,
       foregroundColor: PactaFlowColors.textPrimary,
@@ -196,7 +208,10 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: PactaFlowColors.primary, width: 1.5),
+        borderSide: const BorderSide(
+          color: PactaFlowColors.primary,
+          width: 1.5,
+        ),
       ),
       labelStyle: TextStyle(color: PactaFlowColors.textSecondary, fontSize: 13),
       hintStyle: TextStyle(color: PactaFlowColors.textDisabled, fontSize: 13),
@@ -209,14 +224,25 @@ class AppTheme {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         elevation: 0,
-        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 0.3),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+          letterSpacing: 0.3,
+        ),
       ),
     ),
     navigationRailTheme: NavigationRailThemeData(
-      backgroundColor: PactaFlowColors.background, // Match background so it blends natively
+      backgroundColor:
+          PactaFlowColors.background, // Match background so it blends natively
       indicatorColor: PactaFlowColors.primary.withValues(alpha: 0.15),
-      selectedIconTheme: const IconThemeData(color: PactaFlowColors.primary, size: 24),
-      unselectedIconTheme: const IconThemeData(color: PactaFlowColors.textDisabled, size: 24),
+      selectedIconTheme: const IconThemeData(
+        color: PactaFlowColors.primary,
+        size: 24,
+      ),
+      unselectedIconTheme: const IconThemeData(
+        color: PactaFlowColors.textDisabled,
+        size: 24,
+      ),
       selectedLabelTextStyle: const TextStyle(
         color: PactaFlowColors.textPrimary,
         fontWeight: FontWeight.w600,
@@ -232,7 +258,8 @@ class AppTheme {
       backgroundColor: PactaFlowColors.surfaceElevated,
       headerBackgroundColor: PactaFlowColors.surface,
       headerForegroundColor: PactaFlowColors.textPrimary,
-      surfaceTintColor: Colors.transparent, // Disable Material 3 subtle tint parsing
+      surfaceTintColor:
+          Colors.transparent, // Disable Material 3 subtle tint parsing
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: PactaFlowColors.border, width: 1),
@@ -254,8 +281,12 @@ class AppTheme {
         }
         return PactaFlowColors.textPrimary;
       }),
-      cancelButtonStyle: TextButton.styleFrom(foregroundColor: PactaFlowColors.textSecondary),
-      confirmButtonStyle: TextButton.styleFrom(foregroundColor: PactaFlowColors.primary),
+      cancelButtonStyle: TextButton.styleFrom(
+        foregroundColor: PactaFlowColors.textSecondary,
+      ),
+      confirmButtonStyle: TextButton.styleFrom(
+        foregroundColor: PactaFlowColors.primary,
+      ),
     ),
   );
 
@@ -270,8 +301,8 @@ class AppTheme {
   static Color get primaryColor => PactaFlowColors.primary;
   static Color get surfaceColor => PactaFlowColors.background;
   static Gradient get primaryGradient => const LinearGradient(
-        colors: [PactaFlowColors.primary, PactaFlowColors.secondary],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
+    colors: [PactaFlowColors.primary, PactaFlowColors.secondary],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 }

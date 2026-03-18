@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 
 /// Standard header for PactaFlow screens.
-/// 
+///
 /// Ensures mathematical alignment between icon, title, and actions.
 /// Follows the 8px grid system defined in [PactaFlowSpacing].
 class PactaFlowHeader extends StatelessWidget {
@@ -26,11 +26,7 @@ class PactaFlowHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          size: 28,
-          color: iconColor ?? PactaFlowColors.primary,
-        ),
+        Icon(icon, size: 28, color: iconColor ?? PactaFlowColors.primary),
         const SizedBox(width: PactaFlowSpacing.md),
         Expanded(
           child: Column(

@@ -85,15 +85,13 @@ class _PactaFlowAdminAppState extends ConsumerState<PactaFlowAdminApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('pt', 'BR'),
-      ],
+      supportedLocales: const [Locale('pt', 'BR')],
       locale: const Locale('pt', 'BR'),
       home: widget.reviewContractToken != null
           ? ReviewContractScreen(token: widget.reviewContractToken!)
           : widget.inviteToken != null
-              ? AcceptInviteScreen(token: widget.inviteToken!)
-              : const ErrorBoundary(child: AdminLockScreen()),
+          ? AcceptInviteScreen(token: widget.inviteToken!)
+          : const ErrorBoundary(child: AdminLockScreen()),
     );
   }
 }

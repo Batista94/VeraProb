@@ -41,7 +41,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
 
   /// Causal linkage: The last ledger entry ID considered in this closure.
   /// Proves deterministically the exact boundary of events computed.
-  final int? lastLedgerEntryId;
+  final String? lastLedgerEntryId;
 
   /// Reprocessing chain: The ID of the snapshot this one replaces (if any).
   final String? previousSnapshotId;
@@ -93,7 +93,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required int executedCount,
     required int noShowCount,
     required int evidenceGapCount,
-    required int? lastLedgerEntryId,
+    required String? lastLedgerEntryId,
     String? previousSnapshotId,
     String? reprocessingReason,
     String? authorUserId,
@@ -162,7 +162,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required int executedCount,
     required int noShowCount,
     required int evidenceGapCount,
-    required int? lastLedgerEntryId,
+    required String? lastLedgerEntryId,
     String? previousSnapshotId,
     String? reprocessingReason,
     String? authorUserId,

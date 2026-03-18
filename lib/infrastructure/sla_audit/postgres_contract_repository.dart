@@ -16,7 +16,7 @@ class PostgresContractRepository implements ContractRepository {
   final SupabaseClient _client;
 
   PostgresContractRepository([SupabaseClient? client])
-      : _client = client ?? supabase;
+    : _client = client ?? supabase;
 
   @override
   Future<void> save(Contract contract) async {
@@ -36,8 +36,8 @@ class PostgresContractRepository implements ContractRepository {
       'close_reason': contract.closeReason,
       'cloned_from_contract_id': contract.clonedFromContractId,
       'financial_ceiling_cents': contract.financialCeiling?.cents,
-      'submitted_for_approval_at_utc':
-          contract.submittedForApprovalAtUtc?.toIso8601String(),
+      'submitted_for_approval_at_utc': contract.submittedForApprovalAtUtc
+          ?.toIso8601String(),
     });
   }
 

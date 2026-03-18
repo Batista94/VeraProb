@@ -24,10 +24,10 @@ class ContractQueryServiceInMemory implements ContractQueryService {
     required PlanDeclarationRepository planRepository,
     required ContractualExecutionStateRepository executionStateRepository,
     required SlaExecutionQueryService slaExecutionQueryService,
-  })  : _contractRepository = contractRepository,
-        _planRepository = planRepository,
-        _executionStateRepository = executionStateRepository,
-        _slaExecutionQueryService = slaExecutionQueryService;
+  }) : _contractRepository = contractRepository,
+       _planRepository = planRepository,
+       _executionStateRepository = executionStateRepository,
+       _slaExecutionQueryService = slaExecutionQueryService;
 
   @override
   Future<List<ContractSummaryView>> listContracts({
@@ -63,26 +63,27 @@ class ContractQueryServiceInMemory implements ContractQueryService {
       contractId,
       organizationId: organizationId,
     );
-    final recentExecutions = allStates
-        .map(
-          (s) => SlaExecutionItemView(
-            setId: s.setId,
-            contractId: s.contractId,
-            status: s.status,
-            windowStartUtc: s.windowStartUtc,
-            windowEndUtc: s.windowEndUtc,
-            plannedVehicleId: s.plannedVehicleId,
-            boundVehicleId: s.boundVehicleId,
-            boundAtUtc: s.bindingTimestampUtc,
-            startLatitude: s.startLatitude,
-            startLongitude: s.startLongitude,
-            startRadiusMeters: s.startRadiusMeters,
-            contractualValue: s.contractualValue,
-            noShowPenaltyMultiplier: s.noShowPenaltyMultiplier,
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.windowStartUtc.compareTo(a.windowStartUtc));
+    final recentExecutions =
+        allStates
+            .map(
+              (s) => SlaExecutionItemView(
+                setId: s.setId,
+                contractId: s.contractId,
+                status: s.status,
+                windowStartUtc: s.windowStartUtc,
+                windowEndUtc: s.windowEndUtc,
+                plannedVehicleId: s.plannedVehicleId,
+                boundVehicleId: s.boundVehicleId,
+                boundAtUtc: s.bindingTimestampUtc,
+                startLatitude: s.startLatitude,
+                startLongitude: s.startLongitude,
+                startRadiusMeters: s.startRadiusMeters,
+                contractualValue: s.contractualValue,
+                noShowPenaltyMultiplier: s.noShowPenaltyMultiplier,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.windowStartUtc.compareTo(a.windowStartUtc));
 
     // Financial summary for this contract
     final financialSummary = await _slaExecutionQueryService.getSummary(
@@ -124,15 +125,18 @@ class ContractQueryServiceInMemory implements ContractQueryService {
       contractId,
       organizationId: organizationId,
     );
-    final totalSetsInProgress =
-        allStates.where((s) => s.status == ExecutionStatus.pending).length;
+    final totalSetsInProgress = allStates
+        .where((s) => s.status == ExecutionStatus.pending)
+        .length;
 
     // SLA health: executed / total * 100
     final totalSets = allStates.length;
-    final executedCount =
-        allStates.where((s) => s.status == ExecutionStatus.executed).length;
-    final slaHealthPercentage =
-        totalSets == 0 ? 0.0 : (executedCount / totalSets) * 100.0;
+    final executedCount = allStates
+        .where((s) => s.status == ExecutionStatus.executed)
+        .length;
+    final slaHealthPercentage = totalSets == 0
+        ? 0.0
+        : (executedCount / totalSets) * 100.0;
 
     return ContractSummaryView(
       id: contract.id,

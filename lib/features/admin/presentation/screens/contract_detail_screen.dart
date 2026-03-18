@@ -43,8 +43,10 @@ class ContractDetailScreen extends ConsumerWidget {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(
-        child: Text('Erro ao carregar contrato: $e',
-            style: const TextStyle(color: Colors.red)),
+        child: Text(
+          'Erro ao carregar contrato: $e',
+          style: const TextStyle(color: Colors.red),
+        ),
       ),
     );
   }
@@ -101,12 +103,14 @@ class _DetailViewState extends ConsumerState<_DetailView> {
 
       final token = await ref
           .read(submitContractForApprovalHandlerProvider)
-          .handle(SubmitContractForApprovalCommand(
-            organizationId: orgId,
-            contractId: s.id,
-            callerUserId: userId,
-            callerRole: role,
-          ));
+          .handle(
+            SubmitContractForApprovalCommand(
+              organizationId: orgId,
+              contractId: s.id,
+              callerUserId: userId,
+              callerRole: role,
+            ),
+          );
 
       ref.invalidate(contractDetailProvider(s.id));
       ref.invalidate(contractListProvider);
@@ -114,8 +118,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       if (!mounted) return;
 
       // Build the review link based on current window location
-      final reviewLink =
-          '${Uri.base.origin}/review-contract?token=$token';
+      final reviewLink = '${Uri.base.origin}/review-contract?token=$token';
 
       if (!context.mounted) return;
 
@@ -154,9 +157,9 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: reviewLink));
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Link copiado!')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Link copiado!')));
               },
             ),
             TextButton(
@@ -169,7 +172,8 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     } catch (e) {
       if (mounted) {
         final raw = e.toString();
-        final isUnauthorized = raw.contains('Unauthorized') || raw.contains('unauthorized');
+        final isUnauthorized =
+            raw.contains('Unauthorized') || raw.contains('unauthorized');
         final msg = isUnauthorized
             ? 'Permissão negada. Faça logout e login novamente para atualizar suas credenciais.'
             : raw.replaceAll('Exception: ', '');
@@ -185,10 +189,12 @@ class _DetailViewState extends ConsumerState<_DetailView> {
   @override
   Widget build(BuildContext context) {
     final s = widget.detail.summary;
-    final canDeclarePlan = s.status != ContractStatus.closed &&
+    final canDeclarePlan =
+        s.status != ContractStatus.closed &&
         s.status != ContractStatus.awaitingContractorAcceptance;
     final noPlan = s.status == ContractStatus.draft && s.activePlanVersion == 0;
-    final canSubmitForApproval = s.status == ContractStatus.draft && s.activePlanVersion > 0;
+    final canSubmitForApproval =
+        s.status == ContractStatus.draft && s.activePlanVersion > 0;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -201,9 +207,9 @@ class _DetailViewState extends ConsumerState<_DetailView> {
             title: s.name,
             subtitle: s.contractorName,
             actions: [
-               _StatusChip(status: s.status),
-               const SizedBox(width: PactaFlowSpacing.md),
-               if (canSubmitForApproval)
+              _StatusChip(status: s.status),
+              const SizedBox(width: PactaFlowSpacing.md),
+              if (canSubmitForApproval)
                 OutlinedButton.icon(
                   icon: _submitting
                       ? const SizedBox(
@@ -217,7 +223,8 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                       ? null
                       : () => _submitForApproval(context),
                 ),
-              if (canSubmitForApproval) const SizedBox(width: PactaFlowSpacing.sm),
+              if (canSubmitForApproval)
+                const SizedBox(width: PactaFlowSpacing.sm),
               if (canDeclarePlan)
                 FilledButton.icon(
                   icon: const Icon(Icons.playlist_add_check, size: 16),
@@ -253,7 +260,9 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               ),
               _MetaItem(
                 label: 'Plano atual',
-                value: s.activePlanVersion > 0 ? 'v${s.activePlanVersion}' : '—',
+                value: s.activePlanVersion > 0
+                    ? 'v${s.activePlanVersion}'
+                    : '—',
               ),
               _MetaItem(
                 label: 'SETs pendentes',
@@ -316,8 +325,11 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                     child: TabBarView(
                       children: [
                         _ExecutionsTab(
-                            executions: widget.detail.recentExecutions),
-                        _FinancialTab(financialSummary: widget.detail.financialSummary),
+                          executions: widget.detail.recentExecutions,
+                        ),
+                        _FinancialTab(
+                          financialSummary: widget.detail.financialSummary,
+                        ),
                       ],
                     ),
                   ),
@@ -345,14 +357,21 @@ class _ExecutionsTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.directions_bus_outlined,
-                size: 48, color: Colors.grey.shade400),
+            Icon(
+              Icons.directions_bus_outlined,
+              size: 48,
+              color: Colors.grey.shade400,
+            ),
             const SizedBox(height: 12),
-            Text('Nenhuma viagem projetada.',
-                style: TextStyle(color: Colors.grey.shade600)),
+            Text(
+              'Nenhuma viagem projetada.',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
             const SizedBox(height: 4),
-            Text('Declare um plano operacional para começar o monitoramento.',
-                style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+            Text(
+              'Declare um plano operacional para começar o monitoramento.',
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+            ),
           ],
         ),
       );
@@ -364,7 +383,9 @@ class _ExecutionsTab extends StatelessWidget {
         child: DataTable(
           columnSpacing: 14,
           headingTextStyle: const TextStyle(
-              fontWeight: FontWeight.w600, fontSize: 12),
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
           columns: const [
             DataColumn(label: Text('Status')),
             DataColumn(label: Text('Janela')),
@@ -380,23 +401,29 @@ class _ExecutionsTab extends StatelessWidget {
   DataRow _buildRow(SlaExecutionItemView e) {
     final window =
         '${_dateTimeFormat.format(e.windowStartUtc.toLocal())} – ${_dateTimeFormat.format(e.windowEndUtc.toLocal())}';
-    return DataRow(cells: [
-      DataCell(_ExecutionStatusChip(status: e.status)),
-      DataCell(Text(window, style: const TextStyle(fontSize: 11))),
-      DataCell(Text(
-        e.boundVehicleId ?? e.plannedVehicleId ?? 'Sem veículo',
-        style: TextStyle(
-          fontSize: 12,
-          color: (e.boundVehicleId == null && e.plannedVehicleId == null)
-              ? Colors.grey.shade400
-              : null,
+    return DataRow(
+      cells: [
+        DataCell(_ExecutionStatusChip(status: e.status)),
+        DataCell(Text(window, style: const TextStyle(fontSize: 11))),
+        DataCell(
+          Text(
+            e.boundVehicleId ?? e.plannedVehicleId ?? 'Sem veículo',
+            style: TextStyle(
+              fontSize: 12,
+              color: (e.boundVehicleId == null && e.plannedVehicleId == null)
+                  ? Colors.grey.shade400
+                  : null,
+            ),
+          ),
         ),
-      )),
-      DataCell(Text(
-        _currencyFormat.format(e.contractualValue.toDouble()),
-        style: const TextStyle(fontSize: 12),
-      )),
-    ]);
+        DataCell(
+          Text(
+            _currencyFormat.format(e.contractualValue.toDouble()),
+            style: const TextStyle(fontSize: 12),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -474,17 +501,23 @@ class _KpiCard extends StatelessWidget {
                 children: [
                   Icon(icon, size: 16, color: color),
                   const SizedBox(width: 6),
-                  Text(label,
-                      style: const TextStyle(fontSize: 12, color: PactaFlowColors.textSecondary)),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: PactaFlowColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
                 _currencyFormat.format(value.toDouble()),
                 style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: color),
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
               ),
             ],
           ),
@@ -517,8 +550,13 @@ class _CountCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(label,
-                  style: const TextStyle(fontSize: 12, color: PactaFlowColors.textSecondary)),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: PactaFlowColors.textSecondary,
+                ),
+              ),
               const SizedBox(height: 8),
               _countRow('Executados', executed, PactaFlowColors.onTime),
               _countRow('Pendentes', pending, PactaFlowColors.scheduled),
@@ -537,16 +575,17 @@ class _CountCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-              width: 8,
-              height: 8,
-              decoration:
-                  BoxDecoration(color: color, shape: BoxShape.circle)),
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
           const SizedBox(width: 6),
           Text(lbl, style: const TextStyle(fontSize: 11)),
           const Spacer(),
-          Text('$count',
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600, fontSize: 12)),
+          Text(
+            '$count',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -599,8 +638,14 @@ class _ExecutionStatusChip extends StatelessWidget {
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(label,
-          style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
@@ -616,10 +661,14 @@ class _MetaItem extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
-        Text(value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+        ),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }

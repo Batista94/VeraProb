@@ -24,9 +24,9 @@ class ShadowModeService {
     required ShadowModeRepository simulationRepo,
     required ReportingService reportingService,
     required CanonicalFactRepository canonicalFactRepo,
-  })  : _simulationRepo = simulationRepo,
-        _reportingService = reportingService,
-        _canonicalFactRepo = canonicalFactRepo;
+  }) : _simulationRepo = simulationRepo,
+       _reportingService = reportingService,
+       _canonicalFactRepo = canonicalFactRepo;
 
   /// Computes and persists a Shadow Mode ROI simulation for the given period.
   ///
@@ -65,8 +65,9 @@ class ShadowModeService {
     );
     final totalFacts = flagCounts.values.fold(0, (a, b) => a + b);
     final okFacts = flagCounts[IngestionIntegrityFlag.ok] ?? 0;
-    final evidenceQualityRate =
-        totalFacts > 0 ? (okFacts / totalFacts * 100) : 100.0;
+    final evidenceQualityRate = totalFacts > 0
+        ? (okFacts / totalFacts * 100)
+        : 100.0;
 
     // 3. Compute simulation
     final incidentCount = report.noShowCount + report.evidenceGapCount;
@@ -105,9 +106,8 @@ class ShadowModeService {
   Future<List<ShadowModeSimulation>> listSimulations({
     required String organizationId,
     int limit = 10,
-  }) =>
-      _simulationRepo.findByOrganization(
-        organizationId: organizationId,
-        limit: limit,
-      );
+  }) => _simulationRepo.findByOrganization(
+    organizationId: organizationId,
+    limit: limit,
+  );
 }

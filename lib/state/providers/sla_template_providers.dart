@@ -14,8 +14,9 @@ import 'auth_providers.dart';
 final slaTemplateRepositoryProvider = Provider<SlaTemplateRepository>((ref) {
   return switch (ref.watch(persistenceModeProvider)) {
     PersistenceMode.inMemory => InMemorySlaTemplateRepository(),
-    PersistenceMode.postgres =>
-      PostgresSlaTemplateRepository(ref.watch(supabaseClientProvider)),
+    PersistenceMode.postgres => PostgresSlaTemplateRepository(
+      ref.watch(supabaseClientProvider),
+    ),
   };
 });
 

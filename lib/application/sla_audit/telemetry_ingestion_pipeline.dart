@@ -127,10 +127,15 @@ class TelemetryIngestionPipeline {
 
       if (lastFact != null) {
         final distanceM = _haversineMeters(
-          lastFact.lat, lastFact.lng, fact.lat, fact.lng,
+          lastFact.lat,
+          lastFact.lng,
+          fact.lat,
+          fact.lng,
         );
-        final timeDiffSeconds =
-            fact.gpsTimestamp.difference(lastFact.gpsTimestamp).inSeconds.abs();
+        final timeDiffSeconds = fact.gpsTimestamp
+            .difference(lastFact.gpsTimestamp)
+            .inSeconds
+            .abs();
 
         if (timeDiffSeconds > 0) {
           final impliedKmh = (distanceM / timeDiffSeconds) * 3.6;
@@ -158,7 +163,8 @@ class TelemetryIngestionPipeline {
         );
 
         final status = _statusCache[cacheKey]!;
-        if (status == AssetStatus.maintenance || status == AssetStatus.offDuty) {
+        if (status == AssetStatus.maintenance ||
+            status == AssetStatus.offDuty) {
           skippedByAssetStatus++;
           continue;
         }
@@ -205,7 +211,8 @@ class TelemetryIngestionPipeline {
 
     return VehicleOperationalState(
       vehicleId: vehicleId,
-      tripId: '', // No trip concept at ingestion level; engine does not use this
+      tripId:
+          '', // No trip concept at ingestion level; engine does not use this
       latitude: fact.lat,
       longitude: fact.lng,
       heading: fact.headingDegrees?.toDouble(),
@@ -221,7 +228,10 @@ class TelemetryIngestionPipeline {
 
   // ── Haversine distance (metres) ──────────────────────────────────────────────
   static double _haversineMeters(
-    double lat1, double lon1, double lat2, double lon2,
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
   ) {
     const p = 0.017453292519943295; // pi / 180
     final a =

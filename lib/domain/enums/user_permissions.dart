@@ -21,11 +21,15 @@ const Map<UserPermission, Set<UserRole>> rolePermissions = {
   UserPermission.canManageOrganization: {UserRole.admin},
   UserPermission.canApproveContractAcceptance: {UserRole.admin},
   UserPermission.canManageUsers: {UserRole.admin},
-  
+
   UserPermission.canCloseContracts: {UserRole.admin, UserRole.operator},
   UserPermission.canDeclareContractualPlan: {UserRole.admin, UserRole.operator},
   UserPermission.canManageAssets: {UserRole.admin, UserRole.operator},
   UserPermission.canManageContractors: {UserRole.admin, UserRole.operator},
-  
-  UserPermission.canViewAuditExports: {UserRole.admin, UserRole.operator, UserRole.auditor},
+
+  UserPermission.canViewAuditExports: {
+    UserRole.admin,
+    UserRole.operator,
+    UserRole.auditor,
+  },
 };

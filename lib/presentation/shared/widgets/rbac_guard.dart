@@ -4,7 +4,7 @@ import '../../../domain/enums/user_role.dart';
 import '../../../state/providers/auth_providers.dart';
 
 /// A widget that conditionally renders its child based on the current user's role.
-/// 
+///
 /// If the user does not have the [minimumRole], the [fallback] widget is shown.
 /// If [fallback] is null, an empty [SizedBox] is returned.
 class RbacGuard extends ConsumerWidget {

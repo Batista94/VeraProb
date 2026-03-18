@@ -36,16 +36,16 @@ Future<OperationalZone?> showZoneFormDialog(
 
 extension ZoneTypeUi on ZoneType {
   String get label => switch (this) {
-        ZoneType.garagem => 'Garagem',
-        ZoneType.cliente => 'Cliente',
-        ZoneType.apoio => 'Apoio',
-      };
+    ZoneType.garagem => 'Garagem',
+    ZoneType.cliente => 'Cliente',
+    ZoneType.apoio => 'Apoio',
+  };
 
   IconData get icon => switch (this) {
-        ZoneType.garagem => Icons.garage_outlined,
-        ZoneType.cliente => Icons.business_outlined,
-        ZoneType.apoio => Icons.support_agent_outlined,
-      };
+    ZoneType.garagem => Icons.garage_outlined,
+    ZoneType.cliente => Icons.business_outlined,
+    ZoneType.apoio => Icons.support_agent_outlined,
+  };
 }
 
 // ── Screen ───────────────────────────────────────────────────
@@ -83,28 +83,31 @@ class OperationalZonesScreen extends ConsumerWidget {
             'Garagens, clientes e pontos de apoio usados como origem/destino '
             'nas viagens programadas. Geofence (coordenadas + raio) é obrigatório '
             'para auditoria automática pelo motor de avaliação.',
-            style: PactaFlowTypography.bodyMedium
-                .copyWith(color: PactaFlowColors.textSecondary),
+            style: PactaFlowTypography.bodyMedium.copyWith(
+              color: PactaFlowColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 24),
           Expanded(
             child: zonesAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Text(
                   'Erro ao carregar zonas: $e',
-                  style: PactaFlowTypography.bodyMedium
-                      .copyWith(color: PactaFlowColors.error),
+                  style: PactaFlowTypography.bodyMedium.copyWith(
+                    color: PactaFlowColors.error,
+                  ),
                 ),
               ),
               data: (zones) => zones.isEmpty
-                  ? _EmptyState(onCreateTap: () async {
-                      final saved = await showZoneFormDialog(context);
-                      if (saved != null) {
-                        ref.invalidate(operationalZonesProvider);
-                      }
-                    })
+                  ? _EmptyState(
+                      onCreateTap: () async {
+                        final saved = await showZoneFormDialog(context);
+                        if (saved != null) {
+                          ref.invalidate(operationalZonesProvider);
+                        }
+                      },
+                    )
                   : _ZoneList(zones: zones),
             ),
           ),
@@ -131,21 +134,22 @@ class _ZoneList extends ConsumerWidget {
         final hasGeofence = z.geofence != null;
         final geoLabel = hasGeofence
             ? '${z.geofence!.radiusMeters} m  ·  '
-                '${z.geofence!.latitude.toStringAsFixed(5)}, '
-                '${z.geofence!.longitude.toStringAsFixed(5)}'
+                  '${z.geofence!.latitude.toStringAsFixed(5)}, '
+                  '${z.geofence!.longitude.toStringAsFixed(5)}'
             : 'Sem geofence — configure para auditoria automática';
 
         return ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 4,
+          ),
           leading: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: PactaFlowColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child:
-                Icon(z.type.icon, color: PactaFlowColors.primary, size: 20),
+            child: Icon(z.type.icon, color: PactaFlowColors.primary, size: 20),
           ),
           title: Row(
             children: [
@@ -158,8 +162,11 @@ class _ZoneList extends ConsumerWidget {
                   message:
                       'Sem geofence — o motor de avaliação não pode auditar '
                       'chegada/partida automaticamente.',
-                  child: Icon(Icons.location_off,
-                      size: 16, color: PactaFlowColors.warning),
+                  child: Icon(
+                    Icons.location_off,
+                    size: 16,
+                    color: PactaFlowColors.warning,
+                  ),
                 ),
               ],
             ],
@@ -169,8 +176,9 @@ class _ZoneList extends ConsumerWidget {
             children: [
               Text(
                 z.address ?? 'Endereço não informado',
-                style: PactaFlowTypography.caption
-                    .copyWith(color: PactaFlowColors.textSecondary),
+                style: PactaFlowTypography.caption.copyWith(
+                  color: PactaFlowColors.textSecondary,
+                ),
               ),
               Row(
                 children: [
@@ -202,8 +210,9 @@ class _ZoneList extends ConsumerWidget {
               Text(
                 z.id.substring(0, 8),
                 style: PactaFlowTypography.caption.copyWith(
-                    color: PactaFlowColors.textDisabled,
-                    fontFamily: 'monospace'),
+                  color: PactaFlowColors.textDisabled,
+                  fontFamily: 'monospace',
+                ),
               ),
               const SizedBox(width: 4),
               IconButton(
@@ -211,8 +220,10 @@ class _ZoneList extends ConsumerWidget {
                 tooltip: 'Editar zona',
                 color: PactaFlowColors.textSecondary,
                 onPressed: () async {
-                  final saved =
-                      await showZoneFormDialog(context, existingZone: z);
+                  final saved = await showZoneFormDialog(
+                    context,
+                    existingZone: z,
+                  );
                   if (saved != null) ref.invalidate(operationalZonesProvider);
                 },
               ),
@@ -248,21 +259,26 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.place_outlined,
-              size: 56, color: PactaFlowColors.textDisabled),
+          const Icon(
+            Icons.place_outlined,
+            size: 56,
+            color: PactaFlowColors.textDisabled,
+          ),
           const SizedBox(height: 16),
           Text(
             'Nenhuma zona criada ainda',
-            style: PactaFlowTypography.sectionTitle
-                .copyWith(color: PactaFlowColors.textSecondary),
+            style: PactaFlowTypography.sectionTitle.copyWith(
+              color: PactaFlowColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Crie zonas operacionais para usar como origem e destino\n'
             'nas viagens programadas por padrão de turno.',
             textAlign: TextAlign.center,
-            style: PactaFlowTypography.bodyMedium
-                .copyWith(color: PactaFlowColors.textSecondary),
+            style: PactaFlowTypography.bodyMedium.copyWith(
+              color: PactaFlowColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
@@ -381,18 +397,23 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
       'countrycodes': 'br',
       'addressdetails': '0',
     });
-    final response = await http.get(uri, headers: {
-      'User-Agent': 'PactaFlow/1.0 (admin@PactaFlow.app)',
-      'Accept-Language': 'pt-BR,pt;q=0.9',
-    });
+    final response = await http.get(
+      uri,
+      headers: {
+        'User-Agent': 'PactaFlow/1.0 (admin@PactaFlow.app)',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+      },
+    );
     if (response.statusCode != 200) return [];
     final json = jsonDecode(response.body) as List;
     return json
-        .map((e) => _PlaceSuggestion(
-              displayName: e['display_name'] as String,
-              lat: double.parse(e['lat'] as String),
-              lng: double.parse(e['lon'] as String),
-            ))
+        .map(
+          (e) => _PlaceSuggestion(
+            displayName: e['display_name'] as String,
+            lat: double.parse(e['lat'] as String),
+            lng: double.parse(e['lon'] as String),
+          ),
+        )
         .toList();
   }
 
@@ -526,10 +547,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                         ),
                       ),
                     ),
-                    Expanded(
-                      flex: 3,
-                      child: _buildMap(),
-                    ),
+                    Expanded(flex: 3, child: _buildMap()),
                   ],
                 ),
               ),
@@ -572,14 +590,18 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           initialValue: _selectedType,
           decoration: const InputDecoration(labelText: 'Tipo *'),
           items: ZoneType.values
-              .map((t) => DropdownMenuItem(
-                    value: t,
-                    child: Row(children: [
+              .map(
+                (t) => DropdownMenuItem(
+                  value: t,
+                  child: Row(
+                    children: [
                       Icon(t.icon, size: 18),
                       const SizedBox(width: 8),
                       Text(t.label),
-                    ]),
-                  ))
+                    ],
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (v) => setState(() => _selectedType = v!),
         ),
@@ -605,10 +627,12 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
         Builder(
           builder: (context) {
             final options =
-                ref.watch(contractorNamesProvider).valueOrNull ?? const <String>[];
+                ref.watch(contractorNamesProvider).valueOrNull ??
+                const <String>[];
             return Autocomplete<String>(
-              initialValue:
-                  TextEditingValue(text: _contractorLabelController.text),
+              initialValue: TextEditingValue(
+                text: _contractorLabelController.text,
+              ),
               optionsBuilder: (v) {
                 if (v.text.isEmpty) return options;
                 final lower = v.text.toLowerCase();
@@ -616,7 +640,9 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
               },
               displayStringForOption: (o) => o,
               fieldViewBuilder: (ctx, ctrl, focusNode, onSubmitted) {
-                ctrl.addListener(() => _contractorLabelController.text = ctrl.text);
+                ctrl.addListener(
+                  () => _contractorLabelController.text = ctrl.text,
+                );
                 return TextFormField(
                   controller: ctrl,
                   focusNode: _contractorLabelFocus,
@@ -658,11 +684,11 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                     ),
                   )
                 : (_suggestions.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 16),
-                        onPressed: _clearSuggestions,
-                      )
-                    : null),
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 16),
+                          onPressed: _clearSuggestions,
+                        )
+                      : null),
           ),
           onChanged: _onAddressChanged,
         ),
@@ -685,8 +711,11 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                 final s = _suggestions[i];
                 return ListTile(
                   dense: true,
-                  leading: const Icon(Icons.place_outlined,
-                      size: 16, color: PactaFlowColors.primary),
+                  leading: const Icon(
+                    Icons.place_outlined,
+                    size: 16,
+                    color: PactaFlowColors.primary,
+                  ),
                   title: Text(
                     s.displayName,
                     style: PactaFlowTypography.bodySmall,
@@ -722,8 +751,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           initiallyExpanded: _lat != null,
           children: [
             Padding(
-              padding: const EdgeInsets.only(
-                  left: 16, right: 16, bottom: 16),
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -731,19 +759,26 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                   if (_lat != null && _lng != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
                         color: PactaFlowColors.success.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                            color: PactaFlowColors.success
-                                .withValues(alpha: 0.35)),
+                          color: PactaFlowColors.success.withValues(
+                            alpha: 0.35,
+                          ),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.my_location,
-                              size: 14, color: PactaFlowColors.success),
+                          const Icon(
+                            Icons.my_location,
+                            size: 14,
+                            color: PactaFlowColors.success,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -762,16 +797,19 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                               _lng = null;
                             }),
                             style: TextButton.styleFrom(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
                               minimumSize: Size.zero,
-                              tapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: const Text('Limpar',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: PactaFlowColors.textSecondary)),
+                            child: const Text(
+                              'Limpar',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: PactaFlowColors.textSecondary,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -781,26 +819,29 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                       padding: const EdgeInsets.all(10),
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color:
-                            PactaFlowColors.warning.withValues(alpha: 0.08),
+                        color: PactaFlowColors.warning.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                            color: PactaFlowColors.warning
-                                .withValues(alpha: 0.3)),
+                          color: PactaFlowColors.warning.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.touch_app_outlined,
-                              size: 16, color: PactaFlowColors.warning),
+                          Icon(
+                            Icons.touch_app_outlined,
+                            size: 16,
+                            color: PactaFlowColors.warning,
+                          ),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Busque um endereço ou clique no mapa para '
                               'definir as coordenadas do geofence.',
                               style: TextStyle(
-                                  fontSize: 11,
-                                  color: PactaFlowColors.warning),
+                                fontSize: 11,
+                                color: PactaFlowColors.warning,
+                              ),
                             ),
                           ),
                         ],
@@ -821,9 +862,11 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (v) {
                       if (_lat == null) return null;
-                      if (v == null || v.isEmpty) return 'Obrigatório com geofence';
+                      if (v == null || v.isEmpty)
+                        return 'Obrigatório com geofence';
                       final n = int.tryParse(v);
-                      if (n == null || n <= 0 || n > 50000) return '1 a 50.000 m';
+                      if (n == null || n <= 0 || n > 50000)
+                        return '1 a 50.000 m';
                       return null;
                     },
                   ),
@@ -838,8 +881,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
 
   Widget _buildMap() {
     final hasPin = _lat != null && _lng != null;
-    final center =
-        hasPin ? LatLng(_lat!, _lng!) : _defaultCenter;
+    final center = hasPin ? LatLng(_lat!, _lng!) : _defaultCenter;
     final zoom = hasPin ? _pinZoom : _defaultZoom;
 
     return ClipRRect(
@@ -855,8 +897,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'app.PactaFlow',
               ),
               if (hasPin)
@@ -881,8 +922,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             top: 8,
             left: 8,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(4),
@@ -906,10 +946,11 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             right: 0,
             child: Container(
               color: Colors.white.withValues(alpha: 0.7),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              child: const Text('© OpenStreetMap contributors',
-                  style: TextStyle(fontSize: 9, color: Colors.black87)),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: const Text(
+                '© OpenStreetMap contributors',
+                style: TextStyle(fontSize: 9, color: Colors.black87),
+              ),
             ),
           ),
         ],
@@ -929,18 +970,24 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
               color: PactaFlowColors.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                  color: PactaFlowColors.error.withValues(alpha: 0.3)),
+                color: PactaFlowColors.error.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline,
-                    color: PactaFlowColors.error, size: 16),
+                const Icon(
+                  Icons.error_outline,
+                  color: PactaFlowColors.error,
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _errorMessage!,
                     style: const TextStyle(
-                        color: PactaFlowColors.error, fontSize: 13),
+                      color: PactaFlowColors.error,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -964,10 +1011,14 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : Icon(isEdit ? Icons.save : Icons.add_location_alt,
-                      size: 18),
+                  : Icon(
+                      isEdit ? Icons.save : Icons.add_location_alt,
+                      size: 18,
+                    ),
               label: Text(isEdit ? 'Salvar Zona' : 'Criar Zona'),
             ),
           ],

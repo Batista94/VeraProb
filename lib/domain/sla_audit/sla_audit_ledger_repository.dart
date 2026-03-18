@@ -14,7 +14,7 @@ abstract class SlaAuditLedgerRepository {
 
   /// Retrieves the sequence ID of the most recent entry in the ledger.
   /// Used to deterministically capture the causal boundary of a financial closure.
-  Future<int?> getLastEntryId();
+  Future<String?> getLastEntryId();
 
   /// Retrieves all forensic entries related to a specific contractual or operational set (e.g. trip).
   /// Ordered chronologically.

@@ -35,10 +35,10 @@ class SubmitContractForApprovalHandler {
     required ContractApprovalCommandService approvalService,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
-  })  : _contractRepository = contractRepository,
-        _approvalService = approvalService,
-        _ledger = ledger,
-        _rbac = rbac;
+  }) : _contractRepository = contractRepository,
+       _approvalService = approvalService,
+       _ledger = ledger,
+       _rbac = rbac;
 
   /// Returns the raw [token] string on success.
   /// The UI is responsible for constructing the full review URL.
@@ -49,8 +49,13 @@ class SubmitContractForApprovalHandler {
   /// - Contract is not in [draft] status
   Future<String> handle(SubmitContractForApprovalCommand command) async {
     // 1. RBAC — before any I/O
-    if (!_rbac.can(command.callerRole, UserPermission.canApproveContractAcceptance)) {
-      throw const DomainException('Unauthorized: canApproveContractAcceptance required.');
+    if (!_rbac.can(
+      command.callerRole,
+      UserPermission.canApproveContractAcceptance,
+    )) {
+      throw const DomainException(
+        'Unauthorized: canApproveContractAcceptance required.',
+      );
     }
 
     // 2. Load aggregate — scoped to organizationId (tenant isolation)

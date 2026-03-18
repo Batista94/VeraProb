@@ -32,7 +32,10 @@ class TripsTimelineScreen extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               'Visualização temporal Gantt de todas as viagens do dia',
-              style: TextStyle(color: PactaFlowColors.textDisabled, fontSize: 13),
+              style: TextStyle(
+                color: PactaFlowColors.textDisabled,
+                fontSize: 13,
+              ),
             ),
           ],
         ),

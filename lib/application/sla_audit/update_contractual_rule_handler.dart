@@ -21,8 +21,8 @@ class UpdateContractualRuleHandler {
   UpdateContractualRuleHandler({
     required RuleStudioCommandService commandService,
     required RbacService rbac,
-  })  : _commandService = commandService,
-        _rbac = rbac;
+  }) : _commandService = commandService,
+       _rbac = rbac;
 
   /// Returns the UUID of the newly created rule version.
   ///
@@ -40,10 +40,10 @@ class UpdateContractualRuleHandler {
 
     // 3. Atomic close + insert via RPC (atomicity guaranteed by Postgres)
     return _commandService.updateRule(
-      contractId:      command.contractId,
-      oldRuleId:       command.oldRuleId,
-      ruleType:        command.ruleType,
-      newConfig:       command.newConfig,
+      contractId: command.contractId,
+      oldRuleId: command.oldRuleId,
+      ruleType: command.ruleType,
+      newConfig: command.newConfig,
       evaluationOrder: command.evaluationOrder,
     );
   }
@@ -53,11 +53,11 @@ class UpdateContractualRuleHandler {
     final type = command.ruleType;
 
     final requiredKey = switch (type.value) {
-      'MAX_TOLERANCE_DELAY'   => 'threshold_minutes',
-      'MAX_EVIDENCE_GAP'      => 'max_gap_seconds',
+      'MAX_TOLERANCE_DELAY' => 'threshold_minutes',
+      'MAX_EVIDENCE_GAP' => 'max_gap_seconds',
       'MIN_GEOFENCE_COVERAGE' => 'min_dwell_seconds',
-      'NO_SHOW_PENALTY'       => 'penalty_amount_cents',
-      _                       => throw DomainException('Unknown rule type: ${type.value}'),
+      'NO_SHOW_PENALTY' => 'penalty_amount_cents',
+      _ => throw DomainException('Unknown rule type: ${type.value}'),
     };
 
     if (!config.containsKey(requiredKey)) {

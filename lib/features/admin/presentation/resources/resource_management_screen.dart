@@ -20,8 +20,9 @@ class ResourceManagementScreen extends StatelessWidget {
               tabs: [
                 Tab(icon: Icon(Icons.people_alt_outlined), text: 'Motoristas'),
                 Tab(
-                    icon: Icon(Icons.directions_bus_outlined),
-                    text: 'Veículos'),
+                  icon: Icon(Icons.directions_bus_outlined),
+                  text: 'Veículos',
+                ),
                 Tab(icon: Icon(Icons.route_outlined), text: 'Rotas'),
               ],
             ),
@@ -29,11 +30,7 @@ class ResourceManagementScreen extends StatelessWidget {
           // Tab content
           const Expanded(
             child: TabBarView(
-              children: [
-                DriversScreen(),
-                VehiclesTab(),
-                RoutesTab(),
-              ],
+              children: [DriversScreen(), VehiclesTab(), RoutesTab()],
             ),
           ),
         ],

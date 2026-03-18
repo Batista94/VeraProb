@@ -233,9 +233,7 @@ class PostgresContractualExecutionStateRepository
       startLongitude: (data['start_longitude'] as num).toDouble(),
       startRadiusMeters: data['start_radius_meters'] as int,
       plannedVehicleId: data['planned_vehicle_id'],
-      contractualValue: Money(
-        (data['contractual_value_cents'] as num).toInt(),
-      ),
+      contractualValue: Money((data['contractual_value_cents'] as num).toInt()),
       noShowPenaltyMultiplier: (data['no_show_penalty_multiplier'] as num)
           .toDouble(),
       windowStartUtc: DateTime.parse(data['window_start_utc']),

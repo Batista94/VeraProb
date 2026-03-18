@@ -17,7 +17,10 @@ class InMemoryContractRepository implements ContractRepository {
   }
 
   @override
-  Future<Contract?> findById(String id, {required String organizationId}) async {
+  Future<Contract?> findById(
+    String id, {
+    required String organizationId,
+  }) async {
     final contract = _store[id];
     if (contract == null) return null;
     // Enforce tenant isolation even in-memory

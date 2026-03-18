@@ -86,14 +86,10 @@ class SLAPenalties extends Equatable {
     Money baseTripValue = const Money(0),
   }) {
     if (noShowPenaltyMultiplier < 1.0) {
-      throw const DomainException(
-        'noShowPenaltyMultiplier must be >= 1.0',
-      );
+      throw const DomainException('noShowPenaltyMultiplier must be >= 1.0');
     }
     if (delayToleranceMinutes < 0) {
-      throw const DomainException(
-        'delayToleranceMinutes must be >= 0',
-      );
+      throw const DomainException('delayToleranceMinutes must be >= 0');
     }
     if (delayPenaltyPerMinute.cents <= 0) {
       throw const DomainException(
@@ -106,24 +102,16 @@ class SLAPenalties extends Equatable {
       );
     }
     if (noShowThresholdMinutes < 0) {
-      throw const DomainException(
-        'noShowThresholdMinutes must be >= 0',
-      );
+      throw const DomainException('noShowThresholdMinutes must be >= 0');
     }
     if (earlyArrivalToleranceMinutes < 0) {
-      throw const DomainException(
-        'earlyArrivalToleranceMinutes must be >= 0',
-      );
+      throw const DomainException('earlyArrivalToleranceMinutes must be >= 0');
     }
     if (dwellTimeMinutes < 0) {
-      throw const DomainException(
-        'dwellTimeMinutes must be >= 0',
-      );
+      throw const DomainException('dwellTimeMinutes must be >= 0');
     }
     if (gracePeriodMinutes < 0) {
-      throw const DomainException(
-        'gracePeriodMinutes must be >= 0',
-      );
+      throw const DomainException('gracePeriodMinutes must be >= 0');
     }
     if (baseTripValue.cents < 0) {
       throw const DomainException('baseTripValue must be >= 0');
@@ -169,51 +157,50 @@ class SLAPenalties extends Equatable {
 
   /// Serializes to JSON for JSONB storage inside [ShiftPattern] payload.
   Map<String, dynamic> toJson() => {
-        'noShowPenaltyMultiplier': noShowPenaltyMultiplier,
-        'delayToleranceMinutes': delayToleranceMinutes,
-        'delayPenaltyPerMinuteCents': delayPenaltyPerMinute.cents,
-        'downgradePenaltyFlatCents': downgradePenaltyFlat.cents,
-        'noShowThresholdMinutes': noShowThresholdMinutes,
-        'earlyArrivalToleranceMinutes': earlyArrivalToleranceMinutes,
-        'dwellTimeMinutes': dwellTimeMinutes,
-        'gracePeriodMinutes': gracePeriodMinutes,
-        'baseTripValueCents': baseTripValue.cents,
-      };
+    'noShowPenaltyMultiplier': noShowPenaltyMultiplier,
+    'delayToleranceMinutes': delayToleranceMinutes,
+    'delayPenaltyPerMinuteCents': delayPenaltyPerMinute.cents,
+    'downgradePenaltyFlatCents': downgradePenaltyFlat.cents,
+    'noShowThresholdMinutes': noShowThresholdMinutes,
+    'earlyArrivalToleranceMinutes': earlyArrivalToleranceMinutes,
+    'dwellTimeMinutes': dwellTimeMinutes,
+    'gracePeriodMinutes': gracePeriodMinutes,
+    'baseTripValueCents': baseTripValue.cents,
+  };
 
   /// Deserializes from JSON stored in [ShiftPattern] JSONB payload.
   /// New fields use `?? default` for backward compatibility with existing plans.
   factory SLAPenalties.fromJson(Map<String, dynamic> json) {
     return SLAPenalties._(
-      noShowPenaltyMultiplier:
-          (json['noShowPenaltyMultiplier'] as num).toDouble(),
+      noShowPenaltyMultiplier: (json['noShowPenaltyMultiplier'] as num)
+          .toDouble(),
       delayToleranceMinutes: json['delayToleranceMinutes'] as int,
-      delayPenaltyPerMinute:
-          Money((json['delayPenaltyPerMinuteCents'] as num).toInt()),
-      downgradePenaltyFlat:
-          Money((json['downgradePenaltyFlatCents'] as num).toInt()),
-      noShowThresholdMinutes:
-          (json['noShowThresholdMinutes'] as int?) ?? 60,
+      delayPenaltyPerMinute: Money(
+        (json['delayPenaltyPerMinuteCents'] as num).toInt(),
+      ),
+      downgradePenaltyFlat: Money(
+        (json['downgradePenaltyFlatCents'] as num).toInt(),
+      ),
+      noShowThresholdMinutes: (json['noShowThresholdMinutes'] as int?) ?? 60,
       earlyArrivalToleranceMinutes:
           (json['earlyArrivalToleranceMinutes'] as int?) ?? 5,
-      dwellTimeMinutes:
-          (json['dwellTimeMinutes'] as int?) ?? 3,
+      dwellTimeMinutes: (json['dwellTimeMinutes'] as int?) ?? 3,
       gracePeriodMinutes: (json['gracePeriodMinutes'] as int?) ?? 0,
       // Backward compat: absent in JSONB before Bloco 4.3 → Money(0).
-      baseTripValue:
-          Money((json['baseTripValueCents'] as num?)?.toInt() ?? 0),
+      baseTripValue: Money((json['baseTripValueCents'] as num?)?.toInt() ?? 0),
     );
   }
 
   @override
   List<Object?> get props => [
-        noShowPenaltyMultiplier,
-        delayToleranceMinutes,
-        delayPenaltyPerMinute,
-        downgradePenaltyFlat,
-        noShowThresholdMinutes,
-        earlyArrivalToleranceMinutes,
-        dwellTimeMinutes,
-        gracePeriodMinutes,
-        baseTripValue,
-      ];
+    noShowPenaltyMultiplier,
+    delayToleranceMinutes,
+    delayPenaltyPerMinute,
+    downgradePenaltyFlat,
+    noShowThresholdMinutes,
+    earlyArrivalToleranceMinutes,
+    dwellTimeMinutes,
+    gracePeriodMinutes,
+    baseTripValue,
+  ];
 }

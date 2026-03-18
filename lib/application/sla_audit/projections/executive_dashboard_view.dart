@@ -151,10 +151,13 @@ class ExecutiveDashboardView {
     final trendScore = _sigmoid(trendDelta);
 
     // FPS composite
-    final fps = ((40 * complianceScore + 25 * evidenceScore +
-                20 * recoveryScore + 15 * trendScore) /
-            100)
-        .clamp(0.0, 100.0);
+    final fps =
+        ((40 * complianceScore +
+                    25 * evidenceScore +
+                    20 * recoveryScore +
+                    15 * trendScore) /
+                100)
+            .clamp(0.0, 100.0);
 
     // Penalty recovery rate
     final penaltyRecoveryRate = potentialLoss > 0

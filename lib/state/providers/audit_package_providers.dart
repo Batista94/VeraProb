@@ -38,7 +38,9 @@ final pdfExportServiceProvider = Provider<PdfExportService>(
 // ── Read Models ──────────────────────────────────────────────────────────────
 
 /// List of sealed audit packages for the current organization.
-final sealedAuditPackagesProvider = FutureProvider<List<AuditPackage>>((ref) async {
+final sealedAuditPackagesProvider = FutureProvider<List<AuditPackage>>((
+  ref,
+) async {
   final organizationId = ref.watch(currentOrganizationIdProvider);
   if (organizationId == null) return const [];
 
@@ -48,7 +50,10 @@ final sealedAuditPackagesProvider = FutureProvider<List<AuditPackage>>((ref) asy
 
 /// CSV export bytes for a given sealed package ID.
 /// Usage: ref.read(csvExportProvider(packageId).future)
-final csvExportProvider = FutureProvider.family<String, String>((ref, packageId) async {
+final csvExportProvider = FutureProvider.family<String, String>((
+  ref,
+  packageId,
+) async {
   final organizationId = ref.watch(currentOrganizationIdProvider);
   if (organizationId == null) throw StateError('Not authenticated');
 
@@ -73,7 +78,10 @@ final csvExportProvider = FutureProvider.family<String, String>((ref, packageId)
 });
 
 /// PDF export bytes for a given sealed package ID.
-final pdfExportProvider = FutureProvider.family<List<int>, String>((ref, packageId) async {
+final pdfExportProvider = FutureProvider.family<List<int>, String>((
+  ref,
+  packageId,
+) async {
   final organizationId = ref.watch(currentOrganizationIdProvider);
   if (organizationId == null) throw StateError('Not authenticated');
 

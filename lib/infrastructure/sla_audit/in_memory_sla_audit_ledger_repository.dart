@@ -28,9 +28,9 @@ class InMemorySlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   }
 
   @override
-  Future<int?> getLastEntryId() async {
+  Future<String?> getLastEntryId() async {
     if (_entries.isEmpty) return null;
-    return _entries.last.id;
+    return _entries.last.eventId;
   }
 
   /// Returns a copy of the recorded entries for testing/verification.

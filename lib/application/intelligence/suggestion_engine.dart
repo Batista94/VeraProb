@@ -10,9 +10,7 @@ import '../../domain/enums/trip_status.dart';
 class SuggestionEngine {
   /// Generates the single best contextual suggestion for a trip,
   /// or null if no action is needed.
-  OperationalSuggestion? generateSuggestion({
-    required OperationalTrip trip,
-  }) {
+  OperationalSuggestion? generateSuggestion({required OperationalTrip trip}) {
     if (!trip.requiresAttention) return null;
 
     final hasVehicleStopped = trip.warnings.any(

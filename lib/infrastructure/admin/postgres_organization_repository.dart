@@ -16,7 +16,7 @@ class PostgresOrganizationRepository implements OrganizationRepository {
           .select()
           .eq('id', id)
           .single();
-      
+
       return Organization(
         id: data['id'] as String,
         name: data['name'] as String,

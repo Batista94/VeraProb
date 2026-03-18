@@ -21,7 +21,11 @@ import '../../../../presentation/shared/widgets/pactaflow_chip.dart';
 ///
 /// Access: TENANT_ADMIN only (gated by [UserPermission.canEditSlaRules]).
 class RuleStudioScreen extends ConsumerWidget {
-  const RuleStudioScreen({super.key, required this.contractId, required this.contractName});
+  const RuleStudioScreen({
+    super.key,
+    required this.contractId,
+    required this.contractName,
+  });
 
   final String contractId;
   final String contractName;
@@ -93,22 +97,27 @@ class _Body extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Regras Ativas',
-                  style: PactaFlowTypography.bodyMedium.copyWith(
-                      color: PactaFlowColors.textSecondary,
-                      fontWeight: FontWeight.w600)),
+              Text(
+                'Regras Ativas',
+                style: PactaFlowTypography.bodyMedium.copyWith(
+                  color: PactaFlowColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: 12),
               Expanded(
                 child: ListView(
                   children: SlaRuleType.values
-                      .map((type) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _RuleCard(
-                              contractId: contractId,
-                              ruleType: type,
-                              activeRule: activeRules[type],
-                            ),
-                          ))
+                      .map(
+                        (type) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _RuleCard(
+                            contractId: contractId,
+                            ruleType: type,
+                            activeRule: activeRules[type],
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -122,14 +131,18 @@ class _Body extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Histórico de Versões',
-                  style: PactaFlowTypography.bodyMedium.copyWith(
-                      color: PactaFlowColors.textSecondary,
-                      fontWeight: FontWeight.w600)),
+              Text(
+                'Histórico de Versões',
+                style: PactaFlowTypography.bodyMedium.copyWith(
+                  color: PactaFlowColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: 12),
               Expanded(
                 child: historyAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (e, _) => _ErrorState(message: e.toString()),
                   data: (history) => _VersionHistoryPanel(history: history),
                 ),
@@ -181,15 +194,22 @@ class _RuleCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_ruleTypeLabel(ruleType),
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: PactaFlowColors.textPrimary)),
+                    Text(
+                      _ruleTypeLabel(ruleType),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: PactaFlowColors.textPrimary,
+                      ),
+                    ),
                     if (activeRule != null)
-                      Text('v${activeRule!.ruleVersion}',
-                          style: const TextStyle(
-                              fontSize: 11, color: PactaFlowColors.textSecondary)),
+                      Text(
+                        'v${activeRule!.ruleVersion}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: PactaFlowColors.textSecondary,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -214,7 +234,9 @@ class _RuleCard extends ConsumerWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               icon: const Icon(Icons.edit_outlined, size: 14),
-              label: Text(activeRule != null ? 'Editar Regra' : 'Configurar Regra'),
+              label: Text(
+                activeRule != null ? 'Editar Regra' : 'Configurar Regra',
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: PactaFlowColors.primary,
                 side: const BorderSide(color: PactaFlowColors.primary),
@@ -228,7 +250,11 @@ class _RuleCard extends ConsumerWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, WidgetRef ref, dynamic callerRole) {
+  void _showEditDialog(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic callerRole,
+  ) {
     showDialog(
       context: context,
       builder: (_) => _RuleEditDialog(
@@ -256,16 +282,22 @@ class _ConfigPreview extends StatelessWidget {
       spacing: 8,
       runSpacing: 6,
       children: items
-          .map((item) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: PactaFlowColors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(6),
+          .map(
+            (item) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: PactaFlowColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                item,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: PactaFlowColors.textSecondary,
                 ),
-                child: Text(item,
-                    style: const TextStyle(
-                        fontSize: 12, color: PactaFlowColors.textSecondary)),
-              ))
+              ),
+            ),
+          )
           .toList(),
     );
   }
@@ -273,18 +305,14 @@ class _ConfigPreview extends StatelessWidget {
   List<String> _buildItems() {
     final c = entry.config;
     return switch (ruleType.value) {
-      'MAX_TOLERANCE_DELAY' => [
-          'Tolerância: ${c['threshold_minutes']} min',
-        ],
-      'MAX_EVIDENCE_GAP' => [
-          'Lacuna máx: ${c['max_gap_seconds']} s',
-        ],
+      'MAX_TOLERANCE_DELAY' => ['Tolerância: ${c['threshold_minutes']} min'],
+      'MAX_EVIDENCE_GAP' => ['Lacuna máx: ${c['max_gap_seconds']} s'],
       'MIN_GEOFENCE_COVERAGE' => [
-          'Permanência mín: ${c['min_dwell_seconds']} s',
-        ],
+        'Permanência mín: ${c['min_dwell_seconds']} s',
+      ],
       'NO_SHOW_PENALTY' => [
-          'Penalidade: R\$ ${(((c['penalty_amount_cents'] as int?) ?? 0) / 100).toStringAsFixed(2)}',
-        ],
+        'Penalidade: R\$ ${(((c['penalty_amount_cents'] as int?) ?? 0) / 100).toStringAsFixed(2)}',
+      ],
       _ => ['Configurado'],
     };
   }
@@ -324,22 +352,26 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
     final c = widget.currentRule?.config ?? {};
     return switch (widget.ruleType.value) {
       'MAX_TOLERANCE_DELAY' => {
-          'threshold_minutes': TextEditingController(
-              text: (c['threshold_minutes'] ?? 5).toString()),
-        },
+        'threshold_minutes': TextEditingController(
+          text: (c['threshold_minutes'] ?? 5).toString(),
+        ),
+      },
       'MAX_EVIDENCE_GAP' => {
-          'max_gap_seconds': TextEditingController(
-              text: (c['max_gap_seconds'] ?? 300).toString()),
-        },
+        'max_gap_seconds': TextEditingController(
+          text: (c['max_gap_seconds'] ?? 300).toString(),
+        ),
+      },
       'MIN_GEOFENCE_COVERAGE' => {
-          'min_dwell_seconds': TextEditingController(
-              text: (c['min_dwell_seconds'] ?? 30).toString()),
-        },
+        'min_dwell_seconds': TextEditingController(
+          text: (c['min_dwell_seconds'] ?? 30).toString(),
+        ),
+      },
       'NO_SHOW_PENALTY' => {
-          'penalty_amount_cents': TextEditingController(
-              text: ((c['penalty_amount_cents'] as int? ?? 0) / 100)
-                  .toStringAsFixed(2)),
-        },
+        'penalty_amount_cents': TextEditingController(
+          text: ((c['penalty_amount_cents'] as int? ?? 0) / 100)
+              .toStringAsFixed(2),
+        ),
+      },
       _ => {},
     };
   }
@@ -347,23 +379,24 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
   Map<String, dynamic> _buildConfig() {
     return switch (widget.ruleType.value) {
       'MAX_TOLERANCE_DELAY' => {
-          'threshold_minutes':
-              int.tryParse(_controllers['threshold_minutes']!.text) ?? 5,
-        },
+        'threshold_minutes':
+            int.tryParse(_controllers['threshold_minutes']!.text) ?? 5,
+      },
       'MAX_EVIDENCE_GAP' => {
-          'max_gap_seconds':
-              int.tryParse(_controllers['max_gap_seconds']!.text) ?? 300,
-        },
+        'max_gap_seconds':
+            int.tryParse(_controllers['max_gap_seconds']!.text) ?? 300,
+      },
       'MIN_GEOFENCE_COVERAGE' => {
-          'min_dwell_seconds':
-              int.tryParse(_controllers['min_dwell_seconds']!.text) ?? 30,
-        },
+        'min_dwell_seconds':
+            int.tryParse(_controllers['min_dwell_seconds']!.text) ?? 30,
+      },
       'NO_SHOW_PENALTY' => {
-          'penalty_amount_cents': ((double.tryParse(
-                      _controllers['penalty_amount_cents']!.text) ??
-                  0.0) *
-              100).round(),
-        },
+        'penalty_amount_cents':
+            ((double.tryParse(_controllers['penalty_amount_cents']!.text) ??
+                        0.0) *
+                    100)
+                .round(),
+      },
       _ => {},
     };
   }
@@ -380,16 +413,19 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
     setState(() => _saving = true);
     try {
       final handler = ref.read(updateContractualRuleHandlerProvider);
-      await handler.handle(UpdateContractualRuleCommand(
-        organizationId:  ref.read(currentOrganizationIdProvider) ?? '',
-        contractId:      widget.contractId,
-        oldRuleId:       widget.currentRule?.id,
-        ruleType:        widget.ruleType,
-        newConfig:       _buildConfig(),
-        evaluationOrder: widget.currentRule?.evaluationOrder ??
-            SlaRuleType.values.indexOf(widget.ruleType),
-        callerRole:      widget.callerRole,
-      ));
+      await handler.handle(
+        UpdateContractualRuleCommand(
+          organizationId: ref.read(currentOrganizationIdProvider) ?? '',
+          contractId: widget.contractId,
+          oldRuleId: widget.currentRule?.id,
+          ruleType: widget.ruleType,
+          newConfig: _buildConfig(),
+          evaluationOrder:
+              widget.currentRule?.evaluationOrder ??
+              SlaRuleType.values.indexOf(widget.ruleType),
+          callerRole: widget.callerRole,
+        ),
+      );
 
       // Invalidate providers so the screen refreshes
       ref.invalidate(activeRulesProvider(widget.contractId));
@@ -427,58 +463,66 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
         children: [
           _RuleTypeIcon(ruleType: widget.ruleType),
           const SizedBox(width: 10),
-          Text(_ruleTypeLabel(widget.ruleType),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(
+            _ruleTypeLabel(widget.ruleType),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
         ],
       ),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
         child: SingleChildScrollView(
           child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.currentRule != null)
-              Container(
-                padding: const EdgeInsets.all(10),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: PactaFlowColors.info.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: PactaFlowColors.info.withValues(alpha: 0.25)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline,
-                        size: 14, color: PactaFlowColors.info),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Salvar cria uma nova versão. A versão atual (v${widget.currentRule!.ruleVersion}) '
-                        'é preservada no histórico (INV-1).',
-                        style: const TextStyle(
-                            fontSize: 12, color: PactaFlowColors.textSecondary),
-                      ),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.currentRule != null)
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: PactaFlowColors.info.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: PactaFlowColors.info.withValues(alpha: 0.25),
                     ),
-                  ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: PactaFlowColors.info,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Salvar cria uma nova versão. A versão atual (v${widget.currentRule!.ruleVersion}) '
+                          'é preservada no histórico (INV-1).',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: PactaFlowColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+              // ── Parameter Fields ──────────────────────────────
+              ..._buildFields(),
+              const SizedBox(height: 16),
+              // ── Financial Impact Simulation ───────────────────
+              _ImpactSimulationPanel(
+                ruleType: widget.ruleType,
+                currentRule: widget.currentRule,
+                controllers: _controllers,
+                expanded: _showImpact,
+                onToggle: () => setState(() => _showImpact = !_showImpact),
               ),
-            // ── Parameter Fields ──────────────────────────────
-            ..._buildFields(),
-            const SizedBox(height: 16),
-            // ── Financial Impact Simulation ───────────────────
-            _ImpactSimulationPanel(
-              ruleType: widget.ruleType,
-              currentRule: widget.currentRule,
-              controllers: _controllers,
-              expanded: _showImpact,
-              onToggle: () => setState(() => _showImpact = !_showImpact),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(),
@@ -490,7 +534,10 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
                   width: 14,
                   height: 14,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
               : const Icon(Icons.save_outlined, size: 16),
           label: const Text('Salvar Nova Versão'),
           onPressed: _saving ? null : _save,
@@ -502,45 +549,45 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
   List<Widget> _buildFields() {
     return switch (widget.ruleType.value) {
       'MAX_TOLERANCE_DELAY' => [
-          _ParamField(
-            label: 'Tolerância de Atraso (minutos)',
-            hint: 'Ex: 5',
-            controller: _controllers['threshold_minutes']!,
-            inputType: TextInputType.number,
-            helpText: 'Minutos de atraso antes de iniciar o cômputo de penalidade.',
-          ),
-        ],
+        _ParamField(
+          label: 'Tolerância de Atraso (minutos)',
+          hint: 'Ex: 5',
+          controller: _controllers['threshold_minutes']!,
+          inputType: TextInputType.number,
+          helpText:
+              'Minutos de atraso antes de iniciar o cômputo de penalidade.',
+        ),
+      ],
       'MAX_EVIDENCE_GAP' => [
-          _ParamField(
-            label: 'Lacuna Máxima de Evidência (segundos)',
-            hint: 'Ex: 300',
-            controller: _controllers['max_gap_seconds']!,
-            inputType: TextInputType.number,
-            helpText:
-                'Intervalo máximo (s) entre pings de telemetria antes de invalidar a evidência.',
-          ),
-        ],
+        _ParamField(
+          label: 'Lacuna Máxima de Evidência (segundos)',
+          hint: 'Ex: 300',
+          controller: _controllers['max_gap_seconds']!,
+          inputType: TextInputType.number,
+          helpText:
+              'Intervalo máximo (s) entre pings de telemetria antes de invalidar a evidência.',
+        ),
+      ],
       'MIN_GEOFENCE_COVERAGE' => [
-          _ParamField(
-            label: 'Permanência Mínima no Geofence (segundos)',
-            hint: 'Ex: 30',
-            controller: _controllers['min_dwell_seconds']!,
-            inputType: TextInputType.number,
-            helpText:
-                'Tempo mínimo (s) que o veículo deve permanecer no geofence para validar a viagem.',
-          ),
-        ],
+        _ParamField(
+          label: 'Permanência Mínima no Geofence (segundos)',
+          hint: 'Ex: 30',
+          controller: _controllers['min_dwell_seconds']!,
+          inputType: TextInputType.number,
+          helpText:
+              'Tempo mínimo (s) que o veículo deve permanecer no geofence para validar a viagem.',
+        ),
+      ],
       'NO_SHOW_PENALTY' => [
-          _ParamField(
-            label: 'Valor da Penalidade No-Show (R\$)',
-            hint: 'Ex: 150.00',
-            controller: _controllers['penalty_amount_cents']!,
-            inputType:
-                const TextInputType.numberWithOptions(decimal: true),
-            helpText:
-                'Valor financeiro aplicado quando o veículo não se apresenta (após threshold).',
-          ),
-        ],
+        _ParamField(
+          label: 'Valor da Penalidade No-Show (R\$)',
+          hint: 'Ex: 150.00',
+          controller: _controllers['penalty_amount_cents']!,
+          inputType: const TextInputType.numberWithOptions(decimal: true),
+          helpText:
+              'Valor financeiro aplicado quando o veículo não se apresenta (após threshold).',
+        ),
+      ],
       _ => [],
     };
   }
@@ -580,14 +627,20 @@ class _ImpactSimulationPanel extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
                 children: [
-                  const Icon(Icons.insights_outlined,
-                      size: 16, color: PactaFlowColors.secondary),
+                  const Icon(
+                    Icons.insights_outlined,
+                    size: 16,
+                    color: PactaFlowColors.secondary,
+                  ),
                   const SizedBox(width: 8),
-                  const Text('Simulação de Impacto Financeiro',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: PactaFlowColors.secondary)),
+                  const Text(
+                    'Simulação de Impacto Financeiro',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: PactaFlowColors.secondary,
+                    ),
+                  ),
                   const Spacer(),
                   Icon(
                     expanded
@@ -646,10 +699,11 @@ class _ImpactBody extends StatelessWidget {
         const Text(
           'Alteração de Parâmetro',
           style: TextStyle(
-              fontSize: 11,
-              color: PactaFlowColors.textDisabled,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5),
+            fontSize: 11,
+            color: PactaFlowColors.textDisabled,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
         ),
         const SizedBox(height: 8),
         ...rows,
@@ -662,14 +716,19 @@ class _ImpactBody extends StatelessWidget {
           ),
           child: const Row(
             children: [
-              Icon(Icons.warning_amber_outlined,
-                  size: 12, color: PactaFlowColors.warning),
+              Icon(
+                Icons.warning_amber_outlined,
+                size: 12,
+                color: PactaFlowColors.warning,
+              ),
               SizedBox(width: 6),
               Expanded(
                 child: Text(
                   'Simulação qualitativa — impacto quantitativo disponível na Phase 7 (Audit Exports).',
                   style: TextStyle(
-                      fontSize: 11, color: PactaFlowColors.textSecondary),
+                    fontSize: 11,
+                    color: PactaFlowColors.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -683,50 +742,52 @@ class _ImpactBody extends StatelessWidget {
     final c = currentRule!.config;
     return switch (ruleType.value) {
       'MAX_TOLERANCE_DELAY' => [
-          _ImpactRow(
-            label: 'Tolerância',
-            current: '${c['threshold_minutes']} min',
-            proposed: '${controllers['threshold_minutes']!.text} min',
-            impactWhenIncreased: 'Menos penalidades — mais leniente com atrasos',
-            impactWhenDecreased: 'Mais penalidades — penaliza atrasos menores',
-            currentValue: (c['threshold_minutes'] as num?)?.toDouble() ?? 0,
-            proposedText: controllers['threshold_minutes']!.text,
-          ),
-        ],
+        _ImpactRow(
+          label: 'Tolerância',
+          current: '${c['threshold_minutes']} min',
+          proposed: '${controllers['threshold_minutes']!.text} min',
+          impactWhenIncreased: 'Menos penalidades — mais leniente com atrasos',
+          impactWhenDecreased: 'Mais penalidades — penaliza atrasos menores',
+          currentValue: (c['threshold_minutes'] as num?)?.toDouble() ?? 0,
+          proposedText: controllers['threshold_minutes']!.text,
+        ),
+      ],
       'MAX_EVIDENCE_GAP' => [
-          _ImpactRow(
-            label: 'Lacuna máx.',
-            current: '${c['max_gap_seconds']} s',
-            proposed: '${controllers['max_gap_seconds']!.text} s',
-            impactWhenIncreased: 'Mais permissivo com lacunas de telemetria',
-            impactWhenDecreased: 'Invalida mais evidências — pode aumentar no-shows',
-            currentValue: (c['max_gap_seconds'] as num?)?.toDouble() ?? 0,
-            proposedText: controllers['max_gap_seconds']!.text,
-          ),
-        ],
+        _ImpactRow(
+          label: 'Lacuna máx.',
+          current: '${c['max_gap_seconds']} s',
+          proposed: '${controllers['max_gap_seconds']!.text} s',
+          impactWhenIncreased: 'Mais permissivo com lacunas de telemetria',
+          impactWhenDecreased:
+              'Invalida mais evidências — pode aumentar no-shows',
+          currentValue: (c['max_gap_seconds'] as num?)?.toDouble() ?? 0,
+          proposedText: controllers['max_gap_seconds']!.text,
+        ),
+      ],
       'MIN_GEOFENCE_COVERAGE' => [
-          _ImpactRow(
-            label: 'Permanência mín.',
-            current: '${c['min_dwell_seconds']} s',
-            proposed: '${controllers['min_dwell_seconds']!.text} s',
-            impactWhenIncreased: 'Exigência maior — mais viagens rejeitadas',
-            impactWhenDecreased: 'Exigência menor — mais viagens validadas',
-            currentValue: (c['min_dwell_seconds'] as num?)?.toDouble() ?? 0,
-            proposedText: controllers['min_dwell_seconds']!.text,
-          ),
-        ],
+        _ImpactRow(
+          label: 'Permanência mín.',
+          current: '${c['min_dwell_seconds']} s',
+          proposed: '${controllers['min_dwell_seconds']!.text} s',
+          impactWhenIncreased: 'Exigência maior — mais viagens rejeitadas',
+          impactWhenDecreased: 'Exigência menor — mais viagens validadas',
+          currentValue: (c['min_dwell_seconds'] as num?)?.toDouble() ?? 0,
+          proposedText: controllers['min_dwell_seconds']!.text,
+        ),
+      ],
       'NO_SHOW_PENALTY' => [
-          _ImpactRow(
-            label: 'Penalidade',
-            current:
-                'R\$ ${(((c['penalty_amount_cents'] as int?) ?? 0) / 100).toStringAsFixed(2)}',
-            proposed: 'R\$ ${controllers['penalty_amount_cents']!.text}',
-            impactWhenIncreased: 'Maior recuperação financeira por no-show',
-            impactWhenDecreased: 'Menor recuperação financeira por no-show',
-            currentValue: ((c['penalty_amount_cents'] as num?)?.toDouble() ?? 0) / 100,
-            proposedText: controllers['penalty_amount_cents']!.text,
-          ),
-        ],
+        _ImpactRow(
+          label: 'Penalidade',
+          current:
+              'R\$ ${(((c['penalty_amount_cents'] as int?) ?? 0) / 100).toStringAsFixed(2)}',
+          proposed: 'R\$ ${controllers['penalty_amount_cents']!.text}',
+          impactWhenIncreased: 'Maior recuperação financeira por no-show',
+          impactWhenDecreased: 'Menor recuperação financeira por no-show',
+          currentValue:
+              ((c['penalty_amount_cents'] as num?)?.toDouble() ?? 0) / 100,
+          proposedText: controllers['penalty_amount_cents']!.text,
+        ),
+      ],
       _ => [],
     };
   }
@@ -760,14 +821,14 @@ class _ImpactRow extends StatelessWidget {
     final impactText = unchanged
         ? 'Sem alteração'
         : delta > 0
-            ? impactWhenIncreased
-            : impactWhenDecreased;
+        ? impactWhenIncreased
+        : impactWhenDecreased;
 
     final impactColor = unchanged
         ? PactaFlowColors.textDisabled
         : delta > 0
-            ? PactaFlowColors.warning
-            : PactaFlowColors.info;
+        ? PactaFlowColors.warning
+        : PactaFlowColors.info;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -777,23 +838,36 @@ class _ImpactRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 11, color: PactaFlowColors.textDisabled)),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: PactaFlowColors.textDisabled,
+                  ),
+                ),
                 Row(
                   children: [
-                    Text(current,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            color: PactaFlowColors.textSecondary,
-                            decoration: TextDecoration.lineThrough)),
-                    const Icon(Icons.arrow_right_alt,
-                        size: 14, color: PactaFlowColors.textDisabled),
-                    Text(proposed,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            color: PactaFlowColors.textPrimary,
-                            fontWeight: FontWeight.w600)),
+                    Text(
+                      current,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: PactaFlowColors.textSecondary,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_right_alt,
+                      size: 14,
+                      color: PactaFlowColors.textDisabled,
+                    ),
+                    Text(
+                      proposed,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: PactaFlowColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -827,14 +901,18 @@ class _VersionHistoryPanel extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.history_outlined,
-                size: 48,
-                color: PactaFlowColors.textDisabled.withValues(alpha: 0.4)),
+            Icon(
+              Icons.history_outlined,
+              size: 48,
+              color: PactaFlowColors.textDisabled.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 12),
             const Text(
               'Nenhuma regra configurada ainda.',
               style: TextStyle(
-                  fontSize: 13, color: PactaFlowColors.textSecondary),
+                fontSize: 13,
+                color: PactaFlowColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -888,15 +966,22 @@ class _HistoryGroupState extends State<_HistoryGroup> {
                 children: [
                   _RuleTypeIcon(ruleType: widget.ruleType, size: 16),
                   const SizedBox(width: 8),
-                  Text(_ruleTypeLabel(widget.ruleType),
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: PactaFlowColors.textPrimary)),
+                  Text(
+                    _ruleTypeLabel(widget.ruleType),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: PactaFlowColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Text('${widget.entries.length} versões',
-                      style: const TextStyle(
-                          fontSize: 11, color: PactaFlowColors.textSecondary)),
+                  Text(
+                    '${widget.entries.length} versões',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: PactaFlowColors.textSecondary,
+                    ),
+                  ),
                   const Spacer(),
                   Icon(
                     _expanded
@@ -948,23 +1033,31 @@ class _HistoryRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text('v${entry.ruleVersion}',
-                        style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: PactaFlowColors.textPrimary)),
+                    Text(
+                      'v${entry.ruleVersion}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: PactaFlowColors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(width: 6),
                     if (entry.isActive)
-                      const Text('(ativa)',
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: PactaFlowColors.onTime)),
+                      const Text(
+                        '(ativa)',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: PactaFlowColors.onTime,
+                        ),
+                      ),
                   ],
                 ),
                 Text(
                   _formatDateRange(entry),
                   style: const TextStyle(
-                      fontSize: 10, color: PactaFlowColors.textDisabled),
+                    fontSize: 10,
+                    color: PactaFlowColors.textDisabled,
+                  ),
                 ),
               ],
             ),
@@ -972,7 +1065,9 @@ class _HistoryRow extends StatelessWidget {
           Text(
             _configSummary(entry),
             style: const TextStyle(
-                fontSize: 11, color: PactaFlowColors.textSecondary),
+              fontSize: 11,
+              color: PactaFlowColors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -992,12 +1087,12 @@ class _HistoryRow extends StatelessWidget {
   String _configSummary(RuleVersionHistoryEntry e) {
     final c = e.config;
     return switch (e.ruleType.value) {
-      'MAX_TOLERANCE_DELAY'   => '${c['threshold_minutes']} min',
-      'MAX_EVIDENCE_GAP'      => '${c['max_gap_seconds']} s',
+      'MAX_TOLERANCE_DELAY' => '${c['threshold_minutes']} min',
+      'MAX_EVIDENCE_GAP' => '${c['max_gap_seconds']} s',
       'MIN_GEOFENCE_COVERAGE' => '${c['min_dwell_seconds']} s',
       'NO_SHOW_PENALTY' =>
         'R\$ ${(((c['penalty_amount_cents'] as int?) ?? 0) / 100).toStringAsFixed(2)}',
-      _                       => '',
+      _ => '',
     };
   }
 }
@@ -1013,11 +1108,20 @@ class _RuleTypeIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, color) = switch (ruleType.value) {
-      'MAX_TOLERANCE_DELAY'   => (Icons.schedule_outlined, PactaFlowColors.warning),
-      'MAX_EVIDENCE_GAP'      => (Icons.signal_cellular_connected_no_internet_0_bar, PactaFlowColors.info),
-      'MIN_GEOFENCE_COVERAGE' => (Icons.location_on_outlined, PactaFlowColors.onTime),
-      'NO_SHOW_PENALTY'       => (Icons.money_off_outlined, PactaFlowColors.error),
-      _                       => (Icons.rule_outlined, PactaFlowColors.textSecondary),
+      'MAX_TOLERANCE_DELAY' => (
+        Icons.schedule_outlined,
+        PactaFlowColors.warning,
+      ),
+      'MAX_EVIDENCE_GAP' => (
+        Icons.signal_cellular_connected_no_internet_0_bar,
+        PactaFlowColors.info,
+      ),
+      'MIN_GEOFENCE_COVERAGE' => (
+        Icons.location_on_outlined,
+        PactaFlowColors.onTime,
+      ),
+      'NO_SHOW_PENALTY' => (Icons.money_off_outlined, PactaFlowColors.error),
+      _ => (Icons.rule_outlined, PactaFlowColors.textSecondary),
     };
 
     return Container(
@@ -1051,11 +1155,14 @@ class _ParamField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: PactaFlowColors.textPrimary)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: PactaFlowColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
@@ -1078,14 +1185,20 @@ class _ParamField extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: PactaFlowColors.primary),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
           ),
         ),
         const SizedBox(height: 4),
-        Text(helpText,
-            style: const TextStyle(
-                fontSize: 11, color: PactaFlowColors.textDisabled)),
+        Text(
+          helpText,
+          style: const TextStyle(
+            fontSize: 11,
+            color: PactaFlowColors.textDisabled,
+          ),
+        ),
       ],
     );
   }
@@ -1109,9 +1222,9 @@ class _ErrorState extends StatelessWidget {
 // ── Shared helper ─────────────────────────────────────────────────────────────
 
 String _ruleTypeLabel(SlaRuleType type) => switch (type.value) {
-      'MAX_TOLERANCE_DELAY'   => 'Tolerância de Atraso',
-      'MAX_EVIDENCE_GAP'      => 'Lacuna de Evidência',
-      'MIN_GEOFENCE_COVERAGE' => 'Permanência Mínima no Geofence',
-      'NO_SHOW_PENALTY'       => 'Penalidade No-Show',
-      _                       => type.value,
-    };
+  'MAX_TOLERANCE_DELAY' => 'Tolerância de Atraso',
+  'MAX_EVIDENCE_GAP' => 'Lacuna de Evidência',
+  'MIN_GEOFENCE_COVERAGE' => 'Permanência Mínima no Geofence',
+  'NO_SHOW_PENALTY' => 'Penalidade No-Show',
+  _ => type.value,
+};

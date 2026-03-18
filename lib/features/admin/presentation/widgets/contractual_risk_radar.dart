@@ -45,7 +45,10 @@ class ContractualRiskRadar extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Radar de Risco Contratual', style: PactaFlowTypography.kpiValue.copyWith(fontSize: 22)),
+            Text(
+              'Radar de Risco Contratual',
+              style: PactaFlowTypography.kpiValue.copyWith(fontSize: 22),
+            ),
             const SizedBox(height: 4),
             Text(
               'Acompanhamento de SLA operacional e impacto financeiro',
@@ -77,7 +80,9 @@ class _FinancialKpiRow extends ConsumerWidget {
       ),
       error: (err, _) => Text(
         'Erro ao carregar KPIs financeiros: $err',
-        style: PactaFlowTypography.bodySmall.copyWith(color: PactaFlowColors.error),
+        style: PactaFlowTypography.bodySmall.copyWith(
+          color: PactaFlowColors.error,
+        ),
       ),
       data: (impact) {
         return Row(
@@ -85,7 +90,8 @@ class _FinancialKpiRow extends ConsumerWidget {
             Expanded(
               child: _KpiCard(
                 title: 'Receita Protegida',
-                value: 'R\$ ${(impact.protectedRevenue.cents / 100).toStringAsFixed(2)}',
+                value:
+                    'R\$ ${(impact.protectedRevenue.cents / 100).toStringAsFixed(2)}',
                 color: PactaFlowColors.success,
                 icon: Icons.shield,
               ),
@@ -94,7 +100,8 @@ class _FinancialKpiRow extends ConsumerWidget {
             Expanded(
               child: _KpiCard(
                 title: 'Receita em Risco (Atrasos)',
-                value: 'R\$ ${(impact.revenueAtRisk.cents / 100).toStringAsFixed(2)}',
+                value:
+                    'R\$ ${(impact.revenueAtRisk.cents / 100).toStringAsFixed(2)}',
                 color: PactaFlowColors.warning,
                 icon: Icons.warning_amber_rounded,
               ),
@@ -103,7 +110,8 @@ class _FinancialKpiRow extends ConsumerWidget {
             Expanded(
               child: _KpiCard(
                 title: 'SLA Violado (Penalty)',
-                value: 'R\$ ${(impact.lostRevenue.cents / 100).toStringAsFixed(2)}',
+                value:
+                    'R\$ ${(impact.lostRevenue.cents / 100).toStringAsFixed(2)}',
                 color: PactaFlowColors.error,
                 icon: Icons.gavel,
               ),
@@ -194,7 +202,11 @@ class _RiskFeedList extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.list_alt, size: 18, color: PactaFlowColors.info),
+                const Icon(
+                  Icons.list_alt,
+                  size: 18,
+                  color: PactaFlowColors.info,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Viagens Programadas (Turnos)',
@@ -212,7 +224,9 @@ class _RiskFeedList extends ConsumerWidget {
             loading: () => const Padding(
               padding: EdgeInsets.all(24.0),
               child: Center(
-                child: CircularProgressIndicator(color: PactaFlowColors.primary),
+                child: CircularProgressIndicator(
+                  color: PactaFlowColors.primary,
+                ),
               ),
             ),
             error: (err, _) => Padding(
@@ -345,7 +359,9 @@ class _FeedNodeItem extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              _timeFormat.format(node.execution.windowStartUtc.toLocal()),
+                              _timeFormat.format(
+                                node.execution.windowStartUtc.toLocal(),
+                              ),
                               style: PactaFlowTypography.bodyMedium.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: PactaFlowColors.textPrimary,
@@ -397,7 +413,9 @@ class _FeedNodeItem extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 '${node.activeAlerts.length} ${node.activeAlerts.length == 1 ? 'Alerta' : 'Alertas'}',
-                                style: PactaFlowTypography.caption.copyWith(color: color),
+                                style: PactaFlowTypography.caption.copyWith(
+                                  color: color,
+                                ),
                               ),
                             ],
                           ],

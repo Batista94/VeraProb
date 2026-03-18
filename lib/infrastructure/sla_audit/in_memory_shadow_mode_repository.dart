@@ -15,10 +15,9 @@ class InMemoryShadowModeRepository implements ShadowModeRepository {
     required String organizationId,
     int limit = 10,
   }) async {
-    final results = _simulations
-        .where((s) => s.organizationId == organizationId)
-        .toList()
-      ..sort((a, b) => b.generatedAtUtc.compareTo(a.generatedAtUtc));
+    final results =
+        _simulations.where((s) => s.organizationId == organizationId).toList()
+          ..sort((a, b) => b.generatedAtUtc.compareTo(a.generatedAtUtc));
     return results.take(limit).toList();
   }
 

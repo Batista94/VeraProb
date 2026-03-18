@@ -5,12 +5,7 @@ import '../../../domain/sla_audit/operational_alert.dart';
 import 'sla_execution_item_view.dart';
 
 /// Defines the severity of a node in the dashboard risk feed.
-enum DashboardFeedSeverity {
-  critical,
-  warning,
-  pending,
-  onTime,
-}
+enum DashboardFeedSeverity { critical, warning, pending, onTime }
 
 /// A read model node representing a single contractual obligation (SET)
 /// evaluated alongside its active operational alerts for the dashboard.

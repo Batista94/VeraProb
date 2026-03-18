@@ -22,9 +22,11 @@ class PostgresRuleVersionQueryService {
 
     final list = result as List? ?? [];
     return list
-        .map((e) => RuleVersionHistoryEntry.fromJson(
-              Map<String, dynamic>.from(e as Map),
-            ))
+        .map(
+          (e) => RuleVersionHistoryEntry.fromJson(
+            Map<String, dynamic>.from(e as Map),
+          ),
+        )
         .toList();
   }
 

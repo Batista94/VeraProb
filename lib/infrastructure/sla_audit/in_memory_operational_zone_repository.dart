@@ -28,10 +28,9 @@ class InMemoryOperationalZoneRepository implements OperationalZoneRepository {
   Future<List<OperationalZone>> findByOrganization(
     String organizationId,
   ) async {
-    final results = _store.values
-        .where((z) => z.organizationId == organizationId)
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    final results =
+        _store.values.where((z) => z.organizationId == organizationId).toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
     return UnmodifiableListView(results);
   }
 }

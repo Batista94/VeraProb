@@ -26,7 +26,10 @@ final ledgerEntriesProvider =
 
 /// Retrieves a specific execution state for forensic analysis.
 final executionStateProvider =
-    FutureProvider.family<ContractualExecutionState?, String>((ref, setId) async {
-  final repo = ref.watch(contractualExecutionStateRepositoryProvider);
-  return repo.findBySetId(setId);
-});
+    FutureProvider.family<ContractualExecutionState?, String>((
+      ref,
+      setId,
+    ) async {
+      final repo = ref.watch(contractualExecutionStateRepositoryProvider);
+      return repo.findBySetId(setId);
+    });

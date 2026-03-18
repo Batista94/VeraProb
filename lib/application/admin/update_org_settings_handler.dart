@@ -4,20 +4,21 @@ import '../../domain/services/rbac_service.dart';
 import 'update_org_settings_command.dart';
 
 /// Application handler for updating organization settings.
-/// 
+///
 /// RBAC: Requires [UserPermission.canManageOrganization].
 class UpdateOrgSettingsHandler {
   final OrganizationRepository _repository;
   final RbacService _rbac = RbacService();
 
-  UpdateOrgSettingsHandler({
-    required OrganizationRepository repository,
-  }) : _repository = repository;
+  UpdateOrgSettingsHandler({required OrganizationRepository repository})
+    : _repository = repository;
 
   Future<void> handle(UpdateOrgSettingsCommand command) async {
     // 1. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageOrganization)) {
-      throw Exception('Unauthorized: Caller identifies as ${command.callerRole} but needs canManageOrganization permission');
+      throw Exception(
+        'Unauthorized: Caller identifies as ${command.callerRole} but needs canManageOrganization permission',
+      );
     }
 
     // 2. Fetch aggregate

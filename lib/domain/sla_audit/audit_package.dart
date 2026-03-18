@@ -53,8 +53,8 @@ class AuditPackage extends Equatable {
   final String billingCycleReportId;
 
   /// The highest `lastLedgerEntryId` across all constituent daily snapshots.
-  /// Any ledger entry with id ≤ [reportLedgerBoundary] is inside this package's scope.
-  final int reportLedgerBoundary;
+  /// Any ledger entry before or at [reportLedgerBoundary] is inside this package's scope.
+  final String? reportLedgerBoundary;
 
   /// Ordered UUIDs of the [ContractualFinancialDailySnapshot] records aggregated.
   /// Stored as UUID[] in the database (D2-Challenger: array over junction table).
@@ -140,7 +140,7 @@ class AuditPackage extends Equatable {
     required DateTime periodStartUtc,
     required DateTime periodEndUtc,
     required BillingCycleReport report,
-    required int reportLedgerBoundary,
+    required String? reportLedgerBoundary,
     required String engineVersionAtGeneration,
     required String generatedByUserId,
     required AttestationHeader attestationHeader,
@@ -304,7 +304,7 @@ class AuditPackage extends Equatable {
     required DateTime periodStartUtc,
     required DateTime periodEndUtc,
     required String billingCycleReportId,
-    required int reportLedgerBoundary,
+    required String? reportLedgerBoundary,
     required List<String> snapshotIds,
     required Money totalContractedRevenue,
     required Money protectedRevenue,
@@ -398,7 +398,7 @@ class AuditPackage extends Equatable {
     required String contractorName,
     required DateTime periodStartUtc,
     required DateTime periodEndUtc,
-    required int reportLedgerBoundary,
+    required String? reportLedgerBoundary,
     required String engineVersionAtGeneration,
     required String generatedByUserId,
   }) {
@@ -409,27 +409,18 @@ class AuditPackage extends Equatable {
       throw const DomainException('contractorName must not be empty');
     }
     if (!periodStartUtc.isUtc) {
-      throw const DomainException(
-        'periodStartUtc must be UTC (INV-3).',
-      );
+      throw const DomainException('periodStartUtc must be UTC (INV-3).');
     }
     if (!periodEndUtc.isUtc) {
-      throw const DomainException(
-        'periodEndUtc must be UTC (INV-3).',
-      );
+      throw const DomainException('periodEndUtc must be UTC (INV-3).');
     }
     if (!periodEndUtc.isAfter(periodStartUtc)) {
-      throw const DomainException(
-        'periodEndUtc must be after periodStartUtc.',
-      );
-    }
-    if (reportLedgerBoundary < 0) {
-      throw const DomainException(
-        'reportLedgerBoundary must be >= 0.',
-      );
+      throw const DomainException('periodEndUtc must be after periodStartUtc.');
     }
     if (engineVersionAtGeneration.trim().isEmpty) {
-      throw const DomainException('engineVersionAtGeneration must not be empty');
+      throw const DomainException(
+        'engineVersionAtGeneration must not be empty',
+      );
     }
     if (generatedByUserId.trim().isEmpty) {
       throw const DomainException('generatedByUserId must not be empty');

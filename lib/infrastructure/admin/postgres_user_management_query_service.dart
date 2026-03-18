@@ -23,15 +23,15 @@ class PostgresUserManagementQueryService {
 
   Future<List<OrgMember>> getMembers() async {
     final response = await _client.rpc('get_org_members');
-    
+
     return (response as List).map((row) {
       return OrgMember(
         userId: row['user_id'] as String,
         email: row['email'] as String,
         role: row['role'] as String,
         invitedAt: DateTime.parse(row['invited_at'] as String),
-        lastSignIn: row['last_sign_in'] != null 
-            ? DateTime.parse(row['last_sign_in'] as String) 
+        lastSignIn: row['last_sign_in'] != null
+            ? DateTime.parse(row['last_sign_in'] as String)
             : null,
       );
     }).toList();

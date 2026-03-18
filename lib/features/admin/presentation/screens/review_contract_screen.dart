@@ -67,9 +67,9 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
     });
 
     try {
-      await ref.read(acceptByContractorHandlerProvider).handle(
-            AcceptByContractorCommand(token: widget.token),
-          );
+      await ref
+          .read(acceptByContractorHandlerProvider)
+          .handle(AcceptByContractorCommand(token: widget.token));
 
       if (!mounted) return;
       setState(() {
@@ -132,8 +132,9 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
           const SizedBox(height: 8),
           Text(
             'Este link de revisão é inválido, expirou ou o contrato já foi aceito.',
-            style: PactaFlowTypography.bodyMedium
-                .copyWith(color: PactaFlowColors.textSecondary),
+            style: PactaFlowTypography.bodyMedium.copyWith(
+              color: PactaFlowColors.textSecondary,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -145,16 +146,23 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle_outline,
-              color: PactaFlowColors.success, size: 56),
+          const Icon(
+            Icons.check_circle_outline,
+            color: PactaFlowColors.success,
+            size: 56,
+          ),
           const SizedBox(height: 16),
-          Text('Contrato Aceito!', style: PactaFlowTypography.sectionTitle,
-              textAlign: TextAlign.center),
+          Text(
+            'Contrato Aceito!',
+            style: PactaFlowTypography.sectionTitle,
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 8),
           Text(
             'Sua aceitação foi registrada com sucesso.\nA operadora foi notificada.',
-            style: PactaFlowTypography.bodyMedium
-                .copyWith(color: PactaFlowColors.textSecondary),
+            style: PactaFlowTypography.bodyMedium.copyWith(
+              color: PactaFlowColors.textSecondary,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -168,17 +176,23 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(Icons.description_outlined,
-            color: PactaFlowColors.primary, size: 48),
+        const Icon(
+          Icons.description_outlined,
+          color: PactaFlowColors.primary,
+          size: 48,
+        ),
         const SizedBox(height: 16),
-        Text('Revisão de Contrato',
-            style: PactaFlowTypography.sectionTitle,
-            textAlign: TextAlign.center),
+        Text(
+          'Revisão de Contrato',
+          style: PactaFlowTypography.sectionTitle,
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 8),
         Text(
           'Revise os dados abaixo e confirme o aceite do contrato.',
-          style: PactaFlowTypography.bodyMedium
-              .copyWith(color: PactaFlowColors.textSecondary),
+          style: PactaFlowTypography.bodyMedium.copyWith(
+            color: PactaFlowColors.textSecondary,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -186,7 +200,8 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
         _InfoRow(label: 'Contratante', value: s.contractorName),
         _InfoRow(
           label: 'Vigência',
-          value: '${fmt.format(s.validFromUtc)} – ${fmt.format(s.validUntilUtc)}',
+          value:
+              '${fmt.format(s.validFromUtc)} – ${fmt.format(s.validUntilUtc)}',
         ),
         if (s.financialCeilingCents != null)
           _InfoRow(
@@ -209,7 +224,9 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Icon(Icons.handshake_outlined),
           label: Text(_accepting ? 'Registrando...' : 'Aceitar Contrato'),
@@ -220,8 +237,9 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
         const SizedBox(height: 12),
         Text(
           'Ao aceitar, você confirma que leu e concorda com os termos deste contrato.',
-          style: PactaFlowTypography.bodySmall
-              .copyWith(color: PactaFlowColors.textSecondary),
+          style: PactaFlowTypography.bodySmall.copyWith(
+            color: PactaFlowColors.textSecondary,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -251,13 +269,12 @@ class _InfoRow extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: PactaFlowTypography.bodyMedium
-                  .copyWith(color: PactaFlowColors.textSecondary),
+              style: PactaFlowTypography.bodyMedium.copyWith(
+                color: PactaFlowColors.textSecondary,
+              ),
             ),
           ),
-          Expanded(
-            child: Text(value, style: PactaFlowTypography.bodyMedium),
-          ),
+          Expanded(child: Text(value, style: PactaFlowTypography.bodyMedium)),
         ],
       ),
     );

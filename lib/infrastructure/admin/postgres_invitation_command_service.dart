@@ -16,13 +16,16 @@ class PostgresInvitationCommandService implements InvitationCommandService {
     required String invitationId,
     required DateTime expiresAtUtc,
   }) async {
-    await _client.rpc('invite_user', params: {
-      'p_email': email,
-      'p_role': _mapRoleToDb(role),
-      'p_token': token,
-      'p_invitation_id': invitationId,
-      'p_expires_at': expiresAtUtc.toIso8601String(),
-    });
+    await _client.rpc(
+      'invite_user',
+      params: {
+        'p_email': email,
+        'p_role': _mapRoleToDb(role),
+        'p_token': token,
+        'p_invitation_id': invitationId,
+        'p_expires_at': expiresAtUtc.toIso8601String(),
+      },
+    );
   }
 
   @override
@@ -30,17 +33,18 @@ class PostgresInvitationCommandService implements InvitationCommandService {
     required String token,
     required String userId,
   }) async {
-    await _client.rpc('accept_invitation', params: {
-      'p_token': token,
-      'p_user_id': userId,
-    });
+    await _client.rpc(
+      'accept_invitation',
+      params: {'p_token': token, 'p_user_id': userId},
+    );
   }
 
   @override
   Future<void> revokeInvitation({required String invitationId}) async {
-    await _client.rpc('revoke_invitation', params: {
-      'p_invitation_id': invitationId,
-    });
+    await _client.rpc(
+      'revoke_invitation',
+      params: {'p_invitation_id': invitationId},
+    );
   }
 
   String _mapRoleToDb(UserRole role) {

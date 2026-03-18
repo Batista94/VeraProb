@@ -7,6 +7,13 @@ class TripRepositoryImpl implements ITripRepository {
 
   TripRepositoryImpl(this._supabase);
 
+  String get _orgId {
+    final orgId =
+        _supabase.auth.currentSession?.user.appMetadata['org_id'] as String?;
+    if (orgId == null) throw StateError('No organization in session JWT');
+    return orgId;
+  }
+
   @override
   Future<List<Trip>> getTrips() async {
     // Join with routes to get the human readable ID
@@ -68,8 +75,10 @@ class TripRepositoryImpl implements ITripRepository {
       final newRoute = await _supabase
           .from('routes')
           .insert({
+            'organization_id': _orgId,
             'gtfs_route_id': routeId,
-            'name': 'Linha $routeId',
+            'short_name': routeId,
+            'long_name': 'Linha $routeId',
             'agency_id': 'SPTRANS',
           })
           .select()
@@ -82,6 +91,7 @@ class TripRepositoryImpl implements ITripRepository {
     final response = await _supabase
         .from('trips_audit')
         .insert({
+          'organization_id': _orgId,
           'driver_id': driverId,
           'route_id': realRouteUUID,
           'status': 'active',

@@ -183,25 +183,24 @@ class ShiftPattern extends Equatable {
 
   /// Returns true if the shift crosses midnight (departure is after arrival in
   /// local time), requiring D+1 adjustment for the arrival date at projection.
-  bool get isOvernight =>
-      departureTimeLocal.compareTo(arrivalTimeLocal) > 0;
+  bool get isOvernight => departureTimeLocal.compareTo(arrivalTimeLocal) > 0;
 
   /// Returns true if this pattern runs on [weekday] (1 = Monday, 7 = Sunday).
   bool runsOn(int weekday) => daysOfWeek.any((d) => d.value == weekday);
 
   /// Serializes to JSON for JSONB storage in [plan_declarations.shift_patterns_payload].
   Map<String, dynamic> toJson() => {
-        'index': index,
-        'daysOfWeek': daysOfWeek.map((d) => d.value).toList(),
-        'arrivalTimeLocal': arrivalTimeLocal,
-        'departureTimeLocal': departureTimeLocal,
-        'timezone': timezone,
-        'originZoneId': originZoneId,
-        'destinationZoneId': destinationZoneId,
-        'penalties': penalties.toJson(),
-        'requiredVehicleCategory': requiredVehicleCategory.toJson(),
-        'weekCycle': weekCycle.toJson(),
-      };
+    'index': index,
+    'daysOfWeek': daysOfWeek.map((d) => d.value).toList(),
+    'arrivalTimeLocal': arrivalTimeLocal,
+    'departureTimeLocal': departureTimeLocal,
+    'timezone': timezone,
+    'originZoneId': originZoneId,
+    'destinationZoneId': destinationZoneId,
+    'penalties': penalties.toJson(),
+    'requiredVehicleCategory': requiredVehicleCategory.toJson(),
+    'weekCycle': weekCycle.toJson(),
+  };
 
   factory ShiftPattern.fromJson(Map<String, dynamic> json) {
     final days = (json['daysOfWeek'] as List<dynamic>)
@@ -237,8 +236,12 @@ class ShiftPattern extends Equatable {
     }
     final hour = int.tryParse(parts[0]);
     final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null || hour < 0 || hour > 23 ||
-        minute < 0 || minute > 59) {
+    if (hour == null ||
+        minute == null ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59) {
       throw DomainException('$fieldName has invalid time value: $time');
     }
   }
@@ -267,15 +270,15 @@ class ShiftPattern extends Equatable {
 
   @override
   List<Object?> get props => [
-        index,
-        daysOfWeek,
-        arrivalTimeLocal,
-        departureTimeLocal,
-        timezone,
-        originZoneId,
-        destinationZoneId,
-        penalties,
-        requiredVehicleCategory,
-        weekCycle,
-      ];
+    index,
+    daysOfWeek,
+    arrivalTimeLocal,
+    departureTimeLocal,
+    timezone,
+    originZoneId,
+    destinationZoneId,
+    penalties,
+    requiredVehicleCategory,
+    weekCycle,
+  ];
 }

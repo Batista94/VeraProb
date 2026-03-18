@@ -56,8 +56,11 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
                       : _buildTable(context, routes, colorScheme, userRole),
                   loading: () => _buildSkeleton(),
                   error: (err, stack) {
-                    LoggerService().error('Falha ao carregar rotas',
-                        error: err, stackTrace: stack);
+                    LoggerService().error(
+                      'Falha ao carregar rotas',
+                      error: err,
+                      stackTrace: stack,
+                    );
                     return _buildErrorState();
                   },
                 ),
@@ -89,7 +92,10 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
   }
 
   Widget _buildHeader(
-      BuildContext context, ColorScheme colorScheme, UserRole userRole) {
+    BuildContext context,
+    ColorScheme colorScheme,
+    UserRole userRole,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -109,17 +115,16 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
               Text(
                 'Rotas Operacionais',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A237E),
-                    ),
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1A237E),
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Cadastro de rotas vinculadas à operação da organização.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.grey.shade600),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
               ),
             ],
           ),
@@ -133,7 +138,9 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               textStyle: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w600),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
       ],
@@ -175,19 +182,29 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-                color: Colors.grey.shade100, shape: BoxShape.circle),
-            child: Icon(Icons.route_outlined,
-                size: 64, color: Colors.grey.shade400),
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.route_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
           ),
           const SizedBox(height: 20),
-          Text('Nenhuma rota cadastrada ainda.',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade600)),
+          Text(
+            'Nenhuma rota cadastrada ainda.',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('Clique em "Cadastrar rota" para começar.',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
+          Text(
+            'Clique em "Cadastrar rota" para começar.',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          ),
         ],
       ),
     );
@@ -200,8 +217,10 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
         children: [
           Icon(Icons.error_outline, size: 48, color: Colors.grey),
           SizedBox(height: 12),
-          Text('Não foi possível carregar as rotas agora.',
-              style: TextStyle(fontSize: 16, color: Colors.grey)),
+          Text(
+            'Não foi possível carregar as rotas agora.',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
         ],
       ),
     );
@@ -215,15 +234,20 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
         child: Container(
           height: 56,
           decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10)),
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTable(BuildContext context, List<TransitRoute> routes,
-      ColorScheme colorScheme, UserRole userRole) {
+  Widget _buildTable(
+    BuildContext context,
+    List<TransitRoute> routes,
+    ColorScheme colorScheme,
+    UserRole userRole,
+  ) {
     return Card(
       child: Column(
         children: [
@@ -231,8 +255,9 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
             child: Row(
@@ -269,12 +294,15 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
   Widget _headerCell(String label, {int flex = 1}) {
     return Expanded(
       flex: flex,
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade600,
-              letterSpacing: 0.8)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Colors.grey.shade600,
+          letterSpacing: 0.8,
+        ),
+      ),
     );
   }
 
@@ -286,8 +314,9 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
         content: Text('Deseja excluir a rota ${route.shortName}?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -302,15 +331,22 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
         ref.invalidate(routesListProvider);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Rota removida com sucesso.')));
+            const SnackBar(content: Text('Rota removida com sucesso.')),
+          );
         }
       } catch (e, stack) {
-        LoggerService()
-            .error('Falha ao remover rota', error: e, stackTrace: stack);
+        LoggerService().error(
+          'Falha ao remover rota',
+          error: e,
+          stackTrace: stack,
+        );
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
               content: Text('Não foi possível remover a rota agora.'),
-              backgroundColor: Colors.red));
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     }
@@ -323,10 +359,11 @@ class _RouteRow extends StatefulWidget {
   final bool isHighlighted;
   final VoidCallback? onDelete;
 
-  const _RouteRow(
-      {required this.route,
-      required this.isHighlighted,
-      required this.onDelete});
+  const _RouteRow({
+    required this.route,
+    required this.isHighlighted,
+    required this.onDelete,
+  });
 
   @override
   State<_RouteRow> createState() => _RouteRowState();
@@ -349,23 +386,28 @@ class _RouteRowState extends State<_RouteRow> {
           color: widget.isHighlighted
               ? colorScheme.primaryContainer.withValues(alpha: 0.3)
               : _isHovered
-                  ? Colors.grey.shade50
-                  : Colors.white,
+              ? Colors.grey.shade50
+              : Colors.white,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Row(
           children: [
             Expanded(
               flex: 1,
-              child: Text(widget.route.shortName,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14)),
+              child: Text(
+                widget.route.shortName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
             ),
             Expanded(
               flex: 3,
-              child: Text(widget.route.longName,
-                  style:
-                      TextStyle(fontSize: 14, color: Colors.grey.shade700)),
+              child: Text(
+                widget.route.longName,
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+              ),
             ),
             Expanded(
               flex: 1,
@@ -376,20 +418,28 @@ class _RouteRowState extends State<_RouteRow> {
                           width: 16,
                           height: 16,
                           decoration: BoxDecoration(
-                              color: routeColor,
-                              borderRadius: BorderRadius.circular(4)),
+                            color: routeColor,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        Text(widget.route.color ?? '',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                                fontFamily: 'monospace')),
+                        Text(
+                          widget.route.color ?? '',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
                       ],
                     )
-                  : Text('—',
+                  : Text(
+                      '—',
                       style: TextStyle(
-                          fontSize: 14, color: Colors.grey.shade400)),
+                        fontSize: 14,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
             ),
             SizedBox(
               width: 80,
@@ -398,8 +448,11 @@ class _RouteRowState extends State<_RouteRow> {
                 children: [
                   if (widget.onDelete != null)
                     IconButton(
-                      icon: Icon(Icons.delete_outline,
-                          size: 20, color: Colors.red.shade400),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: Colors.red.shade400,
+                      ),
                       tooltip: 'Remover rota',
                       onPressed: widget.onDelete,
                     ),
@@ -428,8 +481,7 @@ class _RouteFormDrawer extends ConsumerStatefulWidget {
   final VoidCallback onClose;
   final ValueChanged<String> onRouteAdded;
 
-  const _RouteFormDrawer(
-      {required this.onClose, required this.onRouteAdded});
+  const _RouteFormDrawer({required this.onClose, required this.onRouteAdded});
 
   @override
   ConsumerState<_RouteFormDrawer> createState() => _RouteFormDrawerState();
@@ -451,11 +503,13 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
   void initState() {
     super.initState();
     _animController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 300));
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(
-            CurvedAnimation(
-                parent: _animController, curve: Curves.easeOutCubic));
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _slideAnimation = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
     _animController.forward();
   }
 
@@ -480,7 +534,9 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
       _errorMessage = null;
     });
     try {
-      final route = await ref.read(transitRouteRepositoryProvider).addRoute(
+      final route = await ref
+          .read(transitRouteRepositoryProvider)
+          .addRoute(
             shortName: _shortNameController.text.trim(),
             longName: _longNameController.text.trim(),
             color: _colorController.text.trim().isNotEmpty
@@ -488,20 +544,27 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
                 : null,
           );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Row(children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text('Rota cadastrada com sucesso'),
-          ]),
-          backgroundColor: const Color(0xFF2E7D32),
-          duration: const Duration(seconds: 3),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Text('Rota cadastrada com sucesso'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF2E7D32),
+            duration: const Duration(seconds: 3),
+          ),
+        );
         widget.onRouteAdded(route.id);
       }
     } catch (e, stack) {
-      LoggerService()
-          .error('Falha ao cadastrar rota', error: e, stackTrace: stack);
+      LoggerService().error(
+        'Falha ao cadastrar rota',
+        error: e,
+        stackTrace: stack,
+      );
       setState(() {
         _errorMessage =
             'Não foi possível salvar a rota agora. Tente novamente.';
@@ -526,31 +589,40 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                    border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade200))),
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade200),
+                  ),
+                ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer
-                              .withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(8)),
-                      child: Icon(Icons.route,
-                          size: 22, color: colorScheme.primary),
+                        color: colorScheme.primaryContainer.withValues(
+                          alpha: 0.4,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.route,
+                        size: 22,
+                        color: colorScheme.primary,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
-                      child: Text('Cadastrar rota',
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  )),
+                      child: Text(
+                        'Cadastrar rota',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                     IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: _handleClose,
-                        tooltip: 'Fechar'),
+                      icon: const Icon(Icons.close),
+                      onPressed: _handleClose,
+                      tooltip: 'Fechar',
+                    ),
                   ],
                 ),
               ),
@@ -567,8 +639,9 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _shortNameController,
-                          decoration:
-                              const InputDecoration(hintText: 'Ex: L001'),
+                          decoration: const InputDecoration(
+                            hintText: 'Ex: L001',
+                          ),
                           textCapitalization: TextCapitalization.characters,
                           enabled: !_isSaving,
                           validator: (v) {
@@ -584,7 +657,8 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
                         TextFormField(
                           controller: _longNameController,
                           decoration: const InputDecoration(
-                              hintText: 'Ex: Terminal Central → Zona Norte'),
+                            hintText: 'Ex: Terminal Central → Zona Norte',
+                          ),
                           textCapitalization: TextCapitalization.sentences,
                           enabled: !_isSaving,
                           validator: (v) {
@@ -600,7 +674,8 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
                         TextFormField(
                           controller: _colorController,
                           decoration: const InputDecoration(
-                              hintText: 'Ex: #3F51B5'),
+                            hintText: 'Ex: #3F51B5',
+                          ),
                           enabled: !_isSaving,
                         ),
                         if (_errorMessage != null) ...[
@@ -608,20 +683,27 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: Colors.red.shade200)),
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.red.shade200),
+                            ),
                             child: Row(
                               children: [
-                                Icon(Icons.warning_amber,
-                                    size: 18, color: Colors.red.shade700),
+                                Icon(
+                                  Icons.warning_amber,
+                                  size: 18,
+                                  color: Colors.red.shade700,
+                                ),
                                 const SizedBox(width: 10),
                                 Expanded(
-                                    child: Text(_errorMessage!,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.red.shade800))),
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.red.shade800,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -635,16 +717,16 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                    border: Border(
-                        top: BorderSide(color: Colors.grey.shade200))),
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
                 child: Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _isSaving ? null : _handleClose,
                         style: OutlinedButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 16)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                         child: const Text('Cancelar'),
                       ),
                     ),
@@ -654,17 +736,21 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
                       child: FilledButton(
                         onPressed: _isSaving ? null : _handleSubmit,
                         style: FilledButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 16)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                         child: _isSaving
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : const Text('Cadastrar',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600)),
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Cadastrar',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
                       ),
                     ),
                   ],
@@ -678,10 +764,13 @@ class _RouteFormDrawerState extends ConsumerState<_RouteFormDrawer>
   }
 
   Widget _fieldLabel(String text) {
-    return Text(text,
-        style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade800));
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Colors.grey.shade800,
+      ),
+    );
   }
 }

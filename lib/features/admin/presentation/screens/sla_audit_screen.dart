@@ -129,7 +129,9 @@ class _SummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: PactaFlowColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: PactaFlowColors.border.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: PactaFlowColors.border.withValues(alpha: 0.1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,13 +253,16 @@ class _SlaExceptionsTable extends ConsumerWidget {
                           item.plannedVehicleId ?? 'Sem veículo',
                           style: item.plannedVehicleId == null
                               ? PactaFlowTypography.bodyMedium.copyWith(
-                                  color: PactaFlowColors.textDisabled)
+                                  color: PactaFlowColors.textDisabled,
+                                )
                               : PactaFlowTypography.bodyMedium,
                         ),
                       ),
                       DataCell(
                         Text(
-                          _currencyFormat.format(item.contractualValue.toDouble()),
+                          _currencyFormat.format(
+                            item.contractualValue.toDouble(),
+                          ),
                           style: PactaFlowTypography.bodyMedium,
                         ),
                       ),

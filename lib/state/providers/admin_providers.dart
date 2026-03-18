@@ -31,21 +31,25 @@ final orgSettingsProvider = FutureProvider<Organization?>((ref) async {
 });
 
 /// Provider for the update organization settings handler.
-final updateOrgSettingsHandlerProvider = Provider<UpdateOrgSettingsHandler>((ref) {
+final updateOrgSettingsHandlerProvider = Provider<UpdateOrgSettingsHandler>((
+  ref,
+) {
   return UpdateOrgSettingsHandler(
     repository: ref.watch(organizationRepositoryProvider),
   );
 });
 
 /// Provider for the user management query service (members list).
-final userManagementQueryServiceProvider = Provider<PostgresUserManagementQueryService>((ref) {
-  return PostgresUserManagementQueryService(supabase);
-});
+final userManagementQueryServiceProvider =
+    Provider<PostgresUserManagementQueryService>((ref) {
+      return PostgresUserManagementQueryService(supabase);
+    });
 
 /// Provider for the user management command service (RPCS).
-final userManagementCommandServiceProvider = Provider<UserManagementCommandService>((ref) {
-  return PostgresUserManagementCommandService(supabase);
-});
+final userManagementCommandServiceProvider =
+    Provider<UserManagementCommandService>((ref) {
+      return PostgresUserManagementCommandService(supabase);
+    });
 
 /// Future provider for organization members.
 final orgMembersProvider = FutureProvider<List<OrgMember>>((ref) async {
@@ -70,14 +74,18 @@ final removeMemberHandlerProvider = Provider<RemoveMemberHandler>((ref) {
 // ── Invitation providers ─────────────────────────────────────────────────────
 
 /// Provider for the invitation command service (RPCs).
-final invitationCommandServiceProvider = Provider<InvitationCommandService>((ref) {
+final invitationCommandServiceProvider = Provider<InvitationCommandService>((
+  ref,
+) {
   return PostgresInvitationCommandService(supabase);
 });
 
 /// Provider for the invitation query service (read-side).
-final invitationQueryServiceProvider = Provider<PostgresInvitationQueryService>((ref) {
-  return PostgresInvitationQueryService(supabase);
-});
+final invitationQueryServiceProvider = Provider<PostgresInvitationQueryService>(
+  (ref) {
+    return PostgresInvitationQueryService(supabase);
+  },
+);
 
 /// Future provider for all invitations of the current organization.
 final orgInvitationsProvider = FutureProvider<List<Invitation>>((ref) async {
@@ -93,11 +101,15 @@ final inviteUserHandlerProvider = Provider<InviteUserHandler>((ref) {
 });
 
 /// Provider for the accept invitation handler.
-final acceptInvitationHandlerProvider = Provider<AcceptInvitationHandler>((ref) {
+final acceptInvitationHandlerProvider = Provider<AcceptInvitationHandler>((
+  ref,
+) {
   return AcceptInvitationHandler(ref.watch(invitationCommandServiceProvider));
 });
 
 /// Provider for the revoke invitation handler.
-final revokeInvitationHandlerProvider = Provider<RevokeInvitationHandler>((ref) {
+final revokeInvitationHandlerProvider = Provider<RevokeInvitationHandler>((
+  ref,
+) {
   return RevokeInvitationHandler(ref.watch(invitationCommandServiceProvider));
 });

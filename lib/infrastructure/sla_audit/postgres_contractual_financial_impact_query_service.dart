@@ -71,8 +71,7 @@ class ContractualFinancialImpactQueryServicePostgres
     // Rows are already ordered descending, so the very first active row is the latest
     final latest = activeRows.first;
 
-    final lostRevenueCents =
-        (latest['lost_revenue_cents'] as num).toInt();
+    final lostRevenueCents = (latest['lost_revenue_cents'] as num).toInt();
     final marginErosionPercent = (ceilingCents != null && ceilingCents > 0)
         ? lostRevenueCents / ceilingCents * 100.0
         : null;

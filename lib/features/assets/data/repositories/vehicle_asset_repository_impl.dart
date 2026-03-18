@@ -9,8 +9,8 @@ class VehicleAssetRepositoryImpl implements IVehicleAssetRepository {
   VehicleAssetRepositoryImpl(this._supabase);
 
   String get _orgId {
-    final orgId = _supabase.auth.currentSession?.user.appMetadata['org_id']
-        as String?;
+    final orgId =
+        _supabase.auth.currentSession?.user.appMetadata['org_id'] as String?;
     if (orgId == null) throw StateError('No organization in session JWT');
     return orgId;
   }

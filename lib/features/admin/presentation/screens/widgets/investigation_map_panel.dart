@@ -14,7 +14,7 @@ class InvestigationMapPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     // Basic center based on start geofence
     final center = LatLng(execution.startLatitude, execution.startLongitude);
-    
+
     // Convert status to visual color
     Color statusColor = PactaFlowColors.info;
     if (execution.status == ExecutionStatus.noShow ||
@@ -34,7 +34,11 @@ class InvestigationMapPanel extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.map, size: 16, color: PactaFlowColors.secondary),
+                const Icon(
+                  Icons.map,
+                  size: 16,
+                  color: PactaFlowColors.secondary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Camada Geoespacial (Local de Origem)',
@@ -73,7 +77,8 @@ class InvestigationMapPanel extends StatelessWidget {
                           borderColor: statusColor,
                           borderStrokeWidth: 2,
                           useRadiusInMeter: true,
-                          radius: execution.startRadiusMeters.toDouble(), // Geofence
+                          radius: execution.startRadiusMeters
+                              .toDouble(), // Geofence
                         ),
                       ],
                     ),
@@ -84,11 +89,11 @@ class InvestigationMapPanel extends StatelessWidget {
                           _buildGlowMarker(
                             point: center,
                             color: statusColor,
-                            size: 40, 
+                            size: 40,
                           ),
                         ],
                       ),
-                    ]
+                    ],
                   ],
                 ),
               ),

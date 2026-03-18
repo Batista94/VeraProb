@@ -9,8 +9,5 @@ class AcceptInvitationCommand {
   final String token;
   final String userId;
 
-  const AcceptInvitationCommand({
-    required this.token,
-    required this.userId,
-  });
+  const AcceptInvitationCommand({required this.token, required this.userId});
 }

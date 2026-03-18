@@ -60,7 +60,9 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
   }
 
   Future<void> _pickDate({required bool isStart}) async {
-    final initial = isStart ? (_validFrom ?? DateTime.now()) : (_validUntil ?? DateTime.now());
+    final initial = isStart
+        ? (_validFrom ?? DateTime.now())
+        : (_validUntil ?? DateTime.now());
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -86,7 +88,14 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
       if (isStart) {
         _validFrom = DateTime.utc(picked.year, picked.month, picked.day);
       } else {
-        _validUntil = DateTime.utc(picked.year, picked.month, picked.day, 23, 59, 59);
+        _validUntil = DateTime.utc(
+          picked.year,
+          picked.month,
+          picked.day,
+          23,
+          59,
+          59,
+        );
       }
     });
   }
@@ -99,7 +108,10 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
       return;
     }
     if (!_validUntil!.isAfter(_validFrom!)) {
-      setState(() => _errorMessage = 'A data de fim deve ser posterior à data de início.');
+      setState(
+        () => _errorMessage =
+            'A data de fim deve ser posterior à data de início.',
+      );
       return;
     }
 
@@ -120,7 +132,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
       final financialCeilingCents = rawCeiling.isEmpty
           ? null
           : ((double.tryParse(rawCeiling.replaceAll(',', '.')) ?? 0.0) * 100)
-              .round();
+                .round();
 
       final contract = await handler.handle(
         CreateContractCommand(
@@ -134,8 +146,8 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
           validUntilUtc: _validUntil!,
           financialCeilingCents:
               (financialCeilingCents != null && financialCeilingCents > 0)
-                  ? financialCeilingCents
-                  : null,
+              ? financialCeilingCents
+              : null,
         ),
       );
 
@@ -178,16 +190,26 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                         color: PactaFlowColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.description_rounded, color: PactaFlowColors.primary, size: 20),
+                      child: const Icon(
+                        Icons.description_rounded,
+                        color: PactaFlowColors.primary,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Text(
                       'Novo Contrato Operacional',
-                      style: PactaFlowTypography.sectionTitle.copyWith(fontSize: 20),
+                      style: PactaFlowTypography.sectionTitle.copyWith(
+                        fontSize: 20,
+                      ),
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20, color: PactaFlowColors.textDisabled),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: PactaFlowColors.textDisabled,
+                      ),
                       onPressed: () => Navigator.of(context).pop(null),
                     ),
                   ],
@@ -199,21 +221,32 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: PactaFlowColors.primary.withValues(alpha: 0.07),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: PactaFlowColors.primary.withValues(alpha: 0.25)),
+                    border: Border.all(
+                      color: PactaFlowColors.primary.withValues(alpha: 0.25),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, size: 15, color: PactaFlowColors.primary.withValues(alpha: 0.8)),
+                      Icon(
+                        Icons.info_outline,
+                        size: 15,
+                        color: PactaFlowColors.primary.withValues(alpha: 0.8),
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Após criar o contrato, declare o Plano Operacional para vincular templates SLA e turnos.',
                           style: PactaFlowTypography.bodySmall.copyWith(
-                            color: PactaFlowColors.primary.withValues(alpha: 0.9),
+                            color: PactaFlowColors.primary.withValues(
+                              alpha: 0.9,
+                            ),
                           ),
                         ),
                       ),
@@ -229,16 +262,24 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                     decoration: BoxDecoration(
                       color: PactaFlowColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: PactaFlowColors.error.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: PactaFlowColors.error.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded, color: PactaFlowColors.error, size: 18),
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: PactaFlowColors.error,
+                          size: 18,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Sessão sem organização vinculada. Faça logout e login novamente.',
-                            style: PactaFlowTypography.bodySmall.copyWith(color: PactaFlowColors.error),
+                            style: PactaFlowTypography.bodySmall.copyWith(
+                              color: PactaFlowColors.error,
+                            ),
                           ),
                         ),
                       ],
@@ -254,10 +295,12 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                     hintText: 'Ex: Concessão Norte - Lote 1',
                   ),
                   maxLength: 100,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Campo obrigatório'
+                      : null,
                 ),
                 const SizedBox(height: 16),
-                
+
                 TextFormField(
                   controller: _contractorController,
                   style: PactaFlowTypography.bodyMedium,
@@ -265,10 +308,12 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                     labelText: 'Entidade Contratante (Auditor) *',
                     hintText: 'Ex: SPTRANS / Secretaria de Transportes',
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Campo obrigatório'
+                      : null,
                 ),
                 const SizedBox(height: 24),
-                
+
                 Text(
                   'CRONOGRAMA DE VIGÊNCIA',
                   style: PactaFlowTypography.kpiLabel,
@@ -303,12 +348,15 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                 TextFormField(
                   controller: _financialCeilingController,
                   style: PactaFlowTypography.bodyMedium,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Teto Financeiro (opcional)',
                     hintText: 'Ex: 50000,00',
                     prefixText: 'R\$ ',
-                    helperText: 'Limite máximo de penalidades acumuladas. Habilita o KPI Risco Relativo.',
+                    helperText:
+                        'Limite máximo de penalidades acumuladas. Habilita o KPI Risco Relativo.',
                   ),
                 ),
 
@@ -319,16 +367,26 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                     decoration: BoxDecoration(
                       color: PactaFlowColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: PactaFlowColors.error.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: PactaFlowColors.error.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline_rounded, color: PactaFlowColors.error, size: 18),
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: PactaFlowColors.error,
+                          size: 18,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             _errorMessage!,
-                            style: const TextStyle(color: PactaFlowColors.error, fontSize: 13, fontWeight: FontWeight.w500),
+                            style: const TextStyle(
+                              color: PactaFlowColors.error,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
@@ -341,14 +399,28 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(null),
-                      child: Text('DESCARTAR', style: PactaFlowTypography.badge.copyWith(color: PactaFlowColors.textSecondary)),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(null),
+                      child: Text(
+                        'DESCARTAR',
+                        style: PactaFlowTypography.badge.copyWith(
+                          color: PactaFlowColors.textSecondary,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton(
                       onPressed: _isSubmitting ? null : _submit,
                       child: _isSubmitting
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                           : const Text('ATIVAR CONTRATO'),
                     ),
                   ],
@@ -367,7 +439,11 @@ class _DatePickerField extends StatelessWidget {
   final DateTime? value;
   final VoidCallback onTap;
 
-  const _DatePickerField({required this.label, required this.value, required this.onTap});
+  const _DatePickerField({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +460,10 @@ class _DatePickerField extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: PactaFlowTypography.kpiLabel.copyWith(fontSize: 10)),
+            Text(
+              label,
+              style: PactaFlowTypography.kpiLabel.copyWith(fontSize: 10),
+            ),
             const SizedBox(height: 6),
             Row(
               children: [
@@ -394,12 +473,20 @@ class _DatePickerField extends StatelessWidget {
                         ? '${value!.day.toString().padLeft(2, '0')}/${value!.month.toString().padLeft(2, '0')}/${value!.year}'
                         : 'Definir Data',
                     style: PactaFlowTypography.bodyMedium.copyWith(
-                      color: value != null ? PactaFlowColors.textPrimary : PactaFlowColors.textDisabled,
-                      fontWeight: value != null ? FontWeight.w700 : FontWeight.w400,
+                      color: value != null
+                          ? PactaFlowColors.textPrimary
+                          : PactaFlowColors.textDisabled,
+                      fontWeight: value != null
+                          ? FontWeight.w700
+                          : FontWeight.w400,
                     ),
                   ),
                 ),
-                const Icon(Icons.calendar_today_rounded, size: 14, color: PactaFlowColors.primary),
+                const Icon(
+                  Icons.calendar_today_rounded,
+                  size: 14,
+                  color: PactaFlowColors.primary,
+                ),
               ],
             ),
           ],

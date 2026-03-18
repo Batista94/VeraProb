@@ -1,9 +1,12 @@
+import 'dart:convert';
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../features/shared/providers/reporting_providers.dart';
 import '../../../../domain/sla_audit/billing_cycle_report.dart';
 import '../../../../state/providers/contract_providers.dart';
+import '../../../../state/providers/auth_providers.dart';
 
 class BillingCycleReportsScreen extends ConsumerStatefulWidget {
   const BillingCycleReportsScreen({super.key});
@@ -22,12 +25,20 @@ class _BillingCycleReportsScreenState
   BillingCycleReport? _report;
 
   Future<void> _generateReport() async {
+    final organizationId = ref.read(currentOrganizationIdProvider);
+    if (organizationId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sessão inválida. Faça login novamente.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final report = await ref
           .read(reportingServiceProvider)
           .generateBillingCycleReport(
-            organizationId: 'org-1', // Mock or get from auth
+            organizationId: organizationId,
             periodStartUtc: _startDate,
             periodEndUtc: _endDate,
             contractId: _selectedContractId,
@@ -40,15 +51,63 @@ class _BillingCycleReportsScreenState
 
   Future<void> _exportCsv() async {
     if (_report == null) return;
-    final csv = ref.read(exportServiceProvider).generateCsv(_report!);
+    try {
+      final csv = ref.read(exportServiceProvider).generateCsv(_report!);
 
-    // In a real app, use share_plus or similar to save the file.
-    // For now, we simulate success and log the size.
-    debugPrint('CSV Exportado: ${csv.length} bytes');
+      // Real download for Web
+      final bytes = utf8.encode('\uFEFF$csv'); // UTF-8 with BOM for Excel
+      final blob = html.Blob([bytes]);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      html.AnchorElement(href: url)
+        ..setAttribute(
+          'download',
+          'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}.csv',
+        )
+        ..click();
+      html.Url.revokeObjectUrl(url);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Relatório CSV preparado (${csv.length} bytes)')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Relatório CSV baixado com sucesso! 📊')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao exportar CSV: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _exportPdf() async {
+    if (_report == null) return;
+    try {
+      final pdfBytes = await ref
+          .read(exportServiceProvider)
+          .generatePdf(_report!);
+
+      // Real download for Web
+      final blob = html.Blob([pdfBytes]);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      html.AnchorElement(href: url)
+        ..setAttribute(
+          'download',
+          'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        )
+        ..click();
+      html.Url.revokeObjectUrl(url);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Relatório PDF gerado com sucesso! 📄')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao exportar PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -86,10 +145,8 @@ class _BillingCycleReportsScreenState
         Row(
           children: [
             contractsAsync.when(
-              loading: () => const SizedBox(
-                width: 220,
-                child: LinearProgressIndicator(),
-              ),
+              loading: () =>
+                  const SizedBox(width: 220, child: LinearProgressIndicator()),
               error: (_, _) => const Text('Erro ao carregar contratos'),
               data: (contracts) => DropdownButton<String?>(
                 value: _selectedContractId,
@@ -117,8 +174,10 @@ class _BillingCycleReportsScreenState
                   context: context,
                   firstDate: DateTime(2025),
                   lastDate: DateTime(2027),
-                  initialDateRange:
-                      DateTimeRange(start: _startDate, end: _endDate),
+                  initialDateRange: DateTimeRange(
+                    start: _startDate,
+                    end: _endDate,
+                  ),
                 );
                 if (picked != null) {
                   setState(() {
@@ -139,8 +198,15 @@ class _BillingCycleReportsScreenState
               const SizedBox(width: 16),
               IconButton(
                 onPressed: _exportCsv,
-                icon: const Icon(Icons.file_download),
+                icon: const Icon(Icons.table_view_rounded),
                 tooltip: 'Exportar CSV',
+                color: Colors.green.shade700,
+              ),
+              IconButton(
+                onPressed: _exportPdf,
+                icon: const Icon(Icons.picture_as_pdf_rounded),
+                tooltip: 'Exportar PDF',
+                color: Colors.red.shade700,
               ),
             ],
           ],

@@ -16,10 +16,9 @@ class InMemorySlaTemplateRepository implements SlaTemplateRepository {
 
   @override
   Future<List<SlaTemplate>> findByOrganization(String organizationId) async {
-    final results = _store.values
-        .where((t) => t.organizationId == organizationId)
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    final results =
+        _store.values.where((t) => t.organizationId == organizationId).toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
     return UnmodifiableListView(results);
   }
 

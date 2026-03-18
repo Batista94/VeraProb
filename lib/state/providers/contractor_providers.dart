@@ -27,7 +27,9 @@ final saveContractorHandlerProvider = Provider<SaveContractorHandler>((ref) {
 });
 
 /// Provider for the delete contractor handler.
-final deleteContractorHandlerProvider = Provider<DeleteContractorHandler>((ref) {
+final deleteContractorHandlerProvider = Provider<DeleteContractorHandler>((
+  ref,
+) {
   return DeleteContractorHandler(
     repository: ref.watch(contractorRepositoryProvider),
   );

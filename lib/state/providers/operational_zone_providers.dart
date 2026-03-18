@@ -11,24 +11,27 @@ import 'auth_providers.dart';
 
 // ── Repository ───────────────────────────────────────────────
 
-final operationalZoneRepositoryProvider = Provider<OperationalZoneRepository>((ref) {
+final operationalZoneRepositoryProvider = Provider<OperationalZoneRepository>((
+  ref,
+) {
   return switch (ref.watch(persistenceModeProvider)) {
     PersistenceMode.inMemory => InMemoryOperationalZoneRepository(),
-    PersistenceMode.postgres =>
-      PostgresOperationalZoneRepository(ref.watch(supabaseClientProvider)),
+    PersistenceMode.postgres => PostgresOperationalZoneRepository(
+      ref.watch(supabaseClientProvider),
+    ),
   };
 });
 
 // ── Zone list ────────────────────────────────────────────────
 
 /// All [OperationalZone]s for the current organization.
-final operationalZonesProvider = FutureProvider<List<OperationalZone>>((ref) async {
+final operationalZonesProvider = FutureProvider<List<OperationalZone>>((
+  ref,
+) async {
   final orgId = ref.watch(currentOrganizationIdProvider);
   if (orgId == null) return const [];
 
-  return ref
-      .watch(operationalZoneRepositoryProvider)
-      .findByOrganization(orgId);
+  return ref.watch(operationalZoneRepositoryProvider).findByOrganization(orgId);
 });
 
 // ── Create zone ──────────────────────────────────────────────

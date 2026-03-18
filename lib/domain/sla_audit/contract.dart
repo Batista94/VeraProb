@@ -407,10 +407,7 @@ class Contract extends Equatable {
   ///
   /// Throws [DomainException] if the contract is already [closed],
   /// or if required fields are empty.
-  Contract close({
-    required String closedByUserId,
-    required String reason,
-  }) {
+  Contract close({required String closedByUserId, required String reason}) {
     if (status == ContractStatus.closed) {
       throw const DomainException(
         'Contract is already closed. Closed is a terminal state.',

@@ -12,12 +12,12 @@ enum VehicleCategory {
 
   /// Returns the UI label in Brazilian Portuguese.
   String get label => switch (this) {
-        VehicleCategory.conventional => 'Convencional',
-        VehicleCategory.executive => 'Executivo',
-        VehicleCategory.micro => 'Micro-ônibus',
-        VehicleCategory.van => 'Van',
-        VehicleCategory.accessible => 'Acessível (PCD)',
-      };
+    VehicleCategory.conventional => 'Convencional',
+    VehicleCategory.executive => 'Executivo',
+    VehicleCategory.micro => 'Micro-ônibus',
+    VehicleCategory.van => 'Van',
+    VehicleCategory.accessible => 'Acessível (PCD)',
+  };
 
   static VehicleCategory fromJson(String? value) {
     return VehicleCategory.values.firstWhere(

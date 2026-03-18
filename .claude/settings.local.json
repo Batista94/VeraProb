@@ -54,7 +54,8 @@
       "Bash(find /c/Projects/PactaFlow/supabase/migrations -type f -name *contract* -o -name *invitation*)",
       "Bash(git stash:*)",
       "Bash(echo \"Exit: $?\")",
-      "Bash(cmd //C \"set DART_VM_OPTIONS=--old_gen_heap_size=8192 && flutter test --reporter=compact 2>&1\")"
+      "Bash(cmd //C \"set DART_VM_OPTIONS=--old_gen_heap_size=8192 && flutter test --reporter=compact 2>&1\")",
+      "Bash(find /c/Projects/PactaFlow/lib/application/sla_audit -name *handler*.dart -type f)"
     ]
   }
 }

@@ -79,11 +79,8 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
         : _repo.findAll(organizationId: organizationId));
 
     // org filter is enforced in the repo; filter only by status
-    final filtered =
-        states
-            .where((s) => s.status == status)
-            .toList()
-          ..sort((a, b) => a.windowStartUtc.compareTo(b.windowStartUtc));
+    final filtered = states.where((s) => s.status == status).toList()
+      ..sort((a, b) => a.windowStartUtc.compareTo(b.windowStartUtc));
 
     return filtered.map(_toItemView).toList();
   }

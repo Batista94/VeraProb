@@ -34,15 +34,15 @@ class Invitation extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        organizationId,
-        email,
-        role,
-        token,
-        invitedBy,
-        createdAtUtc,
-        expiresAtUtc,
-        acceptedAtUtc,
-        revokedAtUtc,
-      ];
+    id,
+    organizationId,
+    email,
+    role,
+    token,
+    invitedBy,
+    createdAtUtc,
+    expiresAtUtc,
+    acceptedAtUtc,
+    revokedAtUtc,
+  ];
 }

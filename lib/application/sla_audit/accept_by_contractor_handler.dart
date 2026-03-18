@@ -23,8 +23,8 @@ class AcceptByContractorHandler {
   AcceptByContractorHandler({
     required ContractApprovalCommandService approvalService,
     required SlaAuditLedgerRepository ledger,
-  })  : _approvalService = approvalService,
-        _ledger = ledger;
+  }) : _approvalService = approvalService,
+       _ledger = ledger;
 
   /// Throws [DomainException] if:
   /// - [command.token] is empty or whitespace

@@ -16,7 +16,8 @@ enum UserRole {
   bool hasPermission(UserRole requiredRole) {
     if (this == UserRole.admin) return true;
     if (this == UserRole.operator) {
-      return requiredRole == UserRole.operator || requiredRole == UserRole.auditor;
+      return requiredRole == UserRole.operator ||
+          requiredRole == UserRole.auditor;
     }
     return requiredRole == UserRole.auditor;
   }

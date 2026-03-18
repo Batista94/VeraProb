@@ -261,20 +261,29 @@ class _SuggestionSection extends ConsumerWidget {
     switch (suggestion.action) {
       case SuggestionAction.cancelTrip:
         return () {
-          control.updateTripStatus(tripId, TripStatus.cancelled,
-              reason: 'Cancelado via auto-sugestão (Veículo parado)');
+          control.updateTripStatus(
+            tripId,
+            TripStatus.cancelled,
+            reason: 'Cancelado via auto-sugestão (Veículo parado)',
+          );
           triggerUIRefresh(ref);
         };
       case SuggestionAction.interruptTrip:
         return () {
-          control.updateTripStatus(tripId, TripStatus.interrupted,
-              reason: 'Interrompido via auto-sugestão (Atraso crítico)');
+          control.updateTripStatus(
+            tripId,
+            TripStatus.interrupted,
+            reason: 'Interrompido via auto-sugestão (Atraso crítico)',
+          );
           triggerUIRefresh(ref);
         };
       case SuggestionAction.regularizeTrip:
         return () {
-          control.updateTripStatus(tripId, TripStatus.enRoute,
-              reason: 'Regularizado via auto-sugestão (Acompanhado)');
+          control.updateTripStatus(
+            tripId,
+            TripStatus.enRoute,
+            reason: 'Regularizado via auto-sugestão (Acompanhado)',
+          );
           triggerUIRefresh(ref);
         };
     }

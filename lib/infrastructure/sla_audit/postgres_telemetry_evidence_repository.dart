@@ -18,7 +18,7 @@ class PostgresTelemetryEvidenceRepository
   final SupabaseClient _client;
 
   PostgresTelemetryEvidenceRepository([SupabaseClient? client])
-      : _client = client ?? supabase;
+    : _client = client ?? supabase;
 
   @override
   Future<void> save(TelemetryEvidence evidence) async {
@@ -79,8 +79,7 @@ class PostgresTelemetryEvidenceRepository
       organizationId: row['organization_id'] as String,
       setId: row['set_id'] as String,
       vehicleId: row['vehicle_id'] as String,
-      capturedAtUtc:
-          DateTime.parse(row['captured_at_utc'] as String).toUtc(),
+      capturedAtUtc: DateTime.parse(row['captured_at_utc'] as String).toUtc(),
       rawLatitude: (row['raw_latitude'] as num).toDouble(),
       rawLongitude: (row['raw_longitude'] as num).toDouble(),
       rawSpeedCms: row['raw_speed_cms'] as int?,

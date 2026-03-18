@@ -144,9 +144,7 @@ class SlaLedgerMapper {
         contractId: event.contractId,
         planVersion: 0,
         occurredAtUtc: event.occurredAtUtc,
-        payload: {
-          'activated_at_utc': event.activatedAtUtc.toIso8601String(),
-        },
+        payload: {'activated_at_utc': event.activatedAtUtc.toIso8601String()},
       );
     }
 

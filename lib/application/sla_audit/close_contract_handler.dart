@@ -24,9 +24,9 @@ class CloseContractHandler {
     required ContractRepository contractRepository,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
-  })  : _contractRepository = contractRepository,
-        _ledger = ledger,
-        _rbac = rbac;
+  }) : _contractRepository = contractRepository,
+       _ledger = ledger,
+       _rbac = rbac;
 
   /// Handles the command by transitioning the contract to [closed],
   /// persisting the updated aggregate, and appending the event to the ledger.

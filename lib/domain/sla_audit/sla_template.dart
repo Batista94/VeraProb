@@ -51,7 +51,9 @@ class SlaTemplate extends Equatable {
       throw const DomainException('Template name must not be empty');
     }
     if (name.length > 100) {
-      throw const DomainException('Template name must not exceed 100 characters');
+      throw const DomainException(
+        'Template name must not exceed 100 characters',
+      );
     }
 
     return SlaTemplate._(

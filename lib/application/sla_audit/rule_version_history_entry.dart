@@ -29,13 +29,13 @@ class RuleVersionHistoryEntry extends Equatable {
 
   factory RuleVersionHistoryEntry.fromJson(Map<String, dynamic> json) {
     return RuleVersionHistoryEntry(
-      id:              json['id'] as String,
-      ruleType:        SlaRuleType.fromString(json['rule_type'] as String),
-      config:          Map<String, dynamic>.from(json['rule_config'] as Map),
-      ruleVersion:     json['rule_version'] as int,
+      id: json['id'] as String,
+      ruleType: SlaRuleType.fromString(json['rule_type'] as String),
+      config: Map<String, dynamic>.from(json['rule_config'] as Map),
+      ruleVersion: json['rule_version'] as int,
       evaluationOrder: json['evaluation_order'] as int,
-      activeFromUtc:   DateTime.parse(json['active_from_utc'] as String).toUtc(),
-      activeToUtc:     json['active_to_utc'] != null
+      activeFromUtc: DateTime.parse(json['active_from_utc'] as String).toUtc(),
+      activeToUtc: json['active_to_utc'] != null
           ? DateTime.parse(json['active_to_utc'] as String).toUtc()
           : null,
       isActive: json['is_active'] as bool,
@@ -45,11 +45,11 @@ class RuleVersionHistoryEntry extends Equatable {
   String get displayLabel => '${_ruleTypeLabel(ruleType)} v$ruleVersion';
 
   static String _ruleTypeLabel(SlaRuleType type) => switch (type.value) {
-    'MAX_TOLERANCE_DELAY'   => 'Tolerância de Atraso',
-    'MAX_EVIDENCE_GAP'      => 'Lacuna de Evidência',
+    'MAX_TOLERANCE_DELAY' => 'Tolerância de Atraso',
+    'MAX_EVIDENCE_GAP' => 'Lacuna de Evidência',
     'MIN_GEOFENCE_COVERAGE' => 'Permanência Mínima',
-    'NO_SHOW_PENALTY'       => 'Penalidade No-Show',
-    _                       => type.value,
+    'NO_SHOW_PENALTY' => 'Penalidade No-Show',
+    _ => type.value,
   };
 
   @override

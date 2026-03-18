@@ -29,8 +29,6 @@ class RevokeInvitationHandler {
     }
 
     // 2. Delegate — server-side validates org scope
-    await _commandService.revokeInvitation(
-      invitationId: command.invitationId,
-    );
+    await _commandService.revokeInvitation(invitationId: command.invitationId);
   }
 }

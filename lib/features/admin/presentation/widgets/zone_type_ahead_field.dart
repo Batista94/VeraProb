@@ -176,7 +176,6 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
       },
       displayStringForOption: (zone) => zone.name,
       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
-
         final selectedZone = widget.selectedZone;
         final hasGeofence = selectedZone?.geofence != null;
 

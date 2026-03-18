@@ -37,22 +37,26 @@ class ChartsSection extends StatelessWidget {
                     enabled: false,
                     touchTooltipData: BarTouchTooltipData(
                       tooltipBgColor: PactaFlowColors.surfaceElevated,
-                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      tooltipPadding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       tooltipMargin: 8,
-                      getTooltipItem: (
-                        BarChartGroupData group,
-                        int groupIndex,
-                        BarChartRodData rod,
-                        int rodIndex,
-                      ) {
-                        return BarTooltipItem(
-                          rod.toY.round().toString(),
-                          const TextStyle(
-                            color: PactaFlowColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        );
-                      },
+                      getTooltipItem:
+                          (
+                            BarChartGroupData group,
+                            int groupIndex,
+                            BarChartRodData rod,
+                            int rodIndex,
+                          ) {
+                            return BarTooltipItem(
+                              rod.toY.round().toString(),
+                              const TextStyle(
+                                color: PactaFlowColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          },
                     ),
                   ),
                   titlesData: FlTitlesData(
@@ -113,21 +117,30 @@ class ChartsSection extends StatelessWidget {
                     BarChartGroupData(
                       x: 6,
                       barRods: [
-                        BarChartRodData(toY: 12, color: PactaFlowColors.primary),
+                        BarChartRodData(
+                          toY: 12,
+                          color: PactaFlowColors.primary,
+                        ),
                       ],
                       showingTooltipIndicators: [0],
                     ),
                     BarChartGroupData(
                       x: 12,
                       barRods: [
-                        BarChartRodData(toY: 19, color: PactaFlowColors.primary),
+                        BarChartRodData(
+                          toY: 19,
+                          color: PactaFlowColors.primary,
+                        ),
                       ],
                       showingTooltipIndicators: [0],
                     ),
                     BarChartGroupData(
                       x: 18,
                       barRods: [
-                        BarChartRodData(toY: 15, color: PactaFlowColors.primary),
+                        BarChartRodData(
+                          toY: 15,
+                          color: PactaFlowColors.primary,
+                        ),
                       ],
                       showingTooltipIndicators: [0],
                     ),

@@ -2,8 +2,8 @@ import 'package:equatable/equatable.dart';
 
 /// Represents a Contractor entity (e.g., Caterpillar, Vale, etc.)
 /// that hires the transport services provided by the Tenant.
-/// 
-/// A Contractor is an Aggregate Root in Phase 6 to support 
+///
+/// A Contractor is an Aggregate Root in Phase 6 to support
 /// future contractor-initiated flows (e.g., self-reviewing contracts).
 class Contractor extends Equatable {
   final String id;
@@ -26,14 +26,14 @@ class Contractor extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        organizationId,
-        name,
-        taxId,
-        primaryEmail,
-        contactName,
-        createdAtUtc,
-      ];
+    id,
+    organizationId,
+    name,
+    taxId,
+    primaryEmail,
+    contactName,
+    createdAtUtc,
+  ];
 
   Contractor copyWith({
     String? name,

@@ -13,7 +13,9 @@ import 'sla_financial_providers.dart';
 
 // ── Canonical Fact Repository ────────────────────────────────────────────────
 
-final canonicalFactRepositoryProvider = Provider<CanonicalFactRepository>((ref) {
+final canonicalFactRepositoryProvider = Provider<CanonicalFactRepository>((
+  ref,
+) {
   // Phase 7.2: swap to PostgresCanonicalFactRepository for Postgres mode
   return InMemoryCanonicalFactRepository();
 });
@@ -40,12 +42,12 @@ final shadowModeServiceProvider = Provider<ShadowModeService>((ref) {
 
 final shadowModeSimulationsProvider =
     FutureProvider<List<ShadowModeSimulation>>((ref) async {
-  final organizationId = ref.watch(currentOrganizationIdProvider);
-  if (organizationId == null) return const [];
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return const [];
 
-  final service = ref.watch(shadowModeServiceProvider);
-  return service.listSimulations(organizationId: organizationId, limit: 5);
-});
+      final service = ref.watch(shadowModeServiceProvider);
+      return service.listSimulations(organizationId: organizationId, limit: 5);
+    });
 
 // ── Executive Dashboard View ────────────────────────────────────────────────
 
@@ -53,8 +55,9 @@ final shadowModeSimulationsProvider =
 ///
 /// Uses the most recent 12 months of sealed packages for trend data.
 /// Returns [ExecutiveDashboardView.empty] when no data is available.
-final executiveDashboardProvider =
-    FutureProvider<ExecutiveDashboardView>((ref) async {
+final executiveDashboardProvider = FutureProvider<ExecutiveDashboardView>((
+  ref,
+) async {
   final organizationId = ref.watch(currentOrganizationIdProvider);
   if (organizationId == null) {
     return ExecutiveDashboardView.empty('');
@@ -76,10 +79,9 @@ final executiveDashboardProvider =
   final sealedPackages = await ref.watch(sealedAuditPackagesProvider.future);
   final recentIds = sealedPackages.take(3).map((p) => p.id).toList();
 
-  final latestShadowMode =
-      await ref.watch(shadowModeSimulationsProvider.future).then(
-            (list) => list.isNotEmpty ? list.first : null,
-          );
+  final latestShadowMode = await ref
+      .watch(shadowModeSimulationsProvider.future)
+      .then((list) => list.isNotEmpty ? list.first : null);
 
   return ExecutiveDashboardView.compute(
     organizationId: organizationId,

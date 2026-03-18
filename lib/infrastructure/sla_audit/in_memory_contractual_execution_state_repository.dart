@@ -84,7 +84,8 @@ class InMemoryContractualExecutionStateRepository
   }) async {
     final results = _store.values
         .where(
-          (s) => s.organizationId == organizationId && s.contractId == contractId,
+          (s) =>
+              s.organizationId == organizationId && s.contractId == contractId,
         )
         .toList();
 

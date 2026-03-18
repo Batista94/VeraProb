@@ -57,8 +57,11 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
                       : _buildTable(context, vehicles, colorScheme, userRole),
                   loading: () => _buildSkeleton(),
                   error: (err, stack) {
-                    LoggerService().error('Falha ao carregar veículos',
-                        error: err, stackTrace: stack);
+                    LoggerService().error(
+                      'Falha ao carregar veículos',
+                      error: err,
+                      stackTrace: stack,
+                    );
                     return _buildErrorState();
                   },
                 ),
@@ -90,7 +93,10 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
   }
 
   Widget _buildHeader(
-      BuildContext context, ColorScheme colorScheme, UserRole userRole) {
+    BuildContext context,
+    ColorScheme colorScheme,
+    UserRole userRole,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -100,7 +106,11 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
             color: colorScheme.primaryContainer.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(Icons.directions_bus, size: 28, color: colorScheme.primary),
+          child: Icon(
+            Icons.directions_bus,
+            size: 28,
+            color: colorScheme.primary,
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -110,17 +120,16 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
               Text(
                 'Frota de Veículos',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A237E),
-                    ),
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1A237E),
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Cadastro de veículos operacionais vinculados à organização.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.grey.shade600),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
               ),
             ],
           ),
@@ -134,7 +143,9 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               textStyle: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w600),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
       ],
@@ -176,19 +187,29 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-                color: Colors.grey.shade100, shape: BoxShape.circle),
-            child: Icon(Icons.directions_bus_outlined,
-                size: 64, color: Colors.grey.shade400),
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.directions_bus_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
           ),
           const SizedBox(height: 20),
-          Text('Nenhum veículo cadastrado ainda.',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade600)),
+          Text(
+            'Nenhum veículo cadastrado ainda.',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('Clique em "Cadastrar veículo" para começar.',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
+          Text(
+            'Clique em "Cadastrar veículo" para começar.',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          ),
         ],
       ),
     );
@@ -201,8 +222,10 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
         children: [
           Icon(Icons.error_outline, size: 48, color: Colors.grey),
           SizedBox(height: 12),
-          Text('Não foi possível carregar os veículos agora.',
-              style: TextStyle(fontSize: 16, color: Colors.grey)),
+          Text(
+            'Não foi possível carregar os veículos agora.',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
         ],
       ),
     );
@@ -216,15 +239,20 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
         child: Container(
           height: 56,
           decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10)),
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTable(BuildContext context, List<Vehicle> vehicles,
-      ColorScheme colorScheme, UserRole userRole) {
+  Widget _buildTable(
+    BuildContext context,
+    List<Vehicle> vehicles,
+    ColorScheme colorScheme,
+    UserRole userRole,
+  ) {
     return Card(
       child: Column(
         children: [
@@ -232,8 +260,9 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
             child: Row(
@@ -242,13 +271,17 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
                 _headerCell('MODELO', flex: 2),
                 _headerCell('CAPACIDADE', flex: 1),
                 const SizedBox(
-                    width: 110,
-                    child: Text('STATUS',
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.grey,
-                            letterSpacing: 0.8))),
+                  width: 110,
+                  child: Text(
+                    'STATUS',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 80),
               ],
             ),
@@ -278,12 +311,15 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
   Widget _headerCell(String label, {int flex = 1}) {
     return Expanded(
       flex: flex,
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade600,
-              letterSpacing: 0.8)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Colors.grey.shade600,
+          letterSpacing: 0.8,
+        ),
+      ),
     );
   }
 
@@ -295,8 +331,9 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
         content: Text('Deseja excluir o veículo ${vehicle.plate} da frota?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -313,15 +350,22 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
         ref.invalidate(vehiclesListProvider);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Veículo removido com sucesso.')));
+            const SnackBar(content: Text('Veículo removido com sucesso.')),
+          );
         }
       } catch (e, stack) {
-        LoggerService()
-            .error('Falha ao remover veículo', error: e, stackTrace: stack);
+        LoggerService().error(
+          'Falha ao remover veículo',
+          error: e,
+          stackTrace: stack,
+        );
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
               content: Text('Não foi possível remover o veículo agora.'),
-              backgroundColor: Colors.red));
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     }
@@ -334,10 +378,11 @@ class _VehicleRow extends StatefulWidget {
   final bool isHighlighted;
   final VoidCallback? onDelete;
 
-  const _VehicleRow(
-      {required this.vehicle,
-      required this.isHighlighted,
-      required this.onDelete});
+  const _VehicleRow({
+    required this.vehicle,
+    required this.isHighlighted,
+    required this.onDelete,
+  });
 
   @override
   State<_VehicleRow> createState() => _VehicleRowState();
@@ -358,31 +403,36 @@ class _VehicleRowState extends State<_VehicleRow> {
           color: widget.isHighlighted
               ? colorScheme.primaryContainer.withValues(alpha: 0.3)
               : _isHovered
-                  ? Colors.grey.shade50
-                  : Colors.white,
+              ? Colors.grey.shade50
+              : Colors.white,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Row(
           children: [
             Expanded(
               flex: 2,
-              child: Text(widget.vehicle.plate,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      fontFamily: 'monospace')),
+              child: Text(
+                widget.vehicle.plate,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  fontFamily: 'monospace',
+                ),
+              ),
             ),
             Expanded(
               flex: 2,
-              child: Text(widget.vehicle.model ?? '—',
-                  style:
-                      TextStyle(fontSize: 14, color: Colors.grey.shade700)),
+              child: Text(
+                widget.vehicle.model ?? '—',
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+              ),
             ),
             Expanded(
               flex: 1,
-              child: Text('${widget.vehicle.capacity} pax',
-                  style:
-                      TextStyle(fontSize: 14, color: Colors.grey.shade700)),
+              child: Text(
+                '${widget.vehicle.capacity} pax',
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+              ),
             ),
             SizedBox(
               width: 110,
@@ -395,8 +445,11 @@ class _VehicleRowState extends State<_VehicleRow> {
                 children: [
                   if (widget.onDelete != null)
                     IconButton(
-                      icon: Icon(Icons.delete_outline,
-                          size: 20, color: Colors.red.shade400),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: Colors.red.shade400,
+                      ),
                       tooltip: 'Remover veículo',
                       onPressed: widget.onDelete,
                     ),
@@ -419,34 +472,41 @@ class _VehicleStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color, bgColor) = switch (status) {
       VehicleStatus.available => (
-          'Disponível',
-          const Color(0xFF1B5E20),
-          const Color(0xFFE8F5E9),
-        ),
+        'Disponível',
+        const Color(0xFF1B5E20),
+        const Color(0xFFE8F5E9),
+      ),
       VehicleStatus.inService => (
-          'Em Serviço',
-          const Color(0xFF1565C0),
-          const Color(0xFFE3F2FD),
-        ),
+        'Em Serviço',
+        const Color(0xFF1565C0),
+        const Color(0xFFE3F2FD),
+      ),
       VehicleStatus.maintenance => (
-          'Manutenção',
-          const Color(0xFFE65100),
-          const Color(0xFFFFF3E0),
-        ),
+        'Manutenção',
+        const Color(0xFFE65100),
+        const Color(0xFFFFF3E0),
+      ),
       VehicleStatus.retired => (
-          'Aposentado',
-          const Color(0xFF616161),
-          const Color(0xFFF5F5F5),
-        ),
+        'Aposentado',
+        const Color(0xFF616161),
+        const Color(0xFFF5F5F5),
+      ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-          color: bgColor, borderRadius: BorderRadius.circular(20)),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: color),
-          textAlign: TextAlign.center),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+        textAlign: TextAlign.center,
+      ),
     );
   }
 }
@@ -456,12 +516,13 @@ class _VehicleFormDrawer extends ConsumerStatefulWidget {
   final VoidCallback onClose;
   final ValueChanged<String> onVehicleAdded;
 
-  const _VehicleFormDrawer(
-      {required this.onClose, required this.onVehicleAdded});
+  const _VehicleFormDrawer({
+    required this.onClose,
+    required this.onVehicleAdded,
+  });
 
   @override
-  ConsumerState<_VehicleFormDrawer> createState() =>
-      _VehicleFormDrawerState();
+  ConsumerState<_VehicleFormDrawer> createState() => _VehicleFormDrawerState();
 }
 
 class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
@@ -480,11 +541,13 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
   void initState() {
     super.initState();
     _animController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 300));
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(
-            CurvedAnimation(
-                parent: _animController, curve: Curves.easeOutCubic));
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _slideAnimation = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
     _animController.forward();
   }
 
@@ -509,7 +572,9 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
       _errorMessage = null;
     });
     try {
-      final vehicle = await ref.read(vehicleAssetRepositoryProvider).addVehicle(
+      final vehicle = await ref
+          .read(vehicleAssetRepositoryProvider)
+          .addVehicle(
             plate: _plateController.text.trim(),
             model: _modelController.text.trim().isNotEmpty
                 ? _modelController.text.trim()
@@ -517,20 +582,27 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
             capacity: int.parse(_capacityController.text.trim()),
           );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Row(children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text('Veículo cadastrado com sucesso'),
-          ]),
-          backgroundColor: const Color(0xFF2E7D32),
-          duration: const Duration(seconds: 3),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Text('Veículo cadastrado com sucesso'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF2E7D32),
+            duration: const Duration(seconds: 3),
+          ),
+        );
         widget.onVehicleAdded(vehicle.id);
       }
     } catch (e, stack) {
-      LoggerService().error('Falha ao cadastrar veículo',
-          error: e, stackTrace: stack);
+      LoggerService().error(
+        'Falha ao cadastrar veículo',
+        error: e,
+        stackTrace: stack,
+      );
       setState(() {
         _errorMessage = e.toString().contains('uq_vehicles_org_plate')
             ? 'Esta placa já está cadastrada na frota.'
@@ -556,31 +628,40 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                    border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade200))),
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade200),
+                  ),
+                ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer
-                              .withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(8)),
-                      child: Icon(Icons.directions_bus,
-                          size: 22, color: colorScheme.primary),
+                        color: colorScheme.primaryContainer.withValues(
+                          alpha: 0.4,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.directions_bus,
+                        size: 22,
+                        color: colorScheme.primary,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
-                      child: Text('Cadastrar veículo',
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  )),
+                      child: Text(
+                        'Cadastrar veículo',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                     IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: _handleClose,
-                        tooltip: 'Fechar'),
+                      icon: const Icon(Icons.close),
+                      onPressed: _handleClose,
+                      tooltip: 'Fechar',
+                    ),
                   ],
                 ),
               ),
@@ -598,7 +679,8 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
                         TextFormField(
                           controller: _plateController,
                           decoration: const InputDecoration(
-                              hintText: 'Ex: ABC-1234'),
+                            hintText: 'Ex: ABC-1234',
+                          ),
                           textCapitalization: TextCapitalization.characters,
                           enabled: !_isSaving,
                           validator: (v) {
@@ -614,7 +696,8 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
                         TextFormField(
                           controller: _modelController,
                           decoration: const InputDecoration(
-                              hintText: 'Ex: Mercedes-Benz O500'),
+                            hintText: 'Ex: Mercedes-Benz O500',
+                          ),
                           textCapitalization: TextCapitalization.words,
                           enabled: !_isSaving,
                         ),
@@ -642,20 +725,27 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: Colors.red.shade200)),
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.red.shade200),
+                            ),
                             child: Row(
                               children: [
-                                Icon(Icons.warning_amber,
-                                    size: 18, color: Colors.red.shade700),
+                                Icon(
+                                  Icons.warning_amber,
+                                  size: 18,
+                                  color: Colors.red.shade700,
+                                ),
                                 const SizedBox(width: 10),
                                 Expanded(
-                                    child: Text(_errorMessage!,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.red.shade800))),
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.red.shade800,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -669,16 +759,16 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                    border: Border(
-                        top: BorderSide(color: Colors.grey.shade200))),
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
                 child: Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _isSaving ? null : _handleClose,
                         style: OutlinedButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 16)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                         child: const Text('Cancelar'),
                       ),
                     ),
@@ -688,17 +778,21 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
                       child: FilledButton(
                         onPressed: _isSaving ? null : _handleSubmit,
                         style: FilledButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 16)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                         child: _isSaving
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : const Text('Cadastrar',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600)),
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Cadastrar',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
                       ),
                     ),
                   ],
@@ -712,10 +806,13 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
   }
 
   Widget _fieldLabel(String text) {
-    return Text(text,
-        style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade800));
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Colors.grey.shade800,
+      ),
+    );
   }
 }

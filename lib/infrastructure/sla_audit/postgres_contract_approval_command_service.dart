@@ -12,7 +12,7 @@ class PostgresContractApprovalCommandService
   final SupabaseClient _client;
 
   PostgresContractApprovalCommandService([SupabaseClient? client])
-      : _client = client ?? supabase;
+    : _client = client ?? supabase;
 
   @override
   Future<void> submitForApproval({
@@ -22,22 +22,27 @@ class PostgresContractApprovalCommandService
     required String token,
     required DateTime expiresAtUtc,
   }) async {
-    await _client.rpc('submit_contract_for_approval', params: {
-      'p_contract_id': contractId,
-      'p_token_id': tokenId,
-      'p_token': token,
-      'p_expires_at': expiresAtUtc.toIso8601String(),
-    });
+    await _client.rpc(
+      'submit_contract_for_approval',
+      params: {
+        'p_contract_id': contractId,
+        'p_token_id': tokenId,
+        'p_token': token,
+        'p_expires_at': expiresAtUtc.toIso8601String(),
+      },
+    );
   }
 
   @override
   Future<({String contractId, String organizationId})> acceptByContractor({
     required String token,
   }) async {
-    final result = await _client.rpc(
-      'accept_contract_by_contractor',
-      params: {'p_token': token},
-    ) as Map<String, dynamic>;
+    final result =
+        await _client.rpc(
+              'accept_contract_by_contractor',
+              params: {'p_token': token},
+            )
+            as Map<String, dynamic>;
 
     return (
       contractId: result['contract_id'] as String,

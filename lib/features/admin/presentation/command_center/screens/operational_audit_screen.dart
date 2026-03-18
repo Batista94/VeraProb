@@ -184,13 +184,14 @@ class OperationalAuditScreen extends ConsumerWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: IncidentStatusUiMapper.colorFor(log.lifecycleStatus!).withValues(
-                                    alpha: 0.15,
-                                  ),
+                                  color: IncidentStatusUiMapper.colorFor(
+                                    log.lifecycleStatus!,
+                                  ).withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color: IncidentStatusUiMapper.colorFor(log.lifecycleStatus!)
-                                        .withValues(alpha: 0.5),
+                                    color: IncidentStatusUiMapper.colorFor(
+                                      log.lifecycleStatus!,
+                                    ).withValues(alpha: 0.5),
                                   ),
                                 ),
                                 child: Text(
@@ -198,7 +199,9 @@ class OperationalAuditScreen extends ConsumerWidget {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: IncidentStatusUiMapper.colorFor(log.lifecycleStatus!),
+                                    color: IncidentStatusUiMapper.colorFor(
+                                      log.lifecycleStatus!,
+                                    ),
                                   ),
                                 ),
                               )

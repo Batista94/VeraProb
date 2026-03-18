@@ -11,43 +11,45 @@ import '../../infrastructure/sla_audit/postgres_rule_version_query_service.dart'
 
 // ── Infrastructure ────────────────────────────────────────────────────────────
 
-final ruleStudioCommandServiceProvider = Provider<RuleStudioCommandService>((ref) {
+final ruleStudioCommandServiceProvider = Provider<RuleStudioCommandService>((
+  ref,
+) {
   return PostgresRuleStudioCommandService(ref.watch(supabaseClientProvider));
 });
 
 final ruleVersionQueryServiceProvider =
     Provider<PostgresRuleVersionQueryService>((ref) {
-  return PostgresRuleVersionQueryService(ref.watch(supabaseClientProvider));
-});
+      return PostgresRuleVersionQueryService(ref.watch(supabaseClientProvider));
+    });
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
 final updateContractualRuleHandlerProvider =
     Provider<UpdateContractualRuleHandler>((ref) {
-  return UpdateContractualRuleHandler(
-    commandService: ref.watch(ruleStudioCommandServiceProvider),
-    rbac: RbacService(),
-  );
-});
+      return UpdateContractualRuleHandler(
+        commandService: ref.watch(ruleStudioCommandServiceProvider),
+        rbac: RbacService(),
+      );
+    });
 
 // ── Query Providers ───────────────────────────────────────────────────────────
 
 /// All rule versions (history) for a contract — used by the history panel.
 final ruleHistoryProvider =
-    FutureProvider.family<List<RuleVersionHistoryEntry>, String>(
-  (ref, contractId) async {
-    return ref
-        .watch(ruleVersionQueryServiceProvider)
-        .getHistory(contractId);
-  },
-);
+    FutureProvider.family<List<RuleVersionHistoryEntry>, String>((
+      ref,
+      contractId,
+    ) async {
+      return ref.watch(ruleVersionQueryServiceProvider).getHistory(contractId);
+    });
 
 /// Active rules per type for a contract — used by the rule cards.
 final activeRulesProvider =
-    FutureProvider.family<Map<SlaRuleType, RuleVersionHistoryEntry>, String>(
-  (ref, contractId) async {
-    return ref
-        .watch(ruleVersionQueryServiceProvider)
-        .getActiveRules(contractId);
-  },
-);
+    FutureProvider.family<Map<SlaRuleType, RuleVersionHistoryEntry>, String>((
+      ref,
+      contractId,
+    ) async {
+      return ref
+          .watch(ruleVersionQueryServiceProvider)
+          .getActiveRules(contractId);
+    });

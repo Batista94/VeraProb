@@ -155,14 +155,56 @@ Validar antes de implementar:
 ### [ ] Phase 8 — Operational Hardening
 
 **Por que depois de Phase 7:** O hardening operacional prepara o produto para receber tráfego real.
-Executá-lo antes de ter todas as features seria otimizar prematuramente —
-testar performance e CI/CD de algo incompleto é trabalho dobrado.
+Executá-lo antes de ter todas as features ser#### [ ] 8.1 — Systemic UX, Hard Gates & Dual-Key RLS
 
-**Objetivo:** Transformar o projeto de "dev pessoal" em infraestrutura operável.
-Esta phase não adiciona features — garante que as existentes sejam confiáveis, monitoráveis,
-seguras e recuperáveis em produção.
+**Fonte da Verdade:** [`docs/architecture/12_systemic_user_journeys.md`](../architecture/12_systemic_user_journeys.md)
 
-#### [ ] 8.1 — CI/CD Pipeline
+**Objetivo:** Enforcar o fluxo sistêmico do PactaFlow na camada de domínio e infraestrutura. Não se trata apenas de UX — é a garantia de que o engine nunca acorda sem contexto e que um contractor nunca acessa dados de outro.
+
+**Invariantes ratificadas:** INV-18 · INV-19 · INV-20
+
+##### [ ] 8.1.1 — Hard Gate: Engine Activation (INV-18)
+- **Domain/Application:** Adicionar guard em `DeclareContractualPlanHandler` (`lib/application/sla_audit/declare_contractual_plan_handler.dart`)
+  - `operationalZoneRepository.countByOrg(organizationId) > 0` → throw `DomainException('No operational zones configured for this organization')`
+  - Se shift-based: `vehicleRepository.countActive(organizationId) > 0` → throw `DomainException('No active vehicles found for this organization')`
+- **Testes:** 2 novos testes unitários no handler (zona ausente → exception, veículo ausente em shift-based → exception)
+
+##### [ ] 8.1.2 — Hard Gate: On-The-Fly Contractor Creation (INV-19)
+- **Flutter:** Adicionar `ContractorSelectorField` (typeahead) em `CreateContractForm` (`lib/features/admin/presentation/screens/create_contract_form.dart`)
+  - Se lista vazia ou nome não encontrado → exibir "+ Criar '[nome]' como Contractor"
+  - Abre `SaveContractorModal` como `showDialog()` overlay — NÃO navega
+  - Após salvar, injeta o novo contractor no campo sem fechar o formulário pai
+- **Invariante:** O formulário pai nunca perde estado durante a criação de dependência
+
+##### [ ] 8.1.3 — Dual-Key RLS para CONTRACTOR_VIEWER (INV-20)
+- **SQL — Migration:** `[timestamp]_contractor_viewer_role.sql`
+  - Adicionar coluna `contractor_id UUID REFERENCES contractors(id)` em `user_roles`
+  - Atualizar `custom_access_token_hook` para injetar `app_metadata.contractor_id` quando `role = 'CONTRACTOR_VIEWER'`
+  - Injetar `contractor_id = NULL` explicitamente para roles internas (admin, operator, auditor)
+- **SQL — RLS:** Adicionar política dual-keyed em `audit_packages` e demais tabelas do portal do contractor:
+  ```sql
+  USING (
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    AND contractor_id = (auth.jwt() -> 'app_metadata' ->> 'contractor_id')::uuid
+  )
+  ```
+- **BLOCKER:** PO deve confirmar *"SQL executado no SQL Editor do Supabase"* antes da implementação Flutter
+
+##### [ ] 8.1.4 — Correção de JWT Path em `audit_packages` (Technical Debt)
+- **SQL:** Corrigir RLS de `audit_packages` de `(auth.jwt() ->> 'organization_id')::uuid` para `(auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid` (alinhar com INV-10)
+- **Arquivo:** `supabase/migrations/20260401000001_audit_packages.sql` (linha 108-115)
+- **Nota:** Executar ANTES de 8.1.3 para evitar conflito de políticas
+
+##### [ ] 8.1.5 — OnboardingProgressBanner (UX)
+- **Flutter:** Novo widget `OnboardingProgressBanner` em `lib/presentation/shell/admin_shell.dart`
+  - Exibe: Zonas ✓/✗ · Contractors ✓/✗ · Veículos ✓/✗ · SLA Template ✓/✗
+  - Itens clicáveis → navegam para tela correspondente
+  - Desaparece automaticamente quando todos os 4 pré-requisitos satisfeitos
+  - Providers: `operationalZonesProvider`, `contractorListProvider`, `vehicleListProvider`, `activeRulesProvider`
+
+**Personas:** `senior_engineer` (8.1.1, 8.1.2, 8.1.5) · `qa_security` (8.1.3, 8.1.4)
+
+#### [ ] 8.2 — CI/CD Pipeline
 **Artefatos:** `.github/workflows/ci.yml` · `.github/workflows/deploy.yml`
 
 ```
@@ -180,7 +222,7 @@ Tag vX.Y.Z →
   deploy → Production (aprovação manual obrigatória)
 ```
 
-#### [!] 8.2 — Separação de Ambientes (Technical Debt)
+#### [!] 8.3 — Separação de Ambientes (Technical Debt)
 - [ ] **Environments Configuration**: Separação de chaves e instâncias (Dev / Staging / Prod).
 - [ ] **Migrations Pipeline**: Migrar de "Copy-Paste no SQL Editor" para `supabase db push` via CI/CD.
 - [ ] **Edge Functions CI**: Automação de deploy para triggers e hooks.
@@ -190,13 +232,13 @@ Tag vX.Y.Z →
 - [ ] `--dart-define` injetados por ambiente no CI (sem `.env` em pipeline)
 - [ ] Dados de teste **nunca** chegam em prod
 
-#### [ ] 8.3 — Observabilidade
+#### [ ] 8.4 — Observabilidade
 - Error tracking: Sentry (Flutter SDK + Supabase Edge Functions)
 - Logging estruturado: JSON com `organization_id`, `user_id`, `correlation_id` em cada entrada
 - Substituir todos os `print()` por logger estruturado (detectáveis via `avoid_print` já ativo)
 - Alertas: notificação se ledger write > 2s ou taxa de erro > 1%
 
-#### [ ] 8.4 — Segurança (Hardening Final)
+#### [ ] 8.5 — Segurança (Hardening Final)
 - Remover políticas `Public Read` das tabelas críticas no RLS
 - Adicionar `mutated_by_user_id` + `mutated_reason` nas tabelas mutáveis (`execution_states`, `operational_alerts`)
 - **Type-safety pass:** habilitar `strict-casts: true` e corrigir ~80 erros de `dynamic` nos repositórios Postgres
@@ -212,19 +254,19 @@ Tag vX.Y.Z →
 - [ ] **Inspeção de rede:** abrir DevTools → aba Network → verificar que nenhuma chamada à API Supabase expõe `service_role key` ou dados de outras orgs no payload de resposta
 - [ ] **`strict-casts` habilitado:** após corrigir os ~80 erros de `dynamic`, rodar `flutter analyze` e confirmar 0 erros com `strict-casts: true`
 
-#### [ ] 8.5 — Performance & Escala
+#### [ ] 8.6 — Performance & Escala
 - Load test: 1.000 veículos simultâneos com telemetria contínua
 - Benchmark `ContractualEvaluationEngine` (meta: < 100ms por vehicle state)
 - Revisão de índices com base nas queries reais de staging
 - Avaliar read replicas para queries de relatório (não competir com writes do ledger)
 
-#### [ ] 8.6 — Disaster Recovery
+#### [ ] 8.7 — Disaster Recovery
 - Documentar estratégia de backup (Supabase PITR — Point-in-Time Recovery)
 - Runbook de restore com tempo estimado e responsável pela autorização
 - Definir RPO/RTO para dados financeiros (meta: RPO ≤ 1h · RTO ≤ 4h)
 - Testar restore em ambiente isolado ao menos 1× antes do lançamento
 
-#### [ ] 8.7 — Auditoria de Integridade de Telemetria (Anti-Spoofing)
+#### [ ] 8.8 — Auditoria de Integridade de Telemetria (Anti-Spoofing)
 - **Detectar Fake GPS:** saltos lógicos de posição (velocidade física impossível entre dois pontos)
 - **Detectar sinal manipulado:** baixo número de satélites + coordenadas fixas por longo período
 - **Engine invalida evidências suspeitas com flag `TELEMETRY_INTEGRITY_VIOLATION` antes de emitir veredito**
@@ -233,6 +275,13 @@ Tag vX.Y.Z →
   - **Implementation:** Integrar engine de anti-spoofing no pipeline de avaliação.
   - **Validation:** Testar com datasets de spoofing conhecido e verificar flags no vederito.
 - **Personas:** `qa_security`, `architect`
+* Novo widget `OnboardingProgressBanner` em `lib/presentation/shell/admin_shell.dart`
+  - Exibe: Zonas ✓/✗ · Contractors ✓/✗ · Veículos ✓/✗ · SLA Template ✓/✗
+  - Itens clicáveis → navegam para tela correspondente
+  - Desaparece automaticamente quando todos os 4 pré-requisitos satisfeitos
+  - Providers: `operationalZonesProvider`, `contractorListProvider`, `vehicleListProvider`, `activeRulesProvider`
+
+**Personas:** `senior_engineer` (8.8.1, 8.8.2, 8.8.5) · `qa_security` (8.8.3, 8.8.4)
 
 ---
 
@@ -302,8 +351,9 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 ─────────────────────────────────────────────────────
 
 ### Próximo passo: Phase 8 — Operational Hardening
-Preparar a infraestrutura para produção real (CI/CD, Monitoramento, Observabilidade).
-1. [ ] 8.1 CI/CD Pipeline
-2. [ ] 8.2 Separação de Ambientes
-3. [ ] 8.3 Observabilidade (Sentry/PostHog)
-4. [ ] 8.4 Segurança (Strict-casts & RLS audit)
+Preparar o fluxo sistêmico e a infraestrutura para produção real.
+1. [ ] 8.1 Systemic UX, Hard Gates & Dual-Key RLS (INV-18, INV-19, INV-20)
+2. [ ] 8.2 CI/CD Pipeline
+3. [ ] 8.3 Separação de Ambientes
+4. [ ] 8.4 Observabilidade (Sentry/PostHog)
+5. [ ] 8.5 Segurança (Strict-casts & RLS audit)

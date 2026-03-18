@@ -67,9 +67,9 @@ class PlanDeclaration extends Equatable {
     required List<ContractualServiceExecution> services,
     required List<ShiftPattern> shiftPatterns,
     required List<DomainEvent> domainEvents,
-  })  : _services = services,
-        _shiftPatterns = shiftPatterns,
-        _domainEvents = domainEvents;
+  }) : _services = services,
+       _shiftPatterns = shiftPatterns,
+       _domainEvents = domainEvents;
 
   // ── Public read-only views ────────────────────────────────
   /// Unmodifiable view of manually-declared service executions.
@@ -79,8 +79,7 @@ class PlanDeclaration extends Equatable {
 
   /// Unmodifiable view of shift patterns.
   /// Empty for manually-declared (baseline) plans.
-  List<ShiftPattern> get shiftPatterns =>
-      UnmodifiableListView(_shiftPatterns);
+  List<ShiftPattern> get shiftPatterns => UnmodifiableListView(_shiftPatterns);
 
   /// Whether this plan uses [ShiftPattern]-based projection (B2B mode).
   bool get isShiftBased => _shiftPatterns.isNotEmpty;
@@ -107,7 +106,12 @@ class PlanDeclaration extends Equatable {
     required RuleSnapshot ruleSnapshot,
     required List<ContractualServiceExecution> services,
   }) {
-    _validateCommon(contractId, declaredByUserId, originalFileHash, declaredAtUtc);
+    _validateCommon(
+      contractId,
+      declaredByUserId,
+      originalFileHash,
+      declaredAtUtc,
+    );
     if (services.isEmpty) {
       throw const DomainException('services must not be empty');
     }
@@ -166,7 +170,12 @@ class PlanDeclaration extends Equatable {
     required List<ShiftPattern> shiftPatterns,
     DateTime? cycleAnchorDateUtc,
   }) {
-    _validateCommon(contractId, declaredByUserId, originalFileHash, declaredAtUtc);
+    _validateCommon(
+      contractId,
+      declaredByUserId,
+      originalFileHash,
+      declaredAtUtc,
+    );
     if (shiftPatterns.isEmpty) {
       throw const DomainException('shiftPatterns must not be empty');
     }
@@ -180,8 +189,9 @@ class PlanDeclaration extends Equatable {
     }
 
     // Validate: cycleAnchorDateUtc required when any pattern uses a non-weekly cycle
-    final hasCycledPattern = shiftPatterns
-        .any((p) => p.weekCycle != WeekCycle.everyWeek);
+    final hasCycledPattern = shiftPatterns.any(
+      (p) => p.weekCycle != WeekCycle.everyWeek,
+    );
     if (hasCycledPattern && cycleAnchorDateUtc == null) {
       throw const DomainException(
         'cycleAnchorDateUtc is required when any ShiftPattern uses a non-weekly WeekCycle.',
@@ -298,16 +308,16 @@ class PlanDeclaration extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        organizationId,
-        contractId,
-        declaredAtUtc,
-        declaredByUserId,
-        planVersion,
-        originalFileHash,
-        ruleSnapshot,
-        cycleAnchorDateUtc,
-        _services,
-        _shiftPatterns,
-      ];
+    id,
+    organizationId,
+    contractId,
+    declaredAtUtc,
+    declaredByUserId,
+    planVersion,
+    originalFileHash,
+    ruleSnapshot,
+    cycleAnchorDateUtc,
+    _services,
+    _shiftPatterns,
+  ];
 }

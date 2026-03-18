@@ -45,14 +45,11 @@ class BillingCycleReportsScreen extends ConsumerWidget {
           ),
           packagesAsync.when(
             data: (packages) => packages.isEmpty
-                ? const SliverFillRemaining(
-                    child: _EmptyState(),
-                  )
+                ? const SliverFillRemaining(child: _EmptyState())
                 : SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => _PackageCard(
-                        package: packages[index],
-                      ),
+                      (context, index) =>
+                          _PackageCard(package: packages[index]),
                       childCount: packages.length,
                     ),
                   ),
@@ -122,7 +119,9 @@ class _PackageCard extends ConsumerWidget {
                         const SizedBox(width: 8),
                         _Badge(
                           label: 'SHA-256',
-                          color: PactaFlowColors.primary.withValues(alpha: 0.15),
+                          color: PactaFlowColors.primary.withValues(
+                            alpha: 0.15,
+                          ),
                         ),
                       ],
                     ),
@@ -154,28 +153,34 @@ class _PackageCard extends ConsumerWidget {
 
   void _downloadCsv(BuildContext context, WidgetRef ref) {
     final messenger = ScaffoldMessenger.of(context);
-    ref.read(csvExportProvider(package.id).future).then((_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('CSV gerado com sucesso.')),
-      );
-    }).catchError((e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('Erro ao gerar CSV: $e')),
-      );
-    });
+    ref
+        .read(csvExportProvider(package.id).future)
+        .then((_) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('CSV gerado com sucesso.')),
+          );
+        })
+        .catchError((e) {
+          messenger.showSnackBar(
+            SnackBar(content: Text('Erro ao gerar CSV: $e')),
+          );
+        });
   }
 
   void _downloadPdf(BuildContext context, WidgetRef ref) {
     final messenger = ScaffoldMessenger.of(context);
-    ref.read(pdfExportProvider(package.id).future).then((_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('PDF gerado com sucesso.')),
-      );
-    }).catchError((e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('Erro ao gerar PDF: $e')),
-      );
-    });
+    ref
+        .read(pdfExportProvider(package.id).future)
+        .then((_) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('PDF gerado com sucesso.')),
+          );
+        })
+        .catchError((e) {
+          messenger.showSnackBar(
+            SnackBar(content: Text('Erro ao gerar PDF: $e')),
+          );
+        });
   }
 
   String _fmtDate(DateTime dt) => dt.toIso8601String().split('T')[0];

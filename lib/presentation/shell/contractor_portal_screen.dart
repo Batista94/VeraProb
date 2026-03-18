@@ -73,14 +73,10 @@ class ContractorPortalScreen extends ConsumerWidget {
               }
 
               return SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final view =
-                        ContractorPortalView.fromPackage(sealed[index]);
-                    return _EvidenceCard(view: view);
-                  },
-                  childCount: sealed.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final view = ContractorPortalView.fromPackage(sealed[index]);
+                  return _EvidenceCard(view: view);
+                }, childCount: sealed.length),
               );
             },
             loading: () => const SliverFillRemaining(
@@ -115,8 +111,8 @@ class _EvidenceCard extends ConsumerWidget {
     final complianceColor = view.complianceRate >= 90
         ? PactaFlowColors.success
         : view.complianceRate >= 70
-            ? PactaFlowColors.warning
-            : PactaFlowColors.error;
+        ? PactaFlowColors.warning
+        : PactaFlowColors.error;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -155,8 +151,10 @@ class _EvidenceCard extends ConsumerWidget {
                   ),
                   // Compliance badge
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: complianceColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
@@ -244,8 +242,9 @@ class _EvidenceCard extends ConsumerWidget {
                             ),
                             Text(
                               'de ${_fmtBrl(view.totalContractedRevenue)} contratados',
-                              style: PactaFlowTypography.bodySmall
-                                  .copyWith(fontSize: 11),
+                              style: PactaFlowTypography.bodySmall.copyWith(
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ),
@@ -331,17 +330,20 @@ class _EvidenceRequestButton extends ConsumerWidget {
   void _requestPackage(BuildContext context, WidgetRef ref) {
     final messenger = ScaffoldMessenger.of(context);
     // Request both CSV and PDF in parallel — contractor gets both formats
-    ref.read(csvExportProvider(view.sealedPackageId).future).then((_) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Pacote de evidências gerado — CSV disponível.'),
-        ),
-      );
-    }).catchError((e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('Erro ao gerar pacote: $e')),
-      );
-    });
+    ref
+        .read(csvExportProvider(view.sealedPackageId).future)
+        .then((_) {
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Pacote de evidências gerado — CSV disponível.'),
+            ),
+          );
+        })
+        .catchError((e) {
+          messenger.showSnackBar(
+            SnackBar(content: Text('Erro ao gerar pacote: $e')),
+          );
+        });
   }
 }
 

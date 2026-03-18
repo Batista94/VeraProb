@@ -19,12 +19,14 @@ class InMemoryCanonicalFactRepository implements CanonicalFactRepository {
     bool includeAllFlags = false,
   }) async {
     return _facts
-        .where((f) =>
-            f.organizationId == organizationId &&
-            f.assetId == assetId &&
-            !f.gpsTimestamp.isBefore(fromUtc) &&
-            !f.gpsTimestamp.isAfter(toUtc) &&
-            (includeAllFlags || f.isEligibleForEvaluation))
+        .where(
+          (f) =>
+              f.organizationId == organizationId &&
+              f.assetId == assetId &&
+              !f.gpsTimestamp.isBefore(fromUtc) &&
+              !f.gpsTimestamp.isAfter(toUtc) &&
+              (includeAllFlags || f.isEligibleForEvaluation),
+        )
         .toList()
       ..sort((a, b) => a.gpsTimestamp.compareTo(b.gpsTimestamp));
   }
@@ -36,10 +38,12 @@ class InMemoryCanonicalFactRepository implements CanonicalFactRepository {
     DateTime? sinceUtc,
   }) async {
     return _facts
-        .where((f) =>
-            f.organizationId == organizationId &&
-            f.deviceId == deviceId &&
-            (sinceUtc == null || f.gpsTimestamp.isAfter(sinceUtc)))
+        .where(
+          (f) =>
+              f.organizationId == organizationId &&
+              f.deviceId == deviceId &&
+              (sinceUtc == null || f.gpsTimestamp.isAfter(sinceUtc)),
+        )
         .toList()
       ..sort((a, b) => a.gpsTimestamp.compareTo(b.gpsTimestamp));
   }

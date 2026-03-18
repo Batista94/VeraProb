@@ -13,7 +13,7 @@ class PostgresSlaTemplateRepository implements SlaTemplateRepository {
   final SupabaseClient _client;
 
   PostgresSlaTemplateRepository([SupabaseClient? client])
-      : _client = client ?? supabase;
+    : _client = client ?? supabase;
 
   @override
   Future<void> save(SlaTemplate template) async {

@@ -107,21 +107,25 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
       }
 
       // Accept the invitation — provisions user_roles atomically
-      await ref.read(acceptInvitationHandlerProvider).handle(AcceptInvitationCommand(
-            token: widget.token,
-            userId: userId,
-          ));
+      await ref
+          .read(acceptInvitationHandlerProvider)
+          .handle(AcceptInvitationCommand(token: widget.token, userId: userId));
 
       if (!mounted) return;
       // Navigate to lock screen — onAuthStateChange will redirect to AdminHome
-      unawaited(Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const AdminLockScreen()),
-      ));
+      unawaited(
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+        ),
+      );
     } catch (e) {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+          _error = e
+              .toString()
+              .replaceAll('Exception: ', '')
+              .replaceAll('AuthException: ', '');
         });
       }
     }
@@ -165,14 +169,19 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cancel_outlined, color: PactaFlowColors.error, size: 48),
+          const Icon(
+            Icons.cancel_outlined,
+            color: PactaFlowColors.error,
+            size: 48,
+          ),
           const SizedBox(height: 16),
           Text('Convite Inválido', style: PactaFlowTypography.sectionTitle),
           const SizedBox(height: 8),
           Text(
             'Este link de convite é inválido, expirou ou já foi utilizado.',
-            style: PactaFlowTypography.bodyMedium
-                .copyWith(color: PactaFlowColors.textSecondary),
+            style: PactaFlowTypography.bodyMedium.copyWith(
+              color: PactaFlowColors.textSecondary,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -185,16 +194,23 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.mark_email_read_outlined,
-              color: PactaFlowColors.primary, size: 48),
+          const Icon(
+            Icons.mark_email_read_outlined,
+            color: PactaFlowColors.primary,
+            size: 48,
+          ),
           const SizedBox(height: 16),
-          Text('Aceitar Convite', style: PactaFlowTypography.sectionTitle,
-              textAlign: TextAlign.center),
+          Text(
+            'Aceitar Convite',
+            style: PactaFlowTypography.sectionTitle,
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 8),
           Text(
             'Você foi convidado como $_invitedRole.\nDefina sua senha para ativar o acesso.',
-            style: PactaFlowTypography.bodyMedium
-                .copyWith(color: PactaFlowColors.textSecondary),
+            style: PactaFlowTypography.bodyMedium.copyWith(
+              color: PactaFlowColors.textSecondary,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -217,7 +233,10 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
             const SizedBox(height: 12),
             Text(
               _error!,
-              style: const TextStyle(color: PactaFlowColors.error, fontSize: 13),
+              style: const TextStyle(
+                color: PactaFlowColors.error,
+                fontSize: 13,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -229,7 +248,10 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Text('Ativar Acesso'),
           ),
         ],

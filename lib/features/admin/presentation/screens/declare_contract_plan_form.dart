@@ -127,6 +127,7 @@ class DeclareContractPlanForm extends ConsumerStatefulWidget {
 class _DeclareContractPlanFormState
     extends ConsumerState<DeclareContractPlanForm> {
   int _currentStep = 0;
+
   /// Tracks the furthest step the user has successfully reached.
   /// Steps beyond this are shown as [StepState.disabled] and block forward taps.
   int _highestStepReached = 0;
@@ -352,8 +353,12 @@ class _DeclareContractPlanFormState
     // The engine is blind without coordinates + radius. Do NOT allow
     // advancing to the shift pattern step if any zone lacks a geofence.
     final zones = ref.read(operationalZonesProvider).valueOrNull ?? [];
-    final originZone = zones.where((z) => z.id == _selectedOriginZoneId).firstOrNull;
-    final destZone = zones.where((z) => z.id == _selectedDestinationZoneId).firstOrNull;
+    final originZone = zones
+        .where((z) => z.id == _selectedOriginZoneId)
+        .firstOrNull;
+    final destZone = zones
+        .where((z) => z.id == _selectedDestinationZoneId)
+        .firstOrNull;
     final missingNames = [
       if (originZone?.geofence == null) originZone?.name ?? 'Zona de Partida',
       if (destZone?.geofence == null) destZone?.name ?? 'Zona de Chegada',
@@ -686,7 +691,10 @@ class _DeclareContractPlanFormState
             ),
             Center(
               child: IconButton(
-                icon: const Icon(Icons.swap_vert, color: PactaFlowColors.primary),
+                icon: const Icon(
+                  Icons.swap_vert,
+                  color: PactaFlowColors.primary,
+                ),
                 tooltip: 'Inverter Origem/Destino',
                 onPressed: () {
                   setState(() {
@@ -735,8 +743,10 @@ class _DeclareContractPlanFormState
       7: 'Dom',
     };
 
-    final originName = _selectedOriginZone?.name ?? _selectedOriginZoneId ?? '—';
-    final destName = _selectedDestinationZone?.name ?? _selectedDestinationZoneId ?? '—';
+    final originName =
+        _selectedOriginZone?.name ?? _selectedOriginZoneId ?? '—';
+    final destName =
+        _selectedDestinationZone?.name ?? _selectedDestinationZoneId ?? '—';
     // For return shifts, display the current turn's direction (zones were swapped).
     final turnIndex = _confirmedShiftDrafts.length;
     final isReturnShift = turnIndex > 0;
@@ -774,10 +784,17 @@ class _DeclareContractPlanFormState
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text('·', style: TextStyle(color: PactaFlowColors.textDisabled)),
+                const Text(
+                  '·',
+                  style: TextStyle(color: PactaFlowColors.textDisabled),
+                ),
                 const SizedBox(width: 10),
               ],
-              const Icon(Icons.business, size: 14, color: PactaFlowColors.textSecondary),
+              const Icon(
+                Icons.business,
+                size: 14,
+                color: PactaFlowColors.textSecondary,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -792,9 +809,17 @@ class _DeclareContractPlanFormState
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Icon(Icons.arrow_forward, size: 14, color: PactaFlowColors.info),
+                child: Icon(
+                  Icons.arrow_forward,
+                  size: 14,
+                  color: PactaFlowColors.info,
+                ),
               ),
-              const Icon(Icons.location_on, size: 14, color: PactaFlowColors.textSecondary),
+              const Icon(
+                Icons.location_on,
+                size: 14,
+                color: PactaFlowColors.textSecondary,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -1103,7 +1128,8 @@ class _DeclareContractPlanFormState
             suffixText: ' min',
             border: OutlineInputBorder(),
             isDense: true,
-            helperText: 'Janela de espera após o horário previsto antes de iniciar checagem.',
+            helperText:
+                'Janela de espera após o horário previsto antes de iniciar checagem.',
           ),
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(_noShowMultiplierFocus),
@@ -1458,7 +1484,9 @@ class _DeclareContractPlanFormState
     if (allTurns.isEmpty) return const SizedBox.shrink();
 
     // ── Contract access (for financialCeiling) ────────────────
-    final contractDetailAsync = ref.watch(contractDetailProvider(widget.contractId));
+    final contractDetailAsync = ref.watch(
+      contractDetailProvider(widget.contractId),
+    );
     final contract = contractDetailAsync.valueOrNull?.summary;
     final financialCeilingCents = contract?.financialCeilingCents;
 
@@ -1478,7 +1506,8 @@ class _DeclareContractPlanFormState
 
       // Trip ceiling: max between full no-show or max delay pen before no-show conversion
       final noShowPenalty = (d.baseValueCents * d.noShowMultiplier).round();
-      final delayPenaltyCeiling = d.delayPenaltyCentsPerMinute * d.noShowThresholdMinutes;
+      final delayPenaltyCeiling =
+          d.delayPenaltyCentsPerMinute * d.noShowThresholdMinutes;
       final maxTripPenalty = noShowPenalty > delayPenaltyCeiling
           ? noShowPenalty
           : delayPenaltyCeiling;
@@ -1492,7 +1521,8 @@ class _DeclareContractPlanFormState
 
     double? relativeRisk;
     if (financialCeilingCents != null && financialCeilingCents > 0) {
-      relativeRisk = (totalMaxNoShowExposureCents / financialCeilingCents) * 100;
+      relativeRisk =
+          (totalMaxNoShowExposureCents / financialCeilingCents) * 100;
     }
 
     final hasBaseTripValue = allTurns.any((d) => d.baseValueCents > 0);
@@ -1505,12 +1535,19 @@ class _DeclareContractPlanFormState
             padding: const EdgeInsets.only(bottom: 12),
             child: Row(
               children: const [
-                Icon(Icons.info_outline, size: 14, color: PactaFlowColors.warning),
+                Icon(
+                  Icons.info_outline,
+                  size: 14,
+                  color: PactaFlowColors.warning,
+                ),
                 SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'Configure o Valor Base por Viagem no Step 3 para habilitar os KPIs financeiros.',
-                    style: TextStyle(fontSize: 12, color: PactaFlowColors.warning),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: PactaFlowColors.warning,
+                    ),
                   ),
                 ),
               ],
@@ -1524,7 +1561,8 @@ class _DeclareContractPlanFormState
                 label: 'Receita Protegida',
                 value: _formatCents(totalProtectedRevenueCents),
                 period: '/mês',
-                tooltip: 'Soma dos valores contratuais por viagem × volume mensal projetado.',
+                tooltip:
+                    'Soma dos valores contratuais por viagem × volume mensal projetado.',
               ),
             ),
             const SizedBox(width: 12),
@@ -1534,7 +1572,8 @@ class _DeclareContractPlanFormState
                 label: 'Exposição No-Show',
                 value: _formatCents(totalMaxNoShowExposureCents),
                 period: '/mês',
-                tooltip: 'Risco máximo em caso de 100% de falha No-Show em todos os turnos.',
+                tooltip:
+                    'Risco máximo em caso de 100% de falha No-Show em todos os turnos.',
               ),
             ),
           ],
@@ -1548,7 +1587,8 @@ class _DeclareContractPlanFormState
                 label: 'Penalidade Máx.',
                 value: _formatCents(absoluteMaxPenaltyPerTripCents),
                 period: '/viagem',
-                tooltip: 'Maior penalidade possível em um único evento (No-Show ou Atraso Crítico).',
+                tooltip:
+                    'Maior penalidade possível em um único evento (No-Show ou Atraso Crítico).',
               ),
             ),
             if (relativeRisk != null) ...[
@@ -1559,7 +1599,8 @@ class _DeclareContractPlanFormState
                   label: 'Risco Relativo',
                   value: '${relativeRisk.toStringAsFixed(1)}%',
                   period: 'do teto',
-                  tooltip: 'Percentual do Teto Financeiro ocupado pela exposição máxima de No-Show mensal.',
+                  tooltip:
+                      'Percentual do Teto Financeiro ocupado pela exposição máxima de No-Show mensal.',
                 ),
               ),
             ] else ...[
@@ -1569,7 +1610,8 @@ class _DeclareContractPlanFormState
                   icon: Icons.lock_outline,
                   label: 'Risco Relativo',
                   value: '—',
-                  tooltip: 'Configure o Teto Financeiro no contrato para habilitar este indicador.',
+                  tooltip:
+                      'Configure o Teto Financeiro no contrato para habilitar este indicador.',
                 ),
               ),
             ],
@@ -1841,7 +1883,11 @@ class _KpiCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Tooltip(
                   message: tooltip!,
-                  child: const Icon(Icons.help_outline, size: 12, color: PactaFlowColors.textDisabled),
+                  child: const Icon(
+                    Icons.help_outline,
+                    size: 12,
+                    color: PactaFlowColors.textDisabled,
+                  ),
                 ),
               ],
             ],

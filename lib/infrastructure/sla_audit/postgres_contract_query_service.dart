@@ -22,8 +22,8 @@ class PostgresContractQueryService implements ContractQueryService {
   PostgresContractQueryService({
     SupabaseClient? client,
     required SlaExecutionQueryService slaExecutionQueryService,
-  })  : _client = client ?? supabase,
-        _slaExecutionQueryService = slaExecutionQueryService;
+  }) : _client = client ?? supabase,
+       _slaExecutionQueryService = slaExecutionQueryService;
 
   @override
   Future<List<ContractSummaryView>> listContracts({
@@ -84,8 +84,7 @@ class PostgresContractQueryService implements ContractQueryService {
         setId: s['set_id'] as String,
         contractId: s['contract_id'] as String,
         status: ExecutionStatus.values.byName(statusStr),
-        windowStartUtc:
-            DateTime.parse(s['window_start_utc'] as String).toUtc(),
+        windowStartUtc: DateTime.parse(s['window_start_utc'] as String).toUtc(),
         windowEndUtc: DateTime.parse(s['window_end_utc'] as String).toUtc(),
         plannedVehicleId: s['planned_vehicle_id'] as String?,
         boundVehicleId: s['bound_vehicle_id'] as String?,
@@ -95,10 +94,9 @@ class PostgresContractQueryService implements ContractQueryService {
         startLatitude: (s['start_latitude'] as num).toDouble(),
         startLongitude: (s['start_longitude'] as num).toDouble(),
         startRadiusMeters: (s['start_radius_meters'] as num).toInt(),
-        contractualValue:
-            Money((s['contractual_value_cents'] as num).toInt()),
-        noShowPenaltyMultiplier:
-            (s['no_show_penalty_multiplier'] as num).toDouble(),
+        contractualValue: Money((s['contractual_value_cents'] as num).toInt()),
+        noShowPenaltyMultiplier: (s['no_show_penalty_multiplier'] as num)
+            .toDouble(),
       );
     }).toList();
 
@@ -145,17 +143,15 @@ class PostgresContractQueryService implements ContractQueryService {
               contractualValue: Money(
                 (s['contractual_value_cents'] as num).toInt(),
               ),
-              noShowPenaltyMultiplier:
-                  (s['no_show_penalty_multiplier'] as num).toDouble(),
+              noShowPenaltyMultiplier: (s['no_show_penalty_multiplier'] as num)
+                  .toDouble(),
             ),
           )
           .toList();
 
       if (projected.isNotEmpty) {
         final merged = [...recentExecutions, ...projected];
-        merged.sort(
-          (a, b) => b.windowStartUtc.compareTo(a.windowStartUtc),
-        );
+        merged.sort((a, b) => b.windowStartUtc.compareTo(a.windowStartUtc));
         recentExecutions = merged;
       }
     }
@@ -189,8 +185,9 @@ class PostgresContractQueryService implements ContractQueryService {
         .order('plan_version', ascending: false);
 
     final planCount = planRows.length;
-    final activePlanVersion =
-        planRows.isEmpty ? 0 : (planRows.first['plan_version'] as int);
+    final activePlanVersion = planRows.isEmpty
+        ? 0
+        : (planRows.first['plan_version'] as int);
 
     // Execution state counters (single query — aggregate in Dart to avoid RPC)
     final List<dynamic> stateRows = await _client
@@ -209,8 +206,9 @@ class PostgresContractQueryService implements ContractQueryService {
       if (st == ExecutionStatus.executed.name) executedCount++;
     }
 
-    final slaHealthPercentage =
-        totalSets == 0 ? 0.0 : (executedCount / totalSets) * 100.0;
+    final slaHealthPercentage = totalSets == 0
+        ? 0.0
+        : (executedCount / totalSets) * 100.0;
 
     return ContractSummaryView(
       id: row['id'] as String,

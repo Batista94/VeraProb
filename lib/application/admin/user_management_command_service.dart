@@ -7,7 +7,7 @@ abstract class UserManagementCommandService {
     required String targetUserId,
     required UserRole newRole,
   });
-  
+
   Future<void> removeMember({
     required String organizationId,
     required String targetUserId,

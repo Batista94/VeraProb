@@ -13,7 +13,7 @@ class PostgresContractReviewTokenQueryService {
   final SupabaseClient _client;
 
   PostgresContractReviewTokenQueryService([SupabaseClient? client])
-      : _client = client ?? supabase;
+    : _client = client ?? supabase;
 
   /// Returns a [ContractReviewSummary] for the given [token],
   /// or `null` if the token is invalid, expired, or the contract is
@@ -22,10 +22,12 @@ class PostgresContractReviewTokenQueryService {
     String token,
   ) async {
     try {
-      final result = await _client.rpc(
-        'get_contract_for_review',
-        params: {'p_token': token},
-      ) as Map<String, dynamic>?;
+      final result =
+          await _client.rpc(
+                'get_contract_for_review',
+                params: {'p_token': token},
+              )
+              as Map<String, dynamic>?;
 
       if (result == null) return null;
       return ContractReviewSummary.fromJson(result);

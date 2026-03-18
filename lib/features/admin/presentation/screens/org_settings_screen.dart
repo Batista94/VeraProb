@@ -44,15 +44,24 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.business_outlined, size: 28, color: PactaFlowColors.primary),
+                const Icon(
+                  Icons.business_outlined,
+                  size: 28,
+                  color: PactaFlowColors.primary,
+                ),
                 const SizedBox(width: 12),
-                Text('Configurações da Organização', style: PactaFlowTypography.sectionTitle),
+                Text(
+                  'Configurações da Organização',
+                  style: PactaFlowTypography.sectionTitle,
+                ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               'Gerencie o perfil público, fuso horário e moeda padrão da sua empresa.',
-              style: PactaFlowTypography.bodyMedium.copyWith(color: PactaFlowColors.textSecondary),
+              style: PactaFlowTypography.bodyMedium.copyWith(
+                color: PactaFlowColors.textSecondary,
+              ),
             ),
             const SizedBox(height: 32),
             Expanded(
@@ -65,8 +74,11 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                   ),
                 ),
                 data: (org) {
-                  if (org == null) return const Center(child: Text('Organização não encontrada'));
-                  
+                  if (org == null)
+                    return const Center(
+                      child: Text('Organização não encontrada'),
+                    );
+
                   // Initialize controllers once
                   if (_nameController.text.isEmpty && !_isSaving) {
                     _nameController.text = org.name;
@@ -87,34 +99,41 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                               controller: _nameController,
                               decoration: const InputDecoration(
                                 labelText: 'Nome da Organização',
-                                helperText: 'Nome exibido em relatórios e faturas.',
+                                helperText:
+                                    'Nome exibido em relatórios e faturas.',
                               ),
-                              validator: (v) => v?.isEmpty ?? true ? 'Obrigatório' : null,
+                              validator: (v) =>
+                                  v?.isEmpty ?? true ? 'Obrigatório' : null,
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
                               controller: _timezoneController,
                               decoration: const InputDecoration(
                                 labelText: 'Fuso Horário',
-                                helperText: 'Ex: America/Sao_Paulo (usado para cálculos de SLA).',
+                                helperText:
+                                    'Ex: America/Sao_Paulo (usado para cálculos de SLA).',
                               ),
-                              validator: (v) => v?.isEmpty ?? true ? 'Obrigatório' : null,
+                              validator: (v) =>
+                                  v?.isEmpty ?? true ? 'Obrigatório' : null,
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
                               controller: _currencyController,
                               decoration: const InputDecoration(
                                 labelText: 'Código da Moeda',
-                                helperText: 'Ex: BRL, USD (usado para valores financeiros).',
+                                helperText:
+                                    'Ex: BRL, USD (usado para valores financeiros).',
                               ),
-                              validator: (v) => v?.isEmpty ?? true ? 'Obrigatório' : null,
+                              validator: (v) =>
+                                  v?.isEmpty ?? true ? 'Obrigatório' : null,
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
                               controller: _logoUrlController,
                               decoration: const InputDecoration(
                                 labelText: 'URL do Logotipo',
-                                helperText: 'Link para imagem SVG ou PNG da marca.',
+                                helperText:
+                                    'Link para imagem SVG ou PNG da marca.',
                               ),
                             ),
                             const SizedBox(height: 48),
@@ -122,8 +141,15 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                               width: double.infinity,
                               height: 48,
                               child: FilledButton.icon(
-                                icon: _isSaving 
-                                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                icon: _isSaving
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
                                     : const Icon(Icons.save_outlined),
                                 label: const Text('Salvar Alterações'),
                                 onPressed: _isSaving ? null : _save,
@@ -150,23 +176,25 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final role = ref.read(currentUserRoleProvider);
-      
+
       final command = UpdateOrgSettingsCommand(
         organizationId: orgId!,
         callerRole: role,
         name: _nameController.text.trim(),
         timezone: _timezoneController.text.trim(),
         currencyCode: _currencyController.text.trim(),
-        logoUrl: _logoUrlController.text.trim().isEmpty ? null : _logoUrlController.text.trim(),
+        logoUrl: _logoUrlController.text.trim().isEmpty
+            ? null
+            : _logoUrlController.text.trim(),
       );
 
       await ref.read(updateOrgSettingsHandlerProvider).handle(command);
-      
+
       ref.invalidate(orgSettingsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Configurações salvas com sucesso!'), 
+            content: Text('Configurações salvas com sucesso!'),
             backgroundColor: PactaFlowColors.success,
           ),
         );
@@ -175,7 +203,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao salvar: $e'), 
+            content: Text('Erro ao salvar: $e'),
             backgroundColor: PactaFlowColors.error,
           ),
         );

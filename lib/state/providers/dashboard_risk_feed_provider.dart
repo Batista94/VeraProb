@@ -10,8 +10,9 @@ import 'sla_providers.dart';
 ///
 /// Implements CQRS: Does not calculate risk, merely projects
 /// existing states and alerts into the [DashboardRiskFeedNode] model.
-final dashboardRiskFeedProvider =
-    FutureProvider<List<DashboardRiskFeedNode>>((ref) async {
+final dashboardRiskFeedProvider = FutureProvider<List<DashboardRiskFeedNode>>((
+  ref,
+) async {
   final organizationId = ref.watch(currentOrganizationIdProvider);
 
   if (organizationId == null) {
@@ -38,8 +39,9 @@ final dashboardRiskFeedProvider =
 
   // 3. Join executions with alerts and map to Feed Nodes
   final nodes = todaysExecutions.map((exec) {
-    final relatedAlerts =
-        activeAlerts.where((a) => a.entityId == exec.setId).toList();
+    final relatedAlerts = activeAlerts
+        .where((a) => a.entityId == exec.setId)
+        .toList();
     return DashboardRiskFeedNode.evaluate(exec, relatedAlerts);
   }).toList();
 

@@ -22,8 +22,8 @@ class CreateContractHandler {
   CreateContractHandler({
     required ContractRepository contractRepository,
     required SlaAuditLedgerRepository ledger,
-  })  : _contractRepository = contractRepository,
-        _ledger = ledger;
+  }) : _contractRepository = contractRepository,
+       _ledger = ledger;
 
   /// Handles the command by creating the aggregate, persisting it,
   /// and appending all domain events to the ledger.

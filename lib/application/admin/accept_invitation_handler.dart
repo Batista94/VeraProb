@@ -29,7 +29,8 @@ class AcceptInvitationHandler {
     }
     if (command.userId.trim().isEmpty) {
       throw const DomainException(
-          'User must be authenticated to accept an invitation.');
+        'User must be authenticated to accept an invitation.',
+      );
     }
 
     await _commandService.acceptInvitation(

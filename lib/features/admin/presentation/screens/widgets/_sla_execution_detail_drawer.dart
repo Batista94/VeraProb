@@ -61,7 +61,9 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                     const SizedBox(height: 16),
                     _InfoField(
                       label: 'Valor Contratual',
-                      value: _currencyFormat.format(item.contractualValue.toDouble()),
+                      value: _currencyFormat.format(
+                        item.contractualValue.toDouble(),
+                      ),
                     ),
                     _InfoField(
                       label: 'Multiplicador NoShow',
@@ -70,7 +72,9 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                     if (item.status == ExecutionStatus.noShow)
                       _InfoField(
                         label: 'Penalidade Calculada',
-                        value: _currencyFormat.format(item.calculatedPenalty.toDouble()),
+                        value: _currencyFormat.format(
+                          item.calculatedPenalty.toDouble(),
+                        ),
                       ),
                     const Divider(height: 48),
                     Text(
@@ -197,11 +201,13 @@ class _StatusSection extends StatelessWidget {
       case ExecutionStatus.noShow:
         color = PactaFlowColors.error;
         label = 'NO SHOW';
-        description = 'Não detectado: Obrigação não executada na Zona Operacional.';
+        description =
+            'Não detectado: Obrigação não executada na Zona Operacional.';
       case ExecutionStatus.evidenceGap:
         color = PactaFlowColors.warning;
         label = 'EVIDENCE GAP';
-        description = 'Detecção Parcial: Indícios de Execução sem comprovação contínua.';
+        description =
+            'Detecção Parcial: Indícios de Execução sem comprovação contínua.';
       case ExecutionStatus.executed:
         color = PactaFlowColors.success;
         label = 'EXECUTADO';

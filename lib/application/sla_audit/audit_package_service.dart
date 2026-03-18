@@ -22,8 +22,8 @@ class AuditPackageService {
   AuditPackageService({
     required AuditPackageRepository auditPackageRepo,
     required ReportingService reportingService,
-  })  : _auditPackageRepo = auditPackageRepo,
-        _reportingService = reportingService;
+  }) : _auditPackageRepo = auditPackageRepo,
+       _reportingService = reportingService;
 
   /// Generates a [BillingCycleReport], creates a draft, seals it, and persists
   /// both rows. Returns the sealed [AuditPackage].
@@ -62,11 +62,11 @@ class AuditPackageService {
       contractId: contractId,
     );
 
-    // 2. Compute reportLedgerBoundary = max(lastLedgerEntryId) across snapshots
+    // 2. Compute reportLedgerBoundary = lastLedgerEntryId of the latest snapshot
     //    This is the deterministic scope anchor (Architect mandate).
-    final reportLedgerBoundary = report.snapshots
-        .map((s) => s.lastLedgerEntryId ?? 0)
-        .fold(0, (a, b) => a > b ? a : b);
+    final reportLedgerBoundary = report.snapshots.isEmpty
+        ? null
+        : report.snapshots.last.lastLedgerEntryId;
 
     // 3. Create draft and persist as row A
     final draft = AuditPackage.createDraft(
@@ -143,9 +143,8 @@ class AuditPackageService {
   Future<List<AuditPackage>> listSealedPackages({
     required String organizationId,
     int limit = 20,
-  }) =>
-      _auditPackageRepo.findSealedByOrganization(
-        organizationId: organizationId,
-        limit: limit,
-      );
+  }) => _auditPackageRepo.findSealedByOrganization(
+    organizationId: organizationId,
+    limit: limit,
+  );
 }

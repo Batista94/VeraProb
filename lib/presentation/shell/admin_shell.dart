@@ -82,10 +82,7 @@ enum AdminDestination {
 class AdminShell extends ConsumerStatefulWidget {
   final Widget child;
 
-  const AdminShell({
-    super.key,
-    required this.child,
-  });
+  const AdminShell({super.key, required this.child});
 
   @override
   ConsumerState<AdminShell> createState() => _AdminShellState();
@@ -154,10 +151,7 @@ class _AdminSidebar extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
         border: Border(
-          right: BorderSide(
-            color: Colors.black.withOpacity(0.05),
-            width: 1,
-          ),
+          right: BorderSide(color: Colors.black.withOpacity(0.05), width: 1),
         ),
       ),
       child: Column(
@@ -195,17 +189,19 @@ class _AdminSidebar extends ConsumerWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  ...AdminDestination.values.where((dest) {
-                    return userRole.hasPermission(dest.minimumRole);
-                  }).map((dest) {
-                    final isSelected = dest == currentDestination;
-                    return _SidebarIcon(
-                      icon: isSelected ? dest.selectedIcon : dest.icon,
-                      tooltip: dest.tooltip,
-                      isSelected: isSelected,
-                      onTap: () => onDestinationSelected(dest),
-                    );
-                  }),
+                  ...AdminDestination.values
+                      .where((dest) {
+                        return userRole.hasPermission(dest.minimumRole);
+                      })
+                      .map((dest) {
+                        final isSelected = dest == currentDestination;
+                        return _SidebarIcon(
+                          icon: isSelected ? dest.selectedIcon : dest.icon,
+                          tooltip: dest.tooltip,
+                          isSelected: isSelected,
+                          onTap: () => onDestinationSelected(dest),
+                        );
+                      }),
                 ],
               ),
             ),
@@ -255,7 +251,9 @@ class _SidebarIcon extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : Colors.transparent,
+              color: isSelected
+                  ? AppTheme.primaryColor.withOpacity(0.1)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(

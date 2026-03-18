@@ -37,16 +37,16 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   }
 
   @override
-  Future<int?> getLastEntryId() async {
+  Future<String?> getLastEntryId() async {
     final response = await _client
         .from('sla_audit_ledger_v2')
         .select('id')
-        .order('id', ascending: false)
+        .order('occurred_at_utc', ascending: false)
         .limit(1)
         .maybeSingle();
 
     if (response == null) return null;
-    return response['id'] as int;
+    return response['id'] as String;
   }
 
   @override
@@ -59,7 +59,7 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
 
     return (response as List).map((row) {
       return SlaLedgerEntry(
-        id: row['id'] as int,
+        eventId: row['id'] as String,
         organizationId: row['organization_id'] as String,
         type: row['type'] as String,
         setId: row['set_id'] as String?,

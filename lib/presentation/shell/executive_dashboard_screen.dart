@@ -85,7 +85,8 @@ class _DashboardBody extends StatelessWidget {
                 // ── Evidence Quality Attribution ─────────────────────────
                 if (dashboard.latestShadowMode != null) ...[
                   _EvidenceAttributionCard(
-                    attribution: dashboard.latestShadowMode!.evidenceQualityAttribution,
+                    attribution:
+                        dashboard.latestShadowMode!.evidenceQualityAttribution,
                     evidenceScore: dashboard.evidenceScore,
                   ),
                   const SizedBox(height: 24),
@@ -190,7 +191,8 @@ class _KpiGrid extends StatelessWidget {
         _KpiCard(
           title: 'Receita Blindada',
           value: _fmtBrl(dashboard.protectedRevenue),
-          subtitle: 'de ${_fmtBrl(dashboard.totalContractedRevenue)} contratados',
+          subtitle:
+              'de ${_fmtBrl(dashboard.totalContractedRevenue)} contratados',
           color: PactaFlowColors.success,
           icon: Icons.shield_outlined,
         ),
@@ -211,7 +213,8 @@ class _KpiGrid extends StatelessWidget {
         _KpiCard(
           title: 'Conformidade SLA',
           value: '${dashboard.complianceScore.toStringAsFixed(1)}%',
-          subtitle: '${dashboard.executedCount} / ${dashboard.totalObligations} obrigações',
+          subtitle:
+              '${dashboard.executedCount} / ${dashboard.totalObligations} obrigações',
           color: PactaFlowColors.primary,
           icon: Icons.check_circle_outline,
         ),
@@ -316,26 +319,17 @@ class _RevenueSection extends StatelessWidget {
               if (protectedPct > 0)
                 Expanded(
                   flex: (protectedPct * 100).round(),
-                  child: Container(
-                    height: 24,
-                    color: PactaFlowColors.success,
-                  ),
+                  child: Container(height: 24, color: PactaFlowColors.success),
                 ),
               if (atRiskPct > 0)
                 Expanded(
                   flex: (atRiskPct * 100).round(),
-                  child: Container(
-                    height: 24,
-                    color: PactaFlowColors.warning,
-                  ),
+                  child: Container(height: 24, color: PactaFlowColors.warning),
                 ),
               if (lostPct > 0)
                 Expanded(
                   flex: (lostPct * 100).round(),
-                  child: Container(
-                    height: 24,
-                    color: PactaFlowColors.error,
-                  ),
+                  child: Container(height: 24, color: PactaFlowColors.error),
                 ),
             ],
           ),
@@ -344,9 +338,18 @@ class _RevenueSection extends StatelessWidget {
         Wrap(
           spacing: 16,
           children: [
-            _Legend(color: PactaFlowColors.success, label: 'Blindada ${(protectedPct * 100).toStringAsFixed(0)}%'),
-            _Legend(color: PactaFlowColors.warning, label: 'Em Risco ${(atRiskPct * 100).toStringAsFixed(0)}%'),
-            _Legend(color: PactaFlowColors.error, label: 'Perdida ${(lostPct * 100).toStringAsFixed(0)}%'),
+            _Legend(
+              color: PactaFlowColors.success,
+              label: 'Blindada ${(protectedPct * 100).toStringAsFixed(0)}%',
+            ),
+            _Legend(
+              color: PactaFlowColors.warning,
+              label: 'Em Risco ${(atRiskPct * 100).toStringAsFixed(0)}%',
+            ),
+            _Legend(
+              color: PactaFlowColors.error,
+              label: 'Perdida ${(lostPct * 100).toStringAsFixed(0)}%',
+            ),
           ],
         ),
       ],

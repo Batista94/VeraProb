@@ -43,8 +43,9 @@ class InviteUserHandler {
     const uuid = Uuid();
     final invitationId = uuid.v4();
     final token = uuid.v4();
-    final expiresAtUtc =
-        DateTime.now().toUtc().add(const Duration(days: _ttlDays));
+    final expiresAtUtc = DateTime.now().toUtc().add(
+      const Duration(days: _ttlDays),
+    );
 
     // 4. Delegate — RPC atomically revokes any existing pending invite + inserts new one
     await _commandService.inviteUser(

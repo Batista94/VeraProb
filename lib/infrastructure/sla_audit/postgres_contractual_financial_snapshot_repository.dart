@@ -136,13 +136,11 @@ class PostgresContractualFinancialSnapshotRepository
       lostRevenue: Money(row['lost_revenue_cents'] as int),
       riskPercentage: (row['risk_percentage'] as num).toDouble(),
       lossPercentage: (row['loss_percentage'] as num).toDouble(),
-      totalObligations: row['total_obligations'] as int,
-      executedCount: row['executed_count'] as int,
-      noShowCount: row['no_show_count'] as int,
-      evidenceGapCount: row['evidence_gap_count'] as int,
-      lastLedgerEntryId: row['last_ledger_entry_id'] != null
-          ? row['last_ledger_entry_id'] as int
-          : null,
+      totalObligations: (row['total_obligations'] as num?)?.toInt() ?? 0,
+      executedCount: (row['executed_count'] as num?)?.toInt() ?? 0,
+      noShowCount: (row['no_show_count'] as num?)?.toInt() ?? 0,
+      evidenceGapCount: (row['evidence_gap_count'] as num?)?.toInt() ?? 0,
+      lastLedgerEntryId: row['last_ledger_entry_id'] as String?,
       previousSnapshotId: row['previous_snapshot_id'] as String?,
       reprocessingReason: row['reprocessing_reason'] as String?,
       authorUserId: row['author_user_id'] as String?,

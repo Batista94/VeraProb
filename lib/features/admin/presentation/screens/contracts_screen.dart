@@ -59,7 +59,10 @@ class _ContractListView extends ConsumerWidget {
                   ),
                   Text(
                     'Controle de vigência e conformidade SLA',
-                    style: TextStyle(color: PactaFlowColors.textSecondary, fontSize: 14),
+                    style: TextStyle(
+                      color: PactaFlowColors.textSecondary,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
@@ -68,10 +71,14 @@ class _ContractListView extends ConsumerWidget {
                 icon: const Icon(Icons.add_rounded, size: 20),
                 label: const Text('Novo Contrato'),
                 onPressed: () async {
-                  final newContractId = await CreateContractForm.show(context, ref);
+                  final newContractId = await CreateContractForm.show(
+                    context,
+                    ref,
+                  );
                   if (newContractId != null) {
                     ref.invalidate(contractListProvider);
-                    ref.read(selectedContractIdProvider.notifier).state = newContractId;
+                    ref.read(selectedContractIdProvider.notifier).state =
+                        newContractId;
                   }
                 },
               ),
@@ -85,41 +92,42 @@ class _ContractListView extends ConsumerWidget {
               _FilterChip(
                 label: 'Todos',
                 selected: activeFilter == null,
-                onSelected: (_) => ref
-                    .read(contractStatusFilterProvider.notifier)
-                    .state = null,
+                onSelected: (_) =>
+                    ref.read(contractStatusFilterProvider.notifier).state =
+                        null,
               ),
               _FilterChip(
                 label: 'Rascunhos',
                 color: PactaFlowColors.neutral,
                 selected: activeFilter == ContractStatus.draft,
-                onSelected: (_) => ref
-                    .read(contractStatusFilterProvider.notifier)
-                    .state = ContractStatus.draft,
+                onSelected: (_) =>
+                    ref.read(contractStatusFilterProvider.notifier).state =
+                        ContractStatus.draft,
               ),
               _FilterChip(
                 label: 'Aguardando Aceite',
                 color: Colors.blue,
-                selected: activeFilter == ContractStatus.awaitingContractorAcceptance,
-                onSelected: (_) => ref
-                    .read(contractStatusFilterProvider.notifier)
-                    .state = ContractStatus.awaitingContractorAcceptance,
+                selected:
+                    activeFilter == ContractStatus.awaitingContractorAcceptance,
+                onSelected: (_) =>
+                    ref.read(contractStatusFilterProvider.notifier).state =
+                        ContractStatus.awaitingContractorAcceptance,
               ),
               _FilterChip(
                 label: 'Ativos',
                 color: PactaFlowColors.success,
                 selected: activeFilter == ContractStatus.active,
-                onSelected: (_) => ref
-                    .read(contractStatusFilterProvider.notifier)
-                    .state = ContractStatus.active,
+                onSelected: (_) =>
+                    ref.read(contractStatusFilterProvider.notifier).state =
+                        ContractStatus.active,
               ),
               _FilterChip(
                 label: 'Encerrados',
                 color: PactaFlowColors.error,
                 selected: activeFilter == ContractStatus.closed,
-                onSelected: (_) => ref
-                    .read(contractStatusFilterProvider.notifier)
-                    .state = ContractStatus.closed,
+                onSelected: (_) =>
+                    ref.read(contractStatusFilterProvider.notifier).state =
+                        ContractStatus.closed,
               ),
             ],
           ),
@@ -130,8 +138,7 @@ class _ContractListView extends ConsumerWidget {
               data: (contracts) => contracts.isEmpty
                   ? const _EmptyState()
                   : _ContractTable(contracts: contracts),
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Text(
                   'Erro ao carregar contratos: $e',
@@ -159,32 +166,38 @@ class _ContractTable extends ConsumerWidget {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-            columnSpacing: 24,
-            headingRowColor: WidgetStateProperty.all(PactaFlowColors.surfaceElevated),
-            headingTextStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: PactaFlowColors.textSecondary,
-              letterSpacing: 0.5,
+              columnSpacing: 24,
+              headingRowColor: WidgetStateProperty.all(
+                PactaFlowColors.surfaceElevated,
+              ),
+              headingTextStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: PactaFlowColors.textSecondary,
+                letterSpacing: 0.5,
+              ),
+              dataRowMaxHeight: 64,
+              rows: contracts.map((c) => _buildRow(context, ref, c)).toList(),
+              columns: const [
+                DataColumn(label: Text('CONTRATO')),
+                DataColumn(label: Text('CONTRATANTE')),
+                DataColumn(label: Text('VIGÊNCIA')),
+                DataColumn(label: Text('STATUS')),
+                DataColumn(label: Text('SAÚDE SLA')),
+                DataColumn(label: Text('')),
+              ],
             ),
-            dataRowMaxHeight: 64,
-            rows: contracts.map((c) => _buildRow(context, ref, c)).toList(),
-            columns: const [
-              DataColumn(label: Text('CONTRATO')),
-              DataColumn(label: Text('CONTRATANTE')),
-              DataColumn(label: Text('VIGÊNCIA')),
-              DataColumn(label: Text('STATUS')),
-              DataColumn(label: Text('SAÚDE SLA')),
-              DataColumn(label: Text('')),
-            ],
-          ),
           ),
         ),
       ),
     );
   }
 
-  DataRow _buildRow(BuildContext context, WidgetRef ref, ContractSummaryView c) {
+  DataRow _buildRow(
+    BuildContext context,
+    WidgetRef ref,
+    ContractSummaryView c,
+  ) {
     final vigencia =
         '${_dateFormat.format(c.validFromUtc.toLocal())} – ${_dateFormat.format(c.validUntilUtc.toLocal())}';
 
@@ -195,14 +208,39 @@ class _ContractTable extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, color: PactaFlowColors.textPrimary)),
+              Text(
+                c.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: PactaFlowColors.textPrimary,
+                ),
+              ),
               if (c.activePlanVersion > 0)
-                Text('Plano v${c.activePlanVersion}', style: const TextStyle(fontSize: 11, color: PactaFlowColors.textSecondary)),
+                Text(
+                  'Plano v${c.activePlanVersion}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: PactaFlowColors.textSecondary,
+                  ),
+                ),
             ],
           ),
         ),
-        DataCell(Text(c.contractorName, style: const TextStyle(color: PactaFlowColors.textPrimary))),
-        DataCell(Text(vigencia, style: const TextStyle(fontSize: 12, color: PactaFlowColors.textSecondary))),
+        DataCell(
+          Text(
+            c.contractorName,
+            style: const TextStyle(color: PactaFlowColors.textPrimary),
+          ),
+        ),
+        DataCell(
+          Text(
+            vigencia,
+            style: const TextStyle(
+              fontSize: 12,
+              color: PactaFlowColors.textSecondary,
+            ),
+          ),
+        ),
         DataCell(_StatusChip(status: c.status)),
         DataCell(_SlaHealthBar(percentage: c.slaHealthPercentage)),
         DataCell(
@@ -325,9 +363,13 @@ class _ContractTable extends ConsumerWidget {
                   ),
                   if (errorMsg != null) ...[
                     const SizedBox(height: 12),
-                    Text(errorMsg!,
-                        style: const TextStyle(
-                            color: PactaFlowColors.error, fontSize: 12)),
+                    Text(
+                      errorMsg!,
+                      style: const TextStyle(
+                        color: PactaFlowColors.error,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -342,28 +384,32 @@ class _ContractTable extends ConsumerWidget {
                     ? null
                     : () async {
                         if (nameController.text.trim().isEmpty) {
-                          setDialogState(() =>
-                              errorMsg = 'Informe o nome do contrato.');
+                          setDialogState(
+                            () => errorMsg = 'Informe o nome do contrato.',
+                          );
                           return;
                         }
                         if (validFrom == null || validUntil == null) {
-                          setDialogState(() =>
-                              errorMsg = 'Defina as datas de início e fim.');
+                          setDialogState(
+                            () => errorMsg = 'Defina as datas de início e fim.',
+                          );
                           return;
                         }
                         if (!validUntil!.isAfter(validFrom!)) {
-                          setDialogState(() =>
-                              errorMsg = 'A data de fim deve ser após o início.');
+                          setDialogState(
+                            () => errorMsg =
+                                'A data de fim deve ser após o início.',
+                          );
                           return;
                         }
 
                         setDialogState(() => isSubmitting = true);
                         try {
-                          final orgId =
-                              ref.read(currentOrganizationIdProvider);
+                          final orgId = ref.read(currentOrganizationIdProvider);
                           if (orgId == null) {
                             throw const DomainException(
-                                'Sessão expirada. Faça login novamente.');
+                              'Sessão expirada. Faça login novamente.',
+                            );
                           }
                           final cmd = CloneContractCommand(
                             organizationId: orgId,
@@ -372,8 +418,9 @@ class _ContractTable extends ConsumerWidget {
                             contractorName: c.contractorName,
                             description: null,
                           );
-                          final handler =
-                              ref.read(cloneContractHandlerProvider);
+                          final handler = ref.read(
+                            cloneContractHandlerProvider,
+                          );
                           final newContract = await handler.handle(
                             cmd,
                             validFromUtc: validFrom!.toUtc(),
@@ -381,9 +428,8 @@ class _ContractTable extends ConsumerWidget {
                           );
                           ref.invalidate(contractListProvider);
                           if (ctx.mounted) Navigator.of(ctx).pop();
-                          ref
-                              .read(selectedContractIdProvider.notifier)
-                              .state = newContract.id;
+                          ref.read(selectedContractIdProvider.notifier).state =
+                              newContract.id;
                         } on DomainException catch (e) {
                           setDialogState(() {
                             errorMsg = e.message;
@@ -401,7 +447,9 @@ class _ContractTable extends ConsumerWidget {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Text('Clonar'),
               ),
@@ -455,7 +503,10 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
       ContractStatus.draft => ('RASCUNHO', PactaFlowColors.neutral),
-      ContractStatus.awaitingContractorAcceptance => ('AGUARDANDO ACEITE', Colors.blue),
+      ContractStatus.awaitingContractorAcceptance => (
+        'AGUARDANDO ACEITE',
+        Colors.blue,
+      ),
       ContractStatus.active => ('ATIVO', PactaFlowColors.success),
       ContractStatus.closed => ('ENCERRADO', PactaFlowColors.error),
     };
@@ -469,7 +520,12 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
@@ -482,7 +538,11 @@ class _SlaHealthBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = percentage.clamp(0.0, 100.0);
-    final color = pct >= 90 ? PactaFlowColors.success : pct >= 70 ? PactaFlowColors.warning : PactaFlowColors.error;
+    final color = pct >= 90
+        ? PactaFlowColors.success
+        : pct >= 70
+        ? PactaFlowColors.warning
+        : PactaFlowColors.error;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -491,8 +551,14 @@ class _SlaHealthBar extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('${pct.toStringAsFixed(0)}%', 
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+            Text(
+              '${pct.toStringAsFixed(0)}%',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: ClipRRect(
@@ -520,13 +586,25 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.description_outlined, size: 80, color: PactaFlowColors.border),
+          Icon(
+            Icons.description_outlined,
+            size: 80,
+            color: PactaFlowColors.border,
+          ),
           const SizedBox(height: 24),
-          const Text('Nenhum contrato encontrado', 
-            style: TextStyle(color: PactaFlowColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Nenhum contrato encontrado',
+            style: TextStyle(
+              color: PactaFlowColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text('Crie um novo contrato para iniciar a auditoria de SLA.', 
-            style: TextStyle(color: PactaFlowColors.textSecondary)),
+          const Text(
+            'Crie um novo contrato para iniciar a auditoria de SLA.',
+            style: TextStyle(color: PactaFlowColors.textSecondary),
+          ),
         ],
       ),
     );

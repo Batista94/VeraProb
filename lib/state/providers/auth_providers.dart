@@ -29,7 +29,7 @@ final organizationIdFetcherProvider = FutureProvider<String?>((ref) async {
         .select('organization_id')
         .eq('user_id', userId)
         .maybeSingle();
-    
+
     return response?['organization_id'] as String?;
   } catch (e) {
     debugPrint('[Auth] organizationIdFetcherProvider failed: $e');
@@ -41,7 +41,7 @@ final organizationIdFetcherProvider = FutureProvider<String?>((ref) async {
 /// Injected by the Postgres `custom_access_token_hook`.
 final currentOrganizationIdProvider = Provider<String?>((ref) {
   final authState = ref.watch(authStateProvider).valueOrNull;
-  
+
   // 1. Try JWT metadata (fastest)
   final metadata = authState?.session?.user.appMetadata;
   final fromMetadata = metadata?['org_id'] as String?;

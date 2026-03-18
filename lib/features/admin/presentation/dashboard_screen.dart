@@ -17,6 +17,7 @@ class DashboardScreen extends ConsumerWidget {
       final seeder = DataSeeder(supabase, organizationId: organizationId);
       await seeder.seedDrivers();
       await seeder.seedRoutes();
+      await seeder.seedHistoricalData();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -66,8 +67,11 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.analytics_rounded, 
-                        size: 32, color: PactaFlowColors.primary),
+                      child: const Icon(
+                        Icons.analytics_rounded,
+                        size: 32,
+                        color: PactaFlowColors.primary,
+                      ),
                     ),
                     const SizedBox(width: 20),
                     Column(

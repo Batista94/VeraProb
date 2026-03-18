@@ -34,8 +34,9 @@ final contractualRuleRepositoryProvider = Provider<ContractualRuleRepository>((
 ) {
   return switch (ref.watch(persistenceModeProvider)) {
     PersistenceMode.inMemory => InMemoryContractualRuleRepository(),
-    PersistenceMode.postgres =>
-      PostgresContractualRuleRepository(ref.watch(supabaseClientProvider)),
+    PersistenceMode.postgres => PostgresContractualRuleRepository(
+      ref.watch(supabaseClientProvider),
+    ),
   };
 });
 
@@ -67,23 +68,24 @@ final closeContractHandlerProvider = Provider<CloseContractHandler>((ref) {
 
 final contractApprovalCommandServiceProvider =
     Provider<ContractApprovalCommandService>((ref) {
-  return PostgresContractApprovalCommandService(
-    ref.watch(supabaseClientProvider),
-  );
-});
+      return PostgresContractApprovalCommandService(
+        ref.watch(supabaseClientProvider),
+      );
+    });
 
 final submitContractForApprovalHandlerProvider =
     Provider<SubmitContractForApprovalHandler>((ref) {
-  return SubmitContractForApprovalHandler(
-    contractRepository: ref.watch(contractRepositoryProvider),
-    approvalService: ref.watch(contractApprovalCommandServiceProvider),
-    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
-    rbac: RbacService(),
-  );
-});
+      return SubmitContractForApprovalHandler(
+        contractRepository: ref.watch(contractRepositoryProvider),
+        approvalService: ref.watch(contractApprovalCommandServiceProvider),
+        ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+        rbac: RbacService(),
+      );
+    });
 
-final acceptByContractorHandlerProvider =
-    Provider<AcceptByContractorHandler>((ref) {
+final acceptByContractorHandlerProvider = Provider<AcceptByContractorHandler>((
+  ref,
+) {
   return AcceptByContractorHandler(
     approvalService: ref.watch(contractApprovalCommandServiceProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
@@ -92,10 +94,10 @@ final acceptByContractorHandlerProvider =
 
 final contractReviewTokenQueryServiceProvider =
     Provider<PostgresContractReviewTokenQueryService>((ref) {
-  return PostgresContractReviewTokenQueryService(
-    ref.watch(supabaseClientProvider),
-  );
-});
+      return PostgresContractReviewTokenQueryService(
+        ref.watch(supabaseClientProvider),
+      );
+    });
 
 final shiftProjectionServiceProvider = Provider<ShiftProjectionService>((ref) {
   return ShiftProjectionService(
@@ -143,7 +145,9 @@ final contractQueryServiceProvider = Provider<ContractQueryService>((ref) {
 final selectedContractIdProvider = StateProvider<String?>((ref) => null);
 
 /// Active status filter on the contracts list. Null = all statuses.
-final contractStatusFilterProvider = StateProvider<ContractStatus?>((ref) => null);
+final contractStatusFilterProvider = StateProvider<ContractStatus?>(
+  (ref) => null,
+);
 
 // ── Projections ─────────────────────────────────────────────
 
@@ -156,24 +160,20 @@ final contractListProvider = FutureProvider<List<ContractSummaryView>>((
   final status = ref.watch(contractStatusFilterProvider);
   final service = ref.watch(contractQueryServiceProvider);
 
-  return service.listContracts(
-    organizationId: organizationId,
-    status: status,
-  );
+  return service.listContracts(organizationId: organizationId, status: status);
 });
 
-final contractDetailProvider = FutureProvider.family<ContractDetailView?, String>(
-  (ref, contractId) async {
-    final organizationId = ref.watch(currentOrganizationIdProvider);
-    if (organizationId == null) return null;
+final contractDetailProvider =
+    FutureProvider.family<ContractDetailView?, String>((ref, contractId) async {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return null;
 
-    final service = ref.watch(contractQueryServiceProvider);
-    return service.getContractDetail(
-      organizationId: organizationId,
-      contractId: contractId,
-    );
-  },
-);
+      final service = ref.watch(contractQueryServiceProvider);
+      return service.getContractDetail(
+        organizationId: organizationId,
+        contractId: contractId,
+      );
+    });
 
 /// Unique sorted contractor names across all contracts for this org.
 /// Used by the zone form's contractor label Autocomplete.
@@ -182,11 +182,12 @@ final contractorNamesProvider = FutureProvider<List<String>>((ref) async {
   if (organizationId == null) return [];
   final service = ref.watch(contractQueryServiceProvider);
   final contracts = await service.listContracts(organizationId: organizationId);
-  final names = contracts
-      .map((c) => c.contractorName)
-      .where((n) => n.trim().isNotEmpty)
-      .toSet()
-      .toList()
-    ..sort();
+  final names =
+      contracts
+          .map((c) => c.contractorName)
+          .where((n) => n.trim().isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
   return names;
 });

@@ -95,8 +95,10 @@ class TripSidebar extends ConsumerWidget {
                   ? _EmptyState()
                   : ListView.separated(
                       itemCount: displayTrips.length,
-                      separatorBuilder: (_, _) =>
-                          const Divider(height: 1, color: PactaFlowColors.border),
+                      separatorBuilder: (_, _) => const Divider(
+                        height: 1,
+                        color: PactaFlowColors.border,
+                      ),
                       itemBuilder: (context, index) {
                         final trip = displayTrips[index];
                         return _TripCard(
@@ -326,7 +328,10 @@ class _TripCard extends StatelessWidget {
                       color: PactaFlowColors.textDisabled,
                     ),
                     const SizedBox(width: 2),
-                    Text(trip.vehiclePlate!, style: PactaFlowTypography.caption),
+                    Text(
+                      trip.vehiclePlate!,
+                      style: PactaFlowTypography.caption,
+                    ),
                     const SizedBox(width: 8),
                   ],
                   if (trip.driverName != null) ...[

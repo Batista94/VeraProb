@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 
 /// A premium, consistent chip for status and types.
-/// 
+///
 /// Replaces ad-hoc Containers for badges/chips across the app.
 class PactaFlowChip extends StatelessWidget {
   final String label;
@@ -40,12 +40,7 @@ class PactaFlowChip extends StatelessWidget {
             Icon(icon, size: 12, color: color),
             const SizedBox(width: 6),
           ],
-          Text(
-            label,
-            style: PactaFlowTypography.badge.copyWith(
-              color: color,
-            ),
-          ),
+          Text(label, style: PactaFlowTypography.badge.copyWith(color: color)),
         ],
       ),
     );

@@ -114,9 +114,7 @@ class ShadowModeSimulation extends Equatable {
       throw const DomainException('organizationId must not be empty');
     }
     if (!periodStartUtc.isUtc || !periodEndUtc.isUtc || !generatedAtUtc.isUtc) {
-      throw const DomainException(
-        'All DateTime fields must be UTC (INV-3).',
-      );
+      throw const DomainException('All DateTime fields must be UTC (INV-3).');
     }
     if (baselineDisputeRate < 0 || baselineDisputeRate > 100) {
       throw const DomainException(
@@ -136,7 +134,8 @@ class ShadowModeSimulation extends Equatable {
     );
 
     // Manual enforcement labor cost savings
-    final manualCostTotal = manualEnforcementCostPerIncident * incidentCount.toDouble();
+    final manualCostTotal =
+        manualEnforcementCostPerIncident * incidentCount.toDouble();
 
     // Revenue protected = (penalties that would have been waived) + labor savings
     final protected = Money(

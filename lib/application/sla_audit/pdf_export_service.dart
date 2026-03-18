@@ -51,10 +51,19 @@ class PdfExportService {
             _labelValue('Report ID', package.billingCycleReportId),
             _labelValue('Package ID', package.id),
             _labelValue('Package Hash', 'SHA-256:${package.packageHash}'),
-            _labelValue('Ledger Boundary', 'Entry #${package.reportLedgerBoundary}'),
+            _labelValue(
+              'Ledger Boundary',
+              'Entry #${package.reportLedgerBoundary}',
+            ),
             pw.SizedBox(height: 8),
-            _labelValue('Emissor', '${h.tenantName} (CNPJ: ${h.tenantCnpj ?? "N/A"})'),
-            _labelValue('Contratante', '${h.contractorName} (CNPJ: ${h.contractorCnpj ?? "N/A"})'),
+            _labelValue(
+              'Emissor',
+              '${h.tenantName} (CNPJ: ${h.tenantCnpj ?? "N/A"})',
+            ),
+            _labelValue(
+              'Contratante',
+              '${h.contractorName} (CNPJ: ${h.contractorCnpj ?? "N/A"})',
+            ),
             _labelValue('Contrato', contractScope),
             _labelValue(
               'Período',
@@ -87,10 +96,7 @@ class PdfExportService {
             pw.SizedBox(height: 8),
             pw.Divider(),
             pw.SizedBox(height: 8),
-            pw.Text(
-              h.legalNotice,
-              style: const pw.TextStyle(fontSize: 8),
-            ),
+            pw.Text(h.legalNotice, style: const pw.TextStyle(fontSize: 8)),
           ],
         ),
       ),
@@ -114,11 +120,20 @@ class PdfExportService {
             pw.TableHelper.fromTextArray(
               headers: ['Métrica', 'Valor'],
               data: [
-                ['Faturamento Total Contratado', _fmtBrl(package.totalContractedRevenue)],
-                ['Receita Protegida (Blindada)', _fmtBrl(package.protectedRevenue)],
+                [
+                  'Faturamento Total Contratado',
+                  _fmtBrl(package.totalContractedRevenue),
+                ],
+                [
+                  'Receita Protegida (Blindada)',
+                  _fmtBrl(package.protectedRevenue),
+                ],
                 ['Receita em Risco', _fmtBrl(package.revenueAtRisk)],
                 ['Receita Perdida (Penalidades)', _fmtBrl(package.lostRevenue)],
-                ['Taxa de Conformidade', '${package.complianceRate.toStringAsFixed(1)}%'],
+                [
+                  'Taxa de Conformidade',
+                  '${package.complianceRate.toStringAsFixed(1)}%',
+                ],
                 ['Total de Obrigações', '${package.totalObligations}'],
                 ['Executadas', '${package.executedCount}'],
                 ['No Show', '${package.noShowCount}'],
@@ -259,10 +274,7 @@ class PdfExportService {
             pw.SizedBox(height: 16),
             pw.Divider(),
             pw.SizedBox(height: 8),
-            pw.Text(
-              h.legalNotice,
-              style: const pw.TextStyle(fontSize: 7),
-            ),
+            pw.Text(h.legalNotice, style: const pw.TextStyle(fontSize: 7)),
           ],
         ),
       ),
@@ -274,34 +286,28 @@ class PdfExportService {
   // ── Private helpers ────────────────────────────────────────────────────────
 
   pw.Widget _sectionHeader(String text) => pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontWeight: pw.FontWeight.bold,
-          fontSize: 12,
-        ),
-      );
+    text,
+    style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
+  );
 
   pw.Widget _labelValue(String label, String value) => pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 2),
-        child: pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.SizedBox(
-              width: 140,
-              child: pw.Text(
-                '$label:',
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 9,
-                ),
-              ),
-            ),
-            pw.Expanded(
-              child: pw.Text(value, style: const pw.TextStyle(fontSize: 9)),
-            ),
-          ],
+    padding: const pw.EdgeInsets.symmetric(vertical: 2),
+    child: pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(
+          width: 140,
+          child: pw.Text(
+            '$label:',
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+          ),
         ),
-      );
+        pw.Expanded(
+          child: pw.Text(value, style: const pw.TextStyle(fontSize: 9)),
+        ),
+      ],
+    ),
+  );
 
   pw.Widget _custodyStep(String number, String title, String description) =>
       pw.Padding(
@@ -311,10 +317,7 @@ class PdfExportService {
           children: [
             pw.Text(
               'LINK $number — $title',
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 9,
-              ),
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
             ),
             pw.Text(description, style: const pw.TextStyle(fontSize: 8)),
           ],
@@ -342,11 +345,7 @@ class PdfExportService {
           _fmtBrl(package.protectedRevenue),
           '$protectedPct%',
         ],
-        [
-          'Receita em Risco',
-          _fmtBrl(package.revenueAtRisk),
-          '$atRiskPct%',
-        ],
+        ['Receita em Risco', _fmtBrl(package.revenueAtRisk), '$atRiskPct%'],
         [
           'Receita Perdida (Penalidades)',
           _fmtBrl(package.lostRevenue),

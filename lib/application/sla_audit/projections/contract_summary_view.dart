@@ -56,18 +56,18 @@ class ContractSummaryView extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        contractorName,
-        status,
-        validFromUtc,
-        validUntilUtc,
-        createdAtUtc,
-        activatedAtUtc,
-        planCount,
-        activePlanVersion,
-        totalSetsInProgress,
-        slaHealthPercentage,
-        financialCeilingCents,
-      ];
+    id,
+    name,
+    contractorName,
+    status,
+    validFromUtc,
+    validUntilUtc,
+    createdAtUtc,
+    activatedAtUtc,
+    planCount,
+    activePlanVersion,
+    totalSetsInProgress,
+    slaHealthPercentage,
+    financialCeilingCents,
+  ];
 }

@@ -40,7 +40,11 @@ class InvestigationModal extends ConsumerWidget {
           ),
           title: Row(
             children: [
-              const Icon(Icons.search, size: 18, color: PactaFlowColors.primary),
+              const Icon(
+                Icons.search,
+                size: 18,
+                color: PactaFlowColors.primary,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Análise Forense de Decisões',
@@ -87,13 +91,19 @@ class InvestigationModal extends ConsumerWidget {
                         children: [
                           Consumer(
                             builder: (context, ref, child) {
-                              final stateAsync = ref.watch(executionStateProvider(setId));
+                              final stateAsync = ref.watch(
+                                executionStateProvider(setId),
+                              );
                               return stateAsync.when(
-                                loading: () => const Center(child: CircularProgressIndicator()),
+                                loading: () => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
                                 error: (e, st) => const SizedBox(),
                                 data: (state) {
                                   if (state == null) return const SizedBox();
-                                  return InvestigationMapPanel(execution: state);
+                                  return InvestigationMapPanel(
+                                    execution: state,
+                                  );
                                 },
                               );
                             },
@@ -214,7 +224,11 @@ class _LedgerTimelinePanel extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.timeline, size: 16, color: PactaFlowColors.info),
+                const Icon(
+                  Icons.timeline,
+                  size: 16,
+                  color: PactaFlowColors.info,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Ledger Operacional',
@@ -228,7 +242,9 @@ class _LedgerTimelinePanel extends StatelessWidget {
           Expanded(
             child: ledgerAsync.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(color: PactaFlowColors.primary),
+                child: CircularProgressIndicator(
+                  color: PactaFlowColors.primary,
+                ),
               ),
               error: (err, _) => Center(
                 child: Text(
@@ -434,7 +450,9 @@ class _EvaluationTracePanel extends StatelessWidget {
           Expanded(
             child: tracesAsync.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(color: PactaFlowColors.primary),
+                child: CircularProgressIndicator(
+                  color: PactaFlowColors.primary,
+                ),
               ),
               error: (err, _) => Center(
                 child: Text(
@@ -473,7 +491,11 @@ class _NoTraceState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.info_outline, size: 48, color: PactaFlowColors.textDisabled),
+          Icon(
+            Icons.info_outline,
+            size: 48,
+            color: PactaFlowColors.textDisabled,
+          ),
           const SizedBox(height: 16),
           Text(
             'Nenhuma rastreabilidade disponível',
@@ -571,7 +593,10 @@ class _MetaChip extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(label, style: PactaFlowTypography.bodySmall.copyWith(color: color)),
+        Text(
+          label,
+          style: PactaFlowTypography.bodySmall.copyWith(color: color),
+        ),
       ],
     );
   }
@@ -639,7 +664,9 @@ class _DecisionRow extends StatelessWidget {
                 ),
                 child: Text(
                   decision.outcome,
-                  style: PactaFlowTypography.badge.copyWith(color: outcomeColor),
+                  style: PactaFlowTypography.badge.copyWith(
+                    color: outcomeColor,
+                  ),
                 ),
               ),
             ],
@@ -685,7 +712,7 @@ class _DecisionRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text(
+                  Text(
                     'PROVA DOCUMENTAL',
                     style: PactaFlowTypography.caption.copyWith(
                       letterSpacing: 1.0,
