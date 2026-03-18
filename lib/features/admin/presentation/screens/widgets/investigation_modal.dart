@@ -491,7 +491,7 @@ class _NoTraceState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.info_outline,
             size: 48,
             color: PactaFlowColors.textDisabled,

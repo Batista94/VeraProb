@@ -117,7 +117,7 @@ void main() {
       ruleRepository: MockContractualRuleRepository(),
       contractRepository: MockContractRepository(),
       zoneRepository: _StubZoneRepository(),
-      vehicleRepository: InMemoryActiveVehicleRepository(
+      vehicleRepository: const InMemoryActiveVehicleRepository(
         countsByOrg: {'org-1': 1},
       ),
     );

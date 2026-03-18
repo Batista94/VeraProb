@@ -74,10 +74,11 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                   ),
                 ),
                 data: (org) {
-                  if (org == null)
+                  if (org == null) {
                     return const Center(
                       child: Text('Organização não encontrada'),
                     );
+                  }
 
                   // Initialize controllers once
                   if (_nameController.text.isEmpty && !_isSaving) {

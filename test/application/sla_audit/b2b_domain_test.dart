@@ -25,8 +25,8 @@ void main() {
     late InMemoryOperationalZoneRepository zoneRepo;
 
     final baseDate = DateTime.utc(2026, 3, 3); // Tuesday
-    final testOrgId = 'org-b2b';
-    final testContractId = 'c-b2b-01';
+    const testOrgId = 'org-b2b';
+    const testContractId = 'c-b2b-01';
 
     setUp(() {
       tz.initializeTimeZones();

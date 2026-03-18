@@ -32,7 +32,7 @@ void main() {
     );
   });
 
-  Future<String> _createSource({String orgId = 'org-1'}) async {
+  Future<String> createSource({String orgId = 'org-1'}) async {
     final source = await createHandler.handle(CreateContractCommand(
       organizationId: orgId,
       name: 'Contrato Original',
@@ -46,7 +46,7 @@ void main() {
 
   group('CloneContractHandler — happy path', () {
     test('creates a new draft contract with a distinct UUID', () async {
-      final sourceId = await _createSource();
+      final sourceId = await createSource();
 
       final clone = await cloneHandler.handle(
         CloneContractCommand(
@@ -65,7 +65,7 @@ void main() {
     });
 
     test('cloned contract records clonedFromContractId for audit', () async {
-      final sourceId = await _createSource();
+      final sourceId = await createSource();
 
       final clone = await cloneHandler.handle(
         CloneContractCommand(
@@ -82,7 +82,7 @@ void main() {
     });
 
     test('clone emits its own ContractCreatedEvent (distinct aggregate)', () async {
-      final sourceId = await _createSource();
+      final sourceId = await createSource();
 
       final clone = await cloneHandler.handle(
         CloneContractCommand(
@@ -101,7 +101,7 @@ void main() {
     });
 
     test('clone is persisted and retrievable', () async {
-      final sourceId = await _createSource();
+      final sourceId = await createSource();
 
       final clone = await cloneHandler.handle(
         CloneContractCommand(
@@ -120,7 +120,7 @@ void main() {
     });
 
     test('contracts created without cloning have null clonedFromContractId', () async {
-      final sourceId = await _createSource();
+      final sourceId = await createSource();
       final source = await repository.findById(sourceId, organizationId: 'org-1');
       expect(source!.clonedFromContractId, isNull);
     });
@@ -129,7 +129,7 @@ void main() {
   group('CloneContractHandler — tenant isolation (QA invariant)', () {
     test('throws DomainException when source belongs to a different org', () async {
       // Source in org-A
-      final sourceId = await _createSource(orgId: 'org-A');
+      final sourceId = await createSource(orgId: 'org-A');
 
       // Attacker in org-B tries to clone org-A's contract
       expect(
@@ -150,7 +150,7 @@ void main() {
     test('throws DomainException when source does not exist', () async {
       expect(
         () => cloneHandler.handle(
-          CloneContractCommand(
+          const CloneContractCommand(
             organizationId: 'org-1',
             sourceContractId: 'non-existent-id',
             name: 'Clone',
@@ -166,7 +166,7 @@ void main() {
 
   group('CloneContractHandler — domain invariants', () {
     test('throws DomainException for invalid date range (until before from)', () async {
-      final sourceId = await _createSource();
+      final sourceId = await createSource();
 
       expect(
         () => cloneHandler.handle(
@@ -184,7 +184,7 @@ void main() {
     });
 
     test('throws DomainException for empty name', () async {
-      final sourceId = await _createSource();
+      final sourceId = await createSource();
 
       expect(
         () => cloneHandler.handle(

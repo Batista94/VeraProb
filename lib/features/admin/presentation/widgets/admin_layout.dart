@@ -5,9 +5,11 @@ import '../../providers/admin_navigation_provider.dart';
 import '../../../../application/projections/providers/feed_health_projection_provider.dart';
 import '../../../../dev/performance_metrics.dart';
 import '../../../../state/providers/fleet_providers.dart';
+import '../../../../state/providers/contract_providers.dart';
 import '../../../../application/adapters/stress_scenario_config.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../lock_screen.dart';
+import '../../../../presentation/shell/widgets/onboarding_progress_banner.dart';
 
 class AdminLayout extends ConsumerWidget {
   final List<Widget> children;
@@ -109,7 +111,9 @@ class AdminLayout extends ConsumerWidget {
                   minExtendedWidth: 220,
                   selectedIndex: selectedIndex,
                   onDestinationSelected: (index) {
+                    if (index == selectedIndex) return; // stay on current screen
                     ref.read(adminIndexProvider.notifier).state = index;
+                    ref.read(selectedContractIdProvider.notifier).state = null;
                   },
                   useIndicator: true,
                   destinations: destinations,
@@ -118,11 +122,30 @@ class AdminLayout extends ConsumerWidget {
               Expanded(
                 child: Container(
                   color: PactaFlowColors.background,
-                  child: IndexedStack(
-                    index: selectedIndex,
-                    children: children
-                        .map((child) => _AnimatedPage(child: child))
-                        .toList(),
+                  child: Column(
+                    children: [
+                      OnboardingProgressBanner(
+                        // Translating destination labels to actual index in AdminHome
+                        onNavigate: (destIdx) {
+                          ref.read(adminIndexProvider.notifier).state = destIdx;
+                          ref.read(selectedContractIdProvider.notifier).state = null;
+                        },
+                      ),
+                      if (ref.watch(selectedContractIdProvider) != null)
+                        _InternalBackButton(
+                          onBack: () => ref
+                              .read(selectedContractIdProvider.notifier)
+                              .state = null,
+                        ),
+                      Expanded(
+                        child: IndexedStack(
+                          index: selectedIndex,
+                          children: children
+                              .map((child) => _AnimatedPage(child: child))
+                              .toList(),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -130,6 +153,35 @@ class AdminLayout extends ConsumerWidget {
           ),
           if (ref.watch(stressScenarioProvider) != null)
             const PerformanceOverlayHud(),
+        ],
+      ),
+    );
+  }
+}
+
+class _InternalBackButton extends StatelessWidget {
+  final VoidCallback onBack;
+  const _InternalBackButton({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+      child: Row(
+        children: [
+          TextButton.icon(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back_rounded, size: 18),
+            label: const Text('VOLTAR PARA LISTA'),
+            style: TextButton.styleFrom(
+              foregroundColor: PactaFlowColors.textSecondary,
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
         ],
       ),
     );

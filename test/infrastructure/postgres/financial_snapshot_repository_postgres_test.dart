@@ -15,7 +15,7 @@ void main() async {
     () {
       late SupabaseClient client;
       late PostgresContractualFinancialSnapshotRepository repository;
-      final uuid = const Uuid();
+      const uuid = Uuid();
 
       setUpAll(() async {
         if (isRunning) {

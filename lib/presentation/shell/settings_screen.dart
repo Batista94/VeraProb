@@ -36,7 +36,7 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 32),
 
                   // ── Seção: Sessão Atual ────────────────
-                  _SectionHeader(title: 'Sessão Atual'),
+                  const _SectionHeader(title: 'Sessão Atual'),
                   _SettingTile(
                     label: 'Operador Conectado',
                     value: operatorName,
@@ -51,7 +51,7 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 32),
 
                   // ── Seção: Conectividade ───────────────
-                  _SectionHeader(title: 'Dados e Conectividade'),
+                  const _SectionHeader(title: 'Dados e Conectividade'),
                   const _SettingTile(
                     label: 'Telemetria',
                     value: 'Real-time (Supabase)',
@@ -61,7 +61,7 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 32),
 
                   // ── Seção: Informações Técnicas ───────
-                  _SectionHeader(title: 'Sobre a Plataforma'),
+                  const _SectionHeader(title: 'Sobre a Plataforma'),
                   const _SettingTile(
                     label: 'Versão do Software',
                     value: '1.0.0-mvp.hardening',

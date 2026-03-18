@@ -212,7 +212,7 @@ class _FleetMapState extends ConsumerState<FleetMap> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 12,
                     height: 12,
                     child: CircularProgressIndicator(

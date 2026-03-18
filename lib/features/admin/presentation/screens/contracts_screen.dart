@@ -582,7 +582,7 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState();
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -591,8 +591,8 @@ class _EmptyState extends StatelessWidget {
             size: 80,
             color: PactaFlowColors.border,
           ),
-          const SizedBox(height: 24),
-          const Text(
+          SizedBox(height: 24),
+          Text(
             'Nenhum contrato encontrado',
             style: TextStyle(
               color: PactaFlowColors.textPrimary,
@@ -600,8 +600,8 @@ class _EmptyState extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          SizedBox(height: 8),
+          Text(
             'Crie um novo contrato para iniciar a auditoria de SLA.',
             style: TextStyle(color: PactaFlowColors.textSecondary),
           ),

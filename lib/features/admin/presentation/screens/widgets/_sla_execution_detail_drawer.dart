@@ -82,7 +82,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                       style: PactaFlowTypography.caption,
                     ),
                     const SizedBox(height: 16),
-                    _InfoField(
+                    const _InfoField(
                       label: 'Referência Geográfica',
                       value: 'Ocultado (Confidencial B2B)',
                     ),

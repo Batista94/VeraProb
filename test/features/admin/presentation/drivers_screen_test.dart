@@ -121,7 +121,7 @@ void main() {
     });
 
     testWidgets('Delete Driver flow', (tester) async {
-      final driver = const Driver(
+      const driver = Driver(
         id: '1',
         organizationId: 'test-org',
         name: 'João Silva',

@@ -59,7 +59,7 @@ class AdminHome extends StatelessWidget {
         NavigationRailDestination(
           icon: Icon(Icons.place_outlined),
           selectedIcon: Icon(Icons.place),
-          label: const Text('Zonas Operacionais'),
+          label: Text('Zonas Operacionais'),
         ),
         NavigationRailDestination(
           icon: Icon(Icons.summarize_outlined),

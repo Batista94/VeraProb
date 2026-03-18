@@ -54,17 +54,21 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
     return Dialog(
       backgroundColor: PactaFlowColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Container(
-        width: 400,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Header
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.report_problem_outlined,
                   color: PactaFlowColors.delayed,
                   size: 20,
@@ -179,7 +183,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
-                  borderSide: BorderSide(color: PactaFlowColors.primary),
+                  borderSide: const BorderSide(color: PactaFlowColors.primary),
                 ),
                 contentPadding: const EdgeInsets.all(10),
               ),
@@ -192,7 +196,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: Text(
+                  child: const Text(
                     'Cancelar',
                     style: TextStyle(color: PactaFlowColors.textSecondary),
                   ),
@@ -225,7 +229,8 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Future<void> _submit() async {

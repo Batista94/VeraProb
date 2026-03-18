@@ -46,12 +46,12 @@ Widget buildTestWidget({
       // the service is never called. Override it with a fixed test org.
       currentOrganizationIdProvider.overrideWithValue('org-test'),
     ],
-    child: MaterialApp(
+    child: const MaterialApp(
       home: Scaffold(
         body: SizedBox(
           width: 1200,
           height: 900,
-          child: const SlaFinancialImpactScreen(),
+          child: SlaFinancialImpactScreen(),
         ),
       ),
     ),

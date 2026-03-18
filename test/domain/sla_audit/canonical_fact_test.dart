@@ -5,8 +5,8 @@ import 'package:pactaflow/domain/sla_audit/ingestion_integrity_flag.dart';
 
 void main() {
   // ── Helpers ────────────────────────────────────────────────────────────────
-  final _receivedAt = DateTime.utc(2026, 3, 17, 14, 0, 0);
-  final _gpsTs = DateTime.utc(2026, 3, 17, 13, 55, 0); // 5 min before receipt
+  final receivedAt = DateTime.utc(2026, 3, 17, 14, 0, 0);
+  final gpsTs = DateTime.utc(2026, 3, 17, 13, 55, 0); // 5 min before receipt
 
   CanonicalFact makeValid({
     String organizationId = 'org-1',
@@ -29,8 +29,8 @@ void main() {
         assetId: assetId,
         deviceId: deviceId,
         sourceAdapter: sourceAdapter,
-        receivedAtUtc: receivedAtUtc ?? _receivedAt,
-        gpsTimestamp: gpsTimestamp ?? _gpsTs,
+        receivedAtUtc: receivedAtUtc ?? receivedAt,
+        gpsTimestamp: gpsTimestamp ?? gpsTs,
         lat: lat,
         lng: lng,
         speedCms: speedCms,
@@ -273,8 +273,8 @@ void main() {
         rawPayloadId: 'raw-1',
         deviceId: 'DEV-001',
         sourceAdapter: 'SASCAR_V1',
-        receivedAtUtc: _receivedAt,
-        gpsTimestamp: _gpsTs,
+        receivedAtUtc: receivedAt,
+        gpsTimestamp: gpsTs,
         lat: -23.5505,
         lng: -46.6333,
         integrityFlag: IngestionIntegrityFlag.ok,
@@ -294,8 +294,8 @@ void main() {
         rawPayloadId: 'raw-1',
         deviceId: 'DEV-001',
         sourceAdapter: 'SASCAR_V1',
-        receivedAtUtc: _receivedAt,
-        gpsTimestamp: _gpsTs,
+        receivedAtUtc: receivedAt,
+        gpsTimestamp: gpsTs,
         lat: -23.5505,
         lng: -46.6333,
         integrityFlag: IngestionIntegrityFlag.ok,
@@ -306,8 +306,8 @@ void main() {
         rawPayloadId: 'raw-1',
         deviceId: 'DEV-001',
         sourceAdapter: 'SASCAR_V1',
-        receivedAtUtc: _receivedAt,
-        gpsTimestamp: _gpsTs,
+        receivedAtUtc: receivedAt,
+        gpsTimestamp: gpsTs,
         lat: -23.5505,
         lng: -46.6333,
         integrityFlag: IngestionIntegrityFlag.ok,

@@ -12,18 +12,16 @@ final supabase = Supabase.instance.client;
 ///  3. Silent skip (in-memory test mode, no Supabase required)
 class SupabaseConfig {
   static Future<void> initialize() async {
-    // Load .env for local dev. Silently ignored in CI (file won't exist).
-    try {
-      await dotenv.load(fileName: '.env');
-    } catch (_) {
-      // Expected in CI/CD environments where --dart-define is used instead.
-    }
-
-    // .env takes priority over --dart-define for local dev overrides.
-    final url =
-        dotenv.env['SUPABASE_URL'] ?? EnvironmentConfig.supabaseUrl;
-    final anonKey =
-        dotenv.env['SUPABASE_KEY'] ?? EnvironmentConfig.supabaseAnonKey;
+    // Priority: 
+    // 1. EnvironmentConfig (via --dart-define)
+    // 2. dotenv (via .env file)
+    final url = EnvironmentConfig.supabaseUrl.isNotEmpty 
+        ? EnvironmentConfig.supabaseUrl 
+        : (dotenv.env['SUPABASE_URL'] ?? '');
+        
+    final anonKey = EnvironmentConfig.supabaseAnonKey.isNotEmpty
+        ? EnvironmentConfig.supabaseAnonKey
+        : (dotenv.env['SUPABASE_KEY'] ?? '');
 
     if (url.isEmpty || anonKey.isEmpty) {
       // Allowed in Phase 0 / in-memory test mode — no Supabase connection needed.

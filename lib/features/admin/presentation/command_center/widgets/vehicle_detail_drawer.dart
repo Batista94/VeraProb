@@ -299,7 +299,7 @@ class _SuggestionSection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb, color: PactaFlowColors.primary, size: 18),
+              const Icon(Icons.lightbulb, color: PactaFlowColors.primary, size: 18),
               const SizedBox(width: 8),
               Text(
                 'SUGESTÃO DO SISTEMA',
@@ -502,7 +502,7 @@ class _ActionsSection extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(
+            child: const Text(
               'Não',
               style: TextStyle(color: PactaFlowColors.textSecondary),
             ),

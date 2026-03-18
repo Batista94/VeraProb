@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/config/environment.dart';
 import 'core/theme/app_theme.dart';
 import 'core/time/brazil_time.dart';
 import 'features/shared/providers.dart';
@@ -18,6 +21,18 @@ import 'state/providers/auth_providers.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   BrazilTime.ensureInitialized(); // timezone DB must be ready before ShiftPattern.create()
+
+  // Bootstrap environment
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // Expected in CI/CD where --dart-define is used
+  }
+
+  // Security Log (Debug only)
+  if (kDebugMode) {
+    print('[PactaFlow] Mode: ${EnvironmentConfig.label} | Endpoint: ${EnvironmentConfig.supabaseUrl}');
+  }
 
   // FASE 0 - Passively initialize Supabase. No overrides or dependencies created.
   await SupabaseConfig.initialize();

@@ -84,8 +84,9 @@ class ShiftProjectionService {
         // Industrial cycle filter: skip dates outside the pattern's week slot.
         if (pattern.weekCycle != WeekCycle.everyWeek) {
           final anchor = plan.cycleAnchorDateUtc;
-          if (anchor == null)
+          if (anchor == null) {
             continue; // guard — should not happen after validation
+          }
           final daysDiff = dateOnly.difference(anchor).inDays;
           final weekIndex = ((daysDiff ~/ 7) % 4 + 4) % 4;
           if (weekIndex != pattern.weekCycle.index - 1) continue;

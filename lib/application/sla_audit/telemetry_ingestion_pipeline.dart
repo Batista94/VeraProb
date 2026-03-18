@@ -109,10 +109,10 @@ class TelemetryIngestionPipeline {
     final Set<String> lateArrivalAssetIds = {};
 
     // ── 6.5.4: Per-device state for sequential kinematic check ───────────────
-    final Map<String, CanonicalFact> _lastKnownFact = {};
+    final Map<String, CanonicalFact> lastKnownFact = {};
 
     // ── Asset status cache (avoid repeated DB queries per fact) ──────────────
-    final Map<String, AssetStatus> _statusCache = {};
+    final Map<String, AssetStatus> statusCache = {};
 
     for (final fact in sorted) {
       // ── Step 1: Integrity flag filter (stored by Edge Function) ─────────────
@@ -123,7 +123,7 @@ class TelemetryIngestionPipeline {
 
       // ── Step 2: Sequential kinematic jump check (6.5.4) ─────────────────────
       final deviceKey = '${fact.organizationId}|${fact.deviceId}';
-      final lastFact = _lastKnownFact[deviceKey];
+      final lastFact = lastKnownFact[deviceKey];
 
       if (lastFact != null) {
         final distanceM = _haversineMeters(
@@ -151,18 +151,18 @@ class TelemetryIngestionPipeline {
         }
       }
 
-      _lastKnownFact[deviceKey] = fact;
+      lastKnownFact[deviceKey] = fact;
 
       // ── Step 3: Asset status check (6.5.3 / INV-13) ─────────────────────────
       if (_assetStatusRepo != null && fact.assetId != null) {
         final assetId = fact.assetId!;
-        final cacheKey = '${organizationId}|$assetId';
-        _statusCache[cacheKey] ??= await _assetStatusRepo.getCurrentStatus(
+        final cacheKey = '$organizationId|$assetId';
+        statusCache[cacheKey] ??= await _assetStatusRepo.getCurrentStatus(
           assetId: assetId,
           organizationId: organizationId,
         );
 
-        final status = _statusCache[cacheKey]!;
+        final status = statusCache[cacheKey]!;
         if (status == AssetStatus.maintenance ||
             status == AssetStatus.offDuty) {
           skippedByAssetStatus++;

@@ -10,8 +10,8 @@ void main() {
   SLAPenalties makePenalties() => SLAPenalties.create(
         noShowPenaltyMultiplier: 1.5,
         delayToleranceMinutes: 15,
-        delayPenaltyPerMinute: Money(50),
-        downgradePenaltyFlat: Money(5000),
+        delayPenaltyPerMinute: const Money(50),
+        downgradePenaltyFlat: const Money(5000),
       );
 
   // ── SlaTemplate.create ─────────────────────────────────────

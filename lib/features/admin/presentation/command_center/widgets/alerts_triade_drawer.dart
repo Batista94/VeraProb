@@ -21,9 +21,9 @@ class AlertsTriadeDrawer extends ConsumerWidget {
 
     return Container(
       width: 340,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: PactaFlowColors.surface,
-        border: const Border(
+        border: Border(
           left: BorderSide(color: PactaFlowColors.border, width: 1),
         ),
       ),
@@ -44,7 +44,7 @@ class AlertsTriadeDrawer extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.warning_amber_rounded,
                       color: PactaFlowColors.critical,
                       size: 20,
@@ -245,7 +245,7 @@ class _AlertCard extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.info_outline,
                     size: 14,
                     color: PactaFlowColors.textSecondary,

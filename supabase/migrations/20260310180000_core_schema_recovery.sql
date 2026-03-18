@@ -5,7 +5,7 @@
 
 -- 1. DRIVERS
 CREATE TABLE IF NOT EXISTS public.drivers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     full_name TEXT NOT NULL,
     license_number TEXT UNIQUE NOT NULL,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'pending')),
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.drivers (
 
 -- 2. ROUTES
 CREATE TABLE IF NOT EXISTS public.routes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     gtfs_route_id TEXT UNIQUE,
     short_name TEXT,
     long_name TEXT DEFAULT '',
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS public.routes (
 
 -- 3. TRIPS AUDIT (The reality table expected by TripRepositoryImpl)
 CREATE TABLE IF NOT EXISTS public.trips_audit (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     driver_id UUID REFERENCES public.drivers(id) ON DELETE SET NULL,
     route_id UUID REFERENCES public.routes(id) ON DELETE CASCADE,
     status TEXT DEFAULT 'scheduled' 

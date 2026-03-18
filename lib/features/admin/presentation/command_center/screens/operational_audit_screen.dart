@@ -324,7 +324,7 @@ class _FilterChip extends StatelessWidget {
               const SizedBox(width: 4),
               GestureDetector(
                 onTap: onClear,
-                child: Icon(
+                child: const Icon(
                   Icons.close,
                   size: 14,
                   color: PactaFlowColors.primary,
@@ -373,9 +373,9 @@ class _AuditSidePanel extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Detalhes do Registro',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: PactaFlowColors.textPrimary,

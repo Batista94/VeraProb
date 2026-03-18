@@ -583,16 +583,16 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
+          const SnackBar(
+            content: Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white, size: 20),
                 SizedBox(width: 10),
                 Text('Veículo cadastrado com sucesso'),
               ],
             ),
-            backgroundColor: const Color(0xFF2E7D32),
-            duration: const Duration(seconds: 3),
+            backgroundColor: Color(0xFF2E7D32),
+            duration: Duration(seconds: 3),
           ),
         );
         widget.onVehicleAdded(vehicle.id);

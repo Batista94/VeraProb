@@ -196,26 +196,25 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: PactaFlowColors.background, // Nested feel
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      fillColor: PactaFlowColors.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: PactaFlowColors.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: PactaFlowColors.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(
           color: PactaFlowColors.primary,
           width: 1.5,
         ),
       ),
-      labelStyle: TextStyle(color: PactaFlowColors.textSecondary, fontSize: 13),
-      hintStyle: TextStyle(color: PactaFlowColors.textDisabled, fontSize: 13),
-      isDense: true,
+      labelStyle: const TextStyle(color: PactaFlowColors.textSecondary, fontSize: 13),
+      hintStyle: const TextStyle(color: PactaFlowColors.textDisabled, fontSize: 13),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(

@@ -213,7 +213,7 @@ class _AlertCard extends ConsumerWidget {
                   ),
                   Text(
                     formatter.format(alert.triggeredAtUtc.toLocal()),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: PactaFlowColors.textSecondary,
                       fontSize: 11,
                     ),
@@ -225,7 +225,7 @@ class _AlertCard extends ConsumerWidget {
               // Details row
               Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.route,
                     size: 14,
                     color: PactaFlowColors.textSecondary,
@@ -233,13 +233,13 @@ class _AlertCard extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Text(
                     alert.entityId,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: PactaFlowColors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Icon(
+                  const Icon(
                     Icons.description_outlined,
                     size: 14,
                     color: PactaFlowColors.textSecondary,
@@ -248,7 +248,7 @@ class _AlertCard extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       alert.contractId,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: PactaFlowColors.textSecondary,
                         fontSize: 12,
                       ),

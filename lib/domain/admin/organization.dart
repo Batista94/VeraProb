@@ -27,13 +27,13 @@ class Organization extends Equatable {
     String? logoUrl,
   }) {
     return Organization(
-      id: this.id,
+      id: id,
       name: name ?? this.name,
       timezone: timezone ?? this.timezone,
       currencyCode: currencyCode ?? this.currencyCode,
       logoUrl: logoUrl ?? this.logoUrl,
-      isActive: this.isActive,
-      createdAt: this.createdAt,
+      isActive: isActive,
+      createdAt: createdAt,
     );
   }
 

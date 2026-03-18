@@ -100,7 +100,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
   }) {
     if (previousSnapshotId != null &&
         (reprocessingReason == null || reprocessingReason.trim().isEmpty)) {
-      throw DomainException(
+      throw const DomainException(
         'A reprocessing reason is required when providing a previousSnapshotId.',
       );
     }

@@ -13,7 +13,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 1. DRIVERS
 -- ============================================================
 CREATE TABLE public.drivers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     full_name TEXT NOT NULL,
     license_number TEXT UNIQUE NOT NULL,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'pending')),
@@ -25,7 +25,7 @@ CREATE TABLE public.drivers (
 -- 2. VEHICLES
 -- ============================================================
 CREATE TABLE public.vehicles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     plate TEXT UNIQUE NOT NULL,
     model TEXT,
     capacity INTEGER NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE public.vehicles (
 -- 3. ROUTES (normalized from GTFS or manual)
 -- ============================================================
 CREATE TABLE public.routes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     gtfs_route_id TEXT UNIQUE,
     short_name TEXT NOT NULL,         -- e.g. "809U-10"
     long_name TEXT NOT NULL DEFAULT '',-- e.g. "Cidade Universitária"
@@ -52,7 +52,7 @@ CREATE TABLE public.routes (
 -- 4. STOPS (transit stops from GTFS)
 -- ============================================================
 CREATE TABLE public.stops (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     gtfs_stop_id TEXT UNIQUE,
     name TEXT NOT NULL,
     location GEOGRAPHY(POINT, 4326) NOT NULL,
@@ -65,7 +65,7 @@ CREATE INDEX idx_stops_location ON public.stops USING GIST (location);
 -- 5. ROUTE SHAPES (polyline geometry for map rendering)
 -- ============================================================
 CREATE TABLE public.route_shapes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     route_id UUID REFERENCES public.routes(id) ON DELETE CASCADE,
     gtfs_shape_id TEXT,
     geometry GEOGRAPHY(LINESTRING, 4326),
@@ -78,7 +78,7 @@ CREATE INDEX idx_route_shapes_route ON public.route_shapes(route_id);
 -- 6. STOP SEQUENCES (order of stops per route)
 -- ============================================================
 CREATE TABLE public.stop_sequences (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     route_id UUID REFERENCES public.routes(id) ON DELETE CASCADE,
     stop_id UUID REFERENCES public.stops(id) ON DELETE CASCADE,
     sequence_order INTEGER NOT NULL,
@@ -89,7 +89,7 @@ CREATE TABLE public.stop_sequences (
 -- 7. SCHEDULED TRIPS (from GTFS Static — the plan)
 -- ============================================================
 CREATE TABLE public.scheduled_trips (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     route_id UUID REFERENCES public.routes(id) ON DELETE CASCADE,
     gtfs_trip_id TEXT UNIQUE,
     headsign TEXT,
@@ -104,7 +104,7 @@ CREATE TABLE public.scheduled_trips (
 -- 8. OPERATIONAL TRIPS (the central entity — reality)
 -- ============================================================
 CREATE TABLE public.operational_trips (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     scheduled_trip_id UUID REFERENCES public.scheduled_trips(id) ON DELETE SET NULL,
     driver_id UUID REFERENCES public.drivers(id) ON DELETE SET NULL,
     vehicle_id UUID REFERENCES public.vehicles(id) ON DELETE SET NULL,

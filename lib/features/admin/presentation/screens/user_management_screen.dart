@@ -72,8 +72,9 @@ class UserManagementScreen extends ConsumerWidget {
                     ),
                     data: (members) => Column(
                       children: List.generate(members.length * 2 - 1, (i) {
-                        if (i.isOdd)
+                        if (i.isOdd) {
                           return const Divider(color: PactaFlowColors.border);
+                        }
                         final member = members[i ~/ 2];
                         final isSelf = member.userId == currentUserId;
                         return ListTile(

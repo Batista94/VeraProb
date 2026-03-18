@@ -47,7 +47,7 @@ void main() {
     );
   });
 
-  UpdateContractualRuleCommand _cmd({
+  UpdateContractualRuleCommand cmd({
     UserRole role = UserRole.admin,
     SlaRuleType ruleType = SlaRuleType.minGeofenceCoverage,
     Map<String, dynamic>? config,
@@ -69,7 +69,7 @@ void main() {
 
     test('operator role is denied — canEditSlaRules is admin-only', () async {
       expect(
-        () => handler.handle(_cmd(role: UserRole.operator)),
+        () => handler.handle(cmd(role: UserRole.operator)),
         throwsA(isA<DomainException>().having(
           (e) => e.message,
           'message',
@@ -80,7 +80,7 @@ void main() {
 
     test('auditor role is denied — canEditSlaRules is admin-only', () async {
       expect(
-        () => handler.handle(_cmd(role: UserRole.auditor)),
+        () => handler.handle(cmd(role: UserRole.auditor)),
         throwsA(isA<DomainException>()),
       );
     });
@@ -88,7 +88,7 @@ void main() {
     // ── 7.3: Successful version transition ───────────────────
 
     test('admin creates first version — returns new rule UUID', () async {
-      final newId = await handler.handle(_cmd(oldRuleId: null));
+      final newId = await handler.handle(cmd(oldRuleId: null));
       expect(newId, 'new-rule-uuid-1234');
       expect(fakeService.lastOldRuleId, isNull);
       expect(fakeService.lastRuleType, SlaRuleType.minGeofenceCoverage);
@@ -96,7 +96,7 @@ void main() {
     });
 
     test('admin updates existing version — passes oldRuleId to service', () async {
-      final newId = await handler.handle(_cmd(oldRuleId: 'old-uuid'));
+      final newId = await handler.handle(cmd(oldRuleId: 'old-uuid'));
       expect(newId, 'new-rule-uuid-1234');
       expect(fakeService.lastOldRuleId, 'old-uuid');
     });
@@ -105,7 +105,7 @@ void main() {
 
     test('MIN_GEOFENCE_COVERAGE with wrong key throws DomainException', () async {
       expect(
-        () => handler.handle(_cmd(
+        () => handler.handle(cmd(
           ruleType: SlaRuleType.minGeofenceCoverage,
           config: {'wrong_key': 30},
         )),
@@ -118,7 +118,7 @@ void main() {
     });
 
     test('MAX_TOLERANCE_DELAY with correct key passes validation', () async {
-      final newId = await handler.handle(_cmd(
+      final newId = await handler.handle(cmd(
         ruleType: SlaRuleType.maxToleranceDelay,
         config: {'threshold_minutes': 5},
       ));
@@ -126,7 +126,7 @@ void main() {
     });
 
     test('NO_SHOW_PENALTY with correct key passes validation', () async {
-      final newId = await handler.handle(_cmd(
+      final newId = await handler.handle(cmd(
         ruleType: SlaRuleType.noShowPenalty,
         config: {'penalty_amount_cents': 15000},
       ));
@@ -134,7 +134,7 @@ void main() {
     });
 
     test('MAX_EVIDENCE_GAP with correct key passes validation', () async {
-      final newId = await handler.handle(_cmd(
+      final newId = await handler.handle(cmd(
         ruleType: SlaRuleType.maxEvidenceGap,
         config: {'max_gap_seconds': 300},
       ));

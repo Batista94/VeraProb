@@ -862,11 +862,13 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (v) {
                       if (_lat == null) return null;
-                      if (v == null || v.isEmpty)
+                      if (v == null || v.isEmpty) {
                         return 'Obrigatório com geofence';
+                      }
                       final n = int.tryParse(v);
-                      if (n == null || n <= 0 || n > 50000)
+                      if (n == null || n <= 0 || n > 50000) {
                         return '1 a 50.000 m';
+                      }
                       return null;
                     },
                   ),

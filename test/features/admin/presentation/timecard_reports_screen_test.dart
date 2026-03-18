@@ -58,7 +58,7 @@ void main() {
     });
 
     testWidgets('renders Rows with Data', (tester) async {
-      final driver = const Driver(
+      const driver = Driver(
         id: '1',
         organizationId: 'test-org',
         name: 'João Silva',

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:pactaflow/application/sla_audit/declare_contractual_plan_command.dart';
@@ -253,10 +253,9 @@ class _DeclareContractPlanFormState
     return '$h:$m';
   }
 
-  String _formatCents(int cents) {
-    final reais = cents / 100.0;
-    return 'R\$ ${reais.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
+  String _formatCents(int cents) =>
+      NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$ ')
+          .format(cents / 100.0);
 
   String _formatDays(Set<int> days) {
     const map = {
@@ -918,7 +917,7 @@ class _DeclareContractPlanFormState
 
         // ── Fuso Horário ──────────────────────────────────────
         DropdownButtonFormField<String>(
-          value: _kBrTimezones.contains(_timezone)
+          initialValue: _kBrTimezones.contains(_timezone)
               ? _timezone
               : _kBrTimezones.first,
           decoration: const InputDecoration(
@@ -937,7 +936,7 @@ class _DeclareContractPlanFormState
 
         // ── Categoria de Veículo Exigida ──────────────────────
         DropdownButtonFormField<VehicleCategory>(
-          value: _requiredVehicleCategory,
+          initialValue: _requiredVehicleCategory,
           decoration: const InputDecoration(
             labelText: 'Categoria de Veículo Exigida *',
             border: OutlineInputBorder(),
@@ -956,7 +955,7 @@ class _DeclareContractPlanFormState
 
         // ── Ciclo de Recorrência (WeekCycle) ──────────────────
         DropdownButtonFormField<WeekCycle>(
-          value: _weekCycle,
+          initialValue: _weekCycle,
           decoration: const InputDecoration(
             labelText: 'Ciclo de Recorrência *',
             border: OutlineInputBorder(),
@@ -1100,7 +1099,7 @@ class _DeclareContractPlanFormState
         const SizedBox(height: PactaFlowSpacing.lg),
 
         // ── Grupo 1: Pontualidade ──────────────────────────────
-        _SectionHeader(
+        const _SectionHeader(
           icon: Icons.schedule,
           label: 'Pontualidade e Janelas Operacionais',
         ),
@@ -1137,7 +1136,7 @@ class _DeclareContractPlanFormState
         const SizedBox(height: PactaFlowSpacing.lg),
 
         // ── Grupo 2: Falhas Críticas ───────────────────────────
-        _SectionHeader(
+        const _SectionHeader(
           icon: Icons.warning_amber_rounded,
           label: 'Falhas Críticas (Cláusulas de Penalidade)',
         ),
@@ -1165,7 +1164,7 @@ class _DeclareContractPlanFormState
         const SizedBox(height: PactaFlowSpacing.lg),
 
         // ── Grupo 3: Qualidade da Frota ────────────────────────
-        _SectionHeader(icon: Icons.directions_bus, label: 'Qualidade da Frota'),
+        const _SectionHeader(icon: Icons.directions_bus, label: 'Qualidade da Frota'),
         const SizedBox(height: PactaFlowSpacing.sm),
         Row(
           children: [
@@ -1531,10 +1530,10 @@ class _DeclareContractPlanFormState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!hasBaseTripValue)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
             child: Row(
-              children: const [
+              children: [
                 Icon(
                   Icons.info_outline,
                   size: 14,
@@ -1605,7 +1604,7 @@ class _DeclareContractPlanFormState
               ),
             ] else ...[
               const SizedBox(width: 12),
-              Expanded(
+              const Expanded(
                 child: _KpiCard(
                   icon: Icons.lock_outline,
                   label: 'Risco Relativo',
@@ -1630,7 +1629,10 @@ class _DeclareContractPlanFormState
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 800, maxHeight: 740),
+        constraints: BoxConstraints(
+          maxWidth: 800,
+          maxHeight: (MediaQuery.sizeOf(context).height * 0.9).clamp(500, 740),
+        ),
         child: Column(
           children: [
             // Header

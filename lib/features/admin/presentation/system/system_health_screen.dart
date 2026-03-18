@@ -26,21 +26,21 @@ class SystemHealthScreen extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Feed status cards
-          _FeedStatusCard(
+          const _FeedStatusCard(
             name: 'SPTrans Olho Vivo',
             status: 'Aguardando conexão',
             isOnline: false,
             lastUpdate: '—',
           ),
           const SizedBox(height: 12),
-          _FeedStatusCard(
+          const _FeedStatusCard(
             name: 'GTFS Static (São Paulo)',
             status: 'Não importado',
             isOnline: false,
             lastUpdate: '—',
           ),
           const SizedBox(height: 12),
-          _FeedStatusCard(
+          const _FeedStatusCard(
             name: 'Supabase Realtime',
             status: 'Aguardando configuração',
             isOnline: false,

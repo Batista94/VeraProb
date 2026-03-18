@@ -206,7 +206,7 @@ class _SearchSortBar extends StatelessWidget {
                 ),
                 decoration: InputDecoration(
                   hintText: 'Buscar linha...',
-                  hintStyle: TextStyle(
+                  hintStyle: const TextStyle(
                     fontSize: 12,
                     color: PactaFlowColors.textDisabled,
                   ),
@@ -322,7 +322,7 @@ class _TripCard extends StatelessWidget {
               child: Row(
                 children: [
                   if (trip.vehiclePlate != null) ...[
-                    Icon(
+                    const Icon(
                       Icons.directions_bus,
                       size: 12,
                       color: PactaFlowColors.textDisabled,
@@ -335,7 +335,7 @@ class _TripCard extends StatelessWidget {
                     const SizedBox(width: 8),
                   ],
                   if (trip.driverName != null) ...[
-                    Icon(
+                    const Icon(
                       Icons.person,
                       size: 12,
                       color: PactaFlowColors.textDisabled,
@@ -446,8 +446,8 @@ class _ActiveFilterBanner extends StatelessWidget {
           InkWell(
             onTap: onClear,
             borderRadius: BorderRadius.circular(10),
-            child: Padding(
-              padding: const EdgeInsets.all(2),
+            child: const Padding(
+              padding: EdgeInsets.all(2),
               child: Icon(
                 Icons.close,
                 size: 14,
