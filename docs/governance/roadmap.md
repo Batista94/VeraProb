@@ -275,13 +275,6 @@ Tag vX.Y.Z →
   - **Implementation:** Integrar engine de anti-spoofing no pipeline de avaliação.
   - **Validation:** Testar com datasets de spoofing conhecido e verificar flags no vederito.
 - **Personas:** `qa_security`, `architect`
-* Novo widget `OnboardingProgressBanner` em `lib/presentation/shell/admin_shell.dart`
-  - Exibe: Zonas ✓/✗ · Contractors ✓/✗ · Veículos ✓/✗ · SLA Template ✓/✗
-  - Itens clicáveis → navegam para tela correspondente
-  - Desaparece automaticamente quando todos os 4 pré-requisitos satisfeitos
-  - Providers: `operationalZonesProvider`, `contractorListProvider`, `vehicleListProvider`, `activeRulesProvider`
-
-**Personas:** `senior_engineer` (8.8.1, 8.8.2, 8.8.5) · `qa_security` (8.8.3, 8.8.4)
 
 ---
 
