@@ -50,11 +50,12 @@ All non-trivial changes must be reviewed by the specialized personas in `docs/co
 ---
 
 ## 6. Project Roadmap State (Q1 2026)
-*   **Phase 5 (B2B Refactoring):** Advanced state. 
-    *   *Completed:* SLA Templates, Contract Cloning, JIT Zones/Contractors.
-    *   *Current Focus:* Financial Protection Engine (Teto Financeiro, Grace Period).
-*   **Phase 6 (Administration):** **CONCLUÍDA**.
-    *   *Implementado:* Advanced RBAC, Custom JWT Claims (Org ID), Dashboard Consolidado, Convites de Usuários e Aprovação de Contratos.
+*   **Phase 5 (B2B Refactoring):** **CONCLUÍDA**. 
+    *   *Feitos:* SLA Templates, Contract Cloning, JIT Zones/Contractors, Teto Financeiro e Grace Period.
+*   **Phase 6 (Administration & Assets):** **CONCLUÍDA** (Sub-blocos 1-8).
+    *   *Implementado:* Advanced RBAC, Custom JWT Claims (Org ID), Dashboard Consolidado, Convites de Usuários, Aprovação de Contratos e **Asset Manager** (Drivers, Routes, Vehicles com isolamento RLS).
+*   **Phase 6.5 (Ingestion & Resilience):** **CONCLUÍDA**.
+    *   *Realizado:* Ingestão resiliente (Sascar/Omnitracs), Anti-Corruption Edge, Chaos Tolerance (Late Arrival, Ordering), Asset State Machine e Kinematic Filtering. 481 testes passando. ✅
 
 ---
-*Last updated: March 16, 2026 — Sprint 5.12+ (Financial Protection Expansion)*
+*Last updated: March 17, 2026 — Phase 6.5 (Ingestion & Resilience)*

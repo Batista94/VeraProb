@@ -6,44 +6,44 @@
 
 | Aspecto | Estado |
 |---------|--------|
-| Testes | 438 passing · 0 falhas ✅ |
+| Testes | 481 passing · 0 falhas ✅ |
 | Análise estática | 0 erros · 75 infos |
 | Precisão financeira | `Money` (centavos BIGINT) — Enforced ✅ |
 | Sprint 5.11 - 5.12 | **CONCLUÍDAS** — JIT Master Data, RLS, UTC. |
 | Sprint 5.13 | **CONCLUÍDA** — Teto Financeiro, Carência (Grace Period) e Risk KPIs. ✅ |
 | Phase 6 | **CONCLUÍDA** — Administration, RBAC, Invitations e Approval Workflow. ✅ |
 | Bloco 8 | **CONCLUÍDO** — Asset Manager, `organization_id` isolation, tabbed CRUD. ✅ |
-| Banco de dev | Todas as migrations aplicadas — `20260322...` |
+| Phase 6.5 | **CONCLUÍDA** — Anti-Corruption Edge, Chaos Tolerance, Asset State Machine, Kinematic Filter. ✅ |
+| Banco de dev | Todas as migrations aplicadas — `20260325...` |
 
-## Fases Pendentes
+## Fases Pendentes (Próximas Etapas)
 
-### [x] Phase 5 — B2B Refactoring & Foundation (CONCLUÍDA) ✅
-*   **Resultados:** JIT Master Data, RLS, Teto Financeiro, Carência e Evidence Locker validados.
+### [x] Phase 6.5 — Operational Resilience & Ingestion Architecture 🌊 ✅
+**Objetivo:** Preparar a plataforma para o caos do mundo real (atrasos de telemetria, ruído de hardware e integração com terceiros).
 
----
+#### [x] 6.5.1 — Anti-Corruption Edge (Adapters) ✅
+- **Design:** Adapters via Supabase Edge Functions (Sascar/Omnitracs). INV-16 + INV-17 propostos e implementados.
+- **Review:** `provider_api_keys` isolam `organization_id` do payload. Raw blobs selados com SHA-256.
+- **Implementation:** `ingest-sascar` + `ingest-omnitracs` Edge Functions. `CanonicalFact` domain entity. `IngestionIntegrityFlag` enum. Tabelas: `provider_api_keys`, `raw_telemetry_payloads` (com `payload_hash`), `canonical_facts`. Idempotência via hash garantida.
+- **Validation:** 28 testes domain + Smoke test OK (accepted + LATE_ARRIVAL). 481 testes no total. ✅
 
-### [ ] Phase 6 — Administration & Tenant Self-Service 🚀
+#### [x] 6.5.2 — Chronological Chaos Tolerance ✅
+- **Design:** `TelemetryIngestionPipeline` — ordena por `gps_timestamp ASC`. Separação `received_at_utc` de `gps_timestamp` (INV-16).
+- **Review:** `lateArrival` facts são processados; retroactive invalidation delegado a Phase 7.5.1. Filtro `NULL_ISLAND` integrado.
+- **Implementation:** `TelemetryIngestionPipeline` + `CanonicalFactRepository` + in-memory impl.
+- **Validation:** 5 testes de chaos (ordering, late arrival, futureTimestamp, nullIsland, totals). ✅
 
-#### BLOCOS 1 a 8 — CONCLUÍDOS ✅
-*Arquivamento de tarefas concluídas para otimização de contexto.*
+#### [x] 6.5.3 — Asset State Machine ✅
+- **Design:** `AssetStatus` enum (active/maintenance/offDuty) + `AssetStatusEvent` (event-sourced).
+- **Review:** `MAINTENANCE` e `OFF_DUTY` suprimem avaliação no pipeline — zero falsos positivos (INV-13).
+- **Implementation:** `AssetStatusRepository` + `InMemoryAssetStatusRepository` + migration `asset_status_events` + `get_current_asset_status()` function.
+- **Validation:** 6 testes (maintenance suppression, off-duty, default active, replay, UTC invariant).
 
-*   **1-3 Foundation:** RLS JWT Path unification, `Contractor` Aggregate, `RbacService` & guards.
-*   **4-5 Management:** CRM de Organizações, Membros e Contractors. Fluxo de convite via token.
-*   **6 Approval:** Workflow de aprovação de contratos com tokens de review público.
-*   **7 Rule Studio:** Edição atômica de regras, versionamento, simulação de impacto e `gracePeriod`.
-*   **8 Asset Manager:** `organization_id` em `drivers`, `routes`, `vehicles` (nova tabela). RLS tenant isolation. `VehiclesTab`, `RoutesTab`, `ResourceManagementScreen` tabbed CRUD. 438 passing.
-*   **SQL:** Migrations 20260317... a 20260322... aplicadas e validadas.
-*   **Testes:** 438 passing (100% Green).
-
-#### BLOCO 9 — First Run Flow & Phase 6 Validation
-- [ ] 9.1 Public Organization Self-Registration (`/register`)
-- [ ] 9.2 First Run Wizard (Guided 5-step flow)
-- [ ] 9.3 Automated Scenarios (Isolation, RBAC, Immutability)
-- [ ] 9.4 Compliance Report: `docs/governance/compliance/phase6_compliance_report.md`
-- [ ] 9.5 **UX Polish**: Add `semanticsLabel` to critical icons and implement premium transitions for the "Digital Judge" feel.
-- **SQL:** `20260323000001_org_registration_rpc.sql`
- [ ] 9.4 Compliance Report: `docs/governance/compliance/phase6_compliance_report.md`
-- **SQL:** `20260323000001_org_registration_rpc.sql`
+#### [x] 6.5.4 — Kinematic Noise Filter ✅
+- **Design:** Filtro Haversine sequencial em `TelemetryIngestionPipeline` (stateful, in-memory por run). Edge Functions fazem checks single-point; pipeline faz checks sequenciais.
+- **Review:** Devices isolados — state de Device A não contamina Device B.
+- **Implementation:** `_haversineMeters` check em `TelemetryIngestionPipeline.process()`. Max 200 km/h implícito.
+- **Validation:** 4 testes (200m jitter, same-timestamp glitch, valid 80km/h movement, device isolation).
 
 ---
 
@@ -122,6 +122,27 @@ Validar antes de implementar:
 
 ---
 
+### [ ] Phase 7.5 — Financial Defense & Shadow Mode 🛡️
+**Objetivo:** Criar mecanismos indestrutíveis de prova judicial (Apelo) e simulação de ROI acelerada (Shadow Mode).
+
+#### [ ] 7.5.1 — Tribunal de Apelações (Compensating Transactions)
+- **Design:** Registro contábil de estorno/crédito vinculado a débito existente.
+- **Review (@qa_security):** Proibir modificação do passado; exigir trilha de evidência (`evidence_locker_id`).
+- **Implementation:** UI de estorno de multa e lógica de neutralização no Ledger.
+- **Validation:** Auditoria: Verificar se o registro original permanece intacto após o perdão.
+
+#### [ ] 7.5.2 — Shadow Mode (Batch Import Engine)
+- **Design:** Bulk Ingestion de dados históricos para simulação de contratos.
+- **Review:** Garantir isolamento total do ambiente de produção (`shadow_tenant`).
+- **Implementation:** Worker de importação CSV e pipeline RuleEngine para dados retroativos.
+- **Validation:** Provar ROI para CFO em menos de 10 segundos com relatório comparativo.
+
+#### [ ] 7.5.3 — Forensic Hardening
+- **Design:** Habilitar `pgaudit` e triggers de rejeição de DELETE para superuser.
+- **Review:** Blindagem contra "The Superuser Loophole".
+- **Implementation:** Configuração de integridade a nível PostgreSQL.
+- **Validation:** Tentar deletar uma linha do Ledger como admin e receber erro 403 DB level.
+
 ### [ ] Phase 8 — Operational Hardening
 
 **Por que depois de Phase 7:** O hardening operacional prepara o produto para receber tráfego real.
@@ -150,11 +171,15 @@ Tag vX.Y.Z →
   deploy → Production (aprovação manual obrigatória)
 ```
 
-#### [ ] 8.2 — Separação de Ambientes
-- 3 projetos Supabase: `PactaFlow-dev` · `PactaFlow-staging` · `PactaFlow-prod`
-- Processo de promoção de migrations: dev → staging → prod (nunca pular)
-- `--dart-define` injetados por ambiente no CI (sem `.env` em pipeline)
-- Dados de teste **nunca** chegam em prod
+#### [!] 8.2 — Separação de Ambientes (Technical Debt)
+- [ ] **Environments Configuration**: Separação de chaves e instâncias (Dev / Staging / Prod).
+- [ ] **Migrations Pipeline**: Migrar de "Copy-Paste no SQL Editor" para `supabase db push` via CI/CD.
+- [ ] **Edge Functions CI**: Automação de deploy para triggers e hooks.
+- [ ] **Monitoramento**: Integração Sentry/PostHog para erros e analytics.
+- [ ] 3 projetos Supabase: `PactaFlow-dev` · `PactaFlow-staging` · `PactaFlow-prod`
+- [ ] Processo de promoção de migrations: dev → staging → prod (nunca pular)
+- [ ] `--dart-define` injetados por ambiente no CI (sem `.env` em pipeline)
+- [ ] Dados de teste **nunca** chegam em prod
 
 #### [ ] 8.3 — Observabilidade
 - Error tracking: Sentry (Flutter SDK + Supabase Edge Functions)
@@ -233,21 +258,38 @@ legais e de go-to-market necessárias para transformar o produto técnico em pro
 
 ---
 
+## Fases Concluídas (Histórico)
+
+### [x] Phase 6.5 — Operational Resilience & Ingestion Architecture ✅
+*Anti-Corruption Edge (Sascar/Omnitracs adapters), Chronological Chaos Tolerance, Asset State Machine, Kinematic Noise Filter. 481 testes passando.*
+
+### [x] Phase 6 — Administration & Tenant Self-Service ✅
+*RBAC, Gestão de Organização, Convites, Workflow de Aprovação de Contratos e Wizard de Onboarding.*
+
+### [x] Phase 5 — B2B Refactoring & Foundation ✅
+*Implementação de JIT Master Data, RLS Tenant Isolation, Teto Financeiro e Evidence Locker.*
+
+---
+
 ## Visão Geral de Execução
 
 ─────────────────────────────────────────────────────
 [x] Phase 5 — B2B Refactoring (Sprints 5.11, 5.12, 5.13) ✅
 ─────────────────────────────────────────────────────
-[ ] Phase 6 — Administration & Tenant Self-Service 🚀
-      - Organização, RBAC, Contractors e Autogestão de Usuários.
+[x] Phase 6 — Administration & Tenant Self-Service ✅
 ─────────────────────────────────────────────────────
-[ ] Phase 7 — Evidence & Audit Exports
+[x] Phase 6.5 — Operational Resilience 🌊 ✅
+─────────────────────────────────────────────────────
+[ ] Phase 7 — Evidence & Audit Exports (NEXT)
+─────────────────────────────────────────────────────
+[ ] Phase 7.5 — Financial Defense & Shadow Mode 🛡️
 ─────────────────────────────────────────────────────
 [ ] Phase 8 — Operational Hardening
 ─────────────────────────────────────────────────────
 
-### Próximo passo: Phase 6 Activation
-Foco em tornar o sistema multi-tenant autônomo.
-1. [ ] Seed `user_roles` para o usuário de dev como `TENANT_ADMIN`.
-2. [ ] CRUD de Organização e Gerenciamento de Membros.
-3. [ ] Convites de usuários via token.
+### Próximo passo: Phase 7 — Evidence & Audit Exports
+Transformar os snapshots financeiros imutáveis em evidências acionáveis.
+1. [ ] 7.1 Design Specification
+2. [ ] 7.2 Council Review
+3. [ ] 7.3 Implementation (BillingCycleReport, CSV/PDF export, Executive Dashboard, Portal de Transparência)
+4. [ ] 7.4 Validation
