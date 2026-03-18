@@ -52,12 +52,18 @@ jobs:
         with:
           version: latest
 
-      - name: Push migrations to Production
+      - name: Link Supabase project (Production)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          supabase db push --project-ref "$PROJECT_REF"
+          supabase link --project-ref "$PROJECT_REF"
+
+      - name: Push migrations to Production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase db push --yes
 
   build-prod:
     name: Build Web → Production
@@ -73,7 +79,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.32.x"
           channel: stable
           cache: true
 

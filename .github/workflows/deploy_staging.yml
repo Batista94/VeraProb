@@ -26,12 +26,18 @@ jobs:
           version: latest
 
       # Credentials are passed via env: block — NEVER interpolated directly in run:
-      - name: Push migrations to Staging
+      - name: Link Supabase project (Staging)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          supabase db push --project-ref "$PROJECT_REF"
+          supabase link --project-ref "$PROJECT_REF"
+
+      - name: Push migrations to Staging
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase db push --yes
 
   build-staging:
     name: Build Web → Staging
@@ -47,7 +53,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.32.x"
           channel: stable
           cache: true
 
