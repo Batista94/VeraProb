@@ -19,7 +19,7 @@
 
 ## Fases Pendentes (Próximas Etapas)
 
-### [ ] Phase 8 — Operational Hardening
+### [x] Phase 8 — Operational Hardening ✅
 
 **Objetivo:** Preparar o fluxo sistêmico e a infraestrutura para produção real.
 
@@ -42,23 +42,25 @@
 #### [x] 8.7 — Disaster Recovery ✅
 - Runbook de restore e testes de backup (Supabase PITR).
 
-- [x] **8.8 — Auditoria de Integridade de Telemetria (Anti-Spoofing)** ✅
+#### [x] 8.8 — Auditoria de Integridade de Telemetria (Anti-Spoofing) ✅
 - Detecção de Fake GPS e anomalias cinemáticas. (CONCLUÍDA 2026-03-19)
 
 ---
 
-### [ ] Trilha D — Lançamento
+### [ ] Phase 9 — Technical Review & Refinement
 
-**Objetivo:** Go-to-market, documentação de produto e piloto controlado.
+**Objetivo:** Revisão profunda do código e ajustes finos antes da exposição externa.
 
-#### [ ] D1 — Documentação de Produto
-- Landing page, guias de onboarding e integração.
+#### [ ] 9.1 — Code Review Geral
+- Auditoria de possíveis débitos técnicos acumulados nas Fases 6 a 8.
+- Validação de tipagem e null-safety em Edge Functions.
 
-#### [ ] D2 — Modelo Comercial
-- Pricing, Termos de Uso (LGPD) e integração Stripe.
+#### [ ] 9.2 — UX Refactorings
+- Polimento visual baseado nos feedbacks da Phase 8.1.
+- Revisão de fluxos de erro e estados vazios (Empty States).
 
-#### [ ] D3 — Piloto Beta Controlado
-- Seleção de 2-3 clientes reais e monitoramento intensivo.
+#### [ ] 9.3 — Business Rule Fine-tuning
+- Ajustes finais no Evaluation Engine para casos de borda identificados no Load Testing.
 
 ---
 

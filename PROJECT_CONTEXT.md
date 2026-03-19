@@ -39,6 +39,7 @@ All non-trivial changes must be reviewed by the specialized personas in `docs/co
 - **qa_security:** RLS, tenant isolation, and auditability.
 - **ux_operations:** Operator efficiency and "Zero-Friction" UX.
 - **business_maverick:** Market value, ROI, and competitive edge.
+- **lead_reviewer:** The Gatekeeper. Final filter for PRs and architectural integrity.
 
 ---
 
@@ -60,8 +61,10 @@ All non-trivial changes must be reviewed by the specialized personas in `docs/co
     *   *Feitos:* Audit Sealing (INV-16/17), Prova de Execução (Audit Packages), Dashboards Executivos e Portal do Contratante.
 *   **Phase 7.5 (Financial Defense & Shadow Mode):** **CONCLUÍDA**. 
     *   *Implementado:* Shadow Mode (ROI Simulator), Tribunal de Apelações e Hardening Forense DB-level. 568 testes operando. ✅
-*   **Phase 8.8 (Telemetry Integrity & Anti-Spoofing):** **CONCLUÍDA**. 
-    *   *Realizado:* Detecção ativa de Fake GPS (Haversine Variance), Audit Trail imutável com SHA-256 e Invariante 21 (bloqueio automático de suspeitas). ✅
+*   **Phase 8 (Operational Hardening & Resilience):** **CONCLUÍDA** (8.1 - 8.8). 
+    *   *Realizado:* CI/CD automatizado, Observabilidade (Sentry/PostHog), PII Masking, Disaster Recovery (PITR) e Detecção ativa de Fake GPS (Anti-Spoofing). 568 testes operando. ✅
+*   **Phase 9 (Technical Review & Refinement):** **EM ANDAMENTO**.
+    *   *Objetivo:* Auditoria profunda de código, polimento de UX e ajustes finos nas regras de negócio antes de qualquer exposição externa.
 
 ---
-*Last updated: March 19, 2026 — Phase 8.8 (Telemetry Integrity & Anti-Spoofing)*
+*Last updated: March 19, 2026 — Phase 8 (Operational Hardening) Consolidation*
