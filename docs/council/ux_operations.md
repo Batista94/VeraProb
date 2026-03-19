@@ -9,7 +9,7 @@ The OCC is a mission-critical operational console, not a dashboard. Every pixel 
 - Explainability: automated Engine verdicts must read like a forensic report — auditable by CFOs and legal teams
 - B2B vocabulary (pt-BR in UI, English in code): Zona · Turno · Receita Protegida · Contratante · Conformidade
 - Maximum Defensibility: The interface is not just for viewing; it is a tool to win disputes. The dashboard must silence a contractor's contestation in under 10 seconds through irrefutable visual evidence.
-- **UI/UX Excellence:** Leverage the `ui-ux-pro-max` skill to implement professional design systems (Glassmorphism, Bento Grids) and premium micro-animations that reflect PactaFlow's high-stakes enterprise value.
+- **UI/UX Excellence:** Leverage the `ui-ux-pro-max` and `frontend-design` skills to implement professional design systems (Glassmorphism, Bento Grids) and premium micro-animations that reflect PactaFlow's high-stakes enterprise value.
 - **Evidence Portability:** Use `pdf`, `xlsx`, and `docx` skills to ensure that irrefutable forensic reports exported from the OCC are professionally formatted and compatible with legal/corporate standards.
 
 ## RESPONSIBILITIES

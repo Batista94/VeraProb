@@ -42,8 +42,8 @@
 #### [x] 8.7 — Disaster Recovery ✅
 - Runbook de restore e testes de backup (Supabase PITR).
 
-- [x] **8.8 — Auditoria de Integridade de Telemetria (Anti-Spoofing)** (COMPLETED 2026-03-19)
-- Detecção de Fake GPS e anomalias cinemáticas.
+- [x] **8.8 — Auditoria de Integridade de Telemetria (Anti-Spoofing)** ✅
+- Detecção de Fake GPS e anomalias cinemáticas. (CONCLUÍDA 2026-03-19)
 
 ---
 
@@ -64,6 +64,7 @@
 
 ## Fases Concluídas (Histórico Resumido)
 
+- **Phase 8.8 — Auditoria de Integridade (Anti-Spoofing)** ✅: Detecção de Fake GPS e anomalias cinemáticas (INV-21).
 - **Phase 8.7 — Disaster Recovery** ✅: Runbook de restore e PITR configurado.
 - **Phase 8.6 — Performance & Escala** ✅: Benchmark de 1.000 VUs, scripts k6 de caos/estresse e otimização de índices.
 - **Phase 8.2 — CI/CD Pipeline** ✅: Workflows GitHub Actions (`ci.yml`, `deploy_staging.yml`, `deploy_prod.yml`) com gate humano em prod.
@@ -82,9 +83,5 @@
 ## Visão Geral de Execução
 
 ─────────────────────────────────────────────────────
-[x] Phase 5, 6, 6.5, 7, 7.5 ✅
-─────────────────────────────────────────────────────
-[x] Phase 8.1 - 8.7 COMPLETE ✅
-─────────────────────────────────────────────────────
-[ ] Phase 8.8 PENDING
+[x] Phase 5, 6, 6.5, 7, 7.5, 8.1 - 8.8 COMPLETE ✅
 ─────────────────────────────────────────────────────

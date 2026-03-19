@@ -48,3 +48,5 @@ test_output.txt
 # AI/Assistant Local Settings
 .claude/
 
+
+sentry.properties

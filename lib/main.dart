@@ -40,23 +40,24 @@ void main() async {
   // FASE 0 - Passively initialize Supabase. No overrides or dependencies created.
   await SupabaseConfig.initialize();
 
-  // 8.4 — Initialize PostHog analytics (no-op in dev).
-  await AnalyticsService.initialize();
-
-  final prefs = await SharedPreferences.getInstance();
-
-  // Phase 6 — Detect public deep links on Flutter Web startup.
-  final uri = Uri.base;
-  final queryToken = uri.queryParameters['token'];
-  final isInviteRoute =
-      uri.path.contains('accept-invite') && queryToken != null;
-  final isReviewContractRoute =
-      uri.path.contains('review-contract') && queryToken != null;
-
   // 8.4 — Sentry wraps the entire app startup.
   // initSentry is a no-op in dev or when SENTRY_DSN is not set.
   await initSentry(
     appRunner: () async {
+      // 8.4 — Initialize PostHog analytics (no-op in dev).
+      // Initialized AFTER Sentry as requested.
+      await AnalyticsService.initialize();
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // Phase 6 — Detect public deep links on Flutter Web startup.
+      final uri = Uri.base;
+      final queryToken = uri.queryParameters['token'];
+      final isInviteRoute =
+          uri.path.contains('accept-invite') && queryToken != null;
+      final isReviewContractRoute =
+          uri.path.contains('review-contract') && queryToken != null;
+
       runApp(
         ProviderScope(
           observers: const [SentryRiverpodObserver()],

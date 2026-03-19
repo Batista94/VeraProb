@@ -58,8 +58,10 @@ All non-trivial changes must be reviewed by the specialized personas in `docs/co
     *   *Realizado:* Ingestão resiliente (Sascar/Omnitracs), Anti-Corruption Edge, Chaos Tolerance (Late Arrival, Ordering), Asset State Machine e Kinematic Filtering.
 *   **Phase 7 (Evidence & Audit):** **CONCLUÍDA**.
     *   *Feitos:* Audit Sealing (INV-16/17), Prova de Execução (Audit Packages), Dashboards Executivos e Portal do Contratante.
-*   **Phase 7.5 (Financial Defense & Shadow Mode):** **CONCLUÍDA**.
+*   **Phase 7.5 (Financial Defense & Shadow Mode):** **CONCLUÍDA**. 
     *   *Implementado:* Shadow Mode (ROI Simulator), Tribunal de Apelações e Hardening Forense DB-level. 568 testes operando. ✅
+*   **Phase 8.8 (Telemetry Integrity & Anti-Spoofing):** **CONCLUÍDA**. 
+    *   *Realizado:* Detecção ativa de Fake GPS (Haversine Variance), Audit Trail imutável com SHA-256 e Invariante 21 (bloqueio automático de suspeitas). ✅
 
 ---
-*Last updated: March 17, 2026 — Phase 7.5 (Financial Defense & Shadow Mode)*
+*Last updated: March 19, 2026 — Phase 8.8 (Telemetry Integrity & Anti-Spoofing)*

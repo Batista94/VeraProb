@@ -7,12 +7,15 @@
 /// In dev: events are logged to console but NOT sent to PostHog.
 library;
 
+import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import '../../core/config/environment.dart';
 
+@JS('initPosthog')
+external void _jsInitPosthog(JSString apiKey, JSString apiHost, JSBoolean enableSessionReplay);
+
 /// Product analytics events tracked by PactaFlow.
-/// Centralizing event names prevents typos and enables refactoring safety.
 abstract final class PactaFlowEvent {
   // Auth
   static const String userLoggedIn = 'user_logged_in';
@@ -35,14 +38,11 @@ abstract final class PactaFlowEvent {
   static const String occDashboardOpened = 'occ_dashboard_opened';
 }
 
-/// Interface for product analytics — call [AnalyticsService.track] anywhere
-/// in the Infrastructure or Presentation layers.
-///
-/// NEVER log financial values or PII (CPF, email, phone) as event properties.
+/// Interface for product analytics — call [AnalyticsService.track] anywhere.
 class AnalyticsService {
   AnalyticsService._();
 
-  /// Initialize PostHog. Must be called during app bootstrap, before [runApp].
+  /// Initialize PostHog via dynamic JS injection.
   static Future<void> initialize() async {
     if (!EnvironmentConfig.posthogEnabled) {
       if (kDebugMode) {
@@ -56,34 +56,26 @@ class AnalyticsService {
       return;
     }
 
-    // PostHog Flutter 5.x API:
-    // PostHogConfig(apiKey) — fields are mutable after construction.
-    final config = PostHogConfig(EnvironmentConfig.posthogKey);
-    config.host = EnvironmentConfig.posthogHost;
-    config.debug = kDebugMode;
-    config.captureApplicationLifecycleEvents = false; // manual control
-    config.sendFeatureFlagEvents = false;
-    config.sessionReplay = false;            // privacy: no session recording
-    config.surveys = false;                  // not needed in MVP
-    config.errorTrackingConfig.captureFlutterErrors = false; // Sentry handles this
-
-    await Posthog().setup(config);
+    if (kIsWeb) {
+      // Modern JS Interop (8.4 Hardening)
+      _jsInitPosthog(
+        EnvironmentConfig.posthogKey.toJS,
+        EnvironmentConfig.posthogHost.toJS,
+        EnvironmentConfig.isProd.toJS, // Session Replay only in PROD
+      );
+    }
 
     if (kDebugMode) {
       debugPrint('[Analytics] PostHog initialized (${EnvironmentConfig.label})');
     }
   }
 
-  /// Track a product analytics event.
-  ///
-  /// [event] should be a constant from [PactaFlowEvent].
-  /// [properties] must NEVER contain PII or financial amounts.
+  /// Track a product analytics event with automatic 'env' tagging.
   static Future<void> track(
     String event, {
     Map<String, Object>? properties,
   }) async {
     if (kDebugMode) {
-      // Always log to console in dev for visibility.
       debugPrint('[Analytics] event: $event${properties != null ? ' | $properties' : ''}');
     }
 
@@ -91,16 +83,19 @@ class AnalyticsService {
       return;
     }
 
+    // Auto-inject environment tag based on EnvironmentConfig.label
+    final mergedProperties = {
+      'env': EnvironmentConfig.label,
+      ...?properties,
+    };
+
     await Posthog().capture(
       eventName: event,
-      properties: properties,
+      properties: mergedProperties,
     );
   }
 
   /// Identify the current user session (tenant-scoped, no PII).
-  ///
-  /// Use [organizationId] as the distinct_id to keep analytics tenant-isolated.
-  /// NEVER use email or CPF as the distinct_id.
   static Future<void> identifyOrganization(String organizationId) async {
     if (!EnvironmentConfig.posthogEnabled || EnvironmentConfig.posthogKey.isEmpty) {
       return;
@@ -109,12 +104,12 @@ class AnalyticsService {
     await Posthog().identify(
       userId: organizationId,
       userProperties: {
-        'environment': EnvironmentConfig.label,
+        'env': EnvironmentConfig.label,
       },
     );
   }
 
-  /// Reset identity on logout (clears distinctId).
+  /// Reset identity on logout.
   static Future<void> reset() async {
     if (!EnvironmentConfig.posthogEnabled || EnvironmentConfig.posthogKey.isEmpty) {
       return;
