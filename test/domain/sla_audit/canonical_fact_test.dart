@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/domain/sla_audit/canonical_fact.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
-import 'package:pactaflow/domain/sla_audit/ingestion_integrity_flag.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 
 void main() {
   // ── Helpers ────────────────────────────────────────────────────────────────

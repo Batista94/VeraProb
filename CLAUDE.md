@@ -1,6 +1,6 @@
-# PACTAFLOW — GLOBAL ARCHITECTURAL & BUSINESS CONTEXT
+# VeraProb — GLOBAL ARCHITECTURAL & BUSINESS CONTEXT
 
-PactaFlow is an **Automated SLA Compliance & Financial Protection Platform**.
+VeraProb is an **Automated SLA Compliance & Financial Protection Platform**.
 It acts as an impartial, automated Judge: ingests real-world telemetry, evaluates against contractual rules, and generates immutable financial verdicts.
 The CORE engine is industry-agnostic (Current Focus: B2B Logistics/Charter).
 

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:pactaflow/application/sla_audit/projections/contractual_financial_trend_query_service_in_memory.dart';
-import 'package:pactaflow/domain/shared/money.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_financial_daily_snapshot.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_query_service_in_memory.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
 
 void main() {
   late InMemoryContractualFinancialSnapshotRepository snapshotRepo;

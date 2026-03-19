@@ -1,6 +1,6 @@
 # Walkthrough: Phase 9 Technical Audit Report
 
-As the **Skeptical Lead Reviewer**, I performed a deep-tissue audit of the PactaFlow workspace against the **24 Invariants** and the **20 Forensic Rules**.
+As the **Skeptical Lead Reviewer**, I performed a deep-tissue audit of the VeraProb workspace against the **24 Invariants** and the **20 Forensic Rules**.
 
 ## Executive Summary
 The system shows exceptional maturity in data isolation and evidence integrity. The "Cryptographic Hash Chain" for telemetry and the "Dual-Key RLS" for contractors are state-of-the-art. 

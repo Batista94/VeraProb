@@ -1,4 +1,4 @@
-package com.PactaFlow.PactaFlow
+package com.veraprob.veraprob
 
 import io.flutter.embedding.android.FlutterActivity
 

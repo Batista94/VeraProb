@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:pactaflow/application/adapters/realtime_data_provider.dart';
+import 'package:veraprob/application/adapters/realtime_data_provider.dart';
 
 void main() {
   group('RealtimeDataProvider onPayloadReceived', () {

@@ -1,4 +1,4 @@
-/// PactaFlow Analytics Service — 8.4 Observabilidade
+/// veraprob Analytics Service — 8.4 Observabilidade
 ///
 /// Thin wrapper around PostHog. Lives in Infrastructure layer — never import
 /// this from Domain. Domain knows nothing about analytics (INV-4).
@@ -15,8 +15,8 @@ import '../../core/config/environment.dart';
 @JS('initPosthog')
 external void _jsInitPosthog(JSString apiKey, JSString apiHost, JSBoolean enableSessionReplay);
 
-/// Product analytics events tracked by PactaFlow.
-abstract final class PactaFlowEvent {
+/// Product analytics events tracked by VeraProb.
+abstract final class VeraProbEvent {
   // Auth
   static const String userLoggedIn = 'user_logged_in';
   static const String userLoggedOut = 'user_logged_out';

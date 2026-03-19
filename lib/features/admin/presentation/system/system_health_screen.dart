@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Placeholder for the System Health screen.
 /// Will display feed statuses, audit logs, and system diagnostics.
@@ -9,7 +9,7 @@ class SystemHealthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: PactaFlowColors.background,
+      color: VeraProbColors.background,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -17,7 +17,7 @@ class SystemHealthScreen extends StatelessWidget {
           const Text(
             'SAÚDE DO SISTEMA',
             style: TextStyle(
-              color: PactaFlowColors.textPrimary,
+              color: VeraProbColors.textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.5,
@@ -53,7 +53,7 @@ class SystemHealthScreen extends StatelessWidget {
           const Text(
             'LOG DE AUDITORIA',
             style: TextStyle(
-              color: PactaFlowColors.textSecondary,
+              color: VeraProbColors.textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.0,
@@ -64,15 +64,15 @@ class SystemHealthScreen extends StatelessWidget {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: PactaFlowColors.surface,
+                color: VeraProbColors.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: PactaFlowColors.border),
+                border: Border.all(color: VeraProbColors.border),
               ),
               child: const Center(
                 child: Text(
                   'Nenhum evento registrado',
                   style: TextStyle(
-                    color: PactaFlowColors.textDisabled,
+                    color: VeraProbColors.textDisabled,
                     fontSize: 13,
                   ),
                 ),
@@ -101,15 +101,15 @@ class _FeedStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = isOnline
-        ? PactaFlowColors.onTime
-        : PactaFlowColors.textDisabled;
+        ? VeraProbColors.onTime
+        : VeraProbColors.textDisabled;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: PactaFlowColors.border),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Row(
         children: [
@@ -126,13 +126,13 @@ class _FeedStatusCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: PactaFlowTypography.bodyMedium),
+                Text(name, style: VeraProbTypography.bodyMedium),
                 const SizedBox(height: 2),
-                Text(status, style: PactaFlowTypography.caption),
+                Text(status, style: VeraProbTypography.caption),
               ],
             ),
           ),
-          Text('Último: $lastUpdate', style: PactaFlowTypography.caption),
+          Text('Último: $lastUpdate', style: VeraProbTypography.caption),
         ],
       ),
     );

@@ -1,19 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/application/sla_audit/contractual_evaluation_engine.dart';
-import 'package:pactaflow/domain/entities/vehicle_operational_state.dart';
-import 'package:pactaflow/domain/enums/motion_state.dart';
-import 'package:pactaflow/domain/enums/connectivity_state.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_service_execution.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_execution_state.dart';
-import 'package:pactaflow/domain/sla_audit/execution_status.dart';
-import 'package:pactaflow/domain/sla_audit/plan_declaration.dart';
-import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
-import 'package:pactaflow/domain/sla_audit/evaluation_trace.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
-import 'package:pactaflow/domain/shared/money.dart';
+import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
+import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
+import 'package:veraprob/domain/enums/motion_state.dart';
+import 'package:veraprob/domain/enums/connectivity_state.dart';
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 /// Phase 3 Compliance Review — Validation Scenarios
 ///
@@ -296,7 +296,7 @@ void main() {
           trace.engineVersion,
           equals(ContractualEvaluationEngine.currentEngineVersion),
         );
-        expect(trace.engineVersion, equals('PactaFlow-core_v3'));
+        expect(trace.engineVersion, equals('veraprob-core_v3'));
       }
     });
 
@@ -340,7 +340,7 @@ void main() {
         entityId: 'set-001',
         triggeringEventId: 'event-uuid',
         evaluatedAtUtc: DateTime.utc(2026, 3, 1, 7, 0),
-        engineVersion: 'PactaFlow-core_v3',
+        engineVersion: 'veraprob-core_v3',
         decisions: const [],
       );
       expect(trace.organizationId, equals('org-1'));

@@ -27,7 +27,7 @@ class AdminLayout extends ConsumerWidget {
     final isWideScreen = MediaQuery.of(context).size.width >= 600;
 
     return Scaffold(
-      backgroundColor: PactaFlowColors.background,
+      backgroundColor: VeraProbColors.background,
       appBar: AppBar(
         title: Row(
           children: [
@@ -36,8 +36,8 @@ class AdminLayout extends ConsumerWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    PactaFlowColors.primary,
-                    PactaFlowColors.primary.withValues(alpha: 0.7),
+                    VeraProbColors.primary,
+                    VeraProbColors.primary.withValues(alpha: 0.7),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -45,7 +45,7 @@ class AdminLayout extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
-                    color: PactaFlowColors.primary.withValues(alpha: 0.2),
+                    color: VeraProbColors.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -60,12 +60,12 @@ class AdminLayout extends ConsumerWidget {
             if (isWideScreen) ...[
               const SizedBox(width: 16),
               Text(
-                'OCC • PactaFlow',
-                style: PactaFlowTypography.sectionTitle.copyWith(
+                'OCC • veraprob',
+                style: VeraProbTypography.sectionTitle.copyWith(
                   fontSize: 16,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w800,
-                  color: PactaFlowColors.textPrimary,
+                  color: VeraProbColors.textPrimary,
                 ),
               ),
             ],
@@ -80,15 +80,15 @@ class AdminLayout extends ConsumerWidget {
             const SizedBox(width: 8),
           ],
         ),
-        backgroundColor: PactaFlowColors.surface,
-        foregroundColor: PactaFlowColors.textPrimary,
+        backgroundColor: VeraProbColors.surface,
+        foregroundColor: VeraProbColors.textPrimary,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
             decoration: const BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: PactaFlowColors.border, width: 0.5),
+                bottom: BorderSide(color: VeraProbColors.border, width: 0.5),
               ),
             ),
           ),
@@ -100,9 +100,9 @@ class AdminLayout extends ConsumerWidget {
             children: [
               Container(
                 decoration: const BoxDecoration(
-                  color: PactaFlowColors.background,
+                  color: VeraProbColors.background,
                   border: Border(
-                    right: BorderSide(color: PactaFlowColors.border),
+                    right: BorderSide(color: VeraProbColors.border),
                   ),
                 ),
                 child: NavigationRail(
@@ -121,7 +121,7 @@ class AdminLayout extends ConsumerWidget {
               ),
               Expanded(
                 child: Container(
-                  color: PactaFlowColors.background,
+                  color: VeraProbColors.background,
                   child: Column(
                     children: [
                       OnboardingProgressBanner(
@@ -174,7 +174,7 @@ class _InternalBackButton extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_rounded, size: 18),
             label: const Text('VOLTAR PARA LISTA'),
             style: TextButton.styleFrom(
-              foregroundColor: PactaFlowColors.textSecondary,
+              foregroundColor: VeraProbColors.textSecondary,
               textStyle: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -211,8 +211,8 @@ class _StressModeToggle extends ConsumerWidget {
       icon: Icon(
         isStressMode ? Icons.speed_rounded : Icons.speed_outlined,
         color: isStressMode
-            ? PactaFlowColors.primary
-            : PactaFlowColors.textDisabled,
+            ? VeraProbColors.primary
+            : VeraProbColors.textDisabled,
       ),
       tooltip: isStressMode ? 'Desativar Stress Mode' : 'Ativar Stress Mode',
       onPressed: () {
@@ -236,7 +236,7 @@ class _LogoutButton extends StatelessWidget {
     return IconButton(
       icon: const Icon(Icons.logout_rounded),
       tooltip: 'Sair',
-      color: PactaFlowColors.textDisabled,
+      color: VeraProbColors.textDisabled,
       onPressed: () async {
         await Supabase.instance.client.auth.signOut();
         if (context.mounted) {
@@ -278,7 +278,7 @@ class _FeedHealthBadge extends ConsumerWidget {
           const SizedBox(width: 8),
           Text(
             health.label.toUpperCase(),
-            style: PactaFlowTypography.badge.copyWith(
+            style: VeraProbTypography.badge.copyWith(
               color: health.color,
               fontSize: 9,
             ),

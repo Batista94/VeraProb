@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/domain/sla_audit/evaluation_trace.dart';
-import 'package:pactaflow/domain/sla_audit/sla_ledger_entry.dart';
-import 'package:pactaflow/state/providers/investigation_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/state/providers/investigation_providers.dart';
 import 'investigation_map_panel.dart';
 
 final _timeFormat = DateFormat('HH:mm:ss');
@@ -31,9 +31,9 @@ class InvestigationModal extends ConsumerWidget {
 
     return Dialog.fullscreen(
       child: Scaffold(
-        backgroundColor: PactaFlowColors.background,
+        backgroundColor: VeraProbColors.background,
         appBar: AppBar(
-          backgroundColor: PactaFlowColors.surface,
+          backgroundColor: VeraProbColors.surface,
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.pop(context),
@@ -43,25 +43,25 @@ class InvestigationModal extends ConsumerWidget {
               const Icon(
                 Icons.search,
                 size: 18,
-                color: PactaFlowColors.primary,
+                color: VeraProbColors.primary,
               ),
               const SizedBox(width: 8),
               Text(
                 'Análise Forense de Decisões',
-                style: PactaFlowTypography.sectionTitle,
+                style: VeraProbTypography.sectionTitle,
               ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: PactaFlowColors.surfaceElevated,
+                  color: VeraProbColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: PactaFlowColors.border),
+                  border: Border.all(color: VeraProbColors.border),
                 ),
                 child: Text(
                   'MODO AUDITORIA',
-                  style: PactaFlowTypography.caption.copyWith(
-                    color: PactaFlowColors.warning,
+                  style: VeraProbTypography.caption.copyWith(
+                    color: VeraProbColors.warning,
                     letterSpacing: 1.0,
                     fontWeight: FontWeight.w700,
                   ),
@@ -155,9 +155,9 @@ class _ContextHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: PactaFlowColors.border),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Row(
         children: [
@@ -183,10 +183,10 @@ class _HeaderChip extends StatelessWidget {
       children: [
         Text(
           label,
-          style: PactaFlowTypography.caption.copyWith(letterSpacing: 1.2),
+          style: VeraProbTypography.caption.copyWith(letterSpacing: 1.2),
         ),
         const SizedBox(height: 4),
-        Text(value, style: PactaFlowTypography.bodyMedium),
+        Text(value, style: VeraProbTypography.bodyMedium),
       ],
     );
   }
@@ -209,9 +209,9 @@ class _LedgerTimelinePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: PactaFlowColors.border),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,19 +220,19 @@ class _LedgerTimelinePanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
+              border: Border(bottom: BorderSide(color: VeraProbColors.border)),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.timeline,
                   size: 16,
-                  color: PactaFlowColors.info,
+                  color: VeraProbColors.info,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Ledger Operacional',
-                  style: PactaFlowTypography.sectionTitle,
+                  style: VeraProbTypography.sectionTitle,
                 ),
               ],
             ),
@@ -243,14 +243,14 @@ class _LedgerTimelinePanel extends StatelessWidget {
             child: ledgerAsync.when(
               loading: () => const Center(
                 child: CircularProgressIndicator(
-                  color: PactaFlowColors.primary,
+                  color: VeraProbColors.primary,
                 ),
               ),
               error: (err, _) => Center(
                 child: Text(
                   'Erro ao carregar ledger: $err',
-                  style: PactaFlowTypography.bodySmall.copyWith(
-                    color: PactaFlowColors.error,
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.error,
                   ),
                 ),
               ),
@@ -259,7 +259,7 @@ class _LedgerTimelinePanel extends StatelessWidget {
                   return Center(
                     child: Text(
                       'Nenhum evento no ledger',
-                      style: PactaFlowTypography.bodySmall,
+                      style: VeraProbTypography.bodySmall,
                     ),
                   );
                 }
@@ -303,8 +303,8 @@ class _TimelineEvent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dotColor = isTriggering
-        ? PactaFlowColors.primary
-        : PactaFlowColors.border;
+        ? VeraProbColors.primary
+        : VeraProbColors.border;
 
     return IntrinsicHeight(
       child: Row(
@@ -322,13 +322,13 @@ class _TimelineEvent extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: dotColor,
                     border: isTriggering
-                        ? Border.all(color: PactaFlowColors.primary, width: 2)
+                        ? Border.all(color: VeraProbColors.primary, width: 2)
                         : null,
                   ),
                 ),
                 if (!isLast)
                   Expanded(
-                    child: Container(width: 1, color: PactaFlowColors.border),
+                    child: Container(width: 1, color: VeraProbColors.border),
                   ),
               ],
             ),
@@ -342,13 +342,13 @@ class _TimelineEvent extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isTriggering
-                    ? PactaFlowColors.primary.withValues(alpha: 0.08)
-                    : PactaFlowColors.surfaceElevated,
+                    ? VeraProbColors.primary.withValues(alpha: 0.08)
+                    : VeraProbColors.surfaceElevated,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                   color: isTriggering
-                      ? PactaFlowColors.primary.withValues(alpha: 0.3)
-                      : PactaFlowColors.border,
+                      ? VeraProbColors.primary.withValues(alpha: 0.3)
+                      : VeraProbColors.border,
                 ),
               ),
               child: Column(
@@ -358,8 +358,8 @@ class _TimelineEvent extends StatelessWidget {
                     children: [
                       Text(
                         _timeFormat.format(entry.occurredAtUtc),
-                        style: PactaFlowTypography.caption.copyWith(
-                          color: PactaFlowColors.textSecondary,
+                        style: VeraProbTypography.caption.copyWith(
+                          color: VeraProbColors.textSecondary,
                         ),
                       ),
                       const Spacer(),
@@ -370,15 +370,15 @@ class _TimelineEvent extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: PactaFlowColors.primary.withValues(
+                            color: VeraProbColors.primary.withValues(
                               alpha: 0.15,
                             ),
                             borderRadius: BorderRadius.circular(3),
                           ),
                           child: Text(
                             'AUDITADO',
-                            style: PactaFlowTypography.caption.copyWith(
-                              color: PactaFlowColors.primary,
+                            style: VeraProbTypography.caption.copyWith(
+                              color: VeraProbColors.primary,
                               fontWeight: FontWeight.w800,
                               fontSize: 9,
                               letterSpacing: 0.8,
@@ -390,7 +390,7 @@ class _TimelineEvent extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     entry.type,
-                    style: PactaFlowTypography.bodyMedium.copyWith(
+                    style: VeraProbTypography.bodyMedium.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -417,9 +417,9 @@ class _EvaluationTracePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: PactaFlowColors.border),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,19 +428,19 @@ class _EvaluationTracePanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
+              border: Border(bottom: BorderSide(color: VeraProbColors.border)),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.gavel,
                   size: 16,
-                  color: PactaFlowColors.secondary,
+                  color: VeraProbColors.secondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Rastreabilidade Forense',
-                  style: PactaFlowTypography.sectionTitle,
+                  style: VeraProbTypography.sectionTitle,
                 ),
               ],
             ),
@@ -451,14 +451,14 @@ class _EvaluationTracePanel extends StatelessWidget {
             child: tracesAsync.when(
               loading: () => const Center(
                 child: CircularProgressIndicator(
-                  color: PactaFlowColors.primary,
+                  color: VeraProbColors.primary,
                 ),
               ),
               error: (err, _) => Center(
                 child: Text(
                   'Erro ao carregar traces: $err',
-                  style: PactaFlowTypography.bodySmall.copyWith(
-                    color: PactaFlowColors.error,
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.error,
                   ),
                 ),
               ),
@@ -494,20 +494,20 @@ class _NoTraceState extends StatelessWidget {
           const Icon(
             Icons.info_outline,
             size: 48,
-            color: PactaFlowColors.textDisabled,
+            color: VeraProbColors.textDisabled,
           ),
           const SizedBox(height: 16),
           Text(
             'Nenhuma rastreabilidade disponível',
-            style: PactaFlowTypography.sectionTitle,
+            style: VeraProbTypography.sectionTitle,
           ),
           const SizedBox(height: 8),
           Text(
             'Esta obrigação pode ter sido processada antes\n'
             'da ativação do sistema de rastreabilidade.',
             textAlign: TextAlign.center,
-            style: PactaFlowTypography.bodySmall.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.bodySmall.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
           ),
         ],
@@ -530,9 +530,9 @@ class _TraceCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: PactaFlowColors.surfaceElevated,
+        color: VeraProbColors.surfaceElevated,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: PactaFlowColors.border),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,25 +541,25 @@ class _TraceCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
+              border: Border(bottom: BorderSide(color: VeraProbColors.border)),
             ),
             child: Row(
               children: [
                 _MetaChip(
                   icon: Icons.memory,
                   label: trace.engineVersion,
-                  color: PactaFlowColors.secondary,
+                  color: VeraProbColors.secondary,
                 ),
                 const SizedBox(width: 12),
                 _MetaChip(
                   icon: Icons.access_time,
                   label: _dateFormat.format(trace.evaluatedAtUtc),
-                  color: PactaFlowColors.textSecondary,
+                  color: VeraProbColors.textSecondary,
                 ),
                 const Spacer(),
                 Text(
                   '${trace.decisions.length} regra(s)',
-                  style: PactaFlowTypography.caption,
+                  style: VeraProbTypography.caption,
                 ),
               ],
             ),
@@ -595,7 +595,7 @@ class _MetaChip extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: PactaFlowTypography.bodySmall.copyWith(color: color),
+          style: VeraProbTypography.bodySmall.copyWith(color: color),
         ),
       ],
     );
@@ -617,15 +617,15 @@ class _DecisionRow extends StatelessWidget {
     final isPass =
         decision.outcome == 'PASS' || decision.outcome == 'BINDING_CONFIRMED';
     final outcomeColor = isPenalty
-        ? PactaFlowColors.error
+        ? VeraProbColors.error
         : isPass
-        ? PactaFlowColors.success
-        : PactaFlowColors.info;
+        ? VeraProbColors.success
+        : VeraProbColors.info;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
+        border: Border(bottom: BorderSide(color: VeraProbColors.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,13 +636,13 @@ class _DecisionRow extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: PactaFlowColors.info.withValues(alpha: 0.1),
+                  color: VeraProbColors.info.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(3),
                 ),
                 child: Text(
                   'P${decision.rulePriority}',
-                  style: PactaFlowTypography.badge.copyWith(
-                    color: PactaFlowColors.info,
+                  style: VeraProbTypography.badge.copyWith(
+                    color: VeraProbColors.info,
                     fontSize: 10,
                   ),
                 ),
@@ -651,7 +651,7 @@ class _DecisionRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   decision.ruleType,
-                  style: PactaFlowTypography.bodyMedium.copyWith(
+                  style: VeraProbTypography.bodyMedium.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -664,7 +664,7 @@ class _DecisionRow extends StatelessWidget {
                 ),
                 child: Text(
                   decision.outcome,
-                  style: PactaFlowTypography.badge.copyWith(
+                  style: VeraProbTypography.badge.copyWith(
                     color: outcomeColor,
                   ),
                 ),
@@ -679,19 +679,19 @@ class _DecisionRow extends StatelessWidget {
             children: [
               Text(
                 'Regra: ${decision.ruleId.substring(0, 8)}…',
-                style: PactaFlowTypography.caption,
+                style: VeraProbTypography.caption,
               ),
               const SizedBox(width: 16),
               Text(
                 'Versão: v${decision.ruleVersion}',
-                style: PactaFlowTypography.caption,
+                style: VeraProbTypography.caption,
               ),
               if (decision.financialImpactCents != null) ...[
                 const Spacer(),
                 Text(
                   'Impacto: R\$ ${(decision.financialImpactCents! / 100).toStringAsFixed(2)}',
-                  style: PactaFlowTypography.bodySmall.copyWith(
-                    color: PactaFlowColors.error,
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.error,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -706,7 +706,7 @@ class _DecisionRow extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: PactaFlowColors.background,
+                color: VeraProbColors.background,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Column(
@@ -714,7 +714,7 @@ class _DecisionRow extends StatelessWidget {
                 children: [
                   Text(
                     'PROVA DOCUMENTAL',
-                    style: PactaFlowTypography.caption.copyWith(
+                    style: VeraProbTypography.caption.copyWith(
                       letterSpacing: 1.0,
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
@@ -728,13 +728,13 @@ class _DecisionRow extends StatelessWidget {
                         children: [
                           Text(
                             '${e.key}: ',
-                            style: PactaFlowTypography.caption.copyWith(
-                              color: PactaFlowColors.textSecondary,
+                            style: VeraProbTypography.caption.copyWith(
+                              color: VeraProbColors.textSecondary,
                             ),
                           ),
                           Text(
                             '${e.value}',
-                            style: PactaFlowTypography.bodySmall.copyWith(
+                            style: VeraProbTypography.bodySmall.copyWith(
                               fontFamily: 'monospace',
                             ),
                           ),

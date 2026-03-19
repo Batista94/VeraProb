@@ -20,10 +20,10 @@ class ContractualAlertsPanel extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: PactaFlowColors.border.withValues(alpha: 0.3),
+          color: VeraProbColors.border.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -35,7 +35,7 @@ class ContractualAlertsPanel extends ConsumerWidget {
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: PactaFlowColors.border.withValues(alpha: 0.3),
+                  color: VeraProbColors.border.withValues(alpha: 0.3),
                 ),
               ),
             ),
@@ -43,14 +43,14 @@ class ContractualAlertsPanel extends ConsumerWidget {
               children: [
                 const Icon(
                   Icons.notifications_active,
-                  color: PactaFlowColors.critical,
+                  color: VeraProbColors.critical,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Alertas Contratuais',
-                  style: PactaFlowTypography.sectionTitle.copyWith(
-                    color: PactaFlowColors.textPrimary,
+                  style: VeraProbTypography.sectionTitle.copyWith(
+                    color: VeraProbColors.textPrimary,
                   ),
                 ),
                 const Spacer(),
@@ -62,16 +62,16 @@ class ContractualAlertsPanel extends ConsumerWidget {
                     ),
                     decoration: BoxDecoration(
                       color: alerts.isNotEmpty
-                          ? PactaFlowColors.critical.withValues(alpha: 0.2)
-                          : PactaFlowColors.onTime.withValues(alpha: 0.2),
+                          ? VeraProbColors.critical.withValues(alpha: 0.2)
+                          : VeraProbColors.onTime.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '${alerts.length}',
                       style: TextStyle(
                         color: alerts.isNotEmpty
-                            ? PactaFlowColors.critical
-                            : PactaFlowColors.onTime,
+                            ? VeraProbColors.critical
+                            : VeraProbColors.onTime,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -84,7 +84,7 @@ class ContractualAlertsPanel extends ConsumerWidget {
                   ),
                   error: (error, _) => const Icon(
                     Icons.error_outline,
-                    color: PactaFlowColors.critical,
+                    color: VeraProbColors.critical,
                     size: 16,
                   ),
                 ),
@@ -104,13 +104,13 @@ class ContractualAlertsPanel extends ConsumerWidget {
                         Icon(
                           Icons.check_circle_outline,
                           size: 48,
-                          color: PactaFlowColors.onTime.withValues(alpha: 0.5),
+                          color: VeraProbColors.onTime.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'Nenhum alerta ativo',
-                          style: PactaFlowTypography.bodyMedium.copyWith(
-                            color: PactaFlowColors.textSecondary,
+                          style: VeraProbTypography.bodyMedium.copyWith(
+                            color: VeraProbColors.textSecondary,
                           ),
                         ),
                       ],
@@ -130,8 +130,8 @@ class ContractualAlertsPanel extends ConsumerWidget {
               error: (error, _) => Center(
                 child: Text(
                   'Erro ao carregar alertas',
-                  style: PactaFlowTypography.bodyMedium.copyWith(
-                    color: PactaFlowColors.critical,
+                  style: VeraProbTypography.bodyMedium.copyWith(
+                    color: VeraProbColors.critical,
                   ),
                 ),
               ),
@@ -156,7 +156,7 @@ class _AlertCard extends ConsumerWidget {
     final formatter = DateFormat('dd/MM HH:mm');
 
     return Card(
-      color: PactaFlowColors.background,
+      color: VeraProbColors.background,
       margin: const EdgeInsets.symmetric(vertical: 4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -204,9 +204,9 @@ class _AlertCard extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       _alertTypeLabel(alert.alertType),
-                      style: PactaFlowTypography.bodyMedium.copyWith(
+                      style: VeraProbTypography.bodyMedium.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: PactaFlowColors.textPrimary,
+                        color: VeraProbColors.textPrimary,
                         fontSize: 13,
                       ),
                     ),
@@ -214,7 +214,7 @@ class _AlertCard extends ConsumerWidget {
                   Text(
                     formatter.format(alert.triggeredAtUtc.toLocal()),
                     style: const TextStyle(
-                      color: PactaFlowColors.textSecondary,
+                      color: VeraProbColors.textSecondary,
                       fontSize: 11,
                     ),
                   ),
@@ -228,13 +228,13 @@ class _AlertCard extends ConsumerWidget {
                   const Icon(
                     Icons.route,
                     size: 14,
-                    color: PactaFlowColors.textSecondary,
+                    color: VeraProbColors.textSecondary,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     alert.entityId,
                     style: const TextStyle(
-                      color: PactaFlowColors.textSecondary,
+                      color: VeraProbColors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -242,14 +242,14 @@ class _AlertCard extends ConsumerWidget {
                   const Icon(
                     Icons.description_outlined,
                     size: 14,
-                    color: PactaFlowColors.textSecondary,
+                    color: VeraProbColors.textSecondary,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       alert.contractId,
                       style: const TextStyle(
-                        color: PactaFlowColors.textSecondary,
+                        color: VeraProbColors.textSecondary,
                         fontSize: 12,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -276,7 +276,7 @@ class _AlertCard extends ConsumerWidget {
                     icon: const Icon(Icons.search, size: 14),
                     label: const Text('Investigar'),
                     style: TextButton.styleFrom(
-                      foregroundColor: PactaFlowColors.secondary,
+                      foregroundColor: VeraProbColors.secondary,
                       textStyle: const TextStyle(fontSize: 12),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -299,7 +299,7 @@ class _AlertCard extends ConsumerWidget {
                     icon: const Icon(Icons.check, size: 14),
                     label: const Text('Confirmar'),
                     style: TextButton.styleFrom(
-                      foregroundColor: PactaFlowColors.onTime,
+                      foregroundColor: VeraProbColors.onTime,
                       textStyle: const TextStyle(fontSize: 12),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -320,13 +320,13 @@ class _AlertCard extends ConsumerWidget {
   Color _severityColor(String severity) {
     switch (severity) {
       case 'CRITICAL':
-        return PactaFlowColors.critical;
+        return VeraProbColors.critical;
       case 'HIGH':
-        return PactaFlowColors.delayed;
+        return VeraProbColors.delayed;
       case 'WARNING':
         return Colors.orange;
       default:
-        return PactaFlowColors.textSecondary;
+        return VeraProbColors.textSecondary;
     }
   }
 

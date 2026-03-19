@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Phase 6: Organizations Enrichment
+-- veraprob — Phase 6: Organizations Enrichment
 -- ============================================================
 -- REASON:
 --   Add columns to support self-service branding, localization,

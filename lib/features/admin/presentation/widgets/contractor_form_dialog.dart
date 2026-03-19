@@ -86,7 +86,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
               children: [
                 Text(
                   isEdit ? 'Editar Contratante' : 'Novo Contratante',
-                  style: PactaFlowTypography.sectionTitle,
+                  style: VeraProbTypography.sectionTitle,
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
@@ -189,7 +189,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao salvar: $e'),
-            backgroundColor: PactaFlowColors.error,
+            backgroundColor: VeraProbColors.error,
           ),
         );
       }

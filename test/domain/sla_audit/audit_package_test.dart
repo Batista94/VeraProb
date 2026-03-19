@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/domain/sla_audit/attestation_header.dart';
-import 'package:pactaflow/domain/sla_audit/audit_package.dart';
-import 'package:pactaflow/domain/sla_audit/audit_package_status.dart';
-import 'package:pactaflow/domain/sla_audit/billing_cycle_report.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_financial_daily_snapshot.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
-import 'package:pactaflow/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/attestation_header.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
+import 'package:veraprob/domain/sla_audit/audit_package_status.dart';
+import 'package:veraprob/domain/sla_audit/billing_cycle_report.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -372,7 +372,7 @@ void main() {
       // carry evidenceQualityRate. That's on ShadowModeSimulation.
       // This test ensures platformVersion appears in legalNotice.
       final header = makeAttestation();
-      expect(header.legalNotice, contains('PactaFlow'));
+      expect(header.legalNotice, contains('veraprob'));
     });
   });
 

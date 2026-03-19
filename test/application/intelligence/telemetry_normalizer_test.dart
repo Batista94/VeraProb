@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/application/intelligence/telemetry_normalizer.dart';
-import 'package:pactaflow/domain/entities/raw_telemetry_ping.dart';
-import 'package:pactaflow/domain/entities/vehicle_position.dart';
+import 'package:veraprob/application/intelligence/telemetry_normalizer.dart';
+import 'package:veraprob/domain/entities/raw_telemetry_ping.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 void main() {
   group('TelemetryNormalizer (The Purgatory)', () {

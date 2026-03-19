@@ -5,20 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:pactaflow/application/sla_audit/declare_contractual_plan_command.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
-import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
-import 'package:pactaflow/domain/sla_audit/shift_pattern.dart';
-import 'package:pactaflow/domain/sla_audit/sla_penalties.dart';
-import 'package:pactaflow/domain/sla_audit/vehicle_category.dart';
-import 'package:pactaflow/domain/sla_audit/week_cycle.dart';
-import 'package:pactaflow/domain/shared/money.dart';
-import 'package:pactaflow/state/providers/auth_providers.dart';
-import 'package:pactaflow/state/providers/contract_providers.dart';
-import 'package:pactaflow/state/providers/operational_zone_providers.dart';
-import 'package:pactaflow/state/providers/sla_providers.dart';
-import 'package:pactaflow/state/providers/sla_template_providers.dart';
+import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
+import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
+import 'package:veraprob/domain/sla_audit/vehicle_category.dart';
+import 'package:veraprob/domain/sla_audit/week_cycle.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/state/providers/sla_providers.dart';
+import 'package:veraprob/state/providers/sla_template_providers.dart';
 
 import '../widgets/zone_type_ahead_field.dart';
 
@@ -642,7 +642,7 @@ class _DeclareContractPlanFormState
         padding: const EdgeInsets.all(16),
         child: Text(
           'Erro ao carregar zonas operacionais: $e',
-          style: const TextStyle(color: PactaFlowColors.error),
+          style: const TextStyle(color: VeraProbColors.error),
         ),
       ),
       data: (zones) {
@@ -668,9 +668,9 @@ class _DeclareContractPlanFormState
           children: [
             const Text(
               'Selecione as zonas operacionais (geofences) que delineiam esta rota B2B.',
-              style: TextStyle(color: PactaFlowColors.textSecondary),
+              style: TextStyle(color: VeraProbColors.textSecondary),
             ),
-            const SizedBox(height: PactaFlowSpacing.md),
+            const SizedBox(height: VeraProbSpacing.md),
             ZoneTypeAheadField(
               key: ValueKey('origin_$_selectedOriginZoneId'),
               label: 'Zona de Partida',
@@ -692,7 +692,7 @@ class _DeclareContractPlanFormState
               child: IconButton(
                 icon: const Icon(
                   Icons.swap_vert,
-                  color: PactaFlowColors.primary,
+                  color: VeraProbColors.primary,
                 ),
                 tooltip: 'Inverter Origem/Destino',
                 onPressed: () {
@@ -757,7 +757,7 @@ class _DeclareContractPlanFormState
           _confirmedShiftDrafts.isEmpty
               ? 'Configure o padrão de recorrência: dias, horários, fuso e categoria de veículo exigida.'
               : 'Turno ${_confirmedShiftDrafts.length + 1} de ${_confirmedShiftDrafts.length + 1} — configure o turno de Retorno.',
-          style: const TextStyle(color: PactaFlowColors.textSecondary),
+          style: const TextStyle(color: VeraProbColors.textSecondary),
         ),
         const SizedBox(height: 12),
 
@@ -765,10 +765,10 @@ class _DeclareContractPlanFormState
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: PactaFlowColors.info.withValues(alpha: 0.08),
+            color: VeraProbColors.info.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: PactaFlowColors.info.withValues(alpha: 0.25),
+              color: VeraProbColors.info.withValues(alpha: 0.25),
             ),
           ),
           child: Row(
@@ -779,20 +779,20 @@ class _DeclareContractPlanFormState
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: PactaFlowColors.info,
+                    color: VeraProbColors.info,
                   ),
                 ),
                 const SizedBox(width: 10),
                 const Text(
                   '·',
-                  style: TextStyle(color: PactaFlowColors.textDisabled),
+                  style: TextStyle(color: VeraProbColors.textDisabled),
                 ),
                 const SizedBox(width: 10),
               ],
               const Icon(
                 Icons.business,
                 size: 14,
-                color: PactaFlowColors.textSecondary,
+                color: VeraProbColors.textSecondary,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -801,7 +801,7 @@ class _DeclareContractPlanFormState
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: PactaFlowColors.textPrimary,
+                    color: VeraProbColors.textPrimary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -811,13 +811,13 @@ class _DeclareContractPlanFormState
                 child: Icon(
                   Icons.arrow_forward,
                   size: 14,
-                  color: PactaFlowColors.info,
+                  color: VeraProbColors.info,
                 ),
               ),
               const Icon(
                 Icons.location_on,
                 size: 14,
-                color: PactaFlowColors.textSecondary,
+                color: VeraProbColors.textSecondary,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -826,7 +826,7 @@ class _DeclareContractPlanFormState
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: PactaFlowColors.textPrimary,
+                    color: VeraProbColors.textPrimary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -870,7 +870,7 @@ class _DeclareContractPlanFormState
               child: ListTile(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: PactaFlowColors.border),
+                  side: const BorderSide(color: VeraProbColors.border),
                 ),
                 leading: const Icon(Icons.flight_takeoff),
                 title: const Text('Horário de Partida'),
@@ -893,7 +893,7 @@ class _DeclareContractPlanFormState
               child: ListTile(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: PactaFlowColors.border),
+                  side: const BorderSide(color: VeraProbColors.border),
                 ),
                 leading: const Icon(Icons.flight_land),
                 title: const Text('Horário de Chegada'),
@@ -999,9 +999,9 @@ class _DeclareContractPlanFormState
       children: [
         const Text(
           'Acordo de penalidades e janelas operacionais para garantir o nível de serviço.',
-          style: TextStyle(color: PactaFlowColors.textSecondary),
+          style: TextStyle(color: VeraProbColors.textSecondary),
         ),
-        const SizedBox(height: PactaFlowSpacing.md),
+        const SizedBox(height: VeraProbSpacing.md),
 
         // F4 — Aplicar Template SLA
         OutlinedButton.icon(
@@ -1021,7 +1021,7 @@ class _DeclareContractPlanFormState
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     'Erro ao carregar templates: $e',
-                    style: const TextStyle(color: PactaFlowColors.error),
+                    style: const TextStyle(color: VeraProbColors.error),
                   ),
                 ),
                 data: (templates) {
@@ -1081,7 +1081,7 @@ class _DeclareContractPlanFormState
             );
           },
         ),
-        const SizedBox(height: PactaFlowSpacing.md),
+        const SizedBox(height: VeraProbSpacing.md),
 
         // Valor base (fora dos grupos SLA)
         TextField(
@@ -1096,14 +1096,14 @@ class _DeclareContractPlanFormState
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(_delayToleranceFocus),
         ),
-        const SizedBox(height: PactaFlowSpacing.lg),
+        const SizedBox(height: VeraProbSpacing.lg),
 
         // ── Grupo 1: Pontualidade ──────────────────────────────
         const _SectionHeader(
           icon: Icons.schedule,
           label: 'Pontualidade e Janelas Operacionais',
         ),
-        const SizedBox(height: PactaFlowSpacing.sm),
+        const SizedBox(height: VeraProbSpacing.sm),
         TextField(
           controller: _delayToleranceController,
           focusNode: _delayToleranceFocus,
@@ -1117,7 +1117,7 @@ class _DeclareContractPlanFormState
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(_gracePeriodFocus),
         ),
-        const SizedBox(height: PactaFlowSpacing.md),
+        const SizedBox(height: VeraProbSpacing.md),
         TextField(
           controller: _gracePeriodController,
           focusNode: _gracePeriodFocus,
@@ -1133,14 +1133,14 @@ class _DeclareContractPlanFormState
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(_noShowMultiplierFocus),
         ),
-        const SizedBox(height: PactaFlowSpacing.lg),
+        const SizedBox(height: VeraProbSpacing.lg),
 
         // ── Grupo 2: Falhas Críticas ───────────────────────────
         const _SectionHeader(
           icon: Icons.warning_amber_rounded,
           label: 'Falhas Críticas (Cláusulas de Penalidade)',
         ),
-        const SizedBox(height: PactaFlowSpacing.sm),
+        const SizedBox(height: VeraProbSpacing.sm),
         TextField(
           controller: _noShowMultiplierController,
           focusNode: _noShowMultiplierFocus,
@@ -1161,11 +1161,11 @@ class _DeclareContractPlanFormState
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(_delayMinuteValueFocus),
         ),
-        const SizedBox(height: PactaFlowSpacing.lg),
+        const SizedBox(height: VeraProbSpacing.lg),
 
         // ── Grupo 3: Qualidade da Frota ────────────────────────
         const _SectionHeader(icon: Icons.directions_bus, label: 'Qualidade da Frota'),
-        const SizedBox(height: PactaFlowSpacing.sm),
+        const SizedBox(height: VeraProbSpacing.sm),
         Row(
           children: [
             Expanded(
@@ -1185,7 +1185,7 @@ class _DeclareContractPlanFormState
                     FocusScope.of(context).requestFocus(_downgradeValueFocus),
               ),
             ),
-            const SizedBox(width: PactaFlowSpacing.sm),
+            const SizedBox(width: VeraProbSpacing.sm),
             Expanded(
               child: TextField(
                 controller: _downgradeValueController,
@@ -1204,7 +1204,7 @@ class _DeclareContractPlanFormState
             ),
           ],
         ),
-        const SizedBox(height: PactaFlowSpacing.md),
+        const SizedBox(height: VeraProbSpacing.md),
 
         // F5 — ExpansionTile: Opções Avançadas
         ExpansionTile(
@@ -1214,9 +1214,9 @@ class _DeclareContractPlanFormState
           children: [
             Padding(
               padding: const EdgeInsets.only(
-                left: PactaFlowSpacing.md,
-                right: PactaFlowSpacing.md,
-                bottom: PactaFlowSpacing.md,
+                left: VeraProbSpacing.md,
+                right: VeraProbSpacing.md,
+                bottom: VeraProbSpacing.md,
               ),
               child: Column(
                 children: [
@@ -1238,7 +1238,7 @@ class _DeclareContractPlanFormState
                           ).requestFocus(_dwellTimeFocus),
                         ),
                       ),
-                      const SizedBox(width: PactaFlowSpacing.sm),
+                      const SizedBox(width: VeraProbSpacing.sm),
                       Expanded(
                         child: TextField(
                           controller: _dwellTimeController,
@@ -1255,7 +1255,7 @@ class _DeclareContractPlanFormState
                           ).requestFocus(_noShowThresholdFocus),
                         ),
                       ),
-                      const SizedBox(width: PactaFlowSpacing.sm),
+                      const SizedBox(width: VeraProbSpacing.sm),
                       Expanded(
                         child: TextField(
                           controller: _noShowThresholdController,
@@ -1333,7 +1333,7 @@ class _DeclareContractPlanFormState
       children: [
         const Text(
           'Resumo de exposição financeira e revisão detalhada dos turnos antes da publicação.',
-          style: TextStyle(color: PactaFlowColors.textSecondary),
+          style: TextStyle(color: VeraProbColors.textSecondary),
         ),
         const SizedBox(height: 16),
 
@@ -1354,11 +1354,11 @@ class _DeclareContractPlanFormState
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Card(
-              color: PactaFlowColors.info.withValues(alpha: 0.10),
+              color: VeraProbColors.info.withValues(alpha: 0.10),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: const BorderSide(color: PactaFlowColors.border),
+                side: const BorderSide(color: VeraProbColors.border),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -1371,14 +1371,14 @@ class _DeclareContractPlanFormState
                         const Icon(
                           Icons.directions_bus,
                           size: 16,
-                          color: PactaFlowColors.info,
+                          color: VeraProbColors.info,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           label,
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: PactaFlowColors.textPrimary,
+                            color: VeraProbColors.textPrimary,
                           ),
                         ),
                       ],
@@ -1408,7 +1408,7 @@ class _DeclareContractPlanFormState
                       label: 'Categoria exigida',
                       value: d.requiredVehicleCategory.label,
                     ),
-                    const Divider(height: 20, color: PactaFlowColors.border),
+                    const Divider(height: 20, color: VeraProbColors.border),
 
                     // SLA
                     _ReviewRow(
@@ -1451,7 +1451,7 @@ class _DeclareContractPlanFormState
               const Icon(
                 Icons.fingerprint,
                 size: 14,
-                color: PactaFlowColors.textDisabled,
+                color: VeraProbColors.textDisabled,
               ),
               const SizedBox(width: 6),
               Text(
@@ -1459,7 +1459,7 @@ class _DeclareContractPlanFormState
                 style: const TextStyle(
                   fontSize: 11,
                   fontFamily: 'monospace',
-                  color: PactaFlowColors.textDisabled,
+                  color: VeraProbColors.textDisabled,
                 ),
               ),
             ],
@@ -1471,7 +1471,7 @@ class _DeclareContractPlanFormState
         const Text(
           '⚠️ Após publicado, este Padrão de Turno não poderá ser modificado diretamente. Uma nova versão do plano precisará ser declarada.',
           style: TextStyle(
-            color: PactaFlowColors.warning,
+            color: VeraProbColors.warning,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -1537,7 +1537,7 @@ class _DeclareContractPlanFormState
                 Icon(
                   Icons.info_outline,
                   size: 14,
-                  color: PactaFlowColors.warning,
+                  color: VeraProbColors.warning,
                 ),
                 SizedBox(width: 6),
                 Expanded(
@@ -1545,7 +1545,7 @@ class _DeclareContractPlanFormState
                     'Configure o Valor Base por Viagem no Step 3 para habilitar os KPIs financeiros.',
                     style: TextStyle(
                       fontSize: 12,
-                      color: PactaFlowColors.warning,
+                      color: VeraProbColors.warning,
                     ),
                   ),
                 ),
@@ -1617,7 +1617,7 @@ class _DeclareContractPlanFormState
           ],
         ),
         const SizedBox(height: 8),
-        const Divider(height: 32, color: PactaFlowColors.border),
+        const Divider(height: 32, color: VeraProbColors.border),
       ],
     );
   }
@@ -1657,7 +1657,7 @@ class _DeclareContractPlanFormState
                           widget.contractName,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: PactaFlowColors.textSecondary,
+                            color: VeraProbColors.textSecondary,
                           ),
                         ),
                       ],
@@ -1672,17 +1672,17 @@ class _DeclareContractPlanFormState
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: PactaFlowColors.info.withValues(alpha: 0.15),
+                        color: VeraProbColors.info.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: PactaFlowColors.info.withValues(alpha: 0.4),
+                          color: VeraProbColors.info.withValues(alpha: 0.4),
                         ),
                       ),
                       child: Text(
                         '${_confirmedShiftDrafts.length + 1} turnos',
                         style: const TextStyle(
                           fontSize: 11,
-                          color: PactaFlowColors.info,
+                          color: VeraProbColors.info,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1703,17 +1703,17 @@ class _DeclareContractPlanFormState
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: PactaFlowColors.error.withValues(alpha: 0.1),
+                    color: VeraProbColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: PactaFlowColors.error.withValues(alpha: 0.3),
+                      color: VeraProbColors.error.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.error_outline,
-                        color: PactaFlowColors.error,
+                        color: VeraProbColors.error,
                         size: 16,
                       ),
                       const SizedBox(width: 8),
@@ -1721,7 +1721,7 @@ class _DeclareContractPlanFormState
                         child: Text(
                           _errorMessage!,
                           style: const TextStyle(
-                            color: PactaFlowColors.error,
+                            color: VeraProbColors.error,
                             fontSize: 13,
                           ),
                         ),
@@ -1862,23 +1862,23 @@ class _KpiCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: PactaFlowColors.border),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: PactaFlowColors.textSecondary),
+              Icon(icon, size: 14, color: VeraProbColors.textSecondary),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: PactaFlowColors.textSecondary,
+                  color: VeraProbColors.textSecondary,
                 ),
               ),
               if (tooltip != null) ...[
@@ -1888,7 +1888,7 @@ class _KpiCard extends StatelessWidget {
                   child: const Icon(
                     Icons.help_outline,
                     size: 12,
-                    color: PactaFlowColors.textDisabled,
+                    color: VeraProbColors.textDisabled,
                   ),
                 ),
               ],
@@ -1903,7 +1903,7 @@ class _KpiCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: PactaFlowColors.textPrimary,
+                  color: VeraProbColors.textPrimary,
                 ),
               ),
               if (period != null) ...[
@@ -1912,7 +1912,7 @@ class _KpiCard extends StatelessWidget {
                   period!,
                   style: const TextStyle(
                     fontSize: 10,
-                    color: PactaFlowColors.textSecondary,
+                    color: VeraProbColors.textSecondary,
                   ),
                 ),
               ],
@@ -1934,14 +1934,14 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: PactaFlowColors.info),
+        Icon(icon, size: 16, color: VeraProbColors.info),
         const SizedBox(width: 8),
         Text(
           label,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 13,
-            color: PactaFlowColors.info,
+            color: VeraProbColors.info,
           ),
         ),
         const SizedBox(width: 8),
@@ -1969,7 +1969,7 @@ class _ReviewRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: PactaFlowColors.textSecondary),
+          Icon(icon, size: 14, color: VeraProbColors.textSecondary),
           const SizedBox(width: 6),
           SizedBox(
             width: 130,
@@ -1977,7 +1977,7 @@ class _ReviewRow extends StatelessWidget {
               label,
               style: const TextStyle(
                 fontSize: 12,
-                color: PactaFlowColors.textSecondary,
+                color: VeraProbColors.textSecondary,
               ),
             ),
           ),
@@ -1986,7 +1986,7 @@ class _ReviewRow extends StatelessWidget {
               value,
               style: const TextStyle(
                 fontSize: 12,
-                color: PactaFlowColors.textPrimary,
+                color: VeraProbColors.textPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),

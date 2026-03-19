@@ -16,17 +16,17 @@ class InvestigationMapPanel extends StatelessWidget {
     final center = LatLng(execution.startLatitude, execution.startLongitude);
 
     // Convert status to visual color
-    Color statusColor = PactaFlowColors.info;
+    Color statusColor = VeraProbColors.info;
     if (execution.status == ExecutionStatus.noShow ||
         execution.status == ExecutionStatus.evidenceGap) {
-      statusColor = PactaFlowColors.error;
+      statusColor = VeraProbColors.error;
     } else if (execution.status == ExecutionStatus.executed) {
-      statusColor = PactaFlowColors.success;
+      statusColor = VeraProbColors.success;
     }
 
     return Card(
       elevation: 0,
-      color: PactaFlowColors.surfaceElevated,
+      color: VeraProbColors.surfaceElevated,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -37,13 +37,13 @@ class InvestigationMapPanel extends StatelessWidget {
                 const Icon(
                   Icons.map,
                   size: 16,
-                  color: PactaFlowColors.secondary,
+                  color: VeraProbColors.secondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Camada Geoespacial (Local de Origem)',
-                  style: PactaFlowTypography.sectionTitle.copyWith(
-                    color: PactaFlowColors.textPrimary,
+                  style: VeraProbTypography.sectionTitle.copyWith(
+                    color: VeraProbColors.textPrimary,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -67,7 +67,7 @@ class InvestigationMapPanel extends StatelessWidget {
                       urlTemplate:
                           'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
                       subdomains: const ['a', 'b', 'c', 'd'],
-                      userAgentPackageName: 'com.PactaFlow.app',
+                      userAgentPackageName: 'com.veraprob.app',
                     ),
                     CircleLayer(
                       circles: [
@@ -101,7 +101,7 @@ class InvestigationMapPanel extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'O mapa ilustra a cerca virtual de origem (raio de ${execution.startRadiusMeters}m).',
-              style: PactaFlowTypography.caption,
+              style: VeraProbTypography.caption,
             ),
           ],
         ),

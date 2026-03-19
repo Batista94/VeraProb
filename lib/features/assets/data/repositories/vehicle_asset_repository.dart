@@ -1,5 +1,5 @@
-import 'package:pactaflow/domain/entities/vehicle.dart';
-import 'package:pactaflow/domain/enums/vehicle_status.dart';
+import 'package:veraprob/domain/entities/vehicle.dart';
+import 'package:veraprob/domain/enums/vehicle_status.dart';
 
 abstract class IVehicleAssetRepository {
   Future<List<Vehicle>> getVehicles();

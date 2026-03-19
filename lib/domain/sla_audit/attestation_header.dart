@@ -54,7 +54,7 @@ class AttestationHeader extends Equatable {
     required String reportGeneratedBy,
     required DateTime reportGeneratedAtUtc,
     required String engineVersion,
-    String platformVersion = 'PactaFlow 7.1',
+    String platformVersion = 'veraprob 7.1',
   }) {
     if (tenantName.trim().isEmpty) {
       throw const DomainException('tenantName must not be empty');

@@ -12,7 +12,7 @@ class SettingsScreen extends ConsumerWidget {
     final operatorId = ref.watch(currentOperatorIdProvider);
 
     return Scaffold(
-      backgroundColor: PactaFlowColors.background,
+      backgroundColor: VeraProbColors.background,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -23,15 +23,15 @@ class SettingsScreen extends ConsumerWidget {
                 children: [
                   Text(
                     'CONFIGURAÇÕES DO SISTEMA',
-                    style: PactaFlowTypography.sectionTitle.copyWith(
-                      color: PactaFlowColors.primary,
+                    style: VeraProbTypography.sectionTitle.copyWith(
+                      color: VeraProbColors.primary,
                       letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Gerencie as preferências globais do Centro de Controle.',
-                    style: PactaFlowTypography.bodySmall,
+                    style: VeraProbTypography.bodySmall,
                   ),
                   const SizedBox(height: 32),
 
@@ -93,12 +93,12 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(
           title.toUpperCase(),
-          style: PactaFlowTypography.caption.copyWith(
-            color: PactaFlowColors.textSecondary,
+          style: VeraProbTypography.caption.copyWith(
+            color: VeraProbColors.textSecondary,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const Divider(height: 24, color: PactaFlowColors.border),
+        const Divider(height: 24, color: VeraProbColors.border),
       ],
     );
   }
@@ -121,15 +121,15 @@ class _SettingTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: PactaFlowColors.textSecondary),
+          Icon(icon, size: 20, color: VeraProbColors.textSecondary),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: PactaFlowTypography.caption),
+              Text(label, style: VeraProbTypography.caption),
               Text(
                 value,
-                style: PactaFlowTypography.bodyMedium.copyWith(
+                style: VeraProbTypography.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),

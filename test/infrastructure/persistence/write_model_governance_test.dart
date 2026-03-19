@@ -2,15 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:pactaflow/application/audit/audit_service.dart';
-import 'package:pactaflow/domain/authority/policies/in_memory_policy_evaluator.dart';
-import 'package:pactaflow/domain/authority/repositories/in_memory_forensic_repository.dart';
-import 'package:pactaflow/infrastructure/audit/postgres_audit_service.dart';
-import 'package:pactaflow/infrastructure/authority/postgres_forensic_repository.dart';
-import 'package:pactaflow/infrastructure/persistence/persistence_mode.dart';
-import 'package:pactaflow/infrastructure/persistence/persistence_provider.dart';
-import 'package:pactaflow/infrastructure/providers/supabase_provider.dart';
-import 'package:pactaflow/state/providers/authority_providers.dart';
+import 'package:veraprob/application/audit/audit_service.dart';
+import 'package:veraprob/domain/authority/policies/in_memory_policy_evaluator.dart';
+import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
+import 'package:veraprob/infrastructure/audit/postgres_audit_service.dart';
+import 'package:veraprob/infrastructure/authority/postgres_forensic_repository.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/providers/authority_providers.dart';
 
 class MockSupabaseClient extends Mock implements SupabaseClient {}
 

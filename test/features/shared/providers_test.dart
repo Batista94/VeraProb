@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:pactaflow/features/shared/providers.dart';
+import 'package:veraprob/features/shared/providers.dart';
 
-import 'package:pactaflow/features/shared/data/repositories/vehicle_repository.dart';
-import 'package:pactaflow/features/shared/domain/entities/driver.dart';
-import 'package:pactaflow/features/shared/data/repositories/driver_repository.dart';
-import 'package:pactaflow/features/shared/data/repositories/trip_repository.dart';
+import 'package:veraprob/features/shared/data/repositories/vehicle_repository.dart';
+import 'package:veraprob/features/shared/domain/entities/driver.dart';
+import 'package:veraprob/features/shared/data/repositories/driver_repository.dart';
+import 'package:veraprob/features/shared/data/repositories/trip_repository.dart';
 
 class MockSharedPreferences extends Mock implements SharedPreferences {}
 

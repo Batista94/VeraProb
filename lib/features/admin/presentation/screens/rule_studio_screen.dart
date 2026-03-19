@@ -7,8 +7,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/sla_audit/contractual_rule.dart';
 import '../../../../state/providers/auth_providers.dart';
 import '../../../../state/providers/rule_studio_providers.dart';
-import '../../../../presentation/shared/widgets/pactaflow_header.dart';
-import '../../../../presentation/shared/widgets/pactaflow_chip.dart';
+import '../../../../presentation/shared/widgets/veraprob_header.dart';
+import '../../../../presentation/shared/widgets/veraprob_chip.dart';
 
 // ── Screen ───────────────────────────────────────────────────────────────────
 
@@ -42,19 +42,19 @@ class RuleStudioScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            PactaFlowHeader(
+            VeraProbHeader(
               icon: Icons.tune_rounded,
               title: 'Rule Configuration Studio',
               subtitle: contractName,
               actions: [
-                const PactaFlowChip(
+                const VeraProbChip(
                   label: 'TENANT_ADMIN',
-                  color: PactaFlowColors.primary,
+                  color: VeraProbColors.primary,
                   outline: true,
                 ),
               ],
             ),
-            const SizedBox(height: PactaFlowSpacing.lg),
+            const SizedBox(height: VeraProbSpacing.lg),
             Expanded(
               child: activeRulesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -99,8 +99,8 @@ class _Body extends ConsumerWidget {
             children: [
               Text(
                 'Regras Ativas',
-                style: PactaFlowTypography.bodyMedium.copyWith(
-                  color: PactaFlowColors.textSecondary,
+                style: VeraProbTypography.bodyMedium.copyWith(
+                  color: VeraProbColors.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -133,8 +133,8 @@ class _Body extends ConsumerWidget {
             children: [
               Text(
                 'Histórico de Versões',
-                style: PactaFlowTypography.bodyMedium.copyWith(
-                  color: PactaFlowColors.textSecondary,
+                style: VeraProbTypography.bodyMedium.copyWith(
+                  color: VeraProbColors.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -175,12 +175,12 @@ class _RuleCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: activeRule != null
-              ? PactaFlowColors.border
-              : PactaFlowColors.warning.withValues(alpha: 0.4),
+              ? VeraProbColors.border
+              : VeraProbColors.warning.withValues(alpha: 0.4),
         ),
       ),
       child: Column(
@@ -199,7 +199,7 @@ class _RuleCard extends ConsumerWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
-                        color: PactaFlowColors.textPrimary,
+                        color: VeraProbColors.textPrimary,
                       ),
                     ),
                     if (activeRule != null)
@@ -207,21 +207,21 @@ class _RuleCard extends ConsumerWidget {
                         'v${activeRule!.ruleVersion}',
                         style: const TextStyle(
                           fontSize: 11,
-                          color: PactaFlowColors.textSecondary,
+                          color: VeraProbColors.textSecondary,
                         ),
                       ),
                   ],
                 ),
               ),
               if (activeRule != null)
-                const PactaFlowChip(
+                const VeraProbChip(
                   label: 'Ativa',
-                  color: PactaFlowColors.onTime,
+                  color: VeraProbColors.onTime,
                 )
               else
-                const PactaFlowChip(
+                const VeraProbChip(
                   label: 'Não configurada',
-                  color: PactaFlowColors.warning,
+                  color: VeraProbColors.warning,
                 ),
             ],
           ),
@@ -238,8 +238,8 @@ class _RuleCard extends ConsumerWidget {
                 activeRule != null ? 'Editar Regra' : 'Configurar Regra',
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: PactaFlowColors.primary,
-                side: const BorderSide(color: PactaFlowColors.primary),
+                foregroundColor: VeraProbColors.primary,
+                side: const BorderSide(color: VeraProbColors.primary),
                 padding: const EdgeInsets.symmetric(vertical: 8),
               ),
               onPressed: () => _showEditDialog(context, ref, role),
@@ -286,14 +286,14 @@ class _ConfigPreview extends StatelessWidget {
             (item) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: PactaFlowColors.surfaceElevated,
+                color: VeraProbColors.surfaceElevated,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 item,
                 style: const TextStyle(
                   fontSize: 12,
-                  color: PactaFlowColors.textSecondary,
+                  color: VeraProbColors.textSecondary,
                 ),
               ),
             ),
@@ -436,7 +436,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Nova versão da regra salva com sucesso.'),
-            backgroundColor: PactaFlowColors.onTime,
+            backgroundColor: VeraProbColors.onTime,
           ),
         );
       }
@@ -445,7 +445,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro: $e'),
-            backgroundColor: PactaFlowColors.error,
+            backgroundColor: VeraProbColors.error,
           ),
         );
       }
@@ -457,7 +457,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: PactaFlowColors.surface,
+      backgroundColor: VeraProbColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: Row(
         children: [
@@ -481,10 +481,10 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
                   padding: const EdgeInsets.all(10),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: PactaFlowColors.info.withValues(alpha: 0.08),
+                    color: VeraProbColors.info.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: PactaFlowColors.info.withValues(alpha: 0.25),
+                      color: VeraProbColors.info.withValues(alpha: 0.25),
                     ),
                   ),
                   child: Row(
@@ -492,7 +492,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
                       const Icon(
                         Icons.info_outline,
                         size: 14,
-                        color: PactaFlowColors.info,
+                        color: VeraProbColors.info,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -501,7 +501,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
                           'é preservada no histórico (INV-1).',
                           style: const TextStyle(
                             fontSize: 12,
-                            color: PactaFlowColors.textSecondary,
+                            color: VeraProbColors.textSecondary,
                           ),
                         ),
                       ),
@@ -614,9 +614,9 @@ class _ImpactSimulationPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: PactaFlowColors.surfaceElevated,
+        color: VeraProbColors.surfaceElevated,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: PactaFlowColors.border),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
         children: [
@@ -630,7 +630,7 @@ class _ImpactSimulationPanel extends StatelessWidget {
                   const Icon(
                     Icons.insights_outlined,
                     size: 16,
-                    color: PactaFlowColors.secondary,
+                    color: VeraProbColors.secondary,
                   ),
                   const SizedBox(width: 8),
                   const Text(
@@ -638,7 +638,7 @@ class _ImpactSimulationPanel extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: PactaFlowColors.secondary,
+                      color: VeraProbColors.secondary,
                     ),
                   ),
                   const Spacer(),
@@ -647,7 +647,7 @@ class _ImpactSimulationPanel extends StatelessWidget {
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
                     size: 16,
-                    color: PactaFlowColors.textSecondary,
+                    color: VeraProbColors.textSecondary,
                   ),
                 ],
               ),
@@ -684,7 +684,7 @@ class _ImpactBody extends StatelessWidget {
     if (currentRule == null) {
       return const Text(
         'Configure e salve a primeira versão da regra para habilitar simulações comparativas.',
-        style: TextStyle(fontSize: 12, color: PactaFlowColors.textSecondary),
+        style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
       );
     }
 
@@ -694,13 +694,13 @@ class _ImpactBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(color: PactaFlowColors.border, height: 1),
+        const Divider(color: VeraProbColors.border, height: 1),
         const SizedBox(height: 10),
         const Text(
           'Alteração de Parâmetro',
           style: TextStyle(
             fontSize: 11,
-            color: PactaFlowColors.textDisabled,
+            color: VeraProbColors.textDisabled,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
           ),
@@ -711,7 +711,7 @@ class _ImpactBody extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: PactaFlowColors.warning.withValues(alpha: 0.08),
+            color: VeraProbColors.warning.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(6),
           ),
           child: const Row(
@@ -719,7 +719,7 @@ class _ImpactBody extends StatelessWidget {
               Icon(
                 Icons.warning_amber_outlined,
                 size: 12,
-                color: PactaFlowColors.warning,
+                color: VeraProbColors.warning,
               ),
               SizedBox(width: 6),
               Expanded(
@@ -727,7 +727,7 @@ class _ImpactBody extends StatelessWidget {
                   'Simulação qualitativa — impacto quantitativo disponível na Phase 7 (Audit Exports).',
                   style: TextStyle(
                     fontSize: 11,
-                    color: PactaFlowColors.textSecondary,
+                    color: VeraProbColors.textSecondary,
                   ),
                 ),
               ),
@@ -825,10 +825,10 @@ class _ImpactRow extends StatelessWidget {
         : impactWhenDecreased;
 
     final impactColor = unchanged
-        ? PactaFlowColors.textDisabled
+        ? VeraProbColors.textDisabled
         : delta > 0
-        ? PactaFlowColors.warning
-        : PactaFlowColors.info;
+        ? VeraProbColors.warning
+        : VeraProbColors.info;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -842,7 +842,7 @@ class _ImpactRow extends StatelessWidget {
                   label,
                   style: const TextStyle(
                     fontSize: 11,
-                    color: PactaFlowColors.textDisabled,
+                    color: VeraProbColors.textDisabled,
                   ),
                 ),
                 Row(
@@ -851,20 +851,20 @@ class _ImpactRow extends StatelessWidget {
                       current,
                       style: const TextStyle(
                         fontSize: 13,
-                        color: PactaFlowColors.textSecondary,
+                        color: VeraProbColors.textSecondary,
                         decoration: TextDecoration.lineThrough,
                       ),
                     ),
                     const Icon(
                       Icons.arrow_right_alt,
                       size: 14,
-                      color: PactaFlowColors.textDisabled,
+                      color: VeraProbColors.textDisabled,
                     ),
                     Text(
                       proposed,
                       style: const TextStyle(
                         fontSize: 13,
-                        color: PactaFlowColors.textPrimary,
+                        color: VeraProbColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -904,14 +904,14 @@ class _VersionHistoryPanel extends StatelessWidget {
             Icon(
               Icons.history_outlined,
               size: 48,
-              color: PactaFlowColors.textDisabled.withValues(alpha: 0.4),
+              color: VeraProbColors.textDisabled.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 12),
             const Text(
               'Nenhuma regra configurada ainda.',
               style: TextStyle(
                 fontSize: 13,
-                color: PactaFlowColors.textSecondary,
+                color: VeraProbColors.textSecondary,
               ),
             ),
           ],
@@ -951,9 +951,9 @@ class _HistoryGroupState extends State<_HistoryGroup> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: PactaFlowColors.border),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
         children: [
@@ -971,7 +971,7 @@ class _HistoryGroupState extends State<_HistoryGroup> {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: PactaFlowColors.textPrimary,
+                      color: VeraProbColors.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -979,7 +979,7 @@ class _HistoryGroupState extends State<_HistoryGroup> {
                     '${widget.entries.length} versões',
                     style: const TextStyle(
                       fontSize: 11,
-                      color: PactaFlowColors.textSecondary,
+                      color: VeraProbColors.textSecondary,
                     ),
                   ),
                   const Spacer(),
@@ -988,7 +988,7 @@ class _HistoryGroupState extends State<_HistoryGroup> {
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
                     size: 14,
-                    color: PactaFlowColors.textSecondary,
+                    color: VeraProbColors.textSecondary,
                   ),
                 ],
               ),
@@ -1012,7 +1012,7 @@ class _HistoryRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: PactaFlowColors.border)),
+        border: Border(top: BorderSide(color: VeraProbColors.border)),
       ),
       child: Row(
         children: [
@@ -1022,8 +1022,8 @@ class _HistoryRow extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: entry.isActive
-                  ? PactaFlowColors.onTime
-                  : PactaFlowColors.textDisabled,
+                  ? VeraProbColors.onTime
+                  : VeraProbColors.textDisabled,
             ),
           ),
           const SizedBox(width: 10),
@@ -1038,7 +1038,7 @@ class _HistoryRow extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: PactaFlowColors.textPrimary,
+                        color: VeraProbColors.textPrimary,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -1047,7 +1047,7 @@ class _HistoryRow extends StatelessWidget {
                         '(ativa)',
                         style: TextStyle(
                           fontSize: 10,
-                          color: PactaFlowColors.onTime,
+                          color: VeraProbColors.onTime,
                         ),
                       ),
                   ],
@@ -1056,7 +1056,7 @@ class _HistoryRow extends StatelessWidget {
                   _formatDateRange(entry),
                   style: const TextStyle(
                     fontSize: 10,
-                    color: PactaFlowColors.textDisabled,
+                    color: VeraProbColors.textDisabled,
                   ),
                 ),
               ],
@@ -1066,7 +1066,7 @@ class _HistoryRow extends StatelessWidget {
             _configSummary(entry),
             style: const TextStyle(
               fontSize: 11,
-              color: PactaFlowColors.textSecondary,
+              color: VeraProbColors.textSecondary,
             ),
           ),
         ],
@@ -1110,18 +1110,18 @@ class _RuleTypeIcon extends StatelessWidget {
     final (icon, color) = switch (ruleType.value) {
       'MAX_TOLERANCE_DELAY' => (
         Icons.schedule_outlined,
-        PactaFlowColors.warning,
+        VeraProbColors.warning,
       ),
       'MAX_EVIDENCE_GAP' => (
         Icons.signal_cellular_connected_no_internet_0_bar,
-        PactaFlowColors.info,
+        VeraProbColors.info,
       ),
       'MIN_GEOFENCE_COVERAGE' => (
         Icons.location_on_outlined,
-        PactaFlowColors.onTime,
+        VeraProbColors.onTime,
       ),
-      'NO_SHOW_PENALTY' => (Icons.money_off_outlined, PactaFlowColors.error),
-      _ => (Icons.rule_outlined, PactaFlowColors.textSecondary),
+      'NO_SHOW_PENALTY' => (Icons.money_off_outlined, VeraProbColors.error),
+      _ => (Icons.rule_outlined, VeraProbColors.textSecondary),
     };
 
     return Container(
@@ -1160,30 +1160,30 @@ class _ParamField extends StatelessWidget {
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: PactaFlowColors.textPrimary,
+            color: VeraProbColors.textPrimary,
           ),
         ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           keyboardType: inputType,
-          style: const TextStyle(color: PactaFlowColors.textPrimary),
+          style: const TextStyle(color: VeraProbColors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: PactaFlowColors.textDisabled),
+            hintStyle: const TextStyle(color: VeraProbColors.textDisabled),
             filled: true,
-            fillColor: PactaFlowColors.surfaceElevated,
+            fillColor: VeraProbColors.surfaceElevated,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: PactaFlowColors.border),
+              borderSide: const BorderSide(color: VeraProbColors.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: PactaFlowColors.border),
+              borderSide: const BorderSide(color: VeraProbColors.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: PactaFlowColors.primary),
+              borderSide: const BorderSide(color: VeraProbColors.primary),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
@@ -1196,7 +1196,7 @@ class _ParamField extends StatelessWidget {
           helpText,
           style: const TextStyle(
             fontSize: 11,
-            color: PactaFlowColors.textDisabled,
+            color: VeraProbColors.textDisabled,
           ),
         ),
       ],
@@ -1213,7 +1213,7 @@ class _ErrorState extends StatelessWidget {
     return Center(
       child: Text(
         'Erro: $message',
-        style: const TextStyle(color: PactaFlowColors.error),
+        style: const TextStyle(color: VeraProbColors.error),
       ),
     );
   }

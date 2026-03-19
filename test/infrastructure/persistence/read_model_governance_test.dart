@@ -1,18 +1,18 @@
-import 'package:pactaflow/infrastructure/sla_audit/postgres_contractual_financial_trend_query_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_financial_trend_query_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:pactaflow/application/sla_audit/projections/contractual_financial_impact_query_service_in_memory.dart';
-import 'package:pactaflow/application/sla_audit/projections/contractual_financial_trend_query_service_in_memory.dart';
-import 'package:pactaflow/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
-import 'package:pactaflow/infrastructure/persistence/persistence_mode.dart';
-import 'package:pactaflow/infrastructure/persistence/persistence_provider.dart';
-import 'package:pactaflow/infrastructure/providers/supabase_provider.dart';
-import 'package:pactaflow/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
-import 'package:pactaflow/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
-import 'package:pactaflow/state/providers/sla_financial_providers.dart';
-import 'package:pactaflow/state/providers/sla_providers.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service_in_memory.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_query_service_in_memory.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
+import 'package:veraprob/state/providers/sla_financial_providers.dart';
+import 'package:veraprob/state/providers/sla_providers.dart';
 
 class MockSupabaseClient extends Mock implements SupabaseClient {}
 

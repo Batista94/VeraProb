@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
-import 'package:pactaflow/domain/sla_audit/shadow_mode_simulation.dart';
-import 'package:pactaflow/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/shadow_mode_simulation.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
   final periodStart = DateTime.utc(2026, 3, 1);
@@ -224,14 +224,14 @@ void main() {
       // Must mention hardware attribution (PO directive: protect operator's legal position)
       expect(text, contains('hardware GPS'));
       expect(text, contains('contratante'));
-      expect(text, contains('PactaFlow processou 100%'));
+      expect(text, contains('veraprob processou 100%'));
     });
 
-    test('attribution text never blames PactaFlow for hardware issues', () {
+    test('attribution text never blames veraprob for hardware issues', () {
       final sim = makeSimulation(evidenceQualityRate: 40.0);
       final text = sim.evidenceQualityAttribution;
       expect(text, isNot(contains('erro do sistema')));
-      expect(text, isNot(contains('falha do PactaFlow')));
+      expect(text, isNot(contains('falha do veraprob')));
     });
   });
 }

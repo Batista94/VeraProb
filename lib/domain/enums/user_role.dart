@@ -1,4 +1,4 @@
-/// Defines the hierarchical roles within the PactaFlow operational environment.
+/// Defines the hierarchical roles within the veraprob operational environment.
 ///
 /// This forms the basis of the RBAC (Role-Based Access Control) system,
 /// dictating which UI elements and mutation actions a user can perform.

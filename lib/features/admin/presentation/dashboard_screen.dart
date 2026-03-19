@@ -56,9 +56,9 @@ class DashboardScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: PactaFlowColors.surface,
+                        color: VeraProbColors.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: PactaFlowColors.border),
+                        border: Border.all(color: VeraProbColors.border),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.2),
@@ -70,7 +70,7 @@ class DashboardScreen extends ConsumerWidget {
                       child: const Icon(
                         Icons.analytics_rounded,
                         size: 32,
-                        color: PactaFlowColors.primary,
+                        color: VeraProbColors.primary,
                       ),
                     ),
                     const SizedBox(width: 20),
@@ -79,7 +79,7 @@ class DashboardScreen extends ConsumerWidget {
                       children: [
                         Text(
                           'Painel de Controle',
-                          style: PactaFlowTypography.kpiValue.copyWith(
+                          style: VeraProbTypography.kpiValue.copyWith(
                             fontSize: 32,
                             height: 1.1,
                           ),
@@ -91,15 +91,15 @@ class DashboardScreen extends ConsumerWidget {
                               width: 8,
                               height: 8,
                               decoration: const BoxDecoration(
-                                color: PactaFlowColors.onTime,
+                                color: VeraProbColors.onTime,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Operação em Tempo Real • Receita Protegida',
-                              style: PactaFlowTypography.bodySmall.copyWith(
-                                color: PactaFlowColors.textSecondary,
+                              style: VeraProbTypography.bodySmall.copyWith(
+                                color: VeraProbColors.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

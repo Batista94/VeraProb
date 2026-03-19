@@ -1,7 +1,7 @@
 # Phase 3 Compliance Report — Explainability & Investigation
 
 **Date:** 2026-03-05  
-**Engine Version:** `PactaFlow-core_v3`  
+**Engine Version:** `VeraProb-core_v3`  
 **Phase Status:** ✅ Operationally Complete
 
 ---

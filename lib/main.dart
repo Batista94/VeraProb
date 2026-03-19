@@ -34,7 +34,7 @@ void main() async {
 
   // Security Log (Debug only)
   if (kDebugMode) {
-    print('[PactaFlow] Mode: ${EnvironmentConfig.label} | Endpoint: ${EnvironmentConfig.supabaseUrl}');
+    print('[veraprob] Mode: ${EnvironmentConfig.label} | Endpoint: ${EnvironmentConfig.supabaseUrl}');
   }
 
   // FASE 0 - Passively initialize Supabase. No overrides or dependencies created.
@@ -66,7 +66,7 @@ void main() async {
             // FASE 6 — Atomic Switch: runtime now operates on Postgres.
             persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
           ],
-          child: PactaFlowAdminApp(
+          child: VeraProbAdminApp(
             inviteToken: isInviteRoute ? queryToken : null,
             reviewContractToken: isReviewContractRoute ? queryToken : null,
           ),
@@ -76,21 +76,21 @@ void main() async {
   );
 }
 
-class PactaFlowAdminApp extends ConsumerStatefulWidget {
+class VeraProbAdminApp extends ConsumerStatefulWidget {
   final String? inviteToken;
   final String? reviewContractToken;
 
-  const PactaFlowAdminApp({
+  const VeraProbAdminApp({
     super.key,
     this.inviteToken,
     this.reviewContractToken,
   });
 
   @override
-  ConsumerState<PactaFlowAdminApp> createState() => _PactaFlowAdminAppState();
+  ConsumerState<VeraProbAdminApp> createState() => _VeraProbAdminAppState();
 }
 
-class _PactaFlowAdminAppState extends ConsumerState<PactaFlowAdminApp> {
+class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
   @override
   Widget build(BuildContext context) {
     // FASE 8 — Start the ContractualEvaluationSubscriber reactively.
@@ -104,7 +104,7 @@ class _PactaFlowAdminAppState extends ConsumerState<PactaFlowAdminApp> {
 
 
     return MaterialApp(
-      title: 'PactaFlow — Control Center',
+      title: 'veraprob — Control Center',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
       // 8.4 — Sentry route tracking (no-op when Sentry is disabled in dev)

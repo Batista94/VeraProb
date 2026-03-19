@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/application/sla_audit/sla_ledger_mapper.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_execution_state.dart';
-import 'package:pactaflow/domain/sla_audit/execution_status.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
-import 'package:pactaflow/domain/shared/money.dart';
+import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
   group('Event Sourcing Replay', () {

@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 /// Configuração local para os testes de integração do Postgres.
@@ -10,8 +11,14 @@ class PostgresTestConfig {
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlZmF1bHQiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDI3NTIwMCwiZXhwIjoxOTU1ODUxMjAwfQ.B_L-kX1nEx0xGz-yU2Zszf3t60h0yqO0uX7oH8o--Jk';
 
   static Future<SupabaseClient> createClient() async {
-    // Para testes isolados, inicializamos uma nova instância sem afetar o global
-    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+    // Mocking SharedPreferences to avoid MissingPluginException in unit tests
+    // when Supabase.initialize is called.
+    SharedPreferences.setMockInitialValues({});
+    
+    await Supabase.initialize(
+      url: supabaseUrl, 
+      anonKey: supabaseAnonKey,
+    );
     return Supabase.instance.client;
   }
 

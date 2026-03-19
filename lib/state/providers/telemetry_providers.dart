@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pactaflow/data/services/telemetry_service.dart';
+import 'package:veraprob/data/services/telemetry_service.dart';
 
 /// Provider for the Telemetry Service (Bridge)
 final telemetryServiceProvider = Provider<TelemetryService>((ref) {

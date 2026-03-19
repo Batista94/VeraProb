@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pactaflow/application/simulation_control_service.dart';
-import 'package:pactaflow/application/ports/contractual_event_port.dart';
-import 'package:pactaflow/data/services/fleet_simulation_service.dart';
-import 'package:pactaflow/domain/enums/trip_status.dart';
-import 'package:pactaflow/domain/enums/event_type.dart';
-import 'package:pactaflow/domain/entities/trip_event.dart';
-import 'package:pactaflow/application/audit/audit_service.dart';
+import 'package:veraprob/application/simulation_control_service.dart';
+import 'package:veraprob/application/ports/contractual_event_port.dart';
+import 'package:veraprob/data/services/fleet_simulation_service.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/application/audit/audit_service.dart';
 
 class MockFleetSimulationService extends Mock
     implements FleetSimulationService {}

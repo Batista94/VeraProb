@@ -8,7 +8,7 @@ import 'reporting_service.dart';
 /// Orchestrates [ShadowModeSimulation] computation and persistence.
 ///
 /// Shadow Mode answers: "What financial losses would have occurred without
-/// PactaFlow's automated SLA enforcement?" — the key ROI proof for sales.
+/// veraprob's automated SLA enforcement?" — the key ROI proof for sales.
 ///
 /// **Evidence quality attribution (PO directive 2026-03-17):**
 /// When [evidenceQualityRate] is low, [ShadowModeSimulation.evidenceQualityAttribution]
@@ -37,7 +37,7 @@ class ShadowModeService {
   /// [manualEnforcementCostPerIncident]: estimated labor cost in cents to manually
   ///   track and enforce a single SLA incident.
   ///
-  /// [platformSubscriptionCost]: total cost of PactaFlow for the period (cents).
+  /// [platformSubscriptionCost]: total cost of veraprob for the period (cents).
   ///   Used to compute the ROI percentage.
   Future<ShadowModeSimulation> runSimulation({
     required String organizationId,

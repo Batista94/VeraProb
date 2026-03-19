@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Phase 6 Block 6: Contract Approval Workflow
+-- veraprob — Phase 6 Block 6: Contract Approval Workflow
 -- Sprint 6.6 | 2026-03-21
 -- ============================================================
 -- Changes:

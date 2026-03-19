@@ -3,17 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:pactaflow/application/sla_audit/projections/contract_detail_view.dart';
-import 'package:pactaflow/application/sla_audit/projections/sla_execution_item_view.dart';
-import 'package:pactaflow/application/sla_audit/submit_contract_for_approval_command.dart';
-import 'package:pactaflow/domain/sla_audit/contract_status.dart';
-import 'package:pactaflow/domain/sla_audit/execution_status.dart';
-import 'package:pactaflow/domain/shared/money.dart';
-import 'package:pactaflow/state/providers/auth_providers.dart';
-import 'package:pactaflow/state/providers/contract_providers.dart';
-import 'package:pactaflow/presentation/shared/widgets/pactaflow_header.dart';
-import 'package:pactaflow/presentation/shared/widgets/pactaflow_chip.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
+import 'package:veraprob/application/sla_audit/submit_contract_for_approval_command.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/presentation/shared/widgets/veraprob_header.dart';
+import 'package:veraprob/presentation/shared/widgets/veraprob_chip.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 import 'declare_contract_plan_form.dart';
 
@@ -201,13 +201,13 @@ class _DetailViewState extends ConsumerState<_DetailView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Back button + header ─────────────────────────────
-          PactaFlowHeader(
+          VeraProbHeader(
             icon: Icons.description_outlined,
             title: s.name,
             subtitle: s.contractorName,
             actions: [
               _StatusChip(status: s.status),
-              const SizedBox(width: PactaFlowSpacing.md),
+              const SizedBox(width: VeraProbSpacing.md),
               if (canSubmitForApproval)
                 OutlinedButton.icon(
                   icon: _submitting
@@ -223,7 +223,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                       : () => _submitForApproval(context),
                 ),
               if (canSubmitForApproval)
-                const SizedBox(width: PactaFlowSpacing.sm),
+                const SizedBox(width: VeraProbSpacing.sm),
               if (canDeclarePlan)
                 FilledButton.icon(
                   icon: const Icon(Icons.playlist_add_check, size: 16),
@@ -444,19 +444,19 @@ class _FinancialTab extends StatelessWidget {
           _KpiCard(
             label: 'Receita Protegida',
             value: financialSummary.protectedRevenue,
-            color: PactaFlowColors.onTime,
+            color: VeraProbColors.onTime,
             icon: Icons.check_circle_outline,
           ),
           _KpiCard(
             label: 'Receita em Risco',
             value: financialSummary.revenueAtRisk,
-            color: PactaFlowColors.warning,
+            color: VeraProbColors.warning,
             icon: Icons.warning_amber_outlined,
           ),
           _KpiCard(
             label: 'Receita Perdida',
             value: financialSummary.lostRevenue,
-            color: PactaFlowColors.error,
+            color: VeraProbColors.error,
             icon: Icons.money_off_outlined,
           ),
           _CountCard(
@@ -504,7 +504,7 @@ class _KpiCard extends StatelessWidget {
                     label,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: PactaFlowColors.textSecondary,
+                      color: VeraProbColors.textSecondary,
                     ),
                   ),
                 ],
@@ -553,14 +553,14 @@ class _CountCard extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   fontSize: 12,
-                  color: PactaFlowColors.textSecondary,
+                  color: VeraProbColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 8),
-              _countRow('Executados', executed, PactaFlowColors.onTime),
-              _countRow('Pendentes', pending, PactaFlowColors.scheduled),
-              _countRow('No-show', noShow, PactaFlowColors.error),
-              _countRow('Gap evidência', gap, PactaFlowColors.warning),
+              _countRow('Executados', executed, VeraProbColors.onTime),
+              _countRow('Pendentes', pending, VeraProbColors.scheduled),
+              _countRow('No-show', noShow, VeraProbColors.error),
+              _countRow('Gap evidência', gap, VeraProbColors.warning),
             ],
           ),
         ),
@@ -600,7 +600,7 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PactaFlowChip(
+    return VeraProbChip(
       label: switch (status) {
         ContractStatus.draft => 'Rascunho',
         ContractStatus.awaitingContractorAcceptance => 'Aguardando Aceite',
@@ -608,10 +608,10 @@ class _StatusChip extends StatelessWidget {
         ContractStatus.closed => 'Encerrado',
       },
       color: switch (status) {
-        ContractStatus.draft => PactaFlowColors.neutral,
-        ContractStatus.awaitingContractorAcceptance => PactaFlowColors.info,
-        ContractStatus.active => PactaFlowColors.success,
-        ContractStatus.closed => PactaFlowColors.error,
+        ContractStatus.draft => VeraProbColors.neutral,
+        ContractStatus.awaitingContractorAcceptance => VeraProbColors.info,
+        ContractStatus.active => VeraProbColors.success,
+        ContractStatus.closed => VeraProbColors.error,
       },
     );
   }

@@ -1,11 +1,11 @@
-# PactaFlow: Strategic Context & Business Architecture
+# VeraProb: Strategic Context & Business Architecture
 
 This document serves as the **canonical entry point** for any engineering session, AI agent, or stakeholder. It defines the platform's "True North": its business purpose, market differentiators, and operational rules.
 
 ---
 
 ## 1. Platform Purpose: The "Digital Judge"
-PactaFlow is an **Automated SLA Compliance & Financial Protection Platform**. 
+VeraProb is an **Automated SLA Compliance & Financial Protection Platform**. 
 It eliminates the gap between a signed B2B contract and physical operation execution. It acts as an impartial "Judge" that:
 1. **Ingests** real-world telemetry (GPS, Check-ins).
 2. **Normalizes** noisy data into deterministic facts.
@@ -17,7 +17,7 @@ It eliminates the gap between a signed B2B contract and physical operation execu
 ## 2. Market Differentiators (Strategic Moat)
 
 *   **Financial Shield (INV-2):** We don't just report delays; we manage the **Relative Risk** of the entire operation. By setting financial ceilings and calculating exposure in real-time, we protect the operator's margin against catastrophic penalization.
-*   **The Burden of Proof:** PactaFlow generates *cryptographic-like proof* of execution. disputes are resolved by data, not emails.
+*   **The Burden of Proof:** VeraProb generates *cryptographic-like proof* of execution. disputes are resolved by data, not emails.
 *   **Zero-Friction JIT Master Data:** Dispatchers can create operational assets (Geofences, Zones) *inline* during contract creation. The system adapts to the user, not the other way around.
 *   **Multi-Tenant Sovereignty:** Complete data isolation enforced at the database level (RLS). Client A never exists in the context of Client B.
 

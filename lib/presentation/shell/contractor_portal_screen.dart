@@ -27,7 +27,7 @@ class ContractorPortalScreen extends ConsumerWidget {
     final packagesAsync = ref.watch(sealedAuditPackagesProvider);
 
     return Scaffold(
-      backgroundColor: PactaFlowColors.background,
+      backgroundColor: VeraProbColors.background,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -38,22 +38,22 @@ class ContractorPortalScreen extends ConsumerWidget {
                 children: [
                   Text(
                     'PORTAL DO CONTRATANTE',
-                    style: PactaFlowTypography.sectionTitle.copyWith(
-                      color: PactaFlowColors.primary,
+                    style: VeraProbTypography.sectionTitle.copyWith(
+                      color: VeraProbColors.primary,
                       letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Visão verificável e imparcial de cada ciclo de faturamento.',
-                    style: PactaFlowTypography.bodySmall,
+                    style: VeraProbTypography.bodySmall,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Cada pacote é criptograficamente selado (SHA-256) — '
                     'você pode verificar a integridade de forma independente.',
-                    style: PactaFlowTypography.bodySmall.copyWith(
-                      color: PactaFlowColors.textSecondary,
+                    style: VeraProbTypography.bodySmall.copyWith(
+                      color: VeraProbColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -86,8 +86,8 @@ class ContractorPortalScreen extends ConsumerWidget {
               child: Center(
                 child: Text(
                   'Erro ao carregar pacotes: $e',
-                  style: PactaFlowTypography.bodySmall.copyWith(
-                    color: PactaFlowColors.error,
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.error,
                   ),
                 ),
               ),
@@ -109,18 +109,18 @@ class _EvidenceCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final complianceColor = view.complianceRate >= 90
-        ? PactaFlowColors.success
+        ? VeraProbColors.success
         : view.complianceRate >= 70
-        ? PactaFlowColors.warning
-        : PactaFlowColors.error;
+        ? VeraProbColors.warning
+        : VeraProbColors.error;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Card(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: PactaFlowColors.border),
+          side: const BorderSide(color: VeraProbColors.border),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -137,14 +137,14 @@ class _EvidenceCard extends ConsumerWidget {
                       children: [
                         Text(
                           '${_fmtDate(view.periodStartUtc)} – ${_fmtDate(view.periodEndUtc)}',
-                          style: PactaFlowTypography.bodyMedium.copyWith(
+                          style: VeraProbTypography.bodyMedium.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           view.contractorName,
-                          style: PactaFlowTypography.bodySmall,
+                          style: VeraProbTypography.bodySmall,
                         ),
                       ],
                     ),
@@ -176,7 +176,7 @@ class _EvidenceCard extends ConsumerWidget {
               // ── Obligation breakdown ──────────────────────────────────────
               Text(
                 'OBRIGAÇÕES DO PERÍODO',
-                style: PactaFlowTypography.bodySmall.copyWith(
+                style: VeraProbTypography.bodySmall.copyWith(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.8,
                   fontSize: 11,
@@ -190,18 +190,18 @@ class _EvidenceCard extends ConsumerWidget {
                   _ObligationChip(
                     icon: Icons.check_circle_outline,
                     label: '${view.executedCount} executadas',
-                    color: PactaFlowColors.success,
+                    color: VeraProbColors.success,
                   ),
                   _ObligationChip(
                     icon: Icons.cancel_outlined,
                     label: '${view.noShowCount} não realizadas',
-                    color: PactaFlowColors.error,
+                    color: VeraProbColors.error,
                   ),
                   if (view.evidenceGapCount > 0)
                     _ObligationChip(
                       icon: Icons.gps_off_outlined,
                       label: '${view.evidenceGapCount} sem evidência GPS',
-                      color: PactaFlowColors.warning,
+                      color: VeraProbColors.warning,
                     ),
                 ],
               ),
@@ -214,10 +214,10 @@ class _EvidenceCard extends ConsumerWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: PactaFlowColors.error.withValues(alpha: 0.06),
+                    color: VeraProbColors.error.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: PactaFlowColors.error.withValues(alpha: 0.25),
+                      color: VeraProbColors.error.withValues(alpha: 0.25),
                     ),
                   ),
                   child: Row(
@@ -225,7 +225,7 @@ class _EvidenceCard extends ConsumerWidget {
                       const Icon(
                         Icons.account_balance_wallet_outlined,
                         size: 16,
-                        color: PactaFlowColors.error,
+                        color: VeraProbColors.error,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -235,14 +235,14 @@ class _EvidenceCard extends ConsumerWidget {
                             Text(
                               'Penalidades aplicadas: ${_fmtBrl(view.lostRevenue)}',
                               style: const TextStyle(
-                                color: PactaFlowColors.error,
+                                color: VeraProbColors.error,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
                             ),
                             Text(
                               'de ${_fmtBrl(view.totalContractedRevenue)} contratados',
-                              style: PactaFlowTypography.bodySmall.copyWith(
+                              style: VeraProbTypography.bodySmall.copyWith(
                                 fontSize: 11,
                               ),
                             ),
@@ -269,7 +269,7 @@ class _EvidenceCard extends ConsumerWidget {
                             const Icon(
                               Icons.verified_outlined,
                               size: 13,
-                              color: PactaFlowColors.textSecondary,
+                              color: VeraProbColors.textSecondary,
                             ),
                             const SizedBox(width: 4),
                             Flexible(
@@ -318,7 +318,7 @@ class _EvidenceRequestButton extends ConsumerWidget {
         style: TextStyle(fontSize: 12),
       ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: PactaFlowColors.primary,
+        backgroundColor: VeraProbColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         minimumSize: Size.zero,
@@ -387,18 +387,18 @@ class _EmptyState extends StatelessWidget {
           const Icon(
             Icons.shield_outlined,
             size: 48,
-            color: PactaFlowColors.textSecondary,
+            color: VeraProbColors.textSecondary,
           ),
           const SizedBox(height: 12),
           Text(
             'Nenhum pacote de evidências disponível.',
-            style: PactaFlowTypography.bodySmall,
+            style: VeraProbTypography.bodySmall,
           ),
           const SizedBox(height: 4),
           Text(
             'Os pacotes são gerados automaticamente ao fechar o ciclo mensal.',
-            style: PactaFlowTypography.bodySmall.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.bodySmall.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),

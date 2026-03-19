@@ -40,7 +40,7 @@ class CsvExportService {
     final h = package.attestationHeader;
     final contractScope = package.contractId ?? 'ALL';
 
-    buffer.writeln('# ATTESTATION OF AUTHENTICITY — PACTAFLOW AUDIT EXPORT');
+    buffer.writeln('# ATTESTATION OF AUTHENTICITY — veraprob AUDIT EXPORT');
     buffer.writeln('# =====================================================');
     buffer.writeln('# Report ID:       ${package.billingCycleReportId}');
     buffer.writeln('# Package ID:      ${package.id}');

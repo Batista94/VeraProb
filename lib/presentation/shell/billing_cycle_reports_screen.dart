@@ -17,7 +17,7 @@ class BillingCycleReportsScreen extends ConsumerWidget {
     final packagesAsync = ref.watch(sealedAuditPackagesProvider);
 
     return Scaffold(
-      backgroundColor: PactaFlowColors.background,
+      backgroundColor: VeraProbColors.background,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -28,15 +28,15 @@ class BillingCycleReportsScreen extends ConsumerWidget {
                 children: [
                   Text(
                     'RELATÓRIOS DE CICLO DE FATURAMENTO',
-                    style: PactaFlowTypography.sectionTitle.copyWith(
-                      color: PactaFlowColors.primary,
+                    style: VeraProbTypography.sectionTitle.copyWith(
+                      color: VeraProbColors.primary,
                       letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Pacotes de auditoria selados com garantia de integridade SHA-256.',
-                    style: PactaFlowTypography.bodySmall,
+                    style: VeraProbTypography.bodySmall,
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -60,8 +60,8 @@ class BillingCycleReportsScreen extends ConsumerWidget {
               child: Center(
                 child: Text(
                   'Erro ao carregar relatórios: $e',
-                  style: PactaFlowTypography.bodySmall.copyWith(
-                    color: PactaFlowColors.error,
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.error,
                   ),
                 ),
               ),
@@ -87,10 +87,10 @@ class _PackageCard extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
       child: Card(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: PactaFlowColors.border),
+          side: const BorderSide(color: VeraProbColors.border),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -103,14 +103,14 @@ class _PackageCard extends ConsumerWidget {
                   children: [
                     Text(
                       dateRange,
-                      style: PactaFlowTypography.bodyMedium.copyWith(
+                      style: VeraProbTypography.bodyMedium.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       package.contractorName,
-                      style: PactaFlowTypography.bodySmall,
+                      style: VeraProbTypography.bodySmall,
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -119,7 +119,7 @@ class _PackageCard extends ConsumerWidget {
                         const SizedBox(width: 8),
                         _Badge(
                           label: 'SHA-256',
-                          color: PactaFlowColors.primary.withValues(
+                          color: VeraProbColors.primary.withValues(
                             alpha: 0.15,
                           ),
                         ),
@@ -223,7 +223,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color ?? PactaFlowColors.success.withValues(alpha: 0.15),
+        color: color ?? VeraProbColors.success.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(label, style: const TextStyle(fontSize: 11)),
@@ -243,18 +243,18 @@ class _EmptyState extends StatelessWidget {
           const Icon(
             Icons.folder_open_outlined,
             size: 48,
-            color: PactaFlowColors.textSecondary,
+            color: VeraProbColors.textSecondary,
           ),
           const SizedBox(height: 12),
           Text(
             'Nenhum pacote de auditoria selado.',
-            style: PactaFlowTypography.bodySmall,
+            style: VeraProbTypography.bodySmall,
           ),
           const SizedBox(height: 4),
           Text(
             'Os pacotes são gerados automaticamente ao fechar o ciclo mensal.',
-            style: PactaFlowTypography.bodySmall.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.bodySmall.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),

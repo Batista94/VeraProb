@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Phase 6: Organization Management RPCs
+-- veraprob — Phase 6: Organization Management RPCs
 -- ============================================================
 -- REASON:
 --   Allow admins to list and manage members of their organization.

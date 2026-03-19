@@ -9,7 +9,7 @@ class LiveIndicator extends StatefulWidget {
   const LiveIndicator({
     super.key,
     this.size = 8,
-    this.color = PactaFlowColors.onTime,
+    this.color = VeraProbColors.onTime,
   });
 
   @override

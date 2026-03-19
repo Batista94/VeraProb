@@ -6,10 +6,7 @@ import 'revoke_invitation_command.dart';
 
 /// Application handler for [RevokeInvitationCommand].
 ///
-/// RBAC: Requires [UserPermission.canManageUsers] (admin only).
-///
-/// Revokes a PENDING invitation. Has no effect on existing members.
-/// Use [RemoveMemberHandler] to remove an org member.
+/// RBAC: Requires [UserPermission.canInviteUsers] (admin only).
 class RevokeInvitationHandler {
   final InvitationCommandService _commandService;
   final RbacService _rbac = RbacService();
@@ -19,16 +16,16 @@ class RevokeInvitationHandler {
   /// Handles the command by revoking the pending invitation.
   ///
   /// Throws [DomainException] if:
-  /// - [callerRole] does not have [UserPermission.canManageUsers]
-  /// Server-side RPC also throws if the invitation is already accepted/revoked
-  /// or does not belong to the caller's organization.
+  /// - [callerRole] does not have [UserPermission.canInviteUsers]
   Future<void> handle(RevokeInvitationCommand command) async {
     // 1. RBAC check — before any I/O
-    if (!_rbac.can(command.callerRole, UserPermission.canManageUsers)) {
-      throw const DomainException('Unauthorized: canManageUsers required.');
+    if (!_rbac.can(command.callerRole, UserPermission.canInviteUsers)) {
+      throw const DomainException('Unauthorized: canInviteUsers required.');
     }
 
     // 2. Delegate — server-side validates org scope
-    await _commandService.revokeInvitation(invitationId: command.invitationId);
+    await _commandService.revokeInvitation(
+      invitationId: command.invitationId,
+    );
   }
 }

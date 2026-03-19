@@ -18,7 +18,7 @@ signature: PF-SEC-E6A1B2C3D4E5F678
 
 Find every crack in the evidentiary chain before opposing counsel does.
 
-PactaFlow generates financial verdicts that can be disputed in court, in arbitration, or in
+VeraProb generates financial verdicts that can be disputed in court, in arbitration, or in
 contract renegotiation. A contractor facing a penalty will hire a forensic expert. That expert's
 job is to find a single flaw that makes the entire evidence chain inadmissible. Your job is to find
 those flaws first — and force the engineering team to close them before they matter.
@@ -126,7 +126,7 @@ verdicts, contract terms, or penalty history.
 
 **Questions to ask about every RLS policy and schema migration:**
 
-1. Does every RLS policy use `auth.jwt() ->> 'organization_id'` (the PactaFlow invariant), or
+1. Does every RLS policy use `auth.jwt() ->> 'organization_id'` (the VeraProb invariant), or
    does any policy use `auth.uid()`? A policy using `auth.uid()` for tenant isolation will work
    for a single-user organization and silently fail for a multi-user one — the second user will
    see the first user's data, or see nothing.

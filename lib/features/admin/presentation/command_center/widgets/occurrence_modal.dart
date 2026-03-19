@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/domain/enums/event_type.dart';
-import 'package:pactaflow/state/providers/fleet_providers.dart';
-import 'package:pactaflow/presentation/shared/trip_status_theme.dart';
-import 'package:pactaflow/state/providers/authority_providers.dart';
-import 'package:pactaflow/application/authority/operational_command_bus.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/presentation/shared/trip_status_theme.dart';
+import 'package:veraprob/state/providers/authority_providers.dart';
+import 'package:veraprob/application/authority/operational_command_bus.dart';
 
 /// Modal for registering an operational occurrence on a trip.
 ///
@@ -52,7 +52,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: PactaFlowColors.surface,
+      backgroundColor: VeraProbColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -70,44 +70,44 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
               children: [
                 const Icon(
                   Icons.report_problem_outlined,
-                  color: PactaFlowColors.delayed,
+                  color: VeraProbColors.delayed,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Registrar Ocorrência',
-                    style: PactaFlowTypography.sectionTitle,
+                    style: VeraProbTypography.sectionTitle,
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 18),
                   onPressed: () => Navigator.pop(context, false),
-                  color: PactaFlowColors.textSecondary,
+                  color: VeraProbColors.textSecondary,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Text(widget.tripLabel, style: PactaFlowTypography.caption),
-            const Divider(color: PactaFlowColors.border, height: 20),
+            Text(widget.tripLabel, style: VeraProbTypography.caption),
+            const Divider(color: VeraProbColors.border, height: 20),
 
             // Event Type
-            Text('Tipo de Evento', style: PactaFlowTypography.caption),
+            Text('Tipo de Evento', style: VeraProbTypography.caption),
             const SizedBox(height: 6),
             Container(
               decoration: BoxDecoration(
-                border: Border.all(color: PactaFlowColors.border),
+                border: Border.all(color: VeraProbColors.border),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<EventType>(
                   value: _selectedType,
                   isExpanded: true,
-                  dropdownColor: PactaFlowColors.surface,
+                  dropdownColor: VeraProbColors.surface,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  style: PactaFlowTypography.bodyMedium,
+                  style: VeraProbTypography.bodyMedium,
                   items: EventType.values.map((type) {
                     return DropdownMenuItem(
                       value: type,
@@ -133,27 +133,27 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
             const SizedBox(height: 16),
 
             // Severity
-            Text('Severidade', style: PactaFlowTypography.caption),
+            Text('Severidade', style: VeraProbTypography.caption),
             const SizedBox(height: 6),
             Row(
               children: [
                 _SeverityChip(
                   label: 'Baixa',
-                  color: PactaFlowColors.onTime,
+                  color: VeraProbColors.onTime,
                   isSelected: _severity == 'low',
                   onTap: () => setState(() => _severity = 'low'),
                 ),
                 const SizedBox(width: 6),
                 _SeverityChip(
                   label: 'Média',
-                  color: PactaFlowColors.delayed,
+                  color: VeraProbColors.delayed,
                   isSelected: _severity == 'medium',
                   onTap: () => setState(() => _severity = 'medium'),
                 ),
                 const SizedBox(width: 6),
                 _SeverityChip(
                   label: 'Alta',
-                  color: PactaFlowColors.critical,
+                  color: VeraProbColors.critical,
                   isSelected: _severity == 'high',
                   onTap: () => setState(() => _severity = 'high'),
                 ),
@@ -162,28 +162,28 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
             const SizedBox(height: 16),
 
             // Notes
-            Text('Observação', style: PactaFlowTypography.caption),
+            Text('Observação', style: VeraProbTypography.caption),
             const SizedBox(height: 6),
             TextField(
               controller: _notesController,
               maxLines: 3,
-              style: PactaFlowTypography.bodyMedium,
+              style: VeraProbTypography.bodyMedium,
               decoration: InputDecoration(
                 hintText: 'Descreva a ocorrência...',
-                hintStyle: PactaFlowTypography.caption,
+                hintStyle: VeraProbTypography.caption,
                 filled: true,
-                fillColor: PactaFlowColors.background,
+                fillColor: VeraProbColors.background,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: PactaFlowColors.border),
+                  borderSide: const BorderSide(color: VeraProbColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: PactaFlowColors.border),
+                  borderSide: const BorderSide(color: VeraProbColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: PactaFlowColors.primary),
+                  borderSide: const BorderSide(color: VeraProbColors.primary),
                 ),
                 contentPadding: const EdgeInsets.all(10),
               ),
@@ -198,7 +198,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
                   onPressed: () => Navigator.pop(context, false),
                   child: const Text(
                     'Cancelar',
-                    style: TextStyle(color: PactaFlowColors.textSecondary),
+                    style: TextStyle(color: VeraProbColors.textSecondary),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -216,7 +216,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
                       : const Icon(Icons.check, size: 16),
                   label: const Text('Confirmar'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: PactaFlowColors.primary,
+                    backgroundColor: VeraProbColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -256,7 +256,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Acesso Negado: ${e.reason}'),
-            backgroundColor: PactaFlowColors.critical,
+            backgroundColor: VeraProbColors.critical,
           ),
         );
       }
@@ -270,11 +270,11 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
   Color _severityColor(EventType type) {
     switch (type.severity) {
       case EventSeverity.warning:
-        return PactaFlowColors.delayed;
+        return VeraProbColors.delayed;
       case EventSeverity.info:
-        return PactaFlowColors.onTime;
+        return VeraProbColors.onTime;
       case EventSeverity.neutral:
-        return PactaFlowColors.textSecondary;
+        return VeraProbColors.textSecondary;
     }
   }
 }
@@ -304,7 +304,7 @@ class _SeverityChip extends StatelessWidget {
               : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: isSelected ? color : PactaFlowColors.border,
+            color: isSelected ? color : VeraProbColors.border,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -313,7 +313,7 @@ class _SeverityChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? color : PactaFlowColors.textSecondary,
+            color: isSelected ? color : VeraProbColors.textSecondary,
           ),
         ),
       ),

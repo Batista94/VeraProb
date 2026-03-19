@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/domain/sla_audit/canonical_fact.dart';
-import 'package:pactaflow/domain/sla_audit/ingestion_integrity_flag.dart';
-import 'package:pactaflow/domain/sla_audit/spoofing_detector.dart';
-import 'package:pactaflow/domain/sla_audit/spoofing_signal.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact.dart';
+import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_detector.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_signal.dart';
 
 void main() {
   const detector = SpoofingDetector();

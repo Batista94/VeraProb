@@ -14,26 +14,26 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:pactaflow/application/sla_audit/close_contract_command.dart';
-import 'package:pactaflow/application/sla_audit/close_contract_handler.dart';
-import 'package:pactaflow/application/sla_audit/create_contract_command.dart';
-import 'package:pactaflow/application/sla_audit/create_contract_handler.dart';
-import 'package:pactaflow/application/sla_audit/declare_contractual_plan_command.dart';
-import 'package:pactaflow/application/sla_audit/declare_contractual_plan_handler.dart';
-import 'package:pactaflow/application/sla_audit/contractual_service_input.dart';
-import 'package:pactaflow/domain/sla_audit/contract_status.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_rule_repository.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_rule.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
-import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
-import 'package:pactaflow/domain/enums/user_role.dart';
-import 'package:pactaflow/domain/services/rbac_service.dart';
-import 'package:pactaflow/domain/admin/i_active_vehicle_repository.dart';
-import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
-import 'package:pactaflow/domain/sla_audit/operational_zone_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contract_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:veraprob/application/sla_audit/close_contract_command.dart';
+import 'package:veraprob/application/sla_audit/close_contract_handler.dart';
+import 'package:veraprob/application/sla_audit/create_contract_command.dart';
+import 'package:veraprob/application/sla_audit/create_contract_handler.dart';
+import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
+import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 
 void main() {
   group('Phase 5 Compliance — Contract & Plan Lifecycle', () {

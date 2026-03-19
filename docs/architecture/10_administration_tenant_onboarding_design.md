@@ -1,12 +1,12 @@
 # Design Specification: Administration & Tenant Self-Service (Phase 6)
 
 ## 1. Context & Motivation
-Currently, PactaFlow requires manual developer intervention to onboard every new B2B client (tenant). To scale, the product must provide self-service capabilities. Any transport company should be able to self-register, configure its own SLA rules, manage its team, and operate autonomously.
+Currently, VeraProb requires manual developer intervention to onboard every new B2B client (tenant). To scale, the product must provide self-service capabilities. Any transport company should be able to self-register, configure its own SLA rules, manage its team, and operate autonomously.
 
 This phase also addresses critical infrastructure gaps in JWT handling and RBAC (Role-Based Access Control) necessary for secure multi-tenancy.
 
 ## 2. Organization Management
-A "Tenant" in PactaFlow is an `Organization`.
+A "Tenant" in VeraProb is an `Organization`.
 - **Enrichment:** The `organizations` table will be enriched with:
   - `timezone`: For localizing operational events and SLA windows.
   - `currency_code`: For financial projections (default: BRL).

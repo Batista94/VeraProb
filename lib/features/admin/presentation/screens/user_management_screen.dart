@@ -34,12 +34,12 @@ class UserManagementScreen extends ConsumerWidget {
                 const Icon(
                   Icons.people_outline,
                   size: 28,
-                  color: PactaFlowColors.primary,
+                  color: VeraProbColors.primary,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Gestão de Usuários',
-                  style: PactaFlowTypography.sectionTitle,
+                  style: VeraProbTypography.sectionTitle,
                 ),
                 const Spacer(),
                 FilledButton.icon(
@@ -52,8 +52,8 @@ class UserManagementScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               'Gerencie os membros da sua organização e suas permissões de acesso.',
-              style: PactaFlowTypography.bodyMedium.copyWith(
-                color: PactaFlowColors.textSecondary,
+              style: VeraProbTypography.bodyMedium.copyWith(
+                color: VeraProbColors.textSecondary,
               ),
             ),
             const SizedBox(height: 32),
@@ -67,36 +67,36 @@ class UserManagementScreen extends ConsumerWidget {
                     error: (e, _) => Center(
                       child: Text(
                         'Erro ao carregar membros: $e',
-                        style: const TextStyle(color: PactaFlowColors.error),
+                        style: const TextStyle(color: VeraProbColors.error),
                       ),
                     ),
                     data: (members) => Column(
                       children: List.generate(members.length * 2 - 1, (i) {
                         if (i.isOdd) {
-                          return const Divider(color: PactaFlowColors.border);
+                          return const Divider(color: VeraProbColors.border);
                         }
                         final member = members[i ~/ 2];
                         final isSelf = member.userId == currentUserId;
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: PactaFlowColors.primary.withValues(
+                            backgroundColor: VeraProbColors.primary.withValues(
                               alpha: 0.1,
                             ),
                             child: Text(
                               member.email[0].toUpperCase(),
                               style: const TextStyle(
-                                color: PactaFlowColors.primary,
+                                color: VeraProbColors.primary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                           title: Text(
                             member.email,
-                            style: PactaFlowTypography.kpiLabel,
+                            style: VeraProbTypography.kpiLabel,
                           ),
                           subtitle: Text(
                             'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
-                            style: PactaFlowTypography.caption,
+                            style: VeraProbTypography.caption,
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -133,10 +133,10 @@ class UserManagementScreen extends ConsumerWidget {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: PactaFlowColors.surface,
+                                    color: VeraProbColors.surface,
                                     borderRadius: BorderRadius.circular(4),
                                     border: Border.all(
-                                      color: PactaFlowColors.border,
+                                      color: VeraProbColors.border,
                                     ),
                                   ),
                                   child: const Text(
@@ -152,7 +152,7 @@ class UserManagementScreen extends ConsumerWidget {
                                 IconButton(
                                   icon: const Icon(
                                     Icons.person_remove_outlined,
-                                    color: PactaFlowColors.error,
+                                    color: VeraProbColors.error,
                                     size: 20,
                                   ),
                                   tooltip: 'Remover membro',
@@ -183,19 +183,19 @@ class UserManagementScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 32),
-                          const Divider(color: PactaFlowColors.border),
+                          const Divider(color: VeraProbColors.border),
                           const SizedBox(height: 16),
                           Row(
                             children: [
                               const Icon(
                                 Icons.mail_outline,
                                 size: 20,
-                                color: PactaFlowColors.textSecondary,
+                                color: VeraProbColors.textSecondary,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 'Convites Pendentes (${pending.length})',
-                                style: PactaFlowTypography.kpiLabel,
+                                style: VeraProbTypography.kpiLabel,
                               ),
                             ],
                           ),
@@ -262,7 +262,7 @@ class UserManagementScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Permissão atualizada.'),
-            backgroundColor: PactaFlowColors.success,
+            backgroundColor: VeraProbColors.success,
           ),
         );
       }
@@ -271,7 +271,7 @@ class UserManagementScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro: $e'),
-            backgroundColor: PactaFlowColors.error,
+            backgroundColor: VeraProbColors.error,
           ),
         );
       }
@@ -298,7 +298,7 @@ class UserManagementScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: PactaFlowColors.error),
+            style: TextButton.styleFrom(foregroundColor: VeraProbColors.error),
             child: const Text('Remover'),
           ),
         ],
@@ -325,7 +325,7 @@ class UserManagementScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Membro removido.'),
-              backgroundColor: PactaFlowColors.success,
+              backgroundColor: VeraProbColors.success,
             ),
           );
         }
@@ -334,7 +334,7 @@ class UserManagementScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(e.toString().replaceAll('Exception: ', '')),
-              backgroundColor: PactaFlowColors.error,
+              backgroundColor: VeraProbColors.error,
             ),
           );
         }
@@ -361,7 +361,7 @@ class UserManagementScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: PactaFlowColors.error),
+            style: TextButton.styleFrom(foregroundColor: VeraProbColors.error),
             child: const Text('Revogar'),
           ),
         ],
@@ -388,7 +388,7 @@ class UserManagementScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Convite revogado.'),
-              backgroundColor: PactaFlowColors.success,
+              backgroundColor: VeraProbColors.success,
             ),
           );
         }
@@ -397,7 +397,7 @@ class UserManagementScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Erro: $e'),
-              backgroundColor: PactaFlowColors.error,
+              backgroundColor: VeraProbColors.error,
             ),
           );
         }
@@ -431,22 +431,22 @@ class _PendingInvitationTile extends StatelessWidget {
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: PactaFlowColors.warning.withValues(alpha: 0.1),
+        backgroundColor: VeraProbColors.warning.withValues(alpha: 0.1),
         child: const Icon(
           Icons.hourglass_empty_outlined,
-          color: PactaFlowColors.warning,
+          color: VeraProbColors.warning,
           size: 18,
         ),
       ),
-      title: Text(invitation.email, style: PactaFlowTypography.kpiLabel),
+      title: Text(invitation.email, style: VeraProbTypography.kpiLabel),
       subtitle: Text(
         '$roleLabel · Expira em: $expiryStr',
-        style: PactaFlowTypography.caption,
+        style: VeraProbTypography.caption,
       ),
       trailing: IconButton(
         icon: const Icon(
           Icons.cancel_outlined,
-          color: PactaFlowColors.error,
+          color: VeraProbColors.error,
           size: 20,
         ),
         tooltip: 'Revogar convite',
@@ -572,20 +572,20 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: PactaFlowColors.surface,
+                color: VeraProbColors.surface,
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: PactaFlowColors.border),
+                border: Border.all(color: VeraProbColors.border),
               ),
               child: SelectableText(
                 inviteUrl,
-                style: PactaFlowTypography.caption,
+                style: VeraProbTypography.caption,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'O link expira em 7 dias.',
-              style: PactaFlowTypography.caption.copyWith(
-                color: PactaFlowColors.textSecondary,
+              style: VeraProbTypography.caption.copyWith(
+                color: VeraProbColors.textSecondary,
               ),
             ),
           ],
@@ -642,7 +642,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro: $e'),
-            backgroundColor: PactaFlowColors.error,
+            backgroundColor: VeraProbColors.error,
           ),
         );
       }

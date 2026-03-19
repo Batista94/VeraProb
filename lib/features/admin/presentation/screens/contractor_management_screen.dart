@@ -27,12 +27,12 @@ class ContractorManagementScreen extends ConsumerWidget {
                 const Icon(
                   Icons.handshake_outlined,
                   size: 28,
-                  color: PactaFlowColors.primary,
+                  color: VeraProbColors.primary,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Gestão de Contratantes',
-                  style: PactaFlowTypography.sectionTitle,
+                  style: VeraProbTypography.sectionTitle,
                 ),
                 const Spacer(),
                 FilledButton.icon(
@@ -45,8 +45,8 @@ class ContractorManagementScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               'Cadastre as empresas que contratam seus serviços para fins de auditoria e SLA.',
-              style: PactaFlowTypography.bodyMedium.copyWith(
-                color: PactaFlowColors.textSecondary,
+              style: VeraProbTypography.bodyMedium.copyWith(
+                color: VeraProbColors.textSecondary,
               ),
             ),
             const SizedBox(height: 32),
@@ -56,7 +56,7 @@ class ContractorManagementScreen extends ConsumerWidget {
                 error: (e, _) => Center(
                   child: Text(
                     'Erro ao carregar contratantes: $e',
-                    style: const TextStyle(color: PactaFlowColors.error),
+                    style: const TextStyle(color: VeraProbColors.error),
                   ),
                 ),
                 data: (contractors) {
@@ -68,15 +68,15 @@ class ContractorManagementScreen extends ConsumerWidget {
                           Icon(
                             Icons.handshake_outlined,
                             size: 64,
-                            color: PactaFlowColors.textDisabled.withValues(
+                            color: VeraProbColors.textDisabled.withValues(
                               alpha: 0.5,
                             ),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Nenhum contratante cadastrado ainda.',
-                            style: PactaFlowTypography.bodyMedium.copyWith(
-                              color: PactaFlowColors.textSecondary,
+                            style: VeraProbTypography.bodyMedium.copyWith(
+                              color: VeraProbColors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -92,27 +92,27 @@ class ContractorManagementScreen extends ConsumerWidget {
                   return ListView.separated(
                     itemCount: contractors.length,
                     separatorBuilder: (context, index) =>
-                        const Divider(color: PactaFlowColors.border),
+                        const Divider(color: VeraProbColors.border),
                     itemBuilder: (context, index) {
                       final contractor = contractors[index];
                       return ListTile(
                         leading: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: PactaFlowColors.primary.withValues(
+                            color: VeraProbColors.primary.withValues(
                               alpha: 0.1,
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
                             Icons.business,
-                            color: PactaFlowColors.primary,
+                            color: VeraProbColors.primary,
                             size: 20,
                           ),
                         ),
                         title: Text(
                           contractor.name,
-                          style: PactaFlowTypography.kpiLabel,
+                          style: VeraProbTypography.kpiLabel,
                         ),
                         subtitle: Text(
                           '${contractor.contactName} · ${contractor.primaryEmail}',
@@ -129,7 +129,7 @@ class ContractorManagementScreen extends ConsumerWidget {
                             IconButton(
                               icon: const Icon(
                                 Icons.delete_outline,
-                                color: PactaFlowColors.error,
+                                color: VeraProbColors.error,
                                 size: 20,
                               ),
                               tooltip: 'Deletar',
@@ -175,7 +175,7 @@ class ContractorManagementScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: PactaFlowColors.error),
+            style: TextButton.styleFrom(foregroundColor: VeraProbColors.error),
             child: const Text('Deletar'),
           ),
         ],
@@ -202,7 +202,7 @@ class ContractorManagementScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Contratante removido.'),
-              backgroundColor: PactaFlowColors.success,
+              backgroundColor: VeraProbColors.success,
             ),
           );
         }
@@ -211,7 +211,7 @@ class ContractorManagementScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Erro: $e'),
-              backgroundColor: PactaFlowColors.error,
+              backgroundColor: VeraProbColors.error,
             ),
           );
         }

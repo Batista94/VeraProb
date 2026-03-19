@@ -13,7 +13,7 @@ import '../../../domain/sla_audit/shadow_mode_simulation.dart';
 /// **Evidence quality attribution (PO directive):**
 /// When [evidenceScore] is low, the dashboard must display
 /// [ShadowModeSimulation.evidenceQualityAttribution] to attribute the gap
-/// to hardware quality — NOT to PactaFlow software.
+/// to hardware quality — NOT to veraprob software.
 class ExecutiveDashboardView {
   // ── Period ─────────────────────────────────────────────────────────────────
   final DateTime periodStartUtc;

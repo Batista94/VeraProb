@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pactaflow/application/admin/update_org_settings_command.dart';
-import 'package:pactaflow/application/admin/update_org_settings_handler.dart';
-import 'package:pactaflow/domain/admin/organization.dart';
-import 'package:pactaflow/domain/admin/organization_repository.dart';
-import 'package:pactaflow/domain/enums/user_role.dart';
+import 'package:veraprob/application/admin/update_org_settings_command.dart';
+import 'package:veraprob/application/admin/update_org_settings_handler.dart';
+import 'package:veraprob/domain/admin/organization.dart';
+import 'package:veraprob/domain/admin/organization_repository.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 class MockOrganizationRepository extends Mock implements OrganizationRepository {}
 

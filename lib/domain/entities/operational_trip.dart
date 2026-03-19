@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../enums/trip_status.dart';
 import 'operational_warning.dart';
 
-/// The central domain entity of PactaFlow.
+/// The central domain entity of veraprob.
 ///
 /// An OperationalTrip represents a single execution of a scheduled trip.
 /// It binds a driver, a vehicle, and a route together for a specific

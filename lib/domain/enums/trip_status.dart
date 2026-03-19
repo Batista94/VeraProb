@@ -1,4 +1,4 @@
-/// Operational states of a trip in the PactaFlow control center.
+/// Operational states of a trip in the veraprob control center.
 ///
 /// These states form a finite state machine that drives all operational
 /// visualizations — map marker colors, KPI bars, alert evaluation, and

@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Phase 6: User Invitation RPCs
+-- veraprob — Phase 6: User Invitation RPCs
 -- ============================================================
 -- REASON:
 --   Implements the three server-side functions for the invitation

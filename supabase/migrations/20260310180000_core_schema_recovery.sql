@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow Core Schema Recovery Migration
+-- veraprob Core Schema Recovery Migration
 -- Target: Recover missing tables (drivers, routes, trips_audit)
 -- ============================================================
 

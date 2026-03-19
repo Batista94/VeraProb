@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Phase 6: RLS JWT Path Unification (INV-10)
+-- veraprob — Phase 6: RLS JWT Path Unification (INV-10)
 -- ============================================================
 -- REASON:
 --   Unify all Row-Level Security policies to use the canonical

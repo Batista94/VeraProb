@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/domain/sla_audit/contractor.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/contractor.dart';
 
 import 'contractor_form_dialog.dart';
 
@@ -130,7 +130,7 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
         icon: const Icon(Icons.add_business, size: 14),
         label: Text(label),
         style: TextButton.styleFrom(
-          foregroundColor: PactaFlowColors.primary,
+          foregroundColor: VeraProbColors.primary,
           padding: const EdgeInsets.symmetric(horizontal: 4),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
@@ -156,7 +156,7 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
         return TextFormField(
           controller: controller,
           focusNode: focusNode,
-          style: PactaFlowTypography.bodyMedium,
+          style: VeraProbTypography.bodyMedium,
           decoration: InputDecoration(
             labelText: widget.label,
             border: const OutlineInputBorder(),
@@ -196,7 +196,7 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
                     leading: const Icon(
                       Icons.business,
                       size: 18,
-                      color: PactaFlowColors.primary,
+                      color: VeraProbColors.primary,
                     ),
                     title: Text(contractor.name),
                     subtitle: contractor.taxId != null

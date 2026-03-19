@@ -1,8 +1,8 @@
-# System Overview: PactaFlow Platform
+# System Overview: VeraProb Platform
 
-PactaFlow is a B2B SaaS platform focused on Operational Determinism and Contractual Margin Protection for the corporate transportation and charter market. 
+VeraProb is a B2B SaaS platform focused on Operational Determinism and Contractual Margin Protection for the corporate transportation and charter market. 
 
-Unlike traditional fleet tracking (TMS) or B2C mobility apps, PactaFlow is singularly focused on converting raw physical telemetry into **verifiable contractual truth** and **immutable financial projections**.
+Unlike traditional fleet tracking (TMS) or B2C mobility apps, VeraProb is singularly focused on converting raw physical telemetry into **verifiable contractual truth** and **immutable financial projections**.
 
 ## 🧠 Princípios Arquiteturais (O "Core")
 1. **Determinismo Histórico:** O sistema garante que uma re-execução de telemetria contra um contrato do passado gere *exatamente* o mesmo resultado financeiro. Isso é feito via **Snapshots de Regras** imutáveis atrelados a cada plano.

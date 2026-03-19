@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pactaflow/features/admin/presentation/dashboard_screen.dart';
-// import 'package:pactaflow/features/admin/presentation/widgets/charts_section.dart';
-// import 'package:pactaflow/features/admin/presentation/widgets/heatmap_section.dart';
-import 'package:pactaflow/features/shared/providers.dart';
+import 'package:veraprob/features/admin/presentation/dashboard_screen.dart';
+// import 'package:veraprob/features/admin/presentation/widgets/charts_section.dart';
+// import 'package:veraprob/features/admin/presentation/widgets/heatmap_section.dart';
+import 'package:veraprob/features/shared/providers.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

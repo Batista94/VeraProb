@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:pactaflow/application/authority/authorizing_command_bus.dart';
-import 'package:pactaflow/domain/authority/commands/trips/resolve_alert_command.dart';
-import 'package:pactaflow/domain/authority/core/authority_types.dart';
-import 'package:pactaflow/domain/authority/decision/authorization_decision.dart';
-import 'package:pactaflow/domain/authority/repositories/in_memory_forensic_repository.dart';
+import 'package:veraprob/application/authority/authorizing_command_bus.dart';
+import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
+import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
 
 import 'mocks/mock_mutator_service.dart';
 import 'mocks/strict_mock_policy_evaluator.dart';

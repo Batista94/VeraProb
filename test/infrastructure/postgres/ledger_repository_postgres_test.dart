@@ -1,5 +1,5 @@
-import 'package:pactaflow/domain/sla_audit/sla_ledger_entry.dart';
-import 'package:pactaflow/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';

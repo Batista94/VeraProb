@@ -1,6 +1,6 @@
 # Runbook: Disaster Recovery & PITR (Phase 8.7)
 
-This document defines the strategies, tools, and procedures to recover the PactaFlow platform in case of critical failures (data loss, regional outage, human error).
+This document defines the strategies, tools, and procedures to recover the VeraProb platform in case of critical failures (data loss, regional outage, human error).
 
 ## 1. Objectives (RTO & RPO)
 - **Recovery Time Objective (RTO):** < 4 hours (Restore core ledger and OCC accessibility).

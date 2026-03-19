@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/state/providers/fleet_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'widgets/fleet_map.dart';
 import 'widgets/kpi_bar.dart';
 import 'widgets/trip_sidebar.dart';
@@ -32,7 +32,7 @@ class CommandCenterScreen extends ConsumerWidget {
     final isAlertsOpen = ref.watch(isAlertsDrawerOpenProvider);
 
     return Container(
-      color: PactaFlowColors.background,
+      color: VeraProbColors.background,
       child: Column(
         children: [
           // ── KPI Bar ────────────────────────────────

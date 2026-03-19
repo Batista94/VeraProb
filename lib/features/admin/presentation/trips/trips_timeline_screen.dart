@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Placeholder for the Trips Timeline screen.
 /// Will display a Gantt-style timeline of all trips for the day.
@@ -9,7 +9,7 @@ class TripsTimelineScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: PactaFlowColors.background,
+      color: VeraProbColors.background,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -17,13 +17,13 @@ class TripsTimelineScreen extends StatelessWidget {
             Icon(
               Icons.timeline_outlined,
               size: 64,
-              color: PactaFlowColors.secondary.withValues(alpha: 0.3),
+              color: VeraProbColors.secondary.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             const Text(
               'TIMELINE DE VIAGENS',
               style: TextStyle(
-                color: PactaFlowColors.textSecondary,
+                color: VeraProbColors.textSecondary,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 2,
@@ -33,7 +33,7 @@ class TripsTimelineScreen extends StatelessWidget {
             const Text(
               'Visualização temporal Gantt de todas as viagens do dia',
               style: TextStyle(
-                color: PactaFlowColors.textDisabled,
+                color: VeraProbColors.textDisabled,
                 fontSize: 13,
               ),
             ),

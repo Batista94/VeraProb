@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_execution_state.dart';
-import 'package:pactaflow/domain/sla_audit/execution_status.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
-import 'package:pactaflow/domain/shared/money.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
   late InMemoryContractualExecutionStateRepository repo;

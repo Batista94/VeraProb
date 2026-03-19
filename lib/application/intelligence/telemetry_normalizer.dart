@@ -1,6 +1,6 @@
 import 'dart:math' show cos, sqrt, asin;
-import 'package:pactaflow/domain/entities/raw_telemetry_ping.dart';
-import 'package:pactaflow/domain/entities/vehicle_position.dart';
+import 'package:veraprob/domain/entities/raw_telemetry_ping.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 /// The Purgatory Filter.
 /// Responsible for receiving dirty RawTelemetryPings and filtering out noise,
