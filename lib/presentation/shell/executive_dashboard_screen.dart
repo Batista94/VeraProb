@@ -24,15 +24,15 @@ class ExecutiveDashboardScreen extends ConsumerWidget {
     final dashboardAsync = ref.watch(executiveDashboardProvider);
 
     return Scaffold(
-      backgroundColor: PactaFlowColors.background,
+      backgroundColor: VeraProbColors.background,
       body: dashboardAsync.when(
         data: (dashboard) => _DashboardBody(dashboard: dashboard),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Text(
             'Erro ao carregar dashboard: $e',
-            style: PactaFlowTypography.bodySmall.copyWith(
-              color: PactaFlowColors.error,
+            style: VeraProbTypography.bodySmall.copyWith(
+              color: VeraProbColors.error,
             ),
           ),
         ),
@@ -58,15 +58,15 @@ class _DashboardBody extends StatelessWidget {
               children: [
                 Text(
                   'DASHBOARD EXECUTIVO',
-                  style: PactaFlowTypography.sectionTitle.copyWith(
-                    color: PactaFlowColors.primary,
+                  style: VeraProbTypography.sectionTitle.copyWith(
+                    color: VeraProbColors.primary,
                     letterSpacing: 1.2,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${_fmtDate(dashboard.periodStartUtc)} – ${_fmtDate(dashboard.periodEndUtc)}',
-                  style: PactaFlowTypography.bodySmall,
+                  style: VeraProbTypography.bodySmall,
                 ),
                 const SizedBox(height: 24),
 
@@ -119,9 +119,9 @@ class _FpsZoneBanner extends StatelessWidget {
     final zone = dashboard.fpsZone;
 
     final (color, label) = switch (zone) {
-      FpsZone.protected => (PactaFlowColors.success, 'PROTEÇÃO FORTE'),
-      FpsZone.moderate => (PactaFlowColors.warning, 'PROTEÇÃO ADEQUADA'),
-      FpsZone.highRisk => (PactaFlowColors.error, 'PROTEÇÃO INSUFICIENTE'),
+      FpsZone.protected => (VeraProbColors.success, 'PROTEÇÃO FORTE'),
+      FpsZone.moderate => (VeraProbColors.warning, 'PROTEÇÃO ADEQUADA'),
+      FpsZone.highRisk => (VeraProbColors.error, 'PROTEÇÃO INSUFICIENTE'),
     };
 
     return Container(
@@ -140,12 +140,12 @@ class _FpsZoneBanner extends StatelessWidget {
               children: [
                 Text(
                   'Financial Protection Score',
-                  style: PactaFlowTypography.bodySmall,
+                  style: VeraProbTypography.bodySmall,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${fps.toStringAsFixed(1)} / 100',
-                  style: PactaFlowTypography.sectionTitle.copyWith(
+                  style: VeraProbTypography.sectionTitle.copyWith(
                     color: color,
                     fontSize: 32,
                   ),
@@ -193,21 +193,21 @@ class _KpiGrid extends StatelessWidget {
           value: _fmtBrl(dashboard.protectedRevenue),
           subtitle:
               'de ${_fmtBrl(dashboard.totalContractedRevenue)} contratados',
-          color: PactaFlowColors.success,
+          color: VeraProbColors.success,
           icon: Icons.shield_outlined,
         ),
         _KpiCard(
           title: 'Taxa de Recuperação',
           value: '${dashboard.penaltyRecoveryRate.toStringAsFixed(1)}%',
           subtitle: 'penalidades recuperadas',
-          color: PactaFlowColors.primary,
+          color: VeraProbColors.primary,
           icon: Icons.trending_up,
         ),
         _KpiCard(
           title: 'Dispute-to-Resolution',
           value: '${dashboard.disputeToResolutionRatio.toStringAsFixed(1)}%',
           subtitle: 'compensações / no-shows',
-          color: PactaFlowColors.warning,
+          color: VeraProbColors.warning,
           icon: Icons.balance_outlined,
         ),
         _KpiCard(
@@ -215,7 +215,7 @@ class _KpiGrid extends StatelessWidget {
           value: '${dashboard.complianceScore.toStringAsFixed(1)}%',
           subtitle:
               '${dashboard.executedCount} / ${dashboard.totalObligations} obrigações',
-          color: PactaFlowColors.primary,
+          color: VeraProbColors.primary,
           icon: Icons.check_circle_outline,
         ),
       ],
@@ -245,7 +245,7 @@ class _KpiCard extends StatelessWidget {
     return SizedBox(
       width: 220,
       child: Card(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: color.withValues(alpha: 0.3)),
@@ -260,14 +260,14 @@ class _KpiCard extends StatelessWidget {
                   Icon(icon, size: 16, color: color),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(title, style: PactaFlowTypography.bodySmall),
+                    child: Text(title, style: VeraProbTypography.bodySmall),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
                 value,
-                style: PactaFlowTypography.sectionTitle.copyWith(
+                style: VeraProbTypography.sectionTitle.copyWith(
                   color: color,
                   fontSize: 22,
                 ),
@@ -275,7 +275,7 @@ class _KpiCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: PactaFlowTypography.bodySmall.copyWith(fontSize: 11),
+                style: VeraProbTypography.bodySmall.copyWith(fontSize: 11),
               ),
             ],
           ),
@@ -306,7 +306,7 @@ class _RevenueSection extends StatelessWidget {
       children: [
         Text(
           'DISTRIBUIÇÃO DE RECEITA',
-          style: PactaFlowTypography.bodySmall.copyWith(
+          style: VeraProbTypography.bodySmall.copyWith(
             letterSpacing: 1.0,
             fontWeight: FontWeight.bold,
           ),
@@ -319,17 +319,17 @@ class _RevenueSection extends StatelessWidget {
               if (protectedPct > 0)
                 Expanded(
                   flex: (protectedPct * 100).round(),
-                  child: Container(height: 24, color: PactaFlowColors.success),
+                  child: Container(height: 24, color: VeraProbColors.success),
                 ),
               if (atRiskPct > 0)
                 Expanded(
                   flex: (atRiskPct * 100).round(),
-                  child: Container(height: 24, color: PactaFlowColors.warning),
+                  child: Container(height: 24, color: VeraProbColors.warning),
                 ),
               if (lostPct > 0)
                 Expanded(
                   flex: (lostPct * 100).round(),
-                  child: Container(height: 24, color: PactaFlowColors.error),
+                  child: Container(height: 24, color: VeraProbColors.error),
                 ),
             ],
           ),
@@ -339,15 +339,15 @@ class _RevenueSection extends StatelessWidget {
           spacing: 16,
           children: [
             _Legend(
-              color: PactaFlowColors.success,
+              color: VeraProbColors.success,
               label: 'Blindada ${(protectedPct * 100).toStringAsFixed(0)}%',
             ),
             _Legend(
-              color: PactaFlowColors.warning,
+              color: VeraProbColors.warning,
               label: 'Em Risco ${(atRiskPct * 100).toStringAsFixed(0)}%',
             ),
             _Legend(
-              color: PactaFlowColors.error,
+              color: VeraProbColors.error,
               label: 'Perdida ${(lostPct * 100).toStringAsFixed(0)}%',
             ),
           ],
@@ -390,7 +390,7 @@ class _EvidenceAttributionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLow = evidenceScore < 80;
-    final color = isLow ? PactaFlowColors.warning : PactaFlowColors.success;
+    final color = isLow ? VeraProbColors.warning : VeraProbColors.success;
 
     return Container(
       width: double.infinity,
@@ -425,7 +425,7 @@ class _EvidenceAttributionCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             attribution,
-            style: PactaFlowTypography.bodySmall.copyWith(fontSize: 11),
+            style: VeraProbTypography.bodySmall.copyWith(fontSize: 11),
           ),
         ],
       ),
@@ -446,10 +446,10 @@ class _ShadowModeCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: PactaFlowColors.primary.withValues(alpha: 0.08),
+        color: VeraProbColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: PactaFlowColors.primary.withValues(alpha: 0.3),
+          color: VeraProbColors.primary.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -461,7 +461,7 @@ class _ShadowModeCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 'SHADOW MODE — ROI DA PLATAFORMA',
-                style: PactaFlowTypography.bodySmall.copyWith(
+                style: VeraProbTypography.bodySmall.copyWith(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
@@ -471,13 +471,13 @@ class _ShadowModeCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             simulation.simulationName as String,
-            style: PactaFlowTypography.bodySmall,
+            style: VeraProbTypography.bodySmall,
           ),
           const SizedBox(height: 4),
           Text(
             'ROI: ${(simulation.roiPercentage as double).toStringAsFixed(1)}%',
-            style: PactaFlowTypography.sectionTitle.copyWith(
-              color: PactaFlowColors.primary,
+            style: VeraProbTypography.sectionTitle.copyWith(
+              color: VeraProbColors.primary,
               fontSize: 24,
             ),
           ),

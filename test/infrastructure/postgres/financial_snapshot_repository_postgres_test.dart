@@ -1,6 +1,6 @@
-import 'package:pactaflow/domain/shared/money.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_financial_daily_snapshot.dart';
-import 'package:pactaflow/infrastructure/sla_audit/postgres_contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_financial_snapshot_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -30,11 +30,12 @@ void main() async {
         '1. Create and reconstitute a new snapshot works correctly',
         () async {
           final contractId = uuid.v4();
+          final ledgerEntryId = uuid.v4(); // last_ledger_entry_id is UUID in schema
           final operationalDate = DateTime.utc(2026, 3, 1);
           final closedAt = DateTime.now().toUtc();
 
           final snapshot = ContractualFinancialDailySnapshot.create(
-            organizationId: 'org-1',
+            organizationId: PostgresTestConfig.testOrgId,
             contractId: contractId,
             operationalDateUtc: operationalDate,
             operationalTimezone: 'America/Sao_Paulo',
@@ -47,18 +48,13 @@ void main() async {
             executedCount: 80,
             noShowCount: 5,
             evidenceGapCount: 15,
-            lastLedgerEntryId: '442',
+            lastLedgerEntryId: ledgerEntryId,
           );
 
-          // Mutates to executed state to test bindings
-          expect(
-            () async => await repository.save(snapshot),
-            returnsNormally,
-            reason: 'Should persist new snapshot natively without issues',
-          );
+          await repository.save(snapshot);
 
           final contractSnapshots = await repository.findAll(
-            organizationId: 'org-1',
+            organizationId: PostgresTestConfig.testOrgId,
             contractId: contractId,
           );
           expect(contractSnapshots.length, 1);
@@ -68,7 +64,7 @@ void main() async {
           expect(loaded.totalContractedRevenue.cents, 1000000);
           expect(loaded.riskPercentage, 15.0); // 1.5k over 10k
           expect(loaded.lossPercentage, 5.0); // 500 over 10k
-          expect(loaded.lastLedgerEntryId, '442');
+          expect(loaded.lastLedgerEntryId, ledgerEntryId);
           expect(loaded.previousSnapshotId, isNull);
         },
       );
@@ -81,7 +77,7 @@ void main() async {
 
           // Original Generation
           final originalSnapshot = ContractualFinancialDailySnapshot.create(
-            organizationId: 'org-1',
+            organizationId: PostgresTestConfig.testOrgId,
             contractId: contractId,
             operationalDateUtc: operationalDate,
             operationalTimezone: 'America/Sao_Paulo',
@@ -96,14 +92,14 @@ void main() async {
             executedCount: 50,
             noShowCount: 0,
             evidenceGapCount: 50,
-            lastLedgerEntryId: '990',
+            lastLedgerEntryId: uuid.v4(),
           );
 
           await repository.save(originalSnapshot);
 
           // Reprocessing Generation (creates new one referencing the old one)
           final reprocessedSnapshot = ContractualFinancialDailySnapshot.create(
-            organizationId: 'org-1',
+            organizationId: PostgresTestConfig.testOrgId,
             contractId: contractId,
             operationalDateUtc: operationalDate,
             operationalTimezone: 'America/Sao_Paulo',
@@ -116,7 +112,7 @@ void main() async {
             executedCount: 80,
             noShowCount: 0,
             evidenceGapCount: 20,
-            lastLedgerEntryId: '1050',
+            lastLedgerEntryId: uuid.v4(),
             previousSnapshotId: originalSnapshot.id,
             reprocessingReason: 'Late operator check-in',
           );
@@ -126,7 +122,7 @@ void main() async {
           // Native findAll rules state it should ONLY return the "active" snapshots (head of chain)
           // but the original one MUST persist in the database
           final activeContractSnapshots = await repository.findAll(
-            organizationId: 'org-1',
+            organizationId: PostgresTestConfig.testOrgId,
             contractId: contractId,
           );
 

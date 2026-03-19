@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Phase 6: User Invitations
+-- veraprob — Phase 6: User Invitations
 -- ============================================================
 -- REASON:
 --   Allow organizations to invite new members without pre-existing

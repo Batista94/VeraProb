@@ -88,9 +88,9 @@ class _SlimBar extends StatelessWidget {
       height: 48,
       margin: const EdgeInsets.only(bottom: 1),
       decoration: const BoxDecoration(
-        color: PactaFlowColors.surfaceElevated,
+        color: VeraProbColors.surfaceElevated,
         border: Border(
-          bottom: BorderSide(color: PactaFlowColors.border),
+          bottom: BorderSide(color: VeraProbColors.border),
         ),
       ),
       child: Padding(
@@ -109,7 +109,7 @@ class _SlimBar extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: PactaFlowColors.textSecondary,
+                      color: VeraProbColors.textSecondary,
                       letterSpacing: 0.4,
                     ),
                   ),
@@ -118,9 +118,9 @@ class _SlimBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(2),
                     child: LinearProgressIndicator(
                       value: completedCount / prerequisites.length,
-                      backgroundColor: PactaFlowColors.border,
+                      backgroundColor: VeraProbColors.border,
                       valueColor: const AlwaysStoppedAnimation<Color>(
-                        PactaFlowColors.primary,
+                        VeraProbColors.primary,
                       ),
                       minHeight: 3,
                     ),
@@ -159,8 +159,8 @@ class _PrerequisiteDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = prerequisite.isFulfilled
-        ? PactaFlowColors.success
-        : PactaFlowColors.error;
+        ? VeraProbColors.success
+        : VeraProbColors.error;
 
     return Tooltip(
       message: prerequisite.isFulfilled
@@ -191,7 +191,7 @@ class _PrerequisiteDot extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: prerequisite.isFulfilled
-                      ? PactaFlowColors.textSecondary
+                      ? VeraProbColors.textSecondary
                       : color,
                   decoration: prerequisite.isFulfilled
                       ? TextDecoration.none

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/state/providers/fleet_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'alerts_triade_drawer.dart';
 
 /// Bottom alert bar showing attention-requiring events.
@@ -23,13 +23,13 @@ class AlertBar extends ConsumerWidget {
         height: 36,
         decoration: BoxDecoration(
           color: alertTrips.isNotEmpty
-              ? PactaFlowColors.critical.withValues(alpha: 0.1)
-              : PactaFlowColors.background,
+              ? VeraProbColors.critical.withValues(alpha: 0.1)
+              : VeraProbColors.background,
           border: Border(
             top: BorderSide(
               color: alertTrips.isNotEmpty
-                  ? PactaFlowColors.critical
-                  : PactaFlowColors.border,
+                  ? VeraProbColors.critical
+                  : VeraProbColors.border,
               width: 1,
             ),
           ),
@@ -43,18 +43,18 @@ class AlertBar extends ConsumerWidget {
                   : Icons.check_circle_outline,
               size: 16,
               color: alertTrips.isNotEmpty
-                  ? PactaFlowColors.critical
-                  : PactaFlowColors.textSecondary,
+                  ? VeraProbColors.critical
+                  : VeraProbColors.textSecondary,
             ),
             const SizedBox(width: 8),
             Text(
               alertTrips.isNotEmpty
                   ? '${alertTrips.length} ALERTA${alertTrips.length > 1 ? 'S' : ''} REQUEREM ATENÇÃO'
                   : 'NENHUM ALERTA ATIVO',
-              style: PactaFlowTypography.badge.copyWith(
+              style: VeraProbTypography.badge.copyWith(
                 color: alertTrips.isNotEmpty
-                    ? PactaFlowColors.critical
-                    : PactaFlowColors.textSecondary,
+                    ? VeraProbColors.critical
+                    : VeraProbColors.textSecondary,
                 letterSpacing: 0.5,
               ),
             ),
@@ -62,8 +62,8 @@ class AlertBar extends ConsumerWidget {
               const Spacer(),
               Text(
                 'CLIQUE PARA ABRIR A TRIAGEM',
-                style: PactaFlowTypography.caption.copyWith(
-                  color: PactaFlowColors.critical.withValues(alpha: 0.7),
+                style: VeraProbTypography.caption.copyWith(
+                  color: VeraProbColors.critical.withValues(alpha: 0.7),
                   fontWeight: FontWeight.bold,
                   decoration: TextDecoration.underline,
                 ),
@@ -72,7 +72,7 @@ class AlertBar extends ConsumerWidget {
               Icon(
                 Icons.open_in_new,
                 size: 14,
-                color: PactaFlowColors.critical.withValues(alpha: 0.7),
+                color: VeraProbColors.critical.withValues(alpha: 0.7),
               ),
             ],
           ],

@@ -8,14 +8,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
-import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
-import 'package:pactaflow/state/providers/auth_providers.dart';
-import 'package:pactaflow/state/providers/contract_providers.dart';
-import 'package:pactaflow/state/providers/operational_zone_providers.dart';
-import 'package:pactaflow/presentation/shared/widgets/pactaflow_header.dart';
-import 'package:pactaflow/presentation/shared/widgets/pactaflow_chip.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/presentation/shared/widgets/veraprob_header.dart';
+import 'package:veraprob/presentation/shared/widgets/veraprob_chip.dart';
 
 // ── Public API ───────────────────────────────────────────────
 
@@ -63,7 +63,7 @@ class OperationalZonesScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PactaFlowHeader(
+          VeraProbHeader(
             icon: Icons.place_outlined,
             title: 'Zonas Operacionais',
             subtitle: 'Garagens, clientes e pontos de apoio.',
@@ -78,13 +78,13 @@ class OperationalZonesScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: PactaFlowSpacing.md),
+          const SizedBox(height: VeraProbSpacing.md),
           Text(
             'Garagens, clientes e pontos de apoio usados como origem/destino '
             'nas viagens programadas. Geofence (coordenadas + raio) é obrigatório '
             'para auditoria automática pelo motor de avaliação.',
-            style: PactaFlowTypography.bodyMedium.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.bodyMedium.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
           ),
           const SizedBox(height: 24),
@@ -94,8 +94,8 @@ class OperationalZonesScreen extends ConsumerWidget {
               error: (e, _) => Center(
                 child: Text(
                   'Erro ao carregar zonas: $e',
-                  style: PactaFlowTypography.bodyMedium.copyWith(
-                    color: PactaFlowColors.error,
+                  style: VeraProbTypography.bodyMedium.copyWith(
+                    color: VeraProbColors.error,
                   ),
                 ),
               ),
@@ -128,7 +128,7 @@ class _ZoneList extends ConsumerWidget {
     return ListView.separated(
       itemCount: zones.length,
       separatorBuilder: (_, _) =>
-          const Divider(height: 1, color: PactaFlowColors.border),
+          const Divider(height: 1, color: VeraProbColors.border),
       itemBuilder: (context, i) {
         final z = zones[i];
         final hasGeofence = z.geofence != null;
@@ -146,14 +146,14 @@ class _ZoneList extends ConsumerWidget {
           leading: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: PactaFlowColors.primary.withValues(alpha: 0.1),
+              color: VeraProbColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(z.type.icon, color: PactaFlowColors.primary, size: 20),
+            child: Icon(z.type.icon, color: VeraProbColors.primary, size: 20),
           ),
           title: Row(
             children: [
-              Text(z.name, style: PactaFlowTypography.kpiLabel),
+              Text(z.name, style: VeraProbTypography.kpiLabel),
               const SizedBox(width: 8),
               _TypeChip(label: z.type.label),
               if (!hasGeofence) ...[
@@ -165,7 +165,7 @@ class _ZoneList extends ConsumerWidget {
                   child: Icon(
                     Icons.location_off,
                     size: 16,
-                    color: PactaFlowColors.warning,
+                    color: VeraProbColors.warning,
                   ),
                 ),
               ],
@@ -176,8 +176,8 @@ class _ZoneList extends ConsumerWidget {
             children: [
               Text(
                 z.address ?? 'Endereço não informado',
-                style: PactaFlowTypography.caption.copyWith(
-                  color: PactaFlowColors.textSecondary,
+                style: VeraProbTypography.caption.copyWith(
+                  color: VeraProbColors.textSecondary,
                 ),
               ),
               Row(
@@ -186,16 +186,16 @@ class _ZoneList extends ConsumerWidget {
                     hasGeofence ? Icons.my_location : Icons.location_off,
                     size: 12,
                     color: hasGeofence
-                        ? PactaFlowColors.success
-                        : PactaFlowColors.warning,
+                        ? VeraProbColors.success
+                        : VeraProbColors.warning,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     geoLabel,
-                    style: PactaFlowTypography.caption.copyWith(
+                    style: VeraProbTypography.caption.copyWith(
                       color: hasGeofence
-                          ? PactaFlowColors.success
-                          : PactaFlowColors.warning,
+                          ? VeraProbColors.success
+                          : VeraProbColors.warning,
                       fontFamily: hasGeofence ? 'monospace' : null,
                     ),
                   ),
@@ -209,8 +209,8 @@ class _ZoneList extends ConsumerWidget {
             children: [
               Text(
                 z.id.substring(0, 8),
-                style: PactaFlowTypography.caption.copyWith(
-                  color: PactaFlowColors.textDisabled,
+                style: VeraProbTypography.caption.copyWith(
+                  color: VeraProbColors.textDisabled,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -218,7 +218,7 @@ class _ZoneList extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 tooltip: 'Editar zona',
-                color: PactaFlowColors.textSecondary,
+                color: VeraProbColors.textSecondary,
                 onPressed: () async {
                   final saved = await showZoneFormDialog(
                     context,
@@ -241,9 +241,9 @@ class _TypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PactaFlowChip(
+    return VeraProbChip(
       label: label,
-      color: PactaFlowColors.primary,
+      color: VeraProbColors.primary,
       outline: true,
     );
   }
@@ -262,13 +262,13 @@ class _EmptyState extends StatelessWidget {
           const Icon(
             Icons.place_outlined,
             size: 56,
-            color: PactaFlowColors.textDisabled,
+            color: VeraProbColors.textDisabled,
           ),
           const SizedBox(height: 16),
           Text(
             'Nenhuma zona criada ainda',
-            style: PactaFlowTypography.sectionTitle.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.sectionTitle.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
@@ -276,8 +276,8 @@ class _EmptyState extends StatelessWidget {
             'Crie zonas operacionais para usar como origem e destino\n'
             'nas viagens programadas por padrão de turno.',
             textAlign: TextAlign.center,
-            style: PactaFlowTypography.bodyMedium.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.bodyMedium.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
           ),
           const SizedBox(height: 24),
@@ -400,7 +400,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
     final response = await http.get(
       uri,
       headers: {
-        'User-Agent': 'PactaFlow/1.0 (admin@PactaFlow.app)',
+        'User-Agent': 'veraprob/1.0 (admin@veraprob.app)',
         'Accept-Language': 'pt-BR,pt;q=0.9',
       },
     );
@@ -532,7 +532,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(isEdit),
-              const Divider(height: 24, color: PactaFlowColors.border),
+              const Divider(height: 24, color: VeraProbColors.border),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,12 +565,12 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
       children: [
         Icon(
           isEdit ? Icons.edit_location_alt : Icons.add_location_alt,
-          color: PactaFlowColors.primary,
+          color: VeraProbColors.primary,
         ),
         const SizedBox(width: 12),
         Text(
           isEdit ? 'Editar Zona Operacional' : 'Nova Zona Operacional',
-          style: PactaFlowTypography.sectionTitle,
+          style: VeraProbTypography.sectionTitle,
         ),
         const Spacer(),
         IconButton(
@@ -699,9 +699,9 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             constraints: const BoxConstraints(maxHeight: 180),
             margin: const EdgeInsets.only(top: 4),
             decoration: BoxDecoration(
-              color: PactaFlowColors.surfaceElevated,
+              color: VeraProbColors.surfaceElevated,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: PactaFlowColors.border),
+              border: Border.all(color: VeraProbColors.border),
             ),
             child: ListView.builder(
               shrinkWrap: true,
@@ -714,11 +714,11 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                   leading: const Icon(
                     Icons.place_outlined,
                     size: 16,
-                    color: PactaFlowColors.primary,
+                    color: VeraProbColors.primary,
                   ),
                   title: Text(
                     s.displayName,
-                    style: PactaFlowTypography.bodySmall,
+                    style: VeraProbTypography.bodySmall,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -735,16 +735,16 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           leading: Icon(
             Icons.radar,
             color: _lat != null
-                ? PactaFlowColors.success
-                : PactaFlowColors.textSecondary,
+                ? VeraProbColors.success
+                : VeraProbColors.textSecondary,
           ),
           title: const Text('Configuração de Geofence'),
           subtitle: Text(
             _lat != null ? 'Configurado' : 'Não configurado',
             style: TextStyle(
               color: _lat != null
-                  ? PactaFlowColors.success
-                  : PactaFlowColors.textSecondary,
+                  ? VeraProbColors.success
+                  : VeraProbColors.textSecondary,
               fontSize: 12,
             ),
           ),
@@ -764,10 +764,10 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                       ),
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: PactaFlowColors.success.withValues(alpha: 0.08),
+                        color: VeraProbColors.success.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: PactaFlowColors.success.withValues(
+                          color: VeraProbColors.success.withValues(
                             alpha: 0.35,
                           ),
                         ),
@@ -777,7 +777,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                           const Icon(
                             Icons.my_location,
                             size: 14,
-                            color: PactaFlowColors.success,
+                            color: VeraProbColors.success,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -786,7 +786,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                               style: const TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: 12,
-                                color: PactaFlowColors.success,
+                                color: VeraProbColors.success,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -807,7 +807,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                               'Limpar',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: PactaFlowColors.textSecondary,
+                                color: VeraProbColors.textSecondary,
                               ),
                             ),
                           ),
@@ -819,10 +819,10 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                       padding: const EdgeInsets.all(10),
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: PactaFlowColors.warning.withValues(alpha: 0.08),
+                        color: VeraProbColors.warning.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: PactaFlowColors.warning.withValues(alpha: 0.3),
+                          color: VeraProbColors.warning.withValues(alpha: 0.3),
                         ),
                       ),
                       child: const Row(
@@ -831,7 +831,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                           Icon(
                             Icons.touch_app_outlined,
                             size: 16,
-                            color: PactaFlowColors.warning,
+                            color: VeraProbColors.warning,
                           ),
                           SizedBox(width: 8),
                           Expanded(
@@ -840,7 +840,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                               'definir as coordenadas do geofence.',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: PactaFlowColors.warning,
+                                color: VeraProbColors.warning,
                               ),
                             ),
                           ),
@@ -900,7 +900,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'app.PactaFlow',
+                userAgentPackageName: 'app.veraprob',
               ),
               if (hasPin)
                 MarkerLayer(
@@ -911,7 +911,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                       height: 40,
                       child: const Icon(
                         Icons.location_pin,
-                        color: PactaFlowColors.error,
+                        color: VeraProbColors.error,
                         size: 40,
                       ),
                     ),
@@ -969,17 +969,17 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             padding: const EdgeInsets.all(10),
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: PactaFlowColors.error.withValues(alpha: 0.1),
+              color: VeraProbColors.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: PactaFlowColors.error.withValues(alpha: 0.3),
+                color: VeraProbColors.error.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.error_outline,
-                  color: PactaFlowColors.error,
+                  color: VeraProbColors.error,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
@@ -987,7 +987,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                   child: Text(
                     _errorMessage!,
                     style: const TextStyle(
-                      color: PactaFlowColors.error,
+                      color: VeraProbColors.error,
                       fontSize: 13,
                     ),
                   ),

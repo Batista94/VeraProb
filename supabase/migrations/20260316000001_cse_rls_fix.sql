@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Sprint 5.13 Bloco 5.1: CSE RLS Fix (INV-10)
+-- veraprob — Sprint 5.13 Bloco 5.1: CSE RLS Fix (INV-10)
 -- ============================================================
 -- REASON:
 --   contractual_service_executions tinha bootstrap antipattern:

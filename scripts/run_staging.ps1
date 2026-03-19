@@ -1,4 +1,4 @@
-# PactaFlow — Run STAGING Environment
+# veraprob — Run STAGING Environment
 # Usage: .\scripts\run_staging.ps1
 #
 # Requires environment variables to be set before running:
@@ -24,7 +24,7 @@ Defina antes de executar:
     exit 1
 }
 
-Write-Host "🧪 [STAGING] Iniciando PactaFlow contra ambiente de staging..." -ForegroundColor Yellow
+Write-Host "🧪 [STAGING] Iniciando veraprob contra ambiente de staging..." -ForegroundColor Yellow
 Write-Host "   URL: $($supabaseUrl.Substring(0, [Math]::Min(40, $supabaseUrl.Length)))..." -ForegroundColor DarkGray
 
 flutter run -d chrome `

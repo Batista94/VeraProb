@@ -9,7 +9,7 @@
 -- TABLE: shadow_mode_simulations
 --
 -- Stores historical ROI simulations answering:
--- "What financial losses would have occurred without PactaFlow enforcement?"
+-- "What financial losses would have occurred without veraprob enforcement?"
 --
 -- Used by the Executive Dashboard and Contractor Portal to demonstrate
 -- the platform's financial protection value (Sales tool + B2B proof point).
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS shadow_mode_simulations (
   actual_compliance_rate                FLOAT       NOT NULL,
 
   -- Evidence quality (computed from canonical_facts integrity flags)
-  -- Low values indicate contractor hardware quality issues (NOT PactaFlow failures).
+  -- Low values indicate contractor hardware quality issues (NOT veraprob failures).
   evidence_quality_rate                 FLOAT       NOT NULL DEFAULT 100.0,
 
   -- Simulation parameters

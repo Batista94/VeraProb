@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pactaflow/application/admin/remove_member_command.dart';
-import 'package:pactaflow/application/admin/remove_member_handler.dart';
-import 'package:pactaflow/application/admin/user_management_command_service.dart';
-import 'package:pactaflow/domain/enums/user_role.dart';
-import 'package:pactaflow/infrastructure/admin/postgres_user_management_query_service.dart';
+import 'package:veraprob/application/admin/remove_member_command.dart';
+import 'package:veraprob/application/admin/remove_member_handler.dart';
+import 'package:veraprob/application/admin/user_management_command_service.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/infrastructure/admin/postgres_user_management_query_service.dart';
 
 class MockUserManagementCommandService extends Mock implements UserManagementCommandService {}
 class MockUserManagementQueryService extends Mock implements PostgresUserManagementQueryService {}

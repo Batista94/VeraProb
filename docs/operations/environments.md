@@ -1,17 +1,17 @@
-# PactaFlow — Guia de Ambientes
+# VeraProb — Guia de Ambientes
 
 ## Visão Geral
 
-O PactaFlow opera com **3 ambientes Supabase isolados**:
+O VeraProb opera com **3 ambientes Supabase isolados**:
 
 | Ambiente | Projeto Supabase | Propósito |
 |---|---|---|
-| `dev` | `PactaFlow-dev` | Desenvolvimento local. Migrations manuais aceitas. |
-| `staging` | `PactaFlow-staging` | Espelho de prod. Migrations via CI apenas. Dados sintéticos. |
-| `prod` | `PactaFlow-prod` | Tráfego real. Migrations com aprovação manual. Zero dados de teste. |
+| `dev` | `VeraProb-dev` | Desenvolvimento local. Migrations manuais aceitas. |
+| `staging` | `VeraProb-staging` | Espelho de prod. Migrations via CI apenas. Dados sintéticos. |
+| `prod` | `VeraProb-prod` | Tráfego real. Migrations com aprovação manual. Zero dados de teste. |
 
 > [!CAUTION]
-> **Dados de teste NUNCA chegam em prod.** Nenhum `organization_id` de desenvolvimento deve existir em `PactaFlow-prod`.
+> **Dados de teste NUNCA chegam em prod.** Nenhum `organization_id` de desenvolvimento deve existir em `VeraProb-prod`.
 
 ---
 
@@ -20,9 +20,9 @@ O PactaFlow opera com **3 ambientes Supabase isolados**:
 ### 1. Criar os 3 Projetos no Supabase
 
 Acesse [app.supabase.com](https://app.supabase.com) e crie 3 projetos distintos:
-- `PactaFlow-dev`
-- `PactaFlow-staging`
-- `PactaFlow-prod`
+- `VeraProb-dev`
+- `VeraProb-staging`
+- `VeraProb-prod`
 
 Para cada projeto, anote:
 - **Project URL** → `Settings → API → Project URL`
@@ -34,7 +34,7 @@ Para cada projeto, anote:
 # Copiar template de variáveis
 copy .env.example .env
 
-# Editar com suas credenciais do PactaFlow-dev
+# Editar com suas credenciais do VeraProb-dev
 notepad .env
 ```
 
@@ -97,10 +97,10 @@ supabase db push --project-ref SEU_PROJECT_REF_PROD
 
 | Secret Name | Descrição | Status |
 |---|---|---|
-| `SUPABASE_URL_STAGING` | URL do projeto PactaFlow-staging | ✅ Cadastrado |
-| `SUPABASE_ANON_KEY_STAGING` | Anon key do PactaFlow-staging | ✅ Cadastrado |
-| `SUPABASE_URL_PROD` | URL do projeto PactaFlow-prod | ✅ Cadastrado |
-| `SUPABASE_ANON_KEY_PROD` | Anon key do PactaFlow-prod | ✅ Cadastrado |
+| `SUPABASE_URL_STAGING` | URL do projeto VeraProb-staging | ✅ Cadastrado |
+| `SUPABASE_ANON_KEY_STAGING` | Anon key do VeraProb-staging | ✅ Cadastrado |
+| `SUPABASE_URL_PROD` | URL do projeto VeraProb-prod | ✅ Cadastrado |
+| `SUPABASE_ANON_KEY_PROD` | Anon key do VeraProb-prod | ✅ Cadastrado |
 | `SUPABASE_PROJECT_REF_STAGING` | Reference ID do projeto staging (para `supabase db push`) | ⚠️ A cadastrar |
 | `SUPABASE_PROJECT_REF_PROD` | Reference ID do projeto prod (para `supabase db push`) | ⚠️ A cadastrar |
 | `SUPABASE_ACCESS_TOKEN` | Token de acesso pessoal da Supabase CLI | ⚠️ A cadastrar |

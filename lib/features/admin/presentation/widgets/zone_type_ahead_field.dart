@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 
 import '../screens/operational_zones_screen.dart';
 
@@ -154,7 +154,7 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
         icon: const Icon(Icons.add_location_alt, size: 14),
         label: Text(label),
         style: TextButton.styleFrom(
-          foregroundColor: PactaFlowColors.primary,
+          foregroundColor: VeraProbColors.primary,
           padding: const EdgeInsets.symmetric(horizontal: 4),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
@@ -194,8 +194,8 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
                         hasGeofence ? Icons.location_on : Icons.location_off,
                         size: 18,
                         color: hasGeofence
-                            ? PactaFlowColors.onTime
-                            : PactaFlowColors.warning,
+                            ? VeraProbColors.onTime
+                            : VeraProbColors.warning,
                       ),
                       IconButton(
                         icon: const Icon(Icons.clear, size: 18),
@@ -238,26 +238,26 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
                       hasGeo ? Icons.location_on : Icons.location_off,
                       size: 18,
                       color: hasGeo
-                          ? PactaFlowColors.onTime
-                          : PactaFlowColors.warning,
+                          ? VeraProbColors.onTime
+                          : VeraProbColors.warning,
                     ),
                     title: Text(zone.name),
                     trailing: isContractor
                         ? Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: PactaFlowSpacing.xs,
+                              horizontal: VeraProbSpacing.xs,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: PactaFlowColors.primary.withValues(
+                              color: VeraProbColors.primary.withValues(
                                 alpha: 0.15,
                               ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Seu contratante',
-                              style: PactaFlowTypography.fieldLabel.copyWith(
-                                color: PactaFlowColors.primary,
+                              style: VeraProbTypography.fieldLabel.copyWith(
+                                color: VeraProbColors.primary,
                               ),
                             ),
                           )

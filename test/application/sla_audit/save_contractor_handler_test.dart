@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pactaflow/application/sla_audit/save_contractor_command.dart';
-import 'package:pactaflow/application/sla_audit/save_contractor_handler.dart';
-import 'package:pactaflow/domain/sla_audit/contractor.dart';
-import 'package:pactaflow/domain/sla_audit/contractor_repository.dart';
-import 'package:pactaflow/domain/enums/user_role.dart';
+import 'package:veraprob/application/sla_audit/save_contractor_command.dart';
+import 'package:veraprob/application/sla_audit/save_contractor_handler.dart';
+import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 class MockContractorRepository extends Mock implements ContractorRepository {}
 

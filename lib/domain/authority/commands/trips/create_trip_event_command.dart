@@ -1,4 +1,4 @@
-import 'package:pactaflow/domain/enums/event_type.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
 import '../operational_command.dart';
 import '../../core/authority_types.dart';
 

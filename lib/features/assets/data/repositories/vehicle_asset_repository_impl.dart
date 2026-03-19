@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:pactaflow/domain/entities/vehicle.dart';
-import 'package:pactaflow/domain/enums/vehicle_status.dart';
+import 'package:veraprob/domain/entities/vehicle.dart';
+import 'package:veraprob/domain/enums/vehicle_status.dart';
 import 'vehicle_asset_repository.dart';
 
 class VehicleAssetRepositoryImpl implements IVehicleAssetRepository {

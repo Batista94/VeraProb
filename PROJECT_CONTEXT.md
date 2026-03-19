@@ -1,11 +1,11 @@
-# PactaFlow: Strategic Context & Business Architecture
+# VeraProb: Strategic Context & Business Architecture
 
 This document serves as the **canonical entry point** for any engineering session, AI agent, or stakeholder. It defines the platform's "True North": its business purpose, market differentiators, and operational rules.
 
 ---
 
 ## 1. Platform Purpose: The "Digital Judge"
-PactaFlow is an **Automated SLA Compliance & Financial Protection Platform**. 
+VeraProb is an **Automated SLA Compliance & Financial Protection Platform**. 
 It eliminates the gap between a signed B2B contract and physical operation execution. It acts as an impartial "Judge" that:
 1. **Ingests** real-world telemetry (GPS, Check-ins).
 2. **Normalizes** noisy data into deterministic facts.
@@ -17,7 +17,7 @@ It eliminates the gap between a signed B2B contract and physical operation execu
 ## 2. Market Differentiators (Strategic Moat)
 
 *   **Financial Shield (INV-2):** We don't just report delays; we manage the **Relative Risk** of the entire operation. By setting financial ceilings and calculating exposure in real-time, we protect the operator's margin against catastrophic penalization.
-*   **The Burden of Proof:** PactaFlow generates *cryptographic-like proof* of execution. disputes are resolved by data, not emails.
+*   **The Burden of Proof:** VeraProb generates *cryptographic-like proof* of execution. disputes are resolved by data, not emails.
 *   **Zero-Friction JIT Master Data:** Dispatchers can create operational assets (Geofences, Zones) *inline* during contract creation. The system adapts to the user, not the other way around.
 *   **Multi-Tenant Sovereignty:** Complete data isolation enforced at the database level (RLS). Client A never exists in the context of Client B.
 
@@ -39,6 +39,7 @@ All non-trivial changes must be reviewed by the specialized personas in `docs/co
 - **qa_security:** RLS, tenant isolation, and auditability.
 - **ux_operations:** Operator efficiency and "Zero-Friction" UX.
 - **business_maverick:** Market value, ROI, and competitive edge.
+- **lead_reviewer:** The Gatekeeper. Final filter for PRs and architectural integrity.
 
 ---
 
@@ -60,8 +61,10 @@ All non-trivial changes must be reviewed by the specialized personas in `docs/co
     *   *Feitos:* Audit Sealing (INV-16/17), Prova de Execução (Audit Packages), Dashboards Executivos e Portal do Contratante.
 *   **Phase 7.5 (Financial Defense & Shadow Mode):** **CONCLUÍDA**. 
     *   *Implementado:* Shadow Mode (ROI Simulator), Tribunal de Apelações e Hardening Forense DB-level. 568 testes operando. ✅
-*   **Phase 8.8 (Telemetry Integrity & Anti-Spoofing):** **CONCLUÍDA**. 
-    *   *Realizado:* Detecção ativa de Fake GPS (Haversine Variance), Audit Trail imutável com SHA-256 e Invariante 21 (bloqueio automático de suspeitas). ✅
+*   **Phase 8 (Operational Hardening & Resilience):** **CONCLUÍDA** (8.1 - 8.8). 
+    *   *Realizado:* CI/CD automatizado, Observabilidade (Sentry/PostHog), PII Masking, Disaster Recovery (PITR) e Detecção ativa de Fake GPS (Anti-Spoofing). 568 testes operando. ✅
+*   **Phase 9 (Technical Review & Refinement):** **EM ANDAMENTO**.
+    *   *Objetivo:* Auditoria profunda de código, polimento de UX e ajustes finos nas regras de negócio antes de qualquer exposição externa.
 
 ---
-*Last updated: March 19, 2026 — Phase 8.8 (Telemetry Integrity & Anti-Spoofing)*
+*Last updated: March 19, 2026 — Phase 8 (Operational Hardening) Consolidation*

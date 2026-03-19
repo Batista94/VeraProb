@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Bootstrap Dev Seed (Full)
+-- veraprob — Bootstrap Dev Seed (Full)
 -- ============================================================
 -- DEV ONLY. Nunca executar em staging ou produção.
 -- Safe to re-run: todos os INSERTs usam ON CONFLICT DO NOTHING.
@@ -11,8 +11,8 @@
 --   • 2 contracts ativos (um por org, com UUIDs fixos para k6 env vars)
 --
 -- Credenciais de teste:
---   Org A — admin-a@pactaflow.dev / PactaFlow123!
---   Org B — admin-b@pactaflow.dev / PactaFlow123!
+--   Org A — admin-a@veraprob.dev / veraprob123!
+--   Org B — admin-b@veraprob.dev / veraprob123!
 --
 -- UUIDs fixos (para uso nos scripts k6):
 --   ORG_A_ID       = 00000000-0000-0000-0000-000000000001

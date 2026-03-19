@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Phase 6: Zone Contractor FK
+-- veraprob — Phase 6: Zone Contractor FK
 -- ============================================================
 -- REASON:
 --   Link operational_zones to the new contractors aggregate.

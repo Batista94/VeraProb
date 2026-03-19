@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-/// Represents an organization (tenant) in the PactaFlow system.
+/// Represents an organization (tenant) in the veraprob system.
 class Organization extends Equatable {
   final String id;
   final String name;

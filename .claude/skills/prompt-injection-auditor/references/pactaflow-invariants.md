@@ -1,4 +1,4 @@
-# PactaFlow Invariants Reference (CLAUDE.md)
+# VeraProb Invariants Reference (CLAUDE.md)
 
 Este documento mapeia as restrições técnicas obrigatórias que devem ser verificadas durante a auditoria de qualquer skill ou instrução AI.
 

@@ -28,7 +28,7 @@
 //   order (verifiable via SELECT ... ORDER BY occurred_at_utc).
 //
 // ARCHITECTURE NOTE:
-//   PactaFlow does not have a direct REST endpoint for GPS ingestion — events
+//   veraprob does not have a direct REST endpoint for GPS ingestion — events
 //   reach the engine via adapter Edge Functions. Until those endpoints are
 //   deployed, this script targets the Supabase REST API on sla_audit_ledger_v2
 //   to simulate the EFFECT of chaos GPS on ledger output.
@@ -374,7 +374,7 @@ export function handleSummary(data) {
 
   const report = [
     '============================================================',
-    ' PactaFlow Phase 8.6 — GPS Chaos Test Summary',
+    ' veraprob Phase 8.6 — GPS Chaos Test Summary',
     '============================================================',
     '',
     ' SCENARIO A: Teleportation Attack (50 VUs × 2min)',

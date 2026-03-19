@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/features/stops/domain/entities/bus_stop.dart';
+import 'package:veraprob/features/stops/domain/entities/bus_stop.dart';
 
 void main() {
   group('BusStop Entity', () {

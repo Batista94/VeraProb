@@ -3,10 +3,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'vehicle_marker.dart';
-import 'package:pactaflow/domain/entities/vehicle_operational_state.dart';
-import 'package:pactaflow/domain/enums/trip_status.dart';
-import 'package:pactaflow/application/projections/providers/fleet_attention_projection_provider.dart';
-import 'package:pactaflow/application/projections/models/attention_state.dart';
+import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/application/projections/providers/fleet_attention_projection_provider.dart';
+import 'package:veraprob/application/projections/models/attention_state.dart';
 
 /// A wrapper around [MarkerLayer] that animates vehicle positions.
 ///

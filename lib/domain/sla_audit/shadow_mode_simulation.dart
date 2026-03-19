@@ -7,7 +7,7 @@ import 'domain_exception.dart';
 /// Read model for a Shadow Mode ROI simulation.
 ///
 /// Answers the question: "What financial losses would have occurred without
-/// PactaFlow's automated SLA enforcement?"
+/// veraprob's automated SLA enforcement?"
 ///
 /// This is a comparison model — it holds both the actual platform data
 /// and a simulated "without-platform" baseline scenario, producing an
@@ -16,7 +16,7 @@ import 'domain_exception.dart';
 /// **How to present EvidenceScore to clients (PO directive 2026-03-17):**
 /// When [evidenceQualityRate] is low, the [evidenceQualityAttribution] text
 /// explicitly attributes this to hardware quality (the contratante's GPS devices),
-/// NOT to PactaFlow's software. This protects the operator's legal position.
+/// NOT to veraprob's software. This protects the operator's legal position.
 ///
 /// **INV-2:** All monetary values stored as [Money] (cents). Never double/float.
 /// **INV-3:** All timestamps UTC.
@@ -36,7 +36,7 @@ class ShadowModeSimulation extends Equatable {
   final Money actualLostRevenue;
   final Money actualAtRiskRevenue;
 
-  /// Compliance rate achieved WITH PactaFlow (executedCount / totalObligations × 100).
+  /// Compliance rate achieved WITH veraprob (executedCount / totalObligations × 100).
   final double actualComplianceRate;
 
   /// Ratio of canonical_facts with integrity_flag = OK over total facts (0.0–100.0).
@@ -216,7 +216,7 @@ class ShadowModeSimulation extends Equatable {
   /// Human-readable attribution text for low evidence quality.
   ///
   /// When [evidenceQualityRate] < 80%, this text attributes the quality gap
-  /// to the contratante's GPS hardware, not to PactaFlow software.
+  /// to the contratante's GPS hardware, not to veraprob software.
   /// Operators should include this text in reports to protect their legal position.
   String get evidenceQualityAttribution {
     if (evidenceQualityRate >= 95) {
@@ -235,7 +235,7 @@ class ShadowModeSimulation extends Equatable {
         'NULL_ISLAND, LOW_ACCURACY, FUTURE_TIMESTAMP). '
         'O operador recomenda que o contratante audite e atualize os dispositivos '
         'de rastreamento para garantir precisão máxima na proteção contratual. '
-        'PactaFlow processou 100% dos sinais válidos recebidos.';
+        'veraprob processou 100% dos sinais válidos recebidos.';
   }
 
   @override

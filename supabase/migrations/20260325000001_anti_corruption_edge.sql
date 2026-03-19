@@ -65,7 +65,7 @@ CREATE INDEX idx_raw_telemetry_payloads_org_received
 
 -- ---------------------------------------------------------------------------
 -- TABLE 3: canonical_facts
--- The normalized PactaFlowEvent — the only representation the Core Domain sees.
+-- The normalized veraprobEvent — the only representation the Core Domain sees.
 -- FK to raw_telemetry_payloads is MANDATORY — no canonical fact without a sealed raw blob.
 -- INV-14: Adapter Isolation — raw 3rd-party JSON never touches the Core directly.
 -- ---------------------------------------------------------------------------

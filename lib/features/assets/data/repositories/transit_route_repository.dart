@@ -1,4 +1,4 @@
-import 'package:pactaflow/domain/entities/transit_route.dart';
+import 'package:veraprob/domain/entities/transit_route.dart';
 
 abstract class ITransitRouteRepository {
   Future<List<TransitRoute>> getRoutes();

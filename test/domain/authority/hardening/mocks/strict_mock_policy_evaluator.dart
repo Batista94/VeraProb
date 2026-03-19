@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
-import 'package:pactaflow/domain/authority/core/authority_types.dart';
-import 'package:pactaflow/domain/authority/decision/authorization_decision.dart';
-import 'package:pactaflow/domain/authority/policies/authority_policy_evaluator.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
+import 'package:veraprob/domain/authority/policies/authority_policy_evaluator.dart';
 
 /// Programmable Evaluator for strict unit testing.
 ///

@@ -45,7 +45,7 @@ class PdfExportService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            _sectionHeader('ATESTADO DE AUTENTICIDADE — PACTAFLOW'),
+            _sectionHeader('ATESTADO DE AUTENTICIDADE — veraprob'),
             pw.Divider(),
             pw.SizedBox(height: 8),
             _labelValue('Report ID', package.billingCycleReportId),

@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Phase 6 Block 7: Rule Configuration Studio
+-- veraprob — Phase 6 Block 7: Rule Configuration Studio
 -- Sprint 6.7 | 2026-03-17
 -- ============================================================
 -- Changes:

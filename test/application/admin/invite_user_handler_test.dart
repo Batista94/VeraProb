@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pactaflow/application/admin/invitation_command_service.dart';
-import 'package:pactaflow/application/admin/invite_user_command.dart';
-import 'package:pactaflow/application/admin/invite_user_handler.dart';
-import 'package:pactaflow/domain/enums/user_role.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/application/admin/invitation_command_service.dart';
+import 'package:veraprob/application/admin/invite_user_command.dart';
+import 'package:veraprob/application/admin/invite_user_handler.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 class MockInvitationCommandService extends Mock
     implements InvitationCommandService {}

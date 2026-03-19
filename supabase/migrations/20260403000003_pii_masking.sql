@@ -2,7 +2,7 @@
 -- Phase 8.5 — PII Masking (LGPD Compliance)
 -- =============================================================================
 -- CONTEXT:
---   PactaFlow processes B2B contractor data that includes personally identifiable
+--   veraprob processes B2B contractor data that includes personally identifiable
 --   and commercially sensitive information. Under LGPD (Lei 13.709/2018),
 --   PII fields must be protected with access controls appropriate to each role.
 --

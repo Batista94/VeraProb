@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/application/sla_audit/reporting_service.dart';
-import 'package:pactaflow/application/sla_audit/shadow_mode_service.dart';
-import 'package:pactaflow/domain/shared/money.dart';
-import 'package:pactaflow/domain/sla_audit/canonical_fact.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_financial_daily_snapshot.dart';
-import 'package:pactaflow/domain/sla_audit/ingestion_integrity_flag.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_canonical_fact_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_shadow_mode_repository.dart';
+import 'package:veraprob/application/sla_audit/reporting_service.dart';
+import 'package:veraprob/application/sla_audit/shadow_mode_service.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_canonical_fact_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_shadow_mode_repository.dart';
 
 void main() {
   final periodStart = DateTime.utc(2026, 3, 1);
@@ -238,7 +238,7 @@ void main() {
       expect(sim.evidenceQualityRate, closeTo(80.0, 0.01));
     });
 
-    test('evidenceQualityAttribution does NOT mention PactaFlow as cause when quality is low', () async {
+    test('evidenceQualityAttribution does NOT mention veraprob as cause when quality is low', () async {
       await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 1)));
 
       final t = DateTime.utc(2026, 3, 10, 8);
@@ -269,12 +269,12 @@ void main() {
 
       final attribution = sim.evidenceQualityAttribution;
 
-      // PO directive: must attribute to hardware, not PactaFlow software
+      // PO directive: must attribute to hardware, not veraprob software
       expect(attribution, contains('hardware'));
-      expect(attribution, contains('PactaFlow processou 100% dos sinais válidos recebidos'));
-      // Must NOT imply PactaFlow is at fault
+      expect(attribution, contains('veraprob processou 100% dos sinais válidos recebidos'));
+      // Must NOT imply veraprob is at fault
       expect(attribution.toLowerCase(), isNot(contains('falha do sistema')));
-      expect(attribution.toLowerCase(), isNot(contains('erro do pactaflow')));
+      expect(attribution.toLowerCase(), isNot(contains('erro do veraprob')));
       expect(attribution.toLowerCase(), isNot(contains('bug')));
     });
 

@@ -30,7 +30,7 @@ class ContractualEvaluationEngine {
   final EvaluationTraceRepository _traceRepo;
   final OperationalAlertRepository? _alertRepo;
 
-  static const String currentEngineVersion = 'PactaFlow-core_v3';
+  static const String currentEngineVersion = 'veraprob-core_v3';
 
   /// Tracks when a vehicle first entered a SET's geofence.
   /// Key: setId, Value: first entry timestamp.
@@ -76,7 +76,9 @@ class ContractualEvaluationEngine {
     DateTime? nowUtc,
     required String organizationId,
   }) async {
-    final now = nowUtc ?? DateTime.now().toUtc();
+    // INV-12: Strictly use Event Time (gps_timestamp) for evaluation.
+    // Falls back to processing time only if override [nowUtc] is provided.
+    final now = nowUtc ?? vehicleState.lastRawPingAt;
 
     final pendingStates = await _executionRepo.findPendingInWindow(
       now,

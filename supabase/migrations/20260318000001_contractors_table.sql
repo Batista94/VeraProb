@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Phase 6: Contractors Table
+-- veraprob — Phase 6: Contractors Table
 -- ============================================================
 -- REASON:
 --   Introduce the Contractor aggregate to support dedicated

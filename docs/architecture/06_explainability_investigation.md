@@ -1,7 +1,7 @@
 # Phase 3 Design Specification: Explainability & Investigation
 
 ## 1. Goal Description
-The objective of Phase 3 is to evolve PactaFlow from a "Black Box Evaluator" into an explainable auditing platform. When the `ContractualEvaluationEngine` makes a decision (e.g., assessing a penalty or approving a trip), it must provide a cryptographic linkage between the input telemetry, the parameters applied, and the final judgment. This capability allows human operators in the Operations Control Center (OCC) to forensicly investigate and justify system decisions.
+The objective of Phase 3 is to evolve VeraProb from a "Black Box Evaluator" into an explainable auditing platform. When the `ContractualEvaluationEngine` makes a decision (e.g., assessing a penalty or approving a trip), it must provide a cryptographic linkage between the input telemetry, the parameters applied, and the final judgment. This capability allows human operators in the Operations Control Center (OCC) to forensicly investigate and justify system decisions.
 
 ## 2. Core Architectural Concepts
 

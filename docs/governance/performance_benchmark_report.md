@@ -1,4 +1,4 @@
-# PactaFlow — Phase 8.6 Performance Benchmark Report
+# VeraProb — Phase 8.6 Performance Benchmark Report
 
 **Status:** Template — populate with actual k6 results after running load tests
 **Phase:** 8.6 — Performance & Escala
@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-Phase 8.6 establishes the performance baseline for PactaFlow's EvaluationEngine under production-representative load. The goals are:
+Phase 8.6 establishes the performance baseline for VeraProb's EvaluationEngine under production-representative load. The goals are:
 
 | Metric | Target | Status |
 |--------|--------|--------|

@@ -36,10 +36,10 @@ class ContractualRiskRadar extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: PactaFlowColors.warning.withValues(alpha: 0.1),
+            color: VeraProbColors.warning.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.radar, color: PactaFlowColors.warning),
+          child: const Icon(Icons.radar, color: VeraProbColors.warning),
         ),
         const SizedBox(width: 16),
         Column(
@@ -47,13 +47,13 @@ class ContractualRiskRadar extends ConsumerWidget {
           children: [
             Text(
               'Radar de Risco Contratual',
-              style: PactaFlowTypography.kpiValue.copyWith(fontSize: 22),
+              style: VeraProbTypography.kpiValue.copyWith(fontSize: 22),
             ),
             const SizedBox(height: 4),
             Text(
               'Acompanhamento de SLA operacional e impacto financeiro',
-              style: PactaFlowTypography.bodyMedium.copyWith(
-                color: PactaFlowColors.textSecondary,
+              style: VeraProbTypography.bodyMedium.copyWith(
+                color: VeraProbColors.textSecondary,
               ),
             ),
           ],
@@ -76,12 +76,12 @@ class _FinancialKpiRow extends ConsumerWidget {
 
     return impactAsync.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(color: PactaFlowColors.primary),
+        child: CircularProgressIndicator(color: VeraProbColors.primary),
       ),
       error: (err, _) => Text(
         'Erro ao carregar KPIs financeiros: $err',
-        style: PactaFlowTypography.bodySmall.copyWith(
-          color: PactaFlowColors.error,
+        style: VeraProbTypography.bodySmall.copyWith(
+          color: VeraProbColors.error,
         ),
       ),
       data: (impact) {
@@ -92,7 +92,7 @@ class _FinancialKpiRow extends ConsumerWidget {
                 title: 'Receita Protegida',
                 value:
                     'R\$ ${(impact.protectedRevenue.cents / 100).toStringAsFixed(2)}',
-                color: PactaFlowColors.success,
+                color: VeraProbColors.success,
                 icon: Icons.shield,
               ),
             ),
@@ -102,7 +102,7 @@ class _FinancialKpiRow extends ConsumerWidget {
                 title: 'Receita em Risco (Atrasos)',
                 value:
                     'R\$ ${(impact.revenueAtRisk.cents / 100).toStringAsFixed(2)}',
-                color: PactaFlowColors.warning,
+                color: VeraProbColors.warning,
                 icon: Icons.warning_amber_rounded,
               ),
             ),
@@ -112,7 +112,7 @@ class _FinancialKpiRow extends ConsumerWidget {
                 title: 'SLA Violado (Penalty)',
                 value:
                     'R\$ ${(impact.lostRevenue.cents / 100).toStringAsFixed(2)}',
-                color: PactaFlowColors.error,
+                color: VeraProbColors.error,
                 icon: Icons.gavel,
               ),
             ),
@@ -141,9 +141,9 @@ class _KpiCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: PactaFlowColors.surfaceElevated,
+        color: VeraProbColors.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: PactaFlowColors.border),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +154,7 @@ class _KpiCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: PactaFlowTypography.caption.copyWith(
+                style: VeraProbTypography.caption.copyWith(
                   letterSpacing: 0.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -164,7 +164,7 @@ class _KpiCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: PactaFlowTypography.kpiValue.copyWith(
+            style: VeraProbTypography.kpiValue.copyWith(
               color: color,
               fontWeight: FontWeight.w700,
             ),
@@ -188,9 +188,9 @@ class _RiskFeedList extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: PactaFlowColors.border),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,24 +198,24 @@ class _RiskFeedList extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: PactaFlowColors.border)),
+              border: Border(bottom: BorderSide(color: VeraProbColors.border)),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.list_alt,
                   size: 18,
-                  color: PactaFlowColors.info,
+                  color: VeraProbColors.info,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Viagens Programadas (Turnos)',
-                  style: PactaFlowTypography.sectionTitle,
+                  style: VeraProbTypography.sectionTitle,
                 ),
                 const Spacer(),
                 Text(
                   'Ordenado por Severidade',
-                  style: PactaFlowTypography.caption,
+                  style: VeraProbTypography.caption,
                 ),
               ],
             ),
@@ -225,7 +225,7 @@ class _RiskFeedList extends ConsumerWidget {
               padding: EdgeInsets.all(24.0),
               child: Center(
                 child: CircularProgressIndicator(
-                  color: PactaFlowColors.primary,
+                  color: VeraProbColors.primary,
                 ),
               ),
             ),
@@ -234,8 +234,8 @@ class _RiskFeedList extends ConsumerWidget {
               child: Center(
                 child: Text(
                   'Erro ao carregar feed: $err',
-                  style: PactaFlowTypography.bodySmall.copyWith(
-                    color: PactaFlowColors.error,
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.error,
                   ),
                 ),
               ),
@@ -247,7 +247,7 @@ class _RiskFeedList extends ConsumerWidget {
                   child: Center(
                     child: Text(
                       'Nenhuma viagem programada para hoje',
-                      style: PactaFlowTypography.bodyMedium,
+                      style: VeraProbTypography.bodyMedium,
                     ),
                   ),
                 );
@@ -282,13 +282,13 @@ class _FeedNodeItem extends StatelessWidget {
   Color _getSeverityColor() {
     switch (node.severity) {
       case DashboardFeedSeverity.critical:
-        return PactaFlowColors.error;
+        return VeraProbColors.error;
       case DashboardFeedSeverity.warning:
-        return PactaFlowColors.warning;
+        return VeraProbColors.warning;
       case DashboardFeedSeverity.pending:
-        return PactaFlowColors.info;
+        return VeraProbColors.info;
       case DashboardFeedSeverity.onTime:
-        return PactaFlowColors.success;
+        return VeraProbColors.success;
     }
   }
 
@@ -313,7 +313,7 @@ class _FeedNodeItem extends StatelessWidget {
                     color: color,
                     border: Border.all(
                       color: node.severity == DashboardFeedSeverity.critical
-                          ? PactaFlowColors.error.withValues(alpha: 0.5)
+                          ? VeraProbColors.error.withValues(alpha: 0.5)
                           : Colors.transparent,
                       width: 2,
                     ),
@@ -321,7 +321,7 @@ class _FeedNodeItem extends StatelessWidget {
                 ),
                 if (!isLast)
                   Expanded(
-                    child: Container(width: 2, color: PactaFlowColors.border),
+                    child: Container(width: 2, color: VeraProbColors.border),
                   ),
               ],
             ),
@@ -362,9 +362,9 @@ class _FeedNodeItem extends StatelessWidget {
                               _timeFormat.format(
                                 node.execution.windowStartUtc.toLocal(),
                               ),
-                              style: PactaFlowTypography.bodyMedium.copyWith(
+                              style: VeraProbTypography.bodyMedium.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: PactaFlowColors.textPrimary,
+                                color: VeraProbColors.textPrimary,
                               ),
                             ),
                             const Spacer(),
@@ -379,7 +379,7 @@ class _FeedNodeItem extends StatelessWidget {
                               ),
                               child: Text(
                                 node.execution.status.name.toUpperCase(),
-                                style: PactaFlowTypography.badge.copyWith(
+                                style: VeraProbTypography.badge.copyWith(
                                   color: color,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -390,9 +390,9 @@ class _FeedNodeItem extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           'SET ID: ${node.execution.setId.substring(0, 8)}...',
-                          style: PactaFlowTypography.caption.copyWith(
+                          style: VeraProbTypography.caption.copyWith(
                             fontFamily: 'monospace',
-                            color: PactaFlowColors.textSecondary,
+                            color: VeraProbColors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -401,11 +401,11 @@ class _FeedNodeItem extends StatelessWidget {
                             const Icon(
                               Icons.attach_money,
                               size: 14,
-                              color: PactaFlowColors.textSecondary,
+                              color: VeraProbColors.textSecondary,
                             ),
                             Text(
                               'R\$ ${(node.execution.contractualValue.cents / 100).toStringAsFixed(2)}',
-                              style: PactaFlowTypography.bodySmall,
+                              style: VeraProbTypography.bodySmall,
                             ),
                             if (node.activeAlerts.isNotEmpty) ...[
                               const Spacer(),
@@ -413,7 +413,7 @@ class _FeedNodeItem extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 '${node.activeAlerts.length} ${node.activeAlerts.length == 1 ? 'Alerta' : 'Alertas'}',
-                                style: PactaFlowTypography.caption.copyWith(
+                                style: VeraProbTypography.caption.copyWith(
                                   color: color,
                                 ),
                               ),

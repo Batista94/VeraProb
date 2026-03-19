@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pactaflow/application/admin/change_user_role_command.dart';
-import 'package:pactaflow/application/admin/change_user_role_handler.dart';
-import 'package:pactaflow/application/admin/user_management_command_service.dart';
-import 'package:pactaflow/domain/enums/user_role.dart';
+import 'package:veraprob/application/admin/change_user_role_command.dart';
+import 'package:veraprob/application/admin/change_user_role_handler.dart';
+import 'package:veraprob/application/admin/user_management_command_service.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 class MockUserManagementCommandService extends Mock implements UserManagementCommandService {}
 

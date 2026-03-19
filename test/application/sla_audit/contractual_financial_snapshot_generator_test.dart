@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:pactaflow/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
-import 'package:pactaflow/core/time/brazil_time.dart';
-import 'package:pactaflow/domain/shared/money.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_execution_state.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
+import 'package:veraprob/core/time/brazil_time.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 
 void main() {
   late InMemoryContractualExecutionStateRepository executionRepo;

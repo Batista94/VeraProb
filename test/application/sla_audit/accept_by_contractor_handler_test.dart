@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pactaflow/application/sla_audit/accept_by_contractor_command.dart';
-import 'package:pactaflow/application/sla_audit/accept_by_contractor_handler.dart';
-import 'package:pactaflow/application/sla_audit/contract_approval_command_service.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
-import 'package:pactaflow/domain/sla_audit/sla_audit_ledger_repository.dart';
-import 'package:pactaflow/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/application/sla_audit/accept_by_contractor_command.dart';
+import 'package:veraprob/application/sla_audit/accept_by_contractor_handler.dart';
+import 'package:veraprob/application/sla_audit/contract_approval_command_service.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 

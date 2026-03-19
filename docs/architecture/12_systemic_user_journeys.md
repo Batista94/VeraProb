@@ -11,7 +11,7 @@
 
 > **O sistema impõe o fluxo — não a UI.**
 
-Esconder um botão no Flutter é cosmético. Bloquear na camada de domínio é arquitetural. PactaFlow adota uma política de **defesa em profundidade** com três camadas de enforcement obrigatórias para qualquer hard gate:
+Esconder um botão no Flutter é cosmético. Bloquear na camada de domínio é arquitetural. VeraProb adota uma política de **defesa em profundidade** com três camadas de enforcement obrigatórias para qualquer hard gate:
 
 | Camada | Mecanismo | Responsável |
 |--------|-----------|-------------|

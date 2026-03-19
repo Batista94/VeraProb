@@ -89,13 +89,13 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PactaFlowColors.background,
+      backgroundColor: VeraProbColors.background,
       body: Center(
         child: SingleChildScrollView(
           child: SizedBox(
             width: 480,
             child: Card(
-              color: PactaFlowColors.surface,
+              color: VeraProbColors.surface,
               elevation: 8,
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -126,14 +126,14 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.link_off, color: PactaFlowColors.error, size: 48),
+          const Icon(Icons.link_off, color: VeraProbColors.error, size: 48),
           const SizedBox(height: 16),
-          Text('Link Inválido', style: PactaFlowTypography.sectionTitle),
+          Text('Link Inválido', style: VeraProbTypography.sectionTitle),
           const SizedBox(height: 8),
           Text(
             'Este link de revisão é inválido, expirou ou o contrato já foi aceito.',
-            style: PactaFlowTypography.bodyMedium.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.bodyMedium.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -148,20 +148,20 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
         children: [
           const Icon(
             Icons.check_circle_outline,
-            color: PactaFlowColors.success,
+            color: VeraProbColors.success,
             size: 56,
           ),
           const SizedBox(height: 16),
           Text(
             'Contrato Aceito!',
-            style: PactaFlowTypography.sectionTitle,
+            style: VeraProbTypography.sectionTitle,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             'Sua aceitação foi registrada com sucesso.\nA operadora foi notificada.',
-            style: PactaFlowTypography.bodyMedium.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.bodyMedium.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -178,20 +178,20 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
       children: [
         const Icon(
           Icons.description_outlined,
-          color: PactaFlowColors.primary,
+          color: VeraProbColors.primary,
           size: 48,
         ),
         const SizedBox(height: 16),
         Text(
           'Revisão de Contrato',
-          style: PactaFlowTypography.sectionTitle,
+          style: VeraProbTypography.sectionTitle,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
           'Revise os dados abaixo e confirme o aceite do contrato.',
-          style: PactaFlowTypography.bodyMedium.copyWith(
-            color: PactaFlowColors.textSecondary,
+          style: VeraProbTypography.bodyMedium.copyWith(
+            color: VeraProbColors.textSecondary,
           ),
           textAlign: TextAlign.center,
         ),
@@ -212,7 +212,7 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
           const SizedBox(height: 12),
           Text(
             _error!,
-            style: const TextStyle(color: PactaFlowColors.error, fontSize: 13),
+            style: const TextStyle(color: VeraProbColors.error, fontSize: 13),
             textAlign: TextAlign.center,
           ),
         ],
@@ -237,8 +237,8 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
         const SizedBox(height: 12),
         Text(
           'Ao aceitar, você confirma que leu e concorda com os termos deste contrato.',
-          style: PactaFlowTypography.bodySmall.copyWith(
-            color: PactaFlowColors.textSecondary,
+          style: VeraProbTypography.bodySmall.copyWith(
+            color: VeraProbColors.textSecondary,
           ),
           textAlign: TextAlign.center,
         ),
@@ -269,12 +269,12 @@ class _InfoRow extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: PactaFlowTypography.bodyMedium.copyWith(
-                color: PactaFlowColors.textSecondary,
+              style: VeraProbTypography.bodyMedium.copyWith(
+                color: VeraProbColors.textSecondary,
               ),
             ),
           ),
-          Expanded(child: Text(value, style: PactaFlowTypography.bodyMedium)),
+          Expanded(child: Text(value, style: VeraProbTypography.bodyMedium)),
         ],
       ),
     );

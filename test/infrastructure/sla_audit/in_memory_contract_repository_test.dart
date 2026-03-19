@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/domain/sla_audit/contract.dart';
-import 'package:pactaflow/domain/sla_audit/contract_status.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 
 void main() {
   late InMemoryContractRepository repo;

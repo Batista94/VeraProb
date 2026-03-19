@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Operational color system for PactaFlow Control Center.
+/// Operational color system for veraprob Control Center.
 ///
 /// Designed for 24/7 operations: dark base reduces eye strain,
 /// status colors follow industry standards for transport control rooms.
-class PactaFlowColors {
-  PactaFlowColors._();
+class VeraProbColors {
+  VeraProbColors._();
 
   // ── Premium Dark Theme (Deep Navy/Obsidian) ────────────────
   static const Color background = Color(0xFF121212); // Softer than pure black
@@ -44,8 +44,8 @@ class PactaFlowColors {
 ///
 /// All paddings and gaps in the OCC must use these constants —
 /// never raw pixel values — to maintain mathematical alignment.
-class PactaFlowSpacing {
-  PactaFlowSpacing._();
+class VeraProbSpacing {
+  VeraProbSpacing._();
 
   static const double xs = 4.0;
   static const double sm = 8.0;
@@ -65,8 +65,8 @@ class PactaFlowSpacing {
 }
 
 /// Operational typography for dense information display.
-class PactaFlowTypography {
-  PactaFlowTypography._();
+class VeraProbTypography {
+  VeraProbTypography._();
 
   // Use Inter as the premium bridge between UI and Data
   static TextStyle get base => GoogleFonts.inter();
@@ -74,14 +74,14 @@ class PactaFlowTypography {
   static TextStyle get kpiValue => base.copyWith(
     fontSize: 28,
     fontWeight: FontWeight.w700,
-    color: PactaFlowColors.textPrimary,
+    color: VeraProbColors.textPrimary,
     letterSpacing: -0.7,
   );
 
   static TextStyle get kpiLabel => base.copyWith(
     fontSize: 11,
     fontWeight: FontWeight.w600,
-    color: PactaFlowColors.textSecondary,
+    color: VeraProbColors.textSecondary,
     letterSpacing: 0.8,
     textBaseline: TextBaseline.alphabetic,
   );
@@ -89,26 +89,26 @@ class PactaFlowTypography {
   static TextStyle get sectionTitle => base.copyWith(
     fontSize: 14,
     fontWeight: FontWeight.w700,
-    color: PactaFlowColors.textPrimary,
+    color: VeraProbColors.textPrimary,
     letterSpacing: 0.2,
   );
 
   static TextStyle get bodyMedium => base.copyWith(
     fontSize: 13,
     fontWeight: FontWeight.w400,
-    color: PactaFlowColors.textPrimary,
+    color: VeraProbColors.textPrimary,
   );
 
   static TextStyle get bodySmall => base.copyWith(
     fontSize: 12,
     fontWeight: FontWeight.w400,
-    color: PactaFlowColors.textSecondary,
+    color: VeraProbColors.textSecondary,
   );
 
   static TextStyle get caption => base.copyWith(
     fontSize: 11,
     fontWeight: FontWeight.w500,
-    color: PactaFlowColors.textDisabled,
+    color: VeraProbColors.textDisabled,
   );
 
   static TextStyle get badge => base.copyWith(
@@ -122,19 +122,19 @@ class PactaFlowTypography {
   static TextStyle get dataValue => base.copyWith(
     fontSize: 15,
     fontWeight: FontWeight.w600,
-    color: PactaFlowColors.textPrimary,
+    color: VeraProbColors.textPrimary,
   );
 
   /// For form field labels and section sub-headers inside forms.
   static TextStyle get fieldLabel => base.copyWith(
     fontSize: 11,
     fontWeight: FontWeight.w500,
-    color: PactaFlowColors.textSecondary,
+    color: VeraProbColors.textSecondary,
     letterSpacing: 0.4,
   );
 }
 
-/// Main theme configuration for the PactaFlow admin panel.
+/// Main theme configuration for the veraprob admin panel.
 class AppTheme {
   AppTheme._();
 
@@ -142,83 +142,83 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.dark,
     fontFamily: GoogleFonts.inter().fontFamily,
-    scaffoldBackgroundColor: PactaFlowColors.background,
+    scaffoldBackgroundColor: VeraProbColors.background,
     colorScheme: const ColorScheme.dark(
-      primary: PactaFlowColors.primary,
-      secondary: PactaFlowColors.secondary,
-      surface: PactaFlowColors.surface,
-      error: PactaFlowColors.error,
+      primary: VeraProbColors.primary,
+      secondary: VeraProbColors.secondary,
+      surface: VeraProbColors.surface,
+      error: VeraProbColors.error,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
-      onSurface: PactaFlowColors.textPrimary,
+      onSurface: VeraProbColors.textPrimary,
       onError: Colors.white,
-      surfaceContainer: PactaFlowColors.surface,
-      surfaceContainerHigh: PactaFlowColors.surfaceElevated,
+      surfaceContainer: VeraProbColors.surface,
+      surfaceContainerHigh: VeraProbColors.surfaceElevated,
     ),
     textTheme: GoogleFonts.interTextTheme(
       const TextTheme(
         headlineMedium: TextStyle(
-          color: PactaFlowColors.textPrimary,
+          color: VeraProbColors.textPrimary,
           fontWeight: FontWeight.bold,
         ),
         titleLarge: TextStyle(
-          color: PactaFlowColors.textPrimary,
+          color: VeraProbColors.textPrimary,
           fontWeight: FontWeight.w600,
         ),
-        bodyMedium: TextStyle(color: PactaFlowColors.textPrimary),
-        bodySmall: TextStyle(color: PactaFlowColors.textSecondary),
+        bodyMedium: TextStyle(color: VeraProbColors.textPrimary),
+        bodySmall: TextStyle(color: VeraProbColors.textSecondary),
       ),
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: PactaFlowColors.surface,
-      foregroundColor: PactaFlowColors.textPrimary,
+      backgroundColor: VeraProbColors.surface,
+      foregroundColor: VeraProbColors.textPrimary,
       elevation: 0,
       centerTitle: false,
       toolbarHeight: 64, // Slightly taller for premium feel
     ),
     cardTheme: CardThemeData(
-      color: PactaFlowColors.surface,
+      color: VeraProbColors.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: PactaFlowColors.border, width: 1),
+        side: const BorderSide(color: VeraProbColors.border, width: 1),
       ),
       margin: EdgeInsets.zero,
     ),
     dividerTheme: const DividerThemeData(
-      color: PactaFlowColors.border,
+      color: VeraProbColors.border,
       thickness: 1,
       space: 1,
     ),
     iconTheme: const IconThemeData(
-      color: PactaFlowColors.textSecondary,
+      color: VeraProbColors.textSecondary,
       size: 20,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: PactaFlowColors.surface,
+      fillColor: VeraProbColors.surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: PactaFlowColors.border),
+        borderSide: const BorderSide(color: VeraProbColors.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: PactaFlowColors.border),
+        borderSide: const BorderSide(color: VeraProbColors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(
-          color: PactaFlowColors.primary,
+          color: VeraProbColors.primary,
           width: 1.5,
         ),
       ),
-      labelStyle: const TextStyle(color: PactaFlowColors.textSecondary, fontSize: 13),
-      hintStyle: const TextStyle(color: PactaFlowColors.textDisabled, fontSize: 13),
+      labelStyle: const TextStyle(color: VeraProbColors.textSecondary, fontSize: 13),
+      hintStyle: const TextStyle(color: VeraProbColors.textDisabled, fontSize: 13),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: PactaFlowColors.primary,
+        backgroundColor: VeraProbColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -232,59 +232,59 @@ class AppTheme {
     ),
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor:
-          PactaFlowColors.background, // Match background so it blends natively
-      indicatorColor: PactaFlowColors.primary.withValues(alpha: 0.15),
+          VeraProbColors.background, // Match background so it blends natively
+      indicatorColor: VeraProbColors.primary.withValues(alpha: 0.15),
       selectedIconTheme: const IconThemeData(
-        color: PactaFlowColors.primary,
+        color: VeraProbColors.primary,
         size: 24,
       ),
       unselectedIconTheme: const IconThemeData(
-        color: PactaFlowColors.textDisabled,
+        color: VeraProbColors.textDisabled,
         size: 24,
       ),
       selectedLabelTextStyle: const TextStyle(
-        color: PactaFlowColors.textPrimary,
+        color: VeraProbColors.textPrimary,
         fontWeight: FontWeight.w600,
         fontSize: 13,
       ),
       unselectedLabelTextStyle: const TextStyle(
-        color: PactaFlowColors.textDisabled,
+        color: VeraProbColors.textDisabled,
         fontWeight: FontWeight.w500,
         fontSize: 13,
       ),
     ),
     datePickerTheme: DatePickerThemeData(
-      backgroundColor: PactaFlowColors.surfaceElevated,
-      headerBackgroundColor: PactaFlowColors.surface,
-      headerForegroundColor: PactaFlowColors.textPrimary,
+      backgroundColor: VeraProbColors.surfaceElevated,
+      headerBackgroundColor: VeraProbColors.surface,
+      headerForegroundColor: VeraProbColors.textPrimary,
       surfaceTintColor:
           Colors.transparent, // Disable Material 3 subtle tint parsing
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: PactaFlowColors.border, width: 1),
+        side: const BorderSide(color: VeraProbColors.border, width: 1),
       ),
-      dayStyle: PactaFlowTypography.bodyMedium,
-      weekdayStyle: PactaFlowTypography.caption,
-      yearStyle: PactaFlowTypography.bodyMedium,
-      todayBorder: const BorderSide(color: PactaFlowColors.primary),
-      todayForegroundColor: WidgetStateProperty.all(PactaFlowColors.primary),
+      dayStyle: VeraProbTypography.bodyMedium,
+      weekdayStyle: VeraProbTypography.caption,
+      yearStyle: VeraProbTypography.bodyMedium,
+      todayBorder: const BorderSide(color: VeraProbColors.primary),
+      todayForegroundColor: WidgetStateProperty.all(VeraProbColors.primary),
       dayOverlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return PactaFlowColors.primary;
+          return VeraProbColors.primary;
         }
         return null; // Defer to default
       }),
       dayForegroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return PactaFlowColors.background; // Dark text on bright primary
+          return VeraProbColors.background; // Dark text on bright primary
         }
-        return PactaFlowColors.textPrimary;
+        return VeraProbColors.textPrimary;
       }),
       cancelButtonStyle: TextButton.styleFrom(
-        foregroundColor: PactaFlowColors.textSecondary,
+        foregroundColor: VeraProbColors.textSecondary,
       ),
       confirmButtonStyle: TextButton.styleFrom(
-        foregroundColor: PactaFlowColors.primary,
+        foregroundColor: VeraProbColors.primary,
       ),
     ),
   );
@@ -292,15 +292,15 @@ class AppTheme {
   static final lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    colorSchemeSeed: PactaFlowColors.primary,
+    colorSchemeSeed: VeraProbColors.primary,
     fontFamily: GoogleFonts.inter().fontFamily,
   );
 
   // ── Helpers for custom widgets ──────────────────────────
-  static Color get primaryColor => PactaFlowColors.primary;
-  static Color get surfaceColor => PactaFlowColors.background;
+  static Color get primaryColor => VeraProbColors.primary;
+  static Color get surfaceColor => VeraProbColors.background;
   static Gradient get primaryGradient => const LinearGradient(
-    colors: [PactaFlowColors.primary, PactaFlowColors.secondary],
+    colors: [VeraProbColors.primary, VeraProbColors.secondary],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

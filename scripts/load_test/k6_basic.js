@@ -227,7 +227,7 @@ export function handleSummary(data) {
 
   const report = [
     '============================================================',
-    ' PactaFlow Phase 8.6 — Basic Load Test Summary',
+    ' veraprob Phase 8.6 — Basic Load Test Summary',
     '============================================================',
     '',
     ' SCENARIO: Steady State (1,000 VUs × 1 GPS event/min)',

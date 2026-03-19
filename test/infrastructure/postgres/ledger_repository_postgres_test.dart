@@ -1,5 +1,5 @@
-import 'package:pactaflow/domain/sla_audit/sla_ledger_entry.dart';
-import 'package:pactaflow/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -28,7 +28,7 @@ void main() async {
         () async {
           final setId = uuid.v4();
           final contractId = uuid.v4();
-          final entry = SlaLedgerEntry(organizationId: 'org-1', 
+          final entry = SlaLedgerEntry(organizationId: PostgresTestConfig.testOrgId,
             type: 'PLAN_DECLARED',
             setId: setId,
             contractId: contractId,
@@ -46,20 +46,20 @@ void main() async {
           expect(entries.first.type, 'PLAN_DECLARED');
           expect(entries.first.contractId, contractId);
           expect(
-            entries.first.id,
+            entries.first.eventId,
             isNotNull,
-            reason: 'DB should assign monotonic id',
+            reason: 'DB should assign a UUID eventId on insert',
           );
         },
       );
 
       test(
-        '2. Monotonic ordering: sequential appends return ordered IDs',
+        '2. Chronological ordering: sequential appends return entries ordered by occurredAtUtc',
         () async {
           final setId = uuid.v4();
           final contractId = uuid.v4();
 
-          final entry1 = SlaLedgerEntry(organizationId: 'org-1', 
+          final entry1 = SlaLedgerEntry(organizationId: PostgresTestConfig.testOrgId,
             type: 'EXECUTION_BOUND',
             setId: setId,
             contractId: contractId,
@@ -69,7 +69,7 @@ void main() async {
             ),
           );
 
-          final entry2 = SlaLedgerEntry(organizationId: 'org-1', 
+          final entry2 = SlaLedgerEntry(organizationId: PostgresTestConfig.testOrgId,
             type: 'EXECUTION_FINALIZED',
             setId: setId,
             contractId: contractId,
@@ -82,20 +82,22 @@ void main() async {
 
           final entries = await repository.getEntriesBySetId(setId);
           expect(entries.length, 2);
-          // IDs are monotonically increasing (bigserial)
+          // getEntriesBySetId orders by occurred_at_utc ASC
           expect(
-            entries.first.id! < entries.last.id!,
+            entries.first.occurredAtUtc.isBefore(entries.last.occurredAtUtc),
             isTrue,
-            reason: 'Ledger IDs must be monotonically increasing',
+            reason: 'Ledger entries must be ordered chronologically',
           );
+          expect(entries.first.type, 'EXECUTION_BOUND');
+          expect(entries.last.type, 'EXECUTION_FINALIZED');
         },
       );
 
-      test('3. DB Constraints: Cannot UPDATE a ledger entry', () async {
+      test('3. DB Constraints: Cannot UPDATE a ledger entry (RLS guard)', () async {
         final setId = uuid.v4();
         final contractId = uuid.v4();
 
-        final entry = SlaLedgerEntry(organizationId: 'org-1', 
+        final entry = SlaLedgerEntry(organizationId: PostgresTestConfig.testOrgId,
           type: 'PLAN_DECLARED',
           setId: setId,
           contractId: contractId,
@@ -105,27 +107,27 @@ void main() async {
 
         await repository.append(entry);
 
-        // Get the persisted entry to know its ID
+        // Get the persisted entry to know its UUID
         final entries = await repository.getEntriesBySetId(setId);
-        final persistedId = entries.first.id!;
+        final persistedEventId = entries.first.eventId!;
 
         // Direct UPDATE attempt via raw Supabase client (not via repository)
-        expect(
+        await expectLater(
           () async => await client
-              .from('sla_audit_ledger')
+              .from('sla_audit_ledger_v2')
               .update({'type': 'TAMPERED'})
-              .eq('id', persistedId),
+              .eq('id', persistedEventId),
           throwsA(isA<PostgrestException>()),
           reason:
-              'The database must reject UPDATEs on sla_audit_ledger (append-only)',
+              'The database must reject UPDATEs on sla_audit_ledger_v2 (append-only)',
         );
       });
 
-      test('4. DB Constraints: Cannot DELETE a ledger entry', () async {
+      test('4. DB Constraints: Cannot DELETE a ledger entry (RLS guard)', () async {
         final setId = uuid.v4();
         final contractId = uuid.v4();
 
-        final entry = SlaLedgerEntry(organizationId: 'org-1', 
+        final entry = SlaLedgerEntry(organizationId: PostgresTestConfig.testOrgId,
           type: 'PLAN_DECLARED',
           setId: setId,
           contractId: contractId,
@@ -135,19 +137,19 @@ void main() async {
 
         await repository.append(entry);
 
-        // Get the persisted entry to know its ID
+        // Get the persisted entry to know its UUID
         final entries = await repository.getEntriesBySetId(setId);
-        final persistedId = entries.first.id!;
+        final persistedEventId = entries.first.eventId!;
 
         // Direct DELETE attempt via raw Supabase client (not via repository)
-        expect(
+        await expectLater(
           () async => await client
-              .from('sla_audit_ledger')
+              .from('sla_audit_ledger_v2')
               .delete()
-              .eq('id', persistedId),
+              .eq('id', persistedEventId),
           throwsA(isA<PostgrestException>()),
           reason:
-              'The database must reject DELETEs on sla_audit_ledger (append-only)',
+              'The database must reject DELETEs on sla_audit_ledger_v2 (append-only)',
         );
       });
     },

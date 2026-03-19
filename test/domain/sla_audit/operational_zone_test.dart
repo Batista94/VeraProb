@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 void main() {
   // ── Shared helper ──────────────────────────────────────────

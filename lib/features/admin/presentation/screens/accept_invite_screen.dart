@@ -134,13 +134,13 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PactaFlowColors.background,
+      backgroundColor: VeraProbColors.background,
       body: Center(
         child: SingleChildScrollView(
           child: SizedBox(
             width: 440,
             child: Card(
-              color: PactaFlowColors.surface,
+              color: VeraProbColors.surface,
               elevation: 8,
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -171,16 +171,16 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
         children: [
           const Icon(
             Icons.cancel_outlined,
-            color: PactaFlowColors.error,
+            color: VeraProbColors.error,
             size: 48,
           ),
           const SizedBox(height: 16),
-          Text('Convite Inválido', style: PactaFlowTypography.sectionTitle),
+          Text('Convite Inválido', style: VeraProbTypography.sectionTitle),
           const SizedBox(height: 8),
           Text(
             'Este link de convite é inválido, expirou ou já foi utilizado.',
-            style: PactaFlowTypography.bodyMedium.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.bodyMedium.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -196,20 +196,20 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
         children: [
           const Icon(
             Icons.mark_email_read_outlined,
-            color: PactaFlowColors.primary,
+            color: VeraProbColors.primary,
             size: 48,
           ),
           const SizedBox(height: 16),
           Text(
             'Aceitar Convite',
-            style: PactaFlowTypography.sectionTitle,
+            style: VeraProbTypography.sectionTitle,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             'Você foi convidado como $_invitedRole.\nDefina sua senha para ativar o acesso.',
-            style: PactaFlowTypography.bodyMedium.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.bodyMedium.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -234,7 +234,7 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
             Text(
               _error!,
               style: const TextStyle(
-                color: PactaFlowColors.error,
+                color: VeraProbColors.error,
                 fontSize: 13,
               ),
               textAlign: TextAlign.center,

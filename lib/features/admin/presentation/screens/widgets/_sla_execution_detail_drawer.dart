@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/application/sla_audit/projections/sla_execution_item_view.dart';
-import 'package:pactaflow/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'investigation_modal.dart';
 
 final _currencyFormat = NumberFormat.currency(
@@ -24,7 +24,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
         width: 400,
         height: double.infinity,
         decoration: const BoxDecoration(
-          color: PactaFlowColors.surface,
+          color: VeraProbColors.surface,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(16),
             bottomLeft: Radius.circular(16),
@@ -56,7 +56,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                     const Divider(height: 48),
                     Text(
                       'DADOS FINANCEIROS',
-                      style: PactaFlowTypography.caption,
+                      style: VeraProbTypography.caption,
                     ),
                     const SizedBox(height: 16),
                     _InfoField(
@@ -79,7 +79,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                     const Divider(height: 48),
                     Text(
                       'LOCAL DE ORIGEM (ZONA OPERACIONAL)',
-                      style: PactaFlowTypography.caption,
+                      style: VeraProbTypography.caption,
                     ),
                     const SizedBox(height: 16),
                     const _InfoField(
@@ -94,7 +94,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                       const Divider(height: 48),
                       Text(
                         'EVIDÊNCIA DE EXECUÇÃO',
-                        style: PactaFlowTypography.caption,
+                        style: VeraProbTypography.caption,
                       ),
                       const SizedBox(height: 16),
                       _InfoField(
@@ -118,7 +118,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: PactaFlowColors.border.withValues(alpha: 0.3),
+                    color: VeraProbColors.border.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -138,7 +138,7 @@ class SlaExecutionDetailDrawer extends StatelessWidget {
                   icon: const Icon(Icons.search, size: 16),
                   label: const Text('Investigar Decisão'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PactaFlowColors.secondary,
+                    backgroundColor: VeraProbColors.secondary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -168,7 +168,7 @@ class _Header extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: PactaFlowColors.border.withValues(alpha: 0.1),
+            color: VeraProbColors.border.withValues(alpha: 0.1),
           ),
         ),
       ),
@@ -177,7 +177,7 @@ class _Header extends StatelessWidget {
         children: [
           Text(
             'Detalhes da Obrigação',
-            style: PactaFlowTypography.sectionTitle,
+            style: VeraProbTypography.sectionTitle,
           ),
           IconButton(icon: const Icon(Icons.close), onPressed: onClose),
         ],
@@ -199,21 +199,21 @@ class _StatusSection extends StatelessWidget {
 
     switch (status) {
       case ExecutionStatus.noShow:
-        color = PactaFlowColors.error;
+        color = VeraProbColors.error;
         label = 'NO SHOW';
         description =
             'Não detectado: Obrigação não executada na Zona Operacional.';
       case ExecutionStatus.evidenceGap:
-        color = PactaFlowColors.warning;
+        color = VeraProbColors.warning;
         label = 'EVIDENCE GAP';
         description =
             'Detecção Parcial: Indícios de Execução sem comprovação contínua.';
       case ExecutionStatus.executed:
-        color = PactaFlowColors.success;
+        color = VeraProbColors.success;
         label = 'EXECUTADO';
         description = 'Evidência confirmada: Obrigação B2B cumprida.';
       case ExecutionStatus.pending:
-        color = PactaFlowColors.textSecondary;
+        color = VeraProbColors.textSecondary;
         label = 'PENDENTE';
         description = 'Aguardando encerramento da janela.';
     }
@@ -229,14 +229,14 @@ class _StatusSection extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: PactaFlowTypography.badge.copyWith(color: color),
+            style: VeraProbTypography.badge.copyWith(color: color),
           ),
         ),
         const SizedBox(height: 8),
         Text(
           description,
-          style: PactaFlowTypography.bodyMedium.copyWith(
-            color: PactaFlowColors.textSecondary,
+          style: VeraProbTypography.bodyMedium.copyWith(
+            color: VeraProbColors.textSecondary,
           ),
         ),
       ],
@@ -259,13 +259,13 @@ class _InfoField extends StatelessWidget {
         children: [
           Text(
             label.toUpperCase(),
-            style: PactaFlowTypography.caption.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.caption.copyWith(
+              color: VeraProbColors.textSecondary,
               letterSpacing: 1.2,
             ),
           ),
           const SizedBox(height: 4),
-          Text(value, style: PactaFlowTypography.bodyMedium),
+          Text(value, style: VeraProbTypography.bodyMedium),
         ],
       ),
     );

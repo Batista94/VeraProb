@@ -4,13 +4,13 @@ import '../../../core/theme/app_theme.dart';
 /// A premium, consistent chip for status and types.
 ///
 /// Replaces ad-hoc Containers for badges/chips across the app.
-class PactaFlowChip extends StatelessWidget {
+class VeraProbChip extends StatelessWidget {
   final String label;
   final Color color;
   final IconData? icon;
   final bool outline;
 
-  const PactaFlowChip({
+  const VeraProbChip({
     super.key,
     required this.label,
     required this.color,
@@ -22,8 +22,8 @@ class PactaFlowChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: PactaFlowSpacing.sm,
-        vertical: PactaFlowSpacing.xs,
+        horizontal: VeraProbSpacing.sm,
+        vertical: VeraProbSpacing.xs,
       ),
       decoration: BoxDecoration(
         color: outline ? Colors.transparent : color.withValues(alpha: 0.12),
@@ -40,7 +40,7 @@ class PactaFlowChip extends StatelessWidget {
             Icon(icon, size: 12, color: color),
             const SizedBox(width: 6),
           ],
-          Text(label, style: PactaFlowTypography.badge.copyWith(color: color)),
+          Text(label, style: VeraProbTypography.badge.copyWith(color: color)),
         ],
       ),
     );

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/domain/entities/operational_trip.dart';
-import 'package:pactaflow/domain/sla_audit/sla_ledger_entry.dart';
-import 'package:pactaflow/presentation/shared/trip_status_theme.dart';
-import 'package:pactaflow/domain/enums/trip_status.dart';
-import 'package:pactaflow/domain/entities/operational_suggestion.dart';
-import 'package:pactaflow/application/intelligence/suggestion_engine.dart';
-import 'package:pactaflow/state/providers/fleet_providers.dart';
-import 'package:pactaflow/presentation/shared/widgets/status_badge.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/presentation/shared/trip_status_theme.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/domain/entities/operational_suggestion.dart';
+import 'package:veraprob/application/intelligence/suggestion_engine.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/presentation/shared/widgets/status_badge.dart';
 import 'occurrence_modal.dart';
-import 'package:pactaflow/domain/authority/commands/trips/update_trip_status_command.dart';
+import 'package:veraprob/domain/authority/commands/trips/update_trip_status_command.dart';
 import '../utils/ui_command_dispatcher.dart';
 
 /// Detailed vehicle/trip drawer shown when an operator selects a trip.
@@ -37,8 +37,8 @@ class VehicleDetailDrawer extends ConsumerWidget {
     return Container(
       width: 340,
       decoration: const BoxDecoration(
-        color: PactaFlowColors.surface,
-        border: Border(left: BorderSide(color: PactaFlowColors.border)),
+        color: VeraProbColors.surface,
+        border: Border(left: BorderSide(color: VeraProbColors.border)),
         boxShadow: [
           BoxShadow(
             color: Colors.black26,
@@ -61,18 +61,18 @@ class VehicleDetailDrawer extends ConsumerWidget {
                   // Info Section
                   _InfoSection(trip: trip),
 
-                  const Divider(height: 1, color: PactaFlowColors.border),
+                  const Divider(height: 1, color: VeraProbColors.border),
 
                   // Intelligent Suggestion
                   if (suggestion != null) ...[
                     _SuggestionSection(suggestion: suggestion, tripId: trip.id),
-                    const Divider(height: 1, color: PactaFlowColors.border),
+                    const Divider(height: 1, color: VeraProbColors.border),
                   ],
 
                   // Action Buttons
                   _ActionsSection(trip: trip),
 
-                  const Divider(height: 1, color: PactaFlowColors.border),
+                  const Divider(height: 1, color: VeraProbColors.border),
 
                   // Event Timeline
                   eventsAsync.when(
@@ -110,7 +110,7 @@ class _DrawerHeader extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: trip.status.color.withValues(alpha: 0.08),
-        border: const Border(bottom: BorderSide(color: PactaFlowColors.border)),
+        border: const Border(bottom: BorderSide(color: VeraProbColors.border)),
       ),
       child: Row(
         children: [
@@ -129,7 +129,7 @@ class _DrawerHeader extends StatelessWidget {
               children: [
                 Text(
                   trip.routeDisplay,
-                  style: PactaFlowTypography.sectionTitle,
+                  style: VeraProbTypography.sectionTitle,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
@@ -140,8 +140,8 @@ class _DrawerHeader extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         trip.delayDisplay,
-                        style: PactaFlowTypography.caption.copyWith(
-                          color: PactaFlowColors.delayed,
+                        style: VeraProbTypography.caption.copyWith(
+                          color: VeraProbColors.delayed,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -154,7 +154,7 @@ class _DrawerHeader extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.close, size: 18),
             onPressed: onClose,
-            color: PactaFlowColors.textSecondary,
+            color: VeraProbColors.textSecondary,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -229,16 +229,16 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: PactaFlowColors.textDisabled),
+          Icon(icon, size: 14, color: VeraProbColors.textDisabled),
           const SizedBox(width: 8),
           SizedBox(
             width: 100,
-            child: Text(label, style: PactaFlowTypography.caption),
+            child: Text(label, style: VeraProbTypography.caption),
           ),
           Expanded(
             child: Text(
               value,
-              style: PactaFlowTypography.bodyMedium,
+              style: VeraProbTypography.bodyMedium,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -293,18 +293,18 @@ class _SuggestionSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: PactaFlowColors.primary.withValues(alpha: 0.05),
+      color: VeraProbColors.primary.withValues(alpha: 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.lightbulb, color: PactaFlowColors.primary, size: 18),
+              const Icon(Icons.lightbulb, color: VeraProbColors.primary, size: 18),
               const SizedBox(width: 8),
               Text(
                 'SUGESTÃO DO SISTEMA',
-                style: PactaFlowTypography.caption.copyWith(
-                  color: PactaFlowColors.primary,
+                style: VeraProbTypography.caption.copyWith(
+                  color: VeraProbColors.primary,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
@@ -314,12 +314,12 @@ class _SuggestionSection extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             suggestion.title,
-            style: PactaFlowTypography.bodyMedium.copyWith(
+            style: VeraProbTypography.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
-          Text(suggestion.description, style: PactaFlowTypography.caption),
+          Text(suggestion.description, style: VeraProbTypography.caption),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -328,7 +328,7 @@ class _SuggestionSection extends ConsumerWidget {
               icon: Icon(suggestion.action.icon, size: 16),
               label: Text(suggestion.actionLabel),
               style: FilledButton.styleFrom(
-                backgroundColor: PactaFlowColors.primary,
+                backgroundColor: VeraProbColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 10),
               ),
@@ -356,7 +356,7 @@ class _ActionsSection extends ConsumerWidget {
         children: [
           Text(
             'AÇÕES OPERACIONAIS',
-            style: PactaFlowTypography.caption.copyWith(
+            style: VeraProbTypography.caption.copyWith(
               letterSpacing: 1.0,
               fontWeight: FontWeight.w600,
             ),
@@ -370,7 +370,7 @@ class _ActionsSection extends ConsumerWidget {
                 child: _ActionButton(
                   icon: Icons.check_circle_outline,
                   label: 'Regularizar',
-                  color: PactaFlowColors.onTime,
+                  color: VeraProbColors.onTime,
                   enabled:
                       trip.status == TripStatus.delayed ||
                       trip.status == TripStatus.interrupted,
@@ -383,7 +383,7 @@ class _ActionsSection extends ConsumerWidget {
                 child: _ActionButton(
                   icon: Icons.report_problem_outlined,
                   label: 'Ocorrência',
-                  color: PactaFlowColors.delayed,
+                  color: VeraProbColors.delayed,
                   enabled: true,
                   onTap: () => _showOccurrenceModal(context, ref),
                 ),
@@ -399,7 +399,7 @@ class _ActionsSection extends ConsumerWidget {
                 child: _ActionButton(
                   icon: Icons.refresh,
                   label: 'Redespachar',
-                  color: PactaFlowColors.scheduled,
+                  color: VeraProbColors.scheduled,
                   enabled: trip.status.isActive,
                   onTap: () => _dispatchStatusUpdate(
                     context,
@@ -413,7 +413,7 @@ class _ActionsSection extends ConsumerWidget {
                 child: _ActionButton(
                   icon: Icons.pause_circle_outline,
                   label: 'Interromper',
-                  color: PactaFlowColors.critical,
+                  color: VeraProbColors.critical,
                   enabled:
                       trip.status == TripStatus.enRoute ||
                       trip.status == TripStatus.atStop ||
@@ -496,15 +496,15 @@ class _ActionsSection extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: PactaFlowColors.surface,
-        title: Text(title, style: PactaFlowTypography.sectionTitle),
-        content: Text(message, style: PactaFlowTypography.bodyMedium),
+        backgroundColor: VeraProbColors.surface,
+        title: Text(title, style: VeraProbTypography.sectionTitle),
+        content: Text(message, style: VeraProbTypography.bodyMedium),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text(
               'Não',
-              style: TextStyle(color: PactaFlowColors.textSecondary),
+              style: TextStyle(color: VeraProbColors.textSecondary),
             ),
           ),
           FilledButton(
@@ -514,8 +514,8 @@ class _ActionsSection extends ConsumerWidget {
             },
             style: FilledButton.styleFrom(
               backgroundColor: destructive
-                  ? PactaFlowColors.critical
-                  : PactaFlowColors.primary,
+                  ? VeraProbColors.critical
+                  : VeraProbColors.primary,
             ),
             child: Text(destructive ? 'Sim, Cancelar' : 'Confirmar'),
           ),
@@ -542,7 +542,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = enabled ? color : PactaFlowColors.textDisabled;
+    final effectiveColor = enabled ? color : VeraProbColors.textDisabled;
 
     return Material(
       color: Colors.transparent,
@@ -597,7 +597,7 @@ class _EventTimeline extends StatelessWidget {
         children: [
           Text(
             'HISTÓRICO DE EVIDÊNCIAS FORENSES',
-            style: PactaFlowTypography.caption.copyWith(
+            style: VeraProbTypography.caption.copyWith(
               letterSpacing: 1.0,
               fontWeight: FontWeight.w600,
             ),
@@ -609,7 +609,7 @@ class _EventTimeline extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
                 'Nenhum evento registrado no Ledger',
-                style: PactaFlowTypography.bodySmall,
+                style: VeraProbTypography.bodySmall,
               ),
             )
           else
@@ -642,7 +642,7 @@ class _EventTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _eventColor(entry),
                   shape: BoxShape.circle,
-                  border: Border.all(color: PactaFlowColors.surface, width: 2),
+                  border: Border.all(color: VeraProbColors.surface, width: 2),
                   boxShadow: [
                     BoxShadow(
                       color: _eventColor(entry).withValues(alpha: 0.5),
@@ -654,7 +654,7 @@ class _EventTile extends StatelessWidget {
               Container(
                 width: 2,
                 height: 24, // Fixed height instead of Expanded
-                color: PactaFlowColors.border,
+                color: VeraProbColors.border,
                 margin: const EdgeInsets.symmetric(vertical: 4),
               ),
             ],
@@ -675,25 +675,25 @@ class _EventTile extends StatelessWidget {
                     Expanded(
                       child: Text(
                         _eventLabel(entry),
-                        style: PactaFlowTypography.caption.copyWith(
+                        style: VeraProbTypography.caption.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: PactaFlowColors.textPrimary,
+                          color: VeraProbColors.textPrimary,
                         ),
                       ),
                     ),
                     Text(
                       _formatTime(entry.occurredAtUtc.toLocal()),
-                      style: PactaFlowTypography.caption.copyWith(fontSize: 10),
+                      style: VeraProbTypography.caption.copyWith(fontSize: 10),
                     ),
                   ],
                 ),
-                Text(_eventSummary(entry), style: PactaFlowTypography.caption),
+                Text(_eventSummary(entry), style: VeraProbTypography.caption),
                 if (entry.payload['notes'] != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
                       entry.payload['notes'] as String,
-                      style: PactaFlowTypography.caption.copyWith(
+                      style: VeraProbTypography.caption.copyWith(
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -766,14 +766,14 @@ class _EventTile extends StatelessWidget {
       case 'TRIP_INTERRUPTED':
       case 'TRIP_CANCELLED':
       case 'NO_SHOW_DECLARED':
-        return PactaFlowColors.critical;
+        return VeraProbColors.critical;
       case 'OCCURRENCE_REGISTERED':
       case 'EVIDENCE_GAP_DECLARED':
-        return PactaFlowColors.delayed;
+        return VeraProbColors.delayed;
       case 'EXECUTION_BOUND':
-        return PactaFlowColors.onTime;
+        return VeraProbColors.onTime;
       default:
-        return PactaFlowColors.textSecondary;
+        return VeraProbColors.textSecondary;
     }
   }
 

@@ -41,4 +41,4 @@ To prevent skipping steps in future phases, I will:
 - **Phase 6 — Administration & Tenant Onboarding:** Full SaaS operational UI for tenants and organizations.
 - **Phase 7 — Operational Hardening:** CI/CD, observability, and infrastructure scaling.
 
-This workflow guarantees that PactaFlow evolves as a premium B2B product, prioritizing **Decisiveness, Explainability, and Tenant Safety** over ad-hoc speed.
+This workflow guarantees that VeraProb evolves as a premium B2B product, prioritizing **Decisiveness, Explainability, and Tenant Safety** over ad-hoc speed.

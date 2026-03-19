@@ -1,6 +1,6 @@
 # Supabase Database Bootstrap & Migration Runbook
 
-This document outlines the procedure for initializing and migrating the PactaFlow database in a Supabase Cloud environment.
+This document outlines the procedure for initializing and migrating the VeraProb database in a Supabase Cloud environment.
 
 ## 1. Initial State
 The database begins with the core schema defined in `supabase/migrations/initial_schema.sql` (if applicable) or the base tables for SLA Audit.

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/domain/sla_audit/telemetry_evidence.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_telemetry_evidence_repository.dart';
+import 'package:veraprob/domain/sla_audit/telemetry_evidence.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_telemetry_evidence_repository.dart';
 
 TelemetryEvidence _makeEvidence({
   String organizationId = 'org-1',

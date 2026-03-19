@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:pactaflow/application/sla_audit/create_contract_command.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
-import 'package:pactaflow/state/providers/auth_providers.dart';
-import 'package:pactaflow/state/providers/contract_providers.dart';
-import 'package:pactaflow/state/providers/contractor_providers.dart';
-import 'package:pactaflow/domain/sla_audit/contractor.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
+import 'package:veraprob/application/sla_audit/create_contract_command.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/state/providers/contractor_providers.dart';
+import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import '../widgets/contractor_type_ahead_field.dart';
 
 class CreateContractForm extends ConsumerStatefulWidget {
@@ -74,10 +74,10 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: PactaFlowColors.primary,
+              primary: VeraProbColors.primary,
               onPrimary: Colors.white,
-              surface: PactaFlowColors.surfaceElevated,
-              onSurface: PactaFlowColors.textPrimary,
+              surface: VeraProbColors.surfaceElevated,
+              onSurface: VeraProbColors.textPrimary,
             ),
           ),
           child: child!,
@@ -171,10 +171,10 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
     final isFetchingOrg = ref.watch(organizationIdFetcherProvider).isLoading;
 
     return Dialog(
-      backgroundColor: PactaFlowColors.surface,
+      backgroundColor: VeraProbColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: PactaFlowColors.border),
+        side: const BorderSide(color: VeraProbColors.border),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
@@ -192,19 +192,19 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: PactaFlowColors.primary.withValues(alpha: 0.1),
+                          color: VeraProbColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
                           Icons.description_rounded,
-                          color: PactaFlowColors.primary,
+                          color: VeraProbColors.primary,
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: 14),
                       Text(
                         'Novo Contrato Operacional',
-                        style: PactaFlowTypography.sectionTitle.copyWith(
+                        style: VeraProbTypography.sectionTitle.copyWith(
                           fontSize: 20,
                         ),
                       ),
@@ -213,7 +213,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                         icon: const Icon(
                           Icons.close_rounded,
                           size: 20,
-                          color: PactaFlowColors.textDisabled,
+                          color: VeraProbColors.textDisabled,
                         ),
                         onPressed: () => Navigator.of(context).pop(null),
                       ),
@@ -222,7 +222,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                   const SizedBox(height: 12),
                   Text(
                     'Registre os parâmetros regulatórios para auditoria de SLR.',
-                    style: PactaFlowTypography.bodySmall,
+                    style: VeraProbTypography.bodySmall,
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -231,10 +231,10 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: PactaFlowColors.primary.withValues(alpha: 0.07),
+                      color: VeraProbColors.primary.withValues(alpha: 0.07),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: PactaFlowColors.primary.withValues(alpha: 0.25),
+                        color: VeraProbColors.primary.withValues(alpha: 0.25),
                       ),
                     ),
                     child: Row(
@@ -242,14 +242,14 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                         Icon(
                           Icons.info_outline,
                           size: 15,
-                          color: PactaFlowColors.primary.withValues(alpha: 0.8),
+                          color: VeraProbColors.primary.withValues(alpha: 0.8),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'Após criar o contrato, declare o Plano Operacional para vincular templates SLA e turnos.',
-                            style: PactaFlowTypography.bodySmall.copyWith(
-                              color: PactaFlowColors.primary.withValues(
+                            style: VeraProbTypography.bodySmall.copyWith(
+                              color: VeraProbColors.primary.withValues(
                                 alpha: 0.9,
                               ),
                             ),
@@ -265,25 +265,25 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: PactaFlowColors.error.withValues(alpha: 0.1),
+                        color: VeraProbColors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: PactaFlowColors.error.withValues(alpha: 0.3),
+                          color: VeraProbColors.error.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
                         children: [
                           const Icon(
                             Icons.warning_amber_rounded,
-                            color: PactaFlowColors.error,
+                            color: VeraProbColors.error,
                             size: 18,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Sessão sem organização vinculada. Faça logout e login novamente.',
-                              style: PactaFlowTypography.bodySmall.copyWith(
-                                color: PactaFlowColors.error,
+                              style: VeraProbTypography.bodySmall.copyWith(
+                                color: VeraProbColors.error,
                               ),
                             ),
                           ),
@@ -294,7 +294,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
                   TextFormField(
                     controller: _nameController,
-                    style: PactaFlowTypography.bodyMedium,
+                    style: VeraProbTypography.bodyMedium,
                     decoration: const InputDecoration(
                       labelText: 'Nome do Contrato *',
                       hintText: 'Ex: Concessão Norte - Lote 1',
@@ -334,7 +334,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
                   Text(
                     'CRONOGRAMA DE VIGÊNCIA',
-                    style: PactaFlowTypography.kpiLabel,
+                    style: VeraProbTypography.kpiLabel,
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -360,12 +360,12 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                   const SizedBox(height: 24),
                   Text(
                     'PROTEÇÃO FINANCEIRA',
-                    style: PactaFlowTypography.kpiLabel,
+                    style: VeraProbTypography.kpiLabel,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _financialCeilingController,
-                    style: PactaFlowTypography.bodyMedium,
+                    style: VeraProbTypography.bodyMedium,
                     keyboardType: TextInputType.number,
                     inputFormatters: [CurrencyInputFormatter()],
                     decoration: const InputDecoration(
@@ -383,17 +383,17 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: PactaFlowColors.error.withValues(alpha: 0.1),
+                        color: VeraProbColors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: PactaFlowColors.error.withValues(alpha: 0.3),
+                          color: VeraProbColors.error.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
                         children: [
                           const Icon(
                             Icons.error_outline_rounded,
-                            color: PactaFlowColors.error,
+                            color: VeraProbColors.error,
                             size: 18,
                           ),
                           const SizedBox(width: 12),
@@ -401,7 +401,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                             child: Text(
                               _errorMessage!,
                               style: const TextStyle(
-                                color: PactaFlowColors.error,
+                                color: VeraProbColors.error,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -422,8 +422,8 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                             : () => Navigator.of(context).pop(null),
                         child: Text(
                           'DESCARTAR',
-                          style: PactaFlowTypography.badge.copyWith(
-                            color: PactaFlowColors.textSecondary,
+                          style: VeraProbTypography.badge.copyWith(
+                            color: VeraProbColors.textSecondary,
                           ),
                         ),
                       ),
@@ -473,18 +473,18 @@ class _DatePickerField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           floatingLabelBehavior: FloatingLabelBehavior.always,
-          labelStyle: PactaFlowTypography.bodyMedium.copyWith(color: PactaFlowColors.textSecondary),
+          labelStyle: VeraProbTypography.bodyMedium.copyWith(color: VeraProbColors.textSecondary),
           border: const OutlineInputBorder(),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          suffixIcon: const Icon(Icons.calendar_month_rounded, color: PactaFlowColors.primary, size: 20),
+          suffixIcon: const Icon(Icons.calendar_month_rounded, color: VeraProbColors.primary, size: 20),
         ),
         isEmpty: false,
         child: Text(
           value != null
               ? '${value!.day.toString().padLeft(2, '0')}/${value!.month.toString().padLeft(2, '0')}/${value!.year}'
               : 'Selecionar $label...',
-          style: PactaFlowTypography.bodyMedium.copyWith(
-            color: value != null ? PactaFlowColors.textPrimary : PactaFlowColors.textSecondary,
+          style: VeraProbTypography.bodyMedium.copyWith(
+            color: value != null ? VeraProbColors.textPrimary : VeraProbColors.textSecondary,
             fontWeight: value != null ? FontWeight.w600 : FontWeight.w400,
           ),
         ),

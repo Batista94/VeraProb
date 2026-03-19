@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:pactaflow/core/theme/app_theme.dart';
-import 'package:pactaflow/domain/shared/money.dart';
-import 'package:pactaflow/state/providers/sla_providers.dart';
-import 'package:pactaflow/application/sla_audit/projections/sla_execution_item_view.dart';
-import 'package:pactaflow/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/state/providers/sla_providers.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'widgets/_sla_execution_detail_drawer.dart';
 
 final _currencyFormat = NumberFormat.currency(
@@ -20,7 +20,7 @@ class SlaAuditScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      color: PactaFlowColors.background,
+      color: VeraProbColors.background,
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -28,7 +28,7 @@ class SlaAuditScreen extends ConsumerWidget {
           children: [
             Text(
               'Relatório de Auditoria SLA',
-              style: PactaFlowTypography.sectionTitle.copyWith(
+              style: VeraProbTypography.sectionTitle.copyWith(
                 fontSize: 24,
                 letterSpacing: -0.5,
               ),
@@ -36,7 +36,7 @@ class SlaAuditScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               'Consolidação de evidências forenses e proteção de receita.',
-              style: PactaFlowTypography.bodySmall,
+              style: VeraProbTypography.bodySmall,
             ),
             const SizedBox(height: 24),
             const _SlaSummarySection(),
@@ -63,7 +63,7 @@ class _SlaSummarySection extends ConsumerWidget {
             child: _SummaryCard(
               title: 'CONFORMIDADES',
               value: summary.totalExecuted,
-              color: PactaFlowColors.success,
+              color: VeraProbColors.success,
               percentage: summary.total > 0
                   ? (summary.totalExecuted / summary.total * 100).round()
                   : 0,
@@ -76,7 +76,7 @@ class _SlaSummarySection extends ConsumerWidget {
             child: _SummaryCard(
               title: 'INCONSISTÊNCIAS',
               value: summary.totalEvidenceGap,
-              color: PactaFlowColors.warning,
+              color: VeraProbColors.warning,
               percentage: summary.total > 0
                   ? (summary.totalEvidenceGap / summary.total * 100).round()
                   : 0,
@@ -89,7 +89,7 @@ class _SlaSummarySection extends ConsumerWidget {
             child: _SummaryCard(
               title: 'QUEBRAS DE SLA',
               value: summary.totalNoShow,
-              color: PactaFlowColors.error,
+              color: VeraProbColors.error,
               percentage: summary.total > 0
                   ? (summary.totalNoShow / summary.total * 100).round()
                   : 0,
@@ -127,10 +127,10 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: PactaFlowColors.surface,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: PactaFlowColors.border.withValues(alpha: 0.1),
+          color: VeraProbColors.border.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -138,8 +138,8 @@ class _SummaryCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: PactaFlowTypography.kpiLabel.copyWith(
-              color: PactaFlowColors.textSecondary,
+            style: VeraProbTypography.kpiLabel.copyWith(
+              color: VeraProbColors.textSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -148,8 +148,8 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Text(
                 value.toString(),
-                style: PactaFlowTypography.kpiValue.copyWith(
-                  color: PactaFlowColors.textPrimary,
+                style: VeraProbTypography.kpiValue.copyWith(
+                  color: VeraProbColors.textPrimary,
                   fontSize: 32,
                 ),
               ),
@@ -158,8 +158,8 @@ class _SummaryCard extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   '$percentage%',
-                  style: PactaFlowTypography.bodySmall.copyWith(
-                    color: PactaFlowColors.textSecondary,
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.textSecondary,
                   ),
                 ),
               ),
@@ -177,14 +177,14 @@ class _SummaryCard extends StatelessWidget {
               children: [
                 Text(
                   revenueLabel,
-                  style: PactaFlowTypography.caption.copyWith(
-                    color: PactaFlowColors.textSecondary,
+                  style: VeraProbTypography.caption.copyWith(
+                    color: VeraProbColors.textSecondary,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _currencyFormat.format(revenueValue.toDouble()),
-                  style: PactaFlowTypography.badge.copyWith(
+                  style: VeraProbTypography.badge.copyWith(
                     color: color,
                     fontSize: 13,
                   ),
@@ -211,17 +211,17 @@ class _SlaExceptionsTable extends ConsumerWidget {
           return Center(
             child: Text(
               'Nenhuma exceção detectada.',
-              style: PactaFlowTypography.bodyMedium,
+              style: VeraProbTypography.bodyMedium,
             ),
           );
         }
 
         return Container(
           decoration: BoxDecoration(
-            color: PactaFlowColors.surface,
+            color: VeraProbColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: PactaFlowColors.border.withValues(alpha: 0.1),
+              color: VeraProbColors.border.withValues(alpha: 0.1),
             ),
           ),
           child: ClipRRect(
@@ -229,7 +229,7 @@ class _SlaExceptionsTable extends ConsumerWidget {
             child: SingleChildScrollView(
               child: DataTable(
                 headingRowColor: WidgetStateProperty.all(
-                  PactaFlowColors.textPrimary.withValues(alpha: 0.05),
+                  VeraProbColors.textPrimary.withValues(alpha: 0.05),
                 ),
                 columns: const [
                   DataColumn(label: Text('Status')),
@@ -245,17 +245,17 @@ class _SlaExceptionsTable extends ConsumerWidget {
                       DataCell(
                         Text(
                           '${_formatTime(item.windowStartUtc)} - ${_formatTime(item.windowEndUtc)}',
-                          style: PactaFlowTypography.bodyMedium,
+                          style: VeraProbTypography.bodyMedium,
                         ),
                       ),
                       DataCell(
                         Text(
                           item.plannedVehicleId ?? 'Sem veículo',
                           style: item.plannedVehicleId == null
-                              ? PactaFlowTypography.bodyMedium.copyWith(
-                                  color: PactaFlowColors.textDisabled,
+                              ? VeraProbTypography.bodyMedium.copyWith(
+                                  color: VeraProbColors.textDisabled,
                                 )
-                              : PactaFlowTypography.bodyMedium,
+                              : VeraProbTypography.bodyMedium,
                         ),
                       ),
                       DataCell(
@@ -263,7 +263,7 @@ class _SlaExceptionsTable extends ConsumerWidget {
                           _currencyFormat.format(
                             item.contractualValue.toDouble(),
                           ),
-                          style: PactaFlowTypography.bodyMedium,
+                          style: VeraProbTypography.bodyMedium,
                         ),
                       ),
                       DataCell(
@@ -307,8 +307,8 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = status == ExecutionStatus.noShow
-        ? PactaFlowColors.error
-        : PactaFlowColors.warning;
+        ? VeraProbColors.error
+        : VeraProbColors.warning;
 
     final label = status == ExecutionStatus.noShow ? 'Falha' : 'Gargalo';
 
@@ -321,7 +321,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         label.toUpperCase(),
-        style: PactaFlowTypography.badge.copyWith(color: color),
+        style: VeraProbTypography.badge.copyWith(color: color),
       ),
     );
   }

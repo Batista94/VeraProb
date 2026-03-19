@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/application/sla_audit/clone_contract_command.dart';
-import 'package:pactaflow/application/sla_audit/clone_contract_handler.dart';
-import 'package:pactaflow/application/sla_audit/create_contract_command.dart';
-import 'package:pactaflow/application/sla_audit/create_contract_handler.dart';
-import 'package:pactaflow/domain/sla_audit/contract_status.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contract_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:veraprob/application/sla_audit/clone_contract_command.dart';
+import 'package:veraprob/application/sla_audit/clone_contract_handler.dart';
+import 'package:veraprob/application/sla_audit/create_contract_command.dart';
+import 'package:veraprob/application/sla_audit/create_contract_handler.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 
 void main() {
   late InMemoryContractRepository repository;

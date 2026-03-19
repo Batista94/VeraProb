@@ -1,10 +1,10 @@
 # ============================================================================
-# PactaFlow — Supabase Local Development Configuration
+# veraprob — Supabase Local Development Configuration
 # ============================================================================
 # This file is committed to git so all team members share the same local setup.
 # Ports must stay fixed so CI/CD and k6 scripts can use hard-coded URLs.
 
-project_id = "PactaFlow"
+project_id = "veraprob"
 
 [api]
 enabled     = true

@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'domain_exception.dart';
 import 'ingestion_integrity_flag.dart';
 
-/// The normalized, provider-agnostic telemetry event — the PactaFlowEvent.
+/// The normalized, provider-agnostic telemetry event — the veraprobEvent.
 ///
 /// A [CanonicalFact] is produced by an Edge Function Adapter (Sascar, Omnitracs)
 /// after it has:

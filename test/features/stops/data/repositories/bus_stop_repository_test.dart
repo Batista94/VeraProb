@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/features/stops/data/repositories/bus_stop_repository.dart';
-import 'package:pactaflow/features/stops/domain/entities/bus_stop.dart';
+import 'package:veraprob/features/stops/data/repositories/bus_stop_repository.dart';
+import 'package:veraprob/features/stops/domain/entities/bus_stop.dart';
 
 void main() {
   group('BusStopRepository', () {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // =============================================================================
-// PactaFlow — Phase 8.7: JWT Helper for k6 Multi-Tenant Isolation Test
+// veraprob — Phase 8.7: JWT Helper for k6 Multi-Tenant Isolation Test
 // =============================================================================
 // Fluxo completo:
 //   1. Lê URL + chaves do Supabase local (via .env ou `supabase status`)
@@ -31,8 +31,8 @@ const ROOT = join(__dirname, '..');
 const TEST_USERS = [
   {
     id:          '09d00994-6b32-4df3-b08f-3d722f28f4d0',
-    email:       'admin-a@pactaflow.dev',
-    password:    'PactaFlow123!',
+    email:       'admin-a@veraprob.dev',
+    password:    'veraprob123!',
     org_id:      '00000000-0000-0000-0000-000000000001',
     label:       'Org A',
     jwtEnv:      'ORG_A_JWT',
@@ -42,8 +42,8 @@ const TEST_USERS = [
   },
   {
     id:          '210b892e-2f05-4eff-bb45-c3664141022b',
-    email:       'admin-b@pactaflow.dev',
-    password:    'PactaFlow123!',
+    email:       'admin-b@veraprob.dev',
+    password:    'veraprob123!',
     org_id:      '00000000-0000-0000-0000-000000000002',
     label:       'Org B',
     jwtEnv:      'ORG_B_JWT',
@@ -237,7 +237,7 @@ async function signIn(supabaseUrl, anonKey, email, password) {
 async function main() {
   const { url, anonKey, serviceKey, dbUrl } = resolveConfig();
 
-  console.error('\n PactaFlow — k6 Multi-Tenant Isolation JWT Helper\n');
+  console.error('\n veraprob — k6 Multi-Tenant Isolation JWT Helper\n');
   console.error(`  Supabase URL  : ${url}`);
   console.error(`  Anon Key      : ${anonKey ? anonKey.slice(0, 24) + '...' : '❌ NÃO ENCONTRADA'}`);
   console.error(`  Service Key   : ${serviceKey ? serviceKey.slice(0, 24) + '...' : '❌ NÃO ENCONTRADA'}`);

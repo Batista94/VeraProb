@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Phase 6: JWT Hook NULL Safety Fix (Bloco 1.6)
+-- veraprob — Phase 6: JWT Hook NULL Safety Fix (Bloco 1.6)
 -- ============================================================
 -- REASON:
 --   The previous implementation used the string 'null' for

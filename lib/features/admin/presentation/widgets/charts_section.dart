@@ -16,15 +16,15 @@ class ChartsSection extends StatelessWidget {
           children: [
             Text(
               'Performance de Execução Operacional',
-              style: PactaFlowTypography.sectionTitle.copyWith(
-                color: PactaFlowColors.textPrimary,
+              style: VeraProbTypography.sectionTitle.copyWith(
+                color: VeraProbColors.textPrimary,
                 letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Trips processadas nas últimas 24h (Audit Ledger)',
-              style: PactaFlowTypography.caption,
+              style: VeraProbTypography.caption,
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -36,7 +36,7 @@ class ChartsSection extends StatelessWidget {
                   barTouchData: BarTouchData(
                     enabled: false,
                     touchTooltipData: BarTouchTooltipData(
-                      tooltipBgColor: PactaFlowColors.surfaceElevated,
+                      tooltipBgColor: VeraProbColors.surfaceElevated,
                       tooltipPadding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
@@ -52,7 +52,7 @@ class ChartsSection extends StatelessWidget {
                             return BarTooltipItem(
                               rod.toY.round().toString(),
                               const TextStyle(
-                                color: PactaFlowColors.primary,
+                                color: VeraProbColors.primary,
                                 fontWeight: FontWeight.bold,
                               ),
                             );
@@ -65,8 +65,8 @@ class ChartsSection extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          final style = PactaFlowTypography.caption.copyWith(
-                            color: PactaFlowColors.textSecondary,
+                          final style = VeraProbTypography.caption.copyWith(
+                            color: VeraProbColors.textSecondary,
                             fontWeight: FontWeight.w600,
                           );
                           String text;
@@ -110,7 +110,7 @@ class ChartsSection extends StatelessWidget {
                     BarChartGroupData(
                       x: 0,
                       barRods: [
-                        BarChartRodData(toY: 5, color: PactaFlowColors.primary),
+                        BarChartRodData(toY: 5, color: VeraProbColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),
@@ -119,7 +119,7 @@ class ChartsSection extends StatelessWidget {
                       barRods: [
                         BarChartRodData(
                           toY: 12,
-                          color: PactaFlowColors.primary,
+                          color: VeraProbColors.primary,
                         ),
                       ],
                       showingTooltipIndicators: [0],
@@ -129,7 +129,7 @@ class ChartsSection extends StatelessWidget {
                       barRods: [
                         BarChartRodData(
                           toY: 19,
-                          color: PactaFlowColors.primary,
+                          color: VeraProbColors.primary,
                         ),
                       ],
                       showingTooltipIndicators: [0],
@@ -139,7 +139,7 @@ class ChartsSection extends StatelessWidget {
                       barRods: [
                         BarChartRodData(
                           toY: 15,
-                          color: PactaFlowColors.primary,
+                          color: VeraProbColors.primary,
                         ),
                       ],
                       showingTooltipIndicators: [0],

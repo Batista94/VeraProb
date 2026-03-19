@@ -1,6 +1,6 @@
 import 'user_role.dart';
 
-/// Granular permissions for the PactaFlow operational environment.
+/// Granular permissions for the veraprob operational environment.
 enum UserPermission {
   canEditSlaRules,
   canInviteUsers,

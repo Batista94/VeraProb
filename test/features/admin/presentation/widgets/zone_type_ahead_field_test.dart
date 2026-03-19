@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
-import 'package:pactaflow/features/admin/presentation/widgets/zone_type_ahead_field.dart';
-import 'package:pactaflow/state/providers/operational_zone_providers.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/features/admin/presentation/widgets/zone_type_ahead_field.dart';
+import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
 
 // ── Shared fixtures ───────────────────────────────────────────
 

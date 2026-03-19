@@ -38,7 +38,7 @@ class AuthorizationContext extends Equatable {
   }
 }
 
-/// The Ultimate Forensic Asset in PactaFlow Enterprise.
+/// The Ultimate Forensic Asset in veraprob Enterprise.
 ///
 /// Represents the Immutable historical fact that an Actor attempted an Action
 /// against a Target, and the Authority System either Approved or Denied it.

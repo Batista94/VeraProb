@@ -1,4 +1,4 @@
-// PactaFlow — Smoke Tests: Pipeline B2B + JSONB + Telemetria (Smokes 1–3)
+// veraprob — Smoke Tests: Pipeline B2B + JSONB + Telemetria (Smokes 1–3)
 //
 // Requer Supabase (local ou cloud). Pulados automaticamente sem credenciais.
 //
@@ -27,43 +27,43 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 // Domain
-import 'package:pactaflow/core/time/brazil_time.dart';
-import 'package:pactaflow/domain/enums/connectivity_state.dart';
-import 'package:pactaflow/domain/enums/motion_state.dart';
-import 'package:pactaflow/domain/entities/vehicle_operational_state.dart';
-import 'package:pactaflow/domain/shared/money.dart';
-import 'package:pactaflow/domain/sla_audit/contract.dart';
-import 'package:pactaflow/domain/sla_audit/contract_repository.dart';
-import 'package:pactaflow/domain/sla_audit/contract_status.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_execution_state.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_rule.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_rule_repository.dart';
-import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
-import 'package:pactaflow/domain/sla_audit/shift_pattern.dart';
-import 'package:pactaflow/domain/sla_audit/sla_penalties.dart';
-import 'package:pactaflow/domain/sla_audit/domain_exception.dart';
-import 'package:pactaflow/domain/sla_audit/sla_template.dart';
-import 'package:pactaflow/domain/sla_audit/vehicle_category.dart';
+import 'package:veraprob/core/time/brazil_time.dart';
+import 'package:veraprob/domain/enums/connectivity_state.dart';
+import 'package:veraprob/domain/enums/motion_state.dart';
+import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contract.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
+import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/sla_template.dart';
+import 'package:veraprob/domain/sla_audit/vehicle_category.dart';
 
 // Application
-import 'package:pactaflow/application/sla_audit/clone_contract_command.dart';
-import 'package:pactaflow/application/sla_audit/clone_contract_handler.dart';
-import 'package:pactaflow/application/sla_audit/contractual_evaluation_engine.dart';
-import 'package:pactaflow/application/sla_audit/create_contract_command.dart';
-import 'package:pactaflow/application/sla_audit/create_contract_handler.dart';
-import 'package:pactaflow/application/sla_audit/declare_contractual_plan_command.dart';
-import 'package:pactaflow/application/sla_audit/declare_contractual_plan_handler.dart';
-import 'package:pactaflow/domain/sla_audit/operational_zone_repository.dart';
-import 'package:pactaflow/domain/sla_audit/operational_zone.dart';
-import 'package:pactaflow/infrastructure/admin/in_memory_active_vehicle_repository.dart';
+import 'package:veraprob/application/sla_audit/clone_contract_command.dart';
+import 'package:veraprob/application/sla_audit/clone_contract_handler.dart';
+import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
+import 'package:veraprob/application/sla_audit/create_contract_command.dart';
+import 'package:veraprob/application/sla_audit/create_contract_handler.dart';
+import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
+import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repository.dart';
 
 // Infrastructure
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/postgres_contract_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/postgres_sla_template_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contract_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_template_repository.dart';
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────
 

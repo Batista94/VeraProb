@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/application/sla_audit/projections/sla_execution_summary.dart';
-import 'package:pactaflow/domain/shared/money.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
   group('SlaExecutionSummary', () {

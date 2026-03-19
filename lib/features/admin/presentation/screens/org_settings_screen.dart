@@ -47,20 +47,20 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                 const Icon(
                   Icons.business_outlined,
                   size: 28,
-                  color: PactaFlowColors.primary,
+                  color: VeraProbColors.primary,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Configurações da Organização',
-                  style: PactaFlowTypography.sectionTitle,
+                  style: VeraProbTypography.sectionTitle,
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               'Gerencie o perfil público, fuso horário e moeda padrão da sua empresa.',
-              style: PactaFlowTypography.bodyMedium.copyWith(
-                color: PactaFlowColors.textSecondary,
+              style: VeraProbTypography.bodyMedium.copyWith(
+                color: VeraProbColors.textSecondary,
               ),
             ),
             const SizedBox(height: 32),
@@ -70,7 +70,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                 error: (e, _) => Center(
                   child: Text(
                     'Erro ao carregar configurações: $e',
-                    style: const TextStyle(color: PactaFlowColors.error),
+                    style: const TextStyle(color: VeraProbColors.error),
                   ),
                 ),
                 data: (org) {
@@ -196,7 +196,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Configurações salvas com sucesso!'),
-            backgroundColor: PactaFlowColors.success,
+            backgroundColor: VeraProbColors.success,
           ),
         );
       }
@@ -205,7 +205,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao salvar: $e'),
-            backgroundColor: PactaFlowColors.error,
+            backgroundColor: VeraProbColors.error,
           ),
         );
       }

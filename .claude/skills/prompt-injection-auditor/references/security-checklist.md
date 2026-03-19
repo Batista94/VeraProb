@@ -23,7 +23,7 @@ Baseado no AI Risk Management Framework do NIST.
 - [ ] MEASURE-1.4: A precisão da detecção de injection é avaliada (Falsos Negativos)?
 - [ ] MEASURE-1.5: O sistema é testado contra payloads codificados (Base64/Hex)?
 
-## 4. PACTAFLOW DOMAIN COHERENCE (PF-DOM)
+## 4. VeraProb DOMAIN COHERENCE (PF-DOM)
 - [ ] PF-DOM-1.1: A skill respeita a INV-1 (Imutabilidade)? Nenhum comando de mutação detectado nas tabelas de fatos.
 - [ ] PF-DOM-1.2: A skill usa o `EvaluationEngine` como autoridade única (INV-5)?
 - [ ] PF-DOM-1.3: Existe sanitização explícita para dados vindos de `firecrawl` ou fontes externas?

@@ -11,15 +11,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:pactaflow/application/sla_audit/projections/contract_summary_view.dart';
-import 'package:pactaflow/domain/enums/user_role.dart';
-import 'package:pactaflow/features/admin/presentation/screens/contract_detail_screen.dart';
-import 'package:pactaflow/features/admin/presentation/screens/contracts_screen.dart';
-import 'package:pactaflow/features/shared/providers.dart';
-import 'package:pactaflow/infrastructure/persistence/persistence_mode.dart';
-import 'package:pactaflow/infrastructure/persistence/persistence_provider.dart';
-import 'package:pactaflow/state/providers/auth_providers.dart';
-import 'package:pactaflow/state/providers/contract_providers.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/features/admin/presentation/screens/contract_detail_screen.dart';
+import 'package:veraprob/features/admin/presentation/screens/contracts_screen.dart';
+import 'package:veraprob/features/shared/providers.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
 
 void main() {
   late SharedPreferences prefs;

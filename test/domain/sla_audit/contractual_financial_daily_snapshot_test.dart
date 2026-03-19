@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/domain/shared/money.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_financial_daily_snapshot.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
 
 void main() {
   group('ContractualFinancialDailySnapshot', () {

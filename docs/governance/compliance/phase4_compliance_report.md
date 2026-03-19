@@ -1,7 +1,7 @@
 # Phase 4 Compliance Report — Operational Alerts
 
 **Date:** 2026-03-05  
-**Engine Version:** `PactaFlow-core_v3`  
+**Engine Version:** `VeraProb-core_v3`  
 **Phase Status:** ✅ Operationally Complete
 
 ---

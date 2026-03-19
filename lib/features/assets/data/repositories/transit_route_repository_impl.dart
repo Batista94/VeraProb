@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:pactaflow/domain/entities/transit_route.dart';
+import 'package:veraprob/domain/entities/transit_route.dart';
 import 'transit_route_repository.dart';
 
 class TransitRouteRepositoryImpl implements ITransitRouteRepository {

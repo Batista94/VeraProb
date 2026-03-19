@@ -1,20 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pactaflow/domain/entities/vehicle_operational_state.dart';
-import 'package:pactaflow/domain/enums/motion_state.dart';
-import 'package:pactaflow/domain/enums/connectivity_state.dart';
-import 'package:pactaflow/domain/sla_audit/contractual_execution_state.dart';
-import 'package:pactaflow/domain/sla_audit/execution_status.dart';
-import 'package:pactaflow/application/sla_audit/contractual_evaluation_engine.dart';
-import 'package:pactaflow/application/sla_audit/contractual_evaluation_subscriber.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
-import 'package:pactaflow/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
-import 'package:pactaflow/domain/sla_audit/plan_declaration.dart';
-import 'package:pactaflow/domain/sla_audit/rule_snapshot.dart';
-import 'package:pactaflow/domain/shared/money.dart';
+import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
+import 'package:veraprob/domain/enums/motion_state.dart';
+import 'package:veraprob/domain/enums/connectivity_state.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
+import 'package:veraprob/application/sla_audit/contractual_evaluation_subscriber.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
   // ── Shared fixtures ──────────────────────────────────────

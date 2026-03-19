@@ -1,5 +1,5 @@
-name: pactaflow
-description: "Automated SLA Compliance & Financial Protection Platform"
+name: veraprob
+description: "VeraProb: Veracity & Probative SLA Audit Engine"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -60,5 +60,5 @@ flutter:
 sentry:
   upload_debug_symbols: true
   upload_source_maps: true
-  project: flutter
-  org: pactaflow
+  project: veraprob
+  org: veraprob

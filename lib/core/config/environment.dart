@@ -1,4 +1,4 @@
-/// Defines the runtime environment for the PactaFlow application.
+/// Defines the runtime environment for the veraprob application.
 ///
 /// Values are injected at compile time via `--dart-define` in CI/CD pipelines,
 /// or read from a local `.env` file during development.

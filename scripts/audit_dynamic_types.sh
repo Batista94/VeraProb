@@ -95,7 +95,7 @@ TOTAL=$((DOMAIN_COUNT + INFRA_COUNT + PRES_COUNT + OTHER_COUNT))
 # ── 4. Write report ───────────────────────────────────────────────────────────
 {
   echo "============================================================"
-  echo " PactaFlow — Phase 8.5 Strict Type-Safety Audit Report"
+  echo " veraprob — Phase 8.5 Strict Type-Safety Audit Report"
   echo " Generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
   echo "============================================================"
   echo ""

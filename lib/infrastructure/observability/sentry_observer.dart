@@ -1,4 +1,4 @@
-/// Sentry integration for PactaFlow — 8.4 Observabilidade
+/// Sentry integration for veraprob — 8.4 Observabilidade
 ///
 /// Provides:
 /// - [SentryRiverpodObserver]: catches AsyncError from Riverpod providers
@@ -79,7 +79,7 @@ Future<bool> initSentry({
       options.attachScreenshot = false; // Never capture screenshots — privacy
       options.sendDefaultPii = false;   // Never send PII automatically
       options.debug = kDebugMode;
-      options.release = 'pactaflow@${const String.fromEnvironment('APP_VERSION', defaultValue: '1.0.0')}+${EnvironmentConfig.sentryEnvironment}';
+      options.release = 'veraprob@${const String.fromEnvironment('APP_VERSION', defaultValue: '1.0.0')}+${EnvironmentConfig.sentryEnvironment}';
     },
     appRunner: appRunner,
   );

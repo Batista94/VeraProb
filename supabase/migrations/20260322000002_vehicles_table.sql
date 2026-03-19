@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Bloco 8: Vehicles Asset Table
+-- veraprob — Bloco 8: Vehicles Asset Table
 -- Creates the vehicles table with full multi-tenant isolation.
 -- Note: This is the ASSET table for fleet management CRUD.
 -- It is distinct from telemetry/position tracking.

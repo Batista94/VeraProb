@@ -28,8 +28,8 @@
 // Env vars necessários:
 //   SUPABASE_URL      — ex: http://localhost:54321
 //   SUPABASE_ANON_KEY — anon key (mesmo para os dois orgs; autenticação via Bearer)
-//   ORG_A_JWT         — access_token do admin-a@pactaflow.dev (injeta org_id no JWT)
-//   ORG_B_JWT         — access_token do admin-b@pactaflow.dev
+//   ORG_A_JWT         — access_token do admin-a@veraprob.dev (injeta org_id no JWT)
+//   ORG_B_JWT         — access_token do admin-b@veraprob.dev
 //   ORG_A_ID          — UUID da Org A (seed: 00000000-0000-0000-0000-000000000001)
 //   ORG_B_ID          — UUID da Org B (seed: 00000000-0000-0000-0000-000000000002)
 //   CONTRACT_A_ID     — UUID do contrato Org A (seed: 00000000-0000-0000-0000-ca0000000001)
@@ -376,7 +376,7 @@ export function handleSummary(data) {
 
   const report = [
     '============================================================',
-    ' PactaFlow Phase 8.7 — Multi-Tenant Isolation Test Summary',
+    ' veraprob Phase 8.7 — Multi-Tenant Isolation Test Summary',
     '============================================================',
     '',
     ' INV-6 + INV-10: RLS ISOLATION RESULT',

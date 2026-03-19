@@ -1,5 +1,5 @@
 -- ============================================================
--- PactaFlow — Bloco 8: Asset Organization Isolation
+-- veraprob — Bloco 8: Asset Organization Isolation
 -- Adds organization_id to drivers, routes, trips_audit
 -- Replaces permissive USING (TRUE) policies with canonical
 -- tenant isolation using (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
