@@ -75,7 +75,7 @@ Future<bool> initSentry({
       options.dsn = EnvironmentConfig.sentryDsn;
       options.environment = EnvironmentConfig.sentryEnvironment;
       options.tracesSampleRate = EnvironmentConfig.isProd ? 0.2 : 1.0;
-      options.profilesSampleRate = EnvironmentConfig.isProd ? 0.1 : 0.5;
+      options.profilesSampleRate = EnvironmentConfig.isProd ? 0.1 : 0.5; // ignore: experimental_member_use
       options.attachScreenshot = false; // Never capture screenshots — privacy
       options.sendDefaultPii = false;   // Never send PII automatically
       options.debug = kDebugMode;
