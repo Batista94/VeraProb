@@ -257,6 +257,94 @@ Buffer to limit: 60 - 40 = 20 connections (safe)
 
 ---
 
-## 8. Next Phase
+## 8. Phase 8.7 — Multi-Tenant Isolation Stress Test
 
-**Phase 8.7 (not yet authorized):** Multi-tenant isolation stress test — verify RLS policies add < 5ms overhead vs. no-RLS baseline, and that no cross-tenant data leaks under concurrent mixed-org load.
+**Status:** Script ready — awaiting execution
+**Script:** `scripts/load_test/k6_multi_tenant_isolation.js`
+**Invariants:** INV-6 (MULTI-TENANT + RLS), INV-10 (RLS TENANT CLAIM)
+
+### 8.1 Test Design
+
+**Method for RLS overhead measurement (Challenger ruling):**
+`SET row_security = off` requires superuser — unavailable via Supabase REST API.
+Instead: measure latency delta between same-org query (RLS matches, returns data) and
+cross-org probe (RLS filters to `[]` — maximum policy evaluation cost with zero rows returned).
+Delta = RLS predicate overhead proxy. Target: < 5ms.
+
+**Scenarios:**
+
+| Scenario | VUs | Duration | What it tests |
+|----------|-----|----------|---------------|
+| `baseline_read` | 50 | 3 min | Org A reads own ledger — establishes SELECT p95 baseline |
+| `cross_tenant_probe` | 10 | 3 min | Org B JWT probes Org A data — must get `[]` every time |
+| `mixed_org_write` | 500 | 2 min | 250 Org A + 250 Org B concurrent writes — isolation under stress |
+| `isolation_verify` | 2 | ~60s | Each org reads back own data, confirms no foreign-org rows present |
+
+**Abort-on-fail thresholds (hard gates):**
+- `cross_tenant_leak_count == 0` — any leak aborts the test immediately
+- `cross_tenant_returns_empty rate == 1` — 100% of probes must return `[]`
+
+### 8.2 Results
+
+> **Populate this section after running:**
+> ```bash
+> export SUPABASE_URL="https://<project>.supabase.co"
+> export ORG_A_JWT="<jwt-with-app_metadata.org_id=ORG_A>"
+> export ORG_B_JWT="<jwt-with-app_metadata.org_id=ORG_B>"
+> export ORG_A_ID="<org-a-uuid>"
+> export ORG_B_ID="<org-b-uuid>"
+> export CONTRACT_A_ID="<contract-uuid-org-a>"
+> export CONTRACT_B_ID="<contract-uuid-org-b>"
+> k6 run scripts/load_test/k6_multi_tenant_isolation.js
+> ```
+
+| Metric | Result | Target | Pass? |
+|--------|--------|--------|-------|
+| Cross-tenant leak count | — | 0 (hard stop) | — |
+| Cross-tenant queries returning `[]` | —% | 100% | — |
+| RLS overhead delta (cross p95 − baseline p95) | — ms | < 5ms | — |
+| Baseline SELECT p95 (same-org) | — ms | < 500ms | — |
+| Cross-tenant SELECT p95 | — ms | < 505ms | — |
+| Mixed-org write p95 | — ms | < 200ms | — |
+
+### 8.3 Post-Run Verification SQL
+
+Run in Supabase SQL Editor after the test to confirm no physical data leakage:
+
+```sql
+-- A. Rows written as "Org A" must never appear under another org_id
+SELECT COUNT(*) AS leak_count
+FROM sla_audit_ledger_v2
+WHERE set_id LIKE 'mixed-write-A-%'
+  AND organization_id != '<ORG_A_ID>';
+-- Expected: 0
+
+-- B. Rows written as "Org B" must never appear under another org_id
+SELECT COUNT(*) AS leak_count
+FROM sla_audit_ledger_v2
+WHERE set_id LIKE 'mixed-write-B-%'
+  AND organization_id != '<ORG_B_ID>';
+-- Expected: 0
+
+-- C. RLS overhead via EXPLAIN ANALYZE (run outside load test)
+EXPLAIN ANALYZE
+SELECT id FROM sla_audit_ledger_v2
+WHERE organization_id = '<ORG_A_ID>'
+ORDER BY occurred_at_utc DESC LIMIT 50;
+-- Look for: Index Scan using idx_sla_ledger_v2_org_entity_time
+-- Actual time should be < 5ms on a non-empty table
+```
+
+### 8.4 Phase 8.7 Definition of Done
+
+- [ ] `k6 run scripts/load_test/k6_multi_tenant_isolation.js` executed — results pasted in Section 8.2
+- [ ] `cross_tenant_leak_count == 0` confirmed
+- [ ] RLS overhead delta < 5ms confirmed
+- [ ] Post-run verification SQL (Section 8.3) shows 0 rows for A and B
+- [ ] Results saved to `docs/governance/k6_isolation_results.json`
+
+---
+
+## 9. Next Phase
+
+**Phase 8.8 (not yet authorized):** Shadow Mode stress test — run historical data through EvaluationEngine for ROI simulation under tenant load.

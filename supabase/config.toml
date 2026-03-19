@@ -1,0 +1,85 @@
+# ============================================================================
+# PactaFlow — Supabase Local Development Configuration
+# ============================================================================
+# This file is committed to git so all team members share the same local setup.
+# Ports must stay fixed so CI/CD and k6 scripts can use hard-coded URLs.
+
+project_id = "PactaFlow"
+
+[api]
+enabled     = true
+port        = 54321
+schemas     = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows    = 1000
+
+[api.tls]
+enabled = false
+
+[db]
+port         = 54322
+shadow_port  = 54320
+major_version = 15
+
+[db.pooler]
+enabled          = false
+port             = 54329
+pool_mode        = "transaction"
+default_pool_size = 20
+max_client_conn  = 100
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port    = 54323
+api_url = "http://127.0.0.1"
+openai_api_key = "env(OPENAI_API_KEY)"
+
+[inbucket]
+enabled   = true
+port      = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled          = true
+file_size_limit  = "50MiB"
+
+[auth]
+enabled                      = true
+site_url                     = "http://127.0.0.1:3000"
+additional_redirect_urls     = ["https://127.0.0.1:3000"]
+jwt_expiry                   = 3600
+enable_refresh_token_rotation = true
+enable_signup                = true
+enable_anonymous_sign_ins    = false
+enable_manual_linking        = false
+minimum_password_length      = 6
+
+[auth.email]
+enable_signup        = true
+double_confirm_changes = true
+enable_confirmations = false
+secure_password_change = false
+max_frequency        = "1s"
+otp_length           = 6
+otp_expiry           = 3600
+
+# ── CRITICAL: JWT Hook — injects org_id + role into app_metadata on every sign-in ──
+# Without this, RLS policies that read auth.jwt()->'app_metadata'->>'org_id'
+# will return NULL and block ALL queries (INV-6, INV-10).
+[auth.hook.custom_access_token]
+enabled = true
+uri     = "pg-functions://postgres/public/custom_access_token_hook"
+
+[edge_runtime]
+enabled    = true
+policy     = "oneshot"
+inspector_port = 8083
+
+[analytics]
+enabled          = false
+port             = 54327
+backend          = "postgres"
