@@ -9,8 +9,8 @@ The CORE engine is industry-agnostic (MVP: Corporate Charter/Shuttle — Fretame
 
 **Pipeline:** Ingestion (Adapters) → Normalization (Canonical Fact) → Timeline Reconstruction → EvaluationEngine → ImmutableLedger → FinancialSnapshots → QueryServices → OCC
 
-**Current State:** Phase 6.5 (Operational Resilience & Ingestion Architecture) — **CONCLUÍDA**. 481 tests passing. Anti-Corruption Edge, Chronological Determinism, Asset State Machine, Kinematic Noise Filter.
-**Next Focus:** Phase 7.1 (Evidence & Audit Exports — Burden of Proof).
+**Current State:** Phase 8.8 (Operational Hardening & Telemetry Integrity) — **CONCLUÍDA**. 568 tests passing. CI/CD, Observability, Performance (1k VUs), Disaster Recovery, and Anti-Spoofing (INV-21). ✅
+**Next Focus:** Trilha D — Lançamento (Go-to-market, Documentação e Piloto Beta).
 
 ---
 
@@ -95,8 +95,8 @@ Invocation is YOUR responsibility. Always name the persona explicitly.
 | Rule Engine logic, GPS/Time processing, SLA math | `senior_engineer` + `iot-chaos-simulator` |
 | Ledger entries, RLS, Financial audits, Evidence generation | `qa_security` + `hostile-defense-attorney` |
 | API Ingestion, Edge Functions, High-throughput DB | `architect` + `ingestion-streaming-architect` |
-| Flutter widget, Riverpod provider, SQL migration | `senior_engineer` |
-| OCC screen, dispatcher UX, B2B vocabulary | `ux_operations` |
+| Flutter widget, Riverpod provider, SQL migration | `senior_engineer` + `flutter-building-layouts` |
+| Design System, Material 3, a11y, dispatcher UX | `ux_operations` + `flutter-theming-apps` + `wcag-audit-patterns` |
 | Pricing models, ROI, Shadow Mode, Capital recovery | `business_maverick` |
 | Invariant change or new architectural pattern | `architect` + `qa_security` in debate |
 | Feature crossing domain + UI + security + business value | Full council session (all 5) |

@@ -21,7 +21,7 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# Secrets & Environment (OWASP A02:2025 Mitigation)
+# Secrets & Environment (OWASP A01:2025/INV-2 Mitigation)
 .env*
 .env
 .dev.env
@@ -30,6 +30,18 @@ app.*.map.json
 *.keystore
 *.key
 *.pem
+sentry.properties
+sentry-wizard*
+
+# Logs & Temporary Files
+*.log
+test_output.txt
+*.exe
+*.bak
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
 
 # IDEs
 .idea/
@@ -37,16 +49,9 @@ app.*.map.json
 .vscode/settings.json
 *.iml
 
-# OS related
-.DS_Store
-Thumbs.db
-
-# Temporary Test Artifacts
-test_output.txt
-*.log
-
-# AI/Assistant Local Settings
-.claude/
-
-
-sentry.properties
+# Environment & Governance (Council & Skills)
+# We ignore assistant local settings, but KEEP specialized skills.
+.claude/settings.*.json
+.claude/logs/
+.claude/*.log
+!.claude/skills/
