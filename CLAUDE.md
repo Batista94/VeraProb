@@ -4,7 +4,7 @@ PactaFlow is an **Automated SLA Compliance & Financial Protection Platform**.
 It acts as an impartial, automated Judge: ingests real-world telemetry, evaluates against contractual rules, and generates immutable financial verdicts.
 The CORE engine is industry-agnostic (MVP: Corporate Charter/Shuttle — Fretamento).
 
-**Stack:** Flutter Web · Supabase (PostgreSQL + RLS) · Riverpod
+**Stack:** Flutter Web (>= 3.41.5) · Supabase (PostgreSQL + RLS) · Riverpod
 > This is an event-driven SLA Compliance platform — NOT a CRUD system.
 
 **Pipeline:** Ingestion (Adapters) → Normalization (Canonical Fact) → Timeline Reconstruction → EvaluationEngine → ImmutableLedger → FinancialSnapshots → QueryServices → OCC
