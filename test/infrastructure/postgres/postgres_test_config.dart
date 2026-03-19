@@ -1,14 +1,20 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 
 /// Configuração local para os testes de integração do Postgres.
 /// Utiliza as credenciais padrão do `supabase start` rodando na porta 54321.
 class PostgresTestConfig {
   static const String supabaseUrl = 'http://127.0.0.1:54321';
-  // Chave anônima padrão do ambiente local do Supabase CLI
+  // Service role key — bypassa RLS para os testes de integração.
+  // NUNCA usar em produção ou expor ao cliente.
   static const String supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlZmF1bHQiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDI3NTIwMCwiZXhwIjoxOTU1ODUxMjAwfQ.B_L-kX1nEx0xGz-yU2Zszf3t60h0yqO0uX7oH8o--Jk';
+      'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz';
+
+  /// UUID sentinela para testes de integração. Identificador estável para
+  /// evitar colisões entre runs sem precisar de fixture de organização real.
+  static const String testOrgId = '00000000-0000-0000-0000-000000000001';
 
   static Future<SupabaseClient> createClient() async {
     // Mocking SharedPreferences to avoid MissingPluginException in unit tests
@@ -20,6 +26,46 @@ class PostgresTestConfig {
       anonKey: supabaseAnonKey,
     );
     return Supabase.instance.client;
+  }
+
+  /// Insere os pré-requisitos para criar um [ContractualExecutionState]:
+  /// plan_declaration + contractual_service_execution com o [setId] e [contractId]
+  /// fornecidos. Usa service_role, portanto bypassa RLS.
+  static Future<void> seedServiceExecution(
+    SupabaseClient client, {
+    required String setId,
+    required String contractId,
+  }) async {
+    const uuid = Uuid();
+    final planId = uuid.v4();
+
+    await client.from('plan_declarations').insert({
+      'id': planId,
+      'contract_id': contractId,
+      'organization_id': testOrgId,
+      'declared_at_utc': DateTime.now().toUtc().toIso8601String(),
+      'declared_by_user_id': 'test-seed-user',
+      'plan_version': 1,
+      'original_file_hash': 'test-hash-$setId',
+    });
+
+    await client.from('contractual_service_executions').insert({
+      'set_id': setId,
+      'plan_declaration_id': planId,
+      'organization_id': testOrgId,
+      'scheduled_start_time_utc':
+          DateTime.now().toUtc().subtract(const Duration(minutes: 15)).toIso8601String(),
+      'scheduled_end_time_utc':
+          DateTime.now().toUtc().add(const Duration(hours: 1)).toIso8601String(),
+      'start_latitude': -23.5505,
+      'start_longitude': -46.6333,
+      'start_radius_meters': 50,
+      'end_latitude': -23.5506,
+      'end_longitude': -46.6334,
+      'end_radius_meters': 50,
+      'contractual_value_cents': 150000,
+      'no_show_penalty_multiplier': 1.5,
+    });
   }
 
   /// Verifica se o Supabase local está rodando (usado para skip automático de testes)
