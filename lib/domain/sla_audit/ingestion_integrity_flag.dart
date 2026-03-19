@@ -31,4 +31,12 @@ enum IngestionIntegrityFlag {
   /// GPS accuracy radius exceeds the configured maximum (default: 100 m).
   /// Position is too uncertain to anchor a geofence evaluation.
   lowAccuracy,
+
+  /// Algorithmic detection of intentional GPS spoofing or Fake GPS.
+  /// Fact is stored but excluded from Engine evaluation (INV-21).
+  suspectedSpoofing,
+
+  /// Manual confirmation of spoofing by an authorized auditor.
+  /// Fact is stored but permanently excluded from Engine.
+  confirmedSpoofing,
 }

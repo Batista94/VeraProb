@@ -42,7 +42,7 @@
 #### [x] 8.7 — Disaster Recovery ✅
 - Runbook de restore e testes de backup (Supabase PITR).
 
-#### [ ] 8.8 — Auditoria de Integridade de Telemetria (Anti-Spoofing)
+- [x] **8.8 — Auditoria de Integridade de Telemetria (Anti-Spoofing)** (COMPLETED 2026-03-19)
 - Detecção de Fake GPS e anomalias cinemáticas.
 
 ---

@@ -7,6 +7,9 @@ import '../../domain/sla_audit/asset_status.dart';
 import '../../domain/sla_audit/asset_status_repository.dart';
 import '../../domain/sla_audit/canonical_fact.dart';
 import '../../domain/sla_audit/ingestion_integrity_flag.dart';
+import '../../domain/sla_audit/spoofing_audit_entry.dart';
+import '../../domain/sla_audit/spoofing_audit_repository.dart';
+import '../../domain/sla_audit/spoofing_detector.dart';
 import 'contractual_evaluation_engine.dart';
 
 /// Result of a [TelemetryIngestionPipeline.process] call.
@@ -32,6 +35,10 @@ class IngestionPipelineResult {
   /// High counts indicate network/hardware latency issues worth investigating.
   final int lateArrivalCount;
 
+  /// Facts flagged as [IngestionIntegrityFlag.suspectedSpoofing].
+  /// These are excluded from Engine evaluation until manual review (INV-21).
+  final int suspectedSpoofingCount;
+
   /// Asset IDs for which at least one late-arrival fact was processed.
   /// Used by downstream services to flag SETs for retroactive review (Phase 7.5.1).
   final List<String> lateArrivalAssetIds;
@@ -42,6 +49,7 @@ class IngestionPipelineResult {
     required this.skippedByKinematicJump,
     required this.skippedByAssetStatus,
     required this.lateArrivalCount,
+    required this.suspectedSpoofingCount,
     required this.lateArrivalAssetIds,
   });
 
@@ -49,7 +57,8 @@ class IngestionPipelineResult {
       processed +
       skippedByIntegrityFlag +
       skippedByKinematicJump +
-      skippedByAssetStatus;
+      skippedByAssetStatus +
+      suspectedSpoofingCount;
 }
 
 /// Application service that bridges [CanonicalFact] records to the
@@ -75,6 +84,8 @@ class IngestionPipelineResult {
 class TelemetryIngestionPipeline {
   final ContractualEvaluationEngine _engine;
   final AssetStatusRepository? _assetStatusRepo;
+  final SpoofingDetector _spoofingDetector;
+  final SpoofingAuditRepository? _spoofingRepo;
 
   /// Maximum implied speed (km/h) allowed between consecutive facts.
   /// Facts that imply a higher speed are discarded as kinematic anomalies.
@@ -83,9 +94,13 @@ class TelemetryIngestionPipeline {
   TelemetryIngestionPipeline({
     required ContractualEvaluationEngine engine,
     AssetStatusRepository? assetStatusRepo,
+    SpoofingDetector spoofingDetector = const SpoofingDetector(),
+    SpoofingAuditRepository? spoofingRepo,
     this.maxImpliedSpeedKmh = 200.0,
   }) : _engine = engine,
-       _assetStatusRepo = assetStatusRepo;
+       _assetStatusRepo = assetStatusRepo,
+       _spoofingDetector = spoofingDetector,
+       _spoofingRepo = spoofingRepo;
 
   /// Processes a batch of [CanonicalFact] records for the given [organizationId].
   ///
@@ -104,9 +119,74 @@ class TelemetryIngestionPipeline {
     int skippedByIntegrityFlag = 0;
     int skippedByKinematicJump = 0;
     int skippedByAssetStatus = 0;
+    int suspectedSpoofingCount = 0;
     int processed = 0;
     int lateArrivalCount = 0;
     final Set<String> lateArrivalAssetIds = {};
+
+    // ── 8.8: Anti-Spoofing Detector (Step 0.5) ───────────────────────────────
+    // Fatos são agrupados por device e analisados antes do Engine (INV-21).
+    final Map<String, List<CanonicalFact>> deviceBatches = {};
+    for (final fact in sorted) {
+      final key = '${fact.organizationId}|${fact.deviceId}';
+      (deviceBatches[key] ??= []).add(fact);
+    }
+
+    // Map to track modified facts after spoofing detection
+    final List<CanonicalFact> analyzedFacts = [];
+
+    for (final entry in deviceBatches.entries) {
+      final keyParts = entry.key.split('|');
+      final orgId = keyParts[0];
+      final devId = keyParts[1];
+      final batch = entry.value;
+
+      final risk = _spoofingDetector.analyze(batch);
+
+      if (risk.isSuspected()) {
+        // Record the algorithmic detection in the audit log
+        if (_spoofingRepo != null) {
+          final audit = SpoofingAuditEntry.create(
+            organizationId: orgId,
+            deviceId: devId,
+            assetId: batch.first.assetId,
+            windowStart: batch.first.gpsTimestamp,
+            windowEnd: batch.last.gpsTimestamp,
+            riskScore: risk,
+            factsAnalyzed: batch.length,
+            factIds: batch.map((f) => f.id).toList(),
+          );
+          await _spoofingRepo.append(audit);
+        }
+
+        // Flag all facts in this suspicious batch (INV-21)
+        for (final fact in batch) {
+          analyzedFacts.add(
+            CanonicalFact.reconstitute(
+              id: fact.id,
+              organizationId: fact.organizationId,
+              rawPayloadId: fact.rawPayloadId,
+              assetId: fact.assetId,
+              deviceId: fact.deviceId,
+              sourceAdapter: fact.sourceAdapter,
+              receivedAtUtc: fact.receivedAtUtc,
+              gpsTimestamp: fact.gpsTimestamp,
+              lat: fact.lat,
+              lng: fact.lng,
+              speedCms: fact.speedCms,
+              headingDegrees: fact.headingDegrees,
+              accuracyMeters: fact.accuracyMeters,
+              integrityFlag: IngestionIntegrityFlag.suspectedSpoofing,
+            ),
+          );
+        }
+      } else {
+        analyzedFacts.addAll(batch);
+      }
+    }
+
+    // Re-sort to maintain global chronological order after processing by device
+    analyzedFacts.sort((a, b) => a.gpsTimestamp.compareTo(b.gpsTimestamp));
 
     // ── 6.5.4: Per-device state for sequential kinematic check ───────────────
     final Map<String, CanonicalFact> lastKnownFact = {};
@@ -114,8 +194,13 @@ class TelemetryIngestionPipeline {
     // ── Asset status cache (avoid repeated DB queries per fact) ──────────────
     final Map<String, AssetStatus> statusCache = {};
 
-    for (final fact in sorted) {
+    for (final fact in analyzedFacts) {
       // ── Step 1: Integrity flag filter (stored by Edge Function) ─────────────
+      if (fact.integrityFlag == IngestionIntegrityFlag.suspectedSpoofing ||
+          fact.integrityFlag == IngestionIntegrityFlag.confirmedSpoofing) {
+        suspectedSpoofingCount++;
+        continue;
+      }
       if (!fact.isEligibleForEvaluation) {
         skippedByIntegrityFlag++;
         continue;
@@ -194,6 +279,7 @@ class TelemetryIngestionPipeline {
       skippedByKinematicJump: skippedByKinematicJump,
       skippedByAssetStatus: skippedByAssetStatus,
       lateArrivalCount: lateArrivalCount,
+      suspectedSpoofingCount: suspectedSpoofingCount,
       lateArrivalAssetIds: lateArrivalAssetIds.toList(),
     );
   }
