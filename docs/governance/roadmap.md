@@ -12,7 +12,7 @@
 | Sprint 5.11 - 5.13 | **CONCLUÍDAS** — JIT Master Data, RLS, Teto Financeiro. ✅ |
 | Phase 6 & 6.5 | **CONCLUÍDAS** — Admin, RBAC, Operational Resilience. ✅ |
 | Phase 7 & 7.5 | **CONCLUÍDAS** — Audit Exports, Financial Defense. ✅ |
-| Bloco 8.1 - 8.5 | **CONCLUÍDOS** — UX Hard Gates, CI/CD, Env, Obs, Hardening. ✅ |
+| Bloco 8.1 - 8.6 | **CONCLUÍDOS** — UX, CI/CD, Env, Obs, Hardening, Performance. ✅ |
 | Banco de dev | Todas as migrations aplicadas — `20260325...` |
 
 ---
@@ -35,7 +35,7 @@
 - `strict-casts: true` e correção de tipos `dynamic`.
 - Field-level masking para PII e remoção de políticas Public Read remanescentes.
 
-#### [ ] 8.6 — Performance & Escala
+#### [x] 8.6 — Performance & Escala ✅
 - Load testing (1.000 veículos) e benchmark do Evaluation Engine.
 - Revisão de índices e avaliação de read replicas.
 
@@ -64,6 +64,7 @@
 
 ## Fases Concluídas (Histórico Resumido)
 
+- **Phase 8.6 — Performance & Escala** ✅: Benchmark de 1.000 VUs, scripts k6 de caos/estresse e otimização de índices.
 - **Phase 8.2 — CI/CD Pipeline** ✅: Workflows GitHub Actions (`ci.yml`, `deploy_staging.yml`, `deploy_prod.yml`) com gate humano em prod.
 - **Phase 8.5 — Segurança (Hardening Final)** ✅: `strict-casts: true`, correção de `dynamic` e PII masking em SQL.
 - **Phase 8.4 — Observabilidade** ✅: Integração Sentry e PostHog configurada para todos os ambientes.
@@ -82,7 +83,7 @@
 ─────────────────────────────────────────────────────
 [x] Phase 5, 6, 6.5, 7, 7.5 ✅
 ─────────────────────────────────────────────────────
-[x] Phase 8.1 - 8.5 COMPLETE ✅
+[x] Phase 8.1 - 8.6 COMPLETE ✅
 ─────────────────────────────────────────────────────
-[ ] Phase 8.6 - 8.8 PENDING
+[ ] Phase 8.7 - 8.8 PENDING
 ─────────────────────────────────────────────────────
