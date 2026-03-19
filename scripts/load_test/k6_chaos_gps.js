@@ -156,13 +156,13 @@ export function teleportationScenario() {
   const anchorPayload = JSON.stringify({
     organization_id: ORG_ID,
     type:            'GPS_ANCHOR',
-    set_id:          setId,
+    set_id:          assetId,
     contract_id:     CONTRACT_ID,
     plan_version:    1,
-    entity_id:       assetId,
     occurred_at_utc: timestampOffset(5),
     payload: {
       source:    'k6_chaos_teleport',
+      batch_id:  setId,
       lat:       BASE_LAT,
       lon:       BASE_LON,
       chaos_tag: 'ANCHOR',
@@ -181,10 +181,9 @@ export function teleportationScenario() {
   const teleportPayload = JSON.stringify({
     organization_id: ORG_ID,
     type:            'GPS_TELEPORT_CHAOS',   // Tagged — engine should flag/reject
-    set_id:          setId,
+    set_id:          assetId,
     contract_id:     CONTRACT_ID,
     plan_version:    1,
-    entity_id:       assetId,
     occurred_at_utc: timestampOffset(4),     // 1 second after anchor
     payload: {
       source:         'k6_chaos_teleport',
@@ -232,13 +231,13 @@ export function jitterScenario() {
     const payload = JSON.stringify({
       organization_id: ORG_ID,
       type:            'GPS_JITTER_CHAOS',
-      set_id:          setId,
+      set_id:          assetId,
       contract_id:     CONTRACT_ID,
       plan_version:    1,
-      entity_id:       assetId,
       occurred_at_utc: timestampOffset(60 - i * 6), // 60s → 6s ago
       payload: {
         source:     'k6_chaos_jitter',
+        batch_id:   setId,
         lat:        jitterLat,
         lon:        jitterLon,
         noise_m:    8,
@@ -265,7 +264,7 @@ export function jitterScenario() {
   // for this asset. This validates the noise filter output.
   const verifyUrl = `${REST_BASE}/sla_audit_ledger_v2` +
     `?organization_id=eq.${ORG_ID}` +
-    `&entity_id=eq.${assetId}` +
+    `&set_id=eq.${assetId}` +
     `&type=eq.SLA_VERDICT_DEPARTURE` +
     `&limit=1`;
 
@@ -313,7 +312,6 @@ export function outOfOrderScenario() {
       set_id:          setId,
       contract_id:     CONTRACT_ID,
       plan_version:    1,
-      entity_id:       assetId,
       occurred_at_utc: ts,
       payload: {
         source:      'k6_chaos_ooo',
@@ -345,7 +343,6 @@ export function outOfOrderScenario() {
   if (allOk) {
     const verifyUrl = `${REST_BASE}/sla_audit_ledger_v2` +
       `?organization_id=eq.${ORG_ID}` +
-      `&entity_id=eq.${assetId}` +
       `&set_id=eq.${setId}` +
       `&order=occurred_at_utc.asc` +
       `&select=occurred_at_utc,payload`;
@@ -400,13 +397,13 @@ export function handleSummary(data) {
     ' VERIFICATION SQL (run in Supabase SQL Editor):',
     '   -- Check for phantom breach verdicts from teleport events:',
     "   SELECT COUNT(*) FROM sla_audit_ledger_v2",
-    "   WHERE entity_id LIKE 'chaos-teleport-%'",
+    "   WHERE set_id LIKE 'chaos-teleport-%'",
     "   AND type = 'SLA_VERDICT_BREACH';",
     '   -- Expected: 0',
     '',
     '   -- Check for phantom departure verdicts from jitter:',
     "   SELECT COUNT(*) FROM sla_audit_ledger_v2",
-    "   WHERE entity_id LIKE 'chaos-jitter-%'",
+    "   WHERE set_id LIKE 'chaos-jitter-%'",
     "   AND type = 'SLA_VERDICT_DEPARTURE';",
     '   -- Expected: 0',
     '============================================================',

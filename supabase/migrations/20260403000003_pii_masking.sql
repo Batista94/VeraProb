@@ -121,11 +121,16 @@ SELECT
   id,
   organization_id,
   role,
-  status,
+  CASE
+    WHEN revoked_at_utc IS NOT NULL   THEN 'revoked'
+    WHEN accepted_at_utc IS NOT NULL  THEN 'accepted'
+    WHEN expires_at_utc < now()       THEN 'expired'
+    ELSE                                   'pending'
+  END AS status,
   created_at_utc,
   expires_at_utc,
   accepted_at_utc,
-  invited_by_user_id,
+  invited_by AS invited_by_user_id,
 
   -- email: full for TENANT_ADMIN; masked for all other roles
   CASE (auth.jwt() -> 'app_metadata' ->> 'role')

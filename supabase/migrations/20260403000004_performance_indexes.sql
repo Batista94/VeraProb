@@ -43,7 +43,7 @@
 --   (cost=0.29..8.31 rows=1 width=...) — ~220x improvement at 50K rows
 -- =============================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sla_ledger_contract_type_time
+CREATE INDEX IF NOT EXISTS idx_sla_ledger_contract_type_time
   ON public.sla_audit_ledger (contract_id, type, occurred_at_utc DESC);
 
 COMMENT ON INDEX public.idx_sla_ledger_contract_type_time IS
@@ -57,24 +57,27 @@ COMMENT ON INDEX public.idx_sla_ledger_contract_type_time IS
 -- Current indexes: (organization_id, timestamp DESC) and (organization_id, entity_id)
 -- These are created in 20260305171000_multi_tenancy_foundation.sql.
 --
--- Missing: For queries that filter by both org + entity + time range:
+-- Missing: For queries that filter by both org + set_id + time range:
 --   SELECT * FROM sla_audit_ledger_v2
---   WHERE organization_id = $1 AND entity_id = $2
---   ORDER BY timestamp DESC
+--   WHERE organization_id = $1 AND set_id = $2
+--   ORDER BY occurred_at_utc DESC
 --   LIMIT 50;
--- The existing (organization_id, entity_id) covers this, but adding timestamp
+-- The existing (organization_id, set_id) covers this, but adding occurred_at_utc
 -- as the 3rd column converts it from Index Scan → Index Only Scan.
+-- NOTE: entity_id was renamed to set_id in 20260310220000_schema_sync_dart_domain.sql
+--       timestamp was renamed to occurred_at_utc in the same migration.
 --
 -- NOTE: On HASH-partitioned tables, CREATE INDEX applies to ALL partitions.
 -- Each partition (p0–p3) will receive its own child index automatically.
 -- =============================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sla_ledger_v2_org_entity_time
-  ON public.sla_audit_ledger_v2 (organization_id, entity_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_sla_ledger_v2_org_entity_time
+  ON public.sla_audit_ledger_v2 (organization_id, set_id, occurred_at_utc DESC);
 
 COMMENT ON INDEX public.idx_sla_ledger_v2_org_entity_time IS
-  'Phase 8.6: Covers OCC timeline query: org + entity ordered by time. '
-  'Enables Index Only Scan (avoids heap fetch) for dashboard reads.';
+  'Phase 8.6: Covers OCC timeline query: org + set_id ordered by occurred_at_utc. '
+  'Enables Index Only Scan (avoids heap fetch) for dashboard reads. '
+  'Columns renamed from entity_id/timestamp in 20260310220000_schema_sync_dart_domain.';
 
 
 -- =============================================================================
@@ -92,7 +95,7 @@ COMMENT ON INDEX public.idx_sla_ledger_v2_org_entity_time IS
 -- contracts are rarely queried in the Engine hot path.
 -- =============================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_contracts_org_active_window
+CREATE INDEX IF NOT EXISTS idx_contracts_org_active_window
   ON public.contracts (organization_id, valid_from_utc, valid_until_utc)
   WHERE status = 'active';
 
@@ -113,9 +116,9 @@ COMMENT ON INDEX public.idx_contracts_org_active_window IS
 -- accepted/expired invitations are archival, not frequently queried.
 -- =============================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_invitations_org_pending
+CREATE INDEX IF NOT EXISTS idx_invitations_org_pending
   ON public.invitations (organization_id, created_at_utc DESC)
-  WHERE status = 'pending';
+  WHERE revoked_at_utc IS NULL AND accepted_at_utc IS NULL;
 
 COMMENT ON INDEX public.idx_invitations_org_pending IS
   'Phase 8.6: Partial index for admin invitation list (pending only). '
@@ -137,9 +140,9 @@ COMMENT ON INDEX public.idx_invitations_org_pending IS
 
 -- Drop the old single-column index before creating the composite
 -- (The composite is a strict superset — the old index is now redundant.)
-DROP INDEX CONCURRENTLY IF EXISTS idx_plan_declarations_contract_fk;
+DROP INDEX IF EXISTS idx_plan_declarations_contract_fk;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_plan_declarations_contract_version
+CREATE INDEX IF NOT EXISTS idx_plan_declarations_contract_version
   ON public.plan_declarations (contract_fk, plan_version DESC);
 
 COMMENT ON INDEX public.idx_plan_declarations_contract_version IS
@@ -163,7 +166,7 @@ COMMENT ON INDEX public.idx_plan_declarations_contract_version IS
 -- query more efficiently.
 -- =============================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_audit_packages_org_sealed_time
+CREATE INDEX IF NOT EXISTS idx_audit_packages_org_sealed_time
   ON public.audit_packages (organization_id, generated_at_utc DESC)
   WHERE status = 'sealed';
 
@@ -188,9 +191,9 @@ COMMENT ON INDEX public.idx_audit_packages_org_sealed_time IS
 --
 -- B. sla_audit_ledger_v2 OCC query:
 --    EXPLAIN ANALYZE
---    SELECT id, timestamp, type FROM sla_audit_ledger_v2
---    WHERE organization_id = '<your-org-uuid>' AND entity_id = 'asset-001'
---    ORDER BY timestamp DESC LIMIT 50;
+--    SELECT id, occurred_at_utc, type FROM sla_audit_ledger_v2
+--    WHERE organization_id = '<your-org-uuid>' AND set_id = 'asset-001'
+--    ORDER BY occurred_at_utc DESC LIMIT 50;
 --    → Expected: Index Only Scan using idx_sla_ledger_v2_org_entity_time
 --
 -- C. contracts active window:

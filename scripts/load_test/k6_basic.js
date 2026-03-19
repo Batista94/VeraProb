@@ -191,12 +191,12 @@ export function bulkFloodScenario() {
 
 // ── Scenario 3: Ledger Read (OCC Dashboard) ────────────────────────────────────
 // Simulates a dispatcher's OCC screen polling the ledger for a contract.
-// Tests the composite index: (organization_id, entity_id) on sla_audit_ledger_v2.
+// Tests the composite index: (organization_id, set_id) on sla_audit_ledger_v2.
 export function ledgerReadScenario() {
   group('occ_ledger_read', () => {
     const url = `${REST_BASE}/sla_audit_ledger_v2` +
       `?organization_id=eq.${ORG_ID}` +
-      `&order=timestamp.desc` +
+      `&order=occurred_at_utc.desc` +
       `&limit=50`;
 
     const res = http.get(url, {
