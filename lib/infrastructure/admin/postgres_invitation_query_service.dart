@@ -63,8 +63,12 @@ class PostgresInvitationQueryService implements InvitationRepository {
         return UserRole.admin;
       case 'OPERATOR':
         return UserRole.operator;
-      default:
+      case 'AUDITOR':
         return UserRole.auditor;
+      case 'CONTRACTOR_VIEWER':
+        return UserRole.contractorViewer;
+      default:
+        throw ArgumentError('Unknown DB role: $dbRole');
     }
   }
 }

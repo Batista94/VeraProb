@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../state/providers/admin_providers.dart';
 import '../../../../application/admin/accept_invitation_command.dart';
+import '../../../../domain/enums/user_role.dart';
 import '../lock_screen.dart';
 
 /// Public screen for accepting a pending invitation.
@@ -63,10 +64,12 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
       if (invitation == null) {
         setState(() => _tokenValid = false);
       } else {
-        final roleLabel = switch (invitation.role.name) {
-          'admin' => 'Administrador',
-          'operator' => 'Operador',
-          _ => 'Auditor',
+        final roleLabel = switch (invitation.role) {
+          UserRole.admin => 'Administrador',
+          UserRole.operator => 'Operador',
+          UserRole.auditor => 'Auditor',
+          UserRole.contractorViewer => 'Visualizador Contratante',
+          UserRole.superAdmin => 'Super Administrador',
         };
         setState(() {
           _tokenValid = true;

@@ -68,7 +68,10 @@
       "Bash(cp \"C:\\\\Projects\\\\VeraProb\\\\android\\\\app\\\\src\\\\main\\\\kotlin\\\\com\\\\busflow\\\\busflow\\\\MainActivity.kt\" \"C:\\\\Projects\\\\VeraProb\\\\android\\\\app\\\\src\\\\main\\\\kotlin\\\\com\\\\veraprob\\\\veraprob\\\\MainActivity.kt\")",
       "Bash(rm \"C:\\\\Projects\\\\VeraProb\\\\android\\\\app\\\\src\\\\main\\\\kotlin\\\\com\\\\busflow\\\\busflow\\\\MainActivity.kt\")",
       "Bash(rmdir \"C:\\\\Projects\\\\VeraProb\\\\android\\\\app\\\\src\\\\main\\\\kotlin\\\\com\\\\busflow\\\\busflow\")",
-      "Bash(rmdir \"C:\\\\Projects\\\\VeraProb\\\\android\\\\app\\\\src\\\\main\\\\kotlin\\\\com\\\\busflow\")"
+      "Bash(rmdir \"C:\\\\Projects\\\\VeraProb\\\\android\\\\app\\\\src\\\\main\\\\kotlin\\\\com\\\\busflow\")",
+      "Bash(supabase db:*)",
+      "Bash(supabase migration:*)",
+      "Bash(ls:*)"
     ]
   }
 }

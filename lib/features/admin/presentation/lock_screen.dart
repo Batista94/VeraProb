@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/logger_service.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../super_admin/presentation/super_admin_shell.dart';
 import 'admin_home.dart';
 
 class AdminLockScreen extends StatefulWidget {
@@ -27,11 +28,24 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
       if (!mounted) return;
       final session = data.session;
       if (session != null) {
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const AdminHome()));
+        _routeAfterAuth(session);
       }
     });
+  }
+
+  /// Routes to [SuperAdminShell] if the JWT carries `super_admin: true`,
+  /// otherwise to [AdminHome] for regular tenant users.
+  void _routeAfterAuth(Session session) {
+    final isSuperAdmin =
+        session.user.appMetadata['super_admin'] == true;
+
+    final destination = isSuperAdmin
+        ? const SuperAdminShell()
+        : const AdminHome();
+
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => destination));
   }
 
   Future<void> _signIn() async {
@@ -49,9 +63,16 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
     });
 
     try {
-      await _supabase.auth.signInWithPassword(email: email, password: password);
+      final response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
       LoggerService().security('Admin Access Granted via Supabase: $email');
-      // Navigation is handled by onAuthStateChange listener
+      // Navigation handled by onAuthStateChange listener, but also route directly
+      // in case the listener fires before the widget re-renders.
+      if (mounted && response.session != null) {
+        _routeAfterAuth(response.session!);
+      }
     } on AuthException catch (e) {
       LoggerService().security('Admin Access Failed: ${e.message}');
       setState(() => _error = 'Credenciais Incorretas');

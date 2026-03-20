@@ -55,8 +55,12 @@ final currentOrganizationIdProvider = Provider<String?>((ref) {
 final currentUserRoleProvider = Provider<UserRole>((ref) {
   final authState = ref.watch(authStateProvider).valueOrNull;
   final metadata = authState?.session?.user.appMetadata;
-  final roleString = metadata?['role'] as String?;
 
+  // SuperAdmin check — must run before role string mapping (D2).
+  final isSuperAdmin = metadata?['super_admin'] as bool?;
+  if (isSuperAdmin == true) return UserRole.superAdmin;
+
+  final roleString = metadata?['role'] as String?;
   if (roleString == 'TENANT_ADMIN') return UserRole.admin;
   if (roleString == 'AUDITOR') return UserRole.auditor;
   return UserRole.operator;

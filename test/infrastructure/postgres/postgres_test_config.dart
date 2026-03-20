@@ -7,10 +7,16 @@ import 'package:uuid/uuid.dart';
 /// Utiliza as credenciais padrão do `supabase start` rodando na porta 54321.
 class PostgresTestConfig {
   static const String supabaseUrl = 'http://127.0.0.1:54321';
+
   // Service role key — bypassa RLS para os testes de integração.
   // NUNCA usar em produção ou expor ao cliente.
   static const String supabaseAnonKey =
       'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz';
+
+  /// Alias semântico usado pelos testes de SuperAdmin, que precisam de um
+  /// client com service_role explícito (D3: SupabaseClient separado, sem
+  /// Supabase.initialize() duplo).
+  static const String serviceRoleKey = supabaseAnonKey;
 
   /// UUID sentinela para testes de integração. Identificador estável para
   /// evitar colisões entre runs sem precisar de fixture de organização real.

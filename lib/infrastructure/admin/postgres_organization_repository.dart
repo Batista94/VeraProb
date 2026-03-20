@@ -25,6 +25,11 @@ class PostgresOrganizationRepository implements OrganizationRepository {
         logoUrl: data['logo_url'] as String?,
         isActive: data['is_active'] as bool,
         createdAt: DateTime.parse(data['created_at'] as String),
+        legalName: data['legal_name'] as String?,
+        cnpj: data['cnpj'] as String?,
+        planType: data['plan_type'] as String?,
+        maxVehicles: data['max_vehicles'] as int?,
+        maxActiveContracts: data['max_active_contracts'] as int?,
       );
     } catch (e) {
       // If single() fails (not found or multiple), return null

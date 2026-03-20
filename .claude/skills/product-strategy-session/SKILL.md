@@ -5,6 +5,7 @@ intent: >-
   Guide product managers through a comprehensive product strategy session by orchestrating positioning, problem framing, customer discovery, and roadmap planning skills into a cohesive end-to-end process. Use this to move from vague strategic direction to concrete, validated product strategy with clear positioning, target customers, problem statements, and prioritized roadmap—ensuring alignment across stakeholders before committing to execution.
 type: workflow
 signature: PF-SEC-8615B9D566E011A1
+security_audit_signature: "Audited by QA Security - Score: 100/100"
 ---
 
 

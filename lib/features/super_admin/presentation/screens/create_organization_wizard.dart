@@ -1,0 +1,646 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../application/super_admin/create_organization_handler.dart';
+import '../../../../domain/super_admin/create_organization_command.dart';
+import '../../../../domain/super_admin/plan_type.dart';
+import '../../../../domain/sla_audit/domain_exception.dart';
+import '../../../../infrastructure/providers/super_admin_providers.dart';
+import '../../../../state/providers/super_admin_auth_providers.dart';
+
+// Re-use the same BR timezones list from the main wizard.
+const _kBrTimezones = [
+  'America/Sao_Paulo',
+  'America/Manaus',
+  'America/Belem',
+  'America/Fortaleza',
+  'America/Recife',
+  'America/Noronha',
+  'America/Cuiaba',
+  'America/Porto_Velho',
+  'America/Rio_Branco',
+  'America/Boa_Vista',
+];
+
+const _kCurrencies = ['BRL', 'USD', 'EUR'];
+
+/// 3-step wizard for creating a new tenant organization.
+///
+/// Step 1 — Dados Fiscais: legal/trade name, CNPJ, plan, timezone, currency.
+/// Step 2 — Limites de Uso: max vehicles, max active contracts.
+/// Step 3 — Convite Admin: initial admin email.
+///
+/// Pattern: ConsumerStatefulWidget + _currentStep + _highestStepReached
+/// (mirrors declare_contract_plan_form.dart — INV-19: overlay modal).
+class CreateOrganizationWizard extends ConsumerStatefulWidget {
+  /// Called when the wizard completes successfully (navigates to Tenants panel).
+  final VoidCallback onSuccess;
+
+  const CreateOrganizationWizard({super.key, required this.onSuccess});
+
+  @override
+  ConsumerState<CreateOrganizationWizard> createState() =>
+      _CreateOrganizationWizardState();
+}
+
+class _CreateOrganizationWizardState
+    extends ConsumerState<CreateOrganizationWizard> {
+  int _currentStep = 0;
+  int _highestStepReached = 0;
+
+  bool _isSubmitting = false;
+
+  // Step 1 controllers
+  final _legalNameCtrl = TextEditingController();
+  final _tradeNameCtrl = TextEditingController();
+  final _cnpjCtrl = TextEditingController();
+  PlanType _selectedPlan = PlanType.starter;
+  String _timezone = 'America/Sao_Paulo';
+  String _currency = 'BRL';
+
+  // Step 2 controllers
+  final _maxVehiclesCtrl = TextEditingController(text: '50');
+  final _maxContractsCtrl = TextEditingController(text: '10');
+
+  // Step 3 controllers
+  final _adminEmailCtrl = TextEditingController();
+
+  // Step 1 key
+  final _step1Key = GlobalKey<FormState>();
+  final _step2Key = GlobalKey<FormState>();
+  final _step3Key = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _legalNameCtrl.dispose();
+    _tradeNameCtrl.dispose();
+    _cnpjCtrl.dispose();
+    _maxVehiclesCtrl.dispose();
+    _maxContractsCtrl.dispose();
+    _adminEmailCtrl.dispose();
+    super.dispose();
+  }
+
+  bool _validateStep1() {
+    if (!(_step1Key.currentState?.validate() ?? false)) return false;
+    final cnpjDigits = _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '');
+    if (cnpjDigits.length != 14) return false;
+    return true;
+  }
+
+  bool _validateStep2() => _step2Key.currentState?.validate() ?? false;
+
+  bool _validateStep3() => _step3Key.currentState?.validate() ?? false;
+
+  void _goToStep(int step) {
+    if (step > _currentStep) {
+      // Validate before advancing
+      if (_currentStep == 0 && !_validateStep1()) return;
+      if (_currentStep == 1 && !_validateStep2()) return;
+    }
+    setState(() {
+      _currentStep = step;
+      if (step > _highestStepReached) _highestStepReached = step;
+    });
+  }
+
+  Future<void> _submit() async {
+    if (!_validateStep3()) return;
+
+    final superAdminId = ref.read(currentSuperAdminIdProvider);
+    if (superAdminId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sessão expirada. Faça login novamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final repo = ref.read(superAdminRepositoryProvider);
+      final serviceRoleClient =
+          ref.read(superAdminSupabaseClientProvider);
+      final handler =
+          CreateOrganizationHandler(repo, serviceRoleClient);
+
+      final cmd = CreateOrganizationCommand(
+        legalName: _legalNameCtrl.text.trim(),
+        tradeName: _tradeNameCtrl.text.trim(),
+        cnpj: _cnpjCtrl.text.trim(),
+        timezone: _timezone,
+        currencyCode: _currency,
+        planType: _selectedPlan.dbValue,
+        maxVehicles: int.parse(_maxVehiclesCtrl.text.trim()),
+        maxActiveContracts: int.parse(_maxContractsCtrl.text.trim()),
+        initialAdminEmail: _adminEmailCtrl.text.trim().toLowerCase(),
+        superAdminUserId: superAdminId,
+      );
+
+      final result = await handler.handle(cmd);
+
+      if (!mounted) return;
+
+      // Success dialog
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
+          title: const Text('Organização Criada!'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Organização: ${_tradeNameCtrl.text.trim()}'),
+              const SizedBox(height: 8),
+              Text('Admin convidado para: ${_adminEmailCtrl.text.trim()}'),
+              const SizedBox(height: 16),
+              const Text(
+                'Token de convite:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              SelectableText(
+                result.invitationToken,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.onSuccess();
+              },
+              child: const Text('Ver Tenants'),
+            ),
+          ],
+        ),
+      );
+
+      // Invalidate health snapshot to refresh the tenant list
+      ref.invalidate(tenantHealthSnapshotProvider);
+    } on DomainException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro inesperado: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stepper(
+      type: StepperType.horizontal,
+      currentStep: _currentStep,
+      onStepTapped: (step) {
+        if (step <= _highestStepReached) _goToStep(step);
+      },
+      controlsBuilder: _buildControls,
+      steps: [
+        Step(
+          title: const Text('Dados Fiscais'),
+          isActive: _currentStep >= 0,
+          state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+          content: _Step1FiscalData(
+            formKey: _step1Key,
+            legalNameCtrl: _legalNameCtrl,
+            tradeNameCtrl: _tradeNameCtrl,
+            cnpjCtrl: _cnpjCtrl,
+            selectedPlan: _selectedPlan,
+            timezone: _timezone,
+            currency: _currency,
+            onPlanChanged: (p) => setState(() => _selectedPlan = p),
+            onTimezoneChanged: (t) => setState(() => _timezone = t),
+            onCurrencyChanged: (c) => setState(() => _currency = c),
+          ),
+        ),
+        Step(
+          title: const Text('Limites'),
+          isActive: _currentStep >= 1,
+          state: _currentStep > 1 ? StepState.complete : StepState.indexed,
+          content: _Step2Limits(
+            formKey: _step2Key,
+            maxVehiclesCtrl: _maxVehiclesCtrl,
+            maxContractsCtrl: _maxContractsCtrl,
+            // Read-only summary from Step 1
+            tradeName: _tradeNameCtrl.text,
+            planLabel: _selectedPlan.label,
+          ),
+        ),
+        Step(
+          title: const Text('Convite Admin'),
+          isActive: _currentStep >= 2,
+          state: StepState.indexed,
+          content: _Step3AdminInvite(
+            formKey: _step3Key,
+            adminEmailCtrl: _adminEmailCtrl,
+            tradeName: _tradeNameCtrl.text,
+            planLabel: _selectedPlan.label,
+            maxVehicles: _maxVehiclesCtrl.text,
+            maxContracts: _maxContractsCtrl.text,
+            isSubmitting: _isSubmitting,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildControls(BuildContext context, ControlsDetails details) {
+    final isLast = _currentStep == 2;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        children: [
+          if (_currentStep > 0)
+            OutlinedButton(
+              onPressed: _isSubmitting
+                  ? null
+                  : () => _goToStep(_currentStep - 1),
+              child: const Text('Voltar'),
+            ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: _isSubmitting
+                ? null
+                : isLast
+                    ? _submit
+                    : () => _goToStep(_currentStep + 1),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.indigo,
+              foregroundColor: Colors.white,
+            ),
+            child: _isSubmitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(isLast ? 'Criar e Enviar Convite' : 'Próximo'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Step 1: Fiscal Data ───────────────────────────────────────────────────────
+
+class _Step1FiscalData extends StatelessWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController legalNameCtrl;
+  final TextEditingController tradeNameCtrl;
+  final TextEditingController cnpjCtrl;
+  final PlanType selectedPlan;
+  final String timezone;
+  final String currency;
+  final ValueChanged<PlanType> onPlanChanged;
+  final ValueChanged<String> onTimezoneChanged;
+  final ValueChanged<String> onCurrencyChanged;
+
+  const _Step1FiscalData({
+    required this.formKey,
+    required this.legalNameCtrl,
+    required this.tradeNameCtrl,
+    required this.cnpjCtrl,
+    required this.selectedPlan,
+    required this.timezone,
+    required this.currency,
+    required this.onPlanChanged,
+    required this.onTimezoneChanged,
+    required this.onCurrencyChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextFormField(
+            controller: legalNameCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Razão Social *',
+              hintText: 'Ex: Transportes Silva Ltda.',
+            ),
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: tradeNameCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Nome Fantasia *',
+              hintText: 'Ex: Silva Logística',
+            ),
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: cnpjCtrl,
+            decoration: const InputDecoration(
+              labelText: 'CNPJ *',
+              hintText: '00.000.000/0000-00',
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              _CnpjInputFormatter(),
+            ],
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
+              final digits = v.replaceAll(RegExp(r'\D'), '');
+              if (digits.length != 14) return 'CNPJ deve ter 14 dígitos';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Plano *',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<PlanType>(
+            segments: PlanType.values
+                .map((p) => ButtonSegment(
+                      value: p,
+                      label: Text(p.label),
+                    ))
+                .toList(),
+            selected: {selectedPlan},
+            onSelectionChanged: (s) => onPlanChanged(s.first),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            initialValue: timezone,
+            decoration: const InputDecoration(labelText: 'Fuso Horário *'),
+            items: _kBrTimezones
+                .map((tz) => DropdownMenuItem(value: tz, child: Text(tz)))
+                .toList(),
+            onChanged: (v) => onTimezoneChanged(v!),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: currency,
+            decoration: const InputDecoration(labelText: 'Moeda *'),
+            items: _kCurrencies
+                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                .toList(),
+            onChanged: (v) => onCurrencyChanged(v!),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Step 2: Limits ────────────────────────────────────────────────────────────
+
+class _Step2Limits extends StatelessWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController maxVehiclesCtrl;
+  final TextEditingController maxContractsCtrl;
+  final String tradeName;
+  final String planLabel;
+
+  const _Step2Limits({
+    required this.formKey,
+    required this.maxVehiclesCtrl,
+    required this.maxContractsCtrl,
+    required this.tradeName,
+    required this.planLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Read-only summary from Step 1
+          if (tradeName.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.indigo.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.business, size: 16, color: Colors.indigo),
+                  const SizedBox(width: 8),
+                  Text('$tradeName — Plano $planLabel'),
+                ],
+              ),
+            ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: maxVehiclesCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Máximo de Veículos *',
+              hintText: 'Ex: 50',
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
+              final n = int.tryParse(v);
+              if (n == null || n < 1) return 'Deve ser >= 1';
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: maxContractsCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Máximo de Contratos Ativos *',
+              hintText: 'Ex: 10',
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
+              final n = int.tryParse(v);
+              if (n == null || n < 1) return 'Deve ser >= 1';
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Step 3: Admin Invite ──────────────────────────────────────────────────────
+
+class _Step3AdminInvite extends StatelessWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController adminEmailCtrl;
+  final String tradeName;
+  final String planLabel;
+  final String maxVehicles;
+  final String maxContracts;
+  final bool isSubmitting;
+
+  const _Step3AdminInvite({
+    required this.formKey,
+    required this.adminEmailCtrl,
+    required this.tradeName,
+    required this.planLabel,
+    required this.maxVehicles,
+    required this.maxContracts,
+    required this.isSubmitting,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Read-only org summary
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.indigo.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SummaryRow(icon: Icons.business, label: 'Empresa', value: tradeName),
+                _SummaryRow(icon: Icons.star_outline, label: 'Plano', value: planLabel),
+                _SummaryRow(
+                  icon: Icons.directions_car,
+                  label: 'Máx. Veículos',
+                  value: maxVehicles,
+                ),
+                _SummaryRow(
+                  icon: Icons.description_outlined,
+                  label: 'Máx. Contratos',
+                  value: maxContracts,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: adminEmailCtrl,
+            decoration: const InputDecoration(
+              labelText: 'E-mail do Admin Inicial *',
+              hintText: 'admin@empresa.com.br',
+              prefixIcon: Icon(Icons.email_outlined),
+            ),
+            keyboardType: TextInputType.emailAddress,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
+              if (!v.trim().contains('@')) return 'E-mail inválido';
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.shade300),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, size: 16, color: Colors.amber),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Um convite válido por 7 dias será enviado para este e-mail com permissão de Administrador.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _SummaryRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: Colors.indigo),
+          const SizedBox(width: 6),
+          Text('$label: ', style: const TextStyle(color: Colors.grey)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── CNPJ Input Formatter (00.000.000/0000-00) ─────────────────────────────────
+
+class _CnpjInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    final buffer = StringBuffer();
+    for (var i = 0; i < digits.length && i < 14; i++) {
+      if (i == 2 || i == 5) buffer.write('.');
+      if (i == 8) buffer.write('/');
+      if (i == 12) buffer.write('-');
+      buffer.write(digits[i]);
+    }
+    final formatted = buffer.toString();
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}

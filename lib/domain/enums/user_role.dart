@@ -15,7 +15,12 @@ enum UserRole {
   /// External contractor read-only access. Scoped to a single contractor via
   /// dual-key JWT isolation (INV-20). Cannot access any tenant-internal data.
   /// JWT carries both org_id and contractor_id claims.
-  contractorViewer;
+  contractorViewer,
+
+  /// Platform-level super administrator. Cross-tenant access via service_role.
+  /// JWT carries `super_admin: true` and null org_id/role/contractor_id (D2).
+  /// Never mixed with tenant roles — stored in `super_admin_users` (D1).
+  superAdmin;
 
   /// Returns true if this role has equal or greater privileges than the [requiredRole].
   ///
@@ -23,6 +28,7 @@ enum UserRole {
   /// it operates in a separate, contractor-scoped access domain.
   bool hasPermission(UserRole requiredRole) {
     if (this == UserRole.contractorViewer) return false;
+    if (this == UserRole.superAdmin) return true; // superAdmin has all permissions
     if (this == UserRole.admin) return true;
     if (this == UserRole.operator) {
       return requiredRole == UserRole.operator ||
@@ -42,6 +48,8 @@ enum UserRole {
         return 'Auditor';
       case UserRole.contractorViewer:
         return 'Visualizador Contratante';
+      case UserRole.superAdmin:
+        return 'Super Administrador';
     }
   }
 }

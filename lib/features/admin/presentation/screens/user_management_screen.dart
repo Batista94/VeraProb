@@ -237,20 +237,26 @@ class UserManagementScreen extends ConsumerWidget {
       final orgId = ref.read(currentOrganizationIdProvider);
       final callerRole = ref.read(currentUserRoleProvider);
 
-      UserRole newRole;
+      if (orgId == null) {
+        throw StateError('Organization context unavailable for role: $callerRole');
+      }
+
+      final UserRole newRole;
       if (newRoleString == 'TENANT_ADMIN') {
         newRole = UserRole.admin;
       } else if (newRoleString == 'OPERATOR') {
         newRole = UserRole.operator;
-      } else {
+      } else if (newRoleString == 'AUDITOR') {
         newRole = UserRole.auditor;
+      } else {
+        throw ArgumentError('Unrecognized role string: $newRoleString');
       }
 
       await ref
           .read(changeUserRoleHandlerProvider)
           .handle(
             ChangeUserRoleCommand(
-              organizationId: orgId!,
+              organizationId: orgId,
               callerRole: callerRole,
               targetUserId: userId,
               newRole: newRole,
@@ -310,11 +316,15 @@ class UserManagementScreen extends ConsumerWidget {
         final orgId = ref.read(currentOrganizationIdProvider);
         final callerRole = ref.read(currentUserRoleProvider);
 
+        if (orgId == null) {
+          throw StateError('Organization context unavailable for role: $callerRole');
+        }
+
         await ref
             .read(removeMemberHandlerProvider)
             .handle(
               RemoveMemberCommand(
-                organizationId: orgId!,
+                organizationId: orgId,
                 callerRole: callerRole,
                 targetUserId: userId,
               ),
@@ -373,11 +383,15 @@ class UserManagementScreen extends ConsumerWidget {
         final orgId = ref.read(currentOrganizationIdProvider);
         final callerRole = ref.read(currentUserRoleProvider);
 
+        if (orgId == null) {
+          throw StateError('Organization context unavailable for role: $callerRole');
+        }
+
         await ref
             .read(revokeInvitationHandlerProvider)
             .handle(
               RevokeInvitationCommand(
-                organizationId: orgId!,
+                organizationId: orgId,
                 callerRole: callerRole,
                 invitationId: invitation.id,
               ),
@@ -424,6 +438,7 @@ class _PendingInvitationTile extends StatelessWidget {
       UserRole.operator => 'Operador',
       UserRole.auditor => 'Auditor',
       UserRole.contractorViewer => 'Visualizador Contratante',
+      UserRole.superAdmin => 'Super Administrador',
     };
     final expiryStr = invitation.expiresAtUtc.toLocal().toString().split(
       '.',
