@@ -194,6 +194,68 @@ class SlaLedgerMapper {
       );
     }
 
+    if (event is SanctionRecommendedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'SANCTION_RECOMMENDED',
+        setId: event.setId,
+        contractId: event.contractId,
+        planVersion: event.planVersion,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'verdict_evidence': event.verdictEvidence.toJson(),
+        },
+      );
+    }
+
+    if (event is SanctionAppliedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'SANCTION_APPLIED',
+        setId: event.setId,
+        contractId: event.contractId,
+        planVersion: event.planVersion,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'queue_entry_id': event.queueEntryId,
+          'approved_by_user_id': event.approvedByUserId,
+          'verdict_evidence': event.verdictEvidence.toJson(),
+        },
+      );
+    }
+
+    if (event is SanctionRejectedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'SANCTION_REJECTED',
+        setId: event.setId,
+        contractId: event.contractId,
+        planVersion: event.planVersion,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'queue_entry_id': event.queueEntryId,
+          'rejected_by_user_id': event.rejectedByUserId,
+          'rejection_reason': event.rejectionReason,
+          'verdict_evidence': event.verdictEvidence.toJson(),
+        },
+      );
+    }
+
+    if (event is SanctionDisputedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'SANCTION_DISPUTED',
+        setId: event.setId,
+        contractId: event.contractId,
+        planVersion: event.planVersion,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'queue_entry_id': event.queueEntryId,
+          'verdict_evidence': event.verdictEvidence.toJson(),
+        },
+      );
+    }
+
     // Generic fallback for unknown events
     return SlaLedgerEntry(
       organizationId: event.organizationId,

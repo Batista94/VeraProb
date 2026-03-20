@@ -1,4 +1,5 @@
 import 'domain_event.dart';
+import 'verdict_evidence.dart';
 
 /// Emitted when a vehicle is successfully bound to a contractual obligation.
 class ExecutionBoundEvent extends DomainEvent {
@@ -121,5 +122,90 @@ class TripCancelledEvidence extends EvidenceEvent {
     super.vehicleId,
     required super.operatorId,
     this.reason,
+  });
+}
+
+// ── Sanction Lifecycle Events (Human-in-the-Loop, INV-23) ──────────────────
+
+/// Emitted by the engine when a no-show penalty is assessed and queued for
+/// human review. The engine NEVER emits [SanctionAppliedEvent] directly.
+///
+/// Satisfies INV-23: carries the full [VerdictEvidence] explaining the verdict.
+class SanctionRecommendedEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final VerdictEvidence verdictEvidence;
+
+  const SanctionRecommendedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.verdictEvidence,
+  });
+}
+
+/// Emitted when an auditor/admin approves a recommended sanction.
+class SanctionAppliedEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final String queueEntryId;
+  final String approvedByUserId;
+  final VerdictEvidence verdictEvidence;
+
+  const SanctionAppliedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.queueEntryId,
+    required this.approvedByUserId,
+    required this.verdictEvidence,
+  });
+}
+
+/// Emitted when an auditor/admin rejects a recommended sanction.
+class SanctionRejectedEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final String queueEntryId;
+  final String rejectedByUserId;
+  final String rejectionReason;
+  final VerdictEvidence verdictEvidence;
+
+  const SanctionRejectedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.queueEntryId,
+    required this.rejectedByUserId,
+    required this.rejectionReason,
+    required this.verdictEvidence,
+  });
+}
+
+/// Emitted when a contractor disputes a recommended sanction.
+class SanctionDisputedEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final String queueEntryId;
+  final VerdictEvidence verdictEvidence;
+
+  const SanctionDisputedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.queueEntryId,
+    required this.verdictEvidence,
   });
 }

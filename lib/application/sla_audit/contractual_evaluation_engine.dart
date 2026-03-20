@@ -4,7 +4,9 @@ import 'package:uuid/uuid.dart';
 
 import '../../application/sla_audit/sla_ledger_mapper.dart';
 import '../../domain/entities/vehicle_operational_state.dart';
+import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/contractual_execution_state.dart';
+import '../../domain/sla_audit/execution_events.dart';
 import '../../domain/sla_audit/execution_status.dart';
 import '../../domain/sla_audit/contractual_rule.dart';
 import '../../domain/sla_audit/contractual_execution_state_repository.dart';
@@ -16,6 +18,7 @@ import '../../domain/sla_audit/evaluation_trace.dart';
 import '../../domain/sla_audit/evaluation_trace_repository.dart';
 import '../../domain/sla_audit/engine_evaluation_result.dart';
 import '../../domain/sla_audit/operational_alert_repository.dart';
+import '../../domain/sla_audit/verdict_evidence.dart';
 import 'alert_derivation_service.dart';
 
 /// Application Service: Reactive evaluation engine for contractual
@@ -267,6 +270,55 @@ class ContractualEvaluationEngine {
       );
 
       await _commitEvaluationResults(state, now, decisions);
+
+      // INV-23: Emit SANCTION_RECOMMENDED when a penalty was assessed.
+      // The engine RECOMMENDS — it never emits SANCTION_APPLIED directly.
+      // The DB trigger auto-populates sanction_review_queue on INSERT.
+      if (penaltyCents != null && penaltyCents > 0) {
+        // Build VerdictEvidence from the no-show context.
+        // windowEndUtc serves as the primary evidence timestamp (the moment
+        // the contractual obligation expired).
+        final windowEndUtc = state.windowEndUtc.isUtc
+            ? state.windowEndUtc
+            : state.windowEndUtc.toUtc();
+
+        final noShowRuleId = sortedRules
+            .where((r) => r.ruleType == SlaRuleType.noShowPenalty)
+            .map((r) => r.ruleId)
+            .firstOrNull;
+        final noShowRuleVersion = sortedRules
+            .where((r) => r.ruleType == SlaRuleType.noShowPenalty)
+            .map((r) => r.ruleVersion)
+            .firstOrNull;
+
+        if (noShowRuleId != null && noShowRuleVersion != null) {
+          final verdictEvidence = VerdictEvidence.create(
+            clauseRef: noShowRuleId,
+            ruleId: noShowRuleId,
+            ruleVersion: noShowRuleVersion,
+            primaryEvidenceLat: state.startLatitude,
+            primaryEvidenceLng: state.startLongitude,
+            primaryEvidenceTimestampUtc: windowEndUtc,
+            deltaValue: now.difference(state.windowEndUtc).inMinutes.toDouble(),
+            thresholdValue: 0.0,
+            fineCents: Money(penaltyCents),
+            confidenceScore: 100,
+          );
+
+          final recommendedEvent = SanctionRecommendedEvent(
+            organizationId: state.organizationId,
+            occurredAtUtc: now,
+            setId: state.setId,
+            contractId: state.contractId,
+            planVersion: state.planVersion,
+            verdictEvidence: verdictEvidence,
+          );
+
+          await _ledgerRepo.append(
+            SlaLedgerMapper.mapToEntry(recommendedEvent),
+          );
+        }
+      }
     }
   }
 

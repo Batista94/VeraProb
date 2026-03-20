@@ -4,7 +4,9 @@ import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dar
 import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
 import 'package:veraprob/domain/enums/motion_state.dart';
 import 'package:veraprob/domain/enums/connectivity_state.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart' show RuleSnapshotItem;
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
@@ -528,6 +530,129 @@ void main() {
         final s = await repo.findBySetId(state.setId);
         expect(s!.status, ExecutionStatus.executed,
             reason: 'With grace=0, engine should bind immediately after dwell');
+      });
+    });
+
+    // ── INV-23: VerdictEvidence & SANCTION_RECOMMENDED ──────────────────────
+
+    group('INV-23: VerdictEvidence & SANCTION_RECOMMENDED', () {
+      Future<void> seedPlanWithPenaltyRule(
+        String contractId,
+        int version, {
+        int penaltyCents = 150000,
+      }) async {
+        final rule = RuleSnapshotItem(
+          ruleId: 'rule-no-show-01',
+          ruleType: SlaRuleType.noShowPenalty,
+          config: {'penalty_amount_cents': penaltyCents},
+          ruleVersion: 1,
+          evaluationOrder: 1,
+        );
+        final declaration = PlanDeclaration.create(
+          organizationId: 'org-1',
+          contractId: contractId,
+          planVersion: version,
+          declaredAtUtc: DateTime.utc(2026, 1, 1),
+          declaredByUserId: 'user-1',
+          originalFileHash: 'hash-penalty',
+          services: [
+            ContractualServiceExecution.create(
+              contractId: contractId,
+              scheduledStartTimeUtc: DateTime.utc(2026, 3, 1, 6, 0),
+              scheduledEndTimeUtc: DateTime.utc(2026, 3, 1, 7, 0),
+              startLatitude: geoLat,
+              startLongitude: geoLng,
+              startRadiusMeters: geoRadius,
+              endLatitude: -23.5600,
+              endLongitude: -46.6400,
+              endRadiusMeters: 100,
+              contractualValue: Money.fromDouble(150.0),
+              noShowPenaltyMultiplier: 1.5,
+            ),
+          ],
+          ruleSnapshot: RuleSnapshot([rule]),
+        );
+        await planRepo.save(declaration);
+      }
+
+      test('sweep emits SANCTION_RECOMMENDED when penalty rule present', () async {
+        await seedPlanWithPenaltyRule('c-penalty', 1);
+        final state = makeExecState(
+          contractId: 'c-penalty',
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await repo.save(state);
+
+        await engine.sweepExpiredObligations(
+          nowUtc: DateTime.utc(2026, 3, 1, 7, 5),
+          organizationId: 'org-1',
+        );
+
+        final entries = ledger.entries;
+        // NO_SHOW_DECLARED + SANCTION_RECOMMENDED
+        expect(entries.length, 2);
+        final types = entries.map((e) => e.type).toList();
+        expect(types, containsAll(['NO_SHOW_DECLARED', 'SANCTION_RECOMMENDED']));
+      });
+
+      test('SANCTION_RECOMMENDED payload has non-null verdict_evidence', () async {
+        await seedPlanWithPenaltyRule('c-penalty-2', 1);
+        final state = makeExecState(
+          contractId: 'c-penalty-2',
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await repo.save(state);
+
+        await engine.sweepExpiredObligations(
+          nowUtc: DateTime.utc(2026, 3, 1, 7, 5),
+          organizationId: 'org-1',
+        );
+
+        final recommended = ledger.entries
+            .where((e) => e.type == 'SANCTION_RECOMMENDED')
+            .toList();
+        expect(recommended.length, 1);
+
+        final evidence = recommended.first.payload['verdict_evidence'];
+        expect(evidence, isNotNull);
+        expect((evidence['evidence_hash'] as String).length, 64);
+        expect(evidence['fine_cents'], 150000);
+        expect(evidence['confidence_score'], 100);
+      });
+
+      test('engine NEVER emits SANCTION_APPLIED directly (human-in-loop)', () async {
+        await seedPlanWithPenaltyRule('c-penalty-3', 1);
+        final state = makeExecState(
+          contractId: 'c-penalty-3',
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await repo.save(state);
+
+        await engine.sweepExpiredObligations(
+          nowUtc: DateTime.utc(2026, 3, 1, 7, 5),
+          organizationId: 'org-1',
+        );
+
+        final applied = ledger.entries.where((e) => e.type == 'SANCTION_APPLIED');
+        expect(applied, isEmpty,
+            reason: 'Engine must never emit SANCTION_APPLIED');
+      });
+
+      test('no SANCTION_RECOMMENDED without penalty rule', () async {
+        await seedPlan('c-no-penalty', 1); // empty RuleSnapshot
+        final state = makeExecState(
+          contractId: 'c-no-penalty',
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await repo.save(state);
+
+        await engine.sweepExpiredObligations(
+          nowUtc: DateTime.utc(2026, 3, 1, 7, 5),
+          organizationId: 'org-1',
+        );
+
+        final recommended = ledger.entries.where((e) => e.type == 'SANCTION_RECOMMENDED');
+        expect(recommended, isEmpty);
       });
     });
   });
