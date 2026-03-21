@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/logger_service.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/jwt_utils.dart';
 import '../../super_admin/presentation/super_admin_shell.dart';
 import 'admin_home.dart';
 
@@ -35,9 +37,21 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
 
   /// Routes to [SuperAdminShell] if the JWT carries `super_admin: true`,
   /// otherwise to [AdminHome] for regular tenant users.
+  ///
+  /// NOTE: Must decode the JWT access token — GoTrue's custom_access_token_hook
+  /// injects claims into the token payload, not into session.user.appMetadata
+  /// (which reads raw_app_meta_data, a separate static DB field).
   void _routeAfterAuth(Session session) {
-    final isSuperAdmin =
-        session.user.appMetadata['super_admin'] == true;
+    final claims = decodeJwtPayload(session.accessToken);
+    final appMeta = claims['app_metadata'] as Map<String, dynamic>?;
+    final raw = appMeta?['super_admin'];
+
+    if (kDebugMode) {
+      debugPrint('[AUTH] JWT app_metadata: $appMeta');
+      debugPrint('[AUTH] super_admin=$raw (${raw.runtimeType})');
+    }
+
+    final isSuperAdmin = raw == true || raw?.toString() == 'true';
 
     final destination = isSuperAdmin
         ? const SuperAdminShell()

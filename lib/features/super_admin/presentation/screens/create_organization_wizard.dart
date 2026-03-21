@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../application/super_admin/create_organization_handler.dart';
+import '../../../../core/config/supabase_client.dart';
 import '../../../../domain/super_admin/create_organization_command.dart';
 import '../../../../domain/super_admin/plan_type.dart';
 import '../../../../domain/sla_audit/domain_exception.dart';
@@ -145,6 +146,18 @@ class _CreateOrganizationWizardState
 
       if (!mounted) return;
 
+      // Capturar messenger e URL antes do showDialog (contexto seguro)
+      final messenger = ScaffoldMessenger.of(context);
+      final inviteUrl =
+          '${Uri.base.origin}/accept-invite?token=${result.invitationToken}';
+
+      // Fire invitation email — silent failure (link in dialog is the fallback)
+      supabase.functions.invoke('notify-invite', body: {
+        'email': cmd.initialAdminEmail,
+        'inviteUrl': inviteUrl,
+        'orgName': cmd.tradeName,
+      }).catchError((_) {});
+
       // Success dialog
       await showDialog<void>(
         context: context,
@@ -161,15 +174,55 @@ class _CreateOrganizationWizardState
               Text('Admin convidado para: ${_adminEmailCtrl.text.trim()}'),
               const SizedBox(height: 16),
               const Text(
-                'Token de convite:',
+                'Link de convite do Admin:',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              SelectableText(
-                result.invitationToken,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: SelectableText(
+                      inviteUrl,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy_all, size: 18),
+                    tooltip: 'Copiar link',
+                    onPressed: () async {
+                      await Clipboard.setData(
+                          ClipboardData(text: inviteUrl));
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Link copiado!')),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.shade300),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: Colors.amber),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Envie este link ao administrador. Ele deve acessá-lo para definir sua senha.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

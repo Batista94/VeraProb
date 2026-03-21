@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../admin/presentation/lock_screen.dart';
 import 'screens/tenant_health_panel.dart';
 import 'screens/create_organization_wizard.dart';
 import 'screens/super_admin_audit_log_screen.dart';
@@ -70,7 +71,11 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
                   onPressed: () async {
                     await Supabase.instance.client.auth.signOut();
                     if (context.mounted) {
-                      Navigator.of(context).popUntil((r) => r.isFirst);
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                            builder: (_) => const AdminLockScreen()),
+                        (_) => false,
+                      );
                     }
                   },
                 ),

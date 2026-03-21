@@ -1,3 +1,4 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,13 +12,19 @@ import '../../infrastructure/super_admin/supabase_super_admin_repository.dart';
 /// D3: instantiated with service_role key — never Supabase.initialize() again.
 /// Never passed to tenant providers.
 ///
-/// URL resolved from [EnvironmentConfig.supabaseUrl] (--dart-define).
-/// Service_role key from [EnvironmentConfig.supabaseServiceRoleKey].
+/// Credential resolution order (mirrors SupabaseConfig.initialize):
+///  1. `--dart-define` values (CI/CD — production)
+///  2. `.env` file via dotenv (local dev — requires SUPABASE_SERVICE_ROLE_KEY)
 final superAdminSupabaseClientProvider = Provider<SupabaseClient>((ref) {
-  return SupabaseClient(
-    EnvironmentConfig.supabaseUrl,
-    EnvironmentConfig.supabaseServiceRoleKey,
-  );
+  final url = EnvironmentConfig.supabaseUrl.isNotEmpty
+      ? EnvironmentConfig.supabaseUrl
+      : (dotenv.env['SUPABASE_URL'] ?? '');
+
+  final serviceKey = EnvironmentConfig.supabaseServiceRoleKey.isNotEmpty
+      ? EnvironmentConfig.supabaseServiceRoleKey
+      : (dotenv.env['SUPABASE_SERVICE_ROLE_KEY'] ?? '');
+
+  return SupabaseClient(url, serviceKey);
 });
 
 /// Repository provider for SuperAdmin data operations.

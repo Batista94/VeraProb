@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/config/supabase_client.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../state/providers/admin_providers.dart';
 import '../../../../state/providers/auth_providers.dart';
@@ -647,6 +648,20 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
           );
 
       widget.parentRef.invalidate(orgInvitationsProvider);
+
+      // Fire invitation email — silent failure (link in dialog is the fallback)
+      try {
+        final inviteUrl = '${Uri.base.origin}/accept-invite?token=$token';
+        final orgName =
+            (await widget.parentRef.read(orgSettingsProvider.future))?.name ??
+            '';
+        supabase.functions.invoke('notify-invite', body: {
+          'email': _emailController.text,
+          'inviteUrl': inviteUrl,
+          'orgName': orgName,
+        });
+      } catch (_) {}
+
       setState(() {
         _generatedToken = token;
         _loading = false;

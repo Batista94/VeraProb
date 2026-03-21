@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/supabase_client.dart';
+import '../../core/utils/jwt_utils.dart';
 import '../../domain/enums/user_role.dart';
 
 /// Stream of auth state changes.
@@ -37,15 +38,25 @@ final organizationIdFetcherProvider = FutureProvider<String?>((ref) async {
   }
 });
 
+/// Helper: decodes the JWT access token and returns `app_metadata` claims.
+///
+/// GoTrue's custom_access_token_hook injects org_id / role / super_admin into
+/// the ACCESS TOKEN payload. These are NOT in session.user.appMetadata, which
+/// reads raw_app_meta_data — a separate static field in auth.users.
+Map<String, dynamic>? _jwtAppMeta(Session? session) {
+  if (session == null) return null;
+  final claims = decodeJwtPayload(session.accessToken);
+  return claims['app_metadata'] as Map<String, dynamic>?;
+}
+
 /// Extracts the strict `organization_id` boundary from the JWT claims.
 /// Injected by the Postgres `custom_access_token_hook`.
 final currentOrganizationIdProvider = Provider<String?>((ref) {
-  final authState = ref.watch(authStateProvider).valueOrNull;
+  final session = ref.watch(authStateProvider).valueOrNull?.session;
 
-  // 1. Try JWT metadata (fastest)
-  final metadata = authState?.session?.user.appMetadata;
-  final fromMetadata = metadata?['org_id'] as String?;
-  if (fromMetadata != null) return fromMetadata;
+  // 1. Try JWT payload claims (primary — hook-injected)
+  final fromJwt = _jwtAppMeta(session)?['org_id'] as String?;
+  if (fromJwt != null) return fromJwt;
 
   // 2. Fallback to the async fetcher result if available
   return ref.watch(organizationIdFetcherProvider).valueOrNull;
@@ -53,14 +64,13 @@ final currentOrganizationIdProvider = Provider<String?>((ref) {
 
 /// Current User Role derived from the JWT custom app_metadata claim.
 final currentUserRoleProvider = Provider<UserRole>((ref) {
-  final authState = ref.watch(authStateProvider).valueOrNull;
-  final metadata = authState?.session?.user.appMetadata;
+  final session = ref.watch(authStateProvider).valueOrNull?.session;
+  final meta = _jwtAppMeta(session);
 
   // SuperAdmin check — must run before role string mapping (D2).
-  final isSuperAdmin = metadata?['super_admin'] as bool?;
-  if (isSuperAdmin == true) return UserRole.superAdmin;
+  if (meta?['super_admin'] == true) return UserRole.superAdmin;
 
-  final roleString = metadata?['role'] as String?;
+  final roleString = meta?['role'] as String?;
   if (roleString == 'TENANT_ADMIN') return UserRole.admin;
   if (roleString == 'AUDITOR') return UserRole.auditor;
   return UserRole.operator;

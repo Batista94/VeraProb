@@ -71,7 +71,17 @@
       "Bash(rmdir \"C:\\\\Projects\\\\VeraProb\\\\android\\\\app\\\\src\\\\main\\\\kotlin\\\\com\\\\busflow\")",
       "Bash(supabase db:*)",
       "Bash(supabase migration:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(supabase logs:*)",
+      "Bash(python -c \"import sys,json; env=json.load\\(sys.stdin\\)[0][''''Config''''][''''Env'''']; [print\\(e\\) for e in env if ''''hook'''' in e.lower\\(\\) or ''''HOOK'''' in e]\")",
+      "Bash(docker ps:*)",
+      "Bash(powershell -Command \"docker inspect supabase_auth_veraprob 2>&1\")",
+      "Bash(powershell -Command \"docker ps --format ''{{.Names}}'' 2>&1\")",
+      "Bash(powershell -Command \"docker ps -a 2>&1\")",
+      "Bash(powershell -Command \"docker inspect supabase_auth_veraprob | ConvertFrom-Json | ForEach-Object { $_Config.Env } | Where-Object { $_-match ''HOOK|hook'' }\")",
+      "Bash(powershell -Command \"docker inspect supabase_auth_veraprob | ConvertFrom-Json | Select-Object -ExpandProperty Config | Select-Object -ExpandProperty Env | Select-String -Pattern ''HOOK''\")",
+      "Bash(powershell -Command \"docker inspect supabase_auth_veraprob\")",
+      "Bash(powershell -Command \"docker logs supabase_auth_veraprob 2>&1\")"
     ]
   }
 }

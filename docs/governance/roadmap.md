@@ -299,7 +299,7 @@ Cada card deve exibir obrigatoriamente:
 
 **Líder:** QA & Security Lead + Lead Reviewer
 **Invariantes:** INV-1, INV-15, INV-16, INV-17, INV-22
-**Gap Endereçado:** Enterprise clients exigem "quem mudou qual registro, quando, por quê". Sem isso, ISO 27001 / SOC2 estão fora de alcance.
+**Gap Endereçado:** Enterprise clients exigem "quem mudou qual registro, quando, por quê". Sem isso, ISO 27001 / SOC2 estão fora de alcance. Adicionalmente: auditoria de SI (2026-03-20) identificou gaps de Privileged Access Management não mapeados anteriormente — ver itens 5–8 abaixo.
 
 **Deliverables:**
 
@@ -312,6 +312,16 @@ Cada card deve exibir obrigatoriamente:
 4. **`docs/compliance/iso27001_checklist.md`**: mapeamento vivo controle ISO 27001 → feature do sistema. Atualizado como parte do PR de cada sub-fase.
 
 **Critério de Aceite:** Dado qualquer `sla_ledger_entry_id`, história completa em <3 cliques. Relatório de conformidade passa checklist de due diligence enterprise simulado.
+
+**SI Debt adicionado à Phase 9.8 (auditoria 2026-03-20):**
+
+5. **[ALTO] Audit de sessões privilegiadas no `system_audit_log`**: eventos de login/logout do SuperAdmin devem ser registrados (`action_type: 'SUPER_ADMIN_SESSION_START'/'END'`). Atualmente apenas ações pós-login são auditadas. ISO 27001 A.9.4.2 exige rastreabilidade de acesso privilegiado no nível de autenticação.
+
+6. **[MÉDIO] TTL diferenciado para sessão SuperAdmin**: sessões SuperAdmin devem ter timeout de inatividade de 15–30 min (vs. padrão de 1h para tenants). Requer configuração de `jwt_expiry` por tipo de usuário no Supabase + interceptor de sessão no Flutter (`SuperAdminShell`).
+
+8. **[ALTO] MFA obrigatório para SuperAdmin**: o SuperAdmin autentica com email/senha como qualquer usuário tenant. Para ISO 27001 A.9.4.2 e SOC2 CC6.1, toda conta privilegiada deve exigir segundo fator. Supabase suporta TOTP nativo — requer: (a) enrollment obrigatório na primeira sessão SuperAdmin, (b) `SuperAdminGuard` verifica `aal2` (Authenticator Assurance Level 2) no JWT antes de renderizar o shell, (c) sessão sem MFA ativo redireciona para tela de enrollment.
+
+7. **[CRÍTICO — Blocker de Produção] Remover `service_role` key do bundle Flutter**: `lib/infrastructure/providers/super_admin_providers.dart` instancia um `SupabaseClient` com a `service_role` key diretamente no app Flutter. Essa key bypassa 100% do RLS e dá acesso irrestrito a todos os dados de todos os tenants. **Em produção, um usuário pode extrair a key do bundle compilado.** Solução arquitetural: criar Edge Function `super-admin-proxy` que recebe o JWT SuperAdmin, valida o claim `super_admin: true`, e executa as operações com `service_role` server-side. O Flutter passa apenas o JWT de usuário. Referência: Stripe, AWS, Salesforce nunca expõem credenciais de serviço no cliente. **Sem resolver este item, o sistema NÃO deve ir para produção com dados reais.**
 
 ---
 

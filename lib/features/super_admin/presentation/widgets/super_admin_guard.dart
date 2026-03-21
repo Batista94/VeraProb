@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../state/providers/super_admin_auth_providers.dart';
+import '../../../admin/presentation/lock_screen.dart';
 
 /// Guards the SuperAdmin portal.
 ///
@@ -19,11 +20,30 @@ class SuperAdminGuard extends ConsumerWidget {
     final isSuperAdmin = ref.watch(isSuperAdminProvider);
 
     if (!isSuperAdmin) {
-      // Sign out and deny access — user should not see any SuperAdmin UI.
+      final hasSession =
+          Supabase.instance.client.auth.currentSession != null;
+
+      if (!hasSession) {
+        // Logout normal — sessão já foi limpa. Navega silenciosamente.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+              (_) => false,
+            );
+          }
+        });
+        return const Scaffold(); // Tela em branco por 1 frame, imperceptível.
+      }
+
+      // Sessão ativa mas sem claim super_admin — acesso não autorizado (D2).
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Supabase.instance.client.auth.signOut();
         if (context.mounted) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+            (_) => false,
+          );
         }
       });
 
