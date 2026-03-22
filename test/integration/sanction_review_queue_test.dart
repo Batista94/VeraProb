@@ -33,10 +33,6 @@ void main() {
   setUpAll(() async {
     if (supabaseUrl.isNotEmpty) {
       client = SupabaseClient(supabaseUrl, supabaseKey);
-      await client.from('organizations').upsert({
-        'id': orgId,
-        'name': 'Int Org',
-      });
     }
   });
 

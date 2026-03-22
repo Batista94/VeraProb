@@ -105,10 +105,6 @@ void main() {
     // Initialize the real client
     client = SupabaseClient(supabaseUrl, supabaseKey);
     BrazilTime.ensureInitialized();
-    await client.from('organizations').upsert([
-      {'id': '00000000-0000-0000-0000-000000000001', 'name': 'org-1'},
-      {'id': '00000000-0000-0000-0000-000000000002', 'name': 'org-hacker'},
-    ]);
 
     // Instantiate Data Access Layer
     planRepo = PostgresPlanDeclarationRepository(client);
