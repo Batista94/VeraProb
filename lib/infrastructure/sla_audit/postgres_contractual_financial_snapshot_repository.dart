@@ -125,9 +125,9 @@ class PostgresContractualFinancialSnapshotRepository
       id: row['id'] as String,
       organizationId: row['organization_id'] as String,
       contractId: row['contract_id'] as String?,
-      operationalDateUtc: DateTime.parse(row['operational_date_utc'] as String),
+      operationalDateUtc: DateTime.parse(row['operational_date_utc'] as String).toUtc(),
       operationalTimezone: row['operational_timezone'] as String,
-      closedAtUtc: DateTime.parse(row['closed_at_utc'] as String),
+      closedAtUtc: DateTime.parse(row['closed_at_utc'] as String).toUtc(),
       totalContractedRevenue: Money(
         row['total_contracted_revenue_cents'] as int,
       ),
