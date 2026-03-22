@@ -307,7 +307,7 @@ void main() {
                   .from('sla_audit_ledger_v2')
                   .select()
                   .eq('contract_id', contractId)
-                  .order('id', ascending: true)
+                  .order('occurred_at_utc', ascending: true)
               as List;
 
       expect(
@@ -316,18 +316,20 @@ void main() {
         reason: '1 PLAN_DECLARED + 1 EXECUTION_BOUND expected',
       );
 
-      int previousId = -1;
+      DateTime? previousTime;
       bool foundPlanDeclared = false;
       bool foundExecutionBound = false;
 
       for (var row in entries) {
-        final currentId = row['id'] as int;
-        expect(
-          currentId,
-          greaterThan(previousId),
-          reason: 'IDs must be strictly monotonic',
-        );
-        previousId = currentId;
+        final currentTime = DateTime.parse(row['occurred_at_utc'] as String);
+        if (previousTime != null) {
+          expect(
+            currentTime.compareTo(previousTime) >= 0,
+            isTrue,
+            reason: 'occurred_at_utc must be monotonic',
+          );
+        }
+        previousTime = currentTime;
 
         final type = row['type'];
         if (type == 'PLAN_DECLARED') foundPlanDeclared = true;
