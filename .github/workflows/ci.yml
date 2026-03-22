@@ -90,13 +90,17 @@ jobs:
       - name: Start Supabase Local
         run: supabase start
 
+      - name: Seed local database
+        run: supabase db seed
+
       - name: Create stub .env for asset resolution
         run: echo "# CI stub — credentials injected via dart-define" > .env
 
       - name: Flutter Test with Local Supabase
         run: |
           # Extrai a chave de servico gerada localmente pelo Supabase (RLS Bypass para testes E2E)
-          SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2 | tr -d '"' | tr -d '\r')
+          # Usa -f 2- para capturar tudo após o primeiro '=' (JWTs podem conter '=' de padding base64)
+          SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
           flutter test --no-pub \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"
