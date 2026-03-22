@@ -19,7 +19,6 @@ import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dar
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
-import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
