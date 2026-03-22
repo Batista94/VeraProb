@@ -77,8 +77,7 @@ void main() {
   late ContractualFinancialImpactQueryServicePostgres impactQueryService;
 
   // Test Scope Constants
-  final uiqueTestRunId = const Uuid().v4().substring(0, 8);
-  final contractId = 'e2e-test-$uiqueTestRunId';
+  final contractId = const Uuid().v4();
   const vehicleId = 'v-e2e-999';
   const planVersion = 1;
 
