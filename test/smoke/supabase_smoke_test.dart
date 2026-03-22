@@ -554,6 +554,7 @@ void main() {
 
         await client.from('contractual_service_executions').insert({
           'set_id': setId,
+          'organization_id': orgId,
           'plan_declaration_id': declaredPlanId!,
           'scheduled_start_time_utc': baseTimeUtc
               .subtract(const Duration(minutes: 15))
