@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:universal_html/html.dart' as html;
+import 'dart:typed_data';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -53,22 +54,17 @@ class _BillingCycleReportsScreenState
     if (_report == null) return;
     try {
       final csv = ref.read(exportServiceProvider).generateCsv(_report!);
-
-      // Real download for Web
-      final bytes = utf8.encode('\uFEFF$csv'); // UTF-8 with BOM for Excel
-      final blob = html.Blob([bytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)
-        ..setAttribute(
-          'download',
-          'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}.csv',
-        )
-        ..click();
-      html.Url.revokeObjectUrl(url);
-
+      final bytes = Uint8List.fromList(utf8.encode('\uFEFF$csv')); // UTF-8 BOM
+      await FileSaver.instance.saveFile(
+        name:
+            'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}',
+        bytes: bytes,
+        fileExtension: 'csv',
+        mimeType: MimeType.csv,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Relatório CSV baixado com sucesso! 📊')),
+        const SnackBar(content: Text('Relatório CSV baixado com sucesso!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,24 +79,20 @@ class _BillingCycleReportsScreenState
   Future<void> _exportPdf() async {
     if (_report == null) return;
     try {
-      final pdfBytes = await ref
+      final pdfList = await ref
           .read(exportServiceProvider)
           .generatePdf(_report!);
-
-      // Real download for Web
-      final blob = html.Blob([pdfBytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)
-        ..setAttribute(
-          'download',
-          'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}.pdf',
-        )
-        ..click();
-      html.Url.revokeObjectUrl(url);
-
+      final pdfBytes = Uint8List.fromList(pdfList);
+      await FileSaver.instance.saveFile(
+        name:
+            'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}',
+        bytes: pdfBytes,
+        fileExtension: 'pdf',
+        mimeType: MimeType.pdf,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Relatório PDF gerado com sucesso! 📄')),
+        const SnackBar(content: Text('Relatório PDF gerado com sucesso!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
