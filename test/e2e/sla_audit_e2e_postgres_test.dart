@@ -447,7 +447,7 @@ void main() {
         contractualValue: const Money(10000),
         noShowPenaltyMultiplier: 1.5,
         windowStartUtc: testBaseTimeUtc,
-        windowEndUtc: testBaseTimeUtc,
+        windowEndUtc: testBaseTimeUtc.add(const Duration(minutes: 60)),
       );
 
       // This MUST throw a PostgrestException (code 23505 - unique_violation)
@@ -572,8 +572,10 @@ class MockContractualRuleRepository implements ContractualRuleRepository {
   Future<void> saveRule(ContractualRule rule) async {}
 }
 
-/// Returns a draft [Contract] for any non-empty contractId.
-/// Allows the handler to validate and activate contracts during E2E tests.
+/// Returns an active [Contract] for any non-empty contractId.
+/// Using [ContractStatus.active] avoids the draft→active auto-activation path
+/// in [DeclareContractualPlanHandler], which would write an extra
+/// CONTRACT_ACTIVATED ledger entry and break Stage 3's count assertion.
 class MockContractRepository implements ContractRepository {
   @override
   Future<Contract?> findById(
@@ -588,7 +590,7 @@ class MockContractRepository implements ContractRepository {
       contractorName: 'E2E Contractor',
       validFromUtc: DateTime.utc(2026, 1, 1),
       validUntilUtc: DateTime.utc(2026, 12, 31),
-      status: ContractStatus.draft,
+      status: ContractStatus.active,
       createdAtUtc: DateTime.utc(2026, 1, 1),
     );
   }
