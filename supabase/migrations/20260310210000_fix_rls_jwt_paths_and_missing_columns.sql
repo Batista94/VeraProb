@@ -21,10 +21,10 @@ CREATE POLICY "Tenants can manage their own rule sets"
   WITH CHECK (organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid);
 
 -- ── 3. contract_rule_versions — wrong JWT path (via subquery on rule_sets) ───
-DROP POLICY IF EXISTS "Tenants can manage their own rule versions based on set ownership"
+DROP POLICY IF EXISTS "Tenants manage own rule versions"
   ON public.contract_rule_versions;
 
-CREATE POLICY "Tenants can manage their own rule versions based on set ownership"
+CREATE POLICY "Tenants manage own rule versions"
   ON public.contract_rule_versions
   FOR ALL
   USING (

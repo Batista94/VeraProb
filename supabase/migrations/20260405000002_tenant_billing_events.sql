@@ -1,3 +1,6 @@
+-- Suppress DROP TRIGGER IF EXISTS NOTICEs (triggers don't exist on fresh reset).
+SET client_min_messages TO 'WARNING';
+
 -- =============================================================================
 -- Phase 9.2 — Tenant Billing Events (INV-1: Append-Only)
 -- =============================================================================

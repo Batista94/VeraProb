@@ -96,7 +96,16 @@
       "Bash(do)",
       "Bash(echo \"=== $skill ===\")",
       "Read(//c/Projects/VeraProb/**)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(grep -l \"auth.jwt\\(\\)\" /c/Projects/VeraProb/supabase/migrations/*.sql)",
+      "Bash(git push:*)",
+      "Bash(git rm:*)",
+      "Bash(python3 -c \":*)",
+      "WebSearch",
+      "WebFetch(domain:pub.dev)",
+      "Bash(find ~/.pub-cache -path */file_saver*/file_saver.dart)",
+      "Bash(find /c/Users/wes_b/AppData/Local/Pub/Cache -path */file_saver* -name *.dart)",
+      "Bash(git mv:*)"
     ]
   },
   "model": "sonnet"

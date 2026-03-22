@@ -56,8 +56,7 @@ class _BillingCycleReportsScreenState
       final csv = ref.read(exportServiceProvider).generateCsv(_report!);
       final bytes = Uint8List.fromList(utf8.encode('\uFEFF$csv')); // UTF-8 BOM
       await FileSaver.instance.saveFile(
-        name:
-            'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}',
+        name: 'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}',
         bytes: bytes,
         fileExtension: 'csv',
         mimeType: MimeType.csv,
@@ -84,8 +83,7 @@ class _BillingCycleReportsScreenState
           .generatePdf(_report!);
       final pdfBytes = Uint8List.fromList(pdfList);
       await FileSaver.instance.saveFile(
-        name:
-            'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}',
+        name: 'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}',
         bytes: pdfBytes,
         fileExtension: 'pdf',
         mimeType: MimeType.pdf,

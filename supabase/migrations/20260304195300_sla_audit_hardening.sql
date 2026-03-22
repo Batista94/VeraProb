@@ -14,12 +14,17 @@
 -- ============================================================
 
 -- Ledger: append-only. No record may ever be modified or removed.
-REVOKE UPDATE, DELETE ON public.sla_audit_ledger
-FROM PUBLIC, anon, authenticated;
+-- Wrapped in DO/EXCEPTION: PostgreSQL emits WARNING if the privilege was never granted.
+DO $$ BEGIN
+  REVOKE UPDATE, DELETE ON public.sla_audit_ledger FROM PUBLIC, anon, authenticated;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Snapshot: immutable after creation. No snapshot may be altered or removed.
-REVOKE UPDATE, DELETE ON public.contractual_financial_snapshot
-FROM PUBLIC, anon, authenticated;
+DO $$ BEGIN
+  REVOKE UPDATE, DELETE ON public.contractual_financial_snapshot FROM PUBLIC, anon, authenticated;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- ============================================================
 -- PART 2 — ENABLE ROW LEVEL SECURITY

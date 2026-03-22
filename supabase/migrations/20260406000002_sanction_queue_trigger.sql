@@ -1,3 +1,6 @@
+-- Suppress DROP TRIGGER IF EXISTS NOTICE (trigger doesn't exist on fresh reset).
+SET client_min_messages TO 'WARNING';
+
 -- =============================================================================
 -- Migration: Auto-populate sanction_review_queue from SANCTION_RECOMMENDED
 --

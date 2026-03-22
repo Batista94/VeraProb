@@ -1,3 +1,6 @@
+-- Suppress DROP CONSTRAINT IF EXISTS NOTICE (constraint may not exist on fresh reset).
+SET client_min_messages TO 'WARNING';
+
 -- Sprint 5.13 Bloco 2.1 — Zone Taxonomy
 -- Adiciona coluna gerada zone_scope derivada de contractor_label.
 -- NULL contractor_label → 'global' (zona do operador, visível a todos)

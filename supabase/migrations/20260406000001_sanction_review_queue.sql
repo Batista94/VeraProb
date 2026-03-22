@@ -1,3 +1,6 @@
+-- Suppress DROP TRIGGER/POLICY IF EXISTS NOTICEs (objects don't exist on fresh reset).
+SET client_min_messages TO 'WARNING';
+
 -- =============================================================================
 -- Migration: sanction_review_queue table (Phase 9.3 — Human-in-the-Loop)
 --

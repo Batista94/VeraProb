@@ -1,3 +1,6 @@
+-- Supabase pre-installs these extensions; suppress duplicate NOTICEs.
+SET client_min_messages TO 'WARNING';
+
 -- Habilita a extensão para geração de UUIDs v4
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
