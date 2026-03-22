@@ -57,13 +57,12 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
 
   @override
   Future<List<TenantHealthSnapshot>> getAllTenantHealth() async {
-    final data = await _client
-        .from('super_admin_tenant_health_view')
-        .select();
+    final data = await _client.from('super_admin_tenant_health_view').select();
 
     return (data as List<dynamic>)
-        .map((row) =>
-            TenantHealthSnapshot.fromJson(row as Map<String, dynamic>))
+        .map(
+          (row) => TenantHealthSnapshot.fromJson(row as Map<String, dynamic>),
+        )
         .toList();
   }
 

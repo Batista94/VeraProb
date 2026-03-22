@@ -66,7 +66,7 @@ class SimulationControlService implements OperationalControlService {
         // ignore: use_null_aware_elements
         if (reason != null) 'reason': reason,
         'source': 'operator_manual',
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': DateTime.now().toUtc().toIso8601String(),
       },
     );
 
@@ -134,7 +134,7 @@ class SimulationControlService implements OperationalControlService {
         // ignore: use_null_aware_elements
         if (notes != null) 'notes': notes,
         'source': 'operator_manual',
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': DateTime.now().toUtc().toIso8601String(),
       },
     );
 

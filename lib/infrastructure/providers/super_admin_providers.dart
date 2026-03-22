@@ -34,26 +34,29 @@ final superAdminRepositoryProvider = Provider<ISuperAdminRepository>((ref) {
 });
 
 /// Provider that fetches all tenant health snapshots.
-final tenantHealthSnapshotProvider =
-    FutureProvider<List<TenantHealthSnapshot>>((ref) async {
-  final repo = ref.watch(superAdminRepositoryProvider);
-  return repo.getAllTenantHealth();
-});
+final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthSnapshot>>(
+  (ref) async {
+    final repo = ref.watch(superAdminRepositoryProvider);
+    return repo.getAllTenantHealth();
+  },
+);
 
 /// Provider that fetches system audit log entries.
 /// Accepts optional filters via a record parameter.
 final systemAuditLogProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, AuditLogParams>(
-        (ref, params) async {
-  final repo = ref.watch(superAdminRepositoryProvider);
-  return repo.getSystemAuditLog(
-    organizationId: params.organizationId,
-    severity: params.severity,
-    fromDate: params.fromDate,
-    toDate: params.toDate,
-    limit: params.limit,
-  );
-});
+    FutureProvider.family<List<Map<String, dynamic>>, AuditLogParams>((
+      ref,
+      params,
+    ) async {
+      final repo = ref.watch(superAdminRepositoryProvider);
+      return repo.getSystemAuditLog(
+        organizationId: params.organizationId,
+        severity: params.severity,
+        fromDate: params.fromDate,
+        toDate: params.toDate,
+        limit: params.limit,
+      );
+    });
 
 /// Parameter record for [systemAuditLogProvider].
 class AuditLogParams {
@@ -82,13 +85,8 @@ class AuditLogParams {
           limit == other.limit;
 
   @override
-  int get hashCode => Object.hash(
-        organizationId,
-        severity,
-        fromDate,
-        toDate,
-        limit,
-      );
+  int get hashCode =>
+      Object.hash(organizationId, severity, fromDate, toDate, limit);
 }
 
 /// Public constructor for [AuditLogParams] (used by UI layer).
@@ -98,11 +96,10 @@ AuditLogParams auditLogParams({
   DateTime? fromDate,
   DateTime? toDate,
   int limit = 100,
-}) =>
-    AuditLogParams(
-      organizationId: organizationId,
-      severity: severity,
-      fromDate: fromDate,
-      toDate: toDate,
-      limit: limit,
-    );
+}) => AuditLogParams(
+  organizationId: organizationId,
+  severity: severity,
+  fromDate: fromDate,
+  toDate: toDate,
+  limit: limit,
+);

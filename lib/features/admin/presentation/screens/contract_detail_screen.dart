@@ -177,9 +177,9 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           ? 'Permissão negada. Faça logout e login novamente para atualizar suas credenciais.'
           : raw.replaceAll('Exception: ', '');
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

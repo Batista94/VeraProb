@@ -51,8 +51,9 @@ class SpoofingDetector {
   bool _checkStaticPositionWithSpeed(List<CanonicalFact> facts) {
     if (facts.isEmpty) return false;
 
-    final windowDuration =
-        facts.last.gpsTimestamp.difference(facts.first.gpsTimestamp);
+    final windowDuration = facts.last.gpsTimestamp.difference(
+      facts.first.gpsTimestamp,
+    );
     if (windowDuration.inMinutes < 5) return false;
 
     // Use only facts that report speed > 5 km/h (138 cm/s)
@@ -81,13 +82,16 @@ class SpoofingDetector {
   /// Real GPS accuracy always oscillates slightly due to ionospheric noise
   /// and timing. If it stays at EXACTLY the same value in 10+ pings, it's fake.
   bool _checkZeroEntropyAccuracy(List<CanonicalFact> facts) {
-    final values =
-        facts.where((f) => f.accuracyMeters != null).map((f) => f.accuracyMeters!).toList();
+    final values = facts
+        .where((f) => f.accuracyMeters != null)
+        .map((f) => f.accuracyMeters!)
+        .toList();
     if (values.length < 10) return false;
 
     final mean = values.reduce((a, b) => a + b) / values.length;
     final variance =
-        values.map((v) => pow(v - mean, 2)).reduce((a, b) => a + b) / values.length;
+        values.map((v) => pow(v - mean, 2)).reduce((a, b) => a + b) /
+        values.length;
     final stdDev = sqrt(variance);
 
     // StdDev < 0.001 is physically impossible for consumer or commercial GPS over 10 pings
@@ -98,14 +102,17 @@ class SpoofingDetector {
   /// Detects if the heading reports 0 variance. Even on highways, minor
   /// road curves and vibration lead to minor fluctuations in heading.
   bool _checkPerfectLinearTrajectory(List<CanonicalFact> facts) {
-    final headings =
-        facts.where((f) => f.headingDegrees != null).map((f) => f.headingDegrees!.toDouble()).toList();
+    final headings = facts
+        .where((f) => f.headingDegrees != null)
+        .map((f) => f.headingDegrees!.toDouble())
+        .toList();
     if (headings.length < 15) return false;
 
     // Simple variance check on heading
     final mean = headings.reduce((a, b) => a + b) / headings.length;
     final variance =
-        headings.map((v) => pow(v - mean, 2)).reduce((a, b) => a + b) / headings.length;
+        headings.map((v) => pow(v - mean, 2)).reduce((a, b) => a + b) /
+        headings.length;
     final stdDev = sqrt(variance);
 
     // Moving vehicle with exactly identical heading in 15+ pings

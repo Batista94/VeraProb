@@ -7,17 +7,16 @@ import 'contractor_form_dialog.dart';
 
 // ── Filter helper ─────────────────────────────────────────────
 
-List<Contractor> filterContractors(
-  List<Contractor> contractors,
-  String query,
-) {
+List<Contractor> filterContractors(List<Contractor> contractors, String query) {
   if (query.isEmpty) return contractors;
 
   final lower = query.toLowerCase();
   return contractors
-      .where((c) =>
-          c.name.toLowerCase().contains(lower) ||
-          (c.taxId?.toLowerCase().contains(lower) ?? false))
+      .where(
+        (c) =>
+            c.name.toLowerCase().contains(lower) ||
+            (c.taxId?.toLowerCase().contains(lower) ?? false),
+      )
       .toList();
 }
 
@@ -91,7 +90,7 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
       initialName: initialName.isNotEmpty ? initialName : null,
     );
     if (!mounted || contractor == null) return;
-    
+
     // Auto-select the newly created contractor!
     _textController.text = contractor.name;
     widget.onChanged(contractor);
@@ -104,10 +103,7 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildAutocomplete(),
-        _buildCreateButton(),
-      ],
+      children: [_buildAutocomplete(), _buildCreateButton()],
     );
   }
 
@@ -117,7 +113,8 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
     final hasExactMatch =
         query.isNotEmpty &&
         widget.contractors.any(
-            (c) => c.name.toLowerCase() == query.toLowerCase());
+          (c) => c.name.toLowerCase() == query.toLowerCase(),
+        );
     if (hasExactMatch) return const SizedBox.shrink();
 
     final label = query.isEmpty
@@ -142,12 +139,11 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
 
   Widget _buildAutocomplete() {
     return Autocomplete<Contractor>(
-      initialValue: TextEditingValue(text: widget.selectedContractor?.name ?? ''),
+      initialValue: TextEditingValue(
+        text: widget.selectedContractor?.name ?? '',
+      ),
       optionsBuilder: (textEditingValue) {
-        return filterContractors(
-          widget.contractors,
-          textEditingValue.text,
-        );
+        return filterContractors(widget.contractors, textEditingValue.text);
       },
       displayStringForOption: (contractor) => contractor.name,
       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {

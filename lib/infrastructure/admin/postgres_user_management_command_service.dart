@@ -46,7 +46,9 @@ class PostgresUserManagementCommandService
       case UserRole.contractorViewer:
         return 'CONTRACTOR_VIEWER';
       case UserRole.superAdmin:
-        throw ArgumentError('superAdmin is not a tenant role and cannot be assigned via user management');
+        throw ArgumentError(
+          'superAdmin is not a tenant role and cannot be assigned via user management',
+        );
     }
   }
 }

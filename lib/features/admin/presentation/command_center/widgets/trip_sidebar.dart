@@ -328,10 +328,7 @@ class _TripCard extends StatelessWidget {
                       color: VeraProbColors.textDisabled,
                     ),
                     const SizedBox(width: 2),
-                    Text(
-                      trip.vehiclePlate!,
-                      style: VeraProbTypography.caption,
-                    ),
+                    Text(trip.vehiclePlate!, style: VeraProbTypography.caption),
                     const SizedBox(width: 8),
                   ],
                   if (trip.driverName != null) ...[

@@ -20,8 +20,8 @@ class SuperAdminInvitationCommandService implements InvitationCommandService {
     this._serviceRoleClient, {
     required String orgId,
     required String superAdminUserId,
-  })  : _orgId = orgId,
-        _superAdminUserId = superAdminUserId;
+  }) : _orgId = orgId,
+       _superAdminUserId = superAdminUserId;
 
   @override
   Future<void> inviteUser({

@@ -114,7 +114,7 @@ class TripRepositoryImpl implements ITripRepository {
     await _supabase
         .from('trips_audit')
         .update({
-          'end_time': DateTime.now().toIso8601String(),
+          'end_time': DateTime.now().toUtc().toIso8601String(),
           'status': 'completed',
         })
         .eq('id', tripId);

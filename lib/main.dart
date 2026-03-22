@@ -34,7 +34,9 @@ void main() async {
 
   // Security Log (Debug only)
   if (kDebugMode) {
-    print('[veraprob] Mode: ${EnvironmentConfig.label} | Endpoint: ${EnvironmentConfig.supabaseUrl}');
+    print(
+      '[veraprob] Mode: ${EnvironmentConfig.label} | Endpoint: ${EnvironmentConfig.supabaseUrl}',
+    );
   }
 
   // FASE 0 - Passively initialize Supabase. No overrides or dependencies created.
@@ -101,7 +103,6 @@ class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
         ref.read(contractualEvaluationSubscriberProvider)?.start();
       }
     });
-
 
     return MaterialApp(
       title: 'veraprob — Control Center',

@@ -31,7 +31,9 @@ class SentryRiverpodObserver extends ProviderObserver {
       final stack = newValue.stackTrace;
 
       if (kDebugMode) {
-        debugPrint('[Sentry] Provider error in ${provider.name ?? provider.runtimeType}: $error');
+        debugPrint(
+          '[Sentry] Provider error in ${provider.name ?? provider.runtimeType}: $error',
+        );
       }
 
       if (EnvironmentConfig.sentryEnabled) {
@@ -51,12 +53,12 @@ class SentryRiverpodObserver extends ProviderObserver {
 ///
 /// Returns `true` if Sentry was successfully configured.
 /// Returns `false` (and logs warning) if DSN is missing.
-Future<bool> initSentry({
-  required AppRunner appRunner,
-}) async {
+Future<bool> initSentry({required AppRunner appRunner}) async {
   if (!EnvironmentConfig.sentryEnabled) {
     if (kDebugMode) {
-      debugPrint('[Sentry] Disabled in ${EnvironmentConfig.label} — skipping init.');
+      debugPrint(
+        '[Sentry] Disabled in ${EnvironmentConfig.label} — skipping init.',
+      );
     }
     await appRunner();
     return false;
@@ -70,22 +72,24 @@ Future<bool> initSentry({
     return false;
   }
 
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = EnvironmentConfig.sentryDsn;
-      options.environment = EnvironmentConfig.sentryEnvironment;
-      options.tracesSampleRate = EnvironmentConfig.isProd ? 0.2 : 1.0;
-      options.profilesSampleRate = EnvironmentConfig.isProd ? 0.1 : 0.5; // ignore: experimental_member_use
-      options.attachScreenshot = false; // Never capture screenshots — privacy
-      options.sendDefaultPii = false;   // Never send PII automatically
-      options.debug = kDebugMode;
-      options.release = 'veraprob@${const String.fromEnvironment('APP_VERSION', defaultValue: '1.0.0')}+${EnvironmentConfig.sentryEnvironment}';
-    },
-    appRunner: appRunner,
-  );
+  await SentryFlutter.init((options) {
+    options.dsn = EnvironmentConfig.sentryDsn;
+    options.environment = EnvironmentConfig.sentryEnvironment;
+    options.tracesSampleRate = EnvironmentConfig.isProd ? 0.2 : 1.0;
+    options.profilesSampleRate = EnvironmentConfig.isProd
+        ? 0.1
+        : 0.5; // ignore: experimental_member_use
+    options.attachScreenshot = false; // Never capture screenshots — privacy
+    options.sendDefaultPii = false; // Never send PII automatically
+    options.debug = kDebugMode;
+    options.release =
+        'veraprob@${const String.fromEnvironment('APP_VERSION', defaultValue: '1.0.0')}+${EnvironmentConfig.sentryEnvironment}';
+  }, appRunner: appRunner);
 
   if (kDebugMode) {
-    debugPrint('[Sentry] Initialized — DSN configured for ${EnvironmentConfig.label}');
+    debugPrint(
+      '[Sentry] Initialized — DSN configured for ${EnvironmentConfig.label}',
+    );
   }
 
   return true;

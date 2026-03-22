@@ -28,7 +28,9 @@ enum UserRole {
   /// it operates in a separate, contractor-scoped access domain.
   bool hasPermission(UserRole requiredRole) {
     if (this == UserRole.contractorViewer) return false;
-    if (this == UserRole.superAdmin) return true; // superAdmin has all permissions
+    if (this == UserRole.superAdmin) {
+      return true; // superAdmin has all permissions
+    }
     if (this == UserRole.admin) return true;
     if (this == UserRole.operator) {
       return requiredRole == UserRole.operator ||

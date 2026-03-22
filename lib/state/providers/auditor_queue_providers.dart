@@ -9,8 +9,6 @@ import '../../application/sla_audit/reject_sanction_handler.dart';
 import '../../domain/enums/user_role.dart';
 import '../../domain/services/rbac_service.dart';
 import '../../infrastructure/sla_audit/sla_persistence_provider.dart';
-import '../../infrastructure/sla_audit/postgres_sanction_queue_query_service.dart';
-import 'sla_providers.dart';
 
 // ── Realtime stream of pending sanctions ─────────────────────────────────────
 
@@ -25,13 +23,8 @@ final pendingSanctionsStreamProvider =
           .stream(primaryKey: ['id'])
           .eq('status', 'pending')
           .map(
-            (rows) => rows
-                .map(
-                  (row) => SanctionQueueItemView.fromRow(
-                    row as Map<String, dynamic>,
-                  ),
-                )
-                .toList(),
+            (rows) =>
+                rows.map((row) => SanctionQueueItemView.fromRow(row)).toList(),
           );
     });
 

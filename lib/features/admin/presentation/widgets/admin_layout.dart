@@ -111,7 +111,9 @@ class AdminLayout extends ConsumerWidget {
                   minExtendedWidth: 220,
                   selectedIndex: selectedIndex,
                   onDestinationSelected: (index) {
-                    if (index == selectedIndex) return; // stay on current screen
+                    if (index == selectedIndex) {
+                      return; // stay on current screen
+                    }
                     ref.read(adminIndexProvider.notifier).state = index;
                     ref.read(selectedContractIdProvider.notifier).state = null;
                   },
@@ -128,14 +130,17 @@ class AdminLayout extends ConsumerWidget {
                         // Translating destination labels to actual index in AdminHome
                         onNavigate: (destIdx) {
                           ref.read(adminIndexProvider.notifier).state = destIdx;
-                          ref.read(selectedContractIdProvider.notifier).state = null;
+                          ref.read(selectedContractIdProvider.notifier).state =
+                              null;
                         },
                       ),
                       if (ref.watch(selectedContractIdProvider) != null)
                         _InternalBackButton(
-                          onBack: () => ref
-                              .read(selectedContractIdProvider.notifier)
-                              .state = null,
+                          onBack: () =>
+                              ref
+                                      .read(selectedContractIdProvider.notifier)
+                                      .state =
+                                  null,
                         ),
                       Expanded(
                         child: IndexedStack(

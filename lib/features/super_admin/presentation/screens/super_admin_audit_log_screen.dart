@@ -50,8 +50,7 @@ class _SuperAdminAuditLogScreenState
         ),
         Expanded(
           child: logsAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, _) => Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -98,10 +97,7 @@ class _FilterBar extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Text(
-            'Filtros:',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Filtros:', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(width: 12),
           Wrap(
             spacing: 8,
@@ -111,8 +107,7 @@ class _FilterBar extends StatelessWidget {
                 label: Text(s.toUpperCase()),
                 selected: isSelected,
                 selectedColor: _severityColor(s).withValues(alpha: 0.25),
-                onSelected: (_) =>
-                    onSeverityChanged(isSelected ? null : s),
+                onSelected: (_) => onSeverityChanged(isSelected ? null : s),
               );
             }).toList(),
           ),

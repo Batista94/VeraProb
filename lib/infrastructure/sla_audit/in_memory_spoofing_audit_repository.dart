@@ -22,9 +22,13 @@ class InMemorySpoofingAuditRepository implements SpoofingAuditRepository {
   }
 
   @override
-  Future<List<SpoofingAuditEntry>> getPendingReview(String organizationId) async {
+  Future<List<SpoofingAuditEntry>> getPendingReview(
+    String organizationId,
+  ) async {
     return _entries
-        .where((e) => e.organizationId == organizationId && e.reviewedAt == null)
+        .where(
+          (e) => e.organizationId == organizationId && e.reviewedAt == null,
+        )
         .toList();
   }
 

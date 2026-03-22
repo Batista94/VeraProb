@@ -21,20 +21,22 @@ class PostgresSanctionReviewQueueRepository
 
   @override
   Future<void> enqueue(SanctionReviewQueueEntry entry) async {
-    await _client.from('sanction_review_queue').upsert(
-      {
-        'id': entry.id,
-        'organization_id': entry.organizationId,
-        'ledger_entry_id': entry.ledgerEntryId,
-        'set_id': entry.setId,
-        'contract_id': entry.contractId,
-        'verdict_evidence': entry.verdictEvidence.toJson(),
-        'status': entry.status.name,
-        'created_at': entry.createdAtUtc.toIso8601String(),
-      },
-      onConflict: 'ledger_entry_id', // INV-24: idempotent
-      ignoreDuplicates: true,
-    );
+    await _client
+        .from('sanction_review_queue')
+        .upsert(
+          {
+            'id': entry.id,
+            'organization_id': entry.organizationId,
+            'ledger_entry_id': entry.ledgerEntryId,
+            'set_id': entry.setId,
+            'contract_id': entry.contractId,
+            'verdict_evidence': entry.verdictEvidence.toJson(),
+            'status': entry.status.name,
+            'created_at': entry.createdAtUtc.toIso8601String(),
+          },
+          onConflict: 'ledger_entry_id', // INV-24: idempotent
+          ignoreDuplicates: true,
+        );
   }
 
   @override

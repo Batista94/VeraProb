@@ -236,10 +236,7 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
             const SizedBox(height: 12),
             Text(
               _error!,
-              style: const TextStyle(
-                color: VeraProbColors.error,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: VeraProbColors.error, fontSize: 13),
               textAlign: TextAlign.center,
             ),
           ],

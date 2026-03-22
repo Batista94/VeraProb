@@ -299,7 +299,11 @@ class _SuggestionSection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.lightbulb, color: VeraProbColors.primary, size: 18),
+              const Icon(
+                Icons.lightbulb,
+                color: VeraProbColors.primary,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Text(
                 'SUGESTÃO DO SISTEMA',

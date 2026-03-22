@@ -46,6 +46,14 @@ jobs:
       - name: Flutter Analyze (zero warnings policy)
         run: flutter analyze --no-pub
 
+      - name: Enforce Dart Formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: VeraProb Forensic Scan
+        run: |
+          chmod +x .claude/skills/veraprob-pr-scanner/scan.sh
+          bash .claude/skills/veraprob-pr-scanner/scan.sh
+
   test:
     name: Flutter Test
     runs-on: ubuntu-latest
@@ -74,8 +82,21 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase Local
+        run: supabase start
+
       - name: Create stub .env for asset resolution
         run: echo "# CI stub — credentials injected via dart-define" > .env
 
-      - name: Flutter Test
-        run: flutter test --no-pub
+      - name: Flutter Test with Local Supabase
+        run: |
+          # Extrai a chave anônima gerada localmente pelo Supabase
+          ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d '=' -f 2 | tr -d '"' | tr -d '\r')
+          flutter test --no-pub \
+            --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
+            --dart-define=SUPABASE_KEY="$ANON_KEY"

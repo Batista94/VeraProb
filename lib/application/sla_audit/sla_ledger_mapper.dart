@@ -202,9 +202,7 @@ class SlaLedgerMapper {
         contractId: event.contractId,
         planVersion: event.planVersion,
         occurredAtUtc: event.occurredAtUtc,
-        payload: {
-          'verdict_evidence': event.verdictEvidence.toJson(),
-        },
+        payload: {'verdict_evidence': event.verdictEvidence.toJson()},
       );
     }
 

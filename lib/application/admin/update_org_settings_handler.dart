@@ -1,6 +1,7 @@
 import '../../domain/admin/organization_repository.dart';
 import '../../domain/enums/user_permissions.dart';
 import '../../domain/services/rbac_service.dart';
+import '../../domain/sla_audit/domain_exception.dart';
 import 'update_org_settings_command.dart';
 
 /// Application handler for updating organization settings.
@@ -16,7 +17,7 @@ class UpdateOrgSettingsHandler {
   Future<void> handle(UpdateOrgSettingsCommand command) async {
     // 1. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageOrganization)) {
-      throw Exception(
+      throw DomainException(
         'Unauthorized: Caller identifies as ${command.callerRole} but needs canManageOrganization permission',
       );
     }
@@ -24,7 +25,9 @@ class UpdateOrgSettingsHandler {
     // 2. Fetch aggregate
     final org = await _repository.findById(command.organizationId);
     if (org == null) {
-      throw Exception('Organization not found: ${command.organizationId}');
+      throw DomainException(
+        'Organization not found: ${command.organizationId}',
+      );
     }
 
     // 3. Apply changes (value object with copyWith)

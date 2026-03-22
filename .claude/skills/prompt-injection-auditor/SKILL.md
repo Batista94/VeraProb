@@ -1,5 +1,5 @@
 ---
-name: "Prompt Injection Auditor v2.0"
+name: "prompt-injection-auditor"
 trigger: "/audit-prompt"
 description: "🔍 Auditoria completa de prompt injection, jailbreaks e segurança"
 priority: 2000

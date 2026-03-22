@@ -20,8 +20,7 @@ class SuperAdminGuard extends ConsumerWidget {
     final isSuperAdmin = ref.watch(isSuperAdminProvider);
 
     if (!isSuperAdmin) {
-      final hasSession =
-          Supabase.instance.client.auth.currentSession != null;
+      final hasSession = Supabase.instance.client.auth.currentSession != null;
 
       if (!hasSession) {
         // Logout normal — sessão já foi limpa. Navega silenciosamente.
@@ -40,7 +39,7 @@ class SuperAdminGuard extends ConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Supabase.instance.client.auth.signOut();
         if (context.mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
+          await Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const AdminLockScreen()),
             (_) => false,
           );

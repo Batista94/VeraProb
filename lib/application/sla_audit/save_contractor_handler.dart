@@ -3,6 +3,7 @@ import '../../domain/enums/user_permissions.dart';
 import '../../domain/services/rbac_service.dart';
 import '../../domain/sla_audit/contractor.dart';
 import '../../domain/sla_audit/contractor_repository.dart';
+import '../../domain/sla_audit/domain_exception.dart';
 import 'save_contractor_command.dart';
 
 /// Application handler for creating or updating a contractor.
@@ -19,7 +20,7 @@ class SaveContractorHandler {
   Future<Contractor> handle(SaveContractorCommand command) async {
     // 1. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageContractors)) {
-      throw Exception(
+      throw DomainException(
         'Unauthorized: Caller identifies as ${command.callerRole} but needs canManageContractors permission',
       );
     }
@@ -33,7 +34,7 @@ class SaveContractorHandler {
         command.id!,
       );
       if (existing == null) {
-        throw Exception('Contractor not found: ${command.id}');
+        throw DomainException('Contractor not found: ${command.id}');
       }
       contractor = existing.copyWith(
         name: command.name,

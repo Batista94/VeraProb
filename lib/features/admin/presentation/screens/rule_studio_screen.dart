@@ -214,10 +214,7 @@ class _RuleCard extends ConsumerWidget {
                 ),
               ),
               if (activeRule != null)
-                const VeraProbChip(
-                  label: 'Ativa',
-                  color: VeraProbColors.onTime,
-                )
+                const VeraProbChip(label: 'Ativa', color: VeraProbColors.onTime)
               else
                 const VeraProbChip(
                   label: 'Não configurada',

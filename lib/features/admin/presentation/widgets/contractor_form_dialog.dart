@@ -15,10 +15,8 @@ Future<Contractor?> showContractorFormDialog(
   return showDialog<Contractor>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => ContractorFormDialog(
-      existing: existing,
-      initialName: initialName,
-    ),
+    builder: (context) =>
+        ContractorFormDialog(existing: existing, initialName: initialName),
   );
 }
 

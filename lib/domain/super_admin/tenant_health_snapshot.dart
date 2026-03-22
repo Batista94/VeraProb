@@ -37,7 +37,8 @@ class TenantHealthSnapshot extends Equatable {
       isActive: json['is_active'] as bool? ?? false,
       maxVehicles: (json['max_vehicles'] as num?)?.toInt() ?? 0,
       maxActiveContracts: (json['max_active_contracts'] as num?)?.toInt() ?? 0,
-      activeContractCount: (json['active_contract_count'] as num?)?.toInt() ?? 0,
+      activeContractCount:
+          (json['active_contract_count'] as num?)?.toInt() ?? 0,
       lastTelemetryAt: json['last_telemetry_at'] != null
           ? DateTime.parse(json['last_telemetry_at'] as String)
           : null,

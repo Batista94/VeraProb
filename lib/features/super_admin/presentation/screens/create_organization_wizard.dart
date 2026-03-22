@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -124,10 +126,8 @@ class _CreateOrganizationWizardState
 
     try {
       final repo = ref.read(superAdminRepositoryProvider);
-      final serviceRoleClient =
-          ref.read(superAdminSupabaseClientProvider);
-      final handler =
-          CreateOrganizationHandler(repo, serviceRoleClient);
+      final serviceRoleClient = ref.read(superAdminSupabaseClientProvider);
+      final handler = CreateOrganizationHandler(repo, serviceRoleClient);
 
       final cmd = CreateOrganizationCommand(
         legalName: _legalNameCtrl.text.trim(),
@@ -152,11 +152,18 @@ class _CreateOrganizationWizardState
           '${Uri.base.origin}/accept-invite?token=${result.invitationToken}';
 
       // Fire invitation email — silent failure (link in dialog is the fallback)
-      supabase.functions.invoke('notify-invite', body: {
-        'email': cmd.initialAdminEmail,
-        'inviteUrl': inviteUrl,
-        'orgName': cmd.tradeName,
-      }).catchError((_) {});
+      unawaited(() async {
+        try {
+          await supabase.functions.invoke(
+            'notify-invite',
+            body: {
+              'email': cmd.initialAdminEmail,
+              'inviteUrl': inviteUrl,
+              'orgName': cmd.tradeName,
+            },
+          );
+        } catch (_) {}
+      }());
 
       // Success dialog
       await showDialog<void>(
@@ -194,8 +201,7 @@ class _CreateOrganizationWizardState
                     icon: const Icon(Icons.copy_all, size: 18),
                     tooltip: 'Copiar link',
                     onPressed: () async {
-                      await Clipboard.setData(
-                          ClipboardData(text: inviteUrl));
+                      await Clipboard.setData(ClipboardData(text: inviteUrl));
                       messenger.showSnackBar(
                         const SnackBar(content: Text('Link copiado!')),
                       );
@@ -244,10 +250,7 @@ class _CreateOrganizationWizardState
     } on DomainException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
       );
     } catch (e) {
       if (!mounted) return;
@@ -339,8 +342,8 @@ class _CreateOrganizationWizardState
             onPressed: _isSubmitting
                 ? null
                 : isLast
-                    ? _submit
-                    : () => _goToStep(_currentStep + 1),
+                ? _submit
+                : () => _goToStep(_currentStep + 1),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.indigo,
               foregroundColor: Colors.white,
@@ -435,17 +438,11 @@ class _Step1FiscalData extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          Text(
-            'Plano *',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text('Plano *', style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 8),
           SegmentedButton<PlanType>(
             segments: PlanType.values
-                .map((p) => ButtonSegment(
-                      value: p,
-                      label: Text(p.label),
-                    ))
+                .map((p) => ButtonSegment(value: p, label: Text(p.label)))
                 .toList(),
             selected: {selectedPlan},
             onSelectionChanged: (s) => onPlanChanged(s.first),
@@ -590,8 +587,16 @@ class _Step3AdminInvite extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SummaryRow(icon: Icons.business, label: 'Empresa', value: tradeName),
-                _SummaryRow(icon: Icons.star_outline, label: 'Plano', value: planLabel),
+                _SummaryRow(
+                  icon: Icons.business,
+                  label: 'Empresa',
+                  value: tradeName,
+                ),
+                _SummaryRow(
+                  icon: Icons.star_outline,
+                  label: 'Plano',
+                  value: planLabel,
+                ),
                 _SummaryRow(
                   icon: Icons.directions_car,
                   label: 'Máx. Veículos',

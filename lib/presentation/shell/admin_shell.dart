@@ -151,7 +151,10 @@ class _AdminSidebar extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
         border: Border(
-          right: BorderSide(color: Colors.black.withValues(alpha: 0.05), width: 1),
+          right: BorderSide(
+            color: Colors.black.withValues(alpha: 0.05),
+            width: 1,
+          ),
         ),
       ),
       child: Column(

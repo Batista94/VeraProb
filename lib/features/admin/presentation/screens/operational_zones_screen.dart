@@ -767,9 +767,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                         color: VeraProbColors.success.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: VeraProbColors.success.withValues(
-                            alpha: 0.35,
-                          ),
+                          color: VeraProbColors.success.withValues(alpha: 0.35),
                         ),
                       ),
                       child: Row(

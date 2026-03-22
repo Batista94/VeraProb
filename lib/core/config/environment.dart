@@ -34,8 +34,7 @@ class EnvironmentConfig {
   static const _envName = String.fromEnvironment('ENV', defaultValue: 'dev');
 
   /// The currently active environment.
-  static AppEnvironment get environment =>
-      AppEnvironment.fromString(_envName);
+  static AppEnvironment get environment => AppEnvironment.fromString(_envName);
 
   static bool get isDev => environment == AppEnvironment.dev;
   static bool get isStaging => environment == AppEnvironment.staging;
@@ -51,8 +50,9 @@ class EnvironmentConfig {
   /// Supabase service_role key for SuperAdmin client (Phase 9.2 — D3).
   /// NEVER hard-code. Inject via --dart-define=SUPABASE_SERVICE_ROLE_KEY=...
   /// Only used by SuperAdmin portal — never passed to tenant providers.
-  static const supabaseServiceRoleKey =
-      String.fromEnvironment('SUPABASE_SERVICE_ROLE_KEY');
+  static const supabaseServiceRoleKey = String.fromEnvironment(
+    'SUPABASE_SERVICE_ROLE_KEY',
+  );
 
   /// Returns true if the service_role key is available (SuperAdmin portal).
   static bool get hasServiceRoleKey => supabaseServiceRoleKey.isNotEmpty;

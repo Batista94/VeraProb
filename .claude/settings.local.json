@@ -81,7 +81,23 @@
       "Bash(powershell -Command \"docker inspect supabase_auth_veraprob | ConvertFrom-Json | ForEach-Object { $_Config.Env } | Where-Object { $_-match ''HOOK|hook'' }\")",
       "Bash(powershell -Command \"docker inspect supabase_auth_veraprob | ConvertFrom-Json | Select-Object -ExpandProperty Config | Select-Object -ExpandProperty Env | Select-String -Pattern ''HOOK''\")",
       "Bash(powershell -Command \"docker inspect supabase_auth_veraprob\")",
-      "Bash(powershell -Command \"docker logs supabase_auth_veraprob 2>&1\")"
+      "Bash(powershell -Command \"docker logs supabase_auth_veraprob 2>&1\")",
+      "Bash(chmod +x /c/Projects/VeraProb/scripts/pr_scanner.sh)",
+      "Bash(bash scripts/pr_scanner.sh 2>&1)",
+      "Bash(certutil -hashfile \"C:\\\\Projects\\\\VeraProb\\\\.claude\\\\skills\\\\veraprob-pr-scanner\\\\SKILL.md\" SHA256)",
+      "Bash(python /c/Projects/VeraProb/.claude/skills/prompt-injection-auditor/scripts/generate-report.py --file \"/c/Projects/VeraProb/.claude/skills/veraprob-pr-scanner/SKILL.md\" --score 97 --signature \"VP-SEC-7985BB94FF750C34\")",
+      "Bash(find /c/Projects/VeraProb/lib -type f -name \"*.dart\" -exec wc -l {} +)",
+      "Bash(find /c/Projects/VeraProb/lib -name \"*.dart\" -type f -exec grep -L \"^\\(import|export|part|library\\)\" {})",
+      "Bash(find /c/Projects/VeraProb/lib/domain -name \"*.dart\" -type f -exec wc -l {} +)",
+      "Bash(find /c/Projects/VeraProb/lib/application -name \"*.dart\" -type f -exec wc -l {} +)",
+      "Bash(grep -rn \"Future<.*>\" /c/Projects/VeraProb/lib/state/providers/*.dart)",
+      "Bash(dart format:*)",
+      "Bash(for skill:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $skill ===\")",
+      "Read(//c/Projects/VeraProb/**)",
+      "Bash(done)"
     ]
-  }
+  },
+  "model": "sonnet"
 }

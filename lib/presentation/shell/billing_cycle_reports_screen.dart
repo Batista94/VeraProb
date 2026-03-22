@@ -119,9 +119,7 @@ class _PackageCard extends ConsumerWidget {
                         const SizedBox(width: 8),
                         _Badge(
                           label: 'SHA-256',
-                          color: VeraProbColors.primary.withValues(
-                            alpha: 0.15,
-                          ),
+                          color: VeraProbColors.primary.withValues(alpha: 0.15),
                         ),
                       ],
                     ),

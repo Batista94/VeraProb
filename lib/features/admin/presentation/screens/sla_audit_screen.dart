@@ -129,9 +129,7 @@ class _SummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: VeraProbColors.border.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: VeraProbColors.border.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

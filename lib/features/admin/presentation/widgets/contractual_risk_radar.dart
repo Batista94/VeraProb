@@ -224,9 +224,7 @@ class _RiskFeedList extends ConsumerWidget {
             loading: () => const Padding(
               padding: EdgeInsets.all(24.0),
               child: Center(
-                child: CircularProgressIndicator(
-                  color: VeraProbColors.primary,
-                ),
+                child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
             ),
             error: (err, _) => Padding(

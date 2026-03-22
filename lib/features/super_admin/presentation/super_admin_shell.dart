@@ -34,19 +34,15 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
             NavigationRail(
               backgroundColor: Colors.indigo.shade900,
               selectedIndex: _selectedIndex,
-              onDestinationSelected: (i) =>
-                  setState(() => _selectedIndex = i),
+              onDestinationSelected: (i) => setState(() => _selectedIndex = i),
               labelType: NavigationRailLabelType.all,
-              selectedIconTheme:
-                  const IconThemeData(color: Colors.white),
-              unselectedIconTheme:
-                  const IconThemeData(color: Colors.white54),
+              selectedIconTheme: const IconThemeData(color: Colors.white),
+              unselectedIconTheme: const IconThemeData(color: Colors.white54),
               selectedLabelTextStyle: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
-              unselectedLabelTextStyle:
-                  const TextStyle(color: Colors.white54),
+              unselectedLabelTextStyle: const TextStyle(color: Colors.white54),
               leading: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Column(
@@ -71,9 +67,10 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
                   onPressed: () async {
                     await Supabase.instance.client.auth.signOut();
                     if (context.mounted) {
-                      Navigator.of(context).pushAndRemoveUntil(
+                      await Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(
-                            builder: (_) => const AdminLockScreen()),
+                          builder: (_) => const AdminLockScreen(),
+                        ),
                         (_) => false,
                       );
                     }
@@ -100,9 +97,7 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
             ),
             const VerticalDivider(width: 1),
             // ── Main content ───────────────────────────────────────
-            Expanded(
-              child: _buildBody(),
-            ),
+            Expanded(child: _buildBody()),
           ],
         ),
       ),

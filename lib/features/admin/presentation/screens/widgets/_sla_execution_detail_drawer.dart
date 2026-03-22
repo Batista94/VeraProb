@@ -175,10 +175,7 @@ class _Header extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Detalhes da Obrigação',
-            style: VeraProbTypography.sectionTitle,
-          ),
+          Text('Detalhes da Obrigação', style: VeraProbTypography.sectionTitle),
           IconButton(icon: const Icon(Icons.close), onPressed: onClose),
         ],
       ),

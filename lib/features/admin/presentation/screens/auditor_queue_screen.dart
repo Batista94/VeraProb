@@ -27,8 +27,7 @@ class AuditorQueueScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           Expanded(
             child: sanctionsAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Text(
                   'Erro ao carregar fila: $e',
@@ -39,8 +38,7 @@ class AuditorQueueScreen extends ConsumerWidget {
                   ? const _EmptyState()
                   : ListView.separated(
                       itemCount: items.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) => _SanctionCard(item: items[i]),
                     ),
             ),
@@ -67,10 +65,7 @@ class _Header extends StatelessWidget {
       children: [
         const Icon(Icons.approval_outlined, color: VeraProbColors.primary),
         const SizedBox(width: 12),
-        Text(
-          'Fila Auditora',
-          style: VeraProbTypography.sectionTitle,
-        ),
+        Text('Fila Auditora', style: VeraProbTypography.sectionTitle),
         const SizedBox(width: 12),
         if (count > 0)
           Container(
@@ -102,7 +97,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.check_circle_outline,
             size: 56,
             color: VeraProbColors.textDisabled,
@@ -115,7 +110,7 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Todas as recomendações do engine foram revisadas.',
             style: TextStyle(color: VeraProbColors.textDisabled),
           ),
@@ -147,16 +142,14 @@ class _SanctionCardState extends ConsumerState<_SanctionCard> {
 
   @override
   Widget build(BuildContext context) {
-    final actionState = ref.watch(
-      sanctionActionStateProvider(widget.item.id),
-    );
+    final actionState = ref.watch(sanctionActionStateProvider(widget.item.id));
     final isLoading = actionState is AsyncLoading;
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: VeraProbColors.border),
+        side: const BorderSide(color: VeraProbColors.border),
       ),
       color: VeraProbColors.surface,
       child: Padding(
@@ -186,7 +179,7 @@ class _SanctionCardState extends ConsumerState<_SanctionCard> {
                 const Spacer(),
                 Text(
                   _formatDate(widget.item.createdAtUtc),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 11,
                     color: VeraProbColors.textDisabled,
                   ),
@@ -198,10 +191,7 @@ class _SanctionCardState extends ConsumerState<_SanctionCard> {
             // ── Contract / SET info ──────────────────────────────────────
             _InfoRow('Contrato', widget.item.contractId),
             _InfoRow('Veículo (SET)', widget.item.setId),
-            _InfoRow(
-              'Cláusula',
-              widget.item.verdictEvidence.clauseRef,
-            ),
+            _InfoRow('Cláusula', widget.item.verdictEvidence.clauseRef),
             const SizedBox(height: 8),
             _InfoRow(
               'Infração',
@@ -216,7 +206,7 @@ class _SanctionCardState extends ConsumerState<_SanctionCard> {
 
             // ── Provenance section ───────────────────────────────────────
             const SizedBox(height: 12),
-            _SectionLabel('Proveniência'),
+            const _SectionLabel('Proveniência'),
             _InfoRow(
               'GPS',
               'lat ${widget.item.verdictEvidence.primaryEvidenceLat.toStringAsFixed(4)} · '
@@ -227,10 +217,7 @@ class _SanctionCardState extends ConsumerState<_SanctionCard> {
               widget.item.verdictEvidence.primaryEvidenceTimestampUtc
                   .toIso8601String(),
             ),
-            _InfoRow(
-              'Hash SHA-256',
-              '${widget.item.shortEvidenceHash}...',
-            ),
+            _InfoRow('Hash SHA-256', '${widget.item.shortEvidenceHash}...'),
 
             // ── Error feedback ───────────────────────────────────────────
             if (actionState is AsyncError) ...[
@@ -242,11 +229,8 @@ class _SanctionCardState extends ConsumerState<_SanctionCard> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  (actionState as AsyncError).error.toString(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: VeraProbColors.error,
-                  ),
+                  actionState.error.toString(),
+                  style: const TextStyle(fontSize: 12, color: VeraProbColors.error),
                 ),
               ),
             ],
@@ -264,9 +248,8 @@ class _SanctionCardState extends ConsumerState<_SanctionCard> {
               showRejectField: _showRejectField,
               rejectController: _rejectController,
               onApprove: () => _onApprove(context),
-              onRejectTap: () => setState(
-                () => _showRejectField = !_showRejectField,
-              ),
+              onRejectTap: () =>
+                  setState(() => _showRejectField = !_showRejectField),
               onRejectConfirm: () => _onReject(context),
               onDispute: () => _onDispute(context),
             ),
@@ -334,7 +317,7 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         label.toUpperCase(),
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.8,
@@ -361,7 +344,7 @@ class _InfoRow extends StatelessWidget {
             width: 110,
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 color: VeraProbColors.textSecondary,
               ),
@@ -441,7 +424,7 @@ class _ActionRow extends StatelessWidget {
         if (showRejectField)
           ListenableBuilder(
             listenable: rejectController,
-            builder: (_, __) {
+            builder: (_, _) {
               final canConfirm = rejectController.text.trim().length >= 10;
               return FilledButton.icon(
                 onPressed: isLoading || !canConfirm ? null : onRejectConfirm,

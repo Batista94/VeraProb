@@ -1,5 +1,6 @@
 import '../../domain/enums/user_permissions.dart';
 import '../../domain/services/rbac_service.dart';
+import '../../domain/sla_audit/domain_exception.dart';
 import '../../../infrastructure/admin/postgres_user_management_query_service.dart';
 import 'remove_member_command.dart';
 import 'user_management_command_service.dart';
@@ -22,7 +23,7 @@ class RemoveMemberHandler {
   Future<void> handle(RemoveMemberCommand command) async {
     // 1. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageUsers)) {
-      throw Exception(
+      throw DomainException(
         'Unauthorized: Caller identifies as ${command.callerRole} but needs canManageUsers permission',
       );
     }
@@ -35,14 +36,14 @@ class RemoveMemberHandler {
         .where((m) => m.userId == command.targetUserId)
         .firstOrNull;
     if (target == null) {
-      throw Exception('Membro não encontrado na organização.');
+      throw const DomainException('Membro não encontrado na organização.');
     }
 
     // 3. Last-admin guard (Dart level for immediate UX)
     if (target.role == 'TENANT_ADMIN') {
       final adminCount = members.where((m) => m.role == 'TENANT_ADMIN').length;
       if (adminCount <= 1) {
-        throw Exception(
+        throw const DomainException(
           'Não é possível remover o único administrador da organização.',
         );
       }

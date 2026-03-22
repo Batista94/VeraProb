@@ -121,7 +121,7 @@ void main() async {
               .eq('event_type', 'ORG_CREATED');
 
           expect(events, isNotEmpty, reason: 'Deve ter pelo menos um evento');
-          final event = events.first as Map<String, dynamic>;
+          final event = events.first;
           expect(event['new_plan'], equals('starter'));
           expect(event['new_max_vehicles'], equals(10));
           expect(event['new_max_contracts'], equals(5));

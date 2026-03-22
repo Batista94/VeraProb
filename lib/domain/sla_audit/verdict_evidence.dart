@@ -96,9 +96,7 @@ class VerdictEvidence extends Equatable {
       throw const DomainException('fineCents must be > 0 (INV-2)');
     }
     if (confidenceScore < 0 || confidenceScore > 100) {
-      throw const DomainException(
-        'confidenceScore must be between 0 and 100',
-      );
+      throw const DomainException('confidenceScore must be between 0 and 100');
     }
 
     final evidenceHash = _computeHash(
@@ -153,8 +151,8 @@ class VerdictEvidence extends Equatable {
     'rule_version': ruleVersion,
     'primary_evidence_lat': primaryEvidenceLat,
     'primary_evidence_lng': primaryEvidenceLng,
-    'primary_evidence_timestamp_utc':
-        primaryEvidenceTimestampUtc.toIso8601String(),
+    'primary_evidence_timestamp_utc': primaryEvidenceTimestampUtc
+        .toIso8601String(),
     'evidence_hash': evidenceHash,
     'delta_value': deltaValue,
     'threshold_value': thresholdValue,

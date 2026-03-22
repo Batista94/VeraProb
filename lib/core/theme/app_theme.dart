@@ -208,13 +208,16 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(
-          color: VeraProbColors.primary,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: VeraProbColors.primary, width: 1.5),
       ),
-      labelStyle: const TextStyle(color: VeraProbColors.textSecondary, fontSize: 13),
-      hintStyle: const TextStyle(color: VeraProbColors.textDisabled, fontSize: 13),
+      labelStyle: const TextStyle(
+        color: VeraProbColors.textSecondary,
+        fontSize: 13,
+      ),
+      hintStyle: const TextStyle(
+        color: VeraProbColors.textDisabled,
+        fontSize: 13,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(

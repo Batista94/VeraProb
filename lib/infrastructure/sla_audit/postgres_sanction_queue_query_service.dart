@@ -23,7 +23,9 @@ class PostgresSanctionQueueQueryService implements SanctionQueueQueryService {
         .order('created_at', ascending: true);
 
     return (response as List)
-        .map((row) => SanctionQueueItemView.fromRow(row as Map<String, dynamic>))
+        .map(
+          (row) => SanctionQueueItemView.fromRow(row as Map<String, dynamic>),
+        )
         .toList();
   }
 

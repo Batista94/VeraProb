@@ -133,7 +133,6 @@ final contractualEvaluationSubscriberProvider =
       return sub;
     });
 
-
 // ── Query Service ───────────────────────────────────────────
 
 final slaExecutionQueryServiceProvider = Provider<SlaExecutionQueryService>((

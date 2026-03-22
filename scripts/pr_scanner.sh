@@ -1,0 +1,338 @@
+#!/usr/bin/env bash
+# =============================================================================
+# VeraProb PR Scanner — Forensic First-Line Defense
+# =============================================================================
+#
+# PILLAR A: Forensic Binary Rules
+#   A1 — Wasm-Ready:       Blocks dart:html / dart:js imports (INV-4)
+#   A2 — Financial Prec.:  Blocks double/float near financial terms (INV-2)
+#   A3 — UTC Determinism:  Blocks DateTime.now() without .toUtc() (INV-3)
+#   A4 — Zero-Downtime DB: Blocks destructive migration operations (INV-DB)
+#
+# PILLAR B: Static Quality
+#   B1 — Dart Analyzer:    Blocks on errors; warns on warnings
+#   B2 — Format Check:     Warns on unformatted files
+#   B3 — Complexity Check: Warns on files with >200 lines added
+#
+# Exit codes:
+#   0 = PASS (may have warnings — flagged for LLM neural review)
+#   1 = BLOCKED (hard invariant violation or analyzer errors)
+#
+# Usage:
+#   bash scripts/pr_scanner.sh
+#   BASE_BRANCH=develop bash scripts/pr_scanner.sh
+# =============================================================================
+
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+BASE_BRANCH="${BASE_BRANCH:-main}"
+
+BLOCK_COUNT=0
+WARN_COUNT=0
+
+# ── Color codes ──────────────────────────────────────────────────────────────
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+header() {
+  echo ""
+  echo -e "${BOLD}${BLUE}══════════════════════════════════════════════════════════${NC}"
+  echo -e "${BOLD}${BLUE}  $1${NC}"
+  echo -e "${BOLD}${BLUE}══════════════════════════════════════════════════════════${NC}"
+}
+
+block() {
+  echo -e "  ${RED}${BOLD}[BLOCK]${NC} ${RED}$1${NC}"
+  BLOCK_COUNT=$((BLOCK_COUNT + 1))
+}
+
+warn() {
+  echo -e "  ${YELLOW}[WARN] ${NC}$1"
+  WARN_COUNT=$((WARN_COUNT + 1))
+}
+
+pass() {
+  echo -e "  ${GREEN}[PASS] ${NC}$1"
+}
+
+print_hits() {
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && echo -e "         ${RED}→ $line${NC}"
+  done
+}
+
+cd "$PROJECT_DIR"
+
+echo ""
+echo -e "${BOLD}════════════════════════════════════════════════════════════${NC}"
+echo -e "${BOLD}  VeraProb PR Scanner — $(date -u '+%Y-%m-%d %H:%M UTC')${NC}"
+echo -e "${BOLD}  Base branch: $BASE_BRANCH${NC}"
+echo -e "${BOLD}════════════════════════════════════════════════════════════${NC}"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PILLAR A — FORENSIC BINARY RULES
+# ─────────────────────────────────────────────────────────────────────────────
+
+header "PILLAR A — Forensic Invariant Checks"
+
+# ── A1: Wasm-Ready Check ─────────────────────────────────────────────────────
+echo ""
+echo "  A1 — Wasm-Ready: scanning lib/ for forbidden dart:html / dart:js imports..."
+
+WASM_HITS=$(grep -rn --include="*.dart" \
+  -E "import ['\"]dart:html['\"]|import ['\"]dart:js['\"]" \
+  lib/ 2>/dev/null \
+  | grep -v "dart:js_interop" \
+  || true)
+
+if [[ -n "$WASM_HITS" ]]; then
+  block "[WASM-BLOCK] dart:html/dart:js forbidden — use dart:js_interop (INV-4)"
+  echo "$WASM_HITS" | print_hits
+else
+  pass "No forbidden dart:html/dart:js imports"
+fi
+
+# ── A2: Financial Precision Check ────────────────────────────────────────────
+echo ""
+echo "  A2 — Financial Precision: scanning lib/ for double/float near financial terms..."
+
+# Scope to domain + application only (presentation layer may use double for chart rendering)
+# Exclude: multiplier/rate coefficients, toDouble() display helpers, tryParse UI input, comment lines
+FIN_HITS=$(grep -rn --include="*.dart" \
+  -iE "(double|float).{0,60}(fine|price|amount|ledger|cents|penalty|revenue|cost)|(fine|price|amount|ledger|cents|penalty|revenue|cost).{0,60}(double|float)" \
+  lib/domain/ lib/application/ 2>/dev/null \
+  | grep -ivE "multiplier|rate\b|\.toDouble\(\)|toDouble\b|tryParse|fromDouble" \
+  | grep -vE ":[0-9]+:[[:space:]]*(///|//)" \
+  || true)
+
+if [[ -n "$FIN_HITS" ]]; then
+  block "[FIN-BLOCK] double/float storing monetary value in domain/application — use BIGINT cents (INV-2)"
+  echo "         (Checked: lib/domain/ + lib/application/ | Excluded: multipliers, rates, toDouble(), comments)"
+  echo "$FIN_HITS" | print_hits
+else
+  pass "No floating-point monetary storage in domain/application layers"
+fi
+
+# ── A3: UTC Determinism Check ────────────────────────────────────────────────
+echo ""
+echo "  A3 — UTC Determinism: scanning lib/ for DateTime.now() without .toUtc()..."
+
+# Exclude false positives:
+#   - Comment lines (/// //)
+#   - millisecondsSinceEpoch (epoch = always UTC)
+#   - .difference() calls (computes Duration, not a stored timestamp)
+#   - DatePicker params: initialDate/firstDate/lastDate (local time for UI is correct)
+#   - Multiline: if .toUtc() appears on the very next line, it is correct (chained call)
+UTC_HITS=$(grep -rn --include="*.dart" \
+  "DateTime\.now()" lib/ 2>/dev/null \
+  | grep -v "\.toUtc()" \
+  | grep -vE ":[0-9]+:[[:space:]]*(///|//)" \
+  | grep -vE "millisecondsSinceEpoch|\.difference\(|initialDate:|firstDate:|lastDate:|pdf_export_service" \
+  | grep -vE "\?\?[[:space:]]*DateTime\.now\(\)|DateTime\.now\(\)\.subtract\(" \
+  | grep -vE "DateTime _[a-zA-Z]*[Dd]ate\s*=" \
+  | while IFS= read -r hit; do
+      file=$(echo "$hit" | cut -d: -f1)
+      linenum=$(echo "$hit" | sed 's/[^:]*:\([0-9]*\):.*/\1/')
+      nextline=$(sed -n "$((linenum+1))p" "$file" 2>/dev/null || true)
+      # Skip if .toUtc() appears on the immediately following line (multiline chain)
+      if ! echo "$nextline" | grep -q "\.toUtc()"; then
+        echo "$hit"
+      fi
+    done \
+  || true)
+
+if [[ -n "$UTC_HITS" ]]; then
+  block "[UTC-BLOCK] DateTime.now() without .toUtc() — all timestamps must be UTC (INV-3)"
+  echo "$UTC_HITS" | print_hits
+else
+  pass "All DateTime.now() calls use .toUtc()"
+fi
+
+# ── A4: Zero-Downtime DB Check ───────────────────────────────────────────────
+echo ""
+echo "  A4 — Zero-Downtime DB: scanning changed migrations for destructive operations..."
+
+CHANGED_MIGRATIONS=""
+
+normalize_migration_paths() {
+  tr '\\' '/' | tr -d '\r' | grep "supabase/migrations" || true
+}
+
+# Try diff from base branch first
+if git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
+  CHANGED_MIGRATIONS=$(git diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
+    | normalize_migration_paths)
+fi
+
+# Fallback: compare to HEAD~1
+if [[ -z "$CHANGED_MIGRATIONS" ]]; then
+  CHANGED_MIGRATIONS=$(git diff --name-only HEAD~1 HEAD 2>/dev/null \
+    | normalize_migration_paths)
+fi
+
+if [[ -z "$CHANGED_MIGRATIONS" ]]; then
+  warn "No changed migration files detected — if this is a DB-related PR, verify migrations manually"
+else
+  DB_BLOCK_FOUND=0
+  while IFS= read -r migration_file; do
+    if [[ -f "$migration_file" ]]; then
+      DB_HITS=$(grep -niE \
+        "DROP TABLE|DELETE FROM|TRUNCATE|ALTER COLUMN.+TYPE" \
+        "$migration_file" 2>/dev/null \
+        || true)
+      if [[ -n "$DB_HITS" ]]; then
+        block "[DB-BLOCK] Destructive migration in $migration_file — append-only schema required (INV-DB)"
+        echo "$DB_HITS" | while IFS= read -r line; do
+          [[ -n "$line" ]] && echo -e "         ${RED}→ $migration_file: $line${NC}"
+        done
+        DB_BLOCK_FOUND=1
+      fi
+    fi
+  done <<< "$CHANGED_MIGRATIONS"
+
+  if [[ $DB_BLOCK_FOUND -eq 0 ]]; then
+    pass "No destructive DB operations in changed migrations"
+  fi
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PILLAR B — STATIC QUALITY
+# ─────────────────────────────────────────────────────────────────────────────
+
+header "PILLAR B — Static Quality & Clean Code Metrics"
+
+# ── B1: Dart Analyzer ────────────────────────────────────────────────────────
+echo ""
+echo "  B1 — Dart Analyzer: running flutter analyze --no-pub..."
+echo "       (this may take 10–30 seconds)"
+
+ANALYZE_OUTPUT=$(flutter analyze --no-pub 2>&1 || true)
+
+# flutter analyze format: "  error • message • file.dart:line:col • rule"
+ANALYZE_ERRORS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+error •" || true)
+ANALYZE_WARNINGS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+warning •" || true)
+ANALYZE_INFOS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+info •" || true)
+
+if [[ -n "$ANALYZE_ERRORS" ]]; then
+  block "[ANALYZE-BLOCK] flutter analyze reported errors — fix before merge"
+  echo "$ANALYZE_ERRORS" | while IFS= read -r line; do
+    [[ -n "$line" ]] && echo -e "         ${RED}→ $(echo "$line" | xargs)${NC}"
+  done
+fi
+
+if [[ -n "$ANALYZE_WARNINGS" ]]; then
+  warn "[ANALYZE-WARN] flutter analyze reported warnings — LLM neural review required"
+  echo "$ANALYZE_WARNINGS" | while IFS= read -r line; do
+    [[ -n "$line" ]] && echo -e "         ${YELLOW}→ $(echo "$line" | xargs)${NC}"
+  done
+fi
+
+if [[ -n "$ANALYZE_INFOS" ]]; then
+  echo -e "  ${NC}[INFO]  $(echo "$ANALYZE_INFOS" | wc -l | tr -d ' ') info hints (non-blocking)"
+fi
+
+if [[ -z "$ANALYZE_ERRORS" && -z "$ANALYZE_WARNINGS" ]]; then
+  pass "flutter analyze: clean"
+fi
+
+# ── B2: Format Check ─────────────────────────────────────────────────────────
+echo ""
+echo "  B2 — Format Check: running dart format check on lib/..."
+
+if ! dart format --output=none --set-exit-if-changed lib/ > /dev/null 2>&1; then
+  warn "[FORMAT-WARN] Unformatted files detected — run: dart format lib/"
+  echo -e "         ${YELLOW}(Run 'dart format lib/' to auto-fix before committing)${NC}"
+else
+  pass "dart format: all files properly formatted"
+fi
+
+# ── B3: Large File Delta Warning ─────────────────────────────────────────────
+echo ""
+echo "  B3 — Complexity Check: scanning for large file deltas (>200 lines added)..."
+
+CHANGED_DART=""
+
+# Normalize paths: convert Windows backslashes, strip carriage returns and tabs
+normalize_paths() {
+  tr '\\' '/' | tr -d '\r' | tr '\t' '\n' | grep "\.dart$" || true
+}
+
+# Try from base branch
+if git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
+  CHANGED_DART=$(git diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
+    | normalize_paths)
+fi
+
+# Fallback: HEAD~1
+if [[ -z "$CHANGED_DART" ]]; then
+  CHANGED_DART=$(git diff --name-only HEAD~1 HEAD 2>/dev/null \
+    | normalize_paths)
+fi
+
+COMPLEXITY_FLAGS=0
+
+if [[ -n "$CHANGED_DART" ]]; then
+  while IFS= read -r dart_file; do
+    [[ -z "$dart_file" ]] && continue
+    # Ensure forward slashes
+    dart_file=$(echo "$dart_file" | tr '\\' '/')
+
+    # Count added lines (lines starting with +, excluding diff header +++)
+    LINES_ADDED=0
+    if git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
+      LINES_ADDED=$(git diff "$BASE_BRANCH"...HEAD -- "$dart_file" 2>/dev/null \
+        | grep "^+" | grep -vc "^+++" || echo "0")
+    fi
+    if [[ "$LINES_ADDED" -eq 0 ]]; then
+      LINES_ADDED=$(git diff HEAD~1 HEAD -- "$dart_file" 2>/dev/null \
+        | grep "^+" | grep -vc "^+++" || echo "0")
+    fi
+    LINES_ADDED=$(echo "$LINES_ADDED" | tr -d ' \n')
+
+    if [[ "$LINES_ADDED" =~ ^[0-9]+$ ]] && [[ "$LINES_ADDED" -gt 200 ]]; then
+      warn "[COMPLEXITY-WARN] $dart_file added $LINES_ADDED lines — LLM must audit cyclomatic complexity"
+      COMPLEXITY_FLAGS=$((COMPLEXITY_FLAGS + 1))
+    fi
+  done <<< "$CHANGED_DART"
+
+  if [[ $COMPLEXITY_FLAGS -eq 0 ]]; then
+    pass "No files with extreme line count changes (>200 lines added)"
+  fi
+else
+  echo -e "  ${NC}[INFO]  No changed Dart files found for complexity check"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FINAL SUMMARY
+# ─────────────────────────────────────────────────────────────────────────────
+
+echo ""
+echo -e "${BOLD}════════════════════════════════════════════════════════════${NC}"
+echo -e "${BOLD}  SCAN SUMMARY${NC}"
+echo -e "${BOLD}════════════════════════════════════════════════════════════${NC}"
+echo ""
+echo -e "  ${BOLD}BLOCKS  (hard failures, exit 1):${NC}  $BLOCK_COUNT"
+echo -e "  ${BOLD}WARNINGS (flagged for LLM review):${NC} $WARN_COUNT"
+echo ""
+
+if [[ $BLOCK_COUNT -gt 0 ]]; then
+  echo -e "  ${RED}${BOLD}❌ VERDICT: PR BLOCKED — $BLOCK_COUNT invariant violation(s) detected.${NC}"
+  echo -e "  ${RED}   The Lead Reviewer MUST issue [NO-GO] immediately.${NC}"
+  echo -e "  ${RED}   Fix all [BLOCK] violations and re-run this script.${NC}"
+  echo ""
+  exit 1
+else
+  echo -e "  ${GREEN}${BOLD}✅ VERDICT: SCRIPT CLEAN — Proceed to LLM Neural Analysis (Step 1).${NC}"
+  if [[ $WARN_COUNT -gt 0 ]]; then
+    echo -e "  ${YELLOW}   $WARN_COUNT warning(s) flagged for LLM attention in neural review.${NC}"
+  fi
+  echo ""
+  exit 0
+fi

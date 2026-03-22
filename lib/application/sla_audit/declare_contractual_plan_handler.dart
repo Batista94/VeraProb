@@ -94,7 +94,9 @@ class DeclareContractualPlanHandler {
     // INV-18: Engine Activation Gate — spatial context is mandatory.
     // The engine cannot produce spatial SLA evaluations without at least one
     // geofenced zone. For shift-based plans, an active vehicle is also required.
-    final zones = await _zoneRepository.findByOrganization(command.organizationId);
+    final zones = await _zoneRepository.findByOrganization(
+      command.organizationId,
+    );
     if (zones.isEmpty) {
       throw const DomainException(
         'No operational zones configured for this organization',

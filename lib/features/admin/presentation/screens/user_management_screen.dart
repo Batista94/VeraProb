@@ -239,7 +239,9 @@ class UserManagementScreen extends ConsumerWidget {
       final callerRole = ref.read(currentUserRoleProvider);
 
       if (orgId == null) {
-        throw StateError('Organization context unavailable for role: $callerRole');
+        throw StateError(
+          'Organization context unavailable for role: $callerRole',
+        );
       }
 
       final UserRole newRole;
@@ -318,7 +320,9 @@ class UserManagementScreen extends ConsumerWidget {
         final callerRole = ref.read(currentUserRoleProvider);
 
         if (orgId == null) {
-          throw StateError('Organization context unavailable for role: $callerRole');
+          throw StateError(
+            'Organization context unavailable for role: $callerRole',
+          );
         }
 
         await ref
@@ -385,7 +389,9 @@ class UserManagementScreen extends ConsumerWidget {
         final callerRole = ref.read(currentUserRoleProvider);
 
         if (orgId == null) {
-          throw StateError('Organization context unavailable for role: $callerRole');
+          throw StateError(
+            'Organization context unavailable for role: $callerRole',
+          );
         }
 
         await ref
@@ -655,11 +661,14 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
         final orgName =
             (await widget.parentRef.read(orgSettingsProvider.future))?.name ??
             '';
-        supabase.functions.invoke('notify-invite', body: {
-          'email': _emailController.text,
-          'inviteUrl': inviteUrl,
-          'orgName': orgName,
-        });
+        await supabase.functions.invoke(
+          'notify-invite',
+          body: {
+            'email': _emailController.text,
+            'inviteUrl': inviteUrl,
+            'orgName': orgName,
+          },
+        );
       } catch (_) {}
 
       setState(() {

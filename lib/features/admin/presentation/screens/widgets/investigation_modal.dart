@@ -40,11 +40,7 @@ class InvestigationModal extends ConsumerWidget {
           ),
           title: Row(
             children: [
-              const Icon(
-                Icons.search,
-                size: 18,
-                color: VeraProbColors.primary,
-              ),
+              const Icon(Icons.search, size: 18, color: VeraProbColors.primary),
               const SizedBox(width: 8),
               Text(
                 'Análise Forense de Decisões',
@@ -242,9 +238,7 @@ class _LedgerTimelinePanel extends StatelessWidget {
           Expanded(
             child: ledgerAsync.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: VeraProbColors.primary,
-                ),
+                child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
               error: (err, _) => Center(
                 child: Text(
@@ -450,9 +444,7 @@ class _EvaluationTracePanel extends StatelessWidget {
           Expanded(
             child: tracesAsync.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: VeraProbColors.primary,
-                ),
+                child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
               error: (err, _) => Center(
                 child: Text(
@@ -593,10 +585,7 @@ class _MetaChip extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: VeraProbTypography.bodySmall.copyWith(color: color),
-        ),
+        Text(label, style: VeraProbTypography.bodySmall.copyWith(color: color)),
       ],
     );
   }
@@ -664,9 +653,7 @@ class _DecisionRow extends StatelessWidget {
                 ),
                 child: Text(
                   decision.outcome,
-                  style: VeraProbTypography.badge.copyWith(
-                    color: outcomeColor,
-                  ),
+                  style: VeraProbTypography.badge.copyWith(color: outcomeColor),
                 ),
               ),
             ],

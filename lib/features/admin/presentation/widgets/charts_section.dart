@@ -117,30 +117,21 @@ class ChartsSection extends StatelessWidget {
                     BarChartGroupData(
                       x: 6,
                       barRods: [
-                        BarChartRodData(
-                          toY: 12,
-                          color: VeraProbColors.primary,
-                        ),
+                        BarChartRodData(toY: 12, color: VeraProbColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),
                     BarChartGroupData(
                       x: 12,
                       barRods: [
-                        BarChartRodData(
-                          toY: 19,
-                          color: VeraProbColors.primary,
-                        ),
+                        BarChartRodData(toY: 19, color: VeraProbColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),
                     BarChartGroupData(
                       x: 18,
                       barRods: [
-                        BarChartRodData(
-                          toY: 15,
-                          color: VeraProbColors.primary,
-                        ),
+                        BarChartRodData(toY: 15, color: VeraProbColors.primary),
                       ],
                       showingTooltipIndicators: [0],
                     ),

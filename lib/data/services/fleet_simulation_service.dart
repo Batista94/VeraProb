@@ -468,14 +468,16 @@ class _SimulatedTrip {
       id: id,
       routeId: routeId,
       status: status,
-      scheduledStart: DateTime.now().subtract(
+      scheduledStart: DateTime.now().toUtc().subtract(
         Duration(minutes: (progress * 60).toInt()),
       ),
-      scheduledEnd: DateTime.now().add(
+      scheduledEnd: DateTime.now().toUtc().add(
         Duration(minutes: ((1.0 - progress) * 60).toInt()),
       ),
       actualStart: status.isActive || status.isTerminal
-          ? DateTime.now().subtract(Duration(minutes: (progress * 60).toInt()))
+          ? DateTime.now().toUtc().subtract(
+              Duration(minutes: (progress * 60).toInt()),
+            )
           : null,
       delaySeconds: delaySeconds,
       completionPct: progress * 100,

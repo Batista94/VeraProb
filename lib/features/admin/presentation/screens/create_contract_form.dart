@@ -137,9 +137,11 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
     try {
       final handler = ref.read(createContractHandlerProvider);
       final rawCeiling = _financialCeilingController.text.trim();
-      
+
       final cleanValue = rawCeiling.replaceAll('.', '').replaceAll(',', '');
-      final financialCeilingCents = cleanValue.isEmpty ? null : int.tryParse(cleanValue);
+      final financialCeilingCents = cleanValue.isEmpty
+          ? null
+          : int.tryParse(cleanValue);
 
       final contract = await handler.handle(
         CreateContractCommand(
@@ -309,9 +311,11 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
                   Consumer(
                     builder: (context, ref, child) {
-                      final contractorsAsync = ref.watch(contractorListProvider);
+                      final contractorsAsync = ref.watch(
+                        contractorListProvider,
+                      );
                       final contractors = contractorsAsync.valueOrNull ?? [];
-                      
+
                       return ContractorTypeAheadField(
                         label: 'Entidade Contratante (Auditor) *',
                         prefixIcon: Icons.handshake_outlined,
@@ -473,10 +477,19 @@ class _DatePickerField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           floatingLabelBehavior: FloatingLabelBehavior.always,
-          labelStyle: VeraProbTypography.bodyMedium.copyWith(color: VeraProbColors.textSecondary),
+          labelStyle: VeraProbTypography.bodyMedium.copyWith(
+            color: VeraProbColors.textSecondary,
+          ),
           border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          suffixIcon: const Icon(Icons.calendar_month_rounded, color: VeraProbColors.primary, size: 20),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          suffixIcon: const Icon(
+            Icons.calendar_month_rounded,
+            color: VeraProbColors.primary,
+            size: 20,
+          ),
         ),
         isEmpty: false,
         child: Text(
@@ -484,7 +497,9 @@ class _DatePickerField extends StatelessWidget {
               ? '${value!.day.toString().padLeft(2, '0')}/${value!.month.toString().padLeft(2, '0')}/${value!.year}'
               : 'Selecionar $label...',
           style: VeraProbTypography.bodyMedium.copyWith(
-            color: value != null ? VeraProbColors.textPrimary : VeraProbColors.textSecondary,
+            color: value != null
+                ? VeraProbColors.textPrimary
+                : VeraProbColors.textSecondary,
             fontWeight: value != null ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
@@ -496,15 +511,20 @@ class _DatePickerField extends StatelessWidget {
 class CurrencyInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (newValue.text.isEmpty) return newValue;
 
-    double value = double.parse(newValue.text.replaceAll(RegExp(r'[^0-9]'), ''));
+    double value = double.parse(
+      newValue.text.replaceAll(RegExp(r'[^0-9]'), ''),
+    );
     final formatter = NumberFormat.currency(locale: 'pt_BR', symbol: '');
     String newText = formatter.format(value / 100).trim();
 
     return newValue.copyWith(
-        text: newText,
-        selection: TextSelection.collapsed(offset: newText.length));
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
   }
 }

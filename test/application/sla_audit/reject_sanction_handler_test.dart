@@ -57,7 +57,7 @@ void main() {
 
       expect(
         () => handler.handle(
-          RejectSanctionCommand(
+          const RejectSanctionCommand(
             queueEntryId: 'entry-001',
             rejectedByUserId: 'user-op',
             rejectionReason: 'GPS data was inconclusive.',
@@ -76,7 +76,7 @@ void main() {
 
       expect(
         () => handler.handle(
-          RejectSanctionCommand(
+          const RejectSanctionCommand(
             queueEntryId: 'entry-001',
             rejectedByUserId: 'auditor-1',
             rejectionReason: 'too short', // 9 chars
@@ -93,7 +93,7 @@ void main() {
 
       expect(
         () => handler.handle(
-          RejectSanctionCommand(
+          const RejectSanctionCommand(
             queueEntryId: 'entry-001',
             rejectedByUserId: 'auditor-1',
             rejectionReason: '          ', // 10 spaces, trims to empty
@@ -110,7 +110,7 @@ void main() {
 
       await expectLater(
         handler.handle(
-          RejectSanctionCommand(
+          const RejectSanctionCommand(
             queueEntryId: 'entry-001',
             rejectedByUserId: 'auditor-1',
             rejectionReason: '  1234567890  ', // 10 non-whitespace chars
@@ -140,7 +140,7 @@ void main() {
 
       expect(
         () => handler.handle(
-          RejectSanctionCommand(
+          const RejectSanctionCommand(
             queueEntryId: 'entry-001',
             rejectedByUserId: 'auditor-1',
             rejectionReason: 'GPS data was inconclusive for this route.',
@@ -158,7 +158,7 @@ void main() {
       await queueRepo.enqueue(makePendingEntry());
 
       await handler.handle(
-        RejectSanctionCommand(
+        const RejectSanctionCommand(
           queueEntryId: 'entry-001',
           rejectedByUserId: 'auditor-1',
           rejectionReason: 'GPS data was inconclusive for this route.',
@@ -181,7 +181,7 @@ void main() {
       await queueRepo.enqueue(makePendingEntry());
 
       await handler.handle(
-        RejectSanctionCommand(
+        const RejectSanctionCommand(
           queueEntryId: 'entry-001',
           rejectedByUserId: 'auditor-1',
           rejectionReason: 'GPS data was inconclusive for this route.',

@@ -117,10 +117,7 @@ class _TenantTable extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                t.name,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
+              Text(t.name, style: const TextStyle(fontWeight: FontWeight.w600)),
               if (t.legalName != null)
                 Text(
                   t.legalName!,
@@ -172,8 +169,11 @@ class _TenantTable extends StatelessWidget {
                     size: 20,
                   ),
                 )
-              : const Icon(Icons.check_circle_outline,
-                  color: Colors.green, size: 20),
+              : const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.green,
+                  size: 20,
+                ),
         ),
       ],
     );

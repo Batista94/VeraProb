@@ -1,5 +1,6 @@
 import '../../domain/enums/user_permissions.dart';
 import '../../domain/services/rbac_service.dart';
+import '../../domain/sla_audit/domain_exception.dart';
 import 'change_user_role_command.dart';
 import 'user_management_command_service.dart';
 
@@ -15,7 +16,7 @@ class ChangeUserRoleHandler {
   Future<void> handle(ChangeUserRoleCommand command) async {
     // 1. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageUsers)) {
-      throw Exception(
+      throw DomainException(
         'Unauthorized: Caller identifies as ${command.callerRole} but needs canManageUsers permission',
       );
     }

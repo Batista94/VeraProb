@@ -15,10 +15,7 @@ class SpoofingRiskScore extends Equatable {
   /// Default threshold for suspicion (Phase 8.8 definition).
   static const double defaultThreshold = 0.7;
 
-  const SpoofingRiskScore({
-    required this.score,
-    required this.signals,
-  });
+  const SpoofingRiskScore({required this.score, required this.signals});
 
   /// Factory for a risk-free result.
   factory SpoofingRiskScore.zero() =>

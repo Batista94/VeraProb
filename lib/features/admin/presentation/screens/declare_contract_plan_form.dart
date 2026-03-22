@@ -253,9 +253,10 @@ class _DeclareContractPlanFormState
     return '$h:$m';
   }
 
-  String _formatCents(int cents) =>
-      NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$ ')
-          .format(cents / 100.0);
+  String _formatCents(int cents) => NumberFormat.currency(
+    locale: 'pt_BR',
+    symbol: 'R\$ ',
+  ).format(cents / 100.0);
 
   String _formatDays(Set<int> days) {
     const map = {
@@ -1164,7 +1165,10 @@ class _DeclareContractPlanFormState
         const SizedBox(height: VeraProbSpacing.lg),
 
         // ── Grupo 3: Qualidade da Frota ────────────────────────
-        const _SectionHeader(icon: Icons.directions_bus, label: 'Qualidade da Frota'),
+        const _SectionHeader(
+          icon: Icons.directions_bus,
+          label: 'Qualidade da Frota',
+        ),
         const SizedBox(height: VeraProbSpacing.sm),
         Row(
           children: [

@@ -60,7 +60,7 @@ void main() {
 
       expect(
         () => handler.handle(
-          ApproveSanctionCommand(
+          const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'user-op',
             callerRole: UserRole.operator,
@@ -76,7 +76,7 @@ void main() {
 
       expect(
         () => handler.handle(
-          ApproveSanctionCommand(
+          const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'user-cv',
             callerRole: UserRole.contractorViewer,
@@ -92,7 +92,7 @@ void main() {
 
       await expectLater(
         handler.handle(
-          ApproveSanctionCommand(
+          const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'auditor-1',
             callerRole: UserRole.auditor,
@@ -108,7 +108,7 @@ void main() {
 
       await expectLater(
         handler.handle(
-          ApproveSanctionCommand(
+          const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'admin-1',
             callerRole: UserRole.admin,
@@ -140,7 +140,7 @@ void main() {
 
       expect(
         () => handler.handle(
-          ApproveSanctionCommand(
+          const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'auditor-1',
             callerRole: UserRole.auditor,
@@ -158,7 +158,7 @@ void main() {
 
       expect(
         () => handler.handle(
-          ApproveSanctionCommand(
+          const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'auditor-evil',
             callerRole: UserRole.auditor,
@@ -175,7 +175,7 @@ void main() {
       await queueRepo.enqueue(makePendingEntry());
 
       await handler.handle(
-        ApproveSanctionCommand(
+        const ApproveSanctionCommand(
           queueEntryId: 'entry-001',
           approvedByUserId: 'auditor-1',
           callerRole: UserRole.auditor,
@@ -196,7 +196,7 @@ void main() {
       await queueRepo.enqueue(makePendingEntry());
 
       await handler.handle(
-        ApproveSanctionCommand(
+        const ApproveSanctionCommand(
           queueEntryId: 'entry-001',
           approvedByUserId: 'auditor-1',
           callerRole: UserRole.auditor,

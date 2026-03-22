@@ -43,7 +43,9 @@ class PostgresSpoofingAuditRepository implements SpoofingAuditRepository {
   }
 
   @override
-  Future<List<SpoofingAuditEntry>> getPendingReview(String organizationId) async {
+  Future<List<SpoofingAuditEntry>> getPendingReview(
+    String organizationId,
+  ) async {
     final rows = await _client
         .from('spoofing_audit_entries')
         .select()
@@ -76,7 +78,7 @@ class PostgresSpoofingAuditRepository implements SpoofingAuditRepository {
 
   SpoofingAuditEntry _mapRowToEntry(Map<String, dynamic> row) {
     final signalsList = (row['signals'] as List<dynamic>?) ?? [];
-    
+
     return SpoofingAuditEntry.reconstitute(
       id: row['id'] as String,
       organizationId: row['organization_id'] as String,
@@ -91,12 +93,14 @@ class PostgresSpoofingAuditRepository implements SpoofingAuditRepository {
             .toList(),
       ),
       factsAnalyzed: row['facts_analyzed'] as int,
-      factIds: (row['fact_ids'] as List<dynamic>).map((id) => id as String).toList(),
+      factIds: (row['fact_ids'] as List<dynamic>)
+          .map((id) => id as String)
+          .toList(),
       contentHash: row['content_hash'] as String,
       createdAt: DateTime.parse(row['created_at'] as String),
       reviewedBy: row['reviewed_by'] as String?,
-      reviewedAt: row['reviewed_at'] != null 
-          ? DateTime.parse(row['reviewed_at'] as String) 
+      reviewedAt: row['reviewed_at'] != null
+          ? DateTime.parse(row['reviewed_at'] as String)
           : null,
       reviewOutcome: row['review_outcome'] as String?,
     );
