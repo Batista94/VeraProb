@@ -95,8 +95,8 @@ jobs:
 
       - name: Flutter Test with Local Supabase
         run: |
-          # Extrai a chave anônima gerada localmente pelo Supabase
-          ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d '=' -f 2 | tr -d '"' | tr -d '\r')
+          # Extrai a chave de servico gerada localmente pelo Supabase (RLS Bypass para testes E2E)
+          SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2 | tr -d '"' | tr -d '\r')
           flutter test --no-pub \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
-            --dart-define=SUPABASE_KEY="$ANON_KEY"
+            --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"

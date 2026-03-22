@@ -61,8 +61,8 @@ void main() {
             .insert({
               'organization_id': orgId,
               'type': 'SANCTION_RECOMMENDED',
-              'set_id': 'set-int-001',
-              'contract_id': 'contract-int-001',
+              'set_id': '00000000-0000-0000-0000-000000000101',
+              'contract_id': '00000000-0000-0000-0000-000000000100',
               'plan_version': 1,
               'occurred_at_utc': DateTime.now().toUtc().toIso8601String(),
               'payload': {'verdict_evidence': fakeEvidence},
@@ -109,8 +109,8 @@ void main() {
             .insert({
               'organization_id': orgId,
               'type': 'SANCTION_RECOMMENDED',
-              'set_id': 'set-int-002',
-              'contract_id': 'contract-int-002',
+              'set_id': '00000000-0000-0000-0000-000000000201',
+              'contract_id': '00000000-0000-0000-0000-000000000200',
               'plan_version': 1,
               'occurred_at_utc': DateTime.now().toUtc().toIso8601String(),
               'payload': {'verdict_evidence': fakeEvidence},
@@ -128,8 +128,8 @@ void main() {
               {
                 'organization_id': orgId,
                 'ledger_entry_id': ledgerEntryId,
-                'set_id': 'set-int-002',
-                'contract_id': 'contract-int-002',
+                'set_id': '00000000-0000-0000-0000-000000000201',
+                'contract_id': '00000000-0000-0000-0000-000000000200',
                 'verdict_evidence': fakeEvidence,
                 'status': 'pending',
               },
