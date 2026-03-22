@@ -27,7 +27,6 @@ void main() {
 
   group('sanction_escalation_log — DB invariants', () {
     test('UPDATE is blocked by trigger (INV-1)', skip: skipReason, () async {
-
       // Attempt direct update (trigger should block it)
       expect(
         () async => client
@@ -40,7 +39,6 @@ void main() {
     });
 
     test('DELETE is blocked by trigger (INV-1)', skip: skipReason, () async {
-
       expect(
         () async => client
             .from('sanction_escalation_log')

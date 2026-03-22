@@ -216,7 +216,10 @@ void main() {
     setUpAll(() async {
       client = SupabaseClient(supabaseUrl, supabaseKey);
       BrazilTime.ensureInitialized();
-      await client.from('organizations').upsert({'id': orgId, 'name': 'Smoke Org'});
+      await client.from('organizations').upsert({
+        'id': orgId,
+        'name': 'Smoke Org',
+      });
 
       contractRepo = PostgresContractRepository(client);
       planRepo = PostgresPlanDeclarationRepository(client);

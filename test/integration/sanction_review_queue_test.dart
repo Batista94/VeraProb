@@ -33,7 +33,10 @@ void main() {
   setUpAll(() async {
     if (supabaseUrl.isNotEmpty) {
       client = SupabaseClient(supabaseUrl, supabaseKey);
-      await client.from('organizations').upsert({'id': orgId, 'name': 'Int Org'});
+      await client.from('organizations').upsert({
+        'id': orgId,
+        'name': 'Int Org',
+      });
     }
   });
 
@@ -42,7 +45,6 @@ void main() {
       'trigger auto-populates queue on SANCTION_RECOMMENDED insert',
       skip: skipReason,
       () async {
-
         final fakeEvidence = {
           'clause_ref': 'rule-int-001',
           'rule_id': 'rule-int-001',
@@ -91,7 +93,6 @@ void main() {
       'duplicate SANCTION_RECOMMENDED insert → only one queue row (INV-24)',
       skip: skipReason,
       () async {
-
         final fakeEvidence = {
           'clause_ref': 'rule-int-002',
           'rule_id': 'rule-int-002',
@@ -153,7 +154,6 @@ void main() {
       'UPDATE on immutable field → restrict_violation (INV-1)',
       skip: skipReason,
       () async {
-
         final rows = await client
             .from('sanction_review_queue')
             .select('id, organization_id')
@@ -171,7 +171,9 @@ void main() {
         expect(
           () async => client
               .from('sanction_review_queue')
-              .update({'organization_id': '00000000-0000-0000-0000-000000000004'})
+              .update({
+                'organization_id': '00000000-0000-0000-0000-000000000004',
+              })
               .eq('id', rowId),
           throwsA(anything),
         );
