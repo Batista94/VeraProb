@@ -116,10 +116,12 @@ void main() {
         () => handler.handle(makeCommand(callerRole: UserRole.operator)),
         throwsA(isA<DomainException>()),
       );
-      verifyNever(() => contractRepository.findById(
-            any(),
-            organizationId: any(named: 'organizationId'),
-          ));
+      verifyNever(
+        () => contractRepository.findById(
+          any(),
+          organizationId: any(named: 'organizationId'),
+        ),
+      );
       expect(approvalService.submitCallCount, 0);
     });
 
@@ -132,10 +134,10 @@ void main() {
     });
 
     test('Contrato não encontrado — lança DomainException', () async {
-      when(() => contractRepository.findById(
-            'contract-1',
-            organizationId: 'org-1',
-          )).thenAnswer((_) async => null);
+      when(
+        () =>
+            contractRepository.findById('contract-1', organizationId: 'org-1'),
+      ).thenAnswer((_) async => null);
 
       await expectLater(
         () => handler.handle(makeCommand()),
@@ -145,10 +147,10 @@ void main() {
     });
 
     test('Contrato active — domain guard lança DomainException', () async {
-      when(() => contractRepository.findById(
-            'contract-1',
-            organizationId: 'org-1',
-          )).thenAnswer((_) async => _makeContract(status: ContractStatus.active));
+      when(
+        () =>
+            contractRepository.findById('contract-1', organizationId: 'org-1'),
+      ).thenAnswer((_) async => _makeContract(status: ContractStatus.active));
 
       await expectLater(
         () => handler.handle(makeCommand()),
@@ -157,10 +159,10 @@ void main() {
     });
 
     test('Contrato closed — domain guard lança DomainException', () async {
-      when(() => contractRepository.findById(
-            'contract-1',
-            organizationId: 'org-1',
-          )).thenAnswer((_) async => _makeContract(status: ContractStatus.closed));
+      when(
+        () =>
+            contractRepository.findById('contract-1', organizationId: 'org-1'),
+      ).thenAnswer((_) async => _makeContract(status: ContractStatus.closed));
 
       await expectLater(
         () => handler.handle(makeCommand()),
@@ -169,41 +171,52 @@ void main() {
     });
 
     test(
-        'Contrato awaitingContractorAcceptance — domain guard lança DomainException',
-        () async {
-      when(() => contractRepository.findById(
+      'Contrato awaitingContractorAcceptance — domain guard lança DomainException',
+      () async {
+        when(
+          () => contractRepository.findById(
             'contract-1',
             organizationId: 'org-1',
-          )).thenAnswer((_) async => _makeContract(
+          ),
+        ).thenAnswer(
+          (_) async => _makeContract(
             status: ContractStatus.awaitingContractorAcceptance,
-          ));
+          ),
+        );
 
-      await expectLater(
-        () => handler.handle(makeCommand()),
-        throwsA(isA<DomainException>()),
-      );
-    });
+        await expectLater(
+          () => handler.handle(makeCommand()),
+          throwsA(isA<DomainException>()),
+        );
+      },
+    );
 
-    test('Admin + draft — retorna token não-vazio, RPC chamado 1x, ledger appendado 1x',
-        () async {
-      when(() => contractRepository.findById(
+    test(
+      'Admin + draft — retorna token não-vazio, RPC chamado 1x, ledger appendado 1x',
+      () async {
+        when(
+          () => contractRepository.findById(
             'contract-1',
             organizationId: 'org-1',
-          )).thenAnswer((_) async => _makeContract());
+          ),
+        ).thenAnswer((_) async => _makeContract());
 
-      final token = await handler.handle(makeCommand());
+        final token = await handler.handle(makeCommand());
 
-      expect(token, isNotEmpty);
-      expect(approvalService.submitCallCount, 1);
-      expect(approvalService.lastToken, equals(token));
-      verify(() => ledger.append(any())).called(1);
-    });
+        expect(token, isNotEmpty);
+        expect(approvalService.submitCallCount, 1);
+        expect(approvalService.lastToken, equals(token));
+        verify(() => ledger.append(any())).called(1);
+      },
+    );
 
     test('Duas invocações retornam tokens distintos (INV-7)', () async {
-      when(() => contractRepository.findById(
-            any(),
-            organizationId: any(named: 'organizationId'),
-          )).thenAnswer((_) async => _makeContract());
+      when(
+        () => contractRepository.findById(
+          any(),
+          organizationId: any(named: 'organizationId'),
+        ),
+      ).thenAnswer((_) async => _makeContract());
 
       final token1 = await handler.handle(makeCommand());
       final token2 = await handler.handle(makeCommand());

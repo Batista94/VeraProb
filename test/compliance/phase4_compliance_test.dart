@@ -121,7 +121,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final alerts = alertRepo.alerts;
       expect(alerts, isNotEmpty);
@@ -140,12 +140,12 @@ void main() {
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30),
         organizationId: 'org-1',
-);
+      );
       await engine.processVehicleState(
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30, 31),
         organizationId: 'org-1',
-);
+      );
 
       final state = await repo.findBySetId('set-1');
       expect(state!.status, ExecutionStatus.executed);
@@ -170,7 +170,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final alert = alertRepo.alerts.first;
       expect(alert.triggeringEventId, isNotNull);
@@ -197,7 +197,7 @@ void main() {
         await engine.sweepExpiredObligations(
           nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
           organizationId: 'org-1',
-);
+        );
 
         final alert = alertRepo.alerts.first;
 
@@ -235,7 +235,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final alertId = alertRepo.alerts.first.id;
       final service = AlertService(repo: alertRepo);
@@ -269,7 +269,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final alertId = alertRepo.alerts.first.id;
       final service = AlertService(repo: alertRepo);
@@ -311,7 +311,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final org1Alerts = await alertRepo.findActive('org-1');
       final org2Alerts = await alertRepo.findActive('org-2');
@@ -463,7 +463,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       // Alert produced by engine pipeline
       expect(alertRepo.alerts, isNotEmpty);

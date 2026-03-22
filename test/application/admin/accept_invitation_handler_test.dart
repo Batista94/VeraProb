@@ -24,53 +24,58 @@ void main() {
   });
 
   void stubAccept() {
-    when(() => commandService.acceptInvitation(
-          token: any(named: 'token'),
-          userId: any(named: 'userId'),
-        )).thenAnswer((_) async {});
+    when(
+      () => commandService.acceptInvitation(
+        token: any(named: 'token'),
+        userId: any(named: 'userId'),
+      ),
+    ).thenAnswer((_) async {});
   }
 
   group('AcceptInvitationHandler', () {
     test('Token vazio lança DomainException sem chamar RPC', () async {
       await expectLater(
-        () => handler.handle(const AcceptInvitationCommand(
-          token: '  ',
-          userId: 'user-1',
-        )),
+        () => handler.handle(
+          const AcceptInvitationCommand(token: '  ', userId: 'user-1'),
+        ),
         throwsA(isA<DomainException>()),
       );
-      verifyNever(() => commandService.acceptInvitation(
-            token: any(named: 'token'),
-            userId: any(named: 'userId'),
-          ));
+      verifyNever(
+        () => commandService.acceptInvitation(
+          token: any(named: 'token'),
+          userId: any(named: 'userId'),
+        ),
+      );
     });
 
     test('UserId vazio lança DomainException sem chamar RPC', () async {
       await expectLater(
-        () => handler.handle(const AcceptInvitationCommand(
-          token: 'valid-token',
-          userId: '',
-        )),
+        () => handler.handle(
+          const AcceptInvitationCommand(token: 'valid-token', userId: ''),
+        ),
         throwsA(isA<DomainException>()),
       );
-      verifyNever(() => commandService.acceptInvitation(
-            token: any(named: 'token'),
-            userId: any(named: 'userId'),
-          ));
+      verifyNever(
+        () => commandService.acceptInvitation(
+          token: any(named: 'token'),
+          userId: any(named: 'userId'),
+        ),
+      );
     });
 
     test('Token e userId válidos delegam para commandService', () async {
       stubAccept();
 
-      await handler.handle(const AcceptInvitationCommand(
-        token: 'abc-token',
-        userId: 'user-1',
-      ));
+      await handler.handle(
+        const AcceptInvitationCommand(token: 'abc-token', userId: 'user-1'),
+      );
 
-      verify(() => commandService.acceptInvitation(
-            token: 'abc-token',
-            userId: 'user-1',
-          )).called(1);
+      verify(
+        () => commandService.acceptInvitation(
+          token: 'abc-token',
+          userId: 'user-1',
+        ),
+      ).called(1);
     });
   });
 }

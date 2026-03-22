@@ -88,8 +88,16 @@ void main() {
         final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
         final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
 
-        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
-        await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'); // Triggers bind
+        await engine.processVehicleState(
+          vehicle,
+          nowUtc: t0,
+          organizationId: 'org-1',
+        );
+        await engine.processVehicleState(
+          vehicle,
+          nowUtc: t31,
+          organizationId: 'org-1',
+        ); // Triggers bind
 
         // 3. Query verification (Executed)
         final midSummary = await queryService.getSummary(
@@ -97,7 +105,10 @@ void main() {
         );
         expect(midSummary.totalPending, 0);
         expect(midSummary.totalExecuted, 1);
-        expect(midSummary.protectedRevenue, const Money(20000)); // Revenue bound!
+        expect(
+          midSummary.protectedRevenue,
+          const Money(20000),
+        ); // Revenue bound!
         expect(midSummary.lostRevenue, const Money(0));
 
         final executedList = await queryService.listByStatus(
@@ -136,7 +147,10 @@ void main() {
         expect(finalSummary.totalExecuted, 1);
         expect(finalSummary.totalNoShow, 1);
         expect(finalSummary.protectedRevenue, const Money(20000));
-        expect(finalSummary.lostRevenue, const Money(15000)); // 100 * 1.5 Penalty matched
+        expect(
+          finalSummary.lostRevenue,
+          const Money(15000),
+        ); // 100 * 1.5 Penalty matched
 
         final noshowList = await queryService.listByStatus(
           ExecutionStatus.noShow,

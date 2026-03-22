@@ -13,7 +13,8 @@ void main() {
       final execRepo = InMemoryContractualExecutionStateRepository();
 
       // 1. Initial State
-      final originalState = ContractualExecutionState.create(organizationId: 'org-1', 
+      final originalState = ContractualExecutionState.create(
+        organizationId: 'org-1',
         setId: 'set-1',
         contractId: 'c-1',
         planVersion: 1,
@@ -46,7 +47,8 @@ void main() {
       final reconstructedExecRepo =
           InMemoryContractualExecutionStateRepository();
 
-      final baseState = ContractualExecutionState.create(organizationId: 'org-1', 
+      final baseState = ContractualExecutionState.create(
+        organizationId: 'org-1',
         setId: 'set-1',
         contractId: 'c-1',
         planVersion: 1,
@@ -65,7 +67,8 @@ void main() {
 
       for (final entry in allEntries) {
         if (entry.type == 'EXECUTION_BOUND') {
-          rebuiltState = ContractualExecutionState.reconstitute(organizationId: 'org-1', 
+          rebuiltState = ContractualExecutionState.reconstitute(
+            organizationId: 'org-1',
             id: rebuiltState.id,
             setId: rebuiltState.setId,
             contractId: rebuiltState.contractId,
@@ -91,7 +94,8 @@ void main() {
             bindingLongitude: entry.payload['longitude'] as double?,
           );
         } else if (entry.type == 'NO_SHOW_DECLARED') {
-          rebuiltState = ContractualExecutionState.reconstitute(organizationId: 'org-1', 
+          rebuiltState = ContractualExecutionState.reconstitute(
+            organizationId: 'org-1',
             id: rebuiltState.id,
             setId: rebuiltState.setId,
             contractId: rebuiltState.contractId,
@@ -132,7 +136,8 @@ void main() {
         final execRepo = InMemoryContractualExecutionStateRepository();
 
         // 1. Initial State
-        final originalState = ContractualExecutionState.create(organizationId: 'org-1', 
+        final originalState = ContractualExecutionState.create(
+          organizationId: 'org-1',
           setId: 'set-noshow',
           contractId: 'c-1',
           planVersion: 1,
@@ -160,7 +165,8 @@ void main() {
             InMemoryContractualExecutionStateRepository();
 
         // Mock Base fetch
-        final baseState = ContractualExecutionState.create(organizationId: 'org-1', 
+        final baseState = ContractualExecutionState.create(
+          organizationId: 'org-1',
           setId: 'set-noshow',
           contractId: 'c-1',
           planVersion: 1,
@@ -179,7 +185,8 @@ void main() {
 
         for (final entry in allEntries) {
           if (entry.type == 'NO_SHOW_DECLARED') {
-            rebuiltState = ContractualExecutionState.reconstitute(organizationId: 'org-1', 
+            rebuiltState = ContractualExecutionState.reconstitute(
+              organizationId: 'org-1',
               id: rebuiltState.id,
               setId: rebuiltState.setId,
               contractId: rebuiltState.contractId,

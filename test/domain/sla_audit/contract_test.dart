@@ -97,10 +97,7 @@ void main() {
     });
 
     test('throws DomainException for blank name', () {
-      expect(
-        () => makeContract(name: '   '),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeContract(name: '   '), throwsA(isA<DomainException>()));
     });
 
     test('throws DomainException for blank contractorName', () {
@@ -209,21 +206,16 @@ void main() {
     test('throws DomainException if already active', () {
       final active = makeContract().activate();
 
-      expect(
-        () => active.activate(),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => active.activate(), throwsA(isA<DomainException>()));
     });
 
     test('throws DomainException if closed', () {
-      final closed = makeContract()
-          .activate()
-          .close(closedByUserId: 'user-1', reason: 'Done');
-
-      expect(
-        () => closed.activate(),
-        throwsA(isA<DomainException>()),
+      final closed = makeContract().activate().close(
+        closedByUserId: 'user-1',
+        reason: 'Done',
       );
+
+      expect(() => closed.activate(), throwsA(isA<DomainException>()));
     });
   });
 
@@ -257,9 +249,10 @@ void main() {
     });
 
     test('emits ContractClosedEvent', () {
-      final closed = makeContract()
-          .activate()
-          .close(closedByUserId: 'user-1', reason: 'Done');
+      final closed = makeContract().activate().close(
+        closedByUserId: 'user-1',
+        reason: 'Done',
+      );
 
       expect(closed.domainEvents, hasLength(1));
       expect(closed.domainEvents.first, isA<ContractClosedEvent>());
@@ -270,9 +263,10 @@ void main() {
     });
 
     test('throws DomainException if already closed', () {
-      final closed = makeContract()
-          .activate()
-          .close(closedByUserId: 'user-1', reason: 'Done');
+      final closed = makeContract().activate().close(
+        closedByUserId: 'user-1',
+        reason: 'Done',
+      );
 
       expect(
         () => closed.close(closedByUserId: 'user-1', reason: 'Again'),
@@ -313,9 +307,10 @@ void main() {
     });
 
     test('throws DomainException for closed', () {
-      final closed = makeContract()
-          .activate()
-          .close(closedByUserId: 'user-1', reason: 'Done');
+      final closed = makeContract().activate().close(
+        closedByUserId: 'user-1',
+        reason: 'Done',
+      );
 
       expect(
         () => closed.assertCanReceivePlan(),

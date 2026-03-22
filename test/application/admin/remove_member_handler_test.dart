@@ -6,8 +6,11 @@ import 'package:veraprob/application/admin/user_management_command_service.dart'
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/infrastructure/admin/postgres_user_management_query_service.dart';
 
-class MockUserManagementCommandService extends Mock implements UserManagementCommandService {}
-class MockUserManagementQueryService extends Mock implements PostgresUserManagementQueryService {}
+class MockUserManagementCommandService extends Mock
+    implements UserManagementCommandService {}
+
+class MockUserManagementQueryService extends Mock
+    implements PostgresUserManagementQueryService {}
 
 void main() {
   late MockUserManagementCommandService commandService;
@@ -23,7 +26,10 @@ void main() {
     );
   });
 
-  RemoveMemberCommand makeCommand({UserRole role = UserRole.admin, String targetId = 'user-2'}) {
+  RemoveMemberCommand makeCommand({
+    UserRole role = UserRole.admin,
+    String targetId = 'user-2',
+  }) {
     return RemoveMemberCommand(
       organizationId: 'org-1',
       callerRole: role,
@@ -33,52 +39,93 @@ void main() {
 
   group('RemoveMemberHandler', () {
     test('Rejeita não-admin (operator/auditor)', () async {
-      expect(() => handler.handle(makeCommand(role: UserRole.operator)), throwsException);
-      expect(() => handler.handle(makeCommand(role: UserRole.auditor)), throwsException);
+      expect(
+        () => handler.handle(makeCommand(role: UserRole.operator)),
+        throwsException,
+      );
+      expect(
+        () => handler.handle(makeCommand(role: UserRole.auditor)),
+        throwsException,
+      );
     });
 
     test('Rejeita remoção do último admin', () async {
       final members = [
-        OrgMember(userId: 'user-1', email: 'a@a.com', role: 'TENANT_ADMIN', invitedAt: DateTime.now()),
-        OrgMember(userId: 'user-2', email: 'b@b.com', role: 'OPERATOR', invitedAt: DateTime.now()),
+        OrgMember(
+          userId: 'user-1',
+          email: 'a@a.com',
+          role: 'TENANT_ADMIN',
+          invitedAt: DateTime.now(),
+        ),
+        OrgMember(
+          userId: 'user-2',
+          email: 'b@b.com',
+          role: 'OPERATOR',
+          invitedAt: DateTime.now(),
+        ),
       ];
       when(() => queryService.getMembers()).thenAnswer((_) async => members);
 
       final cmd = makeCommand(targetId: 'user-1');
       expect(
-        () => handler.handle(cmd), 
-        throwsA(predicate((e) => e.toString().contains('Não é possível remover o único administrador'))),
+        () => handler.handle(cmd),
+        throwsA(
+          predicate(
+            (e) => e.toString().contains(
+              'Não é possível remover o único administrador',
+            ),
+          ),
+        ),
       );
-      
-      verifyNever(() => commandService.removeMember(
-        organizationId: any(named: 'organizationId'),
-        targetUserId: any(named: 'targetUserId'),
-      ));
+
+      verifyNever(
+        () => commandService.removeMember(
+          organizationId: any(named: 'organizationId'),
+          targetUserId: any(named: 'targetUserId'),
+        ),
+      );
     });
 
     test('Passa quando ≥ 1 admin restante', () async {
       final members = [
-        OrgMember(userId: 'user-1', email: 'a@a.com', role: 'TENANT_ADMIN', invitedAt: DateTime.now()),
-        OrgMember(userId: 'user-2', email: 'b@b.com', role: 'TENANT_ADMIN', invitedAt: DateTime.now()),
+        OrgMember(
+          userId: 'user-1',
+          email: 'a@a.com',
+          role: 'TENANT_ADMIN',
+          invitedAt: DateTime.now(),
+        ),
+        OrgMember(
+          userId: 'user-2',
+          email: 'b@b.com',
+          role: 'TENANT_ADMIN',
+          invitedAt: DateTime.now(),
+        ),
       ];
       when(() => queryService.getMembers()).thenAnswer((_) async => members);
-      when(() => commandService.removeMember(
-        organizationId: any(named: 'organizationId'),
-        targetUserId: any(named: 'targetUserId'),
-      )).thenAnswer((_) async => {});
+      when(
+        () => commandService.removeMember(
+          organizationId: any(named: 'organizationId'),
+          targetUserId: any(named: 'targetUserId'),
+        ),
+      ).thenAnswer((_) async => {});
 
       await handler.handle(makeCommand(targetId: 'user-2'));
 
-      verify(() => commandService.removeMember(
-        organizationId: 'org-1',
-        targetUserId: 'user-2',
-      )).called(1);
+      verify(
+        () => commandService.removeMember(
+          organizationId: 'org-1',
+          targetUserId: 'user-2',
+        ),
+      ).called(1);
     });
-    
+
     test('Erro quando membro não encontrado', () async {
       when(() => queryService.getMembers()).thenAnswer((_) async => []);
-      
-      expect(() => handler.handle(makeCommand(targetId: 'ghost')), throwsException);
+
+      expect(
+        () => handler.handle(makeCommand(targetId: 'ghost')),
+        throwsException,
+      );
     });
   });
 }

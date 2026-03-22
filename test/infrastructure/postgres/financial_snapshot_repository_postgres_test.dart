@@ -30,7 +30,8 @@ void main() async {
         '1. Create and reconstitute a new snapshot works correctly',
         () async {
           final contractId = uuid.v4();
-          final ledgerEntryId = uuid.v4(); // last_ledger_entry_id is UUID in schema
+          final ledgerEntryId = uuid
+              .v4(); // last_ledger_entry_id is UUID in schema
           final operationalDate = DateTime.utc(2026, 3, 1);
           final closedAt = DateTime.now().toUtc();
 

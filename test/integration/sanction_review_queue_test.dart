@@ -125,18 +125,20 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 200));
 
         // Attempt direct duplicate insert into queue
-        await client.from('sanction_review_queue').upsert(
-          {
-            'organization_id': orgId,
-            'ledger_entry_id': ledgerEntryId,
-            'set_id': 'set-int-002',
-            'contract_id': 'contract-int-002',
-            'verdict_evidence': fakeEvidence,
-            'status': 'pending',
-          },
-          onConflict: 'ledger_entry_id',
-          ignoreDuplicates: true,
-        );
+        await client
+            .from('sanction_review_queue')
+            .upsert(
+              {
+                'organization_id': orgId,
+                'ledger_entry_id': ledgerEntryId,
+                'set_id': 'set-int-002',
+                'contract_id': 'contract-int-002',
+                'verdict_evidence': fakeEvidence,
+                'status': 'pending',
+              },
+              onConflict: 'ledger_entry_id',
+              ignoreDuplicates: true,
+            );
 
         final queueRows = await client
             .from('sanction_review_queue')

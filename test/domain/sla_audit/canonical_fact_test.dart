@@ -22,22 +22,21 @@ void main() {
     int? headingDegrees = 90,
     double? accuracyMeters = 15.0,
     IngestionIntegrityFlag integrityFlag = IngestionIntegrityFlag.ok,
-  }) =>
-      CanonicalFact.create(
-        organizationId: organizationId,
-        rawPayloadId: rawPayloadId,
-        assetId: assetId,
-        deviceId: deviceId,
-        sourceAdapter: sourceAdapter,
-        receivedAtUtc: receivedAtUtc ?? receivedAt,
-        gpsTimestamp: gpsTimestamp ?? gpsTs,
-        lat: lat,
-        lng: lng,
-        speedCms: speedCms,
-        headingDegrees: headingDegrees,
-        accuracyMeters: accuracyMeters,
-        integrityFlag: integrityFlag,
-      );
+  }) => CanonicalFact.create(
+    organizationId: organizationId,
+    rawPayloadId: rawPayloadId,
+    assetId: assetId,
+    deviceId: deviceId,
+    sourceAdapter: sourceAdapter,
+    receivedAtUtc: receivedAtUtc ?? receivedAt,
+    gpsTimestamp: gpsTimestamp ?? gpsTs,
+    lat: lat,
+    lng: lng,
+    speedCms: speedCms,
+    headingDegrees: headingDegrees,
+    accuracyMeters: accuracyMeters,
+    integrityFlag: integrityFlag,
+  );
 
   // ── Creation ───────────────────────────────────────────────────────────────
   group('CanonicalFact.create()', () {
@@ -128,10 +127,7 @@ void main() {
     });
 
     test('throws on empty deviceId', () {
-      expect(
-        () => makeValid(deviceId: ''),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeValid(deviceId: ''), throwsA(isA<DomainException>()));
     });
 
     test('throws on empty sourceAdapter', () {
@@ -158,10 +154,7 @@ void main() {
     });
 
     test('throws on negative speedCms', () {
-      expect(
-        () => makeValid(speedCms: -1),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeValid(speedCms: -1), throwsA(isA<DomainException>()));
     });
 
     test('throws on headingDegrees < 0', () {
@@ -254,12 +247,42 @@ void main() {
     });
 
     test('isEligibleForEvaluation is true only for ok and lateArrival', () {
-      expect(makeValid(integrityFlag: IngestionIntegrityFlag.ok).isEligibleForEvaluation, isTrue);
-      expect(makeValid(integrityFlag: IngestionIntegrityFlag.lateArrival).isEligibleForEvaluation, isTrue);
-      expect(makeValid(integrityFlag: IngestionIntegrityFlag.futureTimestamp).isEligibleForEvaluation, isFalse);
-      expect(makeValid(integrityFlag: IngestionIntegrityFlag.kinematicAnomaly).isEligibleForEvaluation, isFalse);
-      expect(makeValid(integrityFlag: IngestionIntegrityFlag.nullIsland).isEligibleForEvaluation, isFalse);
-      expect(makeValid(integrityFlag: IngestionIntegrityFlag.lowAccuracy).isEligibleForEvaluation, isFalse);
+      expect(
+        makeValid(
+          integrityFlag: IngestionIntegrityFlag.ok,
+        ).isEligibleForEvaluation,
+        isTrue,
+      );
+      expect(
+        makeValid(
+          integrityFlag: IngestionIntegrityFlag.lateArrival,
+        ).isEligibleForEvaluation,
+        isTrue,
+      );
+      expect(
+        makeValid(
+          integrityFlag: IngestionIntegrityFlag.futureTimestamp,
+        ).isEligibleForEvaluation,
+        isFalse,
+      );
+      expect(
+        makeValid(
+          integrityFlag: IngestionIntegrityFlag.kinematicAnomaly,
+        ).isEligibleForEvaluation,
+        isFalse,
+      );
+      expect(
+        makeValid(
+          integrityFlag: IngestionIntegrityFlag.nullIsland,
+        ).isEligibleForEvaluation,
+        isFalse,
+      );
+      expect(
+        makeValid(
+          integrityFlag: IngestionIntegrityFlag.lowAccuracy,
+        ).isEligibleForEvaluation,
+        isFalse,
+      );
     });
   });
 

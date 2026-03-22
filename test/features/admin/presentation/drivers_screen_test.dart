@@ -26,7 +26,12 @@ void main() {
 
     // Register Fallback Value for Driver
     registerFallbackValue(
-      const Driver(id: '0', organizationId: 'test-org', name: 'Fallback', licenseNumber: '0'),
+      const Driver(
+        id: '0',
+        organizationId: 'test-org',
+        name: 'Fallback',
+        licenseNumber: '0',
+      ),
     );
   });
 
@@ -56,8 +61,18 @@ void main() {
     testWidgets('renders List of Drivers', (tester) async {
       when(() => mockDriverRepository.getDrivers()).thenAnswer(
         (_) async => [
-          const Driver(id: '1', organizationId: 'test-org', name: 'João Silva', licenseNumber: '111'),
-          const Driver(id: '2', organizationId: 'test-org', name: 'Maria Oliveira', licenseNumber: '222'),
+          const Driver(
+            id: '1',
+            organizationId: 'test-org',
+            name: 'João Silva',
+            licenseNumber: '111',
+          ),
+          const Driver(
+            id: '2',
+            organizationId: 'test-org',
+            name: 'Maria Oliveira',
+            licenseNumber: '222',
+          ),
         ],
       );
 
@@ -158,8 +173,18 @@ void main() {
     testWidgets('Search filters drivers', (tester) async {
       when(() => mockDriverRepository.getDrivers()).thenAnswer(
         (_) async => [
-          const Driver(id: '1', organizationId: 'test-org', name: 'João Silva', licenseNumber: '111'),
-          const Driver(id: '2', organizationId: 'test-org', name: 'Maria Oliveira', licenseNumber: '222'),
+          const Driver(
+            id: '1',
+            organizationId: 'test-org',
+            name: 'João Silva',
+            licenseNumber: '111',
+          ),
+          const Driver(
+            id: '2',
+            organizationId: 'test-org',
+            name: 'Maria Oliveira',
+            licenseNumber: '222',
+          ),
         ],
       );
 
@@ -204,4 +229,3 @@ void main() {
     });
   });
 }
-

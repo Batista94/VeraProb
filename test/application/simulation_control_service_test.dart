@@ -147,46 +147,49 @@ void main() {
       },
     );
 
-    test('Cancelar updates status and dispatches contractual evidence', () async {
-      when(
-        () => mockSimulation.updateTripStatus('t_2', TripStatus.cancelled),
-      ).thenReturn(TripStatus.enRoute);
+    test(
+      'Cancelar updates status and dispatches contractual evidence',
+      () async {
+        when(
+          () => mockSimulation.updateTripStatus('t_2', TripStatus.cancelled),
+        ).thenReturn(TripStatus.enRoute);
 
-      when(
-        () => mockSimulation.addEvent(
-          tripId: any(named: 'tripId'),
-          eventType: any(named: 'eventType'),
-          fromStatus: any(named: 'fromStatus'),
-          toStatus: any(named: 'toStatus'),
-          metadata: any(named: 'metadata'),
-        ),
-      ).thenReturn(
-        TripEvent(
-          id: '2',
-          tripId: 't_2',
-          eventType: EventType.statusChange,
-          createdAt: DateTime.now(),
-        ),
-      );
+        when(
+          () => mockSimulation.addEvent(
+            tripId: any(named: 'tripId'),
+            eventType: any(named: 'eventType'),
+            fromStatus: any(named: 'fromStatus'),
+            toStatus: any(named: 'toStatus'),
+            metadata: any(named: 'metadata'),
+          ),
+        ).thenReturn(
+          TripEvent(
+            id: '2',
+            tripId: 't_2',
+            eventType: EventType.statusChange,
+            createdAt: DateTime.now(),
+          ),
+        );
 
-      await service.updateTripStatus('t_2', TripStatus.cancelled);
+        await service.updateTripStatus('t_2', TripStatus.cancelled);
 
-      verify(
-        () => mockSimulation.updateTripStatus('t_2', TripStatus.cancelled),
-      ).called(1);
+        verify(
+          () => mockSimulation.updateTripStatus('t_2', TripStatus.cancelled),
+        ).called(1);
 
-      // Verify the port received the cancellation evidence
-      verify(
-        () => mockEventPort.dispatchTripCancelled(
-          organizationId: any(named: 'organizationId'),
-          tripId: any(named: 'tripId'),
-          vehicleId: any(named: 'vehicleId'),
-          operatorId: any(named: 'operatorId'),
-          reason: any(named: 'reason'),
-          occurredAtUtc: any(named: 'occurredAtUtc'),
-        ),
-      ).called(1);
-    });
+        // Verify the port received the cancellation evidence
+        verify(
+          () => mockEventPort.dispatchTripCancelled(
+            organizationId: any(named: 'organizationId'),
+            tripId: any(named: 'tripId'),
+            vehicleId: any(named: 'vehicleId'),
+            operatorId: any(named: 'operatorId'),
+            reason: any(named: 'reason'),
+            occurredAtUtc: any(named: 'occurredAtUtc'),
+          ),
+        ).called(1);
+      },
+    );
 
     test('Ocurrence dispatches contractual evidence via port', () async {
       when(

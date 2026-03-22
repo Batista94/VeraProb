@@ -39,31 +39,34 @@ void main() {
   }
 
   group('CreateContractHandler', () {
-    test('happy path — aggregate created in draft, persisted, ledger updated', () async {
-      final contract = await handler.handle(makeCommand());
+    test(
+      'happy path — aggregate created in draft, persisted, ledger updated',
+      () async {
+        final contract = await handler.handle(makeCommand());
 
-      // Status is draft
-      expect(contract.status, ContractStatus.draft);
-      expect(contract.isDraft, isTrue);
+        // Status is draft
+        expect(contract.status, ContractStatus.draft);
+        expect(contract.isDraft, isTrue);
 
-      // Identity and fields preserved
-      expect(contract.id, isNotEmpty);
-      expect(contract.organizationId, 'org-1');
-      expect(contract.name, 'Contrato Norte');
-      expect(contract.contractorName, 'Trans Norte Ltda');
+        // Identity and fields preserved
+        expect(contract.id, isNotEmpty);
+        expect(contract.organizationId, 'org-1');
+        expect(contract.name, 'Contrato Norte');
+        expect(contract.contractorName, 'Trans Norte Ltda');
 
-      // Persisted in repository
-      final found = await repository.findById(
-        contract.id,
-        organizationId: 'org-1',
-      );
-      expect(found, isNotNull);
-      expect(found!.id, contract.id);
+        // Persisted in repository
+        final found = await repository.findById(
+          contract.id,
+          organizationId: 'org-1',
+        );
+        expect(found, isNotNull);
+        expect(found!.id, contract.id);
 
-      // One ledger entry: CONTRACT_CREATED
-      expect(ledger.entries, hasLength(1));
-      expect(ledger.entries.first.type, 'CONTRACT_CREATED');
-    });
+        // One ledger entry: CONTRACT_CREATED
+        expect(ledger.entries, hasLength(1));
+        expect(ledger.entries.first.type, 'CONTRACT_CREATED');
+      },
+    );
 
     test('with optional description', () async {
       final contract = await handler.handle(
@@ -93,7 +96,9 @@ void main() {
     });
 
     test('tenant isolation — findById returns null for wrong org', () async {
-      final contract = await handler.handle(makeCommand(organizationId: 'org-A'));
+      final contract = await handler.handle(
+        makeCommand(organizationId: 'org-A'),
+      );
 
       final found = await repository.findById(
         contract.id,

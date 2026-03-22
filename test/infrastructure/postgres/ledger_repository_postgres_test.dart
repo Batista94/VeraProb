@@ -28,7 +28,8 @@ void main() async {
         () async {
           final setId = uuid.v4();
           final contractId = uuid.v4();
-          final entry = SlaLedgerEntry(organizationId: PostgresTestConfig.testOrgId,
+          final entry = SlaLedgerEntry(
+            organizationId: PostgresTestConfig.testOrgId,
             type: 'PLAN_DECLARED',
             setId: setId,
             contractId: contractId,
@@ -59,7 +60,8 @@ void main() async {
           final setId = uuid.v4();
           final contractId = uuid.v4();
 
-          final entry1 = SlaLedgerEntry(organizationId: PostgresTestConfig.testOrgId,
+          final entry1 = SlaLedgerEntry(
+            organizationId: PostgresTestConfig.testOrgId,
             type: 'EXECUTION_BOUND',
             setId: setId,
             contractId: contractId,
@@ -69,7 +71,8 @@ void main() async {
             ),
           );
 
-          final entry2 = SlaLedgerEntry(organizationId: PostgresTestConfig.testOrgId,
+          final entry2 = SlaLedgerEntry(
+            organizationId: PostgresTestConfig.testOrgId,
             type: 'EXECUTION_FINALIZED',
             setId: setId,
             contractId: contractId,
@@ -93,65 +96,73 @@ void main() async {
         },
       );
 
-      test('3. DB Constraints: Cannot UPDATE a ledger entry (RLS guard)', () async {
-        final setId = uuid.v4();
-        final contractId = uuid.v4();
+      test(
+        '3. DB Constraints: Cannot UPDATE a ledger entry (RLS guard)',
+        () async {
+          final setId = uuid.v4();
+          final contractId = uuid.v4();
 
-        final entry = SlaLedgerEntry(organizationId: PostgresTestConfig.testOrgId,
-          type: 'PLAN_DECLARED',
-          setId: setId,
-          contractId: contractId,
-          planVersion: 1,
-          occurredAtUtc: DateTime.now().toUtc(),
-        );
+          final entry = SlaLedgerEntry(
+            organizationId: PostgresTestConfig.testOrgId,
+            type: 'PLAN_DECLARED',
+            setId: setId,
+            contractId: contractId,
+            planVersion: 1,
+            occurredAtUtc: DateTime.now().toUtc(),
+          );
 
-        await repository.append(entry);
+          await repository.append(entry);
 
-        // Get the persisted entry to know its UUID
-        final entries = await repository.getEntriesBySetId(setId);
-        final persistedEventId = entries.first.eventId!;
+          // Get the persisted entry to know its UUID
+          final entries = await repository.getEntriesBySetId(setId);
+          final persistedEventId = entries.first.eventId!;
 
-        // Direct UPDATE attempt via raw Supabase client (not via repository)
-        await expectLater(
-          () async => await client
-              .from('sla_audit_ledger_v2')
-              .update({'type': 'TAMPERED'})
-              .eq('id', persistedEventId),
-          throwsA(isA<PostgrestException>()),
-          reason:
-              'The database must reject UPDATEs on sla_audit_ledger_v2 (append-only)',
-        );
-      });
+          // Direct UPDATE attempt via raw Supabase client (not via repository)
+          await expectLater(
+            () async => await client
+                .from('sla_audit_ledger_v2')
+                .update({'type': 'TAMPERED'})
+                .eq('id', persistedEventId),
+            throwsA(isA<PostgrestException>()),
+            reason:
+                'The database must reject UPDATEs on sla_audit_ledger_v2 (append-only)',
+          );
+        },
+      );
 
-      test('4. DB Constraints: Cannot DELETE a ledger entry (RLS guard)', () async {
-        final setId = uuid.v4();
-        final contractId = uuid.v4();
+      test(
+        '4. DB Constraints: Cannot DELETE a ledger entry (RLS guard)',
+        () async {
+          final setId = uuid.v4();
+          final contractId = uuid.v4();
 
-        final entry = SlaLedgerEntry(organizationId: PostgresTestConfig.testOrgId,
-          type: 'PLAN_DECLARED',
-          setId: setId,
-          contractId: contractId,
-          planVersion: 1,
-          occurredAtUtc: DateTime.now().toUtc(),
-        );
+          final entry = SlaLedgerEntry(
+            organizationId: PostgresTestConfig.testOrgId,
+            type: 'PLAN_DECLARED',
+            setId: setId,
+            contractId: contractId,
+            planVersion: 1,
+            occurredAtUtc: DateTime.now().toUtc(),
+          );
 
-        await repository.append(entry);
+          await repository.append(entry);
 
-        // Get the persisted entry to know its UUID
-        final entries = await repository.getEntriesBySetId(setId);
-        final persistedEventId = entries.first.eventId!;
+          // Get the persisted entry to know its UUID
+          final entries = await repository.getEntriesBySetId(setId);
+          final persistedEventId = entries.first.eventId!;
 
-        // Direct DELETE attempt via raw Supabase client (not via repository)
-        await expectLater(
-          () async => await client
-              .from('sla_audit_ledger_v2')
-              .delete()
-              .eq('id', persistedEventId),
-          throwsA(isA<PostgrestException>()),
-          reason:
-              'The database must reject DELETEs on sla_audit_ledger_v2 (append-only)',
-        );
-      });
+          // Direct DELETE attempt via raw Supabase client (not via repository)
+          await expectLater(
+            () async => await client
+                .from('sla_audit_ledger_v2')
+                .delete()
+                .eq('id', persistedEventId),
+            throwsA(isA<PostgrestException>()),
+            reason:
+                'The database must reject DELETEs on sla_audit_ledger_v2 (append-only)',
+          );
+        },
+      );
     },
     skip: !isRunning ? 'Skipped: Local Supabase environment is offline.' : null,
   );

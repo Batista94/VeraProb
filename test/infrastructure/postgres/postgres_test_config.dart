@@ -26,11 +26,8 @@ class PostgresTestConfig {
     // Mocking SharedPreferences to avoid MissingPluginException in unit tests
     // when Supabase.initialize is called.
     SharedPreferences.setMockInitialValues({});
-    
-    await Supabase.initialize(
-      url: supabaseUrl, 
-      anonKey: supabaseAnonKey,
-    );
+
+    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
     return Supabase.instance.client;
   }
 
@@ -59,10 +56,14 @@ class PostgresTestConfig {
       'set_id': setId,
       'plan_declaration_id': planId,
       'organization_id': testOrgId,
-      'scheduled_start_time_utc':
-          DateTime.now().toUtc().subtract(const Duration(minutes: 15)).toIso8601String(),
-      'scheduled_end_time_utc':
-          DateTime.now().toUtc().add(const Duration(hours: 1)).toIso8601String(),
+      'scheduled_start_time_utc': DateTime.now()
+          .toUtc()
+          .subtract(const Duration(minutes: 15))
+          .toIso8601String(),
+      'scheduled_end_time_utc': DateTime.now()
+          .toUtc()
+          .add(const Duration(hours: 1))
+          .toIso8601String(),
       'start_latitude': -23.5505,
       'start_longitude': -46.6333,
       'start_radius_meters': 50,

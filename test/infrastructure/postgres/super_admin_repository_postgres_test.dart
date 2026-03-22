@@ -25,17 +25,17 @@ const _uuid = Uuid();
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 CreateOrganizationCommand _testCmd(String cnpj) => CreateOrganizationCommand(
-      legalName: 'Integration Test Ltda.',
-      tradeName: 'Test Corp ${cnpj.substring(0, 4)}',
-      cnpj: cnpj,
-      timezone: 'America/Sao_Paulo',
-      currencyCode: 'BRL',
-      planType: 'starter',
-      maxVehicles: 10,
-      maxActiveContracts: 5,
-      initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
-      superAdminUserId: _uuid.v4(),
-    );
+  legalName: 'Integration Test Ltda.',
+  tradeName: 'Test Corp ${cnpj.substring(0, 4)}',
+  cnpj: cnpj,
+  timezone: 'America/Sao_Paulo',
+  currencyCode: 'BRL',
+  planType: 'starter',
+  maxVehicles: 10,
+  maxActiveContracts: 5,
+  initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+  superAdminUserId: _uuid.v4(),
+);
 
 /// Gera um CNPJ de 14 dígitos único por execução de teste.
 String _uniqueCnpj() {
@@ -109,23 +109,25 @@ void main() async {
           expect(row['is_active'], isTrue);
         });
 
-        test('registra billing event com event_type ORG_CREATED (INV-1)',
-            () async {
-          final cnpj = _uniqueCnpj();
-          final orgId = await repo.createOrganization(_testCmd(cnpj));
+        test(
+          'registra billing event com event_type ORG_CREATED (INV-1)',
+          () async {
+            final cnpj = _uniqueCnpj();
+            final orgId = await repo.createOrganization(_testCmd(cnpj));
 
-          final events = await serviceRoleClient
-              .from('tenant_billing_events')
-              .select()
-              .eq('organization_id', orgId)
-              .eq('event_type', 'ORG_CREATED');
+            final events = await serviceRoleClient
+                .from('tenant_billing_events')
+                .select()
+                .eq('organization_id', orgId)
+                .eq('event_type', 'ORG_CREATED');
 
-          expect(events, isNotEmpty, reason: 'Deve ter pelo menos um evento');
-          final event = events.first;
-          expect(event['new_plan'], equals('starter'));
-          expect(event['new_max_vehicles'], equals(10));
-          expect(event['new_max_contracts'], equals(5));
-        });
+            expect(events, isNotEmpty, reason: 'Deve ter pelo menos um evento');
+            final event = events.first;
+            expect(event['new_plan'], equals('starter'));
+            expect(event['new_max_vehicles'], equals(10));
+            expect(event['new_max_contracts'], equals(5));
+          },
+        );
 
         test('rejeita CNPJ duplicado (R2: unique index uq_org_cnpj)', () async {
           final cnpj = _uniqueCnpj();
@@ -138,26 +140,28 @@ void main() async {
           );
         });
 
-        test('billing event é imutável — UPDATE é bloqueado por trigger (INV-1)',
-            () async {
-          final cnpj = _uniqueCnpj();
-          final orgId = await repo.createOrganization(_testCmd(cnpj));
+        test(
+          'billing event é imutável — UPDATE é bloqueado por trigger (INV-1)',
+          () async {
+            final cnpj = _uniqueCnpj();
+            final orgId = await repo.createOrganization(_testCmd(cnpj));
 
-          final events = await serviceRoleClient
-              .from('tenant_billing_events')
-              .select('id')
-              .eq('organization_id', orgId);
-          final eventId = (events.first as Map)['id'] as String;
-
-          // Tentativa de UPDATE deve ser bloqueada pelo trigger
-          await expectLater(
-            serviceRoleClient
+            final events = await serviceRoleClient
                 .from('tenant_billing_events')
-                .update({'reason': 'tentativa de adulteração'})
-                .eq('id', eventId),
-            throwsException,
-          );
-        });
+                .select('id')
+                .eq('organization_id', orgId);
+            final eventId = (events.first as Map)['id'] as String;
+
+            // Tentativa de UPDATE deve ser bloqueada pelo trigger
+            await expectLater(
+              serviceRoleClient
+                  .from('tenant_billing_events')
+                  .update({'reason': 'tentativa de adulteração'})
+                  .eq('id', eventId),
+              throwsException,
+            );
+          },
+        );
       });
 
       // ── getAllTenantHealth ──────────────────────────────────────────────────
@@ -179,19 +183,24 @@ void main() async {
           }
         });
 
-        test('org recém-criada aparece na view com active_contract_count = 0',
-            () async {
-          final cnpj = _uniqueCnpj();
-          final orgId = await repo.createOrganization(_testCmd(cnpj));
+        test(
+          'org recém-criada aparece na view com active_contract_count = 0',
+          () async {
+            final cnpj = _uniqueCnpj();
+            final orgId = await repo.createOrganization(_testCmd(cnpj));
 
-          final snapshots = await repo.getAllTenantHealth();
-          final match = snapshots.where((s) => s.id == orgId).toList();
+            final snapshots = await repo.getAllTenantHealth();
+            final match = snapshots.where((s) => s.id == orgId).toList();
 
-          expect(match, isNotEmpty,
-              reason: 'Org recém-criada deve aparecer na health view');
-          expect(match.first.activeContractCount, equals(0));
-          expect(match.first.openCriticalAlertCount, equals(0));
-        });
+            expect(
+              match,
+              isNotEmpty,
+              reason: 'Org recém-criada deve aparecer na health view',
+            );
+            expect(match.first.activeContractCount, equals(0));
+            expect(match.first.openCriticalAlertCount, equals(0));
+          },
+        );
       });
 
       // ── getSystemAuditLog ──────────────────────────────────────────────────
@@ -228,12 +237,11 @@ void main() async {
         });
 
         test('filtra por severity corretamente', () async {
-          final logs =
-              await repo.getSystemAuditLog(severity: 'error', limit: 20);
-          expect(
-            logs.every((e) => e['severity'] == 'error'),
-            isTrue,
+          final logs = await repo.getSystemAuditLog(
+            severity: 'error',
+            limit: 20,
           );
+          expect(logs.every((e) => e['severity'] == 'error'), isTrue);
         });
       });
     },

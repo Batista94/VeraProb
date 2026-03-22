@@ -24,9 +24,11 @@ void main() {
   });
 
   void stubRevoke() {
-    when(() => commandService.revokeInvitation(
-          invitationId: any(named: 'invitationId'),
-        )).thenAnswer((_) async {});
+    when(
+      () => commandService.revokeInvitation(
+        invitationId: any(named: 'invitationId'),
+      ),
+    ).thenAnswer((_) async {});
   }
 
   RevokeInvitationCommand makeCommand({UserRole callerRole = UserRole.admin}) {
@@ -43,9 +45,11 @@ void main() {
         () => handler.handle(makeCommand(callerRole: UserRole.operator)),
         throwsA(isA<DomainException>()),
       );
-      verifyNever(() => commandService.revokeInvitation(
-            invitationId: any(named: 'invitationId'),
-          ));
+      verifyNever(
+        () => commandService.revokeInvitation(
+          invitationId: any(named: 'invitationId'),
+        ),
+      );
     });
 
     test('Rejeita auditor — não tem canManageUsers', () async {
@@ -53,9 +57,11 @@ void main() {
         () => handler.handle(makeCommand(callerRole: UserRole.auditor)),
         throwsA(isA<DomainException>()),
       );
-      verifyNever(() => commandService.revokeInvitation(
-            invitationId: any(named: 'invitationId'),
-          ));
+      verifyNever(
+        () => commandService.revokeInvitation(
+          invitationId: any(named: 'invitationId'),
+        ),
+      );
     });
 
     test('Admin revoga com sucesso — delega para commandService', () async {
@@ -63,9 +69,9 @@ void main() {
 
       await handler.handle(makeCommand(callerRole: UserRole.admin));
 
-      verify(() => commandService.revokeInvitation(
-            invitationId: 'inv-uuid-1',
-          )).called(1);
+      verify(
+        () => commandService.revokeInvitation(invitationId: 'inv-uuid-1'),
+      ).called(1);
     });
   });
 }

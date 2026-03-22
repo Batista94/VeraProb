@@ -35,7 +35,8 @@ void main() async {
           contractId: contractId,
         );
 
-        final state = ContractualExecutionState.create(organizationId: PostgresTestConfig.testOrgId,
+        final state = ContractualExecutionState.create(
+          organizationId: PostgresTestConfig.testOrgId,
           setId: setId,
           contractId: contractId,
           planVersion: 1,
@@ -107,7 +108,8 @@ void main() async {
             contractId: contractId2,
           );
 
-          final state1 = ContractualExecutionState.create(organizationId: PostgresTestConfig.testOrgId,
+          final state1 = ContractualExecutionState.create(
+            organizationId: PostgresTestConfig.testOrgId,
             setId: setId1,
             contractId: contractId,
             planVersion: 1,
@@ -124,7 +126,8 @@ void main() async {
             ),
           );
 
-          final state2 = ContractualExecutionState.create(organizationId: PostgresTestConfig.testOrgId,
+          final state2 = ContractualExecutionState.create(
+            organizationId: PostgresTestConfig.testOrgId,
             setId: setId2,
             contractId: contractId2, // Different contract
             planVersion: 1,
@@ -144,7 +147,10 @@ void main() async {
           await repository.save(state1);
           await repository.save(state2);
 
-          final contractStates = await repository.findByContract(contractId, organizationId: PostgresTestConfig.testOrgId);
+          final contractStates = await repository.findByContract(
+            contractId,
+            organizationId: PostgresTestConfig.testOrgId,
+          );
 
           expect(contractStates.isNotEmpty, isTrue);
           expect(

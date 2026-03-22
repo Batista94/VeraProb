@@ -13,14 +13,16 @@ void main() {
   late SaveContractorHandler handler;
 
   setUpAll(() {
-    registerFallbackValue(Contractor(
-      id: '',
-      organizationId: '',
-      name: '',
-      primaryEmail: '',
-      contactName: '',
-      createdAtUtc: DateTime.now(),
-    ));
+    registerFallbackValue(
+      Contractor(
+        id: '',
+        organizationId: '',
+        name: '',
+        primaryEmail: '',
+        contactName: '',
+        createdAtUtc: DateTime.now(),
+      ),
+    );
   });
 
   setUp(() {
@@ -28,7 +30,10 @@ void main() {
     handler = SaveContractorHandler(repository: repository);
   });
 
-  SaveContractorCommand makeCommand({UserRole role = UserRole.admin, String? id}) {
+  SaveContractorCommand makeCommand({
+    UserRole role = UserRole.admin,
+    String? id,
+  }) {
     return SaveContractorCommand(
       organizationId: 'org-1',
       callerRole: role,
@@ -41,7 +46,10 @@ void main() {
 
   group('SaveContractorHandler', () {
     test('Rejeita auditor', () async {
-      expect(() => handler.handle(makeCommand(role: UserRole.auditor)), throwsException);
+      expect(
+        () => handler.handle(makeCommand(role: UserRole.auditor)),
+        throwsException,
+      );
       verifyNever(() => repository.save(any()));
     });
 
@@ -59,7 +67,9 @@ void main() {
 
       await handler.handle(makeCommand(id: null));
 
-      final captured = verify(() => repository.save(captureAny())).captured.single as Contractor;
+      final captured =
+          verify(() => repository.save(captureAny())).captured.single
+              as Contractor;
       expect(captured.id, isNotEmpty);
       expect(captured.id, hasLength(36)); // UUID v4 format
     });
@@ -73,20 +83,26 @@ void main() {
         contactName: 'Old',
         createdAtUtc: DateTime.utc(2025),
       );
-      when(() => repository.findById('org-1', 'existing-id')).thenAnswer((_) async => existing);
+      when(
+        () => repository.findById('org-1', 'existing-id'),
+      ).thenAnswer((_) async => existing);
       when(() => repository.save(any())).thenAnswer((_) async => {});
 
       await handler.handle(makeCommand(id: 'existing-id'));
 
-      final captured = verify(() => repository.save(captureAny())).captured.single as Contractor;
+      final captured =
+          verify(() => repository.save(captureAny())).captured.single
+              as Contractor;
       expect(captured.id, 'existing-id');
       expect(captured.createdAtUtc, existing.createdAtUtc);
       expect(captured.name, 'Contractor X');
     });
-    
+
     test('Erro quando contractor não encontrado no update', () async {
-      when(() => repository.findById(any(), any())).thenAnswer((_) async => null);
-      
+      when(
+        () => repository.findById(any(), any()),
+      ).thenAnswer((_) async => null);
+
       expect(() => handler.handle(makeCommand(id: 'missing')), throwsException);
     });
   });

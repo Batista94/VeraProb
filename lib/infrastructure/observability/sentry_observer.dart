@@ -77,9 +77,7 @@ Future<bool> initSentry({required AppRunner appRunner}) async {
     options.environment = EnvironmentConfig.sentryEnvironment;
     options.tracesSampleRate = EnvironmentConfig.isProd ? 0.2 : 1.0;
     // ignore: experimental_member_use
-    options.profilesSampleRate = EnvironmentConfig.isProd
-        ? 0.1
-        : 0.5;
+    options.profilesSampleRate = EnvironmentConfig.isProd ? 0.1 : 0.5;
     options.attachScreenshot = false; // Never capture screenshots — privacy
     options.sendDefaultPii = false; // Never send PII automatically
     options.debug = kDebugMode;

@@ -226,7 +226,11 @@ void main() {
         );
 
         await planRepo.saveProjectedSets(plan.id, sets, organizationId: orgId);
-        await planRepo.saveProjectedSets(plan.id, sets, organizationId: orgId); // second save
+        await planRepo.saveProjectedSets(
+          plan.id,
+          sets,
+          organizationId: orgId,
+        ); // second save
 
         final stored = planRepo.projectedSetsFor(plan.id);
         expect(stored.length, 1); // no duplicates

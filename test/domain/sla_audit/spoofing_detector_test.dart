@@ -34,14 +34,17 @@ void main() {
   group('SpoofingDetector', () {
     test('legitimate movement returns zero risk', () {
       final t = DateTime.utc(2026, 3, 1, 10, 0);
-      final facts = List.generate(10, (i) => makeFact(
-        gpsTimestamp: t.add(Duration(seconds: i * 30)),
-        lat: -23.5505 + (i * 0.001), // moving north
-        lng: -46.6333,
-        speedCms: 1000, // 36 km/h
-        accuracyMeters: 10.0 + (i % 3), // variable accuracy
-        headingDegrees: 0 + (i % 5), // variable heading
-      ));
+      final facts = List.generate(
+        10,
+        (i) => makeFact(
+          gpsTimestamp: t.add(Duration(seconds: i * 30)),
+          lat: -23.5505 + (i * 0.001), // moving north
+          lng: -46.6333,
+          speedCms: 1000, // 36 km/h
+          accuracyMeters: 10.0 + (i % 3), // variable accuracy
+          headingDegrees: 0 + (i % 5), // variable heading
+        ),
+      );
 
       final risk = detector.analyze(facts);
 
@@ -51,14 +54,17 @@ void main() {
 
     test('static position while moving (speed > 0) triggers signal', () {
       final t = DateTime.utc(2026, 3, 1, 10, 0);
-      final facts = List.generate(11, (i) => makeFact(
-        gpsTimestamp: t.add(Duration(seconds: i * 30)),
-        lat: -23.5505,
-        lng: -46.6333,
-        speedCms: 1389, // ~50 km/h
-        accuracyMeters: 10.0 + i, // variable accuracy
-        headingDegrees: 0 + i, // variable heading
-      ));
+      final facts = List.generate(
+        11,
+        (i) => makeFact(
+          gpsTimestamp: t.add(Duration(seconds: i * 30)),
+          lat: -23.5505,
+          lng: -46.6333,
+          speedCms: 1389, // ~50 km/h
+          accuracyMeters: 10.0 + i, // variable accuracy
+          headingDegrees: 0 + i, // variable heading
+        ),
+      );
 
       final risk = detector.analyze(facts);
 
@@ -68,12 +74,15 @@ void main() {
 
     test('zero entropy accuracy triggers signal', () {
       final t = DateTime.utc(2026, 3, 1, 10, 0);
-      final facts = List.generate(10, (i) => makeFact(
-        gpsTimestamp: t.add(Duration(seconds: i * 10)),
-        accuracyMeters: 8.54321, 
-        speedCms: 0, 
-        headingDegrees: i, // variable
-      ));
+      final facts = List.generate(
+        10,
+        (i) => makeFact(
+          gpsTimestamp: t.add(Duration(seconds: i * 10)),
+          accuracyMeters: 8.54321,
+          speedCms: 0,
+          headingDegrees: i, // variable
+        ),
+      );
 
       final risk = detector.analyze(facts);
 
@@ -83,12 +92,15 @@ void main() {
 
     test('perfect linear trajectory (constant heading) triggers signal', () {
       final t = DateTime.utc(2026, 3, 1, 10, 0);
-      final facts = List.generate(20, (i) => makeFact(
-        gpsTimestamp: t.add(Duration(seconds: i * 10)),
-        headingDegrees: 45,
-        accuracyMeters: 10.0 + i, // variable
-        speedCms: 0,
-      ));
+      final facts = List.generate(
+        20,
+        (i) => makeFact(
+          gpsTimestamp: t.add(Duration(seconds: i * 10)),
+          headingDegrees: 45,
+          accuracyMeters: 10.0 + i, // variable
+          speedCms: 0,
+        ),
+      );
 
       final risk = detector.analyze(facts);
 
@@ -98,14 +110,17 @@ void main() {
 
     test('multiple signals combine to exceed threshold', () {
       final t = DateTime.utc(2026, 3, 1, 10, 0);
-      final facts = List.generate(20, (i) => makeFact(
-        gpsTimestamp: t.add(Duration(seconds: i * 20)),
-        lat: -23.5505, // static
-        lng: -46.6333, // static
-        speedCms: 1500, // moving
-        accuracyMeters: 10.0, // zero entropy
-        headingDegrees: 90, // perfect linear
-      ));
+      final facts = List.generate(
+        20,
+        (i) => makeFact(
+          gpsTimestamp: t.add(Duration(seconds: i * 20)),
+          lat: -23.5505, // static
+          lng: -46.6333, // static
+          speedCms: 1500, // moving
+          accuracyMeters: 10.0, // zero entropy
+          headingDegrees: 90, // perfect linear
+        ),
+      );
 
       final risk = detector.analyze(facts);
 

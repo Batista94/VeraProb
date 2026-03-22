@@ -165,29 +165,34 @@ void main() {
       expect(result.skippedByKinematicJump, 0);
     });
 
-    test('late arrival facts (gpsTimestamp 4h before received) are processed', () async {
-      final state = makeExecState(
-        windowStart: DateTime.utc(2026, 3, 1, 6, 0),
-        windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
-      );
-      await execRepo.save(state);
-      await seedPlan('c-1');
+    test(
+      'late arrival facts (gpsTimestamp 4h before received) are processed',
+      () async {
+        final state = makeExecState(
+          windowStart: DateTime.utc(2026, 3, 1, 6, 0),
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await execRepo.save(state);
+        await seedPlan('c-1');
 
-      final gpsTime = DateTime.utc(2026, 3, 1, 6, 30); // inside window
-      final arrivedAt = DateTime.utc(2026, 3, 1, 10, 30); // 4h later
+        final gpsTime = DateTime.utc(2026, 3, 1, 6, 30); // inside window
+        final arrivedAt = DateTime.utc(2026, 3, 1, 10, 30); // 4h later
 
-      final lateFact = makeFact(
-        gpsTimestamp: gpsTime,
-        receivedAtUtc: arrivedAt,
-        flag: IngestionIntegrityFlag.lateArrival,
-      );
+        final lateFact = makeFact(
+          gpsTimestamp: gpsTime,
+          receivedAtUtc: arrivedAt,
+          flag: IngestionIntegrityFlag.lateArrival,
+        );
 
-      final result = await pipeline.process([lateFact], organizationId: 'org-1');
+        final result = await pipeline.process([
+          lateFact,
+        ], organizationId: 'org-1');
 
-      expect(result.processed, 1); // lateArrival is eligible
-      expect(result.lateArrivalCount, 1);
-      expect(result.lateArrivalAssetIds, contains('asset-1'));
-    });
+        expect(result.processed, 1); // lateArrival is eligible
+        expect(result.lateArrivalCount, 1);
+        expect(result.lateArrivalAssetIds, contains('asset-1'));
+      },
+    );
 
     test('futureTimestamp facts are skipped', () async {
       final futureFact = makeFact(
@@ -195,7 +200,9 @@ void main() {
         flag: IngestionIntegrityFlag.futureTimestamp,
       );
 
-      final result = await pipeline.process([futureFact], organizationId: 'org-1');
+      final result = await pipeline.process([
+        futureFact,
+      ], organizationId: 'org-1');
 
       expect(result.processed, 0);
       expect(result.skippedByIntegrityFlag, 1);
@@ -209,7 +216,9 @@ void main() {
         flag: IngestionIntegrityFlag.nullIsland,
       );
 
-      final result = await pipeline.process([nullIslandFact], organizationId: 'org-1');
+      final result = await pipeline.process([
+        nullIslandFact,
+      ], organizationId: 'org-1');
 
       expect(result.processed, 0);
       expect(result.skippedByIntegrityFlag, 1);
@@ -294,9 +303,7 @@ void main() {
         ),
       );
 
-      final facts = [
-        makeFact(gpsTimestamp: DateTime.utc(2026, 3, 1, 6, 0)),
-      ];
+      final facts = [makeFact(gpsTimestamp: DateTime.utc(2026, 3, 1, 6, 0))];
 
       final result = await pipeline.process(facts, organizationId: 'org-1');
 
@@ -304,21 +311,22 @@ void main() {
       expect(result.processed, 0);
     });
 
-    test('ACTIVE asset (default — no events): facts are processed normally', () async {
-      // No status events — defaults to ACTIVE
-      final state = makeExecState();
-      await execRepo.save(state);
-      await seedPlan('c-1');
+    test(
+      'ACTIVE asset (default — no events): facts are processed normally',
+      () async {
+        // No status events — defaults to ACTIVE
+        final state = makeExecState();
+        await execRepo.save(state);
+        await seedPlan('c-1');
 
-      final facts = [
-        makeFact(gpsTimestamp: DateTime.utc(2026, 3, 1, 6, 0)),
-      ];
+        final facts = [makeFact(gpsTimestamp: DateTime.utc(2026, 3, 1, 6, 0))];
 
-      final result = await pipeline.process(facts, organizationId: 'org-1');
+        final result = await pipeline.process(facts, organizationId: 'org-1');
 
-      expect(result.skippedByAssetStatus, 0);
-      expect(result.processed, 1);
-    });
+        expect(result.skippedByAssetStatus, 0);
+        expect(result.processed, 1);
+      },
+    );
 
     test('AssetStatusEvent: throws on same-status transition', () {
       expect(
@@ -350,23 +358,27 @@ void main() {
 
     test('status history replay: last event wins', () async {
       // active → maintenance → active
-      await statusRepo.append(AssetStatusEvent.create(
-        organizationId: 'org-1',
-        assetId: 'asset-1',
-        newStatus: AssetStatus.maintenance,
-        previousStatus: AssetStatus.active,
-        occurredAtUtc: DateTime.utc(2026, 3, 1, 8, 0),
-        triggeredBy: 'user',
-      ));
-      await statusRepo.append(AssetStatusEvent.create(
-        organizationId: 'org-1',
-        assetId: 'asset-1',
-        newStatus: AssetStatus.active,
-        previousStatus: AssetStatus.maintenance,
-        occurredAtUtc: DateTime.utc(2026, 3, 1, 16, 0),
-        triggeredBy: 'user',
-        reason: 'Maintenance complete',
-      ));
+      await statusRepo.append(
+        AssetStatusEvent.create(
+          organizationId: 'org-1',
+          assetId: 'asset-1',
+          newStatus: AssetStatus.maintenance,
+          previousStatus: AssetStatus.active,
+          occurredAtUtc: DateTime.utc(2026, 3, 1, 8, 0),
+          triggeredBy: 'user',
+        ),
+      );
+      await statusRepo.append(
+        AssetStatusEvent.create(
+          organizationId: 'org-1',
+          assetId: 'asset-1',
+          newStatus: AssetStatus.active,
+          previousStatus: AssetStatus.maintenance,
+          occurredAtUtc: DateTime.utc(2026, 3, 1, 16, 0),
+          triggeredBy: 'user',
+          reason: 'Maintenance complete',
+        ),
+      );
 
       final status = await statusRepo.getCurrentStatus(
         assetId: 'asset-1',
@@ -379,31 +391,34 @@ void main() {
 
   // ── 6.5.4: Kinematic Noise Filter ──────────────────────────────────────────
   group('6.5.4 — Kinematic Noise Filter (sequential Haversine)', () {
-    test('GPS jitter jump of ~200m is discarded, surrounding valid points pass', () async {
-      // t1: valid position inside geofence
-      // t2: GPS jitter — "jumps" 200m away at same speed (impossible)
-      // t3: returns to valid position (proves t2 was noise, not real movement)
+    test(
+      'GPS jitter jump of ~200m is discarded, surrounding valid points pass',
+      () async {
+        // t1: valid position inside geofence
+        // t2: GPS jitter — "jumps" 200m away at same speed (impossible)
+        // t3: returns to valid position (proves t2 was noise, not real movement)
 
-      final t1 = DateTime.utc(2026, 3, 1, 6, 0, 0);
-      final t2 = DateTime.utc(2026, 3, 1, 6, 0, 1); // 1 second later
-      final t3 = DateTime.utc(2026, 3, 1, 6, 0, 2);
+        final t1 = DateTime.utc(2026, 3, 1, 6, 0, 0);
+        final t2 = DateTime.utc(2026, 3, 1, 6, 0, 1); // 1 second later
+        final t3 = DateTime.utc(2026, 3, 1, 6, 0, 2);
 
-      final facts = [
-        makeFact(gpsTimestamp: t1, lat: insideLat, lng: insideLng),
-        // Jump ~200m in 1 second = 720 km/h — physically impossible
-        makeFact(
-          gpsTimestamp: t2,
-          lat: insideLat + 0.0018, // ~200m north
-          lng: insideLng,
-        ),
-        makeFact(gpsTimestamp: t3, lat: insideLat, lng: insideLng),
-      ];
+        final facts = [
+          makeFact(gpsTimestamp: t1, lat: insideLat, lng: insideLng),
+          // Jump ~200m in 1 second = 720 km/h — physically impossible
+          makeFact(
+            gpsTimestamp: t2,
+            lat: insideLat + 0.0018, // ~200m north
+            lng: insideLng,
+          ),
+          makeFact(gpsTimestamp: t3, lat: insideLat, lng: insideLng),
+        ];
 
-      final result = await pipeline.process(facts, organizationId: 'org-1');
+        final result = await pipeline.process(facts, organizationId: 'org-1');
 
-      expect(result.skippedByKinematicJump, 1); // t2 discarded
-      expect(result.processed, 2); // t1 and t3 pass
-    });
+        expect(result.skippedByKinematicJump, 1); // t2 discarded
+        expect(result.processed, 2); // t1 and t3 pass
+      },
+    );
 
     test('same timestamp but displaced > 5m is discarded', () async {
       final t = DateTime.utc(2026, 3, 1, 6, 0, 0);

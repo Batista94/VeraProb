@@ -33,14 +33,16 @@ void main() {
   });
 
   Future<String> createSource({String orgId = 'org-1'}) async {
-    final source = await createHandler.handle(CreateContractCommand(
-      organizationId: orgId,
-      name: 'Contrato Original',
-      contractorName: 'Trans Norte Ltda',
-      description: 'Descrição original',
-      validFromUtc: validFrom,
-      validUntilUtc: validUntil,
-    ));
+    final source = await createHandler.handle(
+      CreateContractCommand(
+        organizationId: orgId,
+        name: 'Contrato Original',
+        contractorName: 'Trans Norte Ltda',
+        description: 'Descrição original',
+        validFromUtc: validFrom,
+        validUntilUtc: validUntil,
+      ),
+    );
     return source.id;
   }
 
@@ -81,24 +83,27 @@ void main() {
       expect(clone.clonedFromContractId, equals(sourceId));
     });
 
-    test('clone emits its own ContractCreatedEvent (distinct aggregate)', () async {
-      final sourceId = await createSource();
+    test(
+      'clone emits its own ContractCreatedEvent (distinct aggregate)',
+      () async {
+        final sourceId = await createSource();
 
-      final clone = await cloneHandler.handle(
-        CloneContractCommand(
-          organizationId: 'org-1',
-          sourceContractId: sourceId,
-          name: 'Cópia',
-          contractorName: 'Trans Norte Ltda',
-        ),
-        validFromUtc: cloneFrom,
-        validUntilUtc: cloneUntil,
-      );
+        final clone = await cloneHandler.handle(
+          CloneContractCommand(
+            organizationId: 'org-1',
+            sourceContractId: sourceId,
+            name: 'Cópia',
+            contractorName: 'Trans Norte Ltda',
+          ),
+          validFromUtc: cloneFrom,
+          validUntilUtc: cloneUntil,
+        );
 
-      // Both source and clone are distinct aggregates with distinct IDs
-      expect(clone.id, isNot(equals(sourceId)));
-      expect(clone.clonedFromContractId, equals(sourceId));
-    });
+        // Both source and clone are distinct aggregates with distinct IDs
+        expect(clone.id, isNot(equals(sourceId)));
+        expect(clone.clonedFromContractId, equals(sourceId));
+      },
+    );
 
     test('clone is persisted and retrievable', () async {
       final sourceId = await createSource();
@@ -114,38 +119,50 @@ void main() {
         validUntilUtc: cloneUntil,
       );
 
-      final found = await repository.findById(clone.id, organizationId: 'org-1');
+      final found = await repository.findById(
+        clone.id,
+        organizationId: 'org-1',
+      );
       expect(found, isNotNull);
       expect(found!.clonedFromContractId, equals(sourceId));
     });
 
-    test('contracts created without cloning have null clonedFromContractId', () async {
-      final sourceId = await createSource();
-      final source = await repository.findById(sourceId, organizationId: 'org-1');
-      expect(source!.clonedFromContractId, isNull);
-    });
+    test(
+      'contracts created without cloning have null clonedFromContractId',
+      () async {
+        final sourceId = await createSource();
+        final source = await repository.findById(
+          sourceId,
+          organizationId: 'org-1',
+        );
+        expect(source!.clonedFromContractId, isNull);
+      },
+    );
   });
 
   group('CloneContractHandler — tenant isolation (QA invariant)', () {
-    test('throws DomainException when source belongs to a different org', () async {
-      // Source in org-A
-      final sourceId = await createSource(orgId: 'org-A');
+    test(
+      'throws DomainException when source belongs to a different org',
+      () async {
+        // Source in org-A
+        final sourceId = await createSource(orgId: 'org-A');
 
-      // Attacker in org-B tries to clone org-A's contract
-      expect(
-        () => cloneHandler.handle(
-          CloneContractCommand(
-            organizationId: 'org-B',        // different org
-            sourceContractId: sourceId,
-            name: 'Clone Malicioso',
-            contractorName: 'Evil Corp',
+        // Attacker in org-B tries to clone org-A's contract
+        expect(
+          () => cloneHandler.handle(
+            CloneContractCommand(
+              organizationId: 'org-B', // different org
+              sourceContractId: sourceId,
+              name: 'Clone Malicioso',
+              contractorName: 'Evil Corp',
+            ),
+            validFromUtc: cloneFrom,
+            validUntilUtc: cloneUntil,
           ),
-          validFromUtc: cloneFrom,
-          validUntilUtc: cloneUntil,
-        ),
-        throwsA(isA<DomainException>()),
-      );
-    });
+          throwsA(isA<DomainException>()),
+        );
+      },
+    );
 
     test('throws DomainException when source does not exist', () async {
       expect(
@@ -165,23 +182,26 @@ void main() {
   });
 
   group('CloneContractHandler — domain invariants', () {
-    test('throws DomainException for invalid date range (until before from)', () async {
-      final sourceId = await createSource();
+    test(
+      'throws DomainException for invalid date range (until before from)',
+      () async {
+        final sourceId = await createSource();
 
-      expect(
-        () => cloneHandler.handle(
-          CloneContractCommand(
-            organizationId: 'org-1',
-            sourceContractId: sourceId,
-            name: 'Clone',
-            contractorName: 'Trans Norte Ltda',
+        expect(
+          () => cloneHandler.handle(
+            CloneContractCommand(
+              organizationId: 'org-1',
+              sourceContractId: sourceId,
+              name: 'Clone',
+              contractorName: 'Trans Norte Ltda',
+            ),
+            validFromUtc: cloneUntil, // swapped — invalid
+            validUntilUtc: cloneFrom,
           ),
-          validFromUtc: cloneUntil,   // swapped — invalid
-          validUntilUtc: cloneFrom,
-        ),
-        throwsA(isA<DomainException>()),
-      );
-    });
+          throwsA(isA<DomainException>()),
+        );
+      },
+    );
 
     test('throws DomainException for empty name', () async {
       final sourceId = await createSource();
@@ -191,7 +211,7 @@ void main() {
           CloneContractCommand(
             organizationId: 'org-1',
             sourceContractId: sourceId,
-            name: '   ',            // blank
+            name: '   ', // blank
             contractorName: 'Trans Norte Ltda',
           ),
           validFromUtc: cloneFrom,

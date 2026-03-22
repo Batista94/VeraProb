@@ -6,21 +6,24 @@ import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/admin/organization_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 
-class MockOrganizationRepository extends Mock implements OrganizationRepository {}
+class MockOrganizationRepository extends Mock
+    implements OrganizationRepository {}
 
 void main() {
   late MockOrganizationRepository repository;
   late UpdateOrgSettingsHandler handler;
 
   setUpAll(() {
-    registerFallbackValue(Organization(
-      id: '',
-      name: '',
-      timezone: '',
-      currencyCode: '',
-      isActive: true,
-      createdAt: DateTime.now(),
-    ));
+    registerFallbackValue(
+      Organization(
+        id: '',
+        name: '',
+        timezone: '',
+        currencyCode: '',
+        isActive: true,
+        createdAt: DateTime.now(),
+      ),
+    );
   });
 
   setUp(() {
@@ -49,8 +52,14 @@ void main() {
 
   group('UpdateOrgSettingsHandler', () {
     test('Rejeita operator/auditor', () async {
-      expect(() => handler.handle(makeCommand(role: UserRole.operator)), throwsException);
-      expect(() => handler.handle(makeCommand(role: UserRole.auditor)), throwsException);
+      expect(
+        () => handler.handle(makeCommand(role: UserRole.operator)),
+        throwsException,
+      );
+      expect(
+        () => handler.handle(makeCommand(role: UserRole.auditor)),
+        throwsException,
+      );
       verifyNever(() => repository.update(any()));
     });
 
@@ -60,17 +69,22 @@ void main() {
 
       await handler.handle(makeCommand(role: UserRole.admin));
 
-      final captured = verify(() => repository.update(captureAny())).captured.single as Organization;
+      final captured =
+          verify(() => repository.update(captureAny())).captured.single
+              as Organization;
       expect(captured.name, 'New Name');
       expect(captured.timezone, 'America/Sao_Paulo');
       expect(captured.currencyCode, 'USD');
       expect(captured.id, 'org-1');
     });
-    
+
     test('Erro quando organização não existe', () async {
       when(() => repository.findById('org-1')).thenAnswer((_) async => null);
-      
-      expect(() => handler.handle(makeCommand(role: UserRole.admin)), throwsException);
+
+      expect(
+        () => handler.handle(makeCommand(role: UserRole.admin)),
+        throwsException,
+      );
     });
   });
 }

@@ -133,12 +133,26 @@ void main() {
         ); // Vehicle stayed for 10 seconds
 
         // Replay telemetry against the Engine
-        await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-1');
-        await engine.processVehicleState(createPing(t10), nowUtc: t10, organizationId: 'org-1');
+        await engine.processVehicleState(
+          createPing(t0),
+          nowUtc: t0,
+          organizationId: 'org-1',
+        );
+        await engine.processVehicleState(
+          createPing(t10),
+          nowUtc: t10,
+          organizationId: 'org-1',
+        );
 
         // Fetch the execution states
-        final stateV1 = (await execRepo.findByContract('contract-v1', organizationId: 'org-1')).first;
-        final stateV2 = (await execRepo.findByContract('contract-v2', organizationId: 'org-1')).first;
+        final stateV1 = (await execRepo.findByContract(
+          'contract-v1',
+          organizationId: 'org-1',
+        )).first;
+        final stateV2 = (await execRepo.findByContract(
+          'contract-v2',
+          organizationId: 'org-1',
+        )).first;
 
         // Assert Determinism:
         // Even though the same physical vehicle telemetry was fed to the engine at exactly the same time,
@@ -175,13 +189,35 @@ void main() {
       // Identical telemetry fed into each tenant's engine boundary separately.
       // The isolation test verifies that the same physical vehicle, evaluated
       // under org-a rules (60s) vs org-b rules (10s), produces different outcomes.
-      await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-a');
-      await engine.processVehicleState(createPing(t15), nowUtc: t15, organizationId: 'org-a');
-      await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-b');
-      await engine.processVehicleState(createPing(t15), nowUtc: t15, organizationId: 'org-b');
+      await engine.processVehicleState(
+        createPing(t0),
+        nowUtc: t0,
+        organizationId: 'org-a',
+      );
+      await engine.processVehicleState(
+        createPing(t15),
+        nowUtc: t15,
+        organizationId: 'org-a',
+      );
+      await engine.processVehicleState(
+        createPing(t0),
+        nowUtc: t0,
+        organizationId: 'org-b',
+      );
+      await engine.processVehicleState(
+        createPing(t15),
+        nowUtc: t15,
+        organizationId: 'org-b',
+      );
 
-      final stateA = (await execRepo.findByContract('contract-a', organizationId: 'org-a')).first;
-      final stateB = (await execRepo.findByContract('contract-b', organizationId: 'org-b')).first;
+      final stateA = (await execRepo.findByContract(
+        'contract-a',
+        organizationId: 'org-a',
+      )).first;
+      final stateB = (await execRepo.findByContract(
+        'contract-b',
+        organizationId: 'org-b',
+      )).first;
 
       // Verification of tenant boundary isolation inside identical compute pipeline
       expect(

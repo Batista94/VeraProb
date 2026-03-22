@@ -16,24 +16,23 @@ void main() {
     Money manualCostPerIncident = const Money(5000), // R$ 50.00
     Money platformSubscriptionCost = const Money(50000), // R$ 500.00
     double evidenceQualityRate = 95.0,
-  }) =>
-      ShadowModeSimulation.compute(
-        organizationId: orgId,
-        simulationName: 'Março 2026',
-        periodStartUtc: periodStart,
-        periodEndUtc: periodEnd,
-        actualProtectedRevenue: const Money(800000),
-        actualLostRevenue: actualLostRevenue,
-        actualAtRiskRevenue: const Money(50000),
-        actualComplianceRate: 85.0,
-        evidenceQualityRate: evidenceQualityRate,
-        baselineDisputeRate: baselineDisputeRate,
-        manualEnforcementCostPerIncident: manualCostPerIncident,
-        incidentCount: incidentCount,
-        platformSubscriptionCost: platformSubscriptionCost,
-        generatedAtUtc: generatedAt,
-        generatedByUserId: 'user-manager-1',
-      );
+  }) => ShadowModeSimulation.compute(
+    organizationId: orgId,
+    simulationName: 'Março 2026',
+    periodStartUtc: periodStart,
+    periodEndUtc: periodEnd,
+    actualProtectedRevenue: const Money(800000),
+    actualLostRevenue: actualLostRevenue,
+    actualAtRiskRevenue: const Money(50000),
+    actualComplianceRate: 85.0,
+    evidenceQualityRate: evidenceQualityRate,
+    baselineDisputeRate: baselineDisputeRate,
+    manualEnforcementCostPerIncident: manualCostPerIncident,
+    incidentCount: incidentCount,
+    platformSubscriptionCost: platformSubscriptionCost,
+    generatedAtUtc: generatedAt,
+    generatedByUserId: 'user-manager-1',
+  );
 
   // ── ROI computation ────────────────────────────────────────────────────────
   group('ShadowModeSimulation.compute — ROI calculation', () {
@@ -79,9 +78,7 @@ void main() {
     });
 
     test('roiPercentage is 0 when subscription cost is 0', () {
-      final sim = makeSimulation(
-        platformSubscriptionCost: const Money(0),
-      );
+      final sim = makeSimulation(platformSubscriptionCost: const Money(0));
       expect(sim.roiPercentage, 0.0);
     });
 
@@ -89,48 +86,57 @@ void main() {
       final sim1 = makeSimulation();
       final sim2 = makeSimulation();
       expect(sim1.simulatedLostRevenue.cents, sim2.simulatedLostRevenue.cents);
-      expect(sim1.revenueProtectedByPlatform.cents, sim2.revenueProtectedByPlatform.cents);
+      expect(
+        sim1.revenueProtectedByPlatform.cents,
+        sim2.revenueProtectedByPlatform.cents,
+      );
       expect(sim1.roiPercentage, sim2.roiPercentage);
     });
 
-    test('zero dispute rate means operator recovers nothing without platform', () {
-      // disputeRate=0% → all penalties would have been successfully disputed
-      // simulated = actualLost × (1-0) = actualLost
-      // protected = 0 + manualCost
-      final sim = makeSimulation(
-        actualLostRevenue: const Money(100000),
-        baselineDisputeRate: 0.0,
-        manualCostPerIncident: const Money(0),
-        incidentCount: 0,
-        platformSubscriptionCost: const Money(1),
-      );
-      expect(sim.simulatedLostRevenue.cents, equals(sim.actualLostRevenue.cents));
-      expect(sim.revenueProtectedByPlatform.cents, 0);
-    });
+    test(
+      'zero dispute rate means operator recovers nothing without platform',
+      () {
+        // disputeRate=0% → all penalties would have been successfully disputed
+        // simulated = actualLost × (1-0) = actualLost
+        // protected = 0 + manualCost
+        final sim = makeSimulation(
+          actualLostRevenue: const Money(100000),
+          baselineDisputeRate: 0.0,
+          manualCostPerIncident: const Money(0),
+          incidentCount: 0,
+          platformSubscriptionCost: const Money(1),
+        );
+        expect(
+          sim.simulatedLostRevenue.cents,
+          equals(sim.actualLostRevenue.cents),
+        );
+        expect(sim.revenueProtectedByPlatform.cents, 0);
+      },
+    );
 
-    test('100% dispute rate means without platform zero recovery (full exposure)', () {
-      // disputeRate=100% → all penalties waived without platform
-      // simulated = actualLost × (1 - 1.0) = 0
-      // protected = actualLost - 0 + manualCost
-      final sim = makeSimulation(
-        actualLostRevenue: const Money(100000),
-        baselineDisputeRate: 100.0,
-        manualCostPerIncident: const Money(0),
-        incidentCount: 0,
-        platformSubscriptionCost: const Money(1),
-      );
-      expect(sim.simulatedLostRevenue.cents, 0);
-      expect(sim.revenueProtectedByPlatform.cents, 100000);
-    });
+    test(
+      '100% dispute rate means without platform zero recovery (full exposure)',
+      () {
+        // disputeRate=100% → all penalties waived without platform
+        // simulated = actualLost × (1 - 1.0) = 0
+        // protected = actualLost - 0 + manualCost
+        final sim = makeSimulation(
+          actualLostRevenue: const Money(100000),
+          baselineDisputeRate: 100.0,
+          manualCostPerIncident: const Money(0),
+          incidentCount: 0,
+          platformSubscriptionCost: const Money(1),
+        );
+        expect(sim.simulatedLostRevenue.cents, 0);
+        expect(sim.revenueProtectedByPlatform.cents, 100000);
+      },
+    );
   });
 
   // ── Validation ─────────────────────────────────────────────────────────────
   group('ShadowModeSimulation.compute — validation', () {
     test('throws if organizationId is empty', () {
-      expect(
-        () => makeSimulation(orgId: ''),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeSimulation(orgId: ''), throwsA(isA<DomainException>()));
     });
 
     test('throws if baselineDisputeRate > 100', () {
@@ -218,14 +224,17 @@ void main() {
       expect(text, contains('adequada'));
     });
 
-    test('warning text when evidenceQualityRate < 80 — attributes to hardware', () {
-      final sim = makeSimulation(evidenceQualityRate: 65.0);
-      final text = sim.evidenceQualityAttribution;
-      // Must mention hardware attribution (PO directive: protect operator's legal position)
-      expect(text, contains('hardware GPS'));
-      expect(text, contains('contratante'));
-      expect(text, contains('veraprob processou 100%'));
-    });
+    test(
+      'warning text when evidenceQualityRate < 80 — attributes to hardware',
+      () {
+        final sim = makeSimulation(evidenceQualityRate: 65.0);
+        final text = sim.evidenceQualityAttribution;
+        // Must mention hardware attribution (PO directive: protect operator's legal position)
+        expect(text, contains('hardware GPS'));
+        expect(text, contains('contratante'));
+        expect(text, contains('veraprob processou 100%'));
+      },
+    );
 
     test('attribution text never blames veraprob for hardware issues', () {
       final sim = makeSimulation(evidenceQualityRate: 40.0);

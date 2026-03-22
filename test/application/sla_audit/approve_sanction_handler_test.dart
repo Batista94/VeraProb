@@ -186,10 +186,7 @@ void main() {
       final entries = ledger.entries;
       expect(entries.length, 1);
       expect(entries.first.type, 'SANCTION_APPLIED');
-      expect(
-        entries.first.payload['verdict_evidence'],
-        isNotNull,
-      );
+      expect(entries.first.payload['verdict_evidence'], isNotNull);
     });
 
     test('updates queue entry status to applied', () async {

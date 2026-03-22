@@ -85,7 +85,8 @@ void main() async {
           expect(
             stopwatch.elapsed,
             lessThan(const Duration(minutes: 5)),
-            reason: 'Onboarding deve completar em < 5 min. '
+            reason:
+                'Onboarding deve completar em < 5 min. '
                 'Levou: ${stopwatch.elapsed.inSeconds}s',
           );
 
@@ -105,7 +106,11 @@ void main() async {
               .select()
               .eq('organization_id', result.orgId)
               .eq('event_type', 'ORG_CREATED');
-          expect(events, isNotEmpty, reason: 'Deve ter billing event ORG_CREATED');
+          expect(
+            events,
+            isNotEmpty,
+            reason: 'Deve ter billing event ORG_CREATED',
+          );
 
           // 4. Convite criado para o admin
           final invitations = await serviceRoleClient
@@ -113,11 +118,12 @@ void main() async {
               .select()
               .eq('organization_id', result.orgId)
               .eq('email', adminEmail);
-          expect(invitations, isNotEmpty, reason: 'Deve ter convite para o admin');
           expect(
-            (invitations.first as Map)['role'],
-            equals('TENANT_ADMIN'),
+            invitations,
+            isNotEmpty,
+            reason: 'Deve ter convite para o admin',
           );
+          expect((invitations.first as Map)['role'], equals('TENANT_ADMIN'));
 
           // 5. Token do convite corresponde ao resultado do handler
           expect(

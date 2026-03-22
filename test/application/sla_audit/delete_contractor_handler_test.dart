@@ -26,17 +26,25 @@ void main() {
 
   group('DeleteContractorHandler', () {
     test('Rejeita auditor', () async {
-      expect(() => handler.handle(makeCommand(role: UserRole.auditor)), throwsException);
+      expect(
+        () => handler.handle(makeCommand(role: UserRole.auditor)),
+        throwsException,
+      );
       verifyNever(() => repository.delete(any(), any()));
     });
 
-    test('Passa para admin e operator (chama repo com args corretos)', () async {
-      when(() => repository.delete('org-1', 'contractor-1')).thenAnswer((_) async => {});
+    test(
+      'Passa para admin e operator (chama repo com args corretos)',
+      () async {
+        when(
+          () => repository.delete('org-1', 'contractor-1'),
+        ).thenAnswer((_) async => {});
 
-      await handler.handle(makeCommand(role: UserRole.admin));
-      await handler.handle(makeCommand(role: UserRole.operator));
+        await handler.handle(makeCommand(role: UserRole.admin));
+        await handler.handle(makeCommand(role: UserRole.operator));
 
-      verify(() => repository.delete('org-1', 'contractor-1')).called(2);
-    });
+        verify(() => repository.delete('org-1', 'contractor-1')).called(2);
+      },
+    );
   });
 }

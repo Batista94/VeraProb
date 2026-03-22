@@ -230,7 +230,10 @@ class _SanctionCardState extends ConsumerState<_SanctionCard> {
                 ),
                 child: Text(
                   actionState.error.toString(),
-                  style: const TextStyle(fontSize: 12, color: VeraProbColors.error),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: VeraProbColors.error,
+                  ),
                 ),
               ),
             ],

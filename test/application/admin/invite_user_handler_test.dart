@@ -24,13 +24,15 @@ void main() {
   });
 
   void stubInviteUser() {
-    when(() => commandService.inviteUser(
-          email: any(named: 'email'),
-          role: any(named: 'role'),
-          token: any(named: 'token'),
-          invitationId: any(named: 'invitationId'),
-          expiresAtUtc: any(named: 'expiresAtUtc'),
-        )).thenAnswer((_) async {});
+    when(
+      () => commandService.inviteUser(
+        email: any(named: 'email'),
+        role: any(named: 'role'),
+        token: any(named: 'token'),
+        invitationId: any(named: 'invitationId'),
+        expiresAtUtc: any(named: 'expiresAtUtc'),
+      ),
+    ).thenAnswer((_) async {});
   }
 
   InviteUserCommand makeCommand({
@@ -53,13 +55,15 @@ void main() {
         () => handler.handle(makeCommand(callerRole: UserRole.operator)),
         throwsA(isA<DomainException>()),
       );
-      verifyNever(() => commandService.inviteUser(
-            email: any(named: 'email'),
-            role: any(named: 'role'),
-            token: any(named: 'token'),
-            invitationId: any(named: 'invitationId'),
-            expiresAtUtc: any(named: 'expiresAtUtc'),
-          ));
+      verifyNever(
+        () => commandService.inviteUser(
+          email: any(named: 'email'),
+          role: any(named: 'role'),
+          token: any(named: 'token'),
+          invitationId: any(named: 'invitationId'),
+          expiresAtUtc: any(named: 'expiresAtUtc'),
+        ),
+      );
     });
 
     test('Rejeita auditor — não tem canInviteUsers', () async {
@@ -89,13 +93,15 @@ void main() {
       final token = await handler.handle(makeCommand());
 
       expect(token, isNotEmpty);
-      verify(() => commandService.inviteUser(
-            email: 'novo@empresa.com',
-            role: UserRole.operator,
-            token: any(named: 'token'),
-            invitationId: any(named: 'invitationId'),
-            expiresAtUtc: any(named: 'expiresAtUtc'),
-          )).called(1);
+      verify(
+        () => commandService.inviteUser(
+          email: 'novo@empresa.com',
+          role: UserRole.operator,
+          token: any(named: 'token'),
+          invitationId: any(named: 'invitationId'),
+          expiresAtUtc: any(named: 'expiresAtUtc'),
+        ),
+      ).called(1);
     });
 
     test('Tokens gerados em duas invocações são distintos', () async {
@@ -112,13 +118,15 @@ void main() {
 
       await handler.handle(makeCommand(email: '  NOVO@EMPRESA.COM  '));
 
-      verify(() => commandService.inviteUser(
-            email: 'novo@empresa.com',
-            role: any(named: 'role'),
-            token: any(named: 'token'),
-            invitationId: any(named: 'invitationId'),
-            expiresAtUtc: any(named: 'expiresAtUtc'),
-          )).called(1);
+      verify(
+        () => commandService.inviteUser(
+          email: 'novo@empresa.com',
+          role: any(named: 'role'),
+          token: any(named: 'token'),
+          invitationId: any(named: 'invitationId'),
+          expiresAtUtc: any(named: 'expiresAtUtc'),
+        ),
+      ).called(1);
     });
   });
 }

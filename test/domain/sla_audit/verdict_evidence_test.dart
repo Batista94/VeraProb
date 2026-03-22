@@ -34,10 +34,7 @@ void main() {
 
   group('VerdictEvidence.create — validations', () {
     test('rejects empty clauseRef', () {
-      expect(
-        () => makeValid(clauseRef: ''),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeValid(clauseRef: ''), throwsA(isA<DomainException>()));
     });
 
     test('rejects empty ruleId', () {
@@ -45,31 +42,19 @@ void main() {
     });
 
     test('rejects lat < -90', () {
-      expect(
-        () => makeValid(lat: -91.0),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeValid(lat: -91.0), throwsA(isA<DomainException>()));
     });
 
     test('rejects lat > 90', () {
-      expect(
-        () => makeValid(lat: 91.0),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeValid(lat: 91.0), throwsA(isA<DomainException>()));
     });
 
     test('rejects lng < -180', () {
-      expect(
-        () => makeValid(lng: -181.0),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeValid(lng: -181.0), throwsA(isA<DomainException>()));
     });
 
     test('rejects lng > 180', () {
-      expect(
-        () => makeValid(lng: 181.0),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeValid(lng: 181.0), throwsA(isA<DomainException>()));
     });
 
     test('rejects non-UTC timestamp', () {
@@ -82,14 +67,8 @@ void main() {
     });
 
     test('rejects fineCents <= 0', () {
-      expect(
-        () => makeValid(fineCents: 0),
-        throwsA(isA<DomainException>()),
-      );
-      expect(
-        () => makeValid(fineCents: -100),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeValid(fineCents: 0), throwsA(isA<DomainException>()));
+      expect(() => makeValid(fineCents: -100), throwsA(isA<DomainException>()));
     });
 
     test('rejects confidenceScore < 0', () {

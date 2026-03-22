@@ -51,8 +51,12 @@ void main() {
   if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
     // Register a single skipped placeholder so the runner reports this file
     // as skipped rather than errored, keeping the CI signal clean.
-    test('SLA Audit E2E (skipped — no Supabase credentials)', () {},
-        skip: 'Set SUPABASE_URL and SUPABASE_KEY via --dart-define to run E2E tests.');
+    test(
+      'SLA Audit E2E (skipped — no Supabase credentials)',
+      () {},
+      skip:
+          'Set SUPABASE_URL and SUPABASE_KEY via --dart-define to run E2E tests.',
+    );
     return;
   }
 
@@ -176,7 +180,10 @@ void main() {
       sharedSetId = plan.services.first.setId;
 
       // 3. Validations
-      final plans = await planRepo.findByContract(contractId, organizationId: 'org-1');
+      final plans = await planRepo.findByContract(
+        contractId,
+        organizationId: 'org-1',
+      );
       expect(plans.length, 1, reason: 'Exactly 1 plan in DB');
 
       final savedPlan = plans.first;
@@ -189,7 +196,10 @@ void main() {
       assert(sharedSetId != null, 'Dependency failed');
 
       // Given: An initial execution state
-      final savedPlan = (await planRepo.findByContract(contractId, organizationId: 'org-1')).first;
+      final savedPlan = (await planRepo.findByContract(
+        contractId,
+        organizationId: 'org-1',
+      )).first;
       final service = savedPlan.services.first;
 
       final executionState = await executionRepo.findBySetId(service.setId);
@@ -248,7 +258,7 @@ void main() {
         vehicleAtCenter,
         nowUtc: testBaseTimeUtc,
         organizationId: 'org-1',
-);
+      );
 
       var stateAfterTick1 = await executionRepo.findBySetId(sharedSetId!);
       expect(
@@ -263,7 +273,7 @@ void main() {
         vehicleAtCenter,
         nowUtc: timeBindUtc,
         organizationId: 'org-1',
-);
+      );
 
       // Validate DB transitions
       var stateAfterTick2 = await executionRepo.findBySetId(sharedSetId!);
@@ -433,28 +443,40 @@ void main() {
         setId: sharedSetId!, // The SAME set ID
         contractId: contractId,
         planVersion: planVersion,
-        startLatitude: -23.5505, startLongitude: -46.6333, startRadiusMeters: 100,
-        contractualValue: const Money(10000), noShowPenaltyMultiplier: 1.5,
-        windowStartUtc: testBaseTimeUtc, windowEndUtc: testBaseTimeUtc,
+        startLatitude: -23.5505,
+        startLongitude: -46.6333,
+        startRadiusMeters: 100,
+        contractualValue: const Money(10000),
+        noShowPenaltyMultiplier: 1.5,
+        windowStartUtc: testBaseTimeUtc,
+        windowEndUtc: testBaseTimeUtc,
       );
 
       // This MUST throw a PostgrestException (code 23505 - unique_violation)
       expect(
         () async => await executionRepo.save(duplicateSet),
         throwsA(isA<PostgrestException>()),
-        reason: 'Postgres UNIQUE(set_id) or (plan,shift,date) must reject duplicate insertions',
+        reason:
+            'Postgres UNIQUE(set_id) or (plan,shift,date) must reject duplicate insertions',
       );
     });
 
     test('Stage 7 — Postgres RLS Isolation (Multi-Tenant Penetration)', () async {
       // Simulate an Operator from 'org-hacker' trying to read 'org-1' data via API.
       // In a real environment with JWTs, Supabase Auth enforces this automatically.
-      // Since our integration tests use the service_role key or bypass Auth, 
+      // Since our integration tests use the service_role key or bypass Auth,
       // the Application logic MUST enforce isolation via `organizationId` parameter.
 
       // 1. Try to read the contract plans using a different Org ID
-      final stolenPlans = await planRepo.findByContract(contractId, organizationId: 'org-hacker');
-      expect(stolenPlans, isEmpty, reason: 'RLS/Application boundary must isolate tenants');
+      final stolenPlans = await planRepo.findByContract(
+        contractId,
+        organizationId: 'org-hacker',
+      );
+      expect(
+        stolenPlans,
+        isEmpty,
+        reason: 'RLS/Application boundary must isolate tenants',
+      );
 
       // 2. Try to query the execution states
       final stolenExecutions = await executionQueryService.listByStatus(
@@ -462,7 +484,11 @@ void main() {
         organizationId: 'org-hacker',
         contractId: contractId,
       );
-      expect(stolenExecutions, isEmpty, reason: 'Cross-tenant execution queries must return 0 rows');
+      expect(
+        stolenExecutions,
+        isEmpty,
+        reason: 'Cross-tenant execution queries must return 0 rows',
+      );
 
       // 3. Try to generate a snapshot for another org's contract
       await snapshotGenerator.generateDailySnapshot(
@@ -476,21 +502,21 @@ void main() {
         contractId: contractId,
       );
       expect(
-        stolenSnapshots, 
-        isEmpty, 
-        reason: 'Cannot generate or read snapshots across tenant boundaries'
+        stolenSnapshots,
+        isEmpty,
+        reason: 'Cannot generate or read snapshots across tenant boundaries',
       );
     });
 
     test('Stage 7.1 — Postgres RLS Active Attack (Write Sabotage)', () async {
       // Setup: Create a legitimate plan for org-1
       final hackerPlanId = const Uuid().v4();
-      
+
       // Attempt 1: Hacker tries to 'overwrite' org-1's plan data by injecting their orgId
-      // In a hardened system, if the JWT is org-hacker, Postgres RLS 'WITH CHECK' 
+      // In a hardened system, if the JWT is org-hacker, Postgres RLS 'WITH CHECK'
       // will reject an INSERT/UPDATE where organization_id != auth.jwt().
       // Here we simulate the repo call.
-      
+
       final forgedPlan = PlanDeclaration.reconstitute(
         id: hackerPlanId,
         organizationId: 'org-1', // Targeting Org 1
@@ -506,21 +532,25 @@ void main() {
       // This should fail at the Postgres level if RLS is enforced on the service_role
       // or if the application layer validates the command org vs repo org.
       // Since integration tests often use service_role, we focus on the REPO and DB level.
-      
+
       // If we use a client restricted by RLS (authenticated as hacker):
       // final hackerClient = SupabaseClient(url, hackerJwt);
       // final hackerRepo = PostgresPlanDeclarationRepository(hackerClient);
-      
+
       // Attempt: Sabotage Org 1's plan data
       // This should be blocked by RLS if using a restricted client.
       // Even with service_role, our repositories should enforce org isolation.
       expect(
         () async => await planRepo.save(forgedPlan),
         throwsA(isA<PostgrestException>()),
-        reason: 'RLS WITH CHECK must prevent inserting data for a different organization_id',
+        reason:
+            'RLS WITH CHECK must prevent inserting data for a different organization_id',
       );
 
-      final leakyData = await planRepo.findByContract(contractId, organizationId: 'org-hacker');
+      final leakyData = await planRepo.findByContract(
+        contractId,
+        organizationId: 'org-hacker',
+      );
       expect(leakyData, isEmpty);
     });
 
@@ -577,7 +607,10 @@ class MockContractualRuleRepository implements ContractualRuleRepository {
 /// Allows the handler to validate and activate contracts during E2E tests.
 class MockContractRepository implements ContractRepository {
   @override
-  Future<Contract?> findById(String id, {required String organizationId}) async {
+  Future<Contract?> findById(
+    String id, {
+    required String organizationId,
+  }) async {
     if (id.isEmpty) return null;
     return Contract.reconstitute(
       id: id,
@@ -607,21 +640,19 @@ class _StubZoneRepository implements OperationalZoneRepository {
   @override
   Future<List<OperationalZone>> findByOrganization(
     String organizationId,
-  ) async =>
-      [
-        OperationalZone.create(
-          organizationId: organizationId,
-          name: 'Stub',
-          type: ZoneType.garagem,
-        ),
-      ];
+  ) async => [
+    OperationalZone.create(
+      organizationId: organizationId,
+      name: 'Stub',
+      type: ZoneType.garagem,
+    ),
+  ];
 
   @override
   Future<OperationalZone?> findById(
     String id, {
     required String organizationId,
-  }) async =>
-      null;
+  }) async => null;
 
   @override
   Future<void> save(OperationalZone zone) async {}

@@ -47,14 +47,18 @@ void main() {
       await repo.save(e1);
       await repo.save(e2);
 
-      final latest =
-          await repo.findLatestBySetId('set-1', organizationId: 'org-1');
+      final latest = await repo.findLatestBySetId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       expect(latest?.id, e2.id);
     });
 
     test('findLatestBySetId returns null for empty chain', () async {
-      final result =
-          await repo.findLatestBySetId('nonexistent', organizationId: 'org-1');
+      final result = await repo.findLatestBySetId(
+        'nonexistent',
+        organizationId: 'org-1',
+      );
       expect(result, isNull);
     });
 

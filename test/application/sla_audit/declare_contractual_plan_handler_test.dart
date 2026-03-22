@@ -114,29 +114,26 @@ void main() {
 
   // ── Tests ────────────────────────────────────────────────
   group('DeclareContractualPlanHandler', () {
-    test(
-      'happy path — aggregate created, persisted, event in ledger',
-      () async {
-        final plan = await handler.handle(makeCommand());
+    test('happy path — aggregate created, persisted, event in ledger', () async {
+      final plan = await handler.handle(makeCommand());
 
-        // Aggregate was created with correct fields
-        expect(plan.id, isNotEmpty);
-        expect(plan.contractId, 'contract-1');
-        expect(plan.declaredByUserId, 'user-1');
-        expect(plan.planVersion, 1);
-        expect(plan.services, hasLength(1));
+      // Aggregate was created with correct fields
+      expect(plan.id, isNotEmpty);
+      expect(plan.contractId, 'contract-1');
+      expect(plan.declaredByUserId, 'user-1');
+      expect(plan.planVersion, 1);
+      expect(plan.services, hasLength(1));
 
-        // Aggregate was persisted
-        final persisted = await repository.findById(plan.id);
-        expect(persisted, isNotNull);
-        expect(persisted!.id, plan.id);
+      // Aggregate was persisted
+      final persisted = await repository.findById(plan.id);
+      expect(persisted, isNotNull);
+      expect(persisted!.id, plan.id);
 
-        // Two entries appended: PLAN_DECLARED + CONTRACT_ACTIVATED (draft→active)
-        expect(ledger.entries, hasLength(2));
-        expect(ledger.entries.first.type, 'PLAN_DECLARED');
-        expect(ledger.entries.last.type, 'CONTRACT_ACTIVATED');
-      },
-    );
+      // Two entries appended: PLAN_DECLARED + CONTRACT_ACTIVATED (draft→active)
+      expect(ledger.entries, hasLength(2));
+      expect(ledger.entries.first.type, 'PLAN_DECLARED');
+      expect(ledger.entries.last.type, 'CONTRACT_ACTIVATED');
+    });
 
     test('persistence — findById returns saved aggregate', () async {
       final plan = await handler.handle(makeCommand());
@@ -169,7 +166,10 @@ void main() {
         ),
       );
 
-      final results = await repository.findByContract('c-1', organizationId: _orgId);
+      final results = await repository.findByContract(
+        'c-1',
+        organizationId: _orgId,
+      );
       expect(results, hasLength(2));
       expect(results.every((p) => p.contractId == 'c-1'), isTrue);
     });
@@ -185,7 +185,10 @@ void main() {
         );
 
         // Repository should be empty
-        final found = await repository.findByContract('', organizationId: _orgId);
+        final found = await repository.findByContract(
+          '',
+          organizationId: _orgId,
+        );
         expect(found, isEmpty);
 
         // Ledger should be empty
@@ -315,7 +318,10 @@ class MockContractualRuleRepository implements ContractualRuleRepository {
 /// Allows the handler to validate and activate contracts during tests.
 class MockContractRepository implements ContractRepository {
   @override
-  Future<Contract?> findById(String id, {required String organizationId}) async {
+  Future<Contract?> findById(
+    String id, {
+    required String organizationId,
+  }) async {
     if (id.isEmpty) return null;
     return Contract.reconstitute(
       id: id,

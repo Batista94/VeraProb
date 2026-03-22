@@ -51,21 +51,30 @@ void main() {
       expect(found, isNull);
     });
 
-    test('save — upsert updates existing contract (status transition)', () async {
-      final draft = makeContract(status: ContractStatus.draft);
-      await repo.save(draft);
+    test(
+      'save — upsert updates existing contract (status transition)',
+      () async {
+        final draft = makeContract(status: ContractStatus.draft);
+        await repo.save(draft);
 
-      final active = makeContract(status: ContractStatus.active);
-      await repo.save(active);
+        final active = makeContract(status: ContractStatus.active);
+        await repo.save(active);
 
-      final found = await repo.findById('c-1', organizationId: 'org-1');
-      expect(found!.status, ContractStatus.active);
-    });
+        final found = await repo.findById('c-1', organizationId: 'org-1');
+        expect(found!.status, ContractStatus.active);
+      },
+    );
 
     test('findByOrganization — returns all contracts for org', () async {
-      await repo.save(makeContract(id: 'c-1', organizationId: 'org-1', name: 'A'));
-      await repo.save(makeContract(id: 'c-2', organizationId: 'org-1', name: 'B'));
-      await repo.save(makeContract(id: 'c-3', organizationId: 'org-2', name: 'C'));
+      await repo.save(
+        makeContract(id: 'c-1', organizationId: 'org-1', name: 'A'),
+      );
+      await repo.save(
+        makeContract(id: 'c-2', organizationId: 'org-1', name: 'B'),
+      );
+      await repo.save(
+        makeContract(id: 'c-3', organizationId: 'org-2', name: 'C'),
+      );
 
       final org1 = await repo.findByOrganization('org-1');
       expect(org1, hasLength(2));
@@ -76,12 +85,9 @@ void main() {
     });
 
     test('findByOrganization — status filter works', () async {
-      await repo.save(makeContract(
-          id: 'c-1', status: ContractStatus.draft));
-      await repo.save(makeContract(
-          id: 'c-2', status: ContractStatus.active));
-      await repo.save(makeContract(
-          id: 'c-3', status: ContractStatus.closed));
+      await repo.save(makeContract(id: 'c-1', status: ContractStatus.draft));
+      await repo.save(makeContract(id: 'c-2', status: ContractStatus.active));
+      await repo.save(makeContract(id: 'c-3', status: ContractStatus.closed));
 
       final drafts = await repo.findByOrganization(
         'org-1',
@@ -98,39 +104,45 @@ void main() {
       expect(active.first.status, ContractStatus.active);
     });
 
-    test('findByOrganization — returns empty list for org with no contracts', () async {
-      final result = await repo.findByOrganization('org-empty');
-      expect(result, isEmpty);
-    });
+    test(
+      'findByOrganization — returns empty list for org with no contracts',
+      () async {
+        final result = await repo.findByOrganization('org-empty');
+        expect(result, isEmpty);
+      },
+    );
 
-    test('findByOrganization — ordering: newer contracts appear first', () async {
-      final older = Contract.reconstitute(
-        id: 'c-old',
-        organizationId: 'org-1',
-        name: 'Older',
-        contractorName: 'C',
-        validFromUtc: DateTime.utc(2026, 1, 1),
-        validUntilUtc: DateTime.utc(2026, 12, 31),
-        status: ContractStatus.draft,
-        createdAtUtc: DateTime.utc(2026, 1, 1),
-      );
-      final newer = Contract.reconstitute(
-        id: 'c-new',
-        organizationId: 'org-1',
-        name: 'Newer',
-        contractorName: 'C',
-        validFromUtc: DateTime.utc(2026, 6, 1),
-        validUntilUtc: DateTime.utc(2026, 12, 31),
-        status: ContractStatus.draft,
-        createdAtUtc: DateTime.utc(2026, 6, 1),
-      );
+    test(
+      'findByOrganization — ordering: newer contracts appear first',
+      () async {
+        final older = Contract.reconstitute(
+          id: 'c-old',
+          organizationId: 'org-1',
+          name: 'Older',
+          contractorName: 'C',
+          validFromUtc: DateTime.utc(2026, 1, 1),
+          validUntilUtc: DateTime.utc(2026, 12, 31),
+          status: ContractStatus.draft,
+          createdAtUtc: DateTime.utc(2026, 1, 1),
+        );
+        final newer = Contract.reconstitute(
+          id: 'c-new',
+          organizationId: 'org-1',
+          name: 'Newer',
+          contractorName: 'C',
+          validFromUtc: DateTime.utc(2026, 6, 1),
+          validUntilUtc: DateTime.utc(2026, 12, 31),
+          status: ContractStatus.draft,
+          createdAtUtc: DateTime.utc(2026, 6, 1),
+        );
 
-      await repo.save(older);
-      await repo.save(newer);
+        await repo.save(older);
+        await repo.save(newer);
 
-      final all = await repo.findByOrganization('org-1');
-      expect(all.first.id, 'c-new');
-      expect(all.last.id, 'c-old');
-    });
+        final all = await repo.findByOrganization('org-1');
+        expect(all.first.id, 'c-new');
+        expect(all.last.id, 'c-old');
+      },
+    );
   });
 }
