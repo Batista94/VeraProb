@@ -125,11 +125,9 @@ class PostgresContractualFinancialSnapshotRepository
       id: row['id'] as String,
       organizationId: row['organization_id'] as String,
       contractId: row['contract_id'] as String?,
-      operationalDateUtc: DateTime.parse(
-        row['operational_date_utc'] as String,
-      ).toUtc(),
+      operationalDateUtc: _parseUtc(row['operational_date_utc'] as String),
       operationalTimezone: row['operational_timezone'] as String,
-      closedAtUtc: DateTime.parse(row['closed_at_utc'] as String).toUtc(),
+      closedAtUtc: _parseUtc(row['closed_at_utc'] as String),
       totalContractedRevenue: Money(
         row['total_contracted_revenue_cents'] as int,
       ),
@@ -146,6 +144,23 @@ class PostgresContractualFinancialSnapshotRepository
       previousSnapshotId: row['previous_snapshot_id'] as String?,
       reprocessingReason: row['reprocessing_reason'] as String?,
       authorUserId: row['author_user_id'] as String?,
+    );
+  }
+
+  static DateTime _parseUtc(String dateString) {
+    final parsed = DateTime.parse(dateString);
+    final hasOffset = dateString.endsWith('Z') || 
+                      dateString.contains('+', 10) || 
+                      dateString.lastIndexOf('-') > 10;
+    
+    if (hasOffset) {
+      return parsed.toUtc();
+    }
+    
+    return DateTime.utc(
+      parsed.year, parsed.month, parsed.day, 
+      parsed.hour, parsed.minute, parsed.second, 
+      parsed.millisecond, parsed.microsecond,
     );
   }
 }

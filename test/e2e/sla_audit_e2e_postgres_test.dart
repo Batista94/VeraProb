@@ -395,7 +395,7 @@ void main() {
         contractId: contractId,
         previousSnapshotId: originalSnapshotId!,
         reprocessingReason: 'E2E Testing Chain Continuity',
-        authorUserId: '00000000-0000-0000-0000-admin000e2e',
+        authorUserId: '00000000-0000-0000-0000-aaaa0000eeee',
       );
 
       // Repo should STILL only return 1 active snapshot
