@@ -17,15 +17,16 @@ void main() {
       ? 'SUPABASE_URL not configured — skipping integration tests'
       : null;
 
+  late final SupabaseClient client;
+
   setUpAll(() async {
     if (supabaseUrl.isNotEmpty) {
-      await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+      client = SupabaseClient(supabaseUrl, supabaseKey);
     }
   });
 
   group('sanction_escalation_log — DB invariants', () {
     test('UPDATE is blocked by trigger (INV-1)', skip: skipReason, () async {
-      final client = Supabase.instance.client;
 
       // Attempt direct update (trigger should block it)
       expect(
@@ -39,7 +40,6 @@ void main() {
     });
 
     test('DELETE is blocked by trigger (INV-1)', skip: skipReason, () async {
-      final client = Supabase.instance.client;
 
       expect(
         () async => client

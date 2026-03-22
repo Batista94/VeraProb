@@ -105,6 +105,10 @@ void main() {
     // Initialize the real client
     client = SupabaseClient(supabaseUrl, supabaseKey);
     BrazilTime.ensureInitialized();
+    await client.from('organizations').upsert([
+      {'id': '00000000-0000-0000-0000-000000000001', 'name': 'org-1'},
+      {'id': '00000000-0000-0000-0000-000000000002', 'name': 'org-hacker'}
+    ]);
 
     // Instantiate Data Access Layer
     planRepo = PostgresPlanDeclarationRepository(client);
@@ -122,7 +126,7 @@ void main() {
       contractRepository: MockContractRepository(),
       zoneRepository: _StubZoneRepository(),
       vehicleRepository: const InMemoryActiveVehicleRepository(
-        countsByOrg: {'org-1': 1},
+        countsByOrg: {'00000000-0000-0000-0000-000000000001': 1},
       ),
     );
 
@@ -166,7 +170,7 @@ void main() {
       );
 
       final command = DeclareContractualPlanCommand(
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
         contractId: contractId,
         declaredByUserId: 'admin-e2e',
         planVersion: planVersion,
@@ -182,7 +186,7 @@ void main() {
       // 3. Validations
       final plans = await planRepo.findByContract(
         contractId,
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
       );
       expect(plans.length, 1, reason: 'Exactly 1 plan in DB');
 
@@ -198,7 +202,7 @@ void main() {
       // Given: An initial execution state
       final savedPlan = (await planRepo.findByContract(
         contractId,
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
       )).first;
       final service = savedPlan.services.first;
 
@@ -212,7 +216,7 @@ void main() {
       // For MVP, if external system hasn't created the state yet, the engine won't see it.
       // Wait, let's artificially initialize it as if the scheduler spawned it.
       final newState = ContractualExecutionState.create(
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
         setId: service.setId,
         contractId: contractId,
         planVersion: planVersion,
@@ -234,7 +238,7 @@ void main() {
       final pendingStates = await executionRepo.findPendingByContractAndTime(
         contractId,
         testBaseTimeUtc,
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
       );
       expect(pendingStates.length, 1);
 
@@ -257,7 +261,7 @@ void main() {
       await evaluationEngine.processVehicleState(
         vehicleAtCenter,
         nowUtc: testBaseTimeUtc,
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
       );
 
       var stateAfterTick1 = await executionRepo.findBySetId(sharedSetId!);
@@ -272,7 +276,7 @@ void main() {
       await evaluationEngine.processVehicleState(
         vehicleAtCenter,
         nowUtc: timeBindUtc,
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
       );
 
       // Validate DB transitions
@@ -353,14 +357,14 @@ void main() {
 
       // Run daily closure manually for the test date
       await snapshotGenerator.generateDailySnapshot(
-        'org-1',
+        '00000000-0000-0000-0000-000000000001',
         operationalDateUtc,
         contractId: contractId,
       );
 
       // Check repo
       final snapshots = await snapshotRepo.findAll(
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
         contractId: contractId,
       );
       expect(snapshots.length, 1, reason: 'Exactly 1 active snapshot created');
@@ -390,7 +394,7 @@ void main() {
 
       // Reprocess explicitly
       await snapshotGenerator.reprocessDailySnapshot(
-        'org-1',
+        '00000000-0000-0000-0000-000000000001',
         operationalDateUtc,
         contractId: contractId,
         previousSnapshotId: originalSnapshotId!,
@@ -400,7 +404,7 @@ void main() {
 
       // Repo should STILL only return 1 active snapshot
       final activeSnapshots = await snapshotRepo.findAll(
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
         contractId: contractId,
       );
       expect(
@@ -439,7 +443,7 @@ void main() {
     test('Stage 6 — Postgres Idempotency (Unique Constraint)', () async {
       // Let's test idempotency by attempting a raw insert of a duplicate SET.
       final duplicateSet = ContractualExecutionState.create(
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
         setId: sharedSetId!, // The SAME set ID
         contractId: contractId,
         planVersion: planVersion,
@@ -462,7 +466,7 @@ void main() {
     });
 
     test('Stage 7 — Postgres RLS Isolation (Multi-Tenant Penetration)', () async {
-      // Simulate an Operator from 'org-hacker' trying to read 'org-1' data via API.
+      // Simulate an Operator from '00000000-0000-0000-0000-000000000002' trying to read '00000000-0000-0000-0000-000000000001' data via API.
       // In a real environment with JWTs, Supabase Auth enforces this automatically.
       // Since our integration tests use the service_role key or bypass Auth,
       // the Application logic MUST enforce isolation via `organizationId` parameter.
@@ -470,7 +474,7 @@ void main() {
       // 1. Try to read the contract plans using a different Org ID
       final stolenPlans = await planRepo.findByContract(
         contractId,
-        organizationId: 'org-hacker',
+        organizationId: '00000000-0000-0000-0000-000000000002',
       );
       expect(
         stolenPlans,
@@ -481,7 +485,7 @@ void main() {
       // 2. Try to query the execution states
       final stolenExecutions = await executionQueryService.listByStatus(
         ExecutionStatus.executed,
-        organizationId: 'org-hacker',
+        organizationId: '00000000-0000-0000-0000-000000000002',
         contractId: contractId,
       );
       expect(
@@ -492,13 +496,13 @@ void main() {
 
       // 3. Try to generate a snapshot for another org's contract
       await snapshotGenerator.generateDailySnapshot(
-        'org-hacker', // Attack vector
+        '00000000-0000-0000-0000-000000000002', // Attack vector
         operationalDateUtc,
         contractId: contractId,
       );
 
       final stolenSnapshots = await snapshotRepo.findAll(
-        organizationId: 'org-hacker',
+        organizationId: '00000000-0000-0000-0000-000000000002',
         contractId: contractId,
       );
       expect(
@@ -519,7 +523,7 @@ void main() {
 
       final forgedPlan = PlanDeclaration.reconstitute(
         id: hackerPlanId,
-        organizationId: 'org-1', // Targeting Org 1
+        organizationId: '00000000-0000-0000-0000-000000000001', // Targeting Org 1
         contractId: contractId,
         planVersion: 99,
         declaredByUserId: 'hacker',
@@ -549,7 +553,7 @@ void main() {
 
       final leakyData = await planRepo.findByContract(
         contractId,
-        organizationId: 'org-hacker',
+        organizationId: '00000000-0000-0000-0000-000000000002',
       );
       expect(leakyData, isEmpty);
     });
@@ -557,7 +561,7 @@ void main() {
     test('Stage 8 — E2E UI Dashboard Query Coverage', () async {
       // 1. Verify SLA Execution Item projections
       final summary = await executionQueryService.getSummary(
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
         contractId: contractId,
       );
 
@@ -568,14 +572,14 @@ void main() {
 
       final executedList = await executionQueryService.listByStatus(
         ExecutionStatus.executed,
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
         contractId: contractId,
       );
       expect(executedList.first.boundVehicleId, vehicleId);
 
       // 2. Verify Financial Impact projections
       final impact = await impactQueryService.getImpact(
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-0000-0000-000000000001',
         contractId: contractId,
       );
 
