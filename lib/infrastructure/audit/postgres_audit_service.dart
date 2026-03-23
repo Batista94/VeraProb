@@ -60,10 +60,9 @@ class PostgresAuditService implements AuditService {
           (data) => AuditLog(
             id: data['id'],
             organizationId: data['organization_id'],
-            operatorId: data['operator_id'] ?? '',
-            actionType: data['event_type'],
-            entityId:
-                data['entity_id'] ?? data['contract_id'] ?? '', // Handle both
+            operatorId: (data['operator_id'] as String?) ?? '',
+            actionType: (data['type'] as String?) ?? '',
+            entityId: (data['set_id'] as String?) ?? '',
             timestamp: DateTime.parse(data['occurred_at_utc']),
           ),
         )

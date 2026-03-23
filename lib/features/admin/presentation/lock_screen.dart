@@ -108,106 +108,110 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VeraProbColors.background,
-      body: Center(
-        child: Container(
-          width: 340,
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: VeraProbColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: VeraProbColors.border),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 40,
-                color: Colors.black.withValues(alpha: 0.5),
+      body: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 340),
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: VeraProbColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: VeraProbColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 40,
+                    color: Colors.black.withValues(alpha: 0.5),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: VeraProbColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.shield_outlined,
-                  size: 48,
-                  color: VeraProbColors.primary,
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Autenticação Corporativa',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: VeraProbColors.textPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Plataforma de Auditoria SLA',
-                style: TextStyle(
-                  color: VeraProbColors.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 32),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: VeraProbColors.textPrimary),
-                decoration: const InputDecoration(
-                  labelText: 'E-mail Corporativo',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                style: const TextStyle(
-                  color: VeraProbColors.textPrimary,
-                  letterSpacing: 4,
-                ),
-                decoration: InputDecoration(
-                  labelText: 'Senha de Acesso',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  errorText: _error,
-                ),
-                onSubmitted: (_) => _signIn(),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ElevatedButton(
-                        onPressed: _signIn,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: VeraProbColors.primary,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: VeraProbColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.shield_outlined,
+                      size: 48,
+                      color: VeraProbColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Autenticação Corporativa',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: VeraProbColors.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Plataforma de Auditoria SLA',
+                    style: TextStyle(
+                      color: VeraProbColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  TextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    style: const TextStyle(color: VeraProbColors.textPrimary),
+                    decoration: const InputDecoration(
+                      labelText: 'E-mail Corporativo',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    style: const TextStyle(
+                      color: VeraProbColors.textPrimary,
+                      letterSpacing: 4,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Senha de Acesso',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      errorText: _error,
+                    ),
+                    onSubmitted: (_) => _signIn(),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : ElevatedButton(
+                            onPressed: _signIn,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: VeraProbColors.primary,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'ACESSAR SISTEMA',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: const Text(
-                          'ACESSAR SISTEMA',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

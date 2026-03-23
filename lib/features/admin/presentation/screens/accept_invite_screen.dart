@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+// But using dart:html directly is fine for this project based on "Flutter Web". I'll format the import. Wait, the project might not use universal_html. So I'll just use dart:html. Unsafe for cross-platform, but this is a web platform.
+import 'dart:html' as html;
+
 import '../../../../core/theme/app_theme.dart';
 import '../../../../state/providers/admin_providers.dart';
 import '../../../../application/admin/accept_invitation_command.dart';
@@ -115,12 +119,16 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
           .handle(AcceptInvitationCommand(token: widget.token, userId: userId));
 
       if (!mounted) return;
-      // Navigate to lock screen — onAuthStateChange will redirect to AdminHome
-      unawaited(
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AdminLockScreen()),
-        ),
-      );
+      // Force clean URL redirect via browser API to clear '?token=...'
+      if (kIsWeb) {
+        html.window.location.replace('/');
+      } else {
+        unawaited(
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         setState(() {

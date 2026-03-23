@@ -132,15 +132,18 @@ class _SlimBar extends StatelessWidget {
             const SizedBox(width: 24),
             // Prerequisite dots
             Expanded(
-              child: Row(
-                children: prerequisites
-                    .map(
-                      (p) => _PrerequisiteDot(
-                        prerequisite: p,
-                        onNavigate: onNavigate,
-                      ),
-                    )
-                    .toList(),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: prerequisites
+                      .map(
+                        (p) => _PrerequisiteDot(
+                          prerequisite: p,
+                          onNavigate: onNavigate,
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
             ),
           ],

@@ -99,17 +99,20 @@ class _FilterBar extends StatelessWidget {
         children: [
           Text('Filtros:', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(width: 12),
-          Wrap(
-            spacing: 8,
-            children: _kSeverities.map((s) {
-              final isSelected = selectedSeverity == s;
-              return FilterChip(
-                label: Text(s.toUpperCase()),
-                selected: isSelected,
-                selectedColor: _severityColor(s).withValues(alpha: 0.25),
-                onSelected: (_) => onSeverityChanged(isSelected ? null : s),
-              );
-            }).toList(),
+          Flexible(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _kSeverities.map((s) {
+                final isSelected = selectedSeverity == s;
+                return FilterChip(
+                  label: Text(s.toUpperCase()),
+                  selected: isSelected,
+                  selectedColor: _severityColor(s).withValues(alpha: 0.25),
+                  onSelected: (_) => onSeverityChanged(isSelected ? null : s),
+                );
+              }).toList(),
+            ),
           ),
           const SizedBox(width: 12),
           OutlinedButton.icon(

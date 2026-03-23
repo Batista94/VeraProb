@@ -19,10 +19,10 @@ import 'super_admin_invitation_command_service.dart';
 /// INV-7: IDs generated in Dart (via InviteUserHandler), not in SQL.
 class CreateOrganizationHandler {
   final ISuperAdminRepository _repository;
-  final SupabaseClient _serviceRoleClient;
+  final SupabaseClient _authenticatedClient;
   final RbacService _rbac = RbacService();
 
-  CreateOrganizationHandler(this._repository, this._serviceRoleClient);
+  CreateOrganizationHandler(this._repository, this._authenticatedClient);
 
   Future<CreateOrganizationResult> handle(CreateOrganizationCommand cmd) async {
     // 1. RBAC — before any I/O
@@ -51,12 +51,20 @@ class CreateOrganizationHandler {
     }
 
     // 5. Create org + billing event (atomic RPC via service_role)
-    final orgId = await _repository.createOrganization(cmd);
+    late final String orgId;
+    try {
+      orgId = await _repository.createOrganization(cmd);
+    } on PostgrestException catch (e) {
+      if (e.code == '23505' && (e.message.contains('cnpj') || e.details.toString().contains('cnpj'))) {
+        throw const DomainException('Já existe uma organização cadastrada com este CNPJ.');
+      }
+      rethrow;
+    }
 
     // 6. Invite first admin via SuperAdminInvitationCommandService (D4: bypasses TENANT_ADMIN check)
     //    IDs generated in Dart by InviteUserHandler — satisfies INV-7.
     final invitationService = SuperAdminInvitationCommandService(
-      _serviceRoleClient,
+      _authenticatedClient,
       orgId: orgId,
       superAdminUserId: cmd.superAdminUserId,
     );

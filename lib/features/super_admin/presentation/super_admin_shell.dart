@@ -7,6 +7,7 @@ import 'screens/tenant_health_panel.dart';
 import 'screens/create_organization_wizard.dart';
 import 'screens/super_admin_audit_log_screen.dart';
 import 'widgets/super_admin_guard.dart';
+import 'widgets/super_admin_session_timeout.dart';
 
 /// Isolated shell for the SuperAdmin portal.
 ///
@@ -26,8 +27,9 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
 
   @override
   Widget build(BuildContext context) {
-    return SuperAdminGuard(
-      child: Scaffold(
+    return SuperAdminSessionTimeout(
+      child: SuperAdminGuard(
+        child: Scaffold(
         body: Row(
           children: [
             // ── NavigationRail (indigo) ─────────────────────────────
@@ -101,7 +103,7 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildBody() {

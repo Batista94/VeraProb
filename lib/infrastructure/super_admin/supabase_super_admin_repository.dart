@@ -4,18 +4,24 @@ import '../../domain/super_admin/create_organization_command.dart';
 import '../../domain/super_admin/i_super_admin_repository.dart';
 import '../../domain/super_admin/tenant_health_snapshot.dart';
 
-/// PostgreSQL implementation of [ISuperAdminRepository] via service_role client.
+/// PostgreSQL implementation of [ISuperAdminRepository].
 ///
-/// D3: uses an isolated [SupabaseClient] with service_role key — never the anon client.
-/// Never passed to tenant providers.
+/// Write RPCs use [_authenticatedClient] (main Supabase session) so that
+/// auth.uid() IS NOT NULL inside the RPC and the super_admin JWT claim is
+/// validated server-side (migration 20260405000007 intent).
+///
+/// Read queries use [_serviceRoleClient] (service_role key) to bypass the RLS
+/// hardening that blocks authenticated super admin reads on cross-tenant tables
+/// (migration 20260405000006).
 class SupabaseSuperAdminRepository implements ISuperAdminRepository {
-  final SupabaseClient _client;
+  final SupabaseClient _serviceRoleClient;
+  final SupabaseClient _authenticatedClient;
 
-  SupabaseSuperAdminRepository(this._client);
+  SupabaseSuperAdminRepository(this._serviceRoleClient, this._authenticatedClient);
 
   @override
   Future<String> createOrganization(CreateOrganizationCommand cmd) async {
-    final result = await _client.rpc(
+    final result = await _authenticatedClient.rpc(
       'super_admin_create_organization',
       params: {
         'p_legal_name': cmd.legalName,
@@ -41,7 +47,7 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
     required DateTime expiresAtUtc,
     required String superAdminUserId,
   }) async {
-    await _client.rpc(
+    await _authenticatedClient.rpc(
       'super_admin_invite_first_admin',
       params: {
         'p_org_id': orgId,
@@ -57,7 +63,7 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
 
   @override
   Future<List<TenantHealthSnapshot>> getAllTenantHealth() async {
-    final data = await _client.from('super_admin_tenant_health_view').select();
+    final data = await _serviceRoleClient.from('super_admin_tenant_health_view').select();
 
     return (data as List<dynamic>)
         .map(
@@ -74,7 +80,7 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
     DateTime? toDate,
     int limit = 100,
   }) async {
-    var query = _client.from('system_audit_log').select();
+    var query = _serviceRoleClient.from('system_audit_log').select();
 
     if (organizationId != null) {
       query = query.eq('organization_id', organizationId);

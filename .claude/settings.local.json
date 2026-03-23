@@ -105,7 +105,10 @@
       "WebFetch(domain:pub.dev)",
       "Bash(find ~/.pub-cache -path */file_saver*/file_saver.dart)",
       "Bash(find /c/Users/wes_b/AppData/Local/Pub/Cache -path */file_saver* -name *.dart)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(gh run:*)",
+      "Bash(where gh:*)",
+      "Bash(find C:/Users/wes_b/AppData/Local/Pub/Cache/hosted/pub.dev -name *.dart -path */supabase_flutter* -name supabase_flutter.dart)"
     ]
   },
   "model": "sonnet"

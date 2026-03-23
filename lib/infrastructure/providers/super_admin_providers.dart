@@ -24,13 +24,29 @@ final superAdminSupabaseClientProvider = Provider<SupabaseClient>((ref) {
       ? EnvironmentConfig.supabaseServiceRoleKey
       : (dotenv.env['SUPABASE_SERVICE_ROLE_KEY'] ?? '');
 
-  return SupabaseClient(url, serviceKey);
+  // EmptyLocalStorage prevents this client from recovering the user session
+  // from browser localStorage (which is shared with the main anon client via
+  // the same sb-<host>-auth-token key). Without this, auth.uid() returns
+  // the super admin's UUID inside RPCs instead of NULL, bypassing the
+  // service_role path in super_admin_create_organization / invite_first_admin.
+  return SupabaseClient(
+    url,
+    serviceKey,
+    authOptions: const FlutterAuthClientOptions(
+      localStorage: EmptyLocalStorage(),
+      autoRefreshToken: false,
+    ),
+  );
 });
 
 /// Repository provider for SuperAdmin data operations.
+///
+/// Passes two clients:
+///  - service_role client (for cross-tenant reads that RLS would otherwise block)
+///  - authenticated client (for write RPCs that validate the super_admin JWT claim)
 final superAdminRepositoryProvider = Provider<ISuperAdminRepository>((ref) {
-  final client = ref.watch(superAdminSupabaseClientProvider);
-  return SupabaseSuperAdminRepository(client);
+  final serviceRoleClient = ref.watch(superAdminSupabaseClientProvider);
+  return SupabaseSuperAdminRepository(serviceRoleClient, Supabase.instance.client);
 });
 
 /// Provider that fetches all tenant health snapshots.

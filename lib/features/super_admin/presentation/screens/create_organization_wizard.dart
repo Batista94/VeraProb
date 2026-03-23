@@ -126,8 +126,7 @@ class _CreateOrganizationWizardState
 
     try {
       final repo = ref.read(superAdminRepositoryProvider);
-      final serviceRoleClient = ref.read(superAdminSupabaseClientProvider);
-      final handler = CreateOrganizationHandler(repo, serviceRoleClient);
+      final handler = CreateOrganizationHandler(repo, supabase);
 
       final cmd = CreateOrganizationCommand(
         legalName: _legalNameCtrl.text.trim(),
@@ -672,7 +671,13 @@ class _SummaryRow extends StatelessWidget {
           Icon(icon, size: 14, color: Colors.indigo),
           const SizedBox(width: 6),
           Text('$label: ', style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Flexible(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

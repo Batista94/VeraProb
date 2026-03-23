@@ -9,15 +9,18 @@ import '../../domain/enums/user_role.dart';
 /// - Accepts [p_org_id] explicitly (SuperAdmin has no org_id JWT claim — D4).
 /// - Validates the `super_admin: true` JWT claim server-side.
 ///
+/// Receives the authenticated client (main Supabase session) so that
+/// auth.uid() IS NOT NULL inside the RPC and the super_admin claim is verified.
+///
 /// [orgId] is captured at construction time by [CreateOrganizationHandler]
 /// after the org is created (contextual service — not a singleton).
 class SuperAdminInvitationCommandService implements InvitationCommandService {
-  final SupabaseClient _serviceRoleClient;
+  final SupabaseClient _client;
   final String _orgId;
   final String _superAdminUserId;
 
   SuperAdminInvitationCommandService(
-    this._serviceRoleClient, {
+    this._client, {
     required String orgId,
     required String superAdminUserId,
   }) : _orgId = orgId,
@@ -31,7 +34,7 @@ class SuperAdminInvitationCommandService implements InvitationCommandService {
     required String invitationId,
     required DateTime expiresAtUtc,
   }) async {
-    await _serviceRoleClient.rpc(
+    await _client.rpc(
       'super_admin_invite_first_admin',
       params: {
         'p_org_id': _orgId,
