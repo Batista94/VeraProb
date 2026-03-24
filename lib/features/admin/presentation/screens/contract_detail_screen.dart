@@ -381,20 +381,20 @@ class _ExecutionsTab extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SingleChildScrollView(
-        child: DataTable(
-          columnSpacing: 14,
-          headingTextStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
+          child: DataTable(
+            columnSpacing: 14,
+            headingTextStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+            columns: const [
+              DataColumn(label: Text('Status')),
+              DataColumn(label: Text('Janela')),
+              DataColumn(label: Text('Veículo')),
+              DataColumn(label: Text('Valor'), numeric: true),
+            ],
+            rows: executions.map(_buildRow).toList(),
           ),
-          columns: const [
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Janela')),
-            DataColumn(label: Text('Veículo')),
-            DataColumn(label: Text('Valor'), numeric: true),
-          ],
-          rows: executions.map(_buildRow).toList(),
-        ),
         ),
       ),
     );

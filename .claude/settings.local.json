@@ -110,7 +110,11 @@
       "Bash(where gh:*)",
       "Bash(find C:/Users/wes_b/AppData/Local/Pub/Cache/hosted/pub.dev -name *.dart -path */supabase_flutter* -name supabase_flutter.dart)",
       "Bash(find /c/Projects/VeraProb/test -type f -name *phase_9* -o -name *auditor* -o -name *verdict*)",
-      "Bash(find /c/Projects/VeraProb -name phase_9*.md -o -name *phase_9*)"
+      "Bash(find /c/Projects/VeraProb -name phase_9*.md -o -name *phase_9*)",
+      "Bash(for file:*)",
+      "Bash(do echo:*)",
+      "Bash(/tmp/check_tests.txt:*)",
+      "Read(//tmp/**)"
     ]
   },
   "model": "sonnet"

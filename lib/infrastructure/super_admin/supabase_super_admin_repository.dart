@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/super_admin/create_organization_command.dart';
 import '../../domain/super_admin/i_super_admin_repository.dart';
+import '../../domain/super_admin/system_audit_log_entry.dart';
 import '../../domain/super_admin/tenant_health_snapshot.dart';
 
 /// PostgreSQL implementation of [ISuperAdminRepository].
@@ -17,7 +18,10 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
   final SupabaseClient _serviceRoleClient;
   final SupabaseClient _authenticatedClient;
 
-  SupabaseSuperAdminRepository(this._serviceRoleClient, this._authenticatedClient);
+  SupabaseSuperAdminRepository(
+    this._serviceRoleClient,
+    this._authenticatedClient,
+  );
 
   @override
   Future<String> createOrganization(CreateOrganizationCommand cmd) async {
@@ -63,7 +67,9 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
 
   @override
   Future<List<TenantHealthSnapshot>> getAllTenantHealth() async {
-    final data = await _serviceRoleClient.from('super_admin_tenant_health_view').select();
+    final data = await _serviceRoleClient
+        .from('super_admin_tenant_health_view')
+        .select();
 
     return (data as List<dynamic>)
         .map(
@@ -73,14 +79,25 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getSystemAuditLog({
+  Future<bool> checkCnpjExists(String cnpjDigits) async {
+    final result = await _authenticatedClient.rpc(
+      'super_admin_check_cnpj_exists',
+      params: {'p_cnpj': cnpjDigits},
+    );
+    return result as bool;
+  }
+
+  @override
+  Future<List<SystemAuditLogEntry>> getSystemAuditLog({
     String? organizationId,
     String? severity,
     DateTime? fromDate,
     DateTime? toDate,
     int limit = 100,
   }) async {
-    var query = _serviceRoleClient.from('system_audit_log').select();
+    var query = _serviceRoleClient
+        .from('system_audit_log')
+        .select('severity, event_type, occurred_at, organization_id, payload');
 
     if (organizationId != null) {
       query = query.eq('organization_id', organizationId);
@@ -100,7 +117,7 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
         .limit(limit);
 
     return (data as List<dynamic>)
-        .map((row) => row as Map<String, dynamic>)
+        .map((row) => SystemAuditLogEntry.fromJson(row as Map<String, dynamic>))
         .toList();
   }
 }

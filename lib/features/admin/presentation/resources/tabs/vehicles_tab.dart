@@ -689,8 +689,11 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
                             }
                             final plate = v.trim().toUpperCase();
                             final br = RegExp(r'^[A-Z]{3}-[0-9]{4}$');
-                            final mercosul = RegExp(r'^[A-Z]{3}[0-9][A-Z][0-9]{2}$');
-                            if (!br.hasMatch(plate) && !mercosul.hasMatch(plate)) {
+                            final mercosul = RegExp(
+                              r'^[A-Z]{3}[0-9][A-Z][0-9]{2}$',
+                            );
+                            if (!br.hasMatch(plate) &&
+                                !mercosul.hasMatch(plate)) {
                               return 'Use ABC-1234 (BR) ou ABC1D23 (Mercosul)';
                             }
                             return null;

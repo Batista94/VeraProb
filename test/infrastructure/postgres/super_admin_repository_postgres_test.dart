@@ -230,7 +230,7 @@ void main() async {
 
           expect(filtered, isNotEmpty);
           expect(
-            filtered.every((e) => e['organization_id'] == orgId),
+            filtered.every((e) => e.organizationId == orgId),
             isTrue,
             reason: 'Todos os logs filtrados devem pertencer à org',
           );
@@ -241,7 +241,7 @@ void main() async {
             severity: 'error',
             limit: 20,
           );
-          expect(logs.every((e) => e['severity'] == 'error'), isTrue);
+          expect(logs.every((e) => e.severity == 'error'), isTrue);
         });
       });
     },

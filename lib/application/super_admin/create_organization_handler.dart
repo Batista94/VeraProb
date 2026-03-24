@@ -55,8 +55,12 @@ class CreateOrganizationHandler {
     try {
       orgId = await _repository.createOrganization(cmd);
     } on PostgrestException catch (e) {
-      if (e.code == '23505' && (e.message.contains('cnpj') || e.details.toString().contains('cnpj'))) {
-        throw const DomainException('Já existe uma organização cadastrada com este CNPJ.');
+      if (e.code == '23505' &&
+          (e.message.contains('cnpj') ||
+              e.details.toString().contains('cnpj'))) {
+        throw const DomainException(
+          'Já existe uma organização cadastrada com este CNPJ.',
+        );
       }
       rethrow;
     }
@@ -82,5 +86,23 @@ class CreateOrganizationHandler {
 
     // 7. Return immutable result
     return CreateOrganizationResult(orgId: orgId, invitationToken: token);
+  }
+
+  /// Fires the invite notification Edge Function — silent failure by design.
+  ///
+  /// The invite link shown in the success dialog is the fallback if this fails.
+  Future<void> sendInviteNotification({
+    required String email,
+    required String inviteUrl,
+    required String orgName,
+  }) async {
+    try {
+      await _authenticatedClient.functions.invoke(
+        'notify-invite',
+        body: {'email': email, 'inviteUrl': inviteUrl, 'orgName': orgName},
+      );
+    } catch (_) {
+      // Silent — the invite link in the dialog is the primary delivery path.
+    }
   }
 }

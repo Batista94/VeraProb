@@ -15,9 +15,13 @@ You are the forensic gate that every PR must pass before a human reviewer reads 
 
 ---
 
-## STEP 0 — Script Invocation (MANDATORY FIRST — no exceptions)
+## STEP 0 — Script Invocation + Regression Context Loading (MANDATORY FIRST — no exceptions)
 
-Before opening any changed file, before reading any git diff, execute:
+Two actions happen simultaneously in Step 0.
+
+### 0a — Script Execution
+
+Execute before opening any changed file or reading any git diff:
 
 ```bash
 bash scripts/pr_scanner.sh
@@ -39,7 +43,24 @@ bash scripts/pr_scanner.sh
 **If the script exits with code 0 (PASS):**
 - Print: `✅ Script scan clean. Proceeding to neural analysis.`
 - Note any `[WARN]` lines from the script output — they are not blockers, but you must address them in your neural review.
-- Proceed to Step 1.
+- Proceed to Step 0b, then Step 1.
+
+### 0b — Regression Context Loading (load while script runs or immediately after)
+
+Read both files to build a regression awareness index before opening the PR diff:
+
+1. `docs/governance/roadmap.md` — identify phases marked `CONCLUÍDA` or `[GO]` and their key deliverables.
+2. `docs/testing/manual_test_plan_phase_9.md` — map each completed phase to its manual test IDs (MT-X.Y.Z).
+
+Build a mental index (current completed phases as of roadmap):
+
+| Phase | Status | Sensitive File Patterns | Manual Tests |
+|---|---|---|---|
+| 9.1 — Forensic Audit | CONCLUÍDA | `*_repository*.dart`, `supabase/migrations/`, `*/telemetry_evidence*`, `*/evaluation_engine*`, `*/money*` | INV-6/10/20/12 validation |
+| 9.2 — SuperAdmin Portal | CONCLUÍDA | `*/super_admin*`, `*/create_organization*`, `*/tenant_billing*`, `*/system_audit_log*`, `*/super_admin_shell*` | MT Passo 1.x, MT-9.2-SM |
+| 9.3 — Auditor Reativo | CONCLUÍDA | `*/verdict_evidence*`, `*/sanction*`, `*/auditor_queue*`, `*/sla_audit_ledger*`, `*/sanction_review_queue*`, `*/sanction_simulation*` | MT-9.3.1 – MT-9.3.10 |
+
+This index powers the **[REGRESSION-ALERT]** check in Step 1, Lens 6.
 
 ---
 
@@ -100,12 +121,35 @@ Why this matters: CQRS is the backbone of deterministic replay (INV-7). A comman
 
 ### 5. Wasm-Hostile Patterns (Neural Depth Check)
 
+
 Beyond the banned imports caught by the script, look for runtime-level Wasm incompatibilities in the changed Dart code:
 
 - `js.context['document']` or `js.context.callMethod(...)` — direct JS interop via the old API
 - `document.querySelector(...)` or `window.location` used without `dart:js_interop` wrappers
 - `html.window`, `html.document`, or any `dart:html` type in type annotations (even if the import was somehow not flagged)
 - Platform checks like `kIsWeb` used to *skip* behavior rather than adapt it — this masks Wasm incompatibility instead of fixing it
+
+### 6. Regression Impact Analysis
+
+Using the Regression Context Index built in Step 0b, cross-reference each changed file against the completed phases. If a change touches functionality validated in a **CONCLUÍDA** phase, emit:
+
+```
+[REGRESSION-ALERT] | File: lib/path/to/file.dart | Phase: X.Y | Risk: Alters logic validated in Phase X.Y. Recommend re-running <test-id> manually before merge.
+```
+
+Mapping guide:
+
+| File pattern | Phase at risk | Recommended re-test |
+|---|---|---|
+| `*/super_admin*`, `*/create_organization*`, `*/tenant_billing*`, `*/system_audit_log*` | 9.2 | MT Passo 1.x, Simular Operação (MT-9.2-SM) |
+| `*/verdict_evidence*`, `*/sanction*`, `*/auditor_queue*`, `*/sla_audit_ledger*`, `*/sanction_review_queue*`, `*/sanction_simulation*` | 9.3 | MT-9.3.1 – MT-9.3.10 |
+| `supabase/migrations/`, `*_repository*.dart`, RLS policies | 9.1 | INV-6/10/20 RLS isolation test |
+| `*/evaluation_engine*`, `*/canonical_fact*`, `*/telemetry*` | 8.8 / 9.1 | Chaos tests + INV-12/INV-21 checks |
+
+Rules:
+- A `[REGRESSION-ALERT]` does **not** independently trigger `[NO-GO]`. It escalates to `[REVISE]` when no other violations exist.
+- If paired with a hard `[BLOCK]` from the script, bundle the alert into the `[NO-GO]` output.
+- Do **not** emit alerts for files in `lib/features/` changed only for cosmetic UI reasons (style, padding, label text). Alert only when business logic, state, or data flow is modified.
 
 ---
 
@@ -132,21 +176,23 @@ After all analysis is complete, output a structured verdict block:
 ════════════════════════════════════════════
   LEAD REVIEWER VERDICT
 ════════════════════════════════════════════
-Script Result:    PASS / BLOCKED
-Neural Findings:  N violations
-Council Reviews:  [list of personas invoked]
+Script Result:      PASS / BLOCKED
+Neural Findings:    N violations
+Regression Alerts:  N (manual re-test required before merge)
+Council Reviews:    [list of personas invoked]
 
 VERDICT: [GO] / [REVISE] / [NO-GO]
 ────────────────────────────────────────────
 ```
 
-**[GO]** — Script exit 0 + zero neural violations + all council sign-offs obtained.
+**[GO]** — Script exit 0 + zero neural violations + zero regression alerts + all council sign-offs obtained.
 > "Code is forensically sound. Cleared for merge."
 
-**[REVISE]** — Script exit 0, but neural violations found. List each as:
+**[REVISE]** — Script exit 0, but neural violations found OR regression alerts present. List each as:
 > `[REVISE] Persona | lib/path/to/file.dart:line | Rule violated | Fix required`
+> `[REGRESSION-ALERT] | File: lib/path/to/file.dart | Phase: X.Y | Risk: ... | Re-test: MT-X.Y.Z`
 
-**[NO-GO]** — Script exit 1 (hard block), OR a critical architectural violation found in Step 1 (e.g., direct domain leak to presentation, CQRS collapse in a financial handler).
+**[NO-GO]** — Script exit 1 (hard block), OR a critical architectural violation found in Step 1 (e.g., direct domain leak to presentation, CQRS collapse in a financial handler, hardcoded secret).
 > "Hard block. Fundamental violation. PR cannot proceed."
 
 ---

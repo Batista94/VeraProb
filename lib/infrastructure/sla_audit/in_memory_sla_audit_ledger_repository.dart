@@ -28,17 +28,29 @@ class InMemorySlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   }
 
   @override
-  Future<String?> getLastEntryId() async {
-    if (_entries.isEmpty) return null;
-    return _entries.last.eventId;
+  Future<String?> getLastEntryId({String? organizationId}) async {
+    final scope = organizationId != null
+        ? _entries.where((e) => e.organizationId == organizationId).toList()
+        : _entries;
+    if (scope.isEmpty) return null;
+    return scope.last.eventId;
   }
 
   /// Returns a copy of the recorded entries for testing/verification.
   List<SlaLedgerEntry> get entries => List.unmodifiable(_entries);
 
   @override
-  Future<List<SlaLedgerEntry>> getEntriesBySetId(String setId) async {
-    return _entries.where((e) => e.setId == setId).toList()
+  Future<List<SlaLedgerEntry>> getEntriesBySetId(
+    String setId, {
+    String? organizationId,
+  }) async {
+    return _entries
+        .where(
+          (e) =>
+              e.setId == setId &&
+              (organizationId == null || e.organizationId == organizationId),
+        )
+        .toList()
       ..sort((a, b) => a.occurredAtUtc.compareTo(b.occurredAtUtc));
   }
 }

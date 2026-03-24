@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../domain/super_admin/system_audit_log_entry.dart';
 import '../../../../infrastructure/providers/super_admin_providers.dart';
 
 const _kSeverities = ['debug', 'info', 'warning', 'error', 'critical'];
@@ -162,7 +163,7 @@ class _FilterBar extends StatelessWidget {
 }
 
 class _LogList extends StatelessWidget {
-  final List<Map<String, dynamic>> logs;
+  final List<SystemAuditLogEntry> logs;
 
   const _LogList({required this.logs});
 
@@ -182,24 +183,19 @@ class _LogList extends StatelessWidget {
       separatorBuilder: (context, _) => const Divider(height: 1),
       itemBuilder: (context, i) {
         final log = logs[i];
-        final severity = log['severity'] as String? ?? 'info';
-        final eventType = log['event_type'] as String? ?? '';
-        final occurredAt = log['occurred_at'] as String?;
-        final payload = log['payload'];
-
         return ListTile(
           leading: Icon(
-            _severityIcon(severity),
-            color: _severityColor(severity),
+            _severityIcon(log.severity),
+            color: _severityColor(log.severity),
             size: 20,
           ),
-          title: Text(eventType),
-          subtitle: Text(occurredAt ?? '—'),
-          trailing: payload != null
+          title: Text(log.eventType),
+          subtitle: Text(log.occurredAt.isNotEmpty ? log.occurredAt : '—'),
+          trailing: log.payload != null
               ? IconButton(
                   icon: const Icon(Icons.data_object, size: 18),
                   tooltip: 'Ver payload',
-                  onPressed: () => _showPayload(context, payload),
+                  onPressed: () => _showPayload(context, log.payload!),
                 )
               : null,
         );
@@ -207,7 +203,7 @@ class _LogList extends StatelessWidget {
     );
   }
 
-  void _showPayload(BuildContext context, dynamic payload) {
+  void _showPayload(BuildContext context, Map<String, dynamic> payload) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(

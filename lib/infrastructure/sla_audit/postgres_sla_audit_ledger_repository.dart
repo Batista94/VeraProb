@@ -38,10 +38,12 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   }
 
   @override
-  Future<String?> getLastEntryId() async {
-    final response = await _client
-        .from('sla_audit_ledger_v2')
-        .select('id')
+  Future<String?> getLastEntryId({String? organizationId}) async {
+    var query = _client.from('sla_audit_ledger_v2').select('id');
+    if (organizationId != null) {
+      query = query.eq('organization_id', organizationId);
+    }
+    final response = await query
         .order('occurred_at_utc', ascending: false)
         .limit(1)
         .maybeSingle();
@@ -51,12 +53,18 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   }
 
   @override
-  Future<List<SlaLedgerEntry>> getEntriesBySetId(String setId) async {
-    final response = await _client
+  Future<List<SlaLedgerEntry>> getEntriesBySetId(
+    String setId, {
+    String? organizationId,
+  }) async {
+    var query = _client
         .from('sla_audit_ledger_v2')
         .select()
-        .eq('set_id', setId)
-        .order('occurred_at_utc', ascending: true);
+        .eq('set_id', setId);
+    if (organizationId != null) {
+      query = query.eq('organization_id', organizationId);
+    }
+    final response = await query.order('occurred_at_utc', ascending: true);
 
     return (response as List).map((row) {
       return SlaLedgerEntry(

@@ -75,7 +75,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     // Async contract name resolution — RLS enforces tenant isolation.
     final contractNameAsync = ref.watch(contractNameProvider(item.contractId));
     final contractName = contractNameAsync.valueOrNull;
-    final displayName = contractName ??
+    final displayName =
+        contractName ??
         '${item.contractId.substring(0, 8).toUpperCase()} [...]';
 
     final unit = _unitForClause(evidence.clauseRef);
@@ -97,170 +98,169 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          // ── Zona 1: Identity Strip ─────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-            child: Row(
-              children: [
-                _ClauseBadge(clauseRef: evidence.clauseRef),
-                const Spacer(),
-                Text(
-                  _formatLocalDate(item.createdAtUtc),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: VeraProbColors.textDisabled,
+            // ── Zona 1: Identity Strip ─────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: Row(
+                children: [
+                  _ClauseBadge(clauseRef: evidence.clauseRef),
+                  const Spacer(),
+                  Text(
+                    _formatLocalDate(item.createdAtUtc),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: VeraProbColors.textDisabled,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // ── Zona 2: Financial Hero ─────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Semantics(
-                        label:
-                            'Multa: ${item.formattedFine}. Validar ou rejeitar esta sanção.',
-                        child: Text(
-                          item.formattedFine,
-                          style: VeraProbTypography.kpiValue.copyWith(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            color: VeraProbColors.error,
-                            letterSpacing: -0.5,
+            // ── Zona 2: Financial Hero ─────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Semantics(
+                          label:
+                              'Multa: ${item.formattedFine}. Validar ou rejeitar esta sanção.',
+                          child: Text(
+                            item.formattedFine,
+                            style: VeraProbTypography.kpiValue.copyWith(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w800,
+                              color: VeraProbColors.error,
+                              letterSpacing: -0.5,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              displayName,
-                              style: VeraProbTypography.dataValue,
-                              overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                displayName,
+                                style: VeraProbTypography.dataValue,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '· ${item.setId}',
-                            style: VeraProbTypography.bodyMedium.copyWith(
-                              color: VeraProbColors.textSecondary,
+                            const SizedBox(width: 8),
+                            Text(
+                              '· ${item.setId}',
+                              style: VeraProbTypography.bodyMedium.copyWith(
+                                color: VeraProbColors.textSecondary,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                _ConfidenceBadge(
-                  score: evidence.confidenceScore,
-                  color: confidenceColor,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-          const Divider(color: VeraProbColors.border, height: 1),
-
-          // ── Zona 3: Infraction Summary ─────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _FactColumn(
-                    label: 'DIFERENÇA OBSERVADA',
-                    value:
-                        '${evidence.deltaValue.toStringAsFixed(1)} $unit',
-                    valueColor: VeraProbColors.warning,
+                  const SizedBox(width: 12),
+                  _ConfidenceBadge(
+                    score: evidence.confidenceScore,
+                    color: confidenceColor,
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _FactColumn(
-                    label: 'LIMITE CONTRATUAL',
-                    value:
-                        '${evidence.thresholdValue.toStringAsFixed(1)} $unit',
-                    valueColor: VeraProbColors.textPrimary,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            const Divider(color: VeraProbColors.border, height: 1),
 
-          // Mini-map static thumbnail
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _MiniMapThumbnail(
-              lat: evidence.primaryEvidenceLat,
-              lng: evidence.primaryEvidenceLng,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-          const Divider(color: VeraProbColors.border, height: 1),
-
-          // ── Zona 4: Forensic Seal ──────────────────────────────────────
-          _ForensicSealRow(item: item),
-
-          // ── Error feedback ─────────────────────────────────────────────
-          if (actionState is AsyncError) ...[
+            // ── Zona 3: Infraction Summary ─────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: VeraProbColors.error.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  actionState.error.toString(),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: VeraProbColors.error,
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _FactColumn(
+                      label: 'DIFERENÇA OBSERVADA',
+                      value: '${evidence.deltaValue.toStringAsFixed(1)} $unit',
+                      valueColor: VeraProbColors.warning,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _FactColumn(
+                      label: 'LIMITE CONTRATUAL',
+                      value:
+                          '${evidence.thresholdValue.toStringAsFixed(1)} $unit',
+                      valueColor: VeraProbColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Mini-map static thumbnail
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _MiniMapThumbnail(
+                lat: evidence.primaryEvidenceLat,
+                lng: evidence.primaryEvidenceLng,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            const Divider(color: VeraProbColors.border, height: 1),
+
+            // ── Zona 4: Forensic Seal ──────────────────────────────────────
+            _ForensicSealRow(item: item),
+
+            // ── Error feedback ─────────────────────────────────────────────
+            if (actionState is AsyncError) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: VeraProbColors.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    actionState.error.toString(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: VeraProbColors.error,
+                    ),
                   ),
                 ),
               ),
+            ],
+
+            // ── Rejection reason field ─────────────────────────────────────
+            if (_showRejectField)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: _RejectReasonField(controller: _rejectController),
+              ),
+
+            // ── Zona 5: Action Row ─────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+              child: _VerdictActionRow(
+                isLoading: isLoading,
+                showRejectField: _showRejectField,
+                rejectController: _rejectController,
+                formattedFine: item.formattedFine,
+                onApprove: () => _onApprove(context),
+                onRejectTap: () =>
+                    setState(() => _showRejectField = !_showRejectField),
+                onRejectConfirm: () => _onReject(context),
+                onRequestMoreProof: () => _onRequestMoreProof(context),
+              ),
             ),
           ],
-
-          // ── Rejection reason field ─────────────────────────────────────
-          if (_showRejectField)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: _RejectReasonField(controller: _rejectController),
-            ),
-
-          // ── Zona 5: Action Row ─────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
-            child: _VerdictActionRow(
-              isLoading: isLoading,
-              showRejectField: _showRejectField,
-              rejectController: _rejectController,
-              formattedFine: item.formattedFine,
-              onApprove: () => _onApprove(context),
-              onRejectTap: () =>
-                  setState(() => _showRejectField = !_showRejectField),
-              onRejectConfirm: () => _onReject(context),
-              onRequestMoreProof: () => _onRequestMoreProof(context),
-            ),
-          ),
-        ],
         ),
       ),
     );
@@ -424,7 +424,8 @@ class _MiniMapThumbnail extends StatelessWidget {
     const isKeyConfigured = key != 'get_your_own_key';
 
     return Semantics(
-      label: 'Local da infração: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
+      label:
+          'Local da infração: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
       excludeSemantics: true,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),

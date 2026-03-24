@@ -41,7 +41,8 @@ class AuditorQueueScreen extends ConsumerWidget {
                   : ListView.separated(
                       itemCount: items.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) => SanctionVerdictCard(item: items[i]),
+                      itemBuilder: (_, i) =>
+                          SanctionVerdictCard(item: items[i]),
                     ),
             ),
           ),
@@ -70,7 +71,9 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
     final orgId = ref.read(currentOrganizationIdProvider);
     if (orgId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Organização não encontrada. Faça login novamente.')),
+        const SnackBar(
+          content: Text('Organização não encontrada. Faça login novamente.'),
+        ),
       );
       return;
     }
@@ -78,11 +81,16 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
     try {
       await ref
           .read(sanctionSimulationServiceProvider)
-          .simulateSpeedViolation(organizationId: orgId, vehiclePlate: 'TST-0001');
+          .simulateSpeedViolation(
+            organizationId: orgId,
+            vehiclePlate: 'TST-0001',
+          );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Sanção VEL-01 injetada — aguarde até 5s para aparecer na fila.'),
+            content: Text(
+              'Sanção VEL-01 injetada — aguarde até 5s para aparecer na fila.',
+            ),
           ),
         );
       }
@@ -196,4 +204,3 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
-

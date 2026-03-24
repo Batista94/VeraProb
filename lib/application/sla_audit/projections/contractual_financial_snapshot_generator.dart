@@ -120,7 +120,9 @@ class ContractualFinancialSnapshotGenerator {
       executedCount: executedCount,
       noShowCount: noShowCount,
       evidenceGapCount: evidenceGapCount,
-      lastLedgerEntryId: await _ledgerRepo.getLastEntryId(),
+      lastLedgerEntryId: await _ledgerRepo.getLastEntryId(
+        organizationId: organizationId,
+      ),
     );
 
     await _snapshotRepo.save(snapshot);
@@ -200,7 +202,9 @@ class ContractualFinancialSnapshotGenerator {
       executedCount: executedCount,
       noShowCount: noShowCount,
       evidenceGapCount: evidenceGapCount,
-      lastLedgerEntryId: await _ledgerRepo.getLastEntryId(),
+      lastLedgerEntryId: await _ledgerRepo.getLastEntryId(
+        organizationId: organizationId,
+      ),
       previousSnapshotId: previousSnapshotId,
       reprocessingReason: reprocessingReason,
       authorUserId: authorUserId,

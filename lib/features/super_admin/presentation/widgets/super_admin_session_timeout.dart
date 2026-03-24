@@ -13,7 +13,8 @@ class SuperAdminSessionTimeout extends StatefulWidget {
   const SuperAdminSessionTimeout({super.key, required this.child});
 
   @override
-  State<SuperAdminSessionTimeout> createState() => _SuperAdminSessionTimeoutState();
+  State<SuperAdminSessionTimeout> createState() =>
+      _SuperAdminSessionTimeoutState();
 }
 
 class _SuperAdminSessionTimeoutState extends State<SuperAdminSessionTimeout> {

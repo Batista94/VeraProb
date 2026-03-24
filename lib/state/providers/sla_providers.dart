@@ -130,7 +130,9 @@ final contractualEvaluationSubscriberProvider =
 
 // ── Simulation Service (Dev Only) ────────────────────────────
 
-final sanctionSimulationServiceProvider = Provider<SanctionSimulationService>((ref) {
+final sanctionSimulationServiceProvider = Provider<SanctionSimulationService>((
+  ref,
+) {
   return SanctionSimulationService(
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
     contracts: ref.watch(contractRepositoryProvider),

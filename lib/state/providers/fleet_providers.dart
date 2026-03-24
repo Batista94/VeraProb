@@ -198,8 +198,13 @@ final forensicLedgerProjectionProvider = FutureProvider<List<SlaLedgerEntry>>((
   // Re-fetch when UI triggers an update
   ref.watch(uiRefreshTrigger);
 
+  final organizationId = ref.watch(currentOrganizationIdProvider);
+  if (organizationId == null) return [];
   final ledgerRepo = ref.read(slaAuditLedgerRepositoryProvider);
-  final entries = await ledgerRepo.getEntriesBySetId(selectedId);
+  final entries = await ledgerRepo.getEntriesBySetId(
+    selectedId,
+    organizationId: organizationId,
+  );
 
   // Sort descending (newest first) for UI timeline
   return entries.reversed.toList();

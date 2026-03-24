@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/sla_audit/evaluation_trace.dart';
 import '../../domain/sla_audit/sla_ledger_entry.dart';
 import '../../domain/sla_audit/contractual_execution_state.dart';
+import 'auth_providers.dart';
 import 'sla_providers.dart';
 
 /// Retrieves all evaluation traces for a given entity (SET ID).
@@ -17,8 +18,13 @@ final evaluationTracesProvider =
 /// Always returns entries sorted chronologically by occurredAtUtc.
 final ledgerEntriesProvider =
     FutureProvider.family<List<SlaLedgerEntry>, String>((ref, setId) async {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return [];
       final ledgerRepo = ref.watch(slaAuditLedgerRepositoryProvider);
-      final entries = await ledgerRepo.getEntriesBySetId(setId);
+      final entries = await ledgerRepo.getEntriesBySetId(
+        setId,
+        organizationId: organizationId,
+      );
       // Enforce chronological order regardless of repository implementation
       entries.sort((a, b) => a.occurredAtUtc.compareTo(b.occurredAtUtc));
       return entries;

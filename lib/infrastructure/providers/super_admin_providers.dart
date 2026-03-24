@@ -2,8 +2,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../application/super_admin/create_organization_handler.dart';
 import '../../core/config/environment.dart';
 import '../../domain/super_admin/i_super_admin_repository.dart';
+import '../../domain/super_admin/system_audit_log_entry.dart';
 import '../../domain/super_admin/tenant_health_snapshot.dart';
 import '../../infrastructure/super_admin/supabase_super_admin_repository.dart';
 
@@ -46,7 +48,10 @@ final superAdminSupabaseClientProvider = Provider<SupabaseClient>((ref) {
 ///  - authenticated client (for write RPCs that validate the super_admin JWT claim)
 final superAdminRepositoryProvider = Provider<ISuperAdminRepository>((ref) {
   final serviceRoleClient = ref.watch(superAdminSupabaseClientProvider);
-  return SupabaseSuperAdminRepository(serviceRoleClient, Supabase.instance.client);
+  return SupabaseSuperAdminRepository(
+    serviceRoleClient,
+    Supabase.instance.client,
+  );
 });
 
 /// Provider that fetches all tenant health snapshots.
@@ -57,10 +62,18 @@ final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthSnapshot>>(
   },
 );
 
+/// Provider that wires [CreateOrganizationHandler] with its dependencies.
+final createOrganizationHandlerProvider = Provider<CreateOrganizationHandler>((
+  ref,
+) {
+  final repo = ref.watch(superAdminRepositoryProvider);
+  return CreateOrganizationHandler(repo, Supabase.instance.client);
+});
+
 /// Provider that fetches system audit log entries.
 /// Accepts optional filters via a record parameter.
 final systemAuditLogProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, AuditLogParams>((
+    FutureProvider.family<List<SystemAuditLogEntry>, AuditLogParams>((
       ref,
       params,
     ) async {

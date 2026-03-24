@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
@@ -28,26 +29,30 @@ class SanctionSimulationService {
     try {
       final now = DateTime.now().toUtc();
       final setId = 'sim-set-${const Uuid().v4().substring(0, 8)}';
-      
+
       // 0. Find a valid contract
       final contracts = await _contracts.findByOrganization(organizationId);
       if (contracts.isEmpty) {
-        throw Exception('Nenhum contrato encontrado para esta organização. Crie um contrato primeiro.');
+        throw Exception(
+          'Nenhum contrato encontrado para esta organização. Crie um contrato primeiro.',
+        );
       }
       final contractId = contracts.first.id;
 
       final evidence = VerdictEvidence.create(
-      clauseRef: 'VEL-01',
-      ruleId: 'rule-speed-v1',
-      ruleVersion: 1,
-      primaryEvidenceLat: -23.5505 + (DateTime.now().millisecond / 100000),
-      primaryEvidenceLng: -46.6333 + (DateTime.now().millisecond / 100000),
-      primaryEvidenceTimestampUtc: now,
-      deltaValue: speed - limit,
-      thresholdValue: limit,
-      fineCents: Money(150000), // R$ 1.500,00
-      confidenceScore: 99,
-    );
+        clauseRef: 'VEL-01',
+        ruleId: 'rule-speed-v1',
+        ruleVersion: 1,
+        primaryEvidenceLat:
+            -23.5505 + (DateTime.now().toUtc().millisecond / 100000),
+        primaryEvidenceLng:
+            -46.6333 + (DateTime.now().toUtc().millisecond / 100000),
+        primaryEvidenceTimestampUtc: now,
+        deltaValue: speed - limit,
+        thresholdValue: limit,
+        fineCents: const Money(150000), // R$ 1.500,00
+        confidenceScore: 99,
+      );
 
       final event = SanctionRecommendedEvent(
         organizationId: organizationId,
@@ -63,13 +68,13 @@ class SanctionSimulationService {
       await _ledger.append(entry);
 
       // 2. Enqueue for review (Fila Auditora)
-      // INV-24/INV-23: Rely on the DB trigger `tr_ledger_to_review_queue` 
+      // INV-24/INV-23: Rely on the DB trigger `tr_ledger_to_review_queue`
       // which auto-populates sanction_review_queue when a SANCTION_RECOMMENDED
       // entry is added to the ledger. Manual insertion here violates RLS for non-system roles.
       // We just need to wait a small moment for the trigger to finish before refreshing the UI.
     } catch (e) {
       // Log for dev debugging
-      print('Error in SanctionSimulationService: $e');
+      debugPrint('Error in SanctionSimulationService: $e');
       rethrow;
     }
   }
@@ -88,7 +93,7 @@ class SanctionSimulationService {
         speed: 84.5,
       );
     } catch (e) {
-      print('Error in seedActiveSanctions: $e');
+      debugPrint('Error in seedActiveSanctions: $e');
     }
   }
 }

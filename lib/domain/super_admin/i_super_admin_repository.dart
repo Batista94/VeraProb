@@ -1,4 +1,5 @@
 import 'create_organization_command.dart';
+import 'system_audit_log_entry.dart';
 import 'tenant_health_snapshot.dart';
 
 /// Port for SuperAdmin data operations.
@@ -24,11 +25,14 @@ abstract class ISuperAdminRepository {
     required String superAdminUserId,
   });
 
+  /// Checks whether a CNPJ (14 raw digits) already exists in the system.
+  Future<bool> checkCnpjExists(String cnpjDigits);
+
   /// Reads all tenant health snapshots from `super_admin_tenant_health_view`.
   Future<List<TenantHealthSnapshot>> getAllTenantHealth();
 
   /// Reads system audit log entries, optionally filtered by organization.
-  Future<List<Map<String, dynamic>>> getSystemAuditLog({
+  Future<List<SystemAuditLogEntry>> getSystemAuditLog({
     String? organizationId,
     String? severity,
     DateTime? fromDate,

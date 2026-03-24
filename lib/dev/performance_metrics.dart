@@ -166,9 +166,7 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.greenAccent.withValues(alpha: 0.5),
-          ),
+          border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.5),
@@ -199,7 +197,10 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
               const Divider(color: Colors.white24, height: 16),
               const Text(
                 'TEST TOOLS (PHASE 9):',
-                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               SizedBox(
@@ -209,23 +210,34 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
                     backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
                     foregroundColor: Colors.redAccent,
                     padding: const EdgeInsets.symmetric(vertical: 4),
-                    textStyle: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                    textStyle: const TextStyle(
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                   onPressed: () async {
-                    final organizationId = ref.read(currentOrganizationIdProvider);
+                    final organizationId = ref.read(
+                      currentOrganizationIdProvider,
+                    );
                     if (organizationId == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Erro: Organization ID não encontrado.')),
+                        const SnackBar(
+                          content: Text(
+                            'Erro: Organization ID não encontrado.',
+                          ),
+                        ),
                       );
                       return;
                     }
 
                     final simulation = ref.read(fleetSimulationProvider);
-                    final simulationService = ref.read(sanctionSimulationServiceProvider);
-                    
+                    final simulationService = ref.read(
+                      sanctionSimulationServiceProvider,
+                    );
+
                     final trips = simulation.currentTrips;
-                    final plate = trips.isNotEmpty 
-                        ? (trips.first.vehiclePlate ?? 'ABC-1234') 
+                    final plate = trips.isNotEmpty
+                        ? (trips.first.vehiclePlate ?? 'ABC-1234')
                         : 'ABC-1234';
 
                     await simulationService.simulateSpeedViolation(
@@ -235,7 +247,11 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
 
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Injetando VEL-01 para $plate na Fila Auditora...')),
+                        SnackBar(
+                          content: Text(
+                            'Injetando VEL-01 para $plate na Fila Auditora...',
+                          ),
+                        ),
                       );
                     }
                   },
@@ -248,11 +264,10 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
                 style: TextStyle(fontSize: 9, color: Colors.white38),
               ),
               const Divider(color: Colors.white24, height: 16),
-              const Text(
-                'REBUILDS:',
-                style: TextStyle(color: Colors.white70),
+              const Text('REBUILDS:', style: TextStyle(color: Colors.white70)),
+              Text(
+                'Map: ${metrics.rebuildsFleetMap} | KPI: ${metrics.rebuildsKpiBar}',
               ),
-              Text('Map: ${metrics.rebuildsFleetMap} | KPI: ${metrics.rebuildsKpiBar}'),
               Text('Sidebar: ${metrics.rebuildsSidebar}'),
             ],
           ),

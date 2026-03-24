@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../application/super_admin/create_organization_handler.dart';
-import '../../../../core/config/supabase_client.dart';
 import '../../../../domain/super_admin/create_organization_command.dart';
 import '../../../../domain/super_admin/plan_type.dart';
 import '../../../../domain/sla_audit/domain_exception.dart';
@@ -122,15 +120,14 @@ class _CreateOrganizationWizardState
 
   Future<void> _checkCnpjExists() async {
     try {
-      final exists = await supabase.rpc(
-        'super_admin_check_cnpj_exists',
-        params: {'p_cnpj': _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '')},
-      ) as bool;
+      final digits = _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '');
+      final exists = await ref
+          .read(superAdminRepositoryProvider)
+          .checkCnpjExists(digits);
       if (!mounted) return;
       setState(() {
         _cnpjChecking = false;
-        _cnpjApiError =
-            exists ? 'CNPJ já cadastrado no sistema' : null;
+        _cnpjApiError = exists ? 'CNPJ já cadastrado no sistema' : null;
       });
     } catch (_) {
       if (!mounted) return;
@@ -179,8 +176,7 @@ class _CreateOrganizationWizardState
     setState(() => _isSubmitting = true);
 
     try {
-      final repo = ref.read(superAdminRepositoryProvider);
-      final handler = CreateOrganizationHandler(repo, supabase);
+      final handler = ref.read(createOrganizationHandlerProvider);
 
       final cmd = CreateOrganizationCommand(
         legalName: _legalNameCtrl.text.trim(),
@@ -205,97 +201,19 @@ class _CreateOrganizationWizardState
           '${Uri.base.origin}/accept-invite?token=${result.invitationToken}';
 
       // Fire invitation email — silent failure (link in dialog is the fallback)
-      unawaited(() async {
-        try {
-          await supabase.functions.invoke(
-            'notify-invite',
-            body: {
-              'email': cmd.initialAdminEmail,
-              'inviteUrl': inviteUrl,
-              'orgName': cmd.tradeName,
-            },
-          );
-        } catch (_) {}
-      }());
+      unawaited(
+        handler.sendInviteNotification(
+          email: cmd.initialAdminEmail,
+          inviteUrl: inviteUrl,
+          orgName: cmd.tradeName,
+        ),
+      );
 
       // Success dialog
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
-          title: const Text('Organização Criada!'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Organização: ${_tradeNameCtrl.text.trim()}'),
-              const SizedBox(height: 8),
-              Text('Admin convidado para: ${_adminEmailCtrl.text.trim()}'),
-              const SizedBox(height: 16),
-              const Text(
-                'Link de convite do Admin:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: SelectableText(
-                      inviteUrl,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.copy_all, size: 18),
-                    tooltip: 'Copiar link',
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: inviteUrl));
-                      messenger.showSnackBar(
-                        const SnackBar(content: Text('Link copiado!')),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber.shade300),
-                ),
-                child: const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline, size: 16, color: Colors.amber),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Envie este link ao administrador. Ele deve acessá-lo para definir sua senha.',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                widget.onSuccess();
-              },
-              child: const Text('Ver Tenants'),
-            ),
-          ],
-        ),
+        builder: (_) => _buildSuccessDialog(inviteUrl, messenger),
       );
 
       // Invalidate health snapshot to refresh the tenant list
@@ -316,6 +234,86 @@ class _CreateOrganizationWizardState
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Widget _buildSuccessDialog(
+    String inviteUrl,
+    ScaffoldMessengerState messenger,
+  ) {
+    return AlertDialog(
+      icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
+      title: const Text('Organização Criada!'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Organização: ${_tradeNameCtrl.text.trim()}'),
+          const SizedBox(height: 8),
+          Text('Admin convidado para: ${_adminEmailCtrl.text.trim()}'),
+          const SizedBox(height: 16),
+          const Text(
+            'Link de convite do Admin:',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: SelectableText(
+                  inviteUrl,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy_all, size: 18),
+                tooltip: 'Copiar link',
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: inviteUrl));
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Link copiado!')),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.shade300),
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, size: 16, color: Colors.amber),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Envie este link ao administrador. Ele deve acessá-lo para definir sua senha.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            widget.onSuccess();
+          },
+          child: const Text('Ver Tenants'),
+        ),
+      ],
+    );
   }
 
   @override

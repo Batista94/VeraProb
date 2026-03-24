@@ -30,80 +30,84 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
     return SuperAdminSessionTimeout(
       child: SuperAdminGuard(
         child: Scaffold(
-        body: Row(
-          children: [
-            // ── NavigationRail (indigo) ─────────────────────────────
-            NavigationRail(
-              backgroundColor: Colors.indigo.shade900,
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-              labelType: NavigationRailLabelType.all,
-              selectedIconTheme: const IconThemeData(color: Colors.white),
-              unselectedIconTheme: const IconThemeData(color: Colors.white54),
-              selectedLabelTextStyle: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-              unselectedLabelTextStyle: const TextStyle(color: Colors.white54),
-              leading: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(
-                  children: [
-                    const Icon(Icons.shield, color: Colors.white, size: 32),
-                    const SizedBox(height: 4),
-                    Text(
-                      'SuperAdmin',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
+          body: Row(
+            children: [
+              // ── NavigationRail (indigo) ─────────────────────────────
+              NavigationRail(
+                backgroundColor: Colors.indigo.shade900,
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: (i) =>
+                    setState(() => _selectedIndex = i),
+                labelType: NavigationRailLabelType.all,
+                selectedIconTheme: const IconThemeData(color: Colors.white),
+                unselectedIconTheme: const IconThemeData(color: Colors.white54),
+                selectedLabelTextStyle: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
-              ),
-              trailing: Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: IconButton(
-                  icon: const Icon(Icons.logout, color: Colors.white54),
-                  tooltip: 'Sair',
-                  onPressed: () async {
-                    await Supabase.instance.client.auth.signOut();
-                    if (context.mounted) {
-                      await Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (_) => const AdminLockScreen(),
+                unselectedLabelTextStyle: const TextStyle(
+                  color: Colors.white54,
+                ),
+                leading: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.shield, color: Colors.white, size: 32),
+                      const SizedBox(height: 4),
+                      Text(
+                        'SuperAdmin',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 11,
                         ),
-                        (_) => false,
-                      );
-                    }
-                  },
+                      ),
+                    ],
+                  ),
                 ),
+                trailing: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.white54),
+                    tooltip: 'Sair',
+                    onPressed: () async {
+                      await Supabase.instance.client.auth.signOut();
+                      if (context.mounted) {
+                        await Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (_) => const AdminLockScreen(),
+                          ),
+                          (_) => false,
+                        );
+                      }
+                    },
+                  ),
+                ),
+                destinations: const [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.business_outlined),
+                    selectedIcon: Icon(Icons.business),
+                    label: Text('Tenants'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.add_business_outlined),
+                    selectedIcon: Icon(Icons.add_business),
+                    label: Text('Nova Org'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.manage_search_outlined),
+                    selectedIcon: Icon(Icons.manage_search),
+                    label: Text('Audit Log'),
+                  ),
+                ],
               ),
-              destinations: const [
-                NavigationRailDestination(
-                  icon: Icon(Icons.business_outlined),
-                  selectedIcon: Icon(Icons.business),
-                  label: Text('Tenants'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.add_business_outlined),
-                  selectedIcon: Icon(Icons.add_business),
-                  label: Text('Nova Org'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.manage_search_outlined),
-                  selectedIcon: Icon(Icons.manage_search),
-                  label: Text('Audit Log'),
-                ),
-              ],
-            ),
-            const VerticalDivider(width: 1),
-            // ── Main content ───────────────────────────────────────
-            Expanded(child: _buildBody()),
-          ],
+              const VerticalDivider(width: 1),
+              // ── Main content ───────────────────────────────────────
+              Expanded(child: _buildBody()),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _buildBody() {

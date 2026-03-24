@@ -14,6 +14,12 @@
 #   B2 — Format Check:     Warns on unformatted files
 #   B3 — Complexity Check: Warns on files with >200 lines added
 #
+# PILLAR C: Cost Efficiency & Automated Security
+#   C1 — Secret Detection:    Blocks hardcoded API keys / service tokens
+#   C2 — Dependency Audit:    Warns on new pubspec.yaml dependencies (INV-25)
+#   C3 — Test Presence Ratio: Warns when domain/application files lack test files
+#   C4 — Leaky Abstractions:  Warns on domain imports inside lib/features/
+#
 # Exit codes:
 #   0 = PASS (may have warnings — flagged for LLM neural review)
 #   1 = BLOCKED (hard invariant violation or analyzer errors)
@@ -307,6 +313,121 @@ if [[ -n "$CHANGED_DART" ]]; then
   fi
 else
   echo -e "  ${NC}[INFO]  No changed Dart files found for complexity check"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PILLAR C — COST EFFICIENCY & AUTOMATED SECURITY
+# ─────────────────────────────────────────────────────────────────────────────
+#   C1 — Secret Detection:    Blocks hardcoded API keys / service tokens (Security)
+#   C2 — Dependency Audit:    Warns on new pubspec.yaml deps (INV-25 license gate)
+#   C3 — Test Presence Ratio: Warns when domain/application files lack test counterparts
+#   C4 — Leaky Abstractions:  Warns on direct domain imports inside lib/features/
+
+header "PILLAR C — Cost Efficiency & Automated Security"
+
+# ── C1: Secret Detection ──────────────────────────────────────────────────────
+echo ""
+echo "  C1 — Secret Detection: scanning lib/ for hardcoded secrets / API keys..."
+
+SECRET_HITS=$(grep -rn --include="*.dart" \
+  -E "(sb_[a-zA-Z0-9]{20,}|sk_[a-zA-Z0-9]{20,}|(serviceRoleKey|anonKey|apiKey|api_key|secretKey)\s*[=:]\s*['\"][^'\"]{20,}['\"]|eyJ[a-zA-Z0-9_\-]{50,})" \
+  lib/ 2>/dev/null \
+  | grep -vE ":[0-9]+:[[:space:]]*(///|//)" \
+  | grep -vE "Env\.|AppConfig\.|\.env" \
+  || true)
+
+if [[ -n "$SECRET_HITS" ]]; then
+  block "[SECRET-BLOCK] Hardcoded secret or API key pattern detected — move to .env / Env class (Security / INV-25)"
+  echo "$SECRET_HITS" | print_hits
+else
+  pass "No hardcoded secret patterns detected in lib/"
+fi
+
+# ── C2: Dependency & License Audit ───────────────────────────────────────────
+echo ""
+echo "  C2 — Dependency Audit: scanning pubspec.yaml for new dependencies..."
+
+PUBSPEC_DIFF=""
+if git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
+  PUBSPEC_DIFF=$(git diff "$BASE_BRANCH"...HEAD -- pubspec.yaml 2>/dev/null || true)
+fi
+if [[ -z "$PUBSPEC_DIFF" ]]; then
+  PUBSPEC_DIFF=$(git diff HEAD~1 HEAD -- pubspec.yaml 2>/dev/null || true)
+fi
+
+if [[ -n "$PUBSPEC_DIFF" ]]; then
+  NEW_DEPS=$(echo "$PUBSPEC_DIFF" \
+    | grep "^+" \
+    | grep -v "^+++" \
+    | grep -E "^\+[[:space:]]+[a-z_]+:[[:space:]]" \
+    | grep -v "^#" \
+    || true)
+  if [[ -n "$NEW_DEPS" ]]; then
+    warn "[DEP-WARN] New dependencies detected in pubspec.yaml — manual license and security review required (INV-25 / Free-Tier Gate)"
+    echo "$NEW_DEPS" | while IFS= read -r line; do
+      [[ -n "$line" ]] && echo -e "         ${YELLOW}→ $(echo "$line" | xargs)${NC}"
+    done
+  else
+    pass "No new dependencies added to pubspec.yaml"
+  fi
+else
+  pass "pubspec.yaml unchanged"
+fi
+
+# ── C3: Test Presence Ratio ───────────────────────────────────────────────────
+echo ""
+echo "  C3 — Test Coverage Gate: checking for missing test files for changed domain/application sources..."
+
+MISSING_TESTS=0
+
+if [[ -n "$CHANGED_DART" ]]; then
+  while IFS= read -r dart_file; do
+    [[ -z "$dart_file" ]] && continue
+    # Skip generated files
+    [[ "$dart_file" == *.g.dart ]] && continue
+    [[ "$dart_file" == *.freezed.dart ]] && continue
+    # Skip existing test files
+    [[ "$dart_file" == *_test.dart ]] && continue
+    # Skip presentation layer (UI smoke tests are manual — see manual_test_plan_phase_9.md)
+    [[ "$dart_file" == lib/features/* ]] && continue
+    # Skip entry points, config, and theme (no testable logic)
+    [[ "$dart_file" == lib/main*.dart ]] && continue
+    [[ "$dart_file" == lib/core/config/* ]] && continue
+    [[ "$dart_file" == lib/core/theme/* ]] && continue
+    [[ "$dart_file" == lib/core/router/* ]] && continue
+
+    # Compute expected test path: lib/foo/bar.dart → test/foo/bar_test.dart
+    test_file=$(echo "$dart_file" | sed 's|^lib/|test/|' | sed 's|\.dart$|_test.dart|')
+
+    if [[ ! -f "$test_file" ]]; then
+      warn "[TEST-WARN] No test file for $dart_file — expected: $test_file (coverage gate >60%)"
+      MISSING_TESTS=$((MISSING_TESTS + 1))
+    fi
+  done <<< "$CHANGED_DART"
+
+  if [[ $MISSING_TESTS -eq 0 ]]; then
+    pass "All changed domain/application/infrastructure files have corresponding test files"
+  fi
+else
+  echo -e "  ${NC}[INFO]  No changed Dart files found for test coverage check"
+fi
+
+# ── C4: Leaky Abstraction Static Check ────────────────────────────────────────
+echo ""
+echo "  C4 — Leaky Abstraction: scanning lib/features/ for direct domain imports..."
+echo "       (SRP rules also surfaced via Pillar B1 — see analysis_options.yaml)"
+
+LEAK_HITS=$(grep -rn --include="*.dart" \
+  "import 'package:veraprob/domain/" \
+  lib/features/ 2>/dev/null \
+  | grep -vE ":[0-9]+:[[:space:]]*(///|//)" \
+  || true)
+
+if [[ -n "$LEAK_HITS" ]]; then
+  warn "[LEAK-WARN] Domain imports found in lib/features/ — domain types must flow through application-layer ViewModels/DTOs (INV-4 / Lens 2)"
+  echo "$LEAK_HITS" | print_hits
+else
+  pass "No leaky domain imports in features/ presentation layer"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────

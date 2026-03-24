@@ -323,10 +323,7 @@ class FleetSimulationService {
           }
         }
 
-        trip = trip.copyWith(
-          progress: newProgress,
-          speed: speed,
-        );
+        trip = trip.copyWith(progress: newProgress, speed: speed);
       }
 
       // Occasionally change states

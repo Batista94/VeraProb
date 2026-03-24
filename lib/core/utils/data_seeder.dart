@@ -231,7 +231,7 @@ class DataSeeder {
           'threshold_value': 80.0,
           'fine_cents': 150000,
           'confidence_score': 99,
-        }
+        },
       },
     });
   }

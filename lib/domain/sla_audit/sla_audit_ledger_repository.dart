@@ -14,9 +14,18 @@ abstract class SlaAuditLedgerRepository {
 
   /// Retrieves the sequence ID of the most recent entry in the ledger.
   /// Used to deterministically capture the causal boundary of a financial closure.
-  Future<String?> getLastEntryId();
+  ///
+  /// [organizationId] provides explicit tenant scoping as defense-in-depth
+  /// alongside RLS. Callers with an available org ID MUST pass it (INV-6).
+  Future<String?> getLastEntryId({String? organizationId});
 
   /// Retrieves all forensic entries related to a specific contractual or operational set (e.g. trip).
   /// Ordered chronologically.
-  Future<List<SlaLedgerEntry>> getEntriesBySetId(String setId);
+  ///
+  /// [organizationId] provides explicit tenant scoping as defense-in-depth
+  /// alongside RLS. Callers with an available org ID MUST pass it (INV-6).
+  Future<List<SlaLedgerEntry>> getEntriesBySetId(
+    String setId, {
+    String? organizationId,
+  });
 }

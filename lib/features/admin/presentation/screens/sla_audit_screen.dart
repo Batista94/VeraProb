@@ -227,58 +227,58 @@ class _SlaExceptionsTable extends ConsumerWidget {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SingleChildScrollView(
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  VeraProbColors.textPrimary.withValues(alpha: 0.05),
-                ),
-                columns: const [
-                  DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Janela')),
-                  DataColumn(label: Text('Veículo Planejado')),
-                  DataColumn(label: Text('Valor')),
-                  DataColumn(label: Text('Ação')),
-                ],
-                rows: exceptions.map((item) {
-                  return DataRow(
-                    cells: [
-                      DataCell(_StatusBadge(status: item.status)),
-                      DataCell(
-                        Text(
-                          '${_formatTime(item.windowStartUtc)} - ${_formatTime(item.windowEndUtc)}',
-                          style: VeraProbTypography.bodyMedium,
-                        ),
-                      ),
-                      DataCell(
-                        Text(
-                          item.plannedVehicleId ?? 'Sem veículo',
-                          style: item.plannedVehicleId == null
-                              ? VeraProbTypography.bodyMedium.copyWith(
-                                  color: VeraProbColors.textDisabled,
-                                )
-                              : VeraProbTypography.bodyMedium,
-                        ),
-                      ),
-                      DataCell(
-                        Text(
-                          _currencyFormat.format(
-                            item.contractualValue.toDouble(),
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(
+                    VeraProbColors.textPrimary.withValues(alpha: 0.05),
+                  ),
+                  columns: const [
+                    DataColumn(label: Text('Status')),
+                    DataColumn(label: Text('Janela')),
+                    DataColumn(label: Text('Veículo Planejado')),
+                    DataColumn(label: Text('Valor')),
+                    DataColumn(label: Text('Ação')),
+                  ],
+                  rows: exceptions.map((item) {
+                    return DataRow(
+                      cells: [
+                        DataCell(_StatusBadge(status: item.status)),
+                        DataCell(
+                          Text(
+                            '${_formatTime(item.windowStartUtc)} - ${_formatTime(item.windowEndUtc)}',
+                            style: VeraProbTypography.bodyMedium,
                           ),
-                          style: VeraProbTypography.bodyMedium,
                         ),
-                      ),
-                      DataCell(
-                        IconButton(
-                          icon: const Icon(Icons.search, size: 20),
-                          onPressed: () => _showDetail(context, item),
+                        DataCell(
+                          Text(
+                            item.plannedVehicleId ?? 'Sem veículo',
+                            style: item.plannedVehicleId == null
+                                ? VeraProbTypography.bodyMedium.copyWith(
+                                    color: VeraProbColors.textDisabled,
+                                  )
+                                : VeraProbTypography.bodyMedium,
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                }).toList(),
+                        DataCell(
+                          Text(
+                            _currencyFormat.format(
+                              item.contractualValue.toDouble(),
+                            ),
+                            style: VeraProbTypography.bodyMedium,
+                          ),
+                        ),
+                        DataCell(
+                          IconButton(
+                            icon: const Icon(Icons.search, size: 20),
+                            onPressed: () => _showDetail(context, item),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
             ),
           ),
-        ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
