@@ -114,7 +114,13 @@
       "Bash(for file:*)",
       "Bash(do echo:*)",
       "Bash(/tmp/check_tests.txt:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(find C:ProjectsVeraProb -type f -name *coverage* -o -name *test*report*)",
+      "Bash(find C:ProjectsVeraProbtest -name *_test.dart -type f)",
+      "Bash(sed 's/.*abstract class //')",
+      "Bash(sed 's/ .*//')",
+      "Bash(find /c/Projects/VeraProb/test -name *jwt* -o -name *rls* -o -name *auth* -o -name *tenant*)",
+      "Bash(bash scripts/pr_scanner.sh)"
     ]
   },
   "model": "sonnet"

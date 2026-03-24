@@ -1,4 +1,4 @@
-# PactaFlow — Roadmap Estratégico
+# VeraProb — Roadmap Estratégico
 
 **Revisão:** 2026-03-24
 **Status Atual:** Phase 9 em andamento — Milestone alvo: **READY FOR FIRST TENANT**
@@ -83,7 +83,7 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 
 ---
 
-## Phase 9 — PactaFlow: De Protótipo de Engenharia a Produto B2B Operacional
+## Phase 9 — VeraProb: De Protótipo de Engenharia a Produto B2B Operacional
 
 > [!CAUTION]
 > **CRITICAL SECURITY BLOCKER (PHASE 9.8 — ITEM 12)**: O sistema contém a `service_role` key no bundle Flutter. **NÃO DEPLOYAR EM PRODUÇÃO** até migração para Edge Proxy.
@@ -92,20 +92,41 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 
 ---
 
-### [ ] Phase 9.4 — ROI Dashboard + Shadow Mode (Demonstração de Valor)
-**Destaques:** Painel de Valor Entregue (BRL), Shadow Mode (Demo de Vendas via CSV), Usage Metering Ledger, CNPJ Auto-fill.
+### [ ] Phase 9.4 — ROI Dashboard & Precision Onboarding
+**Destaques:** 
+- **Bento Grid Layout (UX):** Estrutura modular de dashboards para redução de carga cognitiva e foco em KPIs críticos.
+- **Usage Metering Ledger:** Lastro financeiro de 'savings' e penalidades para faturamento variável e transparência total.
+- **CNPJ Auto-fill:** Integração via API (ReceitaWS) para automação e segurança no cadastro de novos Tenants.
+- **Shadow Mode:** Motor de simulação "What-if" para demonstração de ROI real sem interferência na operação.
 
-### [ ] Phase 9.5 — Vínculo Dinâmico Contrato-Viagem
-**Destaques:** Desacoplamento ativo-contrato via `ServiceManifest`, Smart Defaults no despacho.
+### [ ] Phase 9.5 — Vínculo Dinâmico & UX do Operador
+**Destaques:** 
+- **SLA Template Library:** Galeria de modelos pré-configurados (Fretamento, Carga Seca, etc.) para acelerar o setup operacional.
+- **Smart Defaults (SQL-based):** Preenchimento preditivo baseado em Heurísticas de Frequência histórica de Placa/Motorista.
+- **ServiceManifest:** Desacoplamento lógico entre ativos e obrigações contratuais para flexibilidade JIT.
 
-### [ ] Phase 9.6 — Inteligência de Alertas
-**Destaques:** Impacto financeiro estimado nos alertas, Alertas Preditivos (ETA breach), OCC reformulado.
+### [ ] Phase 9.6 — Lógicas Matemáticas & Cockpit UI
+**Destaques:** 
+- **Kinematic Guard (INV-25):** Validação matemática de telemetria ($v = \Delta d / \Delta t$) para invalidação de fraude no nível do banco.
+- **Industrial Deep Theme:** Interface de alta performance e baixa fadiga visual (Slate/Zinc) para operações 24/7.
+- **Heurísticas de Alerta:** Cálculo de impacto financeiro em tempo real para priorização de incidentes.
 
-### [ ] Phase 9.7 — Liveness Check, Late-Arrival & Anti-Tamper
-**Destaques:** Silêncio como evento auditável (`SIGNAL_LOSS_BREACH`), Reprocessamento de eventos tardios.
+### [ ] Phase 9.7 — Liveness & Resiliência Operacional
+**Destaques:** 
+- **Background Sync Resilience:** Buffer local (SQLite) no Mobile para garantir a cadeia de custódia em zonas de sombra (sem 4G).
+- **Driver Defense Portal:** Interface para justificativas preventivas (fotos/evidências) vinculadas diretamente à auditoria.
+- **Heartbeat Monitor:** Diferenciação técnica entre sabotagem de hardware e falhas de infraestrutura de rede.
+- **Late-Arrival Window Protocol:** Definição de janela temporal (ex: 48h) para reprocessamento determinístico de eventos atrasados sem violação da INV-12.
 
-### [ ] Phase 9.8 — Audit Trail do Sistema e Preparação ISO 27001
-**Destaques:** [CRITICAL] Edge Proxy para SuperAdmin, Impersonation Audit, Self-Service Org Settings, Iterative Auditing.
+### [ ] Phase 9.8 — Audit, Security & Identity
+**Destaques:** 
+- **[CRITICAL] Edge Proxy:** Migração total para Edge Functions e remoção definitiva da `service_role` do frontend.
+- **Hard Quota Enforcement (DB Level):** Implementação de triggers BEFORE INSERT para garantir que limites de `max_vehicles` e `max_contracts` sejam respeitados no banco.
+- **JWT Circuit Breaker:** Mecanismo de invalidação imediata de sessões para organizações suspensas ou inadimplentes.
+- **Privileged Access Hardening:** Implementação de MFA obrigatório e TTL reduzido para sessões de SuperAdmin.
+- **Entity Alias Mapping (UI):** Camada de tradução de UUIDs para nomes amigáveis (Placas, Clientes) em toda a jornada.
+- **Iterative Auditing:** Introdução do estado `PENDING_MORE_INFO` no workflow de sanções forenses.
+- **Justified Impersonation:** Logs de suporte com exigência de Ticket ID e motivo, auditáveis pelo cliente final.
 
 ---
 
@@ -120,17 +141,25 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 | ✅ Zero penalidade aplicada sem aprovação humana | 9.3 | OK |
 | ✅ 100% das sanções com VerdictEvidence (INV-23) | 9.3 | OK |
 | ✅ Testes Manuais MT-9.3.1 a MT-9.3.10 | 9.3 | **PASSED** ✅ |
-| [ ] Dashboard ROI exibe "valor entregue em R$" | 9.4 | |
-| [ ] Shadow Mode gera relatório "se você tivesse" | 9.4 | |
-| [ ] Reatribuição dinâmica de ativo | 9.5 | |
-| [ ] OCC identifica top-3 riscos em <10s | 9.6 | |
-| [ ] Silêncio de rastreador gera SIGNAL_LOSS_BREACH | 9.7 | |
-| [ ] Trilha de auditoria completa para qualquer entidade | 9.8 | |
-| [ ] Edge Proxy para SuperAdmin (Security Gate) | 9.8 | |
+| [ ] Dashboard ROI com Bento Grid & "Savings BRL" | 9.4 | |
+| [ ] Automação de Onboarding (CNPJ Auto-fill) | 9.4 | |
+| [ ] Biblioteca de SLA Templates operacional | 9.5 | |
+| [ ] Smart Defaults reduzindo tempo de despacho | 9.5 | |
+| [ ] Kinematic Guard bloqueando Fake GPS no banco | 9.6 | |
+| [ ] Interface Cockpit em Industrial Deep Theme | 9.6 | |
+| [ ] Sincronismo Offline (Cadeia de Custódia) | 9.7 | |
+| [ ] Late-Arrival Window Enforcement (INV-12) | 9.7 | |
+| [ ] Heartbeat Monitor diferenciando sabotagem | 9.7 | |
+| [ ] Hard Quotas (DB-enforced) para Billing | 9.8 | |
+| [ ] JWT Circuit Breaker (Kill Switch) | 9.8 | |
+| [ ] MFA mandatório para SuperAdmin | 9.8 | |
+| [ ] Edge Proxy (Removido service_role key) | 9.8 | |
+| [ ] Entity Alias Mapping em todo o sistema | 9.8 | |
+| [ ] Justified Impersonation com Log de Suporte | 9.8 | |
 
 ---
 
-## Phase 10 — PactaFlow Enterprise: Escala & Integrações
+## Phase 10 — VeraProb Enterprise: Escala & Integrações
 **Destaques:** API/Webhooks (SAP/Oracle), Captura Passiva (OCR/SDK), Assinatura JIT, Expansão Vertical Agnostica.
 
 ---
@@ -141,11 +170,11 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 ═══════════════════════════════════════════════════════════════════════
 [x] Phase 9.1, 9.2, 9.3 COMPLETE ✅ (Manual Tests Passed)
 ═══════════════════════════════════════════════════════════════════════
-[ ] Phase 9.4 — ROI Dashboard + Shadow
-[ ] Phase 9.5 — Vínculo Dinâmico
-[ ] Phase 9.6 — Inteligência de Alertas
-[ ] Phase 9.7 — Liveness + Late-Arrival
-[ ] Phase 9.8 — Audit Trail + ISO 27001
+[ ] Phase 9.4 — ROI Dashboard & Precision Onboarding
+[ ] Phase 9.5 — Vínculo Dinâmico & UX do Operador
+[ ] Phase 9.6 — Lógicas Matemáticas & Cockpit UI
+[ ] Phase 9.7 — Liveness & Resiliência Operacional
+[ ] Phase 9.8 — Audit, Security & Identity
 ───────────────────────────────────────────────────────────────────────
 >>> MILESTONE: READY FOR FIRST TENANT <<<
 ───────────────────────────────────────────────────────────────────────

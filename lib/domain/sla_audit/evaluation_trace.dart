@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'evidence_payload.dart';
+
 /// Represents a single deterministic decision made by the Evaluation Engine.
 class EvaluationDecision extends Equatable {
   final String ruleId;
@@ -8,7 +10,7 @@ class EvaluationDecision extends Equatable {
   final int rulePriority;
   final String outcome;
   final int? financialImpactCents;
-  final Map<String, dynamic> evidence;
+  final EvidencePayload evidence;
 
   const EvaluationDecision({
     required this.ruleId,
@@ -29,7 +31,7 @@ class EvaluationDecision extends Equatable {
       'outcome': outcome,
       if (financialImpactCents != null)
         'financial_impact_cents': financialImpactCents,
-      'evidence': evidence,
+      'evidence': evidence.toJson(),
     };
   }
 
@@ -41,7 +43,9 @@ class EvaluationDecision extends Equatable {
       rulePriority: json['rule_priority'] as int,
       outcome: json['outcome'] as String,
       financialImpactCents: json['financial_impact_cents'] as int?,
-      evidence: json['evidence'] as Map<String, dynamic>,
+      evidence: EvidencePayload.fromJson(
+        json['evidence'] as Map<String, dynamic>,
+      ),
     );
   }
 

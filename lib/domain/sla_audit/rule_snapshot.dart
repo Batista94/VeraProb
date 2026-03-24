@@ -5,6 +5,9 @@ import 'contractual_rule.dart';
 class RuleSnapshotItem extends Equatable {
   final String ruleId;
   final SlaRuleType ruleType;
+  // architectural-note: config is intentionally Map<String, dynamic> — frozen
+  // snapshot of JSONB rule parameters at declaration time (INV-7: deterministic
+  // replay). Sealed RuleConfig hierarchy deferred to Phase 10.
   final Map<String, dynamic> config;
   final int ruleVersion;
   final int evaluationOrder;
@@ -67,7 +70,7 @@ class RuleSnapshot extends Equatable {
     return RuleSnapshot(list);
   }
 
-  List<dynamic> toJson() {
+  List<Map<String, dynamic>> toJson() {
     return rules.map((e) => e.toJson()).toList();
   }
 

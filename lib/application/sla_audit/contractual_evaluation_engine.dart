@@ -18,6 +18,7 @@ import '../../domain/sla_audit/evaluation_trace.dart';
 import '../../domain/sla_audit/evaluation_trace_repository.dart';
 import '../../domain/sla_audit/engine_evaluation_result.dart';
 import '../../domain/sla_audit/operational_alert_repository.dart';
+import '../../domain/sla_audit/evidence_payload.dart';
 import '../../domain/sla_audit/verdict_evidence.dart';
 import 'alert_derivation_service.dart';
 
@@ -138,10 +139,10 @@ class ContractualEvaluationEngine {
               ruleVersion: rule.ruleVersion,
               rulePriority: rule.evaluationOrder,
               outcome: 'EVALUATED_DWELL_REQUIREMENT',
-              evidence: {
-                'required_dwell_seconds': requiredDwell,
-                'parameter_source': 'rule_config',
-              },
+              evidence: DwellRequirementEvidence(
+                requiredDwellSeconds: requiredDwell,
+                parameterSource: 'rule_config',
+              ),
             ),
           );
         } else if (rule.ruleType == SlaRuleType.excessiveSpeed) {
@@ -181,10 +182,10 @@ class ContractualEvaluationEngine {
                 ruleVersion: rule.ruleVersion,
                 rulePriority: rule.evaluationOrder,
                 outcome: 'SANCTION_RECOMMENDED',
-                evidence: {
-                  'actual_speed_kmh': currentSpeed,
-                  'limit_speed_kmh': maxSpeed,
-                },
+                evidence: SpeedViolationEvidence(
+                  actualSpeedKmh: currentSpeed,
+                  limitSpeedKmh: maxSpeed.toDouble(),
+                ),
               ),
             );
           }
@@ -227,12 +228,12 @@ class ContractualEvaluationEngine {
               ruleVersion: 1,
               rulePriority: 999,
               outcome: 'PASS',
-              evidence: {
-                'distance_meters': distance,
-                'allowed_radius_meters': state.startRadiusMeters,
-                'actual_dwell_seconds': dwellDuration.inSeconds,
-                'required_dwell_seconds': requiredDwell,
-              },
+              evidence: GeofenceBindingEvidence(
+                distanceMeters: distance,
+                allowedRadiusMeters: state.startRadiusMeters,
+                actualDwellSeconds: dwellDuration.inSeconds,
+                requiredDwellSeconds: requiredDwell,
+              ),
             ),
           );
 
@@ -290,7 +291,9 @@ class ContractualEvaluationEngine {
               rulePriority: rule.evaluationOrder,
               outcome: 'PENALTY_ASSESSED',
               financialImpactCents: penaltyCents,
-              evidence: {'penalty_amount_cents': penaltyCents},
+              evidence: PenaltyAssessedEvidence(
+                penaltyAmountCents: penaltyCents,
+              ),
             ),
           );
         }
@@ -305,11 +308,11 @@ class ContractualEvaluationEngine {
           ruleVersion: 1,
           rulePriority: 999,
           outcome: outcome,
-          evidence: {
-            'scheduled_window_end_utc': state.windowEndUtc.toIso8601String(),
-            'evaluated_at_utc': now.toIso8601String(),
-            'expired_by_seconds': now.difference(state.windowEndUtc).inSeconds,
-          },
+          evidence: ExpirationSweepEvidence(
+            scheduledWindowEndUtc: state.windowEndUtc.toIso8601String(),
+            evaluatedAtUtc: now.toIso8601String(),
+            expiredBySeconds: now.difference(state.windowEndUtc).inSeconds,
+          ),
         ),
       );
 

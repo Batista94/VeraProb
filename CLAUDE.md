@@ -31,9 +31,11 @@ supabase/
 
 ## Current Phase
 
-**Phase 8.8 (Telemetry Integrity) — COMPLETE.**
-**Current Objective: Phase 9 — Technical Review, Forensic Audit, and UX/Performance Polish.**
-Gate target: `READY FOR CI/CD` (stable schema · RLS validated · test coverage >60%).
+**Phase 9 (Technical Review & CI/CD Gate) — COMPLETE. All sub-phases [GO].**
+**Gate `READY FOR CI/CD` — ACHIEVED.**
+**Current Objective: Phase 10 — CI/CD & Launch Preparation.**
+First sub-phase: **10.1 — Schema Lock & Migration Freeze.**
+Gate target: `READY FOR FIRST TENANT`.
 See full roadmap: [.claude/rules/roadmap.md](.claude/rules/roadmap.md)
 
 ---
@@ -41,6 +43,8 @@ See full roadmap: [.claude/rules/roadmap.md](.claude/rules/roadmap.md)
 ## Execution Protocol
 
 - **Proposed Action Plan:** Present a plan and wait for PO authorization before every task.
+- **Approved Plan Autonomy:** Once a plan is approved by the PO, execute sub-phases sequentially without re-requesting authorization at each step. Pause only for: unexpected blockers, binary decisions requiring PO input, or destructive actions outside plan scope.
+- **Council & Skills Autonomy:** Invoke council agents and skills proactively based on context — no explicit PO instruction required.
 - **Lead Reviewer Invocation:** Mandatory for every PR, Workspace Audit, or "Nuclear" change.
 - **No Skip Policy:** Technical excellence over speed. Simplicity is a forensic requirement.
 

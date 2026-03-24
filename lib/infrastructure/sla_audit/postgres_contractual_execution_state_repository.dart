@@ -224,32 +224,34 @@ class PostgresContractualExecutionStateRepository
 
   ContractualExecutionState _mapToEntity(Map<String, dynamic> data) {
     return ContractualExecutionState.reconstitute(
-      id: data['id'],
-      organizationId: data['organization_id'],
-      setId: data['set_id'],
-      contractId: data['contract_id'],
+      id: data['id'] as String,
+      organizationId: data['organization_id'] as String,
+      setId: data['set_id'] as String,
+      contractId: data['contract_id'] as String,
       planVersion: data['plan_version'] as int,
       startLatitude: (data['start_latitude'] as num).toDouble(),
       startLongitude: (data['start_longitude'] as num).toDouble(),
       startRadiusMeters: data['start_radius_meters'] as int,
-      plannedVehicleId: data['planned_vehicle_id'],
+      plannedVehicleId: data['planned_vehicle_id'] as String?,
       contractualValue: Money((data['contractual_value_cents'] as num).toInt()),
       noShowPenaltyMultiplier: (data['no_show_penalty_multiplier'] as num)
           .toDouble(),
-      windowStartUtc: DateTime.parse(data['window_start_utc']),
-      windowEndUtc: DateTime.parse(data['window_end_utc']),
-      status: _parseStatus(data['status']),
-      createdAtUtc: DateTime.parse(data['created_at_utc']),
-      lastEvaluatedAtUtc: DateTime.parse(data['last_evaluated_at_utc']),
+      windowStartUtc: DateTime.parse(data['window_start_utc'] as String),
+      windowEndUtc: DateTime.parse(data['window_end_utc'] as String),
+      status: _parseStatus(data['status'] as String),
+      createdAtUtc: DateTime.parse(data['created_at_utc'] as String),
+      lastEvaluatedAtUtc: DateTime.parse(
+        data['last_evaluated_at_utc'] as String,
+      ),
       statusLastUpdatedAtUtc: DateTime.parse(
-        data['status_last_updated_at_utc'],
+        data['status_last_updated_at_utc'] as String,
       ),
       finalizedAtUtc: data['finalized_at_utc'] != null
-          ? DateTime.parse(data['finalized_at_utc'])
+          ? DateTime.parse(data['finalized_at_utc'] as String)
           : null,
-      boundVehicleId: data['bound_vehicle_id'],
+      boundVehicleId: data['bound_vehicle_id'] as String?,
       bindingTimestampUtc: data['binding_timestamp_utc'] != null
-          ? DateTime.parse(data['binding_timestamp_utc'])
+          ? DateTime.parse(data['binding_timestamp_utc'] as String)
           : null,
       bindingLatitude: (data['binding_latitude'] as num?)?.toDouble(),
       bindingLongitude: (data['binding_longitude'] as num?)?.toDouble(),

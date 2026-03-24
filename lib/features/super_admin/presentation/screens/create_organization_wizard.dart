@@ -262,10 +262,7 @@ class _CreateOrganizationWizardState
               Expanded(
                 child: SelectableText(
                   inviteUrl,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
                 ),
               ),
               IconButton(

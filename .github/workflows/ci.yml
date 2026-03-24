@@ -96,11 +96,26 @@ jobs:
       - name: Create stub .env for asset resolution
         run: echo "# CI stub — credentials injected via dart-define" > .env
 
-      - name: Flutter Test with Local Supabase
+      - name: Flutter Test with Coverage
         run: |
           # Extrai a chave de servico gerada localmente pelo Supabase (RLS Bypass para testes E2E)
           # Usa -f 2- para capturar tudo após o primeiro '=' (JWTs podem conter '=' de padding base64)
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
-          flutter test --no-pub \
+          flutter test --no-pub --coverage \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"
+
+      - name: Remove generated files from coverage report
+        run: |
+          lcov --remove coverage/lcov.info \
+            '**/*.g.dart' \
+            '**/*.freezed.dart' \
+            'lib/features/**' \
+            'lib/presentation/**' \
+            --output-file coverage/lcov_filtered.info
+
+      - name: Enforce Coverage Gate (≥60% on domain/application/infrastructure/core)
+        uses: VeryGoodOpenSource/very_good_coverage@v3
+        with:
+          path: coverage/lcov_filtered.info
+          min_coverage: 60

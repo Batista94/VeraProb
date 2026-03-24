@@ -192,6 +192,7 @@ else
       DB_HITS=$(grep -niE \
         "DROP TABLE|DELETE FROM|TRUNCATE|ALTER COLUMN.+TYPE" \
         "$migration_file" 2>/dev/null \
+        | grep -vE "^[0-9]+:[[:space:]]*--" \
         || true)
       if [[ -n "$DB_HITS" ]]; then
         block "[DB-BLOCK] Destructive migration in $migration_file — append-only schema required (INV-DB)"
