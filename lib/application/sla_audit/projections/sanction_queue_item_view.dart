@@ -17,6 +17,10 @@ class SanctionQueueItemView {
   final String? reviewedByUserId;
   final String? rejectionReason;
 
+  /// Human-readable contract name resolved asynchronously from the UI layer.
+  /// Null until enriched via [contractNameProvider]. Never stored in the DB row.
+  final String? contractName;
+
   const SanctionQueueItemView({
     required this.id,
     required this.organizationId,
@@ -29,6 +33,7 @@ class SanctionQueueItemView {
     this.reviewedAtUtc,
     this.reviewedByUserId,
     this.rejectionReason,
+    this.contractName,
   });
 
   /// Formatted fine amount as BRL string (e.g., "R$ 1.500,00").

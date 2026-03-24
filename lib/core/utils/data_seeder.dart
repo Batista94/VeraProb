@@ -193,6 +193,49 @@ class DataSeeder {
     });
   }
 
+  Future<void> seedActiveSanctions() async {
+    // 1. Get or create a contract
+    final contract = await _supabase
+        .from('contracts')
+        .select()
+        .eq('organization_id', organizationId)
+        .limit(1)
+        .maybeSingle();
+
+    if (contract == null) return;
+
+    final now = DateTime.now().toUtc();
+    final setId = 'sim-set-${now.millisecondsSinceEpoch}';
+
+    // 2. Insert into Ledger (to maintain audit trail)
+    // The DB trigger `tr_ledger_to_review_queue` will auto-populate the queue.
+    await _supabase.from('sla_audit_ledger_v2').insert({
+      'organization_id': organizationId,
+      'contract_id': contract['id'],
+      'occurred_at_utc': now.toIso8601String(),
+      'type': 'SANCTION_RECOMMENDED',
+      'set_id': setId,
+      'operator_id': 'system_seeder',
+      'payload': {
+        'rule_id': 'rule-speed-v1',
+        'verdict_evidence': {
+          'clause_ref': 'VEL-01',
+          'rule_id': 'rule-speed-v1',
+          'rule_version': 1,
+          'primary_evidence_lat': -23.5505,
+          'primary_evidence_lng': -46.6333,
+          'primary_evidence_timestamp_utc': now.toIso8601String(),
+          'evidence_hash':
+              'seed000000000000000000000000000000000000000000000000000000000001',
+          'delta_value': 8.5,
+          'threshold_value': 80.0,
+          'fine_cents': 150000,
+          'confidence_score': 99,
+        }
+      },
+    });
+  }
+
   Future<void> clearAll() async {
     // DANGEROUS: Only for dev
     // await _supabase.from('vehicle_positions').delete().neq('id', 0);

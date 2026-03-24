@@ -58,8 +58,9 @@ Antes de começar, precisamos "limpar a mesa" e ligar o motor.
     - **`organizations`**: deve conter uma linha para `Logística ABC`.
     - **`tenant_billing_events`**: deve conter uma linha com `event_type = 'ORG_CREATED'`. Verifique que a coluna **`organization_name`** está preenchida com `Logística ABC` (não pode ser nulo — rastreabilidade sem JOIN).
     - **`system_audit_log`**: deve conter uma linha com `event_type = 'ORGANIZATION_CREATED'` e `payload` com `legal_name`, `trade_name`, `cnpj`, `plan_type` e `super_admin_id` preenchidos.
-6.  **Validação Unicidade Fiscal:** Tente iniciar a criação de uma segunda organização (ex. `Transportadora Beta`) colocando estritamente o **mesmo CNPJ** da `Logística ABC`.
-    - **Resultado Esperado:** O sistema rejeitará na hora da submissão com o aviso vermelho indicando que o CNPJ já possui uma organização vinculada.
+6.  **Validação Unicidade Fiscal (em tempo real):** Tente iniciar a criação de uma segunda organização (ex. `Transportadora Beta`) colocando estritamente o **mesmo CNPJ** da `Logística ABC`.
+    - **Resultado Esperado (enquanto digita):** Após preencher os 14 dígitos do CNPJ duplicado, um spinner aparece no campo enquanto o sistema consulta o banco. Em até 1 segundo, o spinner é substituído por um ícone de erro (vermelho) e uma mensagem vermelha abaixo do campo: **"CNPJ já cadastrado no sistema"**.
+    - **Resultado Esperado (ao clicar em Próximo):** O botão **"Próximo"** é bloqueado enquanto o erro de CNPJ estiver visível — o sistema não avança para o Passo 2. O usuário precisa corrigir o CNPJ antes de prosseguir.
 
 ### Passo 1.3: Aceitar Convite do Admin (via Email ou Link Manual)
 
@@ -73,8 +74,9 @@ Antes de começar, precisamos "limpar a mesa" e ligar o motor.
 1.  No diálogo de sucesso (ainda aberto), localize o campo **"Link de convite do Admin"**.
 2.  Clique no **ícone de cópia** (clipboard) ao lado do link.
     -   **Resultado Esperado:** SnackBar **"Link copiado!"** aparece na parte inferior.
-3.  Abra uma **janela anônima/privada (Incognito)** no Chrome (`Ctrl+Shift+N`) e cole o link: formato `http://localhost:PORT/accept-invite?token=UUID`
+3.  Abra uma **janela anônima/privada (Incognito) SEPARADA** no Chrome (`Ctrl+Shift+N`) e cole o link: formato `http://localhost:PORT/accept-invite?token=UUID`
     - **Nunca use uma aba normal** — isso derrubará a sessão do SuperAdmin na janela #1 (ver nota acima).
+    - **Importante:** O `Ctrl+Shift+N` abre uma nova janela do Chrome em modo incognito — verifique que apareceu uma janela separada (não uma aba na mesma janela). Fechar a janela #1 (SuperAdmin) **não deve afetar a janela incognito #2**, pois são processos de janela independentes.
 4.  Na tela **"Aceitar Convite"**, insira uma senha para `admin@abc.com` (ex: `Admin@abc123!`).
 5.  Confirme. **Resultado Esperado:** O sistema aceita o envio, faz o login (signIn/signUp) automaticamente pelas cortinas e redireciona (faz reload da página) para a raiz `/`.
     - **Validação Bug (URL segura):** Repare na barra de endereços do navegador da janela incognito. A URL deve estar perfeitamente limpa (sem o `?token=...` antigo grudado nela).
@@ -109,45 +111,61 @@ Antes de começar, precisamos "limpar a mesa" e ligar o motor.
 
 ### Passo 2.2: O Badge em Tempo Real (MT-9.3.2)
 
-Para testar a reatividade sem esperar um caminhão de verdade, vamos simular uma infração inserindo diretamente no banco:
+Para testar a reatividade sem esperar um caminhão de verdade, use o botão **"Gerar Sanção de Teste"** na tela Fila Auditora — ele injeta automaticamente uma sanção VEL-01 com payload correto, percorrendo o pipeline completo (ledger → trigger → fila).
 
-> ⚠️ **Campos obrigatórios para o insert:** A tabela `sla_audit_ledger_v2` tem colunas `NOT NULL` sem valor padrão. Sem elas, o Studio rejeita o insert. Além disso, o trigger `trg_auto_enqueue_sanction` popula automaticamente a `sanction_review_queue` a partir de `payload -> 'verdict_evidence'` — portanto o payload **deve** conter a chave `verdict_evidence` na raiz.
+> **Pré-requisito:** deve existir pelo menos **um contrato** na organização. Se não houver, crie um primeiro em **Contratos → Novo Contrato** (nome `Contrato Teste`, datas válidas).
 
-**Antes de inserir, obtenha o `organization_id` da Logística ABC:**
-- No Supabase Studio, abra a tabela `organizations`, filtre pelo nome `Logística ABC` e copie o valor da coluna `id` (UUID). Você vai precisar dele agora.
+#### Método 1 — Botão no App (recomendado
 
-1.  Abra o **Supabase Studio** → Tabela `sla_audit_ledger_v2` → **Insert row**.
-2.  Preencha os campos conforme abaixo:
+1.  No app, logado como `admin-a@veraprob.dev`, navegue para **"Fila Auditora"**.
+2.  Clique em **"Gerar Sanção de Teste"** (canto superior direito do cabeçalho ou centro da tela vazia).
+3.  Aguarde o SnackBar de confirmação: *"Sanção VEL-01 injetada — aguarde até 5s para aparecer na fila."*
+4.  Passe para o Passo 2.3 (observar o card e o badge).
 
-    | Campo | Valor |
-    |---|---|
-    | `organization_id` | UUID copiado da `Logística ABC` (passo acima) |
-    | `type` | `SANCTION_RECOMMENDED` |
-    | `occurred_at_utc` | `now()` — clique no campo e escolha a data/hora atual |
-    | `payload` | JSON completo abaixo |
-    | `set_id` | `VEI-001` (texto livre — identifica o veículo) |
-    | `operator_id` | deixar em branco (nullable) |
+#### Método 2 — Insert Manual via Supabase Studio (fallback)
 
-    **Payload (cole no campo `payload`):**
-    ```json
-    {
-      "clause_ref": "VEL-01",
-      "fine_cents": 150000,
-      "verdict_evidence": {
-        "rule_id": "rule-vel-01",
-        "rule_version": "1.0",
-        "gps_lat": -23.5505,
-        "gps_lng": -46.6333,
-        "primary_evidence_timestamp_utc": "2026-03-20T10:00:00Z",
-        "delta_value": 15,
-        "threshold_value": 80,
-        "confidence_score": 0.97,
-        "evidence_hash": "a3f1c2d4e5b6a7f8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
-      }
-    }
-    ```
+Use apenas se o Método 1 falhar ou se você quiser testar o path de ingestão diretamente pelo Studio.
 
-3.  Salve o insert. **Verifique imediatamente:** o Studio deve aceitar sem erro. Se aparecer erro `restrict_violation` em algum campo imutável, revise os campos preenchidos.
+**Antes de inserir, obtenha dois UUIDs:**
+- No Supabase Studio, abra a tabela **`organizations`**, filtre pelo nome `Logística ABC` e copie o valor da coluna `id` (UUID) → chame de `ORG_UUID`.
+- Abra a tabela **`contracts`**, filtre por `organization_id = ORG_UUID` e copie o `id` de qualquer contrato → chame de `CONTRACT_UUID`.
+
+Abra o **Supabase Studio** → Tabela **`sla_audit_ledger_v2`** → **Insert row** com os campos:
+
+| Campo | Valor |
+|---|---|
+| `organization_id` | `ORG_UUID` copiado da tabela `organizations` |
+| `contract_id` | `CONTRACT_UUID` copiado da tabela `contracts` (**obrigatório**) |
+| `type` | `SANCTION_RECOMMENDED` |
+| `occurred_at_utc` | `now()` |
+| `payload` | JSON completo abaixo |
+| `set_id` | `VEI-001` |
+| `operator_id` | deixar em branco (nullable) |
+
+**Payload (cole no campo `payload`):**
+```json
+{
+  "clause_ref": "VEL-01",
+  "fine_cents": 150000,
+  "verdict_evidence": {
+    "clause_ref": "VEL-01",
+    "rule_id": "rule-vel-01",
+    "rule_version": 1,
+    "primary_evidence_lat": -23.5505,
+    "primary_evidence_lng": -46.6333,
+    "primary_evidence_timestamp_utc": "2026-03-20T10:00:00Z",
+    "delta_value": 15.0,
+    "threshold_value": 80.0,
+    "confidence_score": 97,
+    "fine_cents": 150000,
+    "evidence_hash": "a3f1c2d4e5b6a7f8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
+  }
+}
+```
+
+> ⚠️ **Atenção às chaves exatas:** `primary_evidence_lat`/`primary_evidence_lng` (não `gps_lat`/`gps_lng`), `rule_version` como inteiro `1` (não string `"1.0"`), `confidence_score` como inteiro `97` (não decimal `0.97`). Usar chaves erradas causa erro de parse ao abrir o card.
+
+Salve o insert. **Verifique imediatamente:** o Studio deve aceitar sem erro. Se aparecer erro `restrict_violation`, revise os campos preenchidos.
 
 4.  **O que observar no App (sem dar F5):**
     - Um **badge numérico** (círculo vermelho com "1") deve aparecer no ícone da "Fila Auditora" em menos de 30 segundos.
@@ -252,7 +270,7 @@ Olhe para o card que apareceu. Ele deve conter **todos** os campos abaixo:
 3.  **Validações obrigatórias:**
     - [ ] O campo `payload -> 'verdict_evidence'` **não é nulo**.
     - [ ] O campo `payload -> 'verdict_evidence' -> 'evidence_hash'` tem **exatamente 64 caracteres hexadecimais**.
-    - [ ] Os campos `rule_id`, `rule_version`, `gps_lat`, `gps_lng` e `primary_evidence_timestamp_utc` estão presentes e preenchidos.
+    - [ ] Os campos `rule_id`, `rule_version`, `primary_evidence_lat`, `primary_evidence_lng` e `primary_evidence_timestamp_utc` estão presentes e preenchidos.
 
 > Se o `evidence_hash` tiver menos de 64 chars ou `verdict_evidence` for nulo, a sanção viola INV-23 e **não pode ser aplicada**.
 

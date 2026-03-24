@@ -379,6 +379,8 @@ class _ExecutionsTab extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SingleChildScrollView(
         child: DataTable(
           columnSpacing: 14,
           headingTextStyle: const TextStyle(
@@ -392,6 +394,7 @@ class _ExecutionsTab extends StatelessWidget {
             DataColumn(label: Text('Valor'), numeric: true),
           ],
           rows: executions.map(_buildRow).toList(),
+        ),
         ),
       ),
     );

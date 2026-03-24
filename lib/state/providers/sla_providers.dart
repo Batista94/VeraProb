@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../application/sla_audit/sanction_simulation_service.dart';
 import '../../application/sla_audit/projections/sla_execution_item_view.dart';
 import '../../application/sla_audit/contractual_evaluation_engine.dart';
 import '../../application/sla_audit/contractual_evaluation_subscriber.dart';
@@ -99,14 +100,8 @@ final contractualFinancialClosingServiceProvider =
 
 /// FASE 8: Connects the [ContractualEvaluationEngine] to live telemetry
 /// and periodic sweep timers.
-///
-///
-/// The provider layer adapts the Riverpod [StreamProvider] into a raw
-/// [Stream], ensuring the subscriber never depends on Riverpod.
 final contractualEvaluationSubscriberProvider =
     Provider<ContractualEvaluationSubscriber?>((ref) {
-      // Adapt: build raw Stream from the same sources as normalizedStateProvider,
-      // bypassing the deprecated .stream accessor.
       final adapter = ref.watch(operationalDataProvider);
       final normalizer = ref.watch(operationalStateNormalizerProvider);
 
@@ -132,6 +127,15 @@ final contractualEvaluationSubscriberProvider =
 
       return sub;
     });
+
+// ── Simulation Service (Dev Only) ────────────────────────────
+
+final sanctionSimulationServiceProvider = Provider<SanctionSimulationService>((ref) {
+  return SanctionSimulationService(
+    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    contracts: ref.watch(contractRepositoryProvider),
+  );
+});
 
 // ── Query Service ───────────────────────────────────────────
 

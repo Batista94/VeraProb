@@ -3,8 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// But using dart:html directly is fine for this project based on "Flutter Web". I'll format the import. Wait, the project might not use universal_html. So I'll just use dart:html. Unsafe for cross-platform, but this is a web platform.
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../state/providers/admin_providers.dart';
@@ -118,10 +117,14 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
           .read(acceptInvitationHandlerProvider)
           .handle(AcceptInvitationCommand(token: widget.token, userId: userId));
 
+      // Refresh the session so the JWT hook re-runs with the now-populated
+      // user_roles row — this injects organization_id + role into the token.
+      await supabase.auth.refreshSession();
+
       if (!mounted) return;
       // Force clean URL redirect via browser API to clear '?token=...'
       if (kIsWeb) {
-        html.window.location.replace('/');
+        web.window.location.replace('/');
       } else {
         unawaited(
           Navigator.of(context).pushReplacement(

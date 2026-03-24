@@ -16,6 +16,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'EXECUTION_BOUND',
+        operatorId: 'SYSTEM',
         setId: event.setId,
         contractId: event.contractId,
         planVersion: event.planVersion,
@@ -33,6 +34,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'NO_SHOW_DECLARED',
+        operatorId: 'SYSTEM',
         setId: event.setId,
         contractId: event.contractId,
         planVersion: event.planVersion,
@@ -45,6 +47,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'EVIDENCE_GAP_DECLARED',
+        operatorId: 'SYSTEM',
         setId: event.setId,
         contractId: event.contractId,
         planVersion: event.planVersion,
@@ -56,6 +59,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'PLAN_DECLARED',
+        operatorId: event.declaredByUserId,
         setId: null,
         contractId: event.contractId,
         planVersion: event.planVersion,
@@ -73,6 +77,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'OCCURRENCE_REGISTERED',
+        operatorId: event.operatorId,
         setId: event.tripId,
         contractId: 'N/A', // Set later when merged or queried contextually
         planVersion: 0,
@@ -91,6 +96,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'TRIP_INTERRUPTED',
+        operatorId: event.operatorId,
         setId: event.tripId,
         contractId: 'N/A', // Set later when merged or queried contextually
         planVersion: 0,
@@ -107,6 +113,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'TRIP_CANCELLED',
+        operatorId: event.operatorId,
         setId: event.tripId,
         contractId: 'N/A', // Set later when merged or queried contextually
         planVersion: 0,
@@ -123,6 +130,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'CONTRACT_CREATED',
+        operatorId: 'SYSTEM',
         setId: null,
         contractId: event.contractId,
         planVersion: 0,
@@ -140,6 +148,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'CONTRACT_ACTIVATED',
+        operatorId: 'SYSTEM',
         setId: null,
         contractId: event.contractId,
         planVersion: 0,
@@ -152,6 +161,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'CONTRACT_CLOSED',
+        operatorId: event.closedByUserId,
         setId: null,
         contractId: event.contractId,
         planVersion: 0,
@@ -168,6 +178,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'CONTRACT_SUBMITTED_FOR_APPROVAL',
+        operatorId: 'SYSTEM',
         setId: null,
         contractId: event.contractId,
         planVersion: 0,
@@ -183,6 +194,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'CONTRACT_ACCEPTED_BY_CONTRACTOR',
+        operatorId: 'CONTRACTOR',
         setId: null,
         contractId: event.contractId,
         planVersion: 0,
@@ -198,6 +210,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'SANCTION_RECOMMENDED',
+        operatorId: 'SYSTEM',
         setId: event.setId,
         contractId: event.contractId,
         planVersion: event.planVersion,
@@ -210,6 +223,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'SANCTION_APPLIED',
+        operatorId: event.approvedByUserId,
         setId: event.setId,
         contractId: event.contractId,
         planVersion: event.planVersion,
@@ -226,6 +240,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'SANCTION_REJECTED',
+        operatorId: event.rejectedByUserId,
         setId: event.setId,
         contractId: event.contractId,
         planVersion: event.planVersion,
@@ -243,6 +258,7 @@ class SlaLedgerMapper {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
         type: 'SANCTION_DISPUTED',
+        operatorId: 'CONTRACTOR',
         setId: event.setId,
         contractId: event.contractId,
         planVersion: event.planVersion,
@@ -258,6 +274,7 @@ class SlaLedgerMapper {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'UNKNOWN_EVENT',
+      operatorId: 'SYSTEM',
       contractId: 'unknown',
       planVersion: 0,
       occurredAtUtc: event.occurredAtUtc,

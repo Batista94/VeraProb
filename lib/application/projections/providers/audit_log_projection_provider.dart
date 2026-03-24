@@ -68,9 +68,9 @@ final auditLogProjectionProvider = FutureProvider<AuditLogProjection>((
       timestamp: log.timestamp,
       action: log.actionType,
       actorId: log.operatorId,
-      actorName: log.operatorId == 'SYSTEM'
+      actorName: log.operatorId == 'SYSTEM' || log.operatorId.isEmpty
           ? 'Sistema'
-          : 'Operador [${log.operatorId.substring(0, 4)}]',
+          : 'Operador [${log.operatorId.length >= 4 ? log.operatorId.substring(0, 4) : log.operatorId}]',
       details: details,
       category: category,
       vehiclePlate: tripInfo?.vehiclePlate ?? tripInfo?.vehicleId,

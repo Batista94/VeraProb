@@ -62,6 +62,11 @@ class _CreateOrganizationWizardState
   String _timezone = 'America/Sao_Paulo';
   String _currency = 'BRL';
 
+  // CNPJ real-time uniqueness check
+  String? _cnpjApiError;
+  bool _cnpjChecking = false;
+  Timer? _cnpjDebounceTimer;
+
   // Step 2 controllers
   final _maxVehiclesCtrl = TextEditingController(text: '50');
   final _maxContractsCtrl = TextEditingController(text: '10');
@@ -75,7 +80,15 @@ class _CreateOrganizationWizardState
   final _step3Key = GlobalKey<FormState>();
 
   @override
+  void initState() {
+    super.initState();
+    _cnpjCtrl.addListener(_onCnpjChanged);
+  }
+
+  @override
   void dispose() {
+    _cnpjDebounceTimer?.cancel();
+    _cnpjCtrl.removeListener(_onCnpjChanged);
     _legalNameCtrl.dispose();
     _tradeNameCtrl.dispose();
     _cnpjCtrl.dispose();
@@ -85,10 +98,51 @@ class _CreateOrganizationWizardState
     super.dispose();
   }
 
+  void _onCnpjChanged() {
+    _cnpjDebounceTimer?.cancel();
+    final digits = _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.length != 14) {
+      if (_cnpjApiError != null || _cnpjChecking) {
+        setState(() {
+          _cnpjApiError = null;
+          _cnpjChecking = false;
+        });
+      }
+      return;
+    }
+    setState(() {
+      _cnpjChecking = true;
+      _cnpjApiError = null;
+    });
+    _cnpjDebounceTimer = Timer(
+      const Duration(milliseconds: 600),
+      _checkCnpjExists,
+    );
+  }
+
+  Future<void> _checkCnpjExists() async {
+    try {
+      final exists = await supabase.rpc(
+        'super_admin_check_cnpj_exists',
+        params: {'p_cnpj': _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '')},
+      ) as bool;
+      if (!mounted) return;
+      setState(() {
+        _cnpjChecking = false;
+        _cnpjApiError =
+            exists ? 'CNPJ já cadastrado no sistema' : null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _cnpjChecking = false);
+    }
+  }
+
   bool _validateStep1() {
     if (!(_step1Key.currentState?.validate() ?? false)) return false;
     final cnpjDigits = _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '');
     if (cnpjDigits.length != 14) return false;
+    if (_cnpjChecking || _cnpjApiError != null) return false;
     return true;
   }
 
@@ -286,6 +340,8 @@ class _CreateOrganizationWizardState
             selectedPlan: _selectedPlan,
             timezone: _timezone,
             currency: _currency,
+            cnpjApiError: _cnpjApiError,
+            cnpjChecking: _cnpjChecking,
             onPlanChanged: (p) => setState(() => _selectedPlan = p),
             onTimezoneChanged: (t) => setState(() => _timezone = t),
             onCurrencyChanged: (c) => setState(() => _currency = c),
@@ -374,6 +430,8 @@ class _Step1FiscalData extends StatelessWidget {
   final PlanType selectedPlan;
   final String timezone;
   final String currency;
+  final String? cnpjApiError;
+  final bool cnpjChecking;
   final ValueChanged<PlanType> onPlanChanged;
   final ValueChanged<String> onTimezoneChanged;
   final ValueChanged<String> onCurrencyChanged;
@@ -386,6 +444,8 @@ class _Step1FiscalData extends StatelessWidget {
     required this.selectedPlan,
     required this.timezone,
     required this.currency,
+    required this.cnpjApiError,
+    required this.cnpjChecking,
     required this.onPlanChanged,
     required this.onTimezoneChanged,
     required this.onCurrencyChanged,
@@ -420,9 +480,21 @@ class _Step1FiscalData extends StatelessWidget {
           const SizedBox(height: 12),
           TextFormField(
             controller: cnpjCtrl,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'CNPJ *',
               hintText: '00.000.000/0000-00',
+              suffixIcon: cnpjChecking
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : cnpjApiError != null
+                  ? const Icon(Icons.error_outline, color: Colors.red)
+                  : null,
             ),
             keyboardType: TextInputType.number,
             inputFormatters: [
@@ -436,6 +508,17 @@ class _Step1FiscalData extends StatelessWidget {
               return null;
             },
           ),
+          if (cnpjApiError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 12),
+              child: Text(
+                cnpjApiError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 12,
+                ),
+              ),
+            ),
           const SizedBox(height: 16),
           Text('Plano *', style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 8),

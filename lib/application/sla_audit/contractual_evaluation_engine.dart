@@ -144,6 +144,50 @@ class ContractualEvaluationEngine {
               },
             ),
           );
+        } else if (rule.ruleType == SlaRuleType.excessiveSpeed) {
+          final maxSpeed = rule.config['max_speed_kmh'] as num?;
+          final currentSpeed = vehicleState.smoothedSpeed;
+          if (maxSpeed != null && currentSpeed > maxSpeed) {
+            final verdictEvidence = VerdictEvidence.create(
+              clauseRef: rule.ruleId,
+              ruleId: rule.ruleId,
+              ruleVersion: rule.ruleVersion,
+              primaryEvidenceLat: vehicleState.latitude,
+              primaryEvidenceLng: vehicleState.longitude,
+              primaryEvidenceTimestampUtc: now,
+              deltaValue: currentSpeed - maxSpeed.toDouble(),
+              thresholdValue: maxSpeed.toDouble(),
+              fineCents: Money(rule.config['fine_cents'] as int? ?? 150000),
+              confidenceScore: 98,
+            );
+
+            final recommendedEvent = SanctionRecommendedEvent(
+              organizationId: state.organizationId,
+              occurredAtUtc: now,
+              setId: state.setId,
+              contractId: state.contractId,
+              planVersion: state.planVersion,
+              verdictEvidence: verdictEvidence,
+            );
+
+            await _ledgerRepo.append(
+              SlaLedgerMapper.mapToEntry(recommendedEvent),
+            );
+
+            decisions.add(
+              EvaluationDecision(
+                ruleId: rule.ruleId,
+                ruleType: rule.ruleType.value,
+                ruleVersion: rule.ruleVersion,
+                rulePriority: rule.evaluationOrder,
+                outcome: 'SANCTION_RECOMMENDED',
+                evidence: {
+                  'actual_speed_kmh': currentSpeed,
+                  'limit_speed_kmh': maxSpeed,
+                },
+              ),
+            );
+          }
         }
       }
 

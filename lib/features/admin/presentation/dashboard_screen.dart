@@ -18,6 +18,7 @@ class DashboardScreen extends ConsumerWidget {
       await seeder.seedDrivers();
       await seeder.seedRoutes();
       await seeder.seedHistoricalData();
+      await seeder.seedActiveSanctions();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

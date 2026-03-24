@@ -131,6 +131,9 @@ class FleetSimulationService {
   int _tickCount = 0;
   int _eventCounter = 0;
 
+  /// Map of tripId -> remaining ticks to force high speed (for testing)
+  final Map<String, int> _forcedSpeedTicks = {};
+
   /// Initialize all simulated trips
   void _initializeTrips() {
     if (_initialized) return;
@@ -283,6 +286,12 @@ class FleetSimulationService {
     return _trips[index].toOperationalTrip();
   }
 
+  /// Manually force a speed violation for a specific trip (for testing).
+  void triggerSpeedViolation(String tripId, {int durationTicks = 4}) {
+    _forcedSpeedTicks[tripId] = durationTicks;
+    _emitCurrentState();
+  }
+
   /// Push current state to stream listeners.
   void _emitCurrentState() {
     _tripChangeController.add(currentTrips);
@@ -301,9 +310,22 @@ class FleetSimulationService {
         if (newProgress >= 1.0) {
           newProgress = 0.05; // Loop back
         }
+        var speed = 15 + _random.nextDouble() * 35;
+
+        // Apply forced speed if active
+        if (_forcedSpeedTicks.containsKey(trip.id)) {
+          final remaining = _forcedSpeedTicks[trip.id]!;
+          if (remaining > 0) {
+            speed = 85.0 + _random.nextDouble() * 5.0; // 85-90 km/h
+            _forcedSpeedTicks[trip.id] = remaining - 1;
+          } else {
+            _forcedSpeedTicks.remove(trip.id);
+          }
+        }
+
         trip = trip.copyWith(
           progress: newProgress,
-          speed: 15 + _random.nextDouble() * 35,
+          speed: speed,
         );
       }
 

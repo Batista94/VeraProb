@@ -1,0 +1,94 @@
+import 'package:uuid/uuid.dart';
+import '../../domain/shared/money.dart';
+import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import '../../domain/sla_audit/verdict_evidence.dart';
+import '../../domain/sla_audit/execution_events.dart';
+import 'sla_ledger_mapper.dart';
+
+import '../../domain/sla_audit/contract_repository.dart';
+
+/// Service used ONLY during development/Stress Mode to inject
+/// artificial sanctions into the review queue for testing Phase 9.
+class SanctionSimulationService {
+  final SlaAuditLedgerRepository _ledger;
+  final ContractRepository _contracts;
+
+  SanctionSimulationService({
+    required SlaAuditLedgerRepository ledger,
+    required ContractRepository contracts,
+  }) : _ledger = ledger,
+       _contracts = contracts;
+
+  Future<void> simulateSpeedViolation({
+    required String organizationId,
+    required String vehiclePlate,
+    double speed = 88.5,
+    double limit = 80.0,
+  }) async {
+    try {
+      final now = DateTime.now().toUtc();
+      final setId = 'sim-set-${const Uuid().v4().substring(0, 8)}';
+      
+      // 0. Find a valid contract
+      final contracts = await _contracts.findByOrganization(organizationId);
+      if (contracts.isEmpty) {
+        throw Exception('Nenhum contrato encontrado para esta organização. Crie um contrato primeiro.');
+      }
+      final contractId = contracts.first.id;
+
+      final evidence = VerdictEvidence.create(
+      clauseRef: 'VEL-01',
+      ruleId: 'rule-speed-v1',
+      ruleVersion: 1,
+      primaryEvidenceLat: -23.5505 + (DateTime.now().millisecond / 100000),
+      primaryEvidenceLng: -46.6333 + (DateTime.now().millisecond / 100000),
+      primaryEvidenceTimestampUtc: now,
+      deltaValue: speed - limit,
+      thresholdValue: limit,
+      fineCents: Money(150000), // R$ 1.500,00
+      confidenceScore: 99,
+    );
+
+      final event = SanctionRecommendedEvent(
+        organizationId: organizationId,
+        occurredAtUtc: now,
+        setId: setId,
+        contractId: contractId,
+        planVersion: 1,
+        verdictEvidence: evidence,
+      );
+
+      // 1. Append to ledger (audit trail)
+      final entry = SlaLedgerMapper.mapToEntry(event);
+      await _ledger.append(entry);
+
+      // 2. Enqueue for review (Fila Auditora)
+      // INV-24/INV-23: Rely on the DB trigger `tr_ledger_to_review_queue` 
+      // which auto-populates sanction_review_queue when a SANCTION_RECOMMENDED
+      // entry is added to the ledger. Manual insertion here violates RLS for non-system roles.
+      // We just need to wait a small moment for the trigger to finish before refreshing the UI.
+    } catch (e) {
+      // Log for dev debugging
+      print('Error in SanctionSimulationService: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> seedActiveSanctions({required String organizationId}) async {
+    try {
+      await simulateSpeedViolation(
+        organizationId: organizationId,
+        vehiclePlate: 'TEST-0001',
+        speed: 92.0,
+      );
+      await Future.delayed(const Duration(milliseconds: 500));
+      await simulateSpeedViolation(
+        organizationId: organizationId,
+        vehiclePlate: 'TEST-0002',
+        speed: 84.5,
+      );
+    } catch (e) {
+      print('Error in seedActiveSanctions: $e');
+    }
+  }
+}

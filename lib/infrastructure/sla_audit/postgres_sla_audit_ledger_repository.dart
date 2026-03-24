@@ -24,6 +24,7 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
         .insert({
           'organization_id': entry.organizationId,
           'type': entry.type,
+          'operator_id': entry.operatorId,
           'set_id': entry.setId,
           'contract_id': entry.contractId,
           'plan_version': entry.planVersion,
@@ -62,6 +63,7 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
         eventId: row['id'] as String,
         organizationId: row['organization_id'] as String,
         type: row['type'] as String,
+        operatorId: row['operator_id'] as String? ?? 'SYSTEM',
         setId: row['set_id'] as String?,
         contractId: row['contract_id'] as String,
         planVersion: row['plan_version'] as int,

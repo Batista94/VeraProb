@@ -152,11 +152,14 @@ class _KpiCard extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: color),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: VeraProbTypography.caption.copyWith(
-                  letterSpacing: 0.5,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  title,
+                  style: VeraProbTypography.caption.copyWith(
+                    letterSpacing: 0.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

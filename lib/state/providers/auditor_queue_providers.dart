@@ -37,6 +37,22 @@ final pendingSanctionsCountProvider = Provider.autoDispose<int>((ref) {
       .maybeWhen(data: (items) => items.length, orElse: () => 0);
 });
 
+// ── Contract name enrichment ──────────────────────────────────────────────────
+
+/// Resolves the human-readable contract name for a given [contractId].
+///
+/// Returns null if the contract is not found (RLS will silently block
+/// cross-tenant access — no explicit error exposed to the UI).
+final contractNameProvider =
+    FutureProvider.autoDispose.family<String?, String>((ref, contractId) async {
+      final row = await Supabase.instance.client
+          .from('contracts')
+          .select('name')
+          .eq('id', contractId)
+          .maybeSingle();
+      return row?['name'] as String?;
+    });
+
 // ── Per-sanction action state ─────────────────────────────────────────────────
 
 /// Loading/error state for approve/reject actions on a specific sanction card.

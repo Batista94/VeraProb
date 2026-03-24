@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_providers.dart';
+import '../../application/adapters/simulation_data_provider.dart';
 import '../../application/intelligence/situation_engine.dart';
 import '../../application/operational_control_service.dart';
 import '../../application/simulation_control_service.dart';
@@ -119,8 +120,12 @@ final activeTripsProvider = Provider<List<OperationalTrip>>((ref) {
 // ── Data Adapter ─────────────────────────────────────────
 
 /// The operational data adapter.
-/// FASE 10: Simulation removed. Only real telemetry via Supabase Realtime.
+/// FASE 10: Switched dynamically between Realtime and Simulation.
 final operationalDataProvider = Provider<IOperationalDataProvider>((ref) {
+  final stressConfig = ref.watch(stressScenarioProvider);
+  if (stressConfig != null) {
+    return SimulationDataProvider(ref.watch(fleetSimulationProvider));
+  }
   return RealtimeDataProvider();
 });
 

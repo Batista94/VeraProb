@@ -170,8 +170,9 @@ class _SummaryCard extends StatelessWidget {
               color: color.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 2,
               children: [
                 Text(
                   revenueLabel,
@@ -179,7 +180,6 @@ class _SummaryCard extends StatelessWidget {
                     color: VeraProbColors.textSecondary,
                   ),
                 ),
-                const SizedBox(width: 8),
                 Text(
                   _currencyFormat.format(revenueValue.toDouble()),
                   style: VeraProbTypography.badge.copyWith(
@@ -225,6 +225,8 @@ class _SlaExceptionsTable extends ConsumerWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SingleChildScrollView(
               child: DataTable(
                 headingRowColor: WidgetStateProperty.all(
                   VeraProbColors.textPrimary.withValues(alpha: 0.05),
@@ -276,6 +278,7 @@ class _SlaExceptionsTable extends ConsumerWidget {
               ),
             ),
           ),
+        ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
