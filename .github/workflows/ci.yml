@@ -11,6 +11,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  migration-guard:
+    name: Migration Append-Only Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect destructive DDL in new migrations
+        run: |
+          # Get list of new migration files added in this PR (not in base branch)
+          NEW_MIGRATIONS=$(git diff --name-only --diff-filter=A origin/${{ github.base_ref }}...HEAD -- 'supabase/migrations/*.sql')
+          if [ -z "$NEW_MIGRATIONS" ]; then
+            echo "No new migrations in this PR. PASS."
+            exit 0
+          fi
+          echo "New migrations detected:"
+          echo "$NEW_MIGRATIONS"
+          VIOLATIONS=""
+          for FILE in $NEW_MIGRATIONS; do
+            # Check for destructive DDL (schema-level only, exclude comments)
+            MATCHES=$(grep -inP '^\s*(DROP\s+TABLE|DROP\s+COLUMN|ALTER\s+TABLE\s+\S+\s+DROP\s+COLUMN|TRUNCATE\s+TABLE|TRUNCATE\s+\w)' "$FILE" || true)
+            if [ -n "$MATCHES" ]; then
+              VIOLATIONS="$VIOLATIONS\n--- $FILE ---\n$MATCHES"
+            fi
+          done
+          if [ -n "$VIOLATIONS" ]; then
+            echo ""
+            echo "::error::SCHEMA LOCK VIOLATION — Destructive DDL detected in new migrations."
+            echo "Requires explicit PO sign-off and Lead Reviewer [GO] verdict before merge."
+            echo -e "$VIOLATIONS"
+            exit 1
+          fi
+          echo "No destructive DDL detected. PASS."
+
   analyze:
     name: Flutter Analyze
     runs-on: ubuntu-latest
