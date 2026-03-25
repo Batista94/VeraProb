@@ -386,10 +386,17 @@ void main() async {
         await adminClient.from('spoofing_audit_entries').upsert({
           'id': entryId,
           'organization_id': _orgBId,
-          'canonical_fact_id': _uuid.v4(),
-          'risk_score': 'LOW',
-          'risk_level': 10,
-          'detected_at_utc': DateTime.now().toUtc().toIso8601String(),
+          'device_id': 'rls-test-device',
+          'window_start': DateTime.now()
+              .toUtc()
+              .subtract(const Duration(hours: 1))
+              .toIso8601String(),
+          'window_end': DateTime.now().toUtc().toIso8601String(),
+          'risk_score': 0.5,
+          'signals': [],
+          'facts_analyzed': 1,
+          'fact_ids': [_uuid.v4()],
+          'content_hash': 'rls-test-hash-${entryId.substring(0, 8)}',
         }, onConflict: 'id');
 
         final result = await orgAClient
@@ -507,19 +514,34 @@ void main() async {
             (jsonDecode(listResponse.body) as Map<String, dynamic>)['users']
                 as List<dynamic>;
 
+        final String superAdminId;
         if (list.isEmpty) {
           // Create super admin user and register in super_admin_users
-          final superAdminId = await _ensureUser(
+          superAdminId = await _ensureUser(
             superAdminEmail,
             superAdminPassword,
             supabaseUrl: PostgresTestConfig.supabaseUrl,
             serviceRoleKey: PostgresTestConfig.serviceRoleKey,
           );
-          await adminClient.from('super_admin_users').upsert({
-            'user_id': superAdminId,
-            'email': superAdminEmail,
-          }, onConflict: 'user_id');
+        } else {
+          // User exists — reset password to ensure correct credentials for this run
+          superAdminId = (list.first as Map<String, dynamic>)['id'] as String;
+          await http.put(
+            Uri.parse(
+              '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users/$superAdminId',
+            ),
+            headers: {
+              'apikey': PostgresTestConfig.serviceRoleKey,
+              'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'password': superAdminPassword}),
+          );
         }
+        await adminClient.from('super_admin_users').upsert({
+          'user_id': superAdminId,
+          'email': superAdminEmail,
+        }, onConflict: 'user_id');
 
         final superAdminClient = await _signIn(
           superAdminEmail,
@@ -583,8 +605,8 @@ void main() async {
           'organization_id': _orgAId,
           'token': token,
           'role': 'TENANT_ADMIN',
-          'invited_by_user_id': _uuid.v4(),
-          'invited_email': 'race_test_${_uuid.v4()}@veraprob.test',
+          'invited_by': _uuid.v4(),
+          'email': 'race_test_${_uuid.v4()}@veraprob.test',
           'expires_at_utc': DateTime.now()
               .toUtc()
               .add(const Duration(hours: 24))

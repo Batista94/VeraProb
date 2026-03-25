@@ -15,6 +15,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
+import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
 import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_super_admin_repository.dart';
 
@@ -211,7 +212,7 @@ void main() async {
       group('getSystemAuditLog', () {
         test('retorna lista sem filtro', () async {
           final logs = await repo.getSystemAuditLog(limit: 10);
-          expect(logs, isA<List<Map<String, dynamic>>>());
+          expect(logs, isA<List<SystemAuditLogEntry>>());
         });
 
         test('filtra por organization_id corretamente', () async {

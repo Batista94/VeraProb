@@ -37,9 +37,7 @@ class PostgresContractualFinancialSnapshotRepository
       'executed_count': snapshot.executedCount,
       'no_show_count': snapshot.noShowCount,
       'evidence_gap_count': snapshot.evidenceGapCount,
-      'last_ledger_entry_id': snapshot.lastLedgerEntryId != null
-          ? int.tryParse(snapshot.lastLedgerEntryId!)
-          : null,
+      'last_ledger_entry_id': snapshot.lastLedgerEntryId,
       'previous_snapshot_id': snapshot.previousSnapshotId,
       'reprocessing_reason': snapshot.reprocessingReason,
       'author_user_id': snapshot.authorUserId,
