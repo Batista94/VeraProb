@@ -6,18 +6,20 @@ void main() {
   final d1 = DateTime.utc(2024, 6, 1);
   final d2 = DateTime.utc(2024, 6, 2);
 
-  ContractualFinancialTrendPoint makePoint(DateTime date) =>
-      ContractualFinancialTrendPoint(
-        dateUtc: date,
-        formattedDate: '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
-        baseRevenueUsedForCalculation: const Money(500000),
-        totalContractedRevenue: const Money(1000000),
-        protectedRevenue: const Money(600000),
-        revenueAtRisk: const Money(300000),
-        lostRevenue: const Money(100000),
-        riskPercentage: 30.0,
-        lossPercentage: 10.0,
-      );
+  ContractualFinancialTrendPoint makePoint(
+    DateTime date,
+  ) => ContractualFinancialTrendPoint(
+    dateUtc: date,
+    formattedDate:
+        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
+    baseRevenueUsedForCalculation: const Money(500000),
+    totalContractedRevenue: const Money(1000000),
+    protectedRevenue: const Money(600000),
+    revenueAtRisk: const Money(300000),
+    lostRevenue: const Money(100000),
+    riskPercentage: 30.0,
+    lossPercentage: 10.0,
+  );
 
   group('ContractualFinancialTrendPoint', () {
     test('props equality — same values', () {

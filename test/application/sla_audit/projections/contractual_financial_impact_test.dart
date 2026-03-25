@@ -8,18 +8,17 @@ void main() {
   ContractualFinancialImpact makeImpact({
     String? contractId,
     double? marginErosionPercent,
-  }) =>
-      ContractualFinancialImpact(
-        contractId: contractId,
-        generatedAtUtc: now,
-        totalContractedRevenue: const Money(1000000),
-        protectedRevenue: const Money(700000),
-        revenueAtRisk: const Money(200000),
-        lostRevenue: const Money(100000),
-        riskPercentage: 20.0,
-        lossPercentage: 10.0,
-        marginErosionPercent: marginErosionPercent,
-      );
+  }) => ContractualFinancialImpact(
+    contractId: contractId,
+    generatedAtUtc: now,
+    totalContractedRevenue: const Money(1000000),
+    protectedRevenue: const Money(700000),
+    revenueAtRisk: const Money(200000),
+    lostRevenue: const Money(100000),
+    riskPercentage: 20.0,
+    lossPercentage: 10.0,
+    marginErosionPercent: marginErosionPercent,
+  );
 
   group('ContractualFinancialImpact', () {
     test('props equality — same values are equal', () {

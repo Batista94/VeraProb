@@ -14,21 +14,20 @@ void main() {
   VehicleOperationalState makeState(
     ConnectivityState connectivityState, {
     DateTime? lastPingAt,
-  }) =>
-      VehicleOperationalState(
-        vehicleId: 'v1',
-        tripId: 'trip-1',
-        latitude: -23.5,
-        longitude: -46.6,
-        smoothedSpeed: 0.0,
-        motionState: MotionState.stopped,
-        connectivityState: connectivityState,
-        routeAdherence: RouteAdherence.onRoute,
-        lastRawPingAt: lastPingAt ?? twoMinutesAgo,
-        stateChangedAt: lastPingAt ?? twoMinutesAgo,
-        confidence: connectivityState == ConnectivityState.signalLost ? 0.0 : 1.0,
-        source: 'gps',
-      );
+  }) => VehicleOperationalState(
+    vehicleId: 'v1',
+    tripId: 'trip-1',
+    latitude: -23.5,
+    longitude: -46.6,
+    smoothedSpeed: 0.0,
+    motionState: MotionState.stopped,
+    connectivityState: connectivityState,
+    routeAdherence: RouteAdherence.onRoute,
+    lastRawPingAt: lastPingAt ?? twoMinutesAgo,
+    stateChangedAt: lastPingAt ?? twoMinutesAgo,
+    confidence: connectivityState == ConnectivityState.signalLost ? 0.0 : 1.0,
+    source: 'gps',
+  );
 
   OperationalTrip makeTrip({TripStatus status = TripStatus.enRoute}) =>
       OperationalTrip(
@@ -49,7 +48,9 @@ void main() {
 
     test('canDetect is false for completed trips', () {
       expect(
-          detector.canDetect(makeTrip(status: TripStatus.completed)), isFalse);
+        detector.canDetect(makeTrip(status: TripStatus.completed)),
+        isFalse,
+      );
     });
 
     test('evaluate returns null when state is null', () {
@@ -79,14 +80,20 @@ void main() {
     });
 
     test('evaluate returns null when signal is healthy', () {
-      final warning =
-          detector.evaluate(makeTrip(), makeState(ConnectivityState.healthy), []);
+      final warning = detector.evaluate(
+        makeTrip(),
+        makeState(ConnectivityState.healthy),
+        [],
+      );
       expect(warning, isNull);
     });
 
     test('evaluate returns null when signal is degraded', () {
       final warning = detector.evaluate(
-          makeTrip(), makeState(ConnectivityState.degraded), []);
+        makeTrip(),
+        makeState(ConnectivityState.degraded),
+        [],
+      );
       expect(warning, isNull);
     });
   });

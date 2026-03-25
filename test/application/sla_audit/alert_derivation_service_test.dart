@@ -49,14 +49,14 @@ void main() {
   }
 
   EvaluationDecision makeDecision({int? penaltyCents}) => EvaluationDecision(
-        ruleId: 'rule-1',
-        ruleType: 'SPEED_LIMIT',
-        ruleVersion: 1,
-        rulePriority: 10,
-        outcome: penaltyCents != null ? 'PENALTY_APPLIED' : 'COMPLIANT',
-        financialImpactCents: penaltyCents,
-        evidence: const GenericEvidencePayload({}),
-      );
+    ruleId: 'rule-1',
+    ruleType: 'SPEED_LIMIT',
+    ruleVersion: 1,
+    rulePriority: 10,
+    outcome: penaltyCents != null ? 'PENALTY_APPLIED' : 'COMPLIANT',
+    financialImpactCents: penaltyCents,
+    evidence: const GenericEvidencePayload({}),
+  );
 
   group('AlertDerivationService.deriveFrom', () {
     test('noShow state → CRITICAL alert type NO_SHOW', () {

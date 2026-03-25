@@ -191,44 +191,57 @@ void main() {
       expect(item.startRadiusMeters, geoRadius);
     });
 
-    test('listByWindow returns states whose windowStart falls in the range',
-        () async {
-      final t6 = DateTime.utc(2026, 3, 1, 6, 0);
-      final t7 = DateTime.utc(2026, 3, 1, 7, 0);
-      final t8 = DateTime.utc(2026, 3, 1, 8, 0);
-      final t9 = DateTime.utc(2026, 3, 1, 9, 0);
+    test(
+      'listByWindow returns states whose windowStart falls in the range',
+      () async {
+        final t6 = DateTime.utc(2026, 3, 1, 6, 0);
+        final t7 = DateTime.utc(2026, 3, 1, 7, 0);
+        final t8 = DateTime.utc(2026, 3, 1, 8, 0);
+        final t9 = DateTime.utc(2026, 3, 1, 9, 0);
 
-      await repo.save(makeState(
-        setId: 'early',
-        windowStart: t6,
-        windowEnd: t7,
-      ));
-      await repo.save(makeState(
-        setId: 'mid',
-        windowStart: t7,
-        windowEnd: t8,
-      ));
-      await repo.save(makeState(
-        setId: 'late',
-        windowStart: t8,
-        windowEnd: t9,
-      ));
+        await repo.save(
+          makeState(setId: 'early', windowStart: t6, windowEnd: t7),
+        );
+        await repo.save(
+          makeState(setId: 'mid', windowStart: t7, windowEnd: t8),
+        );
+        await repo.save(
+          makeState(setId: 'late', windowStart: t8, windowEnd: t9),
+        );
 
-      // window [t6, t8) should include 'early' and 'mid'
-      final items = await queryService.listByWindow(
-        t6,
-        t8,
-        organizationId: 'org-1',
-      );
-      expect(items.map((i) => i.setId).toList(), containsAll(['early', 'mid']));
-      expect(items.any((i) => i.setId == 'late'), isFalse);
-    });
+        // window [t6, t8) should include 'early' and 'mid'
+        final items = await queryService.listByWindow(
+          t6,
+          t8,
+          organizationId: 'org-1',
+        );
+        expect(
+          items.map((i) => i.setId).toList(),
+          containsAll(['early', 'mid']),
+        );
+        expect(items.any((i) => i.setId == 'late'), isFalse);
+      },
+    );
 
     test('listByWindow respects contractId filter', () async {
       final t6 = DateTime.utc(2026, 3, 1, 6, 0);
       final t7 = DateTime.utc(2026, 3, 1, 7, 0);
-      await repo.save(makeState(setId: 'c1-x', contractId: 'c-1', windowStart: t6, windowEnd: t7));
-      await repo.save(makeState(setId: 'c2-x', contractId: 'c-2', windowStart: t6, windowEnd: t7));
+      await repo.save(
+        makeState(
+          setId: 'c1-x',
+          contractId: 'c-1',
+          windowStart: t6,
+          windowEnd: t7,
+        ),
+      );
+      await repo.save(
+        makeState(
+          setId: 'c2-x',
+          contractId: 'c-2',
+          windowStart: t6,
+          windowEnd: t7,
+        ),
+      );
 
       final items = await queryService.listByWindow(
         t6,

@@ -23,14 +23,14 @@ void main() {
       );
 
   OperationalAlert makeAlert(String severity) => OperationalAlert(
-        id: 'alert-1',
-        organizationId: 'org-1',
-        entityId: 's1',
-        contractId: 'c1',
-        alertType: 'TEST',
-        severity: severity,
-        triggeredAtUtc: now,
-      );
+    id: 'alert-1',
+    organizationId: 'org-1',
+    entityId: 's1',
+    contractId: 'c1',
+    alertType: 'TEST',
+    severity: severity,
+    triggeredAtUtc: now,
+  );
 
   group('DashboardRiskFeedNode.evaluate severity', () {
     test('noShow status → critical severity', () {

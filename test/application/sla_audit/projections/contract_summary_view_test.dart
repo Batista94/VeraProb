@@ -13,27 +13,32 @@ void main() {
     DateTime? activatedAtUtc,
     int? financialCeilingCents,
     double slaHealthPercentage = 80.0,
-  }) =>
-      ContractSummaryView(
-        id: 'c1',
-        name: 'Test Contract',
-        contractorName: 'Transportes SA',
-        status: status,
-        validFromUtc: base,
-        validUntilUtc: end,
-        createdAtUtc: created,
-        activatedAtUtc: activatedAtUtc,
-        planCount: 2,
-        activePlanVersion: 3,
-        totalSetsInProgress: 5,
-        slaHealthPercentage: slaHealthPercentage,
-        financialCeilingCents: financialCeilingCents,
-      );
+  }) => ContractSummaryView(
+    id: 'c1',
+    name: 'Test Contract',
+    contractorName: 'Transportes SA',
+    status: status,
+    validFromUtc: base,
+    validUntilUtc: end,
+    createdAtUtc: created,
+    activatedAtUtc: activatedAtUtc,
+    planCount: 2,
+    activePlanVersion: 3,
+    totalSetsInProgress: 5,
+    slaHealthPercentage: slaHealthPercentage,
+    financialCeilingCents: financialCeilingCents,
+  );
 
   group('ContractSummaryView', () {
     test('props includes all fields', () {
-      final v1 = makeView(activatedAtUtc: activated, financialCeilingCents: 50000);
-      final v2 = makeView(activatedAtUtc: activated, financialCeilingCents: 50000);
+      final v1 = makeView(
+        activatedAtUtc: activated,
+        financialCeilingCents: 50000,
+      );
+      final v2 = makeView(
+        activatedAtUtc: activated,
+        financialCeilingCents: 50000,
+      );
       expect(v1, equals(v2));
     });
 

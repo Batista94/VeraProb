@@ -24,13 +24,13 @@ class FakeFleetSimulationService extends FleetSimulationService {
 }
 
 VehiclePosition makePosition(String tripId) => VehiclePosition(
-      id: tripId,
-      tripId: tripId,
-      latitude: -23.5,
-      longitude: -46.6,
-      timestamp: DateTime.now().toUtc(),
-      source: 'sim',
-    );
+  id: tripId,
+  tripId: tripId,
+  latitude: -23.5,
+  longitude: -46.6,
+  timestamp: DateTime.now().toUtc(),
+  source: 'sim',
+);
 
 void main() {
   group('SimulationDataProvider', () {
@@ -56,21 +56,23 @@ void main() {
       expect(provider.isConnected, isTrue);
     });
 
-    test('positionStream forwards emissions from FleetSimulationService',
-        () async {
-      await provider.connect();
+    test(
+      'positionStream forwards emissions from FleetSimulationService',
+      () async {
+        await provider.connect();
 
-      final positions = <List<VehiclePosition>>[];
-      final sub = provider.positionStream.listen(positions.add);
+        final positions = <List<VehiclePosition>>[];
+        final sub = provider.positionStream.listen(positions.add);
 
-      final batch = [makePosition('trip-1')];
-      fakeService.emit(batch);
-      await Future.delayed(Duration.zero);
+        final batch = [makePosition('trip-1')];
+        fakeService.emit(batch);
+        await Future.delayed(Duration.zero);
 
-      expect(positions, hasLength(1));
-      expect(positions.first, batch);
-      await sub.cancel();
-    });
+        expect(positions, hasLength(1));
+        expect(positions.first, batch);
+        await sub.cancel();
+      },
+    );
 
     test('connect() is idempotent — calling twice does not throw', () async {
       await provider.connect();

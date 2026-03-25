@@ -8,17 +8,17 @@ void main() {
   final now = DateTime.utc(2024, 6, 1, 12, 0, 0);
 
   VerdictEvidence makeEvidence(int fineCents) => VerdictEvidence.create(
-        clauseRef: 'VEL-01',
-        ruleId: 'rule-speed-v1',
-        ruleVersion: 1,
-        primaryEvidenceLat: -23.5505,
-        primaryEvidenceLng: -46.6333,
-        primaryEvidenceTimestampUtc: now,
-        deltaValue: 8.5,
-        thresholdValue: 80.0,
-        fineCents: Money(fineCents),
-        confidenceScore: 99,
-      );
+    clauseRef: 'VEL-01',
+    ruleId: 'rule-speed-v1',
+    ruleVersion: 1,
+    primaryEvidenceLat: -23.5505,
+    primaryEvidenceLng: -46.6333,
+    primaryEvidenceTimestampUtc: now,
+    deltaValue: 8.5,
+    thresholdValue: 80.0,
+    fineCents: Money(fineCents),
+    confidenceScore: 99,
+  );
 
   SanctionQueueItemView makeView({int fineCents = 150000}) =>
       SanctionQueueItemView(

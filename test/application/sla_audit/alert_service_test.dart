@@ -18,8 +18,9 @@ class FakeAlertRepository implements OperationalAlertRepository {
   @override
   Future<List<OperationalAlert>> findActive(String organizationId) async =>
       _store.values
-          .where((a) =>
-              a.organizationId == organizationId && a.status == 'ACTIVE')
+          .where(
+            (a) => a.organizationId == organizationId && a.status == 'ACTIVE',
+          )
           .toList();
 
   @override
@@ -27,27 +28,25 @@ class FakeAlertRepository implements OperationalAlertRepository {
       _store.values.where((a) => a.entityId == entityId).toList();
 
   @override
-  Future<OperationalAlert?> findById(String alertId) async =>
-      _store[alertId];
+  Future<OperationalAlert?> findById(String alertId) async => _store[alertId];
 
   @override
-  Future<void> update(OperationalAlert alert) async =>
-      _store[alert.id] = alert;
+  Future<void> update(OperationalAlert alert) async => _store[alert.id] = alert;
 }
 
 void main() {
   final now = DateTime.utc(2024, 6, 1, 10);
 
   OperationalAlert makeAlert({String status = 'ACTIVE'}) => OperationalAlert(
-        id: 'alert-1',
-        organizationId: 'org-1',
-        entityId: 'set-1',
-        contractId: 'contract-1',
-        alertType: 'NO_SHOW',
-        severity: 'CRITICAL',
-        triggeredAtUtc: now,
-        status: status,
-      );
+    id: 'alert-1',
+    organizationId: 'org-1',
+    entityId: 'set-1',
+    contractId: 'contract-1',
+    alertType: 'NO_SHOW',
+    severity: 'CRITICAL',
+    triggeredAtUtc: now,
+    status: status,
+  );
 
   group('AlertService.acknowledge', () {
     test('throws StateError when alert not found', () async {

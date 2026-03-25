@@ -45,7 +45,9 @@ void main() {
 
     test('canDetect is false for completed trips', () {
       expect(
-          detector.canDetect(makeTrip(status: TripStatus.completed)), isFalse);
+        detector.canDetect(makeTrip(status: TripStatus.completed)),
+        isFalse,
+      );
     });
 
     test('evaluate returns null when state is null', () {
@@ -53,22 +55,31 @@ void main() {
     });
 
     test('evaluate returns warning when offRoute', () {
-      final warning =
-          detector.evaluate(makeTrip(), makeState(RouteAdherence.offRoute), []);
+      final warning = detector.evaluate(
+        makeTrip(),
+        makeState(RouteAdherence.offRoute),
+        [],
+      );
       expect(warning, isNotNull);
       expect(warning!.type, 'off_route');
       expect(warning.severityScore, 30);
     });
 
     test('evaluate returns null when onRoute', () {
-      final warning =
-          detector.evaluate(makeTrip(), makeState(RouteAdherence.onRoute), []);
+      final warning = detector.evaluate(
+        makeTrip(),
+        makeState(RouteAdherence.onRoute),
+        [],
+      );
       expect(warning, isNull);
     });
 
     test('evaluate returns null when minorDeviation', () {
       final warning = detector.evaluate(
-          makeTrip(), makeState(RouteAdherence.minorDeviation), []);
+        makeTrip(),
+        makeState(RouteAdherence.minorDeviation),
+        [],
+      );
       expect(warning, isNull);
     });
   });

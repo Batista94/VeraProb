@@ -11,43 +11,43 @@ void main() {
   final now = DateTime.utc(2024, 6, 1);
 
   ContractSummaryView makeSummary() => ContractSummaryView(
-        id: 'contract-abc',
-        name: 'Rota Central',
-        contractorName: 'Viação Express',
-        status: ContractStatus.active,
-        validFromUtc: now,
-        validUntilUtc: now.add(const Duration(days: 365)),
-        createdAtUtc: now,
-        planCount: 1,
-        activePlanVersion: 1,
-        totalSetsInProgress: 0,
-        slaHealthPercentage: 100.0,
-      );
+    id: 'contract-abc',
+    name: 'Rota Central',
+    contractorName: 'Viação Express',
+    status: ContractStatus.active,
+    validFromUtc: now,
+    validUntilUtc: now.add(const Duration(days: 365)),
+    createdAtUtc: now,
+    planCount: 1,
+    activePlanVersion: 1,
+    totalSetsInProgress: 0,
+    slaHealthPercentage: 100.0,
+  );
 
   SlaExecutionItemView makeExecution() => SlaExecutionItemView(
-        setId: 'set-1',
-        contractId: 'contract-abc',
-        status: ExecutionStatus.executed,
-        windowStartUtc: now,
-        windowEndUtc: now.add(const Duration(hours: 1)),
-        startLatitude: -23.5,
-        startLongitude: -46.6,
-        startRadiusMeters: 100,
-        contractualValue: const Money(50000),
-        noShowPenaltyMultiplier: 1.0,
-      );
+    setId: 'set-1',
+    contractId: 'contract-abc',
+    status: ExecutionStatus.executed,
+    windowStartUtc: now,
+    windowEndUtc: now.add(const Duration(hours: 1)),
+    startLatitude: -23.5,
+    startLongitude: -46.6,
+    startRadiusMeters: 100,
+    contractualValue: const Money(50000),
+    noShowPenaltyMultiplier: 1.0,
+  );
 
   SlaExecutionSummary makeSummaryFinancial() => SlaExecutionSummary(
-        contractId: 'contract-abc',
-        totalPending: 0,
-        totalExecuted: 1,
-        totalNoShow: 0,
-        totalEvidenceGap: 0,
-        generatedAtUtc: now,
-        protectedRevenue: const Money(50000),
-        revenueAtRisk: const Money(0),
-        lostRevenue: const Money(0),
-      );
+    contractId: 'contract-abc',
+    totalPending: 0,
+    totalExecuted: 1,
+    totalNoShow: 0,
+    totalEvidenceGap: 0,
+    generatedAtUtc: now,
+    protectedRevenue: const Money(50000),
+    revenueAtRisk: const Money(0),
+    lostRevenue: const Money(0),
+  );
 
   group('ContractDetailView', () {
     test('id forwards from summary', () {

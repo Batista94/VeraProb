@@ -11,21 +11,20 @@ void main() {
     double multiplier = 1.5,
     String? plannedVehicleId,
     String? boundVehicleId,
-  }) =>
-      SlaExecutionItemView(
-        setId: 's1',
-        contractId: 'c1',
-        status: status,
-        windowStartUtc: now,
-        windowEndUtc: now.add(const Duration(hours: 1)),
-        plannedVehicleId: plannedVehicleId,
-        boundVehicleId: boundVehicleId,
-        startLatitude: -23.5505,
-        startLongitude: -46.6333,
-        startRadiusMeters: 150,
-        contractualValue: const Money(100000), // R$ 1000,00
-        noShowPenaltyMultiplier: multiplier,
-      );
+  }) => SlaExecutionItemView(
+    setId: 's1',
+    contractId: 'c1',
+    status: status,
+    windowStartUtc: now,
+    windowEndUtc: now.add(const Duration(hours: 1)),
+    plannedVehicleId: plannedVehicleId,
+    boundVehicleId: boundVehicleId,
+    startLatitude: -23.5505,
+    startLongitude: -46.6333,
+    startRadiusMeters: 150,
+    contractualValue: const Money(100000), // R$ 1000,00
+    noShowPenaltyMultiplier: multiplier,
+  );
 
   group('SlaExecutionItemView', () {
     test('calculatedPenalty = contractualValue * multiplier', () {
