@@ -34,7 +34,7 @@ supabase/
 **Phase 9 (Technical Review & CI/CD Gate) — COMPLETE. All sub-phases [GO].**
 **Gate `READY FOR CI/CD` — ACHIEVED.**
 **Current Objective: Phase 10 — CI/CD & Launch Preparation.**
-First sub-phase: **10.1 — Schema Lock & Migration Freeze.**
+**10.1 (Schema Lock & Migration Freeze) — [GO].** Next sub-phase: **10.2 — WASM Build Validation.**
 Gate target: `READY FOR FIRST TENANT`.
 See full roadmap: [.claude/rules/roadmap.md](.claude/rules/roadmap.md)
 

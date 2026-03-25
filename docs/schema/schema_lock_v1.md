@@ -3,7 +3,7 @@
 **Locked:** 2026-03-24
 **Phase:** 10.1 — Schema Lock & Migration Freeze
 **Gate:** `READY FOR FIRST TENANT`
-**Audit baseline:** 67 migrations · 26 tables · 0 critical violations
+**Audit baseline:** 73 migrations · 26 tables · 0 critical violations
 
 This document is an **immutable snapshot** of the production schema at the Phase 10 freeze point.
 No new migrations may be merged to `main` without explicit PO sign-off and Lead Reviewer [GO].
@@ -86,8 +86,9 @@ No new migrations may be merged to `main` without explicit PO sign-off and Lead 
 | 70 | 20260410000002_fix_rls_role_path.sql | RLS role path fix |
 | 71 | 20260411000001_user_roles_enrich_and_fix_auth.sql | User roles enrichment + auth fix |
 | 72 | 20260412000001_fix_accept_invitation_rpc.sql | Accept invitation RPC (3-fix consolidated) |
+| 73 | 20260413000001_fix_accept_invitation_security.sql | Accept invitation — security hardening (email validation, cross-org guard, TOCTOU defense, INV-10/INV-20) |
 
-**Freeze point:** `20260412000001_fix_accept_invitation_rpc.sql`
+**Freeze point:** `20260413000001_fix_accept_invitation_security.sql`
 
 ---
 

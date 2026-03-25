@@ -33,7 +33,7 @@ Gate target: `READY FOR FIRST TENANT` — WASM build passing · Shadow Mode vali
 
 | Sub-Phase | Description | Status |
 |---|---|---|
-| 10.1 | Schema Lock & Migration Freeze | [ ] |
+| 10.1 | Schema Lock & Migration Freeze | [GO] |
 | 10.2 | WASM Build Validation | [ ] |
 | 10.3 | Shadow Mode | [ ] |
 | 10.4 | OCC UX Polish | [ ] |
