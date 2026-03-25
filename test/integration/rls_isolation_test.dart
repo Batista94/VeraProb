@@ -111,7 +111,7 @@ Future<void> _ensureUserRole(
     'user_id': userId,
     'organization_id': orgId,
     'role': role,
-    'contractor_id': ?contractorId,
+    'contractor_id': contractorId,
   }, onConflict: 'user_id');
 }
 
