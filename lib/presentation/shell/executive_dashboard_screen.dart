@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/sla_audit/projections/executive_dashboard_view.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/shared/money.dart';
+import '../../domain/sla_audit/shadow_mode_simulation.dart';
 import '../../state/providers/executive_dashboard_providers.dart';
 
 /// Executive Dashboard — Financial Protection Score + CFO KPIs.
@@ -218,6 +219,16 @@ class _KpiGrid extends StatelessWidget {
           color: VeraProbColors.primary,
           icon: Icons.check_circle_outline,
         ),
+        if (dashboard.latestShadowMode != null)
+          _KpiCard(
+            title: 'Economia BRL',
+            value: _fmtBrl(
+              dashboard.latestShadowMode!.revenueProtectedByPlatform,
+            ),
+            subtitle: 'receita protegida pela plataforma',
+            color: VeraProbColors.success,
+            icon: Icons.savings_outlined,
+          ),
       ],
     );
   }
@@ -436,7 +447,7 @@ class _EvidenceAttributionCard extends StatelessWidget {
 // ── Shadow Mode ROI Card ──────────────────────────────────────────────────────
 
 class _ShadowModeCard extends StatelessWidget {
-  final dynamic simulation;
+  final ShadowModeSimulation simulation;
 
   const _ShadowModeCard({required this.simulation});
 
@@ -469,13 +480,10 @@ class _ShadowModeCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            simulation.simulationName as String,
-            style: VeraProbTypography.bodySmall,
-          ),
+          Text(simulation.simulationName, style: VeraProbTypography.bodySmall),
           const SizedBox(height: 4),
           Text(
-            'ROI: ${(simulation.roiPercentage as double).toStringAsFixed(1)}%',
+            'ROI: ${simulation.roiPercentage.toStringAsFixed(1)}%',
             style: VeraProbTypography.sectionTitle.copyWith(
               color: VeraProbColors.primary,
               fontSize: 24,

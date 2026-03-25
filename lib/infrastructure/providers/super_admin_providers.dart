@@ -4,9 +4,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../application/super_admin/create_organization_handler.dart';
 import '../../core/config/environment.dart';
+import '../../domain/super_admin/i_cnpj_lookup_service.dart';
 import '../../domain/super_admin/i_super_admin_repository.dart';
 import '../../domain/super_admin/system_audit_log_entry.dart';
 import '../../domain/super_admin/tenant_health_snapshot.dart';
+import '../../infrastructure/super_admin/receita_ws_cnpj_service.dart';
 import '../../infrastructure/super_admin/supabase_super_admin_repository.dart';
 
 /// Isolated service_role Supabase client for SuperAdmin operations.
@@ -117,6 +119,11 @@ class AuditLogParams {
   int get hashCode =>
       Object.hash(organizationId, severity, fromDate, toDate, limit);
 }
+
+/// Provider for CNPJ lookup / enrichment service.
+final cnpjLookupServiceProvider = Provider<ICnpjLookupService>(
+  (_) => ReceitaWsCnpjService(),
+);
 
 /// Public constructor for [AuditLogParams] (used by UI layer).
 AuditLogParams auditLogParams({

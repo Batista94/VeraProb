@@ -60,9 +60,12 @@ class _CreateOrganizationWizardState
   String _timezone = 'America/Sao_Paulo';
   String _currency = 'BRL';
 
-  // CNPJ real-time uniqueness check
+  // CNPJ real-time uniqueness check + auto-fill
   String? _cnpjApiError;
   bool _cnpjChecking = false;
+  bool _cnpjLookingUp = false;
+  bool _cnpjAutoFilled = false;
+  bool _cnpjAutoInactive = false;
   Timer? _cnpjDebounceTimer;
 
   // Step 2 controllers
@@ -111,6 +114,8 @@ class _CreateOrganizationWizardState
     setState(() {
       _cnpjChecking = true;
       _cnpjApiError = null;
+      _cnpjAutoFilled = false;
+      _cnpjAutoInactive = false;
     });
     _cnpjDebounceTimer = Timer(
       const Duration(milliseconds: 600),
@@ -119,19 +124,47 @@ class _CreateOrganizationWizardState
   }
 
   Future<void> _checkCnpjExists() async {
+    final digits = _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '');
     try {
-      final digits = _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '');
-      final exists = await ref
+      // Uniqueness check and ReceitaWS lookup run in parallel.
+      setState(() => _cnpjLookingUp = true);
+      final checkFuture = ref
           .read(superAdminRepositoryProvider)
           .checkCnpjExists(digits);
+      final lookupFuture = ref.read(cnpjLookupServiceProvider).lookup(digits);
+      final exists = await checkFuture;
+      // lookup() returns CnpjCompanyData? — destructure to primitives immediately
+      // so the domain VO never persists as widget state or widget parameter.
+      final lookup = await lookupFuture;
+      final autoFilled = lookup != null;
+      final autoInactive = lookup != null && !lookup.isActive;
+      if (!mounted) return;
+
+      setState(() {
+        _cnpjChecking = false;
+        _cnpjLookingUp = false;
+        _cnpjApiError = exists ? 'CNPJ já cadastrado no sistema' : null;
+        _cnpjAutoFilled = autoFilled;
+        _cnpjAutoInactive = autoInactive;
+      });
+
+      // Auto-fill only when CNPJ is not already registered.
+      if (!exists && lookup != null) {
+        if (lookup.legalName != null && _legalNameCtrl.text.trim().isEmpty) {
+          _legalNameCtrl.text = lookup.legalName!;
+        }
+        if (lookup.tradeName != null && _tradeNameCtrl.text.trim().isEmpty) {
+          _tradeNameCtrl.text = lookup.tradeName!.isNotEmpty
+              ? lookup.tradeName!
+              : lookup.legalName ?? '';
+        }
+      }
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _cnpjChecking = false;
-        _cnpjApiError = exists ? 'CNPJ já cadastrado no sistema' : null;
+        _cnpjLookingUp = false;
       });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _cnpjChecking = false);
     }
   }
 
@@ -336,7 +369,9 @@ class _CreateOrganizationWizardState
             timezone: _timezone,
             currency: _currency,
             cnpjApiError: _cnpjApiError,
-            cnpjChecking: _cnpjChecking,
+            cnpjChecking: _cnpjChecking || _cnpjLookingUp,
+            cnpjAutoFilled: _cnpjAutoFilled,
+            cnpjAutoInactive: _cnpjAutoInactive,
             onPlanChanged: (p) => setState(() => _selectedPlan = p),
             onTimezoneChanged: (t) => setState(() => _timezone = t),
             onCurrencyChanged: (c) => setState(() => _currency = c),
@@ -427,6 +462,8 @@ class _Step1FiscalData extends StatelessWidget {
   final String currency;
   final String? cnpjApiError;
   final bool cnpjChecking;
+  final bool cnpjAutoFilled;
+  final bool cnpjAutoInactive;
   final ValueChanged<PlanType> onPlanChanged;
   final ValueChanged<String> onTimezoneChanged;
   final ValueChanged<String> onCurrencyChanged;
@@ -441,6 +478,8 @@ class _Step1FiscalData extends StatelessWidget {
     required this.currency,
     required this.cnpjApiError,
     required this.cnpjChecking,
+    required this.cnpjAutoFilled,
+    required this.cnpjAutoInactive,
     required this.onPlanChanged,
     required this.onTimezoneChanged,
     required this.onCurrencyChanged,
@@ -512,6 +551,36 @@ class _Step1FiscalData extends StatelessWidget {
                   color: Theme.of(context).colorScheme.error,
                   fontSize: 12,
                 ),
+              ),
+            ),
+          if (cnpjAutoFilled && cnpjApiError == null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Dados preenchidos via ReceitaWS',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                  if (cnpjAutoInactive) ...[
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.warning_amber,
+                      size: 14,
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Empresa inativa na Receita Federal',
+                      style: TextStyle(fontSize: 12, color: Colors.orange),
+                    ),
+                  ],
+                ],
               ),
             ),
           const SizedBox(height: 16),

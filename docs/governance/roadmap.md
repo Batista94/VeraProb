@@ -14,6 +14,7 @@
 | Command Handlers | 17 handlers na camada `application/` |
 | Análise estática | 0 erros · Wasm-ready (`package:web`) |
 | Precisão financeira | `Money` VO (centavos BIGINT) — Enforced ✅ |
+| Phase 9.4 Audit | **CONCLUÍDA** — Dashboard ROI + CNPJ Auto-fill ✅ |
 | Phase 9.3 Audit | **CONCLUÍDA** — Testes manuais aprovados ✅ |
 | Phase 9.2 Audit | **CONCLUÍDA** ✅ |
 | Phase 9.1 Audit | **CONCLUÍDA** ✅ |
@@ -92,12 +93,16 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 
 ---
 
-### [ ] Phase 9.4 — ROI Dashboard & Precision Onboarding
-**Destaques:** 
-- **Bento Grid Layout (UX):** Estrutura modular de dashboards para redução de carga cognitiva e foco em KPIs críticos.
-- **Usage Metering Ledger:** Lastro financeiro de 'savings' e penalidades para faturamento variável e transparência total.
-- **CNPJ Auto-fill:** Integração via API (ReceitaWS) para automação e segurança no cadastro de novos Tenants.
-- **Shadow Mode:** Motor de simulação "What-if" para demonstração de ROI real sem interferência na operação.
+### [x] Phase 9.4 — ROI Dashboard & Precision Onboarding ✅ CONCLUÍDA
+**Líder:** Senior Engineer + Lead Reviewer · **Verdict:** [GO] · **Data:** 2026-03-24
+
+**Destaques entregues:**
+- **Dashboard Executivo (KPI Modular):** FPS banner, 5 KPI cards (Receita Blindada, Taxa Recuperação, Dispute-to-Resolution, Conformidade SLA, **Economia BRL**), distribuição de receita, Shadow Mode ROI card.
+- **CNPJ Auto-fill (ReceitaWS):** Lookup paralelo ao check de unicidade; preenche Razão Social e Nome Fantasia automaticamente; chip de confirmação + alerta de empresa inativa.
+- **Shadow Mode ROI:** Motor "What-if" completo com persistência e dashboard integrado.
+- **Fix INV-4:** `_ShadowModeCard` corrigido de `dynamic` para `ShadowModeSimulation` tipado.
+
+**Nota:** Usage Metering Ledger (lastro de billing variável) movido para **Phase 10+** — não é gate para READY FOR FIRST TENANT.
 
 ### [ ] Phase 9.5 — Vínculo Dinâmico & UX do Operador
 **Destaques:** 
@@ -143,8 +148,8 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 | ✅ Zero penalidade aplicada sem aprovação humana | 9.3 | OK |
 | ✅ 100% das sanções com VerdictEvidence (INV-23) | 9.3 | OK |
 | ✅ Testes Manuais MT-9.3.1 a MT-9.3.10 | 9.3 | **PASSED** ✅ |
-| [ ] Dashboard ROI com Bento Grid & "Savings BRL" | 9.4 | |
-| [ ] Automação de Onboarding (CNPJ Auto-fill) | 9.4 | |
+| ✅ Dashboard ROI com KPIs modulares & "Economia BRL" | 9.4 | OK |
+| ✅ Automação de Onboarding (CNPJ Auto-fill via ReceitaWS) | 9.4 | OK |
 | [ ] Biblioteca de SLA Templates operacional | 9.5 | |
 | [ ] Smart Defaults reduzindo tempo de despacho | 9.5 | |
 | [ ] Kinematic Guard bloqueando Fake GPS no banco | 9.6 | |
@@ -172,10 +177,10 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 
 ```
 ═══════════════════════════════════════════════════════════════════════
-[x] Phase 9.1, 9.2, 9.3 COMPLETE ✅ (Manual Tests Passed)
+[x] Phase 9.1, 9.2, 9.3, 9.4 COMPLETE ✅
 ═══════════════════════════════════════════════════════════════════════
-[ ] Phase 9.4 — ROI Dashboard & Precision Onboarding
 [ ] Phase 9.5 — Vínculo Dinâmico & UX do Operador
+[ ] Phase 9.5 — Vínculo Dinâmico & UX do Operador (próxima)
 [ ] Phase 9.6 — Lógicas Matemáticas & Cockpit UI
 [ ] Phase 9.7 — Liveness & Resiliência Operacional
 [ ] Phase 9.8 — Audit, Security & Identity
