@@ -121,6 +121,8 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 ### [ ] Phase 9.8 — Audit, Security & Identity
 **Destaques:** 
 - **[CRITICAL] Edge Proxy:** Migração total para Edge Functions e remoção definitiva da `service_role` do frontend.
+- **WASM Build Hygiene:** Validação rigorosa de `flutter build web --wasm` com remoção total de dependências `dart:html/js`.
+- **Schema Lock Protocol:** Auditoria de migrations para garantir imutabilidade e travamento de novos schemas pós-lançamento.
 - **Hard Quota Enforcement (DB Level):** Implementação de triggers BEFORE INSERT para garantir que limites de `max_vehicles` e `max_contracts` sejam respeitados no banco.
 - **JWT Circuit Breaker:** Mecanismo de invalidação imediata de sessões para organizações suspensas ou inadimplentes.
 - **Privileged Access Hardening:** Implementação de MFA obrigatório e TTL reduzido para sessões de SuperAdmin.
@@ -154,6 +156,8 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 | [ ] JWT Circuit Breaker (Kill Switch) | 9.8 | |
 | [ ] MFA mandatório para SuperAdmin | 9.8 | |
 | [ ] Edge Proxy (Removido service_role key) | 9.8 | |
+| [ ] Build WASM limpo (zero dart:html/js) | 9.8 | |
+| [ ] Schema Lock e Migration Audit | 9.8 | |
 | [ ] Entity Alias Mapping em todo o sistema | 9.8 | |
 | [ ] Justified Impersonation com Log de Suporte | 9.8 | |
 
