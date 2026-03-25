@@ -47,6 +47,7 @@ See full roadmap: [docs/governance/roadmap.md](docs/governance/roadmap.md)
 - **Approved Plan Autonomy:** Once a plan is approved by the PO, execute sub-phases sequentially without re-requesting authorization at each step. Pause only for: unexpected blockers, binary decisions requiring PO input, or destructive actions outside plan scope.
 - **Council & Skills Autonomy:** Invoke council agents and skills proactively based on context — no explicit PO instruction required.
 - **Lead Reviewer Invocation:** Mandatory for every PR, Workspace Audit, or "Nuclear" change.
+- **TDD Mandate:** All new features or logic changes MUST follow Test-Driven Development (TDD). Write failing tests first, then implement to pass.
 - **No Skip Policy:** Technical excellence over speed. Simplicity is a forensic requirement.
 
 Council personas live in `docs/council/`. Lead Reviewer is the final arbiter.
@@ -86,6 +87,7 @@ VeraProb uses a specialized multi-agent council to ensure forensic integrity:
 
 - **Pre-PR:** Always run `bash scripts/pr_scanner.sh`.
 - **Pre-Merge:** Invoke `lead-reviewer` for a final GO/NO-GO verdict.
+- **TDD Requirement:** 100% unit test coverage for ALL new domain/application logic before starting UI.
 - **Testing:** `flutter test` for all logic changes. E2E tests require `SUPABASE_URL/KEY`.
 - **Database:** All migrations MUST be append-only (No `DROP`/`DELETE`).
 
