@@ -1,132 +1,45 @@
 # VeraProb — CLAUDE.md
 
-VeraProb is an **Automated SLA Compliance & Financial Protection Platform** that acts as an impartial, automated Judge: ingests real-world telemetry, evaluates against contractual rules, and generates immutable financial verdicts. The core engine is industry-agnostic (current focus: B2B Logistics/Charter).
+VeraProb is an **Automated SLA Compliance & Financial Protection Platform** (the "Digital Judge"): ingests telemetry, evaluates rules, and generates immutable financial verdicts.
 
 **Stack:** Flutter Web (>= 3.41.5) · Supabase (PostgreSQL + RLS) · Riverpod
-**Integrated Services (free/freemium):** Supabase · MapTiler · Sentry · PostHog · Resend
-
-**Pipeline:** Ingestion (Adapters) → Normalization (Canonical Fact) → Timeline Reconstruction → EvaluationEngine → ImmutableLedger → FinancialSnapshots → QueryServices → OCC
+**Context:** [README.md](README.md) · [PROJECT_CONTEXT.md (Legacy)](PROJECT_CONTEXT.md)
 
 ---
 
-## File Structure
+## 🏗️ Technical Context
 
-```
-lib/
-  application/        # UseCases / Command Handlers
-  core/               # Shared utilities, config, theme, validators
-  data/               # Repository implementations (data layer)
-  domain/             # Pure Dart entities, VOs, interfaces (no infra deps)
-  features/           # UI modules (admin, super_admin, shared)
-  infrastructure/     # Supabase/external service implementations
-  presentation/       # Shell, routing, top-level providers
-  state/              # Riverpod providers
-docs/
-  council/            # Persona files (architect, QA, lead_reviewer, etc.)
-supabase/
-  migrations/         # All schema changes via migration files only
-```
+| Area | Rule / Path |
+|---|---|
+| **Standards** | [.claude/rules/invariants.md](.claude/rules/invariants.md) (THE LAW) |
+| **Protocol** | [.claude/rules/protocol.md](.claude/rules/protocol.md) (Execution rules) |
+| **Dart/Flutter**| [.claude/rules/dart-flutter.md](.claude/rules/dart-flutter.md) |
+| **Security** | [.claude/rules/security.md](.claude/rules/security.md) |
+| **Structure** | `lib/` (application, core, data, domain, features, infra, presentation, state) |
+| **Council** | Agent personas are in `docs/council/` and `.claude/agents/`. |
 
 ---
 
-## Current Phase
+## 📍 LIVE STATUS: Phase 9.5
 
-**Phase 9 — IN PROGRESS. Sub-phases 9.1–9.4 [GO]. Sub-phases 9.5–9.8 PENDING.**
-**Gate `READY FOR CI/CD` — ACHIEVED.**
-**Phase 10.1 (Schema Lock & Migration Freeze) — [GO].**
-**Current Objective: complete Phase 9 (9.5 → 9.6 → 9.7 → 9.8) then Phase 10 (10.2 → 10.3 → 10.4 → 10.5).**
-Next sub-phase: **9.5 — Vínculo Dinâmico & UX do Operador.**
-Gate target: `READY FOR FIRST TENANT`.
-See full roadmap: [docs/governance/roadmap.md](docs/governance/roadmap.md)
+**Current Objective:** [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
+- **Active Task:** SLA Template Library & UX do Operador.
+- **Next Step:** Implementation of `ServiceManifest` for activo-to-contract decoupled logic.
+- **Test Mandate:** 100% unit coverage for domain logic; manual validation for UX.
 
 ---
 
-## Execution Protocol
+## 🛠️ Assistant Commands
 
-- **Proposed Action Plan:** Present a plan and wait for PO authorization before every task.
-- **Approved Plan Autonomy:** Once a plan is approved by the PO, execute sub-phases sequentially without re-requesting authorization at each step. Pause only for: unexpected blockers, binary decisions requiring PO input, or destructive actions outside plan scope.
-- **Council & Skills Autonomy:** Invoke council agents and skills proactively based on context — no explicit PO instruction required.
-- **Lead Reviewer Invocation:** Mandatory for every PR, Workspace Audit, or "Nuclear" change.
-- **TDD Mandate:** All new features or logic changes MUST follow Test-Driven Development (TDD). Write failing tests first, then implement to pass.
-- **No Skip Policy:** Technical excellence over speed. Simplicity is a forensic requirement.
-
-Council personas live in `docs/council/`. Lead Reviewer is the final arbiter.
-
-# VeraProb — Workspace Design & Intelligence Map
-
-This document defines the high-level architecture and governance for the VeraProb project.
-
-## 🏗️ Hierarchy of Context & Truth
-
-To avoid confusion, understand exactly where the different layers of "truth" live:
-
-| Layer | Responsibility | Path |
-|---|---|---|
-| **Human Governance** | Business rules, roadmap, and official technical specs. | `/docs` |
-| **Forensic Manifesto** | The 25 Core Invariants (SSOT). | `docs/governance/forensic_manifesto.md` |
-| **AI Intelligence** | Personas, specialized agents, and AI-only rules. | `/.claude` |
-| **Enforcement** | Automated CI/CD guards and forensic PR scanning. | `scripts/pr_scanner.sh` |
-| **Implementation** | The actual Flutter/Supabase codebase. | `/lib`, `/supabase`, `/test` |
+- `/veraprob-pr-scanner` — Forensic PR scanner (run before any code review)
+- `/hostile-defense-attorney` — RLS and financial verdict auditor
+- `/iot-chaos-simulator` — Chaos tests for EvaluationEngine
+- `/test-driven-development` — TDD workflow
 
 ---
-
-## 🛠️ Assistant Personas (The Council)
-
-VeraProb uses a specialized multi-agent council to ensure forensic integrity:
-
-*   **Lead Reviewer (`lead-reviewer.md`)**: The Gatekeeper. Mandatory first step before any PR.
-*   **Architect (`architect.md`)**: Structural and patterns validation.
-*   **Senior Engineer (`senior-engineer.md`)**: Refactoring and optimization.
-*   **QA & Security (`qa-security.md`)**: Invariant validation and threat modeling.
-*   **Business Maverick (`business-maverick.md`)**: ROI, UX, and market value.
-*   **UX Operations (`ux-operations.md`)**: Design system and operational cockpit.
-
----
-
-## 📊 Standard Procedures
-
-- **Pre-PR:** Always run `bash scripts/pr_scanner.sh`.
-- **Pre-Merge:** Invoke `lead-reviewer` for a final GO/NO-GO verdict.
-- **TDD Requirement:** 100% unit test coverage for ALL new domain/application logic before starting UI.
-- **Testing:** `flutter test` for all logic changes. E2E tests require `SUPABASE_URL/KEY`.
-- **Database:** All migrations MUST be append-only (No `DROP`/`DELETE`).
 
 ## Council Orchestration
 
-Agents live in `.claude/agents/`. Invoke proactively based on context:
-- Architecture/DB/schema changes → architect
-- Performance/Flutter/SLA logic → senior-engineer
-- RLS/security/financial tables → qa-security-lead
-- UI/UX/accessibility → ux-ops-director
-- Roadmap/ROI/product decisions → business-maverick
-- Every PR / Nuclear change → lead-reviewer (mandatory)
-
-When in doubt, invoke all relevant agents before proposing a plan.
-
----
-
-## Standards
-
-| Rule File | Covers |
-|---|---|
-| [.claude/rules/invariants.md](.claude/rules/invariants.md) | The 25 Non-Negotiable Invariants (THE LAW) |
-| [.claude/rules/dart-flutter.md](.claude/rules/dart-flutter.md) | Dart/Flutter coding standards, SOLID, DDD patterns |
-| [.claude/rules/security.md](.claude/rules/security.md) | RLS, multi-tenancy, secrets, JWT claims |
-| [.claude/rules/roadmap.md](.claude/rules/roadmap.md) | Milestones, gates, and phase definitions |
-
----
-
-## Available Skills
-
-- `/veraprob-pr-scanner` — Forensic PR scanner (run before any code review)
-- `/hostile-defense-attorney` — RLS, schema, and financial verdict auditor
-- `/ingestion-streaming-architect` — Event pipeline and idempotency gate
-- `/iot-chaos-simulator` — Chaos tests for EvaluationEngine and telemetry
-- `/systematic-debugging` — Structured debugging protocol
-- `/test-driven-development` — TDD workflow
-
-## Git Workflow
-
-- Conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`
-- Never commit directly to `main`
-- All PRs require Lead Reviewer [GO] verdict for core/RLS changes
+Invoke specialized agents based on task context:
+- Architect (DB/Schema) · Senior Engineer (Logic/Perf) · QA Security (RLS) · UX Ops (UI) · Business Maverick (ROI).
+- **Lead Reviewer:** Mandatory for Every PR and all Nuclear changes.
