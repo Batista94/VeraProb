@@ -53,7 +53,9 @@ Widget _buildCard(SanctionQueueItemView item) {
       ),
     ],
     child: MaterialApp(
-      home: Scaffold(body: SingleChildScrollView(child: SanctionVerdictCard(item: item))),
+      home: Scaffold(
+        body: SingleChildScrollView(child: SanctionVerdictCard(item: item)),
+      ),
     ),
   );
 }
@@ -89,7 +91,9 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('tapping REJEITAR reveals rejection reason field', (tester) async {
+    testWidgets('tapping REJEITAR reveals rejection reason field', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1000);
       tester.view.devicePixelRatio = 1.0;
 

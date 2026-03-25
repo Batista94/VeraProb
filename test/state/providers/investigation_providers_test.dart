@@ -50,33 +50,36 @@ void main() {
         currentOrganizationIdProvider.overrideWithValue(organizationId),
         slaAuditLedgerRepositoryProvider.overrideWithValue(mockLedger),
         evaluationTraceRepositoryProvider.overrideWithValue(mockTraceRepo),
-        contractualExecutionStateRepositoryProvider
-            .overrideWithValue(mockExecutionRepo),
+        contractualExecutionStateRepositoryProvider.overrideWithValue(
+          mockExecutionRepo,
+        ),
       ],
     );
   }
 
   group('ledgerEntriesProvider', () {
-    test('returns empty list when currentOrganizationIdProvider is null',
-        () async {
-      final container = makeContainer(organizationId: null);
-      addTearDown(container.dispose);
+    test(
+      'returns empty list when currentOrganizationIdProvider is null',
+      () async {
+        final container = makeContainer(organizationId: null);
+        addTearDown(container.dispose);
 
-      final result = await container.read(
-        ledgerEntriesProvider('set-1').future,
-      );
-      expect(result, isEmpty);
-      verifyNever(
-        () => mockLedger.getEntriesBySetId(any(), organizationId: any(named: 'organizationId')),
-      );
-    });
+        final result = await container.read(
+          ledgerEntriesProvider('set-1').future,
+        );
+        expect(result, isEmpty);
+        verifyNever(
+          () => mockLedger.getEntriesBySetId(
+            any(),
+            organizationId: any(named: 'organizationId'),
+          ),
+        );
+      },
+    );
 
     test('calls getEntriesBySetId with correct organizationId', () async {
       when(
-        () => mockLedger.getEntriesBySetId(
-          'set-1',
-          organizationId: 'org-1',
-        ),
+        () => mockLedger.getEntriesBySetId('set-1', organizationId: 'org-1'),
       ).thenAnswer((_) async => [_makeEntry()]);
 
       final container = makeContainer(organizationId: 'org-1');
@@ -91,34 +94,34 @@ void main() {
       ).called(1);
     });
 
-    test('enforces chronological sort regardless of repository return order',
-        () async {
-      final entries = [
-        _makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 3)),
-        _makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 1)),
-        _makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 2)),
-      ];
-      when(
-        () => mockLedger.getEntriesBySetId('set-1', organizationId: 'org-1'),
-      ).thenAnswer((_) async => entries);
+    test(
+      'enforces chronological sort regardless of repository return order',
+      () async {
+        final entries = [
+          _makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 3)),
+          _makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 1)),
+          _makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 2)),
+        ];
+        when(
+          () => mockLedger.getEntriesBySetId('set-1', organizationId: 'org-1'),
+        ).thenAnswer((_) async => entries);
 
-      final container = makeContainer(organizationId: 'org-1');
-      addTearDown(container.dispose);
+        final container = makeContainer(organizationId: 'org-1');
+        addTearDown(container.dispose);
 
-      final result = await container.read(
-        ledgerEntriesProvider('set-1').future,
-      );
-      expect(result[0].occurredAtUtc, DateTime.utc(2026, 1, 1));
-      expect(result[1].occurredAtUtc, DateTime.utc(2026, 1, 2));
-      expect(result[2].occurredAtUtc, DateTime.utc(2026, 1, 3));
-    });
+        final result = await container.read(
+          ledgerEntriesProvider('set-1').future,
+        );
+        expect(result[0].occurredAtUtc, DateTime.utc(2026, 1, 1));
+        expect(result[1].occurredAtUtc, DateTime.utc(2026, 1, 2));
+        expect(result[2].occurredAtUtc, DateTime.utc(2026, 1, 3));
+      },
+    );
 
     test('passes setId as positional argument to repository', () async {
       when(
-        () => mockLedger.getEntriesBySetId(
-          'my-set-id',
-          organizationId: 'org-1',
-        ),
+        () =>
+            mockLedger.getEntriesBySetId('my-set-id', organizationId: 'org-1'),
       ).thenAnswer((_) async => []);
 
       final container = makeContainer(organizationId: 'org-1');
@@ -137,8 +140,9 @@ void main() {
 
   group('evaluationTracesProvider', () {
     test('calls findByEntityId with the correct entityId parameter', () async {
-      when(() => mockTraceRepo.findByEntityId('entity-abc'))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTraceRepo.findByEntityId('entity-abc'),
+      ).thenAnswer((_) async => []);
 
       final container = makeContainer(organizationId: 'org-1');
       addTearDown(container.dispose);
@@ -149,8 +153,9 @@ void main() {
     });
 
     test('returns empty list when repository returns no traces', () async {
-      when(() => mockTraceRepo.findByEntityId(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTraceRepo.findByEntityId(any()),
+      ).thenAnswer((_) async => []);
 
       final container = makeContainer(organizationId: 'org-1');
       addTearDown(container.dispose);
@@ -164,8 +169,9 @@ void main() {
 
   group('executionStateProvider', () {
     test('calls findBySetId with the correct setId parameter', () async {
-      when(() => mockExecutionRepo.findBySetId('set-xyz'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockExecutionRepo.findBySetId('set-xyz'),
+      ).thenAnswer((_) async => null);
 
       final container = makeContainer(organizationId: 'org-1');
       addTearDown(container.dispose);
@@ -176,8 +182,9 @@ void main() {
     });
 
     test('returns null when execution state does not exist', () async {
-      when(() => mockExecutionRepo.findBySetId(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockExecutionRepo.findBySetId(any()),
+      ).thenAnswer((_) async => null);
 
       final container = makeContainer(organizationId: 'org-1');
       addTearDown(container.dispose);

@@ -16,7 +16,10 @@ void main() {
     // ── can() ────────────────────────────────────────────────────────────
     group('can()', () {
       test('admin has canEditSlaRules', () {
-        expect(rbac.can(UserRole.admin, UserPermission.canEditSlaRules), isTrue);
+        expect(
+          rbac.can(UserRole.admin, UserPermission.canEditSlaRules),
+          isTrue,
+        );
       });
 
       test('operator does NOT have canEditSlaRules', () {

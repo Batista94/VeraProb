@@ -74,8 +74,9 @@ Future<String> _ensureUser(
         'Authorization': 'Bearer $serviceRoleKey',
       },
     );
-    final list = (jsonDecode(listResponse.body) as Map<String, dynamic>)['users']
-        as List<dynamic>;
+    final list =
+        (jsonDecode(listResponse.body) as Map<String, dynamic>)['users']
+            as List<dynamic>;
     return (list.first as Map<String, dynamic>)['id'] as String;
   }
 
@@ -88,15 +89,12 @@ Future<void> _ensureOrg(
   required String id,
   required String name,
 }) async {
-  await adminClient.from('organizations').upsert(
-    {
-      'id': id,
-      'name': name,
-      'document_number': 'TEST${id.substring(0, 8).replaceAll('-', '')}',
-      'created_at': DateTime.now().toUtc().toIso8601String(),
-    },
-    onConflict: 'id',
-  );
+  await adminClient.from('organizations').upsert({
+    'id': id,
+    'name': name,
+    'document_number': 'TEST${id.substring(0, 8).replaceAll('-', '')}',
+    'created_at': DateTime.now().toUtc().toIso8601String(),
+  }, onConflict: 'id');
 }
 
 /// Upserts a user_role record.
@@ -107,15 +105,12 @@ Future<void> _ensureUserRole(
   required String role,
   String? contractorId,
 }) async {
-  await adminClient.from('user_roles').upsert(
-    {
-      'user_id': userId,
-      'organization_id': orgId,
-      'role': role,
-      'contractor_id': ?contractorId,
-    },
-    onConflict: 'user_id',
-  );
+  await adminClient.from('user_roles').upsert({
+    'user_id': userId,
+    'organization_id': orgId,
+    'role': role,
+    'contractor_id': ?contractorId,
+  }, onConflict: 'user_id');
 }
 
 /// Signs in and returns an authenticated SupabaseClient for the given user.
@@ -211,8 +206,10 @@ void main() {
         'contractor_id': _uuid.v4(),
         'status': 'draft',
         'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
-        'valid_until_utc':
-            DateTime.now().toUtc().add(const Duration(days: 90)).toIso8601String(),
+        'valid_until_utc': DateTime.now()
+            .toUtc()
+            .add(const Duration(days: 90))
+            .toIso8601String(),
         'created_by_user_id': userAId,
       });
 
@@ -236,8 +233,10 @@ void main() {
         'contractor_id': _uuid.v4(),
         'status': 'draft',
         'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
-        'valid_until_utc':
-            DateTime.now().toUtc().add(const Duration(days: 90)).toIso8601String(),
+        'valid_until_utc': DateTime.now()
+            .toUtc()
+            .add(const Duration(days: 90))
+            .toIso8601String(),
         'created_by_user_id': userBId,
       });
 
@@ -282,8 +281,11 @@ void main() {
             .from('contracts')
             .select('id')
             .eq('id', orgBContractId);
-        expect(result, isEmpty,
-            reason: 'Org A should not see Org B contracts via RLS');
+        expect(
+          result,
+          isEmpty,
+          reason: 'Org A should not see Org B contracts via RLS',
+        );
       },
     );
 
@@ -296,8 +298,11 @@ void main() {
             .from('sla_audit_ledger')
             .select('id')
             .eq('id', orgBLedgerEntryId);
-        expect(result, isEmpty,
-            reason: 'Org A should not see Org B ledger entries');
+        expect(
+          result,
+          isEmpty,
+          reason: 'Org A should not see Org B ledger entries',
+        );
       },
     );
 
@@ -336,8 +341,11 @@ void main() {
               .from('execution_states')
               .select('id')
               .eq('set_id', setId);
-          expect(result, isEmpty,
-              reason: 'Org A should not see execution states from other orgs');
+          expect(
+            result,
+            isEmpty,
+            reason: 'Org A should not see execution states from other orgs',
+          );
         } catch (_) {
           // Seed failed (missing FK); skip the assertion gracefully
         }
@@ -354,8 +362,11 @@ void main() {
             .from('sanction_review_queue')
             .select('id')
             .eq('organization_id', _orgBId);
-        expect(result, isEmpty,
-            reason: 'Org A should not see Org B sanction queue rows');
+        expect(
+          result,
+          isEmpty,
+          reason: 'Org A should not see Org B sanction queue rows',
+        );
       },
     );
 
@@ -371,8 +382,11 @@ void main() {
             .update({'status': 'REVIEWED'})
             .eq('organization_id', _orgBId)
             .select('id');
-        expect(result, isEmpty,
-            reason: 'Cross-tenant UPDATE must affect 0 rows (RLS filter)');
+        expect(
+          result,
+          isEmpty,
+          reason: 'Cross-tenant UPDATE must affect 0 rows (RLS filter)',
+        );
       },
     );
 
@@ -383,24 +397,24 @@ void main() {
       () async {
         // Seed an entry for Org B
         final entryId = _uuid.v4();
-        await adminClient.from('spoofing_audit_entries').upsert(
-          {
-            'id': entryId,
-            'organization_id': _orgBId,
-            'canonical_fact_id': _uuid.v4(),
-            'risk_score': 'LOW',
-            'risk_level': 10,
-            'detected_at_utc': DateTime.now().toUtc().toIso8601String(),
-          },
-          onConflict: 'id',
-        );
+        await adminClient.from('spoofing_audit_entries').upsert({
+          'id': entryId,
+          'organization_id': _orgBId,
+          'canonical_fact_id': _uuid.v4(),
+          'risk_score': 'LOW',
+          'risk_level': 10,
+          'detected_at_utc': DateTime.now().toUtc().toIso8601String(),
+        }, onConflict: 'id');
 
         final result = await orgAClient
             .from('spoofing_audit_entries')
             .select('id')
             .eq('id', entryId);
-        expect(result, isEmpty,
-            reason: 'Org A should not see Org B spoofing audit entries');
+        expect(
+          result,
+          isEmpty,
+          reason: 'Org A should not see Org B spoofing audit entries',
+        );
       },
     );
 
@@ -413,8 +427,11 @@ void main() {
             .from('user_roles')
             .select('user_id')
             .eq('organization_id', _orgBId);
-        expect(result, isEmpty,
-            reason: 'Org A should not see Org B user roles via RLS');
+        expect(
+          result,
+          isEmpty,
+          reason: 'Org A should not see Org B user roles via RLS',
+        );
       },
     );
 
@@ -439,8 +456,11 @@ void main() {
               .limit(1);
           // Either empty or throws — both are acceptable (policy-dependent)
           // The key invariant: they must NOT see data from arbitrary orgs
-          expect(result, isA<List>(),
-              reason: 'Should return list (possibly empty) not throw');
+          expect(
+            result,
+            isA<List>(),
+            reason: 'Should return list (possibly empty) not throw',
+          );
         } finally {
           await contractorViewerClient.auth.signOut();
         }
@@ -465,13 +485,22 @@ void main() {
         while (base64.length % 4 != 0) {
           base64 += '=';
         }
-        final payload = jsonDecode(
-          utf8.decode(base64Decode(base64.replaceAll('-', '+').replaceAll('_', '/'))),
-        ) as Map<String, dynamic>;
+        final payload =
+            jsonDecode(
+                  utf8.decode(
+                    base64Decode(
+                      base64.replaceAll('-', '+').replaceAll('_', '/'),
+                    ),
+                  ),
+                )
+                as Map<String, dynamic>;
 
-        expect(payload['organization_id'], _orgAId,
-            reason:
-                'JWT hook must inject organization_id as top-level claim (INV-10)');
+        expect(
+          payload['organization_id'],
+          _orgAId,
+          reason:
+              'JWT hook must inject organization_id as top-level claim (INV-10)',
+        );
       },
     );
 
@@ -507,9 +536,9 @@ void main() {
             supabaseUrl: PostgresTestConfig.supabaseUrl,
             serviceRoleKey: PostgresTestConfig.serviceRoleKey,
           );
-          await adminClient
-              .from('super_admin_users')
-              .upsert({'user_id': superAdminId}, onConflict: 'user_id');
+          await adminClient.from('super_admin_users').upsert({
+            'user_id': superAdminId,
+          }, onConflict: 'user_id');
         }
 
         final superAdminClient = await _signIn(
@@ -529,11 +558,15 @@ void main() {
           while (base64.length % 4 != 0) {
             base64 += '=';
           }
-          final payload = jsonDecode(
-            utf8.decode(
-              base64Decode(base64.replaceAll('-', '+').replaceAll('_', '/')),
-            ),
-          ) as Map<String, dynamic>;
+          final payload =
+              jsonDecode(
+                    utf8.decode(
+                      base64Decode(
+                        base64.replaceAll('-', '+').replaceAll('_', '/'),
+                      ),
+                    ),
+                  )
+                  as Map<String, dynamic>;
 
           // Super admin: organization_id must be null (not present or null)
           final orgId = payload['organization_id'];
@@ -545,8 +578,11 @@ void main() {
 
           // Super admin claim must be true
           final appMeta = payload['app_metadata'] as Map<String, dynamic>?;
-          expect(appMeta?['super_admin'], isTrue,
-              reason: 'Super admin JWT must have app_metadata.super_admin=true');
+          expect(
+            appMeta?['super_admin'],
+            isTrue,
+            reason: 'Super admin JWT must have app_metadata.super_admin=true',
+          );
         } finally {
           await superAdminClient.auth.signOut();
         }
@@ -577,11 +613,11 @@ void main() {
         });
 
         // Ensure invitee exists in auth.users (service role workaround)
-        await adminClient.rpc('ensure_test_user_exists', params: {
-          'p_user_id': inviteeId,
-        }).catchError((_) {
-          // RPC may not exist; insert directly via admin API if needed
-        });
+        await adminClient
+            .rpc('ensure_test_user_exists', params: {'p_user_id': inviteeId})
+            .catchError((_) {
+              // RPC may not exist; insert directly via admin API if needed
+            });
 
         // First acceptance should succeed; second must throw.
         // We run them concurrently to stress the FOR UPDATE lock.
@@ -590,10 +626,10 @@ void main() {
 
         Future<void> acceptOnce() async {
           try {
-            await adminClient.rpc('accept_invitation', params: {
-              'p_token': token,
-              'p_user_id': inviteeId,
-            });
+            await adminClient.rpc(
+              'accept_invitation',
+              params: {'p_token': token, 'p_user_id': inviteeId},
+            );
             successCount++;
           } catch (_) {
             errorCount++;
@@ -602,11 +638,16 @@ void main() {
 
         await Future.wait([acceptOnce(), acceptOnce()]);
 
-        expect(successCount, 1,
-            reason: 'Exactly one concurrent acceptance must succeed');
-        expect(errorCount, 1,
-            reason:
-                'The second concurrent acceptance must be rejected (INV-24)');
+        expect(
+          successCount,
+          1,
+          reason: 'Exactly one concurrent acceptance must succeed',
+        );
+        expect(
+          errorCount,
+          1,
+          reason: 'The second concurrent acceptance must be rejected (INV-24)',
+        );
       },
     );
   });

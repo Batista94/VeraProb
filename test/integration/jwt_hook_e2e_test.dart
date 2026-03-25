@@ -76,7 +76,8 @@ Future<String> _ensureUser(
       },
     );
     final users =
-        (jsonDecode(listRes.body) as Map<String, dynamic>)['users'] as List<dynamic>;
+        (jsonDecode(listRes.body) as Map<String, dynamic>)['users']
+            as List<dynamic>;
     return (users.first as Map<String, dynamic>)['id'] as String;
   }
 
@@ -100,7 +101,8 @@ Map<String, dynamic> _decodeJwt(String token) {
   final parts = token.split('.');
   if (parts.length != 3) return {};
   final normalized = base64Url.normalize(parts[1]);
-  return jsonDecode(utf8.decode(base64Url.decode(normalized))) as Map<String, dynamic>;
+  return jsonDecode(utf8.decode(base64Url.decode(normalized)))
+      as Map<String, dynamic>;
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -120,15 +122,12 @@ void main() {
       );
 
       // ── Seed sentinel org ────────────────────────────────────────────────
-      await adminClient.from('organizations').upsert(
-        {
-          'id': _hookTestOrgId,
-          'name': 'JWT Hook Test Org',
-          'document_number': 'JWTTEST001',
-          'created_at': DateTime.now().toUtc().toIso8601String(),
-        },
-        onConflict: 'id',
-      );
+      await adminClient.from('organizations').upsert({
+        'id': _hookTestOrgId,
+        'name': 'JWT Hook Test Org',
+        'document_number': 'JWTTEST001',
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'id');
 
       // ── Seed tenant user + role ──────────────────────────────────────────
       final tenantUserId = await _ensureUser(
@@ -137,14 +136,11 @@ void main() {
         supabaseUrl: PostgresTestConfig.supabaseUrl,
         serviceRoleKey: PostgresTestConfig.serviceRoleKey,
       );
-      await adminClient.from('user_roles').upsert(
-        {
-          'user_id': tenantUserId,
-          'organization_id': _hookTestOrgId,
-          'role': 'TENANT_ADMIN',
-        },
-        onConflict: 'user_id',
-      );
+      await adminClient.from('user_roles').upsert({
+        'user_id': tenantUserId,
+        'organization_id': _hookTestOrgId,
+        'role': 'TENANT_ADMIN',
+      }, onConflict: 'user_id');
 
       // ── Seed super admin user ─────────────────────────────────────────────
       final superAdminId = await _ensureUser(
@@ -153,9 +149,9 @@ void main() {
         supabaseUrl: PostgresTestConfig.supabaseUrl,
         serviceRoleKey: PostgresTestConfig.serviceRoleKey,
       );
-      await adminClient
-          .from('super_admin_users')
-          .upsert({'user_id': superAdminId}, onConflict: 'user_id');
+      await adminClient.from('super_admin_users').upsert({
+        'user_id': superAdminId,
+      }, onConflict: 'user_id');
 
       // ── Seed pending-invite user (NOT in user_roles, NOT in super_admin_users)
       await _ensureUser(
@@ -199,7 +195,8 @@ void main() {
           expect(
             appMeta!['org_id']?.toString(),
             _hookTestOrgId,
-            reason: 'app_metadata.org_id must match the sentinel org (currentOrganizationIdProvider)',
+            reason:
+                'app_metadata.org_id must match the sentinel org (currentOrganizationIdProvider)',
           );
           expect(
             appMeta['role'],
@@ -231,7 +228,11 @@ void main() {
 
         try {
           final session = client.auth.currentSession;
-          expect(session, isNotNull, reason: 'Super admin client must be signed in');
+          expect(
+            session,
+            isNotNull,
+            reason: 'Super admin client must be signed in',
+          );
 
           final payload = _decodeJwt(session!.accessToken);
           final appMeta = payload['app_metadata'] as Map<String, dynamic>?;
@@ -241,7 +242,8 @@ void main() {
           expect(
             appMeta!['super_admin'],
             isTrue,
-            reason: 'Hook must set app_metadata.super_admin=true for super admins',
+            reason:
+                'Hook must set app_metadata.super_admin=true for super admins',
           );
 
           // currentOrganizationIdProvider must return null for super admins —
@@ -250,7 +252,8 @@ void main() {
           expect(
             orgId == null || orgId.toString().isEmpty,
             isTrue,
-            reason: 'app_metadata.org_id must be null for super admin (no tenant context)',
+            reason:
+                'app_metadata.org_id must be null for super admin (no tenant context)',
           );
 
           // No top-level organization_id — super admin is not tenant-scoped.
@@ -287,8 +290,10 @@ void main() {
           'contractor_id': _uuid.v4(),
           'status': 'draft',
           'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
-          'valid_until_utc':
-              DateTime.now().toUtc().add(const Duration(days: 30)).toIso8601String(),
+          'valid_until_utc': DateTime.now()
+              .toUtc()
+              .add(const Duration(days: 30))
+              .toIso8601String(),
           'created_by_user_id': _uuid.v4(),
         });
 
@@ -337,7 +342,11 @@ void main() {
 
         try {
           final session = client.auth.currentSession;
-          expect(session, isNotNull, reason: 'Pending invite client must be signed in');
+          expect(
+            session,
+            isNotNull,
+            reason: 'Pending invite client must be signed in',
+          );
 
           final payload = _decodeJwt(session!.accessToken);
           final appMeta = payload['app_metadata'] as Map<String, dynamic>?;

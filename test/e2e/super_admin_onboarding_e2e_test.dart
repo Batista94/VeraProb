@@ -46,7 +46,10 @@ void main() async {
           PostgresTestConfig.supabaseUrl,
           PostgresTestConfig.serviceRoleKey,
         );
-        repo = SupabaseSuperAdminRepository(serviceRoleClient, serviceRoleClient);
+        repo = SupabaseSuperAdminRepository(
+          serviceRoleClient,
+          serviceRoleClient,
+        );
         handler = CreateOrganizationHandler(repo, serviceRoleClient);
       });
 

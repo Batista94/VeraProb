@@ -157,42 +157,36 @@ void main() async {
 
       // ── MT-9.3.9 — INV-1: Imutabilidade — Nada se Apaga ou Altera ──────────
       group('MT-9.3.9 — Imutabilidade (INV-1)', () {
-        test(
-          'UPDATE em organization_id → restrict_violation',
-          () async {
-            await expectLater(
-              () => client
-                  .from('sanction_review_queue')
-                  .update({
-                    'organization_id': '00000000-0000-0000-0000-000000000099',
-                  })
-                  .eq('id', queueRowId),
-              throwsA(
-                isA<PostgrestException>().having(
-                  (e) => e.message,
-                  'message',
-                  contains('immutable field mutation'),
-                ),
+        test('UPDATE em organization_id → restrict_violation', () async {
+          await expectLater(
+            () => client
+                .from('sanction_review_queue')
+                .update({
+                  'organization_id': '00000000-0000-0000-0000-000000000099',
+                })
+                .eq('id', queueRowId),
+            throwsA(
+              isA<PostgrestException>().having(
+                (e) => e.message,
+                'message',
+                contains('immutable field mutation'),
               ),
-            );
-          },
-        );
+            ),
+          );
+        });
 
-        test(
-          'UPDATE em verdict_evidence → restrict_violation',
-          () async {
-            final tampered = Map<String, dynamic>.from(fakeEvidence)
-              ..['fine_cents'] = 1; // tampered amount
+        test('UPDATE em verdict_evidence → restrict_violation', () async {
+          final tampered = Map<String, dynamic>.from(fakeEvidence)
+            ..['fine_cents'] = 1; // tampered amount
 
-            await expectLater(
-              () => client
-                  .from('sanction_review_queue')
-                  .update({'verdict_evidence': tampered})
-                  .eq('id', queueRowId),
-              throwsA(isA<PostgrestException>()),
-            );
-          },
-        );
+          await expectLater(
+            () => client
+                .from('sanction_review_queue')
+                .update({'verdict_evidence': tampered})
+                .eq('id', queueRowId),
+            throwsA(isA<PostgrestException>()),
+          );
+        });
 
         test(
           'UPDATE em status (campo mutável) → permitido sem exceção',
@@ -214,32 +208,33 @@ void main() async {
           },
         );
 
-        test(
-          'DELETE → restrict_violation (append-only — INV-1)',
-          () async {
-            await expectLater(
-              () => client
-                  .from('sanction_review_queue')
-                  .delete()
-                  .eq('id', queueRowId),
-              throwsA(
-                isA<PostgrestException>().having(
-                  (e) => e.message,
-                  'message',
-                  contains('append-only'),
-                ),
-              ),
-            );
-
-            // Row must still exist after the blocked delete.
-            final rows = await client
+        test('DELETE → restrict_violation (append-only — INV-1)', () async {
+          await expectLater(
+            () => client
                 .from('sanction_review_queue')
-                .select('id')
-                .eq('id', queueRowId);
+                .delete()
+                .eq('id', queueRowId),
+            throwsA(
+              isA<PostgrestException>().having(
+                (e) => e.message,
+                'message',
+                contains('append-only'),
+              ),
+            ),
+          );
 
-            expect((rows as List).length, 1, reason: 'Row must survive blocked delete');
-          },
-        );
+          // Row must still exist after the blocked delete.
+          final rows = await client
+              .from('sanction_review_queue')
+              .select('id')
+              .eq('id', queueRowId);
+
+          expect(
+            (rows as List).length,
+            1,
+            reason: 'Row must survive blocked delete',
+          );
+        });
       });
 
       // ── MT-9.3.10 — INV-23: VerdictEvidence no Motor ───────────────────────
@@ -265,11 +260,7 @@ void main() async {
 
         test('evidence_hash tem exatamente 64 caracteres hexadecimais', () {
           final hash = evidence['evidence_hash'] as String;
-          expect(
-            hash.length,
-            64,
-            reason: 'SHA-256 deve ter 64 chars (INV-23)',
-          );
+          expect(hash.length, 64, reason: 'SHA-256 deve ter 64 chars (INV-23)');
           expect(
             RegExp(r'^[0-9a-f]{64}$').hasMatch(hash),
             isTrue,
@@ -277,34 +268,38 @@ void main() async {
           );
         });
 
-        test('todos os campos obrigatórios do VerdictEvidence estão presentes e não nulos', () {
-          const requiredFields = [
-            'clause_ref',
-            'rule_id',
-            'rule_version',
-            'primary_evidence_lat',
-            'primary_evidence_lng',
-            'primary_evidence_timestamp_utc',
-            'evidence_hash',
-            'delta_value',
-            'threshold_value',
-            'fine_cents',
-            'confidence_score',
-          ];
+        test(
+          'todos os campos obrigatórios do VerdictEvidence estão presentes e não nulos',
+          () {
+            const requiredFields = [
+              'clause_ref',
+              'rule_id',
+              'rule_version',
+              'primary_evidence_lat',
+              'primary_evidence_lng',
+              'primary_evidence_timestamp_utc',
+              'evidence_hash',
+              'delta_value',
+              'threshold_value',
+              'fine_cents',
+              'confidence_score',
+            ];
 
-          for (final field in requiredFields) {
-            expect(
-              evidence.containsKey(field),
-              isTrue,
-              reason: '$field deve estar presente em verdict_evidence (INV-23)',
-            );
-            expect(
-              evidence[field],
-              isNotNull,
-              reason: '$field não deve ser nulo (INV-23)',
-            );
-          }
-        });
+            for (final field in requiredFields) {
+              expect(
+                evidence.containsKey(field),
+                isTrue,
+                reason:
+                    '$field deve estar presente em verdict_evidence (INV-23)',
+              );
+              expect(
+                evidence[field],
+                isNotNull,
+                reason: '$field não deve ser nulo (INV-23)',
+              );
+            }
+          },
+        );
 
         test('rule_id não está vazio', () {
           expect((evidence['rule_id'] as String).isNotEmpty, isTrue);

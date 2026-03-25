@@ -91,21 +91,27 @@ void main() {
         expect(result, secondId);
       });
 
-      test('tenant isolation: org-A last entry not returned for org-B', () async {
-        final orgAId = await repo.append(makeEntry(organizationId: 'org-A'));
-        await repo.append(makeEntry(organizationId: 'org-B'));
+      test(
+        'tenant isolation: org-A last entry not returned for org-B',
+        () async {
+          final orgAId = await repo.append(makeEntry(organizationId: 'org-A'));
+          await repo.append(makeEntry(organizationId: 'org-B'));
 
-        final resultA = await repo.getLastEntryId(organizationId: 'org-A');
-        expect(resultA, orgAId);
-      });
+          final resultA = await repo.getLastEntryId(organizationId: 'org-A');
+          expect(resultA, orgAId);
+        },
+      );
 
-      test('without organizationId: returns last entry across all orgs', () async {
-        await repo.append(makeEntry(organizationId: 'org-A'));
-        final lastId = await repo.append(makeEntry(organizationId: 'org-B'));
+      test(
+        'without organizationId: returns last entry across all orgs',
+        () async {
+          await repo.append(makeEntry(organizationId: 'org-A'));
+          final lastId = await repo.append(makeEntry(organizationId: 'org-B'));
 
-        final result = await repo.getLastEntryId();
-        expect(result, lastId);
-      });
+          final result = await repo.getLastEntryId();
+          expect(result, lastId);
+        },
+      );
     });
 
     group('getEntriesBySetId', () {
@@ -139,52 +145,60 @@ void main() {
         expect(results, isEmpty);
       });
 
-      test('without organizationId: returns all entries matching setId across orgs',
-          () async {
-        await repo.append(makeEntry(organizationId: 'org-A', setId: 'set-1'));
-        await repo.append(makeEntry(organizationId: 'org-B', setId: 'set-1'));
-        await repo.append(makeEntry(organizationId: 'org-A', setId: 'set-2'));
+      test(
+        'without organizationId: returns all entries matching setId across orgs',
+        () async {
+          await repo.append(makeEntry(organizationId: 'org-A', setId: 'set-1'));
+          await repo.append(makeEntry(organizationId: 'org-B', setId: 'set-1'));
+          await repo.append(makeEntry(organizationId: 'org-A', setId: 'set-2'));
 
-        final results = await repo.getEntriesBySetId('set-1');
-        expect(results, hasLength(2));
-      });
+          final results = await repo.getEntriesBySetId('set-1');
+          expect(results, hasLength(2));
+        },
+      );
 
-      test('entries are sorted chronologically by occurredAtUtc ascending', () async {
-        await repo.append(
-          makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 3), setId: 'set-1'),
-        );
-        await repo.append(
-          makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 1), setId: 'set-1'),
-        );
-        await repo.append(
-          makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 2), setId: 'set-1'),
-        );
+      test(
+        'entries are sorted chronologically by occurredAtUtc ascending',
+        () async {
+          await repo.append(
+            makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 3), setId: 'set-1'),
+          );
+          await repo.append(
+            makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 1), setId: 'set-1'),
+          );
+          await repo.append(
+            makeEntry(occurredAtUtc: DateTime.utc(2026, 1, 2), setId: 'set-1'),
+          );
 
-        final results = await repo.getEntriesBySetId(
-          'set-1',
-          organizationId: 'org-1',
-        );
-        expect(results[0].occurredAtUtc, DateTime.utc(2026, 1, 1));
-        expect(results[1].occurredAtUtc, DateTime.utc(2026, 1, 2));
-        expect(results[2].occurredAtUtc, DateTime.utc(2026, 1, 3));
-      });
+          final results = await repo.getEntriesBySetId(
+            'set-1',
+            organizationId: 'org-1',
+          );
+          expect(results[0].occurredAtUtc, DateTime.utc(2026, 1, 1));
+          expect(results[1].occurredAtUtc, DateTime.utc(2026, 1, 2));
+          expect(results[2].occurredAtUtc, DateTime.utc(2026, 1, 3));
+        },
+      );
 
-      test('multiple sets: entries for set-A do not bleed into set-B', () async {
-        await repo.append(makeEntry(setId: 'set-A'));
-        await repo.append(makeEntry(setId: 'set-B'));
-        await repo.append(makeEntry(setId: 'set-A'));
+      test(
+        'multiple sets: entries for set-A do not bleed into set-B',
+        () async {
+          await repo.append(makeEntry(setId: 'set-A'));
+          await repo.append(makeEntry(setId: 'set-B'));
+          await repo.append(makeEntry(setId: 'set-A'));
 
-        final resultsA = await repo.getEntriesBySetId(
-          'set-A',
-          organizationId: 'org-1',
-        );
-        final resultsB = await repo.getEntriesBySetId(
-          'set-B',
-          organizationId: 'org-1',
-        );
-        expect(resultsA, hasLength(2));
-        expect(resultsB, hasLength(1));
-      });
+          final resultsA = await repo.getEntriesBySetId(
+            'set-A',
+            organizationId: 'org-1',
+          );
+          final resultsB = await repo.getEntriesBySetId(
+            'set-B',
+            organizationId: 'org-1',
+          );
+          expect(resultsA, hasLength(2));
+          expect(resultsB, hasLength(1));
+        },
+      );
     });
   });
 }

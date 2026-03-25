@@ -19,7 +19,9 @@ class _MockHttpOverrides extends HttpOverrides {
 Widget _buildScreen() {
   return ProviderScope(
     overrides: [
-      slaSummaryProvider.overrideWith((ref) async => SlaExecutionSummary.empty()),
+      slaSummaryProvider.overrideWith(
+        (ref) async => SlaExecutionSummary.empty(),
+      ),
       slaExceptionsProvider.overrideWith((ref) async => []),
     ],
     child: const MaterialApp(home: SlaAuditScreen()),

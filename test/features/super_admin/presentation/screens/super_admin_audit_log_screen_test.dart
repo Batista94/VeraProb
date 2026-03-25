@@ -17,12 +17,8 @@ class _MockHttpOverrides extends HttpOverrides {
 
 Widget _buildScreen() {
   return ProviderScope(
-    overrides: [
-      systemAuditLogProvider.overrideWith((ref, params) async => []),
-    ],
-    child: const MaterialApp(
-      home: Scaffold(body: SuperAdminAuditLogScreen()),
-    ),
+    overrides: [systemAuditLogProvider.overrideWith((ref, params) async => [])],
+    child: const MaterialApp(home: Scaffold(body: SuperAdminAuditLogScreen())),
   );
 }
 

@@ -18,9 +18,7 @@ class _MockHttpOverrides extends HttpOverrides {
 Widget _buildScreen() {
   return ProviderScope(
     overrides: [
-      pendingSanctionsStreamProvider.overrideWith(
-        (ref) => Stream.value([]),
-      ),
+      pendingSanctionsStreamProvider.overrideWith((ref) => Stream.value([])),
     ],
     child: const MaterialApp(home: AuditorQueueScreen()),
   );

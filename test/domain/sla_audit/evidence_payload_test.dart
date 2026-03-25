@@ -41,7 +41,8 @@ void main() {
           parameterSource: 'default',
         );
         final restored =
-            EvidencePayload.fromJson(original.toJson()) as DwellRequirementEvidence;
+            EvidencePayload.fromJson(original.toJson())
+                as DwellRequirementEvidence;
         expect(restored.requiredDwellSeconds, original.requiredDwellSeconds);
         expect(restored.parameterSource, original.parameterSource);
       });
@@ -63,8 +64,8 @@ void main() {
       test('fromJson restores instance with num cast to double', () {
         final json = {
           '_type': 'speed_violation',
-          'actual_speed_kmh': 110,   // int in JSON
-          'limit_speed_kmh': 100,    // int in JSON
+          'actual_speed_kmh': 110, // int in JSON
+          'limit_speed_kmh': 100, // int in JSON
         };
         final evidence =
             EvidencePayload.fromJson(json) as SpeedViolationEvidence;
@@ -78,7 +79,8 @@ void main() {
           limitSpeedKmh: 120.0,
         );
         final restored =
-            EvidencePayload.fromJson(original.toJson()) as SpeedViolationEvidence;
+            EvidencePayload.fromJson(original.toJson())
+                as SpeedViolationEvidence;
         expect(restored.actualSpeedKmh, original.actualSpeedKmh);
         expect(restored.limitSpeedKmh, original.limitSpeedKmh);
       });
@@ -109,7 +111,8 @@ void main() {
           requiredDwellSeconds: 60,
         );
         final restored =
-            EvidencePayload.fromJson(original.toJson()) as GeofenceBindingEvidence;
+            EvidencePayload.fromJson(original.toJson())
+                as GeofenceBindingEvidence;
         expect(restored.distanceMeters, original.distanceMeters);
         expect(restored.allowedRadiusMeters, original.allowedRadiusMeters);
         expect(restored.actualDwellSeconds, original.actualDwellSeconds);
@@ -135,7 +138,8 @@ void main() {
       test('round-trip preserves non-null penalty', () {
         const original = PenaltyAssessedEvidence(penaltyAmountCents: 150000);
         final restored =
-            EvidencePayload.fromJson(original.toJson()) as PenaltyAssessedEvidence;
+            EvidencePayload.fromJson(original.toJson())
+                as PenaltyAssessedEvidence;
         expect(restored.penaltyAmountCents, 150000);
       });
     });
@@ -162,7 +166,8 @@ void main() {
           expiredBySeconds: 300,
         );
         final restored =
-            EvidencePayload.fromJson(original.toJson()) as ExpirationSweepEvidence;
+            EvidencePayload.fromJson(original.toJson())
+                as ExpirationSweepEvidence;
         expect(restored.scheduledWindowEndUtc, original.scheduledWindowEndUtc);
         expect(restored.evaluatedAtUtc, original.evaluatedAtUtc);
         expect(restored.expiredBySeconds, original.expiredBySeconds);
@@ -171,14 +176,17 @@ void main() {
 
     // ── GenericEvidencePayload (legacy fallback) ─────────────────────────
     group('GenericEvidencePayload — legacy fallback', () {
-      test('fromJson falls back to GenericEvidencePayload when _type is absent', () {
-        final legacyJson = {'some_old_key': 'some_old_value', 'count': 3};
-        final evidence = EvidencePayload.fromJson(legacyJson);
-        expect(evidence, isA<GenericEvidencePayload>());
-        final generic = evidence as GenericEvidencePayload;
-        expect(generic.rawData['some_old_key'], 'some_old_value');
-        expect(generic.rawData['count'], 3);
-      });
+      test(
+        'fromJson falls back to GenericEvidencePayload when _type is absent',
+        () {
+          final legacyJson = {'some_old_key': 'some_old_value', 'count': 3};
+          final evidence = EvidencePayload.fromJson(legacyJson);
+          expect(evidence, isA<GenericEvidencePayload>());
+          final generic = evidence as GenericEvidencePayload;
+          expect(generic.rawData['some_old_key'], 'some_old_value');
+          expect(generic.rawData['count'], 3);
+        },
+      );
 
       test('fromJson falls back when _type is an unknown string', () {
         final json = {'_type': 'unknown_future_type', 'data': 42};
