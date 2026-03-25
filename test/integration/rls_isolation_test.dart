@@ -112,7 +112,7 @@ Future<void> _ensureUserRole(
       'user_id': userId,
       'organization_id': orgId,
       'role': role,
-      if (contractorId != null) 'contractor_id': contractorId,
+      'contractor_id': ?contractorId,
     },
     onConflict: 'user_id',
   );
@@ -269,8 +269,8 @@ void main() {
 
     tearDownAll(() async {
       if (!supabaseRunning) return;
-      orgAClient.auth.signOut();
-      orgBClient.auth.signOut();
+      await orgAClient.auth.signOut();
+      await orgBClient.auth.signOut();
     });
 
     // ── Case 1: contracts — SELECT cross-tenant ──────────────────────────
@@ -307,7 +307,7 @@ void main() {
       skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         // Attempt DELETE on own org's ledger entry — INV-1 trigger must block it
-        expectLater(
+        await expectLater(
           () async => adminClient
               .from('sla_audit_ledger')
               .delete()
@@ -442,7 +442,7 @@ void main() {
           expect(result, isA<List>(),
               reason: 'Should return list (possibly empty) not throw');
         } finally {
-          contractorViewerClient.auth.signOut();
+          await contractorViewerClient.auth.signOut();
         }
       },
     );
@@ -548,7 +548,7 @@ void main() {
           expect(appMeta?['super_admin'], isTrue,
               reason: 'Super admin JWT must have app_metadata.super_admin=true');
         } finally {
-          superAdminClient.auth.signOut();
+          await superAdminClient.auth.signOut();
         }
       },
     );
@@ -588,7 +588,7 @@ void main() {
         int successCount = 0;
         int errorCount = 0;
 
-        final acceptOnce = () async {
+        Future<void> acceptOnce() async {
           try {
             await adminClient.rpc('accept_invitation', params: {
               'p_token': token,
@@ -598,7 +598,7 @@ void main() {
           } catch (_) {
             errorCount++;
           }
-        };
+        }
 
         await Future.wait([acceptOnce(), acceptOnce()]);
 

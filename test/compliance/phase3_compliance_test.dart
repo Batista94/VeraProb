@@ -357,7 +357,7 @@ void main() {
         ruleVersion: 1,
         rulePriority: 1,
         outcome: 'PASS',
-        evidence: const GenericEvidencePayload({'threshold': 60, 'actual': 120}),
+        evidence: GenericEvidencePayload({'threshold': 60, 'actual': 120}),
       );
       final json = decision.toJson();
       final restored = EvaluationDecision.fromJson(json);

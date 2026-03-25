@@ -212,7 +212,7 @@ void main() {
             reason: 'Tenant user must not have super_admin=true',
           );
         } finally {
-          client.auth.signOut();
+          await client.auth.signOut();
         }
       },
     );
@@ -268,7 +268,7 @@ void main() {
             reason: 'app_metadata.role must be null for super admin',
           );
         } finally {
-          client.auth.signOut();
+          await client.auth.signOut();
         }
       },
     );
@@ -318,7 +318,7 @@ void main() {
                 'no organization_id in JWT means no contract rows returned (INV-6)',
           );
         } finally {
-          superAdminClient.auth.signOut();
+          await superAdminClient.auth.signOut();
         }
       },
     );
@@ -379,7 +379,7 @@ void main() {
                 'Pending invite user must see no data — RLS organization_id is null (INV-10)',
           );
         } finally {
-          client.auth.signOut();
+          await client.auth.signOut();
         }
       },
     );
