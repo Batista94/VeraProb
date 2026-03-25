@@ -149,11 +149,12 @@ jobs:
 
       - name: Remove generated files from coverage report
         run: |
-          lcov --remove coverage/lcov.info \
-            '**/*.g.dart' \
-            '**/*.freezed.dart' \
-            'lib/features/**' \
-            'lib/presentation/**' \
+          lcov --ignore-errors unused \
+            --remove coverage/lcov.info \
+            '*.g.dart' \
+            '*.freezed.dart' \
+            'lib/features/*' \
+            'lib/presentation/*' \
             --output-file coverage/lcov_filtered.info
 
       - name: Enforce Coverage Gate (≥60% on domain/application/infrastructure/core)
