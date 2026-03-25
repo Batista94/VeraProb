@@ -15,18 +15,17 @@ void main() {
       String? newValue = 'completed',
       String? reason = 'Manual override',
       DateTime? timestamp,
-    }) =>
-        AuditLog(
-          id: id,
-          organizationId: organizationId,
-          operatorId: operatorId,
-          actionType: actionType,
-          entityId: entityId,
-          oldValue: oldValue,
-          newValue: newValue,
-          reason: reason,
-          timestamp: timestamp ?? ts,
-        );
+    }) => AuditLog(
+      id: id,
+      organizationId: organizationId,
+      operatorId: operatorId,
+      actionType: actionType,
+      entityId: entityId,
+      oldValue: oldValue,
+      newValue: newValue,
+      reason: reason,
+      timestamp: timestamp ?? ts,
+    );
 
     test('fromJson parses all fields', () {
       final json = {

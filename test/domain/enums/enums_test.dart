@@ -85,23 +85,36 @@ void main() {
 
       test('fromString parses all snake_case values', () {
         expect(EventType.fromString('status_change'), EventType.statusChange);
+        expect(EventType.fromString('delay_detected'), EventType.delayDetected);
         expect(
-            EventType.fromString('delay_detected'), EventType.delayDetected);
-        expect(
-            EventType.fromString('delay_recovered'), EventType.delayRecovered);
+          EventType.fromString('delay_recovered'),
+          EventType.delayRecovered,
+        );
         expect(EventType.fromString('position_lost'), EventType.positionLost);
-        expect(EventType.fromString('position_restored'),
-            EventType.positionRestored);
         expect(
-            EventType.fromString('driver_assigned'), EventType.driverAssigned);
+          EventType.fromString('position_restored'),
+          EventType.positionRestored,
+        );
         expect(
-            EventType.fromString('vehicle_assigned'), EventType.vehicleAssigned);
-        expect(EventType.fromString('feed_disconnected'),
-            EventType.feedDisconnected);
+          EventType.fromString('driver_assigned'),
+          EventType.driverAssigned,
+        );
         expect(
-            EventType.fromString('feed_reconnected'), EventType.feedReconnected);
+          EventType.fromString('vehicle_assigned'),
+          EventType.vehicleAssigned,
+        );
         expect(
-            EventType.fromString('manual_override'), EventType.manualOverride);
+          EventType.fromString('feed_disconnected'),
+          EventType.feedDisconnected,
+        );
+        expect(
+          EventType.fromString('feed_reconnected'),
+          EventType.feedReconnected,
+        );
+        expect(
+          EventType.fromString('manual_override'),
+          EventType.manualOverride,
+        );
       });
 
       test('fromString returns statusChange for unknown value', () {
@@ -125,12 +138,12 @@ void main() {
       });
 
       test('fromString parses all values', () {
+        expect(VehicleStatus.fromString('available'), VehicleStatus.available);
+        expect(VehicleStatus.fromString('in_service'), VehicleStatus.inService);
         expect(
-            VehicleStatus.fromString('available'), VehicleStatus.available);
-        expect(
-            VehicleStatus.fromString('in_service'), VehicleStatus.inService);
-        expect(
-            VehicleStatus.fromString('maintenance'), VehicleStatus.maintenance);
+          VehicleStatus.fromString('maintenance'),
+          VehicleStatus.maintenance,
+        );
         expect(VehicleStatus.fromString('retired'), VehicleStatus.retired);
         expect(VehicleStatus.fromString('unknown'), VehicleStatus.available);
       });

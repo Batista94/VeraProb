@@ -44,6 +44,8 @@ void main() {
   }
 
   final pct = (totalHit / totalFound) * 100;
-  print('Filtered coverage: $totalHit / $totalFound lines = ${pct.toStringAsFixed(4)}%');
+  print(
+    'Filtered coverage: $totalHit / $totalFound lines = ${pct.toStringAsFixed(4)}%',
+  );
   print(pct >= 60 ? 'PASS (>= 60%)' : 'FAIL (< 60%)');
 }

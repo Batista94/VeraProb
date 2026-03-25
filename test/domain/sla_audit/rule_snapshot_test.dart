@@ -12,14 +12,13 @@ void main() {
       Map<String, dynamic>? cfg,
       int ruleVersion = 1,
       int evaluationOrder = 0,
-    }) =>
-        RuleSnapshotItem(
-          ruleId: ruleId,
-          ruleType: ruleType,
-          config: cfg ?? config,
-          ruleVersion: ruleVersion,
-          evaluationOrder: evaluationOrder,
-        );
+    }) => RuleSnapshotItem(
+      ruleId: ruleId,
+      ruleType: ruleType,
+      config: cfg ?? config,
+      ruleVersion: ruleVersion,
+      evaluationOrder: evaluationOrder,
+    );
 
     test('fromJson reconstructs item correctly', () {
       final json = {
@@ -62,12 +61,12 @@ void main() {
 
   group('RuleSnapshot', () {
     RuleSnapshotItem makeItem(int order, SlaRuleType type) => RuleSnapshotItem(
-          ruleId: 'rule-$order',
-          ruleType: type,
-          config: {},
-          ruleVersion: 1,
-          evaluationOrder: order,
-        );
+      ruleId: 'rule-$order',
+      ruleType: type,
+      config: {},
+      ruleVersion: 1,
+      evaluationOrder: order,
+    );
 
     test('orderedRules returns items sorted by evaluationOrder ascending', () {
       final snapshot = RuleSnapshot([
@@ -105,9 +104,7 @@ void main() {
     });
 
     test('toJson serializes rules list', () {
-      final snapshot = RuleSnapshot([
-        makeItem(0, SlaRuleType.excessiveSpeed),
-      ]);
+      final snapshot = RuleSnapshot([makeItem(0, SlaRuleType.excessiveSpeed)]);
       final json = snapshot.toJson();
       expect(json.length, 1);
       expect(json[0]['ruleId'], 'rule-0');

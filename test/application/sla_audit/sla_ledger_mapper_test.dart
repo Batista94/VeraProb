@@ -124,17 +124,17 @@ void main() {
     final DateTime now = DateTime.now().toUtc();
 
     VerdictEvidence buildEvidence() => VerdictEvidence.create(
-          clauseRef: 'VEL-01',
-          ruleId: 'rule-speed-v1',
-          ruleVersion: 1,
-          primaryEvidenceLat: -23.5505,
-          primaryEvidenceLng: -46.6333,
-          primaryEvidenceTimestampUtc: now,
-          deltaValue: 8.5,
-          thresholdValue: 80.0,
-          fineCents: const Money(150000),
-          confidenceScore: 95,
-        );
+      clauseRef: 'VEL-01',
+      ruleId: 'rule-speed-v1',
+      ruleVersion: 1,
+      primaryEvidenceLat: -23.5505,
+      primaryEvidenceLng: -46.6333,
+      primaryEvidenceTimestampUtc: now,
+      deltaValue: 8.5,
+      thresholdValue: 80.0,
+      fineCents: const Money(150000),
+      confidenceScore: 95,
+    );
 
     test('SanctionDisputedEvent maps to SANCTION_DISPUTED entry', () {
       final evidence = buildEvidence();

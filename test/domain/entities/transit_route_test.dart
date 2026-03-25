@@ -13,21 +13,23 @@ void main() {
       String? agencyId = 'SPTRANS',
       DateTime? createdAt,
       int? activeTripsCount,
-    }) =>
-        TransitRoute(
-          id: id,
-          organizationId: organizationId,
-          gtfsRouteId: gtfsRouteId,
-          shortName: shortName,
-          longName: longName,
-          color: color,
-          agencyId: agencyId,
-          createdAt: createdAt,
-          activeTripsCount: activeTripsCount,
-        );
+    }) => TransitRoute(
+      id: id,
+      organizationId: organizationId,
+      gtfsRouteId: gtfsRouteId,
+      shortName: shortName,
+      longName: longName,
+      color: color,
+      agencyId: agencyId,
+      createdAt: createdAt,
+      activeTripsCount: activeTripsCount,
+    );
 
     test('displayName combines shortName and longName', () {
-      final route = buildRoute(shortName: '809U', longName: 'Cidade Universitária');
+      final route = buildRoute(
+        shortName: '809U',
+        longName: 'Cidade Universitária',
+      );
       expect(route.displayName, '809U — Cidade Universitária');
     });
 

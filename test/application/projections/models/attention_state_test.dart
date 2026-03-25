@@ -12,13 +12,12 @@ void main() {
       int severityScore = 0,
       ConnectivityState connectivity = ConnectivityState.healthy,
       RouteAdherence adherence = RouteAdherence.onRoute,
-    }) =>
-        deriveAttentionState(
-          status: status,
-          severityScore: severityScore,
-          connectivity: connectivity,
-          adherence: adherence,
-        );
+    }) => deriveAttentionState(
+      status: status,
+      severityScore: severityScore,
+      connectivity: connectivity,
+      adherence: adherence,
+    );
 
     // ── CRITICAL path ──────────────────────────────────────────────────────
 
@@ -37,24 +36,15 @@ void main() {
     });
 
     test('status interrupted → CRITICAL', () {
-      expect(
-        derive(status: TripStatus.interrupted),
-        AttentionState.critical,
-      );
+      expect(derive(status: TripStatus.interrupted), AttentionState.critical);
     });
 
     test('status noShow → CRITICAL', () {
-      expect(
-        derive(status: TripStatus.noShow),
-        AttentionState.critical,
-      );
+      expect(derive(status: TripStatus.noShow), AttentionState.critical);
     });
 
     test('status maintenance → CRITICAL', () {
-      expect(
-        derive(status: TripStatus.maintenance),
-        AttentionState.critical,
-      );
+      expect(derive(status: TripStatus.maintenance), AttentionState.critical);
     });
 
     test('severity score exactly 50 → CRITICAL', () {
@@ -79,10 +69,7 @@ void main() {
 
     test('off-route overrides delayed status → CRITICAL not WARNING', () {
       expect(
-        derive(
-          adherence: RouteAdherence.offRoute,
-          status: TripStatus.delayed,
-        ),
+        derive(adherence: RouteAdherence.offRoute, status: TripStatus.delayed),
         AttentionState.critical,
       );
     });
@@ -119,23 +106,25 @@ void main() {
       );
     });
 
-    test('minor deviation with healthy connectivity and low severity → NORMAL',
-        () {
-      expect(
-        derive(
-          adherence: RouteAdherence.minorDeviation,
-          severityScore: 10,
-        ),
-        AttentionState.normal,
-      );
-    });
+    test(
+      'minor deviation with healthy connectivity and low severity → NORMAL',
+      () {
+        expect(
+          derive(adherence: RouteAdherence.minorDeviation, severityScore: 10),
+          AttentionState.normal,
+        );
+      },
+    );
 
-    test('degraded connectivity alone does not trigger WARNING or CRITICAL', () {
-      expect(
-        derive(connectivity: ConnectivityState.degraded),
-        AttentionState.normal,
-      );
-    });
+    test(
+      'degraded connectivity alone does not trigger WARNING or CRITICAL',
+      () {
+        expect(
+          derive(connectivity: ConnectivityState.degraded),
+          AttentionState.normal,
+        );
+      },
+    );
 
     test('completed status with score 0 → NORMAL', () {
       expect(

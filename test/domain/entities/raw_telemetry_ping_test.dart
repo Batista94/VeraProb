@@ -14,17 +14,16 @@ void main() {
       double speed = 10.0,
       double heading = 90.0,
       DateTime? timestamp,
-    }) =>
-        RawTelemetryPing(
-          vehicleId: vehicleId,
-          tripId: tripId,
-          latitude: latitude,
-          longitude: longitude,
-          accuracy: accuracy,
-          speed: speed,
-          heading: heading,
-          timestamp: timestamp ?? ts,
-        );
+    }) => RawTelemetryPing(
+      vehicleId: vehicleId,
+      tripId: tripId,
+      latitude: latitude,
+      longitude: longitude,
+      accuracy: accuracy,
+      speed: speed,
+      heading: heading,
+      timestamp: timestamp ?? ts,
+    );
 
     test('fromJson parses all fields', () {
       final json = {

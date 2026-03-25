@@ -16,18 +16,17 @@ void main() {
       DateTime? createdAt,
       String? currentTripId,
       String? currentRouteShortName,
-    }) =>
-        Vehicle(
-          id: id,
-          organizationId: organizationId,
-          plate: plate,
-          model: model,
-          capacity: capacity,
-          status: status,
-          createdAt: createdAt,
-          currentTripId: currentTripId,
-          currentRouteShortName: currentRouteShortName,
-        );
+    }) => Vehicle(
+      id: id,
+      organizationId: organizationId,
+      plate: plate,
+      model: model,
+      capacity: capacity,
+      status: status,
+      createdAt: createdAt,
+      currentTripId: currentTripId,
+      currentRouteShortName: currentRouteShortName,
+    );
 
     test('isAvailable is true when status is available', () {
       expect(buildVehicle(status: VehicleStatus.available).isAvailable, isTrue);
@@ -35,17 +34,20 @@ void main() {
 
     test('isAvailable is false when status is inService', () {
       expect(
-          buildVehicle(status: VehicleStatus.inService).isAvailable, isFalse);
+        buildVehicle(status: VehicleStatus.inService).isAvailable,
+        isFalse,
+      );
     });
 
     test('isInService is true when status is inService', () {
-      expect(
-          buildVehicle(status: VehicleStatus.inService).isInService, isTrue);
+      expect(buildVehicle(status: VehicleStatus.inService).isInService, isTrue);
     });
 
     test('isInService is false when status is available', () {
       expect(
-          buildVehicle(status: VehicleStatus.available).isInService, isFalse);
+        buildVehicle(status: VehicleStatus.available).isInService,
+        isFalse,
+      );
     });
 
     test('displayName includes model when model is present', () {

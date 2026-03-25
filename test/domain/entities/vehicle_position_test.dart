@@ -4,8 +4,9 @@ import 'package:veraprob/domain/entities/vehicle_position.dart';
 void main() {
   group('VehiclePosition', () {
     final DateTime recentTs = DateTime.now().toUtc();
-    final DateTime oldTs =
-        DateTime.now().toUtc().subtract(const Duration(minutes: 5));
+    final DateTime oldTs = DateTime.now().toUtc().subtract(
+      const Duration(minutes: 5),
+    );
 
     VehiclePosition buildPosition({
       String? id = 'pos-001',
@@ -18,19 +19,18 @@ void main() {
       String source = 'api_public',
       String? routeName = '809U',
       String? vehiclePlate = 'ABC-1234',
-    }) =>
-        VehiclePosition(
-          id: id,
-          tripId: tripId,
-          latitude: latitude,
-          longitude: longitude,
-          speed: speed,
-          heading: heading,
-          timestamp: timestamp ?? recentTs,
-          source: source,
-          routeName: routeName,
-          vehiclePlate: vehiclePlate,
-        );
+    }) => VehiclePosition(
+      id: id,
+      tripId: tripId,
+      latitude: latitude,
+      longitude: longitude,
+      speed: speed,
+      heading: heading,
+      timestamp: timestamp ?? recentTs,
+      source: source,
+      routeName: routeName,
+      vehiclePlate: vehiclePlate,
+    );
 
     test('isStale returns false for recent position', () {
       final pos = buildPosition(timestamp: recentTs);

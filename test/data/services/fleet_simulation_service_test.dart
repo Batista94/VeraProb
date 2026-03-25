@@ -73,7 +73,10 @@ void main() {
     // ── updateTripStatus ─────────────────────────────────────────────────
 
     test('updateTripStatus returns null for unknown trip', () {
-      final result = service.updateTripStatus('unknown-id', TripStatus.completed);
+      final result = service.updateTripStatus(
+        'unknown-id',
+        TripStatus.completed,
+      );
       expect(result, isNull);
     });
 
@@ -118,9 +121,13 @@ void main() {
     test('addEvent increments event counter', () {
       const tripId = 'trip-counter-test';
       final e1 = service.addEvent(
-          tripId: tripId, eventType: EventType.delayDetected);
+        tripId: tripId,
+        eventType: EventType.delayDetected,
+      );
       final e2 = service.addEvent(
-          tripId: tripId, eventType: EventType.delayRecovered);
+        tripId: tripId,
+        eventType: EventType.delayRecovered,
+      );
       expect(e1.id, isNot(equals(e2.id)));
     });
 
@@ -161,8 +168,7 @@ void main() {
     });
 
     test('positionStream emits initial positions snapshot', () async {
-      final stream =
-          service.positionStream(interval: const Duration(hours: 1));
+      final stream = service.positionStream(interval: const Duration(hours: 1));
       final first = await stream.first;
       expect(first, isNotNull);
     });

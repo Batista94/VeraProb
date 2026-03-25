@@ -62,9 +62,13 @@ void main() {
   }
 
   final pct = (totalHit / totalFound) * 100;
-  print('=== OVERALL: $totalHit / $totalFound = ${pct.toStringAsFixed(2)}% ===\n');
+  print(
+    '=== OVERALL: $totalHit / $totalFound = ${pct.toStringAsFixed(2)}% ===\n',
+  );
   print('Files with most uncovered lines (top 30):');
-  print('${'Uncovered'.padRight(10)} ${'Hit'.padRight(6)} ${'Total'.padRight(6)} ${'%'.padRight(7)} File');
+  print(
+    '${'Uncovered'.padRight(10)} ${'Hit'.padRight(6)} ${'Total'.padRight(6)} ${'%'.padRight(7)} File',
+  );
   print('-' * 100);
 
   for (final e in sorted.take(30)) {
@@ -73,12 +77,18 @@ void main() {
         ? (e.value.hit / e.value.found * 100).toStringAsFixed(1)
         : '0.0';
     // Shorten path
-    final shortPath = e.key.replaceAll(r'\', '/').replaceAll(RegExp(r'.*/lib/'), 'lib/');
-    print('${uncovered.toString().padRight(10)} ${e.value.hit.toString().padRight(6)} ${e.value.found.toString().padRight(6)} ${'$filePct%'.padRight(7)} $shortPath');
+    final shortPath = e.key
+        .replaceAll(r'\', '/')
+        .replaceAll(RegExp(r'.*/lib/'), 'lib/');
+    print(
+      '${uncovered.toString().padRight(10)} ${e.value.hit.toString().padRight(6)} ${e.value.found.toString().padRight(6)} ${'$filePct%'.padRight(7)} $shortPath',
+    );
   }
 
   // Calculate what we need
   final neededHit = (totalFound * 0.60).ceil();
   final gap = neededHit - totalHit;
-  print('\nNeed $neededHit hits for 60%; currently have $totalHit. Gap: $gap lines to cover.');
+  print(
+    '\nNeed $neededHit hits for 60%; currently have $totalHit. Gap: $gap lines to cover.',
+  );
 }
