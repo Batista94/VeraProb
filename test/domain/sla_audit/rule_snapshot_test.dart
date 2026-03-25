@@ -120,7 +120,7 @@ void main() {
     });
 
     test('empty snapshot orderedRules returns empty list', () {
-      final snapshot = RuleSnapshot([]);
+      const snapshot = RuleSnapshot([]);
       expect(snapshot.orderedRules, isEmpty);
     });
   });
