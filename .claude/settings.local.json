@@ -120,7 +120,21 @@
       "Bash(sed 's/.*abstract class //')",
       "Bash(sed 's/ .*//')",
       "Bash(find /c/Projects/VeraProb/test -name *jwt* -o -name *rls* -o -name *auth* -o -name *tenant*)",
-      "Bash(bash scripts/pr_scanner.sh)"
+      "Bash(bash scripts/pr_scanner.sh)",
+      "Bash(dart test:*)",
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(sed -i 's/          client\\\\.auth\\\\.signOut\\(\\);/          await client.auth.signOut\\(\\);/g' test/integration/jwt_hook_e2e_test.dart)",
+      "Bash(sed -i 's/          superAdminClient\\\\.auth\\\\.signOut\\(\\);/          await superAdminClient.auth.signOut\\(\\);/g' test/integration/jwt_hook_e2e_test.dart)",
+      "Bash(sed -i 's/      orgAClient\\\\.auth\\\\.signOut\\(\\);/      await orgAClient.auth.signOut\\(\\);/' test/integration/rls_isolation_test.dart)",
+      "Bash(sed -i 's/      orgBClient\\\\.auth\\\\.signOut\\(\\);/      await orgBClient.auth.signOut\\(\\);/' test/integration/rls_isolation_test.dart)",
+      "Bash(sed -i 's/          contractorViewerClient\\\\.auth\\\\.signOut\\(\\);/          await contractorViewerClient.auth.signOut\\(\\);/' test/integration/rls_isolation_test.dart)",
+      "Bash(sed -i 's/          superAdminClient\\\\.auth\\\\.signOut\\(\\);/          await superAdminClient.auth.signOut\\(\\);/' test/integration/rls_isolation_test.dart)",
+      "Bash(echo \"exit_code=$?\")",
+      "Bash(echo \"exit=$?\")",
+      "Bash(psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -c \"SELECT column_name FROM information_schema.columns WHERE table_name=''organizations'' ORDER BY ordinal_position;\")",
+      "Bash(psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -c \"SELECT prosrc FROM pg_proc WHERE proname=''''super_admin_create_organization'''';\")",
+      "Bash(psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -c \"SELECT EXISTS\\(SELECT 1 FROM supabase_migrations.schema_migrations WHERE version=''20260405000007''\\);\")",
+      "Bash(psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -c \"SELECT prosrc FROM pg_proc WHERE proname=''''super_admin_invite_first_admin'''';\")"
     ]
   },
   "model": "sonnet"

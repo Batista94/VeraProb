@@ -54,34 +54,14 @@ At the end of every review, output:
 
 ---
 
-# VeraProb: FORENSIC AUDIT MANIFESTO (THE 20 RULES)
+# VeraProb: FORENSIC AUDIT MANIFESTO (THE 25 CORE INVARIANTS)
 
-## I. INFRASTRUCTURE & ISOLATION
-1. **Tenant Isolation:** Every query MUST filter by `organization_id`.
-2. **Dual-Key (Contractors):** Contractor access MUST require both `org_id` and `contract_id`.
-3. **Environment Isolation:** No secrets in code. Use `EnvironmentConfig` runtime injection.
-4. **Wasm-Ready:** Zero use of `dart:html` or `dart:js`. Use `dart:js_interop` and `package:web`.
+All reviews must enforce the **25 Core Invariants** defined in the [Forensic Audit Manifesto](file:///c:/Projects/VeraProb/docs/governance/forensic_manifesto.md). 
 
-## II. DATA INTEGRITY & EVIDENCE
-5. **Immutable Ledger:** No updates/deletes on ledger entries. Only compensating records.
-6. **Evidence Hashing:** Every evidence file (photo/log) must have a SHA-256 server-side hash.
-7. **UTC Determinism:** All timestamps MUST be UTC. Logic must be timezone-agnostic.
-8. **Anti-Spoofing:** Telemetry with `suspectedSpoofing = true` must be manual-approval only.
+Violations on any of the following pillars must result in a [NO-GO] or [REVISE] verdict:
 
-## III. EVALUATION ENGINE LOGIC
-9. **Event Sourcing:** State must be reconstructible by replaying events via `gps_timestamp`.
-10. **Binary Verdicts:** SLA rules must yield "Guilty" or "Innocent". No "Maybe".
-11. **Server-Side Authority:** Final verdicts calculated on Supabase Edge, never on the Client.
-12. **Asset Awareness:** Penalties are inhibited if Asset status is `MAINTENANCE`.
-
-## IV. FINANCIAL & LEGAL COMPLIANCE
-13. **Penny Precision:** All currency handled as `BIGINT` cents. No doubles.
-14. **Package Sealing:** Exported PDFs/CSVs must contain a server-computed `packageHash`.
-15. **Attestation Header:** Mandatory legal notice and CNPJ validation on all exports.
-16. **Traceability:** Manual credits MUST link to a specific debit ID and evidence ID.
-
-## V. UX & OPERATIONAL EXCELLENCE
-17. **OCC Read-Only:** Operations Center never mutates the state; it only acknowledges.
-18. **Draft Protection:** Overlay modals for nested creation. No form data loss.
-19. **Spatial Context Gate:** No contract creation without at least one defined `Zone`.
-20. **Audit UX:** Clear comparison view: "Contractual Rule" vs "Physical Evidence".
+1.  **Infrastructure & Security** (Tenant Isolation, RLS, JWT, Wasm-Ready).
+2.  **Data Integrity & Evidence** (Immutable Ledger, SHA-256 Hashing, UTC).
+3.  **Evaluation Engine Logic** (Deterministic Replay, Server-Side Authority).
+4.  **Financial & Legal Compliance** (BIGINT Penny Precision, Package Sealing).
+5.  **UX & Operational Excellence** (Read-Only Cockpit, Draft Protection).

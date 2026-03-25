@@ -37,7 +37,9 @@ class PostgresContractualFinancialSnapshotRepository
       'executed_count': snapshot.executedCount,
       'no_show_count': snapshot.noShowCount,
       'evidence_gap_count': snapshot.evidenceGapCount,
-      'last_ledger_entry_id': snapshot.lastLedgerEntryId,
+      'last_ledger_entry_id': snapshot.lastLedgerEntryId != null
+          ? int.tryParse(snapshot.lastLedgerEntryId!)
+          : null,
       'previous_snapshot_id': snapshot.previousSnapshotId,
       'reprocessing_reason': snapshot.reprocessingReason,
       'author_user_id': snapshot.authorUserId,
@@ -140,7 +142,7 @@ class PostgresContractualFinancialSnapshotRepository
       executedCount: (row['executed_count'] as num?)?.toInt() ?? 0,
       noShowCount: (row['no_show_count'] as num?)?.toInt() ?? 0,
       evidenceGapCount: (row['evidence_gap_count'] as num?)?.toInt() ?? 0,
-      lastLedgerEntryId: row['last_ledger_entry_id'] as String?,
+      lastLedgerEntryId: row['last_ledger_entry_id']?.toString(),
       previousSnapshotId: row['previous_snapshot_id'] as String?,
       reprocessingReason: row['reprocessing_reason'] as String?,
       authorUserId: row['author_user_id'] as String?,

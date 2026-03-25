@@ -20,6 +20,10 @@
 #   C3 — Test Presence Ratio: Warns when domain/application files lack test files
 #   C4 — Leaky Abstractions:  Warns on domain imports inside lib/features/
 #
+# PILLAR D: Strict Type-Safety (Phase 8.5)
+#   D1 — Strict Casting:      Blocks implicit dynamic casts in Domain (INV-4)
+#   D2 — Infra Audit:         Warns on strict violations in other layers
+#
 # Exit codes:
 #   0 = PASS (may have warnings — flagged for LLM neural review)
 #   1 = BLOCKED (hard invariant violation or analyzer errors)
@@ -109,8 +113,6 @@ fi
 echo ""
 echo "  A2 — Financial Precision: scanning lib/ for double/float near financial terms..."
 
-# Scope to domain + application only (presentation layer may use double for chart rendering)
-# Exclude: multiplier/rate coefficients, toDouble() display helpers, tryParse UI input, comment lines
 FIN_HITS=$(grep -rn --include="*.dart" \
   -iE "(double|float).{0,60}(fine|price|amount|ledger|cents|penalty|revenue|cost)|(fine|price|amount|ledger|cents|penalty|revenue|cost).{0,60}(double|float)" \
   lib/domain/ lib/application/ 2>/dev/null \
@@ -130,12 +132,6 @@ fi
 echo ""
 echo "  A3 — UTC Determinism: scanning lib/ for DateTime.now() without .toUtc()..."
 
-# Exclude false positives:
-#   - Comment lines (/// //)
-#   - millisecondsSinceEpoch (epoch = always UTC)
-#   - .difference() calls (computes Duration, not a stored timestamp)
-#   - DatePicker params: initialDate/firstDate/lastDate (local time for UI is correct)
-#   - Multiline: if .toUtc() appears on the very next line, it is correct (chained call)
 UTC_HITS=$(grep -rn --include="*.dart" \
   "DateTime\.now()" lib/ 2>/dev/null \
   | grep -v "\.toUtc()" \
@@ -147,7 +143,6 @@ UTC_HITS=$(grep -rn --include="*.dart" \
       file=$(echo "$hit" | cut -d: -f1)
       linenum=$(echo "$hit" | sed 's/[^:]*:\([0-9]*\):.*/\1/')
       nextline=$(sed -n "$((linenum+1))p" "$file" 2>/dev/null || true)
-      # Skip if .toUtc() appears on the immediately following line (multiline chain)
       if ! echo "$nextline" | grep -q "\.toUtc()"; then
         echo "$hit"
       fi
@@ -166,18 +161,14 @@ echo ""
 echo "  A4 — Zero-Downtime DB: scanning changed migrations for destructive operations..."
 
 CHANGED_MIGRATIONS=""
-
 normalize_migration_paths() {
   tr '\\' '/' | tr -d '\r' | grep "supabase/migrations" || true
 }
 
-# Try diff from base branch first
 if git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
   CHANGED_MIGRATIONS=$(git diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
     | normalize_migration_paths)
 fi
-
-# Fallback: compare to HEAD~1
 if [[ -z "$CHANGED_MIGRATIONS" ]]; then
   CHANGED_MIGRATIONS=$(git diff --name-only HEAD~1 HEAD 2>/dev/null \
     | normalize_migration_paths)
@@ -221,8 +212,6 @@ echo "  B1 — Dart Analyzer: running flutter analyze --no-pub..."
 echo "       (this may take 10–30 seconds)"
 
 ANALYZE_OUTPUT=$(flutter analyze --no-pub 2>&1 || true)
-
-# flutter analyze format: "  error • message • file.dart:line:col • rule"
 ANALYZE_ERRORS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+error •" || true)
 ANALYZE_WARNINGS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+warning •" || true)
 ANALYZE_INFOS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+info •" || true)
@@ -265,50 +254,41 @@ echo ""
 echo "  B3 — Complexity Check: scanning for large file deltas (>200 lines added)..."
 
 CHANGED_DART=""
-
-# Normalize paths: convert Windows backslashes, strip carriage returns and tabs
 normalize_paths() {
   tr '\\' '/' | tr -d '\r' | tr '\t' '\n' | grep "\.dart$" || true
 }
-
-# Try from base branch
 if git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
   CHANGED_DART=$(git diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
     | normalize_paths)
 fi
-
-# Fallback: HEAD~1
 if [[ -z "$CHANGED_DART" ]]; then
   CHANGED_DART=$(git diff --name-only HEAD~1 HEAD 2>/dev/null \
     | normalize_paths)
 fi
 
 COMPLEXITY_FLAGS=0
-
 if [[ -n "$CHANGED_DART" ]]; then
   while IFS= read -r dart_file; do
     [[ -z "$dart_file" ]] && continue
-    # Ensure forward slashes
     dart_file=$(echo "$dart_file" | tr '\\' '/')
-
-    # Count added lines (lines starting with +, excluding diff header +++)
     LINES_ADDED=0
     if git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
       LINES_ADDED=$(git diff "$BASE_BRANCH"...HEAD -- "$dart_file" 2>/dev/null \
         | grep "^+" | grep -vc "^+++" || echo "0")
     fi
-    if [[ "$LINES_ADDED" -eq 0 ]]; then
+    LINES_ADDED=$(echo "$LINES_ADDED" | tr -d '[:space:]')
+    [[ ! "$LINES_ADDED" =~ ^[0-9]+$ ]] && LINES_ADDED=0
+    if (( LINES_ADDED == 0 )); then
       LINES_ADDED=$(git diff HEAD~1 HEAD -- "$dart_file" 2>/dev/null \
         | grep "^+" | grep -vc "^+++" || echo "0")
+      LINES_ADDED=$(echo "$LINES_ADDED" | tr -d '[:space:]')
+      [[ ! "$LINES_ADDED" =~ ^[0-9]+$ ]] && LINES_ADDED=0
     fi
-    LINES_ADDED=$(echo "$LINES_ADDED" | tr -d ' \n')
-
-    if [[ "$LINES_ADDED" =~ ^[0-9]+$ ]] && [[ "$LINES_ADDED" -gt 200 ]]; then
+    if (( LINES_ADDED > 200 )); then
       warn "[COMPLEXITY-WARN] $dart_file added $LINES_ADDED lines — LLM must audit cyclomatic complexity"
       COMPLEXITY_FLAGS=$((COMPLEXITY_FLAGS + 1))
     fi
   done <<< "$CHANGED_DART"
-
   if [[ $COMPLEXITY_FLAGS -eq 0 ]]; then
     pass "No files with extreme line count changes (>200 lines added)"
   fi
@@ -319,24 +299,18 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 # PILLAR C — COST EFFICIENCY & AUTOMATED SECURITY
 # ─────────────────────────────────────────────────────────────────────────────
-#   C1 — Secret Detection:    Blocks hardcoded API keys / service tokens (Security)
-#   C2 — Dependency Audit:    Warns on new pubspec.yaml deps (INV-25 license gate)
-#   C3 — Test Presence Ratio: Warns when domain/application files lack test counterparts
-#   C4 — Leaky Abstractions:  Warns on direct domain imports inside lib/features/
 
 header "PILLAR C — Cost Efficiency & Automated Security"
 
 # ── C1: Secret Detection ──────────────────────────────────────────────────────
 echo ""
 echo "  C1 — Secret Detection: scanning lib/ for hardcoded secrets / API keys..."
-
 SECRET_HITS=$(grep -rn --include="*.dart" \
   -E "(sb_[a-zA-Z0-9]{20,}|sk_[a-zA-Z0-9]{20,}|(serviceRoleKey|anonKey|apiKey|api_key|secretKey)\s*[=:]\s*['\"][^'\"]{20,}['\"]|eyJ[a-zA-Z0-9_\-]{50,})" \
   lib/ 2>/dev/null \
   | grep -vE ":[0-9]+:[[:space:]]*(///|//)" \
   | grep -vE "Env\.|AppConfig\.|\.env" \
   || true)
-
 if [[ -n "$SECRET_HITS" ]]; then
   block "[SECRET-BLOCK] Hardcoded secret or API key pattern detected — move to .env / Env class (Security / INV-25)"
   echo "$SECRET_HITS" | print_hits
@@ -347,7 +321,6 @@ fi
 # ── C2: Dependency & License Audit ───────────────────────────────────────────
 echo ""
 echo "  C2 — Dependency Audit: scanning pubspec.yaml for new dependencies..."
-
 PUBSPEC_DIFF=""
 if git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
   PUBSPEC_DIFF=$(git diff "$BASE_BRANCH"...HEAD -- pubspec.yaml 2>/dev/null || true)
@@ -355,13 +328,9 @@ fi
 if [[ -z "$PUBSPEC_DIFF" ]]; then
   PUBSPEC_DIFF=$(git diff HEAD~1 HEAD -- pubspec.yaml 2>/dev/null || true)
 fi
-
 if [[ -n "$PUBSPEC_DIFF" ]]; then
   NEW_DEPS=$(echo "$PUBSPEC_DIFF" \
-    | grep "^+" \
-    | grep -v "^+++" \
-    | grep -E "^\+[[:space:]]+[a-z_]+:[[:space:]]" \
-    | grep -v "^#" \
+    | grep "^+" | grep -v "^+++" | grep -E "^\+[[:space:]]+[a-z_]+:[[:space:]]" | grep -v "^#" \
     || true)
   if [[ -n "$NEW_DEPS" ]]; then
     warn "[DEP-WARN] New dependencies detected in pubspec.yaml — manual license and security review required (INV-25 / Free-Tier Gate)"
@@ -378,34 +347,24 @@ fi
 # ── C3: Test Presence Ratio ───────────────────────────────────────────────────
 echo ""
 echo "  C3 — Test Coverage Gate: checking for missing test files for changed domain/application sources..."
-
 MISSING_TESTS=0
-
 if [[ -n "$CHANGED_DART" ]]; then
   while IFS= read -r dart_file; do
     [[ -z "$dart_file" ]] && continue
-    # Skip generated files
     [[ "$dart_file" == *.g.dart ]] && continue
     [[ "$dart_file" == *.freezed.dart ]] && continue
-    # Skip existing test files
     [[ "$dart_file" == *_test.dart ]] && continue
-    # Skip presentation layer (UI smoke tests are manual — see manual_test_plan_phase_9.md)
     [[ "$dart_file" == lib/features/* ]] && continue
-    # Skip entry points, config, and theme (no testable logic)
     [[ "$dart_file" == lib/main*.dart ]] && continue
     [[ "$dart_file" == lib/core/config/* ]] && continue
     [[ "$dart_file" == lib/core/theme/* ]] && continue
     [[ "$dart_file" == lib/core/router/* ]] && continue
-
-    # Compute expected test path: lib/foo/bar.dart → test/foo/bar_test.dart
     test_file=$(echo "$dart_file" | sed 's|^lib/|test/|' | sed 's|\.dart$|_test.dart|')
-
     if [[ ! -f "$test_file" ]]; then
       warn "[TEST-WARN] No test file for $dart_file — expected: $test_file (coverage gate >60%)"
       MISSING_TESTS=$((MISSING_TESTS + 1))
     fi
   done <<< "$CHANGED_DART"
-
   if [[ $MISSING_TESTS -eq 0 ]]; then
     pass "All changed domain/application/infrastructure files have corresponding test files"
   fi
@@ -416,19 +375,55 @@ fi
 # ── C4: Leaky Abstraction Static Check ────────────────────────────────────────
 echo ""
 echo "  C4 — Leaky Abstraction: scanning lib/features/ for direct domain imports..."
-echo "       (SRP rules also surfaced via Pillar B1 — see analysis_options.yaml)"
-
 LEAK_HITS=$(grep -rn --include="*.dart" \
   "import 'package:veraprob/domain/" \
   lib/features/ 2>/dev/null \
   | grep -vE ":[0-9]+:[[:space:]]*(///|//)" \
   || true)
-
 if [[ -n "$LEAK_HITS" ]]; then
   warn "[LEAK-WARN] Domain imports found in lib/features/ — domain types must flow through application-layer ViewModels/DTOs (INV-4 / Lens 2)"
   echo "$LEAK_HITS" | print_hits
 else
   pass "No leaky domain imports in features/ presentation layer"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PILLAR D — STRICT TYPE-SAFETY AUDIT (PHASE 8.5)
+# ─────────────────────────────────────────────────────────────────────────────
+
+header "PILLAR D — Strict Type-Safety Audit (Phase 8.5)"
+
+STRICT_OPTIONS="$PROJECT_DIR/analysis_options_strict.yaml"
+
+# Write a temporary strict analysis_options
+cat > "$STRICT_OPTIONS" << 'EOF'
+include: package:flutter_lints/flutter.yaml
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+EOF
+
+echo ""
+echo "  D1 — Strict Casting: checking for implicit dynamic casts (INV-4)..."
+
+# Capture output — don't fail on non-zero exit (violations are expected during Phase 8.5)
+STRICT_OUTPUT=$(flutter analyze --no-pub --options "$STRICT_OPTIONS" 2>&1 || true)
+rm -f "$STRICT_OPTIONS"
+
+DOMAIN_STRICT=$(echo "$STRICT_OUTPUT" | grep "lib/domain/" || true)
+if [[ -n "$DOMAIN_STRICT" ]]; then
+  block "[STRICT-BLOCK] Implicit dynamic cast in Domain layer — fix with 'as Type' (INV-4)"
+  echo "$DOMAIN_STRICT" | print_hits
+else
+  pass "Domain layer: 0 strict-type violations (INV-4 compliant)"
+fi
+
+INFRA_STRICT=$(echo "$STRICT_OUTPUT" | grep "lib/infrastructure/" || true)
+if [[ -n "$INFRA_STRICT" ]]; then
+  warn "[STRICT-WARN] Strict-type violations in Infrastructure layer (JSON decoding)"
+  echo -e "         ${YELLOW}$(echo "$INFRA_STRICT" | grep -c "^" || echo "0") violations detected${NC}"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────

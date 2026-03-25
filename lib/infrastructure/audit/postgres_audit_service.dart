@@ -63,7 +63,7 @@ class PostgresAuditService implements AuditService {
             operatorId: (data['operator_id'] as String?) ?? '',
             actionType: (data['type'] as String?) ?? '',
             entityId: (data['set_id'] as String?) ?? '',
-            timestamp: DateTime.parse(data['occurred_at_utc']),
+            timestamp: DateTime.parse(data['occurred_at_utc']).toUtc(),
           ),
         )
         .toList();

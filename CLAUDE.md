@@ -51,7 +51,43 @@ See full roadmap: [docs/governance/roadmap.md](docs/governance/roadmap.md)
 
 Council personas live in `docs/council/`. Lead Reviewer is the final arbiter.
 
+# VeraProb — Workspace Design & Intelligence Map
+
+This document defines the high-level architecture and governance for the VeraProb project.
+
+## 🏗️ Hierarchy of Context & Truth
+
+To avoid confusion, understand exactly where the different layers of "truth" live:
+
+| Layer | Responsibility | Path |
+|---|---|---|
+| **Human Governance** | Business rules, roadmap, and official technical specs. | `/docs` |
+| **Forensic Manifesto** | The 25 Core Invariants (SSOT). | `docs/governance/forensic_manifesto.md` |
+| **AI Intelligence** | Personas, specialized agents, and AI-only rules. | `/.claude` |
+| **Enforcement** | Automated CI/CD guards and forensic PR scanning. | `scripts/pr_scanner.sh` |
+| **Implementation** | The actual Flutter/Supabase codebase. | `/lib`, `/supabase`, `/test` |
+
 ---
+
+## 🛠️ Assistant Personas (The Council)
+
+VeraProb uses a specialized multi-agent council to ensure forensic integrity:
+
+*   **Lead Reviewer (`lead-reviewer.md`)**: The Gatekeeper. Mandatory first step before any PR.
+*   **Architect (`architect.md`)**: Structural and patterns validation.
+*   **Senior Engineer (`senior-engineer.md`)**: Refactoring and optimization.
+*   **QA & Security (`qa-security.md`)**: Invariant validation and threat modeling.
+*   **Business Maverick (`business-maverick.md`)**: ROI, UX, and market value.
+*   **UX Operations (`ux-operations.md`)**: Design system and operational cockpit.
+
+---
+
+## 📊 Standard Procedures
+
+- **Pre-PR:** Always run `bash scripts/pr_scanner.sh`.
+- **Pre-Merge:** Invoke `lead-reviewer` for a final GO/NO-GO verdict.
+- **Testing:** `flutter test` for all logic changes. E2E tests require `SUPABASE_URL/KEY`.
+- **Database:** All migrations MUST be append-only (No `DROP`/`DELETE`).
 
 ## Council Orchestration
 

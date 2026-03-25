@@ -26,49 +26,46 @@ void main() async {
         }
       });
 
-      test(
-        '1. Create and reconstitute a new snapshot works correctly',
-        () async {
-          final contractId = uuid.v4();
-          final ledgerEntryId = uuid
-              .v4(); // last_ledger_entry_id is UUID in schema
-          final operationalDate = DateTime.utc(2026, 3, 1);
-          final closedAt = DateTime.now().toUtc();
+      test('1. Create and reconstitute a new snapshot works correctly', () async {
+        final contractId = uuid.v4();
+        // last_ledger_entry_id is BIGINT FK → sla_audit_ledger.id (auto-generated).
+        // We cannot pre-insert a ledger row in this test, so pass null.
+        final operationalDate = DateTime.utc(2026, 3, 1);
+        final closedAt = DateTime.now().toUtc();
 
-          final snapshot = ContractualFinancialDailySnapshot.create(
-            organizationId: PostgresTestConfig.testOrgId,
-            contractId: contractId,
-            operationalDateUtc: operationalDate,
-            operationalTimezone: 'America/Sao_Paulo',
-            closedAtUtc: closedAt,
-            totalContractedRevenue: const Money(1000000), // R$ 10.000,00
-            protectedRevenue: const Money(800000), // R$ 8.000,00
-            revenueAtRisk: const Money(150000), // R$ 1.500,00
-            lostRevenue: const Money(50000), // R$ 500,00
-            totalObligations: 100,
-            executedCount: 80,
-            noShowCount: 5,
-            evidenceGapCount: 15,
-            lastLedgerEntryId: ledgerEntryId,
-          );
+        final snapshot = ContractualFinancialDailySnapshot.create(
+          organizationId: PostgresTestConfig.testOrgId,
+          contractId: contractId,
+          operationalDateUtc: operationalDate,
+          operationalTimezone: 'America/Sao_Paulo',
+          closedAtUtc: closedAt,
+          totalContractedRevenue: const Money(1000000), // R$ 10.000,00
+          protectedRevenue: const Money(800000), // R$ 8.000,00
+          revenueAtRisk: const Money(150000), // R$ 1.500,00
+          lostRevenue: const Money(50000), // R$ 500,00
+          totalObligations: 100,
+          executedCount: 80,
+          noShowCount: 5,
+          evidenceGapCount: 15,
+          lastLedgerEntryId: null,
+        );
 
-          await repository.save(snapshot);
+        await repository.save(snapshot);
 
-          final contractSnapshots = await repository.findAll(
-            organizationId: PostgresTestConfig.testOrgId,
-            contractId: contractId,
-          );
-          expect(contractSnapshots.length, 1);
+        final contractSnapshots = await repository.findAll(
+          organizationId: PostgresTestConfig.testOrgId,
+          contractId: contractId,
+        );
+        expect(contractSnapshots.length, 1);
 
-          final loaded = contractSnapshots.first;
-          expect(loaded.id, snapshot.id);
-          expect(loaded.totalContractedRevenue.cents, 1000000);
-          expect(loaded.riskPercentage, 15.0); // 1.5k over 10k
-          expect(loaded.lossPercentage, 5.0); // 500 over 10k
-          expect(loaded.lastLedgerEntryId, ledgerEntryId);
-          expect(loaded.previousSnapshotId, isNull);
-        },
-      );
+        final loaded = contractSnapshots.first;
+        expect(loaded.id, snapshot.id);
+        expect(loaded.totalContractedRevenue.cents, 1000000);
+        expect(loaded.riskPercentage, 15.0); // 1.5k over 10k
+        expect(loaded.lossPercentage, 5.0); // 500 over 10k
+        expect(loaded.lastLedgerEntryId, isNull);
+        expect(loaded.previousSnapshotId, isNull);
+      });
 
       test(
         '2. Snapshot chain linking properly resolves superseded logic without destroying old data',

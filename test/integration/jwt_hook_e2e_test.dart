@@ -107,15 +107,13 @@ Map<String, dynamic> _decodeJwt(String token) {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-void main() {
-  group('JWT Hook E2E — Phase 9.4.3', () {
-    bool supabaseRunning = false;
+void main() async {
+  final isRunning = await PostgresTestConfig.isSupabaseRunning();
+
+  group('JWT Hook E2E — Phase 9.4.3', skip: !isRunning ? 'Supabase not running' : null, () {
     late SupabaseClient adminClient;
 
     setUpAll(() async {
-      supabaseRunning = await PostgresTestConfig.isSupabaseRunning();
-      if (!supabaseRunning) return;
-
       adminClient = SupabaseClient(
         PostgresTestConfig.supabaseUrl,
         PostgresTestConfig.serviceRoleKey,
@@ -125,7 +123,7 @@ void main() {
       await adminClient.from('organizations').upsert({
         'id': _hookTestOrgId,
         'name': 'JWT Hook Test Org',
-        'document_number': 'JWTTEST001',
+        'cnpj': 'JWTTEST001',
         'created_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'id');
 
@@ -151,6 +149,7 @@ void main() {
       );
       await adminClient.from('super_admin_users').upsert({
         'user_id': superAdminId,
+        'email': _superAdminEmail,
       }, onConflict: 'user_id');
 
       // ── Seed pending-invite user (NOT in user_roles, NOT in super_admin_users)
@@ -166,7 +165,6 @@ void main() {
     // ── Scenario 1: Tenant user — top-level + app_metadata claims ────────
     test(
       'Scenario 1 — INV-10: tenant sign-in injects top-level organization_id and app_metadata.org_id',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         final client = await _signIn(
           _tenantUserEmail,
@@ -217,7 +215,6 @@ void main() {
     // ── Scenario 2: Super admin — super_admin=true, tenant claims nullified
     test(
       'Scenario 2 — INV-20: super admin sign-in sets super_admin=true and nullifies org_id',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         final client = await _signIn(
           _superAdminEmail,
@@ -279,7 +276,6 @@ void main() {
     // ── Scenario 3: Super admin client → RLS blocks tenant-scoped queries ──
     test(
       'Scenario 3 — INV-6: super admin authenticated client cannot SELECT tenant-scoped contracts',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         // Seed a contract visible only to the hook test org.
         final contractId = _uuid.v4();
@@ -287,14 +283,13 @@ void main() {
           'id': contractId,
           'organization_id': _hookTestOrgId,
           'name': 'JWT Hook Visibility Test Contract',
-          'contractor_id': _uuid.v4(),
+          'contractor_name': 'JWT Hook Test Contractor',
           'status': 'draft',
           'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
           'valid_until_utc': DateTime.now()
               .toUtc()
               .add(const Duration(days: 30))
               .toIso8601String(),
-          'created_by_user_id': _uuid.v4(),
         });
 
         // Sign in as super admin using the anon key (NOT service_role).
@@ -331,7 +326,6 @@ void main() {
     // ── Scenario 4: Pending invite user — no tenant context in JWT ─────────
     test(
       'Scenario 4: pending invite user JWT has no org_id, no role, super_admin=false',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         final client = await _signIn(
           _pendingInviteEmail,

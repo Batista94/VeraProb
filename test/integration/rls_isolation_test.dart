@@ -89,10 +89,12 @@ Future<void> _ensureOrg(
   required String id,
   required String name,
 }) async {
+  // Use full UUID (without hyphens, first 14 chars) for uniqueness.
+  final cnpj = id.replaceAll('-', '').substring(0, 14);
   await adminClient.from('organizations').upsert({
     'id': id,
     'name': name,
-    'document_number': 'TEST${id.substring(0, 8).replaceAll('-', '')}',
+    'cnpj': cnpj,
     'created_at': DateTime.now().toUtc().toIso8601String(),
   }, onConflict: 'id');
 }
@@ -127,25 +129,23 @@ Future<SupabaseClient> _signIn(
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-void main() {
-  group('RLS Isolation — Phase 9.4.2', () {
-    bool supabaseRunning = false;
+void main() async {
+  final isRunning = await PostgresTestConfig.isSupabaseRunning();
+
+  group('RLS Isolation — Phase 9.4.2', skip: !isRunning ? 'Supabase not running' : null, () {
     late SupabaseClient adminClient;
 
     // Org A data
     late SupabaseClient orgAClient;
     late String orgAContractId;
-    late String orgALedgerEntryId;
+    late int orgALedgerEntryId;
 
     // Org B data
     late SupabaseClient orgBClient;
     late String orgBContractId;
-    late String orgBLedgerEntryId;
+    late int orgBLedgerEntryId;
 
     setUpAll(() async {
-      supabaseRunning = await PostgresTestConfig.isSupabaseRunning();
-      if (!supabaseRunning) return;
-
       adminClient = SupabaseClient(
         PostgresTestConfig.supabaseUrl,
         PostgresTestConfig.serviceRoleKey,
@@ -168,7 +168,7 @@ void main() {
         supabaseUrl: PostgresTestConfig.supabaseUrl,
         serviceRoleKey: PostgresTestConfig.serviceRoleKey,
       );
-      final contractorViewerId = await _ensureUser(
+      await _ensureUser(
         _contractorViewerEmail,
         _testPassword,
         supabaseUrl: PostgresTestConfig.supabaseUrl,
@@ -188,14 +188,9 @@ void main() {
         orgId: _orgBId,
         role: 'TENANT_ADMIN',
       );
-      // CONTRACTOR_VIEWER without contractor_id (tests INV-20 dual-key blocking)
-      await _ensureUserRole(
-        adminClient,
-        userId: contractorViewerId,
-        orgId: _orgAId,
-        role: 'CONTRACTOR_VIEWER',
-        contractorId: null,
-      );
+      // INV-20: CONTRACTOR_VIEWER without contractor_id cannot be inserted (CHECK
+      // constraint enforces this at the DB level). The user intentionally has no
+      // user_roles row — JWT hook Layer 3 will set org_id=null, blocking all RLS.
 
       // ── Seed Org A contract + ledger entry ──────────────────────────────
       orgAContractId = _uuid.v4();
@@ -203,26 +198,27 @@ void main() {
         'id': orgAContractId,
         'organization_id': _orgAId,
         'name': 'RLS Test Contract A',
-        'contractor_id': _uuid.v4(),
+        'contractor_name': 'RLS Test Contractor A',
         'status': 'draft',
         'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
         'valid_until_utc': DateTime.now()
             .toUtc()
             .add(const Duration(days: 90))
             .toIso8601String(),
-        'created_by_user_id': userAId,
       });
 
-      orgALedgerEntryId = _uuid.v4();
-      await adminClient.from('sla_audit_ledger').insert({
-        'id': orgALedgerEntryId,
-        'ledger_entry_id': _uuid.v4(),
-        'organization_id': _orgAId,
-        'event_type': 'TEST_EVENT',
-        'contract_id': orgAContractId,
-        'occurred_at_utc': DateTime.now().toUtc().toIso8601String(),
-        'payload': {'test': true},
-      });
+      final ledgerRowA = await adminClient
+          .from('sla_audit_ledger')
+          .insert({
+            'type': 'TEST_EVENT',
+            'contract_id': orgAContractId,
+            'plan_version': 1,
+            'occurred_at_utc': DateTime.now().toUtc().toIso8601String(),
+            'payload': {'test': true},
+          })
+          .select('id')
+          .single();
+      orgALedgerEntryId = ledgerRowA['id'] as int;
 
       // ── Seed Org B contract + ledger entry ──────────────────────────────
       orgBContractId = _uuid.v4();
@@ -230,26 +226,27 @@ void main() {
         'id': orgBContractId,
         'organization_id': _orgBId,
         'name': 'RLS Test Contract B',
-        'contractor_id': _uuid.v4(),
+        'contractor_name': 'RLS Test Contractor B',
         'status': 'draft',
         'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
         'valid_until_utc': DateTime.now()
             .toUtc()
             .add(const Duration(days: 90))
             .toIso8601String(),
-        'created_by_user_id': userBId,
       });
 
-      orgBLedgerEntryId = _uuid.v4();
-      await adminClient.from('sla_audit_ledger').insert({
-        'id': orgBLedgerEntryId,
-        'ledger_entry_id': _uuid.v4(),
-        'organization_id': _orgBId,
-        'event_type': 'TEST_EVENT',
-        'contract_id': orgBContractId,
-        'occurred_at_utc': DateTime.now().toUtc().toIso8601String(),
-        'payload': {'test': true},
-      });
+      final ledgerRowB = await adminClient
+          .from('sla_audit_ledger')
+          .insert({
+            'type': 'TEST_EVENT',
+            'contract_id': orgBContractId,
+            'plan_version': 1,
+            'occurred_at_utc': DateTime.now().toUtc().toIso8601String(),
+            'payload': {'test': true},
+          })
+          .select('id')
+          .single();
+      orgBLedgerEntryId = ledgerRowB['id'] as int;
 
       // ── Authenticate both clients ────────────────────────────────────────
       orgAClient = await _signIn(
@@ -267,32 +264,26 @@ void main() {
     });
 
     tearDownAll(() async {
-      if (!supabaseRunning) return;
       await orgAClient.auth.signOut();
       await orgBClient.auth.signOut();
     });
 
     // ── Case 1: contracts — SELECT cross-tenant ──────────────────────────
-    test(
-      'Case 1 — INV-6: Org A cannot SELECT Org B contracts',
-      skip: supabaseRunning ? null : 'Supabase not running',
-      () async {
-        final result = await orgAClient
-            .from('contracts')
-            .select('id')
-            .eq('id', orgBContractId);
-        expect(
-          result,
-          isEmpty,
-          reason: 'Org A should not see Org B contracts via RLS',
-        );
-      },
-    );
+    test('Case 1 — INV-6: Org A cannot SELECT Org B contracts', () async {
+      final result = await orgAClient
+          .from('contracts')
+          .select('id')
+          .eq('id', orgBContractId);
+      expect(
+        result,
+        isEmpty,
+        reason: 'Org A should not see Org B contracts via RLS',
+      );
+    });
 
     // ── Case 2: sla_audit_ledger — SELECT cross-tenant ───────────────────
     test(
       'Case 2 — INV-6, INV-1: Org A cannot SELECT Org B ledger entries',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         final result = await orgAClient
             .from('sla_audit_ledger')
@@ -309,7 +300,6 @@ void main() {
     // ── Case 3: sla_audit_ledger — DELETE attempt ────────────────────────
     test(
       'Case 3 — INV-1: DELETE on sla_audit_ledger must be rejected',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         // Attempt DELETE on own org's ledger entry — INV-1 trigger must block it
         await expectLater(
@@ -325,7 +315,6 @@ void main() {
     // ── Case 4: execution_states — SELECT cross-tenant ───────────────────
     test(
       'Case 4 — INV-6: Org A cannot SELECT Org B execution states',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         // Seed an execution state for Org B via admin (bypasses RLS)
         final setId = _uuid.v4();
@@ -355,7 +344,6 @@ void main() {
     // ── Case 5: sanction_review_queue — OPERATOR role SELECT ────────────
     test(
       'Case 5 — INV-6, INV-10: TENANT_ADMIN cannot SELECT sanction_review_queue without matching org',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         // Org A client should only see Org A queue rows (cross-tenant = empty)
         final result = await orgAClient
@@ -373,7 +361,6 @@ void main() {
     // ── Case 6: sanction_review_queue — UPDATE cross-tenant ─────────────
     test(
       'Case 6 — INV-6: UPDATE on cross-tenant sanction_review_queue returns 0 rows',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         // Attempt to update a row that belongs to Org B using Org A credentials.
         // RLS USING clause will filter it out, resulting in 0 affected rows.
@@ -393,7 +380,6 @@ void main() {
     // ── Case 7: spoofing_audit_entries — SELECT cross-tenant ─────────────
     test(
       'Case 7 — INV-6: Org A cannot SELECT Org B spoofing audit entries',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         // Seed an entry for Org B
         final entryId = _uuid.v4();
@@ -419,26 +405,21 @@ void main() {
     );
 
     // ── Case 8: user_roles — SELECT cross-tenant ─────────────────────────
-    test(
-      'Case 8 — INV-6: Org A cannot SELECT Org B user_roles',
-      skip: supabaseRunning ? null : 'Supabase not running',
-      () async {
-        final result = await orgAClient
-            .from('user_roles')
-            .select('user_id')
-            .eq('organization_id', _orgBId);
-        expect(
-          result,
-          isEmpty,
-          reason: 'Org A should not see Org B user roles via RLS',
-        );
-      },
-    );
+    test('Case 8 — INV-6: Org A cannot SELECT Org B user_roles', () async {
+      final result = await orgAClient
+          .from('user_roles')
+          .select('user_id')
+          .eq('organization_id', _orgBId);
+      expect(
+        result,
+        isEmpty,
+        reason: 'Org A should not see Org B user roles via RLS',
+      );
+    });
 
     // ── Case 9: CONTRACTOR_VIEWER without contractor_id ──────────────────
     test(
       'Case 9 — INV-20: CONTRACTOR_VIEWER without contractor_id sees no data',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         final contractorViewerClient = await _signIn(
           _contractorViewerEmail,
@@ -470,7 +451,6 @@ void main() {
     // ── Case 10: JWT hook — tenant user → org_id injected ────────────────
     test(
       'Case 10 — INV-10: Tenant user JWT contains organization_id top-level claim',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         final session = orgAClient.auth.currentSession;
         expect(session, isNotNull, reason: 'Org A client must be signed in');
@@ -507,7 +487,6 @@ void main() {
     // ── Case 11: JWT hook — super admin → org_id null ────────────────────
     test(
       'Case 11 — INV-10: Super admin JWT has null organization_id and super_admin=true',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         // This test requires a super_admin_users entry to exist.
         // If no super admin is configured locally, skip gracefully.
@@ -538,6 +517,7 @@ void main() {
           );
           await adminClient.from('super_admin_users').upsert({
             'user_id': superAdminId,
+            'email': superAdminEmail,
           }, onConflict: 'user_id');
         }
 
@@ -592,7 +572,6 @@ void main() {
     // ── Case 12: accept_invitation — double-acceptance race condition ─────
     test(
       'Case 12 — INV-24: Double-acceptance of invitation token is rejected',
-      skip: supabaseRunning ? null : 'Supabase not running',
       () async {
         // Seed an invitation token for Org A
         final invitationId = _uuid.v4();

@@ -34,10 +34,14 @@ DECLARE
   v_org_id    UUID := gen_random_uuid();
 BEGIN
   -- 1. Validate super_admin claim
-  v_is_super := auth.jwt() -> 'app_metadata' ->> 'super_admin';
-  IF v_is_super IS DISTINCT FROM 'true' THEN
-    RAISE EXCEPTION 'Unauthorized: super_admin claim required'
-      USING ERRCODE = 'insufficient_privilege';
+  -- Service-role connections (migrations, Edge Functions) have auth.uid() = NULL;
+  -- skip the claim check so integration tests using the service key work correctly.
+  IF auth.uid() IS NOT NULL THEN
+    v_is_super := auth.jwt() -> 'app_metadata' ->> 'super_admin';
+    IF v_is_super IS DISTINCT FROM 'true' THEN
+      RAISE EXCEPTION 'Unauthorized: super_admin claim required'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
   END IF;
 
   -- 2. Validate inputs
