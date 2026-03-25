@@ -134,7 +134,10 @@
       "Bash(psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -c \"SELECT column_name FROM information_schema.columns WHERE table_name=''organizations'' ORDER BY ordinal_position;\")",
       "Bash(psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -c \"SELECT prosrc FROM pg_proc WHERE proname=''''super_admin_create_organization'''';\")",
       "Bash(psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -c \"SELECT EXISTS\\(SELECT 1 FROM supabase_migrations.schema_migrations WHERE version=''20260405000007''\\);\")",
-      "Bash(psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -c \"SELECT prosrc FROM pg_proc WHERE proname=''''super_admin_invite_first_admin'''';\")"
+      "Bash(psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -c \"SELECT prosrc FROM pg_proc WHERE proname=''''super_admin_invite_first_admin'''';\")",
+      "Bash(find /c/Projects/VeraProb/test/application/projections -type f -name *_test.dart)",
+      "Bash(cat C:/Projects/VeraProb/.github/workflows/*.yml)",
+      "Bash(node -e \":*)"
     ]
   },
   "model": "sonnet"

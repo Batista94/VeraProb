@@ -298,6 +298,14 @@ class FleetSimulationService {
     _positionChangeController.add(currentPositions);
   }
 
+  /// Cancels the simulation timer and closes stream controllers.
+  void dispose() {
+    _simTimer?.cancel();
+    _simTimer = null;
+    _tripChangeController.close();
+    _positionChangeController.close();
+  }
+
   /// Advance simulation by one tick
   void _advanceSimulation() {
     for (var i = 0; i < _trips.length; i++) {
