@@ -500,44 +500,30 @@ void main() async {
         const superAdminEmail = 'super_admin@veraprob.test';
         const superAdminPassword = 'SuperAdmin123!';
 
-        // Check if super admin exists
-        final listResponse = await http.get(
+        // Create or find the super admin user, then unconditionally reset the
+        // password so CI runs with a known credential regardless of prior state.
+        final superAdminId = await _ensureUser(
+          superAdminEmail,
+          superAdminPassword,
+          supabaseUrl: PostgresTestConfig.supabaseUrl,
+          serviceRoleKey: PostgresTestConfig.serviceRoleKey,
+        );
+        // Reset password + confirm email for the resolved user ID.
+        // (No-op for newly created users; fixes stale credentials on re-runs.)
+        await http.put(
           Uri.parse(
-            '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users?email=$superAdminEmail',
+            '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users/$superAdminId',
           ),
           headers: {
             'apikey': PostgresTestConfig.serviceRoleKey,
             'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
+            'Content-Type': 'application/json',
           },
+          body: jsonEncode({
+            'password': superAdminPassword,
+            'email_confirm': true,
+          }),
         );
-        final list =
-            (jsonDecode(listResponse.body) as Map<String, dynamic>)['users']
-                as List<dynamic>;
-
-        final String superAdminId;
-        if (list.isEmpty) {
-          // Create super admin user and register in super_admin_users
-          superAdminId = await _ensureUser(
-            superAdminEmail,
-            superAdminPassword,
-            supabaseUrl: PostgresTestConfig.supabaseUrl,
-            serviceRoleKey: PostgresTestConfig.serviceRoleKey,
-          );
-        } else {
-          // User exists — reset password to ensure correct credentials for this run
-          superAdminId = (list.first as Map<String, dynamic>)['id'] as String;
-          await http.put(
-            Uri.parse(
-              '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users/$superAdminId',
-            ),
-            headers: {
-              'apikey': PostgresTestConfig.serviceRoleKey,
-              'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({'password': superAdminPassword}),
-          );
-        }
         await adminClient.from('super_admin_users').upsert({
           'user_id': superAdminId,
           'email': superAdminEmail,
@@ -595,10 +581,20 @@ void main() async {
     test(
       'Case 12 — INV-24: Double-acceptance of invitation token is rejected',
       () async {
-        // Seed an invitation token for Org A
+        // Seed an invitation token for Org A.
+        // accept_invitation validates that the calling user's email matches the
+        // invitation email (BLOCKER-1 / migration 20260413000001), so the invitee
+        // must be created first with the exact same email as the invitation.
         final invitationId = _uuid.v4();
         final token = _uuid.v4();
-        final inviteeId = _uuid.v4();
+        final inviteeEmail = 'race_test_${_uuid.v4()}@veraprob.test';
+
+        final inviteeId = await _ensureUser(
+          inviteeEmail,
+          'InviteePass123!',
+          supabaseUrl: PostgresTestConfig.supabaseUrl,
+          serviceRoleKey: PostgresTestConfig.serviceRoleKey,
+        );
 
         await adminClient.from('invitations').insert({
           'id': invitationId,
@@ -606,19 +602,12 @@ void main() async {
           'token': token,
           'role': 'TENANT_ADMIN',
           'invited_by': _uuid.v4(),
-          'email': 'race_test_${_uuid.v4()}@veraprob.test',
+          'email': inviteeEmail,
           'expires_at_utc': DateTime.now()
               .toUtc()
               .add(const Duration(hours: 24))
               .toIso8601String(),
         });
-
-        // Ensure invitee exists in auth.users (service role workaround)
-        await adminClient
-            .rpc('ensure_test_user_exists', params: {'p_user_id': inviteeId})
-            .catchError((_) {
-              // RPC may not exist; insert directly via admin API if needed
-            });
 
         // First acceptance should succeed; second must throw.
         // We run them concurrently to stress the FOR UPDATE lock.
