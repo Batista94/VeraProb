@@ -1,7 +1,7 @@
 # VeraProb — Roadmap Estratégico
 
 **Revisão:** 2026-03-24
-**Status Atual:** Phase 10 em andamento — Milestone alvo: **READY FOR FIRST TENANT**
+**Status Atual:** Phase 9 em andamento (9.5–9.8 pendentes) · Phase 10.1 CONCLUÍDA — Milestone alvo: **READY FOR FIRST TENANT**
 
 ---
 
@@ -16,10 +16,14 @@
 | CI/CD | `flutter analyze` + `flutter test` passando no GitHub Actions ✅ |
 | Precisão financeira | `Money` VO (centavos BIGINT) — Enforced ✅ |
 | Phase 10.1 | **CONCLUÍDA** — Schema Lock + Migration Freeze + CI append-only guard ✅ |
-| Phase 9.4 Audit | **CONCLUÍDA** — Dashboard ROI + CNPJ Auto-fill ✅ |
-| Phase 9.3 Audit | **CONCLUÍDA** — Testes manuais aprovados ✅ |
-| Phase 9.2 Audit | **CONCLUÍDA** ✅ |
-| Phase 9.1 Audit | **CONCLUÍDA** ✅ |
+| Phase 9.8 | **PENDENTE** — Edge Proxy · Hard Quotas · JWT Circuit Breaker · MFA · Entity Alias · WASM · Justified Impersonation |
+| Phase 9.7 | **PENDENTE** — Background Sync · Heartbeat Monitor · Late-Arrival Window (INV-12) |
+| Phase 9.6 | **PENDENTE** — Kinematic Guard (INV-25) · Industrial Deep Theme · Heurísticas de Alerta |
+| Phase 9.5 | **PENDENTE** — SLA Template Library · Smart Defaults · ServiceManifest |
+| Phase 9.4 | **CONCLUÍDA** — Dashboard ROI + CNPJ Auto-fill ✅ |
+| Phase 9.3 | **CONCLUÍDA** — Testes manuais aprovados ✅ |
+| Phase 9.2 | **CONCLUÍDA** ✅ |
+| Phase 9.1 | **CONCLUÍDA** ✅ |
 
 ---
 
@@ -126,10 +130,10 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 - **Late-Arrival Window Protocol:** Definição de janela temporal (ex: 48h) para reprocessamento determinístico de eventos atrasados sem violação da INV-12.
 
 ### [ ] Phase 9.8 — Audit, Security & Identity
-**Destaques:** 
+**Destaques:**
 - **[CRITICAL] Edge Proxy:** Migração total para Edge Functions e remoção definitiva da `service_role` do frontend.
 - **WASM Build Hygiene:** Validação rigorosa de `flutter build web --wasm` com remoção total de dependências `dart:html/js`.
-- **Schema Lock Protocol:** Auditoria de migrations para garantir imutabilidade e travamento de novos schemas pós-lançamento.
+- ~~**Schema Lock Protocol:** Auditoria de migrations para garantir imutabilidade e travamento de novos schemas pós-lançamento.~~ ✅ **ENTREGUE via Phase 10.1**
 - **Hard Quota Enforcement (DB Level):** Implementação de triggers BEFORE INSERT para garantir que limites de `max_vehicles` e `max_contracts` sejam respeitados no banco.
 - **JWT Circuit Breaker:** Mecanismo de invalidação imediata de sessões para organizações suspensas ou inadimplentes.
 - **Privileged Access Hardening:** Implementação de MFA obrigatório e TTL reduzido para sessões de SuperAdmin.
@@ -141,7 +145,7 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 
 ### Milestone Gate: READY FOR FIRST TENANT
 
-**Sinal:** **READY FOR FIRST TENANT** ✅
+**Sinal:** **EM ANDAMENTO** — 7/19 itens concluídos
 
 | Checklist | Sub-fase | Status |
 |---|---|---|
@@ -164,7 +168,7 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 | [ ] MFA mandatório para SuperAdmin | 9.8 | |
 | [ ] Edge Proxy (Removido service_role key) | 9.8 | |
 | [ ] Build WASM limpo (zero dart:html/js) | 9.8 | |
-| [ ] Schema Lock e Migration Audit | 9.8 | |
+| ✅ Schema Lock e Migration Audit | 9.8 / 10.1 | CONCLUÍDA via Phase 10.1 |
 | [ ] Entity Alias Mapping em todo o sistema | 9.8 | |
 | [ ] Justified Impersonation com Log de Suporte | 9.8 | |
 
@@ -206,10 +210,18 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 
 ```
 ═══════════════════════════════════════════════════════════════════════
-[x] Phase 9.1, 9.2, 9.3, 9.4 COMPLETE ✅
+[x] Phase 9.1 — Forensic Audit Geral ✅
+[x] Phase 9.2 — SuperAdmin Portal ✅
+[x] Phase 9.3 — Auditor Reativo ✅
+[x] Phase 9.4 — ROI Dashboard & Precision Onboarding ✅
 [x] Phase 10.1 — Schema Lock & Migration Freeze ✅
-═══════════════════════════════════════════════════════════════════════
-[ ] Phase 10.2 — WASM Build Validation          ← PRÓXIMA
+───────────────────────────────────────────────────────────────────────
+[ ] Phase 9.5 — Vínculo Dinâmico & UX do Operador     ← PRÓXIMA
+[ ] Phase 9.6 — Lógicas Matemáticas & Cockpit UI
+[ ] Phase 9.7 — Liveness & Resiliência Operacional
+[ ] Phase 9.8 — Audit, Security & Identity
+───────────────────────────────────────────────────────────────────────
+[ ] Phase 10.2 — WASM Build Validation
 [ ] Phase 10.3 — Shadow Mode
 [ ] Phase 10.4 — OCC UX Polish
 [ ] Phase 10.5 — First Pilot Tenant Onboarding

@@ -31,12 +31,13 @@ supabase/
 
 ## Current Phase
 
-**Phase 9 (Technical Review & CI/CD Gate) — COMPLETE. All sub-phases [GO].**
+**Phase 9 — IN PROGRESS. Sub-phases 9.1–9.4 [GO]. Sub-phases 9.5–9.8 PENDING.**
 **Gate `READY FOR CI/CD` — ACHIEVED.**
-**Current Objective: Phase 10 — CI/CD & Launch Preparation.**
-**10.1 (Schema Lock & Migration Freeze) — [GO].** Next sub-phase: **10.2 — WASM Build Validation.**
+**Phase 10.1 (Schema Lock & Migration Freeze) — [GO].**
+**Current Objective: complete Phase 9 (9.5 → 9.6 → 9.7 → 9.8) then Phase 10 (10.2 → 10.3 → 10.4 → 10.5).**
+Next sub-phase: **9.5 — Vínculo Dinâmico & UX do Operador.**
 Gate target: `READY FOR FIRST TENANT`.
-See full roadmap: [.claude/rules/roadmap.md](.claude/rules/roadmap.md)
+See full roadmap: [docs/governance/roadmap.md](docs/governance/roadmap.md)
 
 ---
 
