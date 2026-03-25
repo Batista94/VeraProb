@@ -107,7 +107,7 @@ Map<String, dynamic> _decodeJwt(String token) {
 
 void main() {
   group('JWT Hook E2E — Phase 9.4.3', () {
-    late bool supabaseRunning;
+    bool supabaseRunning = false;
     late SupabaseClient adminClient;
 
     setUpAll(() async {

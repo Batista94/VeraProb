@@ -134,7 +134,7 @@ Future<SupabaseClient> _signIn(
 
 void main() {
   group('RLS Isolation — Phase 9.4.2', () {
-    late bool supabaseRunning;
+    bool supabaseRunning = false;
     late SupabaseClient adminClient;
 
     // Org A data
@@ -268,6 +268,7 @@ void main() {
     });
 
     tearDownAll(() async {
+      if (!supabaseRunning) return;
       orgAClient.auth.signOut();
       orgBClient.auth.signOut();
     });

@@ -687,7 +687,7 @@ class _DecisionRow extends StatelessWidget {
           ),
 
           // Evidence
-          if (decision.evidence.isNotEmpty) ...[
+          if (decision.evidence.toJson().isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
@@ -708,7 +708,7 @@ class _DecisionRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...decision.evidence.entries.map(
+                  ...decision.evidence.toJson().entries.map(
                     (e) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Row(

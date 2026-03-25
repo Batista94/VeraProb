@@ -14,6 +14,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_executio
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/evidence_payload.dart';
 
 /// Phase 3 Compliance Review — Validation Scenarios
 ///
@@ -326,7 +327,8 @@ void main() {
           expect(d.ruleVersion, isA<int>());
           expect(d.rulePriority, isA<int>());
           expect(d.outcome, isNotEmpty);
-          expect(d.evidence, isA<Map<String, dynamic>>());
+          expect(d.evidence, isA<EvidencePayload>());
+          expect(d.evidence.toJson(), isA<Map<String, dynamic>>());
         }
       }
     });
@@ -355,7 +357,7 @@ void main() {
         ruleVersion: 1,
         rulePriority: 1,
         outcome: 'PASS',
-        evidence: {'threshold': 60, 'actual': 120},
+        evidence: const GenericEvidencePayload({'threshold': 60, 'actual': 120}),
       );
       final json = decision.toJson();
       final restored = EvaluationDecision.fromJson(json);
