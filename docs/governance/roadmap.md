@@ -1,7 +1,7 @@
 # VeraProb — Roadmap Estratégico
 
 **Revisão:** 2026-03-24
-**Status Atual:** Phase 9 em andamento — Milestone alvo: **READY FOR FIRST TENANT**
+**Status Atual:** Phase 10 em andamento — Milestone alvo: **READY FOR FIRST TENANT**
 
 ---
 
@@ -9,11 +9,13 @@
 
 | Aspecto | Estado |
 |---|---|
-| Testes | 654 passing · 0 falhas ✅ |
-| Migrations | 48 aplicadas |
+| Testes | 700 passing · 64 skipped (Supabase offline) · 0 falhas ✅ |
+| Migrations | 73 aplicadas (schema lock v1 — append-only) |
 | Command Handlers | 17 handlers na camada `application/` |
-| Análise estática | 0 erros · Wasm-ready (`package:web`) |
+| Análise estática | 0 erros · 0 warnings · `flutter analyze --no-pub` ✅ |
+| CI/CD | `flutter analyze` + `flutter test` passando no GitHub Actions ✅ |
 | Precisão financeira | `Money` VO (centavos BIGINT) — Enforced ✅ |
+| Phase 10.1 | **CONCLUÍDA** — Schema Lock + Migration Freeze + CI append-only guard ✅ |
 | Phase 9.4 Audit | **CONCLUÍDA** — Dashboard ROI + CNPJ Auto-fill ✅ |
 | Phase 9.3 Audit | **CONCLUÍDA** — Testes manuais aprovados ✅ |
 | Phase 9.2 Audit | **CONCLUÍDA** ✅ |
@@ -168,7 +170,34 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 
 ---
 
-## Phase 10 — VeraProb Enterprise: Escala & Integrações
+## Phase 10 — CI/CD & Launch Preparation
+
+**Gate target:** `READY FOR FIRST TENANT`
+
+### [x] Phase 10.1 — Schema Lock & Migration Freeze ✅ CONCLUÍDA
+**Data:** 2026-03-24
+- 73 migrations auditadas · CI append-only guard (pr_scanner.sh) · schema_lock_v1.md
+- Security hardening migration `20260413000001` incluída
+- `flutter analyze --no-pub` → 0 issues (700 passing · 0 failures)
+
+### [ ] Phase 10.2 — WASM Build Validation
+- `flutter build web --wasm` deve passar sem `dart:html`/`dart:js`
+- Todos os arquivos Freezed up-to-date
+- Zero incompatibilidades Wasm no bundle
+
+### [ ] Phase 10.3 — Shadow Mode
+- EvaluationEngine paralelo sem emitir penalidades
+- Output comparado com fluxo manual
+
+### [ ] Phase 10.4 — OCC UX Polish
+- Cognitive load audit · verdict rastreável em ≤1 clique · WCAG 2.2 AA
+
+### [ ] Phase 10.5 — First Pilot Tenant Onboarding
+- Provisionar tenant real · validação end-to-end · PO sign-off
+
+---
+
+## Phase 11+ — VeraProb Enterprise: Escala & Integrações
 **Destaques:** API/Webhooks (SAP/Oracle), Captura Passiva (OCR/SDK), Assinatura JIT, Expansão Vertical Agnostica.
 
 ---
@@ -178,15 +207,15 @@ Validado: Dual-Key RLS · JWT path canônico · Event Time no Engine (INV-12) ·
 ```
 ═══════════════════════════════════════════════════════════════════════
 [x] Phase 9.1, 9.2, 9.3, 9.4 COMPLETE ✅
+[x] Phase 10.1 — Schema Lock & Migration Freeze ✅
 ═══════════════════════════════════════════════════════════════════════
-[ ] Phase 9.5 — Vínculo Dinâmico & UX do Operador
-[ ] Phase 9.5 — Vínculo Dinâmico & UX do Operador (próxima)
-[ ] Phase 9.6 — Lógicas Matemáticas & Cockpit UI
-[ ] Phase 9.7 — Liveness & Resiliência Operacional
-[ ] Phase 9.8 — Audit, Security & Identity
+[ ] Phase 10.2 — WASM Build Validation          ← PRÓXIMA
+[ ] Phase 10.3 — Shadow Mode
+[ ] Phase 10.4 — OCC UX Polish
+[ ] Phase 10.5 — First Pilot Tenant Onboarding
 ───────────────────────────────────────────────────────────────────────
 >>> MILESTONE: READY FOR FIRST TENANT <<<
 ───────────────────────────────────────────────────────────────────────
-[ ] Phase 10+ — Enterprise Expansion
+[ ] Phase 11+ — Enterprise Expansion
 ═══════════════════════════════════════════════════════════════════════
 ```
