@@ -18,9 +18,14 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
+import 'package:veraprob/domain/sla_audit/sla_template.dart';
+import 'package:veraprob/domain/sla_audit/smart_defaults.dart';
+import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
 import 'package:veraprob/state/providers/sla_template_providers.dart';
+import 'package:veraprob/application/sla_audit/sla_template_presets.dart';
 
 import '../widgets/zone_type_ahead_field.dart';
+import '../widgets/transport_vertical_chip.dart';
 
 // ── BR Timezones (curated list for dropdown) ──────────────────
 const _kBrTimezones = [
@@ -992,8 +997,211 @@ class _DeclareContractPlanFormState
     );
   }
 
+  void _applyPenaltiesFromTemplate(SLAPenalties p) {
+    setState(() {
+      _noShowMultiplierController.text = p.noShowPenaltyMultiplier
+          .toStringAsFixed(1)
+          .replaceAll('.', ',');
+      _delayToleranceController.text = p.delayToleranceMinutes.toString();
+      _delayMinuteValueController.text = (p.delayPenaltyPerMinute.cents / 100.0)
+          .toStringAsFixed(2)
+          .replaceAll('.', ',');
+      _downgradeValueController.text = (p.downgradePenaltyFlat.cents / 100.0)
+          .toStringAsFixed(2)
+          .replaceAll('.', ',');
+      _noShowThresholdController.text = p.noShowThresholdMinutes.toString();
+      _earlyArrivalToleranceController.text = p.earlyArrivalToleranceMinutes
+          .toString();
+      _dwellTimeController.text = p.dwellTimeMinutes.toString();
+      _gracePeriodController.text = p.gracePeriodMinutes.toString();
+    });
+  }
+
+  Future<void> _saveCurrentAsTemplate() async {
+    final orgId = ref.read(currentOrganizationIdProvider);
+    if (orgId == null) return;
+
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Salvar como Modelo'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Nome do Modelo',
+              hintText: 'Ex: Fretamento Interurbano',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+              child: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (name == null || name.isEmpty) return;
+
+    try {
+      final noShowMult =
+          double.tryParse(
+            _noShowMultiplierController.text.replaceAll(',', '.'),
+          ) ??
+          1.5;
+      final delayPerMin =
+          ((double.tryParse(
+                        _delayMinuteValueController.text.replaceAll(',', '.'),
+                      ) ??
+                      0.5) *
+                  100)
+              .round();
+      final downgrade =
+          ((double.tryParse(
+                        _downgradeValueController.text.replaceAll(',', '.'),
+                      ) ??
+                      50) *
+                  100)
+              .round();
+
+      final penalties = SLAPenalties.create(
+        noShowPenaltyMultiplier: noShowMult,
+        delayToleranceMinutes:
+            int.tryParse(_delayToleranceController.text) ?? 15,
+        delayPenaltyPerMinute: Money(delayPerMin),
+        downgradePenaltyFlat: Money(downgrade),
+        noShowThresholdMinutes:
+            int.tryParse(_noShowThresholdController.text) ?? 60,
+        earlyArrivalToleranceMinutes:
+            int.tryParse(_earlyArrivalToleranceController.text) ?? 5,
+        dwellTimeMinutes: int.tryParse(_dwellTimeController.text) ?? 3,
+        gracePeriodMinutes: int.tryParse(_gracePeriodController.text) ?? 0,
+      );
+
+      await ref
+          .read(saveSlaTemplateHandlerProvider)
+          .handle(organizationId: orgId, name: name, penalties: penalties);
+
+      ref.invalidate(slaTemplatesProvider);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Modelo "$name" salvo.'),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar modelo: $e'),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showTemplatePicker(AsyncValue<List<SlaTemplate>> allTemplatesAsync) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      constraints: const BoxConstraints(maxHeight: 500),
+      builder: (ctx) => allTemplatesAsync.when(
+        loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+        error: (e, _) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'Erro ao carregar modelos: $e',
+            style: const TextStyle(color: VeraProbColors.error),
+          ),
+        ),
+        data: (templates) {
+          if (templates.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text('Nenhum modelo disponível'),
+              ),
+            );
+          }
+
+          final presets = templates
+              .where((t) => SlaTemplatePresets.isPreset(t.id))
+              .toList();
+          final orgTemplates = templates
+              .where((t) => !SlaTemplatePresets.isPreset(t.id))
+              .toList();
+
+          return ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: [
+              if (presets.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Text(
+                    'MODELOS DO SISTEMA',
+                    style: VeraProbTypography.badge.copyWith(
+                      color: VeraProbColors.textSecondary,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+                ...presets.map(
+                  (t) => _TemplateTile(
+                    template: t,
+                    onTap: () {
+                      _applyPenaltiesFromTemplate(t.penalties);
+                      Navigator.of(ctx).pop();
+                    },
+                  ),
+                ),
+              ],
+              if (orgTemplates.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  child: Text(
+                    'MEUS MODELOS',
+                    style: VeraProbTypography.badge.copyWith(
+                      color: VeraProbColors.textSecondary,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+                ...orgTemplates.map(
+                  (t) => _TemplateTile(
+                    template: t,
+                    onTap: () {
+                      _applyPenaltiesFromTemplate(t.penalties);
+                      Navigator.of(ctx).pop();
+                    },
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildStep3() {
-    final templatesAsync = ref.watch(slaTemplatesProvider);
+    final allTemplatesAsync = ref.watch(allTemplatesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1004,83 +1212,43 @@ class _DeclareContractPlanFormState
         ),
         const SizedBox(height: VeraProbSpacing.md),
 
-        // F4 — Aplicar Template SLA
-        OutlinedButton.icon(
-          icon: const Icon(Icons.style, size: 16),
-          label: const Text('Aplicar Template SLA'),
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              builder: (ctx) => templatesAsync.when(
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(),
-                  ),
+        // ── Smart Defaults: Vertical dropdown ──────────────────────
+        Row(
+          children: [
+            SizedBox(
+              width: 260,
+              child: DropdownButtonFormField<TransportVertical>(
+                decoration: const InputDecoration(
+                  labelText: 'Vertical de Transporte',
+                  prefixIcon: Icon(Icons.category_outlined, size: 20),
+                  isDense: true,
                 ),
-                error: (e, _) => Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Erro ao carregar templates: $e',
-                    style: const TextStyle(color: VeraProbColors.error),
-                  ),
-                ),
-                data: (templates) {
-                  if (templates.isEmpty) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Text('Nenhum template criado ainda'),
-                      ),
-                    );
+                items: TransportVertical.values
+                    .map(
+                      (v) => DropdownMenuItem(value: v, child: Text(v.label)),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null && v != TransportVertical.custom) {
+                    _applyPenaltiesFromTemplate(SmartDefaults.defaultsFor(v));
                   }
-                  return ListView.builder(
-                    itemCount: templates.length,
-                    itemBuilder: (_, i) {
-                      final t = templates[i];
-                      return ListTile(
-                        title: Text(t.name),
-                        subtitle: t.description != null
-                            ? Text(t.description!)
-                            : null,
-                        onTap: () {
-                          final p = t.penalties;
-                          setState(() {
-                            _noShowMultiplierController.text = p
-                                .noShowPenaltyMultiplier
-                                .toStringAsFixed(1)
-                                .replaceAll('.', ',');
-                            _delayToleranceController.text = p
-                                .delayToleranceMinutes
-                                .toString();
-                            _delayMinuteValueController.text =
-                                (p.delayPenaltyPerMinute.cents / 100.0)
-                                    .toStringAsFixed(2)
-                                    .replaceAll('.', ',');
-                            _downgradeValueController.text =
-                                (p.downgradePenaltyFlat.cents / 100.0)
-                                    .toStringAsFixed(2)
-                                    .replaceAll('.', ',');
-                            _noShowThresholdController.text = p
-                                .noShowThresholdMinutes
-                                .toString();
-                            _earlyArrivalToleranceController.text = p
-                                .earlyArrivalToleranceMinutes
-                                .toString();
-                            _dwellTimeController.text = p.dwellTimeMinutes
-                                .toString();
-                            _gracePeriodController.text = p.gracePeriodMinutes
-                                .toString();
-                          });
-                          Navigator.of(ctx).pop();
-                        },
-                      );
-                    },
-                  );
                 },
               ),
-            );
-          },
+            ),
+            const SizedBox(width: 16),
+            // ── Load from Template (grouped: System + Org) ──────────
+            OutlinedButton.icon(
+              icon: const Icon(Icons.style, size: 16),
+              label: const Text('Aplicar Modelo'),
+              onPressed: () => _showTemplatePicker(allTemplatesAsync),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.save_outlined, size: 16),
+              label: const Text('Salvar como Modelo'),
+              onPressed: _saveCurrentAsTemplate,
+            ),
+          ],
         ),
         const SizedBox(height: VeraProbSpacing.md),
 
@@ -1925,6 +2093,53 @@ class _KpiCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _TemplateTile extends StatelessWidget {
+  final SlaTemplate template;
+  final VoidCallback onTap;
+
+  const _TemplateTile({required this.template, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: template.vertical != null
+          ? TransportVerticalChip(vertical: template.vertical!)
+          : null,
+      title: Text(template.name),
+      subtitle: Text(
+        _penaltySummary(template.penalties),
+        style: VeraProbTypography.caption,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: SlaTemplatePresets.isPreset(template.id)
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: VeraProbColors.secondary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'SISTEMA',
+                style: VeraProbTypography.badge.copyWith(
+                  color: VeraProbColors.secondary,
+                  fontSize: 9,
+                ),
+              ),
+            )
+          : null,
+      onTap: onTap,
+    );
+  }
+
+  String _penaltySummary(SLAPenalties p) {
+    final delay = (p.delayPenaltyPerMinute.cents / 100.0).toStringAsFixed(2);
+    return '${p.noShowPenaltyMultiplier}x no-show · '
+        '${p.delayToleranceMinutes}min tol · '
+        'R\$ $delay/min atraso';
   }
 }
 

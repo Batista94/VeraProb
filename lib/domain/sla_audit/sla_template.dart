@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import 'domain_exception.dart';
 import 'sla_penalties.dart';
+import 'transport_vertical.dart';
 
 /// Application-layer entity representing a named preset of [SLAPenalties].
 ///
@@ -23,6 +24,7 @@ class SlaTemplate extends Equatable {
   final String organizationId;
   final String name;
   final String? description;
+  final TransportVertical? vertical;
   final SLAPenalties penalties;
   final DateTime createdAt;
 
@@ -31,6 +33,7 @@ class SlaTemplate extends Equatable {
     required this.organizationId,
     required this.name,
     this.description,
+    this.vertical,
     required this.penalties,
     required this.createdAt,
   });
@@ -42,6 +45,7 @@ class SlaTemplate extends Equatable {
     required String organizationId,
     required String name,
     String? description,
+    TransportVertical? vertical,
     required SLAPenalties penalties,
   }) {
     if (organizationId.isEmpty) {
@@ -61,6 +65,7 @@ class SlaTemplate extends Equatable {
       organizationId: organizationId,
       name: name,
       description: description,
+      vertical: vertical,
       penalties: penalties,
       createdAt: DateTime.now().toUtc(),
     );
@@ -72,6 +77,7 @@ class SlaTemplate extends Equatable {
     required String organizationId,
     required String name,
     String? description,
+    TransportVertical? vertical,
     required SLAPenalties penalties,
     required DateTime createdAt,
   }) {
@@ -80,6 +86,7 @@ class SlaTemplate extends Equatable {
       organizationId: organizationId,
       name: name,
       description: description,
+      vertical: vertical,
       penalties: penalties,
       createdAt: createdAt,
     );

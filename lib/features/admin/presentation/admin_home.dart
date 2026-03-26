@@ -15,6 +15,7 @@ import 'screens/org_settings_screen.dart';
 import 'screens/user_management_screen.dart';
 import 'screens/contractor_management_screen.dart';
 import 'screens/auditor_queue_screen.dart';
+import 'screens/sla_template_library_screen.dart';
 import '../../../state/providers/auditor_queue_providers.dart';
 
 class AdminHome extends ConsumerWidget {
@@ -86,6 +87,11 @@ class AdminHome extends ConsumerWidget {
           selectedIcon: Icon(Icons.handshake),
           label: Text('Contratantes'),
         ),
+        const NavigationRailDestination(
+          icon: Icon(Icons.library_books_outlined),
+          selectedIcon: Icon(Icons.library_books),
+          label: Text('Modelos SLA'),
+        ),
         NavigationRailDestination(
           icon: Badge(
             isLabelVisible: pendingCount > 0,
@@ -113,6 +119,7 @@ class AdminHome extends ConsumerWidget {
         OrgSettingsScreen(),
         UserManagementScreen(),
         ContractorManagementScreen(),
+        SlaTemplateLibraryScreen(),
         AuditorQueueScreen(),
       ],
     );

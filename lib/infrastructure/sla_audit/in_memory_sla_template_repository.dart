@@ -23,6 +23,18 @@ class InMemorySlaTemplateRepository implements SlaTemplateRepository {
   }
 
   @override
+  Future<SlaTemplate?> findById(
+    String id, {
+    required String organizationId,
+  }) async {
+    final template = _store[id];
+    if (template != null && template.organizationId == organizationId) {
+      return template;
+    }
+    return null;
+  }
+
+  @override
   Future<void> delete(String id, {required String organizationId}) async {
     final template = _store[id];
     if (template != null && template.organizationId == organizationId) {

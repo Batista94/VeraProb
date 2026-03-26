@@ -5,8 +5,6 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   file_saver
-  flutter_tts
-  geolocator_windows
   sentry_flutter
   url_launcher_windows
 )
