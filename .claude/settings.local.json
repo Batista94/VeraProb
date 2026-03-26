@@ -137,7 +137,10 @@
       "Bash(psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -c \"SELECT prosrc FROM pg_proc WHERE proname=''''super_admin_invite_first_admin'''';\")",
       "Bash(find /c/Projects/VeraProb/test/application/projections -type f -name *_test.dart)",
       "Bash(cat C:/Projects/VeraProb/.github/workflows/*.yml)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(tee /tmp/wasm_build.log)",
+      "Bash(flutter clean:*)",
+      "Bash(git status:*)"
     ]
   },
   "model": "sonnet"

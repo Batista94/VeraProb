@@ -20,12 +20,12 @@ VeraProb is an **Automated SLA Compliance & Financial Protection Platform** (the
 
 ---
 
-## 📍 LIVE STATUS: Phase 9.5
+## 📍 LIVE STATUS: Phase 9.6
 
 **Current Objective:** [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
 
-- **Status:** Token optimization & Doc consolidation completed ✅.
-- **Next Step:** Start implementation of `SLA Template Library` (Phase 9.5).
+- **Status:** Phase 9.5 (SLA Template Library) completed ✅.
+- **Next Step:** Start implementation of `Kinematic Guard & Cockpit UI` (Phase 9.6).
 - **Test Mandate:** 100% unit coverage for domain logic; manual validation for UX.
 
 ---
