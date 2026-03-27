@@ -51,10 +51,7 @@ void main() {
         ),
       );
 
-      expect(
-        () => handler.handle(),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => handler.handle(), throwsA(isA<DomainException>()));
       verifyNever(() => mockRepo.enrollTotp());
     });
   });

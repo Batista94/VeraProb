@@ -20,16 +20,15 @@ VeraProb is an **Automated SLA Compliance & Financial Protection Platform** (the
 
 ---
 
-## 📍 LIVE STATUS: Phase 9.6 (The Shield)
+## 📍 LIVE STATUS: Phase 9.7 (The Brain)
 
-**Current Objective:** Security & Data Foundation — Hardening Multi-tenancy & Isolation. [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
+**Current Objective:** Core Forensic Intelligence — Finalizing Evidence Snapshots & Wizard. [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
 
-- **Done:** Phase 9.5 ✅ · Phase 9.6.A.1 ✅ (Edge Proxy) · Phase 9.6.A.2 ✅ (MFA SuperAdmin) · Phase 9.7 partial ✅ (Kinematic Guard)
+- **Done:** Phase 9.5 ✅ · Phase 9.6 ✅ (Shield) · Kinematic Guard ✅ · GeoMath ✅
 - **Tests:** 1048 passing (+6 new MFA tests) · 23 skipped · 0 failures ✅
-- **Immediate Next Steps:**
-  1. **[ARCH] RLS Enforcement:** Global isolation by `organization_id` in 100% of operational tables.
-  2. **[ARCH] Multi-Level Auth Flow:** DB-level distinction for SuperAdmin (VeraProb), Tenant Admin, and Operator.
-- **SECURITY BLOCKER:** No new business features until Multi-tenant RLS is verified and tested against data leakage.
+- **Next Up:**
+  1. **Visual Evidence Snapshots:** Mini-map generation in audit cards.
+  2. **Wait for Final RLS Audit:** Verification of data isolation between tenants.
 
 ---
 

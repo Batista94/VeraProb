@@ -85,7 +85,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
 
       switch (result) {
         case MfaVerificationSuccess():
-          Navigator.of(context).pushAndRemoveUntil(
+          await Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const SuperAdminShell()),
             (_) => false,
           );
@@ -101,7 +101,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
             _startLockoutTimer(result.lockedUntil);
           } else {
             // Create a new challenge for the next attempt
-            _createChallenge();
+            await _createChallenge();
           }
       }
     } catch (e) {
@@ -200,9 +200,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          _isLockedOut
-              ? 'Conta Temporariamente Bloqueada'
-              : 'Verificação MFA',
+          _isLockedOut ? 'Conta Temporariamente Bloqueada' : 'Verificação MFA',
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -273,7 +271,9 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
           ),
         ],
 
-        if (!_isLockedOut && _remainingAttempts < 5 && _remainingAttempts > 0) ...[
+        if (!_isLockedOut &&
+            _remainingAttempts < 5 &&
+            _remainingAttempts > 0) ...[
           const SizedBox(height: 8),
           Text(
             '$_remainingAttempts de 5 tentativas restantes',

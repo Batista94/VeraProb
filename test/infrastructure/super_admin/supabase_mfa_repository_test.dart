@@ -100,7 +100,7 @@ void main() {
     group('getMfaStatus', () {
       test('returns needsEnrollment when no TOTP factors exist', () async {
         when(() => mockMfa.getAuthenticatorAssuranceLevel()).thenReturn(
-          AuthMFAGetAuthenticatorAssuranceLevelResponse(
+          const AuthMFAGetAuthenticatorAssuranceLevelResponse(
             currentLevel: AuthenticatorAssuranceLevels.aal1,
             nextLevel: AuthenticatorAssuranceLevels.aal1,
             currentAuthenticationMethods: [],
@@ -110,10 +110,8 @@ void main() {
           (_) async => AuthMFAListFactorsResponse(totp: [], phone: [], all: []),
         );
         when(
-          () => mockClient.rpc(
-            'check_mfa_lockout',
-            params: any(named: 'params'),
-          ),
+          () =>
+              mockClient.rpc('check_mfa_lockout', params: any(named: 'params')),
         ).thenAnswer(
           (_) => FakePostgrestFilterBuilder({
             'failed_attempts': 0,
@@ -140,7 +138,7 @@ void main() {
         );
 
         when(() => mockMfa.getAuthenticatorAssuranceLevel()).thenReturn(
-          AuthMFAGetAuthenticatorAssuranceLevelResponse(
+          const AuthMFAGetAuthenticatorAssuranceLevelResponse(
             currentLevel: AuthenticatorAssuranceLevels.aal1,
             nextLevel: AuthenticatorAssuranceLevels.aal2,
             currentAuthenticationMethods: [],
@@ -154,10 +152,8 @@ void main() {
           ),
         );
         when(
-          () => mockClient.rpc(
-            'check_mfa_lockout',
-            params: any(named: 'params'),
-          ),
+          () =>
+              mockClient.rpc('check_mfa_lockout', params: any(named: 'params')),
         ).thenAnswer(
           (_) => FakePostgrestFilterBuilder({
             'failed_attempts': 0,
@@ -179,15 +175,12 @@ void main() {
     group('verifyChallenge', () {
       test('returns failure immediately when locked out', () async {
         when(
-          () => mockClient.rpc(
-            'check_mfa_lockout',
-            params: any(named: 'params'),
-          ),
+          () =>
+              mockClient.rpc('check_mfa_lockout', params: any(named: 'params')),
         ).thenAnswer(
           (_) => FakePostgrestFilterBuilder({
             'failed_attempts': 5,
-            'locked_until':
-                DateTime.utc(2026, 3, 27, 13, 0).toIso8601String(),
+            'locked_until': DateTime.utc(2026, 3, 27, 13, 0).toIso8601String(),
             'is_locked': true,
           }),
         );
@@ -212,10 +205,8 @@ void main() {
 
       test('returns success and resets lockout on valid code', () async {
         when(
-          () => mockClient.rpc(
-            'check_mfa_lockout',
-            params: any(named: 'params'),
-          ),
+          () =>
+              mockClient.rpc('check_mfa_lockout', params: any(named: 'params')),
         ).thenAnswer(
           (_) => FakePostgrestFilterBuilder({
             'failed_attempts': 0,
@@ -239,10 +230,8 @@ void main() {
           ),
         );
         when(
-          () => mockClient.rpc(
-            'reset_mfa_lockout',
-            params: any(named: 'params'),
-          ),
+          () =>
+              mockClient.rpc('reset_mfa_lockout', params: any(named: 'params')),
         ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
 
         final result = await repo.verifyChallenge(
@@ -253,19 +242,15 @@ void main() {
 
         expect(result, isA<MfaVerificationSuccess>());
         verify(
-          () => mockClient.rpc(
-            'reset_mfa_lockout',
-            params: any(named: 'params'),
-          ),
+          () =>
+              mockClient.rpc('reset_mfa_lockout', params: any(named: 'params')),
         ).called(1);
       });
 
       test('records failure and returns failure on invalid code', () async {
         when(
-          () => mockClient.rpc(
-            'check_mfa_lockout',
-            params: any(named: 'params'),
-          ),
+          () =>
+              mockClient.rpc('check_mfa_lockout', params: any(named: 'params')),
         ).thenAnswer(
           (_) => FakePostgrestFilterBuilder({
             'failed_attempts': 0,
@@ -279,7 +264,7 @@ void main() {
             challengeId: 'challenge-abc',
             code: '000000',
           ),
-        ).thenThrow(AuthException('Invalid TOTP code'));
+        ).thenThrow(const AuthException('Invalid TOTP code'));
         when(
           () => mockClient.rpc(
             'record_mfa_failure',

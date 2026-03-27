@@ -6,8 +6,5 @@ class MfaChallengeResult {
   final String challengeId;
   final String factorId;
 
-  const MfaChallengeResult({
-    required this.challengeId,
-    required this.factorId,
-  });
+  const MfaChallengeResult({required this.challengeId, required this.factorId});
 }

@@ -62,9 +62,9 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
 
     if (!isSuperAdmin) {
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const AdminHome()),
-      );
+      await Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const AdminHome()));
       return;
     }
 
@@ -84,16 +84,16 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
         destination = const SuperAdminShell();
       }
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => destination),
-      );
+      await Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => destination));
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[AUTH] MFA status check failed: $e');
       }
       // Fallback: send to challenge screen (safe default).
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
+      await Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MfaChallengeScreen()),
       );
     }
@@ -122,7 +122,7 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
       // Navigation handled by onAuthStateChange listener, but also route directly
       // in case the listener fires before the widget re-renders.
       if (mounted && response.session != null) {
-        _routeAfterAuth(response.session!);
+        await _routeAfterAuth(response.session!);
       }
     } on AuthException catch (e) {
       LoggerService().security('Admin Access Failed: ${e.message}');

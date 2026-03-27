@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-03-26
-**Current Status:** Phase 9 in progress (9.6.A.1 ✅ Edge Proxy · 9.6.A.2 ✅ MFA done · 9.7 partial ✅) · Phase 10.1 COMPLETED — Target Milestone: **READY FOR FIRST TENANT**
+**Current Status:** Phase 9.7 — Core Forensic Intelligence (The Brain) · [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
 **Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
@@ -16,29 +16,6 @@
 | Phase 10.1 | **COMPLETED** — Schema Lock ✅ |
 
 ---
-
-## Phase 9 — VeraProb: De Protótipo de Engenharia a Produto B2B Operacional
-
-### [x] Phase 9.5 — Vínculo Dinâmico & UX do Operador ✅ CONCLUÍDA
-
-- **SLA Template Library:** Galeria de modelos pré-configurados (Fretamento, Carga Seca, etc.).
-- **Smart Defaults (SQL-based):** Preenchimento preditivo baseado em Heurísticas históricos.
-- **ServiceManifest:** Desacoplamento lógico entre ativos e obrigações contratuais.
-
-### [ ] Phase 9.6 — Security & Data Foundation (The Shield)
-
-- **[x] 9.6.A.1 — Edge Proxy Migration:** ✅ `service_role` removed from Flutter WASM bundle. Edge Function `super-admin-proxy` holds key in `Deno.env`, validates `super_admin` JWT claim server-side. Migration `20260417000001_super_admin_proxy_rls.sql` revokes direct view access. 8 unit tests. **1062 passing · 0 failures.**
-  - **Next action:** Deploy — `supabase functions deploy super-admin-proxy` + manual JWT verify.
-- **[x] 9.6.A.2 — MFA for SuperAdmin:** ✅ TOTP enrollment (QR + recovery), Challenge screen, Lockout RPC (15m/5 fails), isSuperAdminAal2Provider, SuperAdminGuard enforcement + Edge Function AAL2 validator. 6 new tests.
-- **[ARCH] Row Level Security (RLS) Implementation:** Ativar RLS em 100% das tabelas operacionais, garantindo isolamento total de dados entre diferentes `organization_id`.
-- **[ARCH] Multi-Level Auth Flow:** Definir a distinção lógica no banco entre SuperAdmin (VeraProb), Tenant Admin (Diretor da Empresa) e Operador.
-- **Entity Alias Mapping (UX):** Global translation layer from UUIDs to friendly names (Plates, Drivers, Customers) in the UI.
-- **[UX] Full Login Localization (PT-BR) & Alias Preview:** Full localization and removal of technical IDs from visual preview on the login screen.
-- **[UX] WCAG Contrast Overhaul:** Raise global luminosity of secondary texts (e.g., from Zinc-600 to Zinc-400) to ensure readability in high-luminosity OCC environments.
-- **[BIZ] Advanced Custom RBAC:** Granular permissions engine for custom roles (Legal/Finance/Operations) to isolate sensitive UI views (e.g., Financial sees R$, Legal sees Verdicts).
-- **[UX] Coordinate Masking (Reverse Geocoding):** UI translation layer to replace raw Lat/Long coordinates with registered zone names or friendly addresses in all operational screens.
-- **WASM Build Hygiene:** Rigorous validation of `flutter build web --wasm`.
-- **Justified Impersonation:** Support logs with mandatory Ticket ID.
 
 ### [ ] Phase 9.7 — Core Forensic Intelligence (The Brain) · PARTIAL ✅
 

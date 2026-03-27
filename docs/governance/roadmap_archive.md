@@ -40,6 +40,14 @@ Utilize este arquivo apenas para consulta histórica. O estado atual deve ser gu
 - **Data:** 2026-03-24
 - **Destaques:** Dashboard Executivo (KPI Modular), CNPJ Auto-fill (ReceitaWS), Shadow Mode ROI simulator, Correção INV-4 (ShadowModeSimulation tipado).
 
+### Phase 9.5 — Vínculo Dinâmico & UX do Operador ✅ CONCLUÍDA
+- **Data:** 2026-03-25
+- **Deliverables:** SLA Template Library, Smart Defaults (SQL), ServiceManifest decoupled logic.
+
+### Phase 9.6 — Security & Data Foundation (The Shield) ✅ CONCLUÍDA
+- **Data:** 2026-03-27
+- **Highlights:** Edge Proxy (service_role removal), SuperAdmin MFA (TOTP), Lockout RPC, RLS Hardening (100% tables), Multi-level Auth (JWT hook), Entity Alias Mapping, Full PT-BR Localization, WCAG Contrast Overhaul, Coordinate Masking (Nominatim), WASM Build Hygiene.
+
 ---
 
 ## Phase 10 — CI/CD & Launch Preparation

@@ -208,10 +208,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
         const Text(
           'Escaneie o QR code com seu aplicativo autenticador\n(Google Authenticator, Authy, etc.)',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: VeraProbColors.textSecondary,
-            fontSize: 13,
-          ),
+          style: TextStyle(color: VeraProbColors.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 24),
 
@@ -351,8 +348,10 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
             children: codes
                 .map(
                   (code) => Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: VeraProbColors.background,
                       borderRadius: BorderRadius.circular(4),
@@ -394,10 +393,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           onChanged: (v) => setState(() => _codesAcknowledged = v ?? false),
           title: const Text(
             'Salvei meus códigos de recuperação em local seguro.',
-            style: TextStyle(
-              color: VeraProbColors.textPrimary,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: VeraProbColors.textPrimary, fontSize: 13),
           ),
           controlAffinity: ListTileControlAffinity.leading,
           contentPadding: EdgeInsets.zero,

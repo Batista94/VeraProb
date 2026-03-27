@@ -49,10 +49,7 @@ class SupabaseMfaRepository implements IMfaRepository {
   @override
   Future<MfaChallengeResult> createChallenge(String factorId) async {
     final response = await _client.auth.mfa.challenge(factorId: factorId);
-    return MfaChallengeResult(
-      challengeId: response.id,
-      factorId: factorId,
-    );
+    return MfaChallengeResult(challengeId: response.id, factorId: factorId);
   }
 
   @override
@@ -62,10 +59,12 @@ class SupabaseMfaRepository implements IMfaRepository {
     required String code,
   }) async {
     // 1. Check circuit breaker
-    final lockoutData = await _client.rpc(
-      'check_mfa_lockout',
-      params: {'p_user_id': _client.auth.currentUser!.id},
-    ) as Map<String, dynamic>;
+    final lockoutData =
+        await _client.rpc(
+              'check_mfa_lockout',
+              params: {'p_user_id': _client.auth.currentUser!.id},
+            )
+            as Map<String, dynamic>;
 
     if (lockoutData['is_locked'] == true) {
       final lockedUntilRaw = lockoutData['locked_until'];
@@ -96,10 +95,12 @@ class SupabaseMfaRepository implements IMfaRepository {
       return const MfaVerificationSuccess();
     } on AuthException {
       // 4. Failure — record attempt
-      final failureData = await _client.rpc(
-        'record_mfa_failure',
-        params: {'p_user_id': _client.auth.currentUser!.id},
-      ) as Map<String, dynamic>;
+      final failureData =
+          await _client.rpc(
+                'record_mfa_failure',
+                params: {'p_user_id': _client.auth.currentUser!.id},
+              )
+              as Map<String, dynamic>;
 
       final isLocked = failureData['is_locked'] == true;
       final lockedUntilRaw = failureData['locked_until'];
@@ -130,8 +131,8 @@ class SupabaseMfaRepository implements IMfaRepository {
 
     final currentLevel =
         aalResponse.currentLevel == AuthenticatorAssuranceLevels.aal2
-            ? MfaAssuranceLevel.aal2
-            : MfaAssuranceLevel.aal1;
+        ? MfaAssuranceLevel.aal2
+        : MfaAssuranceLevel.aal1;
 
     // Check lockout status
     var isLockedOut = false;
@@ -139,10 +140,12 @@ class SupabaseMfaRepository implements IMfaRepository {
     DateTime? lockedUntil;
 
     if (_client.auth.currentUser != null) {
-      final lockoutData = await _client.rpc(
-        'check_mfa_lockout',
-        params: {'p_user_id': _client.auth.currentUser!.id},
-      ) as Map<String, dynamic>;
+      final lockoutData =
+          await _client.rpc(
+                'check_mfa_lockout',
+                params: {'p_user_id': _client.auth.currentUser!.id},
+              )
+              as Map<String, dynamic>;
 
       isLockedOut = lockoutData['is_locked'] == true;
       failedAttempts = lockoutData['failed_attempts'] as int;
@@ -168,7 +171,10 @@ class SupabaseMfaRepository implements IMfaRepository {
     final random = Random.secure();
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     return List.generate(10, (_) {
-      return List.generate(8, (_) => chars[random.nextInt(chars.length)]).join();
+      return List.generate(
+        8,
+        (_) => chars[random.nextInt(chars.length)],
+      ).join();
     });
   }
 

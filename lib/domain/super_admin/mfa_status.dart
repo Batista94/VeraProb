@@ -46,11 +46,11 @@ class MfaStatus {
 
   @override
   int get hashCode => Object.hash(
-        currentLevel,
-        hasEnrolledFactor,
-        factorId,
-        isLockedOut,
-        failedAttempts,
-        lockedUntil,
-      );
+    currentLevel,
+    hasEnrolledFactor,
+    factorId,
+    isLockedOut,
+    failedAttempts,
+    lockedUntil,
+  );
 }
