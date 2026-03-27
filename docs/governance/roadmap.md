@@ -68,6 +68,7 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - [ ] **Banco de dados preparado com organization_id** em todas as tabelas transacionais.
 - [ ] **Tooltips de interface** aplicados em 100% dos campos complexos.
 - [x] MFA and Edge Proxy active (Total removal of `service_role`) — Edge Proxy ✅ done (9.6.A.1), MFA ✅ done (9.6.A.2).
+  - *NOTE: Local MFA validation is currently bypassed in Dev mode when server support is absent. Full end-to-end validation with TOTP enrollment MUST be confirmed in Staging/HMG before production release (INV-6).*
 - [ ] Entity Alias Mapping implemented in 100% of operational screens.
 - [ ] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations.
 - [ ] **Reverse Geocoding:** Functional addresses and zone names instead of raw coordinates in 100% of lists.

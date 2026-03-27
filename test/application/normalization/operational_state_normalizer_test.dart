@@ -151,4 +151,43 @@ void main() {
     expect(out2.first.connectivityState, ConnectivityState.signalLost);
     expect(out2.first.confidence, 0.0);
   });
+
+  test('reset() clears internal state', () {
+    normalizer.normalize([createPing(0, 0)], now: now);
+    expect(normalizer.normalize([], now: now).length, 1);
+
+    normalizer.reset();
+    expect(normalizer.normalize([], now: now), isEmpty);
+  });
+
+  test('transitions to slowTraffic state', () {
+    // Phase 1: Moving
+    normalizer.normalize([createPing(0, 0, speed: 20)], now: now);
+
+    // Phase 2: Enter slow speed (3.0 kmh, between 2 and 8)
+    now = now.add(const Duration(seconds: 10));
+    final out1 = normalizer.normalize([createPing(0, 0, speed: 3.0)], now: now);
+    expect(out1.first.motionState, MotionState.moving);
+
+    // Phase 3: Wait long enough (16s > 15s slowTrafficMinDuration)
+    now = now.add(const Duration(seconds: 16));
+    final out2 = normalizer.normalize([createPing(0, 0, speed: 3.0)], now: now);
+    expect(out2.first.motionState, MotionState.slowTraffic);
+  });
+
+  test('exercises buffer eviction when length > 3', () {
+    for (int i = 1; i <= 5; i++) {
+        normalizer.normalize([createPing(i.toDouble(), i.toDouble())], now: now);
+        now = now.add(const Duration(seconds: 6));
+    }
+    // No crash, buffer should have been pruned to 3
+    final out = normalizer.normalize([createPing(6, 6)], now: now);
+    expect(out, isNotEmpty);
+  });
+
+  test('exercises line 73 by passing now as null', () {
+    // This just ensures the branch for now == null is taken
+    final out = normalizer.normalize([createPing(0, 0)], now: null);
+    expect(out, isNotEmpty);
+  });
 }

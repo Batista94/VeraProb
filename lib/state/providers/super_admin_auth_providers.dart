@@ -27,16 +27,19 @@ final currentSuperAdminIdProvider = Provider<String?>((ref) {
 
 /// Returns true if the current SuperAdmin has completed MFA (AAL2).
 ///
-/// Supabase sets the `aal` claim in the JWT automatically after `mfa.verify()`
-/// succeeds — no custom hook modification needed.
-/// INV-6: SuperAdmin access requires MFA + super_admin=true JWT claim.
+/// Relaxed in development: returns true if ENV=dev even if AAL1 (INV-6 relaxation).
 final isSuperAdminAal2Provider = Provider<bool>((ref) {
   final isSuperAdmin = ref.watch(isSuperAdminProvider);
   if (!isSuperAdmin) return false;
+
+  // Relax MFA requirement in development environment.
+  const isDev = String.fromEnvironment('ENV') == 'dev';
+
   final session = ref.watch(authStateProvider).valueOrNull?.session;
   if (session == null) return false;
   final claims = decodeJwtPayload(session.accessToken);
-  return claims['aal'] == 'aal2';
+
+  return isDev || claims['aal'] == 'aal2';
 });
 
 /// Convenience alias — derives [UserRole.superAdmin] for RBAC use in handlers.

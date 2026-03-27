@@ -27,6 +27,7 @@ class SupabaseMfaRepository implements IMfaRepository {
   Future<MfaEnrollmentResult> enrollTotp() async {
     final response = await _client.auth.mfa.enroll(
       factorType: FactorType.totp,
+      issuer: 'VeraProb',
       friendlyName: 'VeraProb SuperAdmin TOTP',
     );
 

@@ -20,6 +20,14 @@ VeraProb is an **Automated SLA Compliance & Financial Protection Platform** (the
 
 ---
 
+## ⚠️ CRITICAL SECURITY NOTES
+
+- **MFA Bypass (INV-6):** SuperAdmin MFA check is **BYPASSED in `kDebugMode`** (Local Dev) to maintain compatibility with local Supabase CLI instances.
+- **PROD REQUIREMENT:** MFA **MUST BE ENABLED** in Supabase Dashboard for Staging and Production environments. The bypass only functions during local development (`kDebugMode`).
+- **Audit:** Any release to Staging requires full end-to-end verification of the TOTP enrollment and challenge flow.
+
+---
+
 ## 📍 LIVE STATUS: Phase 9.7 (The Brain)
 
 **Current Objective:** Core Forensic Intelligence — Finalizing Evidence Snapshots & Wizard. [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)

@@ -69,6 +69,20 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
     }
 
     // SuperAdmin path: check MFA status to determine destination.
+    // NOTE: In local development (kDebugMode), we bypass MFA enrollment/challenge
+    // because the local Supabase CLI might not have MFA enabled or configured.
+    // This MUST BE TESTED in Staging before Production (INV-6).
+    if (kDebugMode) {
+      LoggerService().security(
+        'MFA BYPASS active for SuperAdmin in DEV mode (Local Supabase compat).',
+      );
+      if (!mounted) return;
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const SuperAdminShell()),
+      );
+      return;
+    }
+
     try {
       final mfaRepo = SupabaseMfaRepository(_supabase);
       final mfaStatus = await mfaRepo.getMfaStatus();
@@ -87,6 +101,11 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
       await Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (_) => destination));
+    } on AuthApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AUTH] MFA AuthApiException: ${e.message}');
+      }
+      rethrow;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[AUTH] MFA status check failed: $e');

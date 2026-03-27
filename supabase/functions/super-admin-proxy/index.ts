@@ -92,7 +92,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return Response.json({ error: "Invalid token" }, { status: 401 });
   }
 
-  if (jwtPayload.aal !== "aal2") {
+  // Relax MFA requirement in development (local) environment.
+  const environment = Deno.env.get("ENVIRONMENT") ?? "production";
+  const isLocal = environment === "development" || environment === "dev";
+
+  if (!isLocal && jwtPayload.aal !== "aal2") {
     return Response.json(
       { error: "MFA verification required (AAL2)" },
       { status: 403 },

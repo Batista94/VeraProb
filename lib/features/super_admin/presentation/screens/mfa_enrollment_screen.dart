@@ -1,13 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/super_admin/mfa_enrollment_result.dart';
 import '../../../../domain/super_admin/mfa_verification_result.dart';
 import '../../../../infrastructure/providers/mfa_providers.dart';
 import '../../../admin/presentation/lock_screen.dart';
+import '../super_admin_shell.dart';
 import 'mfa_challenge_screen.dart';
 
 /// TOTP enrollment screen for SuperAdmin (INV-6).
@@ -53,6 +56,20 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           _isLoading = false;
         });
       }
+    } on AuthApiException catch (e) {
+      // Graceful degradation for Local Dev: if MFA is disabled on server, allow SuperAdmin access.
+      final isNotEnabled = e.code == 'mfa_totp_enroll_not_enabled' ||
+          e.message.contains('MFA enroll is disabled');
+
+      if (isNotEnabled && kDebugMode) {
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const SuperAdminShell()),
+          (_) => false,
+        );
+        return;
+      }
+      rethrow;
     } catch (e) {
       if (mounted) {
         setState(() {
