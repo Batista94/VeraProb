@@ -29,7 +29,7 @@ void main() {
         tripId: 'trip-xyz',
         type: EventType.delayDetected,
       );
-      expect(cmd.targetRef, TargetRef('trip', 'trip-xyz'));
+      expect(cmd.targetRef, const TargetRef('trip', 'trip-xyz'));
     });
 
     test('supports optional metadata and notes', () {
