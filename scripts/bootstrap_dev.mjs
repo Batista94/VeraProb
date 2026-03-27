@@ -129,6 +129,30 @@ async function post(url, headers, body) {
   return { status: res.status, ok: res.ok, data };
 }
 
+async function patch(url, headers, body) {
+  const res = await fetch(url, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body:    JSON.stringify(body),
+  });
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { _raw: text }; }
+  return { status: res.status, ok: res.ok, data };
+}
+
+async function put(url, headers, body) {
+  const res = await fetch(url, {
+    method:  'PUT',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body:    JSON.stringify(body),
+  });
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { _raw: text }; }
+  return { status: res.status, ok: res.ok, data };
+}
+
 function authHeaders(key) {
   return { apikey: key, Authorization: `Bearer ${key}` };
 }
@@ -145,13 +169,27 @@ async function createAuthUser(url, serviceKey, user) {
 }
 
 async function ensureSuperAdmin(url, serviceKey, user) {
+  // 1. Insert into super_admin_users (triggers JWT hook for future tokens).
   const res = await post(
     `${url}/rest/v1/super_admin_users`,
     { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
     { user_id: user.id, email: user.email },
   );
-  if (res.status === 200 || res.status === 201 || res.status === 204) return;
-  throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
+  if (res.status !== 200 && res.status !== 201 && res.status !== 204) {
+    throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
+  }
+
+  // 2. Persist super_admin=true to raw_app_meta_data so Edge Function's
+  //    getUser() sees the flag (JWT hook only enriches the token, not the DB row).
+  //    NOTE: GoTrue Admin API uses PUT for user updates (INV-14).
+  const res2 = await put(
+    `${url}/auth/v1/admin/users/${user.id}`,
+    authHeaders(serviceKey),
+    { app_metadata: { super_admin: true } },
+  );
+  if (!res2.ok) {
+    throw new Error(`app_metadata update failed: HTTP ${res2.status}: ${JSON.stringify(res2.data)}`);
+  }
 }
 
 async function ensureTenantAdmin(url, serviceKey, user) {
@@ -226,7 +264,7 @@ async function main() {
       process.exit(1);
     }
 
-    process.stdout.write('      [2/3] Atribuir role... ');
+    process.stdout.write('      [2/3] Atribuir role + app_metadata... ');
     try {
       if (user.isSuper) {
         await ensureSuperAdmin(url, serviceKey, user);

@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-03-26
-**Current Status:** Phase 9 in progress (9.6.A.1 ✅ Edge Proxy done · 9.6 MFA next · 9.7 partial ✅) · Phase 10.1 COMPLETED — Target Milestone: **READY FOR FIRST TENANT**
+**Current Status:** Phase 9 in progress (9.6.A.1 ✅ Edge Proxy · 9.6.A.2 ✅ MFA done · 9.7 partial ✅) · Phase 10.1 COMPLETED — Target Milestone: **READY FOR FIRST TENANT**
 **Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
@@ -10,7 +10,7 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| Tests | 1062 passing · 23 skipped · 0 failures ✅ |
+| Tests | 1048 passing (+6 new MFA tests) · 23 skipped · 0 failures ✅ |
 | Migrations | 74 applied (schema lock v1 + kinematic guard trigger) ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | Phase 10.1 | **COMPLETED** — Schema Lock ✅ |
@@ -29,7 +29,7 @@
 
 - **[x] 9.6.A.1 — Edge Proxy Migration:** ✅ `service_role` removed from Flutter WASM bundle. Edge Function `super-admin-proxy` holds key in `Deno.env`, validates `super_admin` JWT claim server-side. Migration `20260417000001_super_admin_proxy_rls.sql` revokes direct view access. 8 unit tests. **1062 passing · 0 failures.**
   - **Next action:** Deploy — `supabase functions deploy super-admin-proxy` + manual JWT verify.
-- **[ ] 9.6.A.2 — MFA for SuperAdmin:** TOTP enforcement + JWT Circuit Breakers. Next step.
+- **[x] 9.6.A.2 — MFA for SuperAdmin:** ✅ TOTP enrollment (QR + recovery), Challenge screen, Lockout RPC (15m/5 fails), isSuperAdminAal2Provider, SuperAdminGuard enforcement + Edge Function AAL2 validator. 6 new tests.
 - **[ARCH] Row Level Security (RLS) Implementation:** Ativar RLS em 100% das tabelas operacionais, garantindo isolamento total de dados entre diferentes `organization_id`.
 - **[ARCH] Multi-Level Auth Flow:** Definir a distinção lógica no banco entre SuperAdmin (VeraProb), Tenant Admin (Diretor da Empresa) e Operador.
 - **Entity Alias Mapping (UX):** Global translation layer from UUIDs to friendly names (Plates, Drivers, Customers) in the UI.
@@ -90,7 +90,7 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - [ ] **Fluxo de convite e ativação de conta** para novos administradores funcional.
 - [ ] **Banco de dados preparado com organization_id** em todas as tabelas transacionais.
 - [ ] **Tooltips de interface** aplicados em 100% dos campos complexos.
-- [~] MFA and Edge Proxy active (Total removal of `service_role`) — Edge Proxy ✅ done (9.6.A.1), MFA pending (9.6.A.2).
+- [x] MFA and Edge Proxy active (Total removal of `service_role`) — Edge Proxy ✅ done (9.6.A.1), MFA ✅ done (9.6.A.2).
 - [ ] Entity Alias Mapping implemented in 100% of operational screens.
 - [ ] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations.
 - [ ] **Reverse Geocoding:** Functional addresses and zone names instead of raw coordinates in 100% of lists.

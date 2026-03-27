@@ -25,6 +25,20 @@ final currentSuperAdminIdProvider = Provider<String?>((ref) {
   return authState?.session?.user.id;
 });
 
+/// Returns true if the current SuperAdmin has completed MFA (AAL2).
+///
+/// Supabase sets the `aal` claim in the JWT automatically after `mfa.verify()`
+/// succeeds — no custom hook modification needed.
+/// INV-6: SuperAdmin access requires MFA + super_admin=true JWT claim.
+final isSuperAdminAal2Provider = Provider<bool>((ref) {
+  final isSuperAdmin = ref.watch(isSuperAdminProvider);
+  if (!isSuperAdmin) return false;
+  final session = ref.watch(authStateProvider).valueOrNull?.session;
+  if (session == null) return false;
+  final claims = decodeJwtPayload(session.accessToken);
+  return claims['aal'] == 'aal2';
+});
+
 /// Convenience alias — derives [UserRole.superAdmin] for RBAC use in handlers.
 final superAdminRoleProvider = Provider<UserRole?>((ref) {
   final isSuperAdmin = ref.watch(isSuperAdminProvider);

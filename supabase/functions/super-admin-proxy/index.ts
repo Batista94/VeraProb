@@ -81,6 +81,39 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // ── AAL2 enforcement (INV-6: SuperAdmin requires MFA) ─────────────────────
+  // Decode the JWT to check the `aal` claim set by Supabase after mfa.verify().
+  const token = authHeader.replace("Bearer ", "");
+  let jwtPayload: Record<string, unknown>;
+  try {
+    const payloadB64 = token.split(".")[1];
+    jwtPayload = JSON.parse(atob(payloadB64));
+  } catch {
+    return Response.json({ error: "Invalid token" }, { status: 401 });
+  }
+
+  if (jwtPayload.aal !== "aal2") {
+    return Response.json(
+      { error: "MFA verification required (AAL2)" },
+      { status: 403 },
+    );
+  }
+
+  // ── Check MFA lockout (circuit breaker) ───────────────────────────────────
+  const lockoutClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+  const { data: lockoutData } = await lockoutClient.rpc("check_mfa_lockout", {
+    p_user_id: user.id,
+  });
+  if (lockoutData?.is_locked === true) {
+    return Response.json(
+      { error: "Account temporarily locked due to failed MFA attempts" },
+      { status: 429 },
+    );
+  }
+
   // ── Parse request body ─────────────────────────────────────────────────────
   let body: RequestBody;
   try {
@@ -162,6 +195,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       ticket_id: body.ticket_id ?? "NOT_PROVIDED",
       justification: body.justification ?? "",
       ip_address: ipAddress,
+      aal_level: jwtPayload.aal ?? "unknown",
       request_params: body.params ?? null,
     })
     .then(({ error }) => {

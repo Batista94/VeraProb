@@ -6,6 +6,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/logger_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/jwt_utils.dart';
+import '../../../../infrastructure/super_admin/supabase_mfa_repository.dart';
+import '../../super_admin/presentation/screens/mfa_challenge_screen.dart';
+import '../../super_admin/presentation/screens/mfa_enrollment_screen.dart';
 import '../../super_admin/presentation/super_admin_shell.dart';
 import 'admin_home.dart';
 
@@ -37,13 +40,15 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
     });
   }
 
-  /// Routes to [SuperAdminShell] if the JWT carries `super_admin: true`,
-  /// otherwise to [AdminHome] for regular tenant users.
+  /// Routes to the appropriate screen based on JWT claims and MFA status.
   ///
-  /// NOTE: Must decode the JWT access token — GoTrue's custom_access_token_hook
-  /// injects claims into the token payload, not into session.user.appMetadata
-  /// (which reads raw_app_meta_data, a separate static DB field).
-  void _routeAfterAuth(Session session) {
+  /// For SuperAdmin users (INV-6):
+  ///   - No TOTP enrolled → MfaEnrollmentScreen
+  ///   - TOTP enrolled but AAL1 → MfaChallengeScreen
+  ///   - AAL2 verified → SuperAdminShell
+  ///
+  /// Regular tenant users → AdminHome (unchanged).
+  Future<void> _routeAfterAuth(Session session) async {
     final claims = decodeJwtPayload(session.accessToken);
     final appMeta = claims['app_metadata'] as Map<String, dynamic>?;
     final raw = appMeta?['super_admin'];
@@ -55,13 +60,43 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
 
     final isSuperAdmin = raw == true || raw?.toString() == 'true';
 
-    final destination = isSuperAdmin
-        ? const SuperAdminShell()
-        : const AdminHome();
+    if (!isSuperAdmin) {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AdminHome()),
+      );
+      return;
+    }
 
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => destination));
+    // SuperAdmin path: check MFA status to determine destination.
+    try {
+      final mfaRepo = SupabaseMfaRepository(_supabase);
+      final mfaStatus = await mfaRepo.getMfaStatus();
+
+      if (!mounted) return;
+
+      final Widget destination;
+      if (mfaStatus.needsEnrollment) {
+        destination = const MfaEnrollmentScreen();
+      } else if (mfaStatus.needsChallenge) {
+        destination = const MfaChallengeScreen();
+      } else {
+        destination = const SuperAdminShell();
+      }
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => destination),
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AUTH] MFA status check failed: $e');
+      }
+      // Fallback: send to challenge screen (safe default).
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MfaChallengeScreen()),
+      );
+    }
   }
 
   Future<void> _signIn() async {

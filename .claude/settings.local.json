@@ -154,7 +154,19 @@
       "Bash(find /c/Projects/VeraProb/supabase -type f \\\\\\(-name *.sql -o -name *.ts -o -name *.json \\\\\\))",
       "Bash(find /c/Projects/VeraProb/lib/presentation -name *.dart -type f)",
       "Bash(find /c/Projects/VeraProb/lib/features -type f -name \"*.dart\" -exec grep -l \"DataTable\\\\|ListView\\\\|Table\\\\|Column\" {})",
-      "Bash(find /c/Projects/VeraProb/lib -path */domain/*zone* -o -path */domain/*geo*)"
+      "Bash(find /c/Projects/VeraProb/lib -path */domain/*zone* -o -path */domain/*geo*)",
+      "Bash(supabase functions:*)",
+      "Bash(supabase projects:*)",
+      "Bash(supabase secrets:*)",
+      "Bash(find C:ProjectsVeraProb -name *totp* -o -name *mfa* -o -name *circuit*)",
+      "Bash(find /c/Projects/VeraProb -type f -name *super-admin-proxy*)",
+      "Bash(find /c/Projects/VeraProb/supabase -type f -name *.ts -o -name *.js)",
+      "Bash(find /c/Projects/VeraProb -type f -name *9.6* -o -name *phase*)",
+      "Bash(while read:*)",
+      "Bash(sed 's/.*CREATE TABLE[^a-z]*//')",
+      "Bash(sed 's/\\(.*$//')",
+      "Bash(find /c/Projects/VeraProb -type f -name *9.6* -o -type f -name *mfa*)",
+      "Bash(node:*)"
     ]
   },
   "model": "sonnet"

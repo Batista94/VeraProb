@@ -4,12 +4,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../state/providers/super_admin_auth_providers.dart';
 import '../../../admin/presentation/lock_screen.dart';
+import '../screens/mfa_challenge_screen.dart';
 
-/// Guards the SuperAdmin portal.
+/// Guards the SuperAdmin portal (INV-6 defense-in-depth).
 ///
-/// Verifies the current JWT carries `super_admin: true`.
-/// If not, signs out and shows an access denied message.
-/// The double-verification (JWT + this guard) is defense-in-depth per D2.
+/// Verifies two conditions:
+/// 1. JWT carries `super_admin: true`
+/// 2. Session is AAL2 (MFA verified)
+///
+/// If super_admin but not AAL2 → redirects to MfaChallengeScreen (legitimate
+/// user, just needs MFA). If not super_admin → signs out and denies access.
 class SuperAdminGuard extends ConsumerWidget {
   final Widget child;
 
@@ -18,12 +22,12 @@ class SuperAdminGuard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isSuperAdmin = ref.watch(isSuperAdminProvider);
+    final isAal2 = ref.watch(isSuperAdminAal2Provider);
 
     if (!isSuperAdmin) {
       final hasSession = Supabase.instance.client.auth.currentSession != null;
 
       if (!hasSession) {
-        // Logout normal — sessão já foi limpa. Navega silenciosamente.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (context.mounted) {
             Navigator.of(context).pushAndRemoveUntil(
@@ -32,10 +36,10 @@ class SuperAdminGuard extends ConsumerWidget {
             );
           }
         });
-        return const Scaffold(); // Tela em branco por 1 frame, imperceptível.
+        return const Scaffold();
       }
 
-      // Sessão ativa mas sem claim super_admin — acesso não autorizado (D2).
+      // Session active but no super_admin claim — unauthorized (D2).
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Supabase.instance.client.auth.signOut();
         if (context.mounted) {
@@ -63,6 +67,19 @@ class SuperAdminGuard extends ConsumerWidget {
           ),
         ),
       );
+    }
+
+    // SuperAdmin but not AAL2 — redirect to MFA challenge (not "denied").
+    if (!isAal2) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MfaChallengeScreen()),
+            (_) => false,
+          );
+        }
+      });
+      return const Scaffold();
     }
 
     return child;

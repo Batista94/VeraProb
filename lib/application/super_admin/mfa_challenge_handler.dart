@@ -1,0 +1,43 @@
+import '../../domain/sla_audit/domain_exception.dart';
+import '../../domain/super_admin/i_mfa_repository.dart';
+import '../../domain/super_admin/mfa_challenge_result.dart';
+import '../../domain/super_admin/mfa_verification_result.dart';
+
+/// Handles MFA challenge creation and TOTP verification for SuperAdmin.
+///
+/// INV-6: SuperAdmin access requires MFA + super_admin=true JWT claim.
+/// INV-4: Pure orchestration — no direct DB access.
+class MfaChallengeHandler {
+  final IMfaRepository _repository;
+
+  MfaChallengeHandler(this._repository);
+
+  /// Creates a new TOTP challenge. Throws if not enrolled or locked out.
+  Future<MfaChallengeResult> createChallenge() async {
+    final status = await _repository.getMfaStatus();
+    if (!status.hasEnrolledFactor || status.factorId == null) {
+      throw const DomainException(
+        'Nenhum fator TOTP cadastrado. Realize o cadastro primeiro.',
+      );
+    }
+    if (status.isLockedOut) {
+      throw const DomainException(
+        'Conta temporariamente bloqueada por tentativas falhas.',
+      );
+    }
+    return _repository.createChallenge(status.factorId!);
+  }
+
+  /// Verifies a TOTP code against a challenge.
+  Future<MfaVerificationResult> verify({
+    required String factorId,
+    required String challengeId,
+    required String code,
+  }) {
+    return _repository.verifyChallenge(
+      factorId: factorId,
+      challengeId: challengeId,
+      code: code,
+    );
+  }
+}
