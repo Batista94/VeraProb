@@ -168,11 +168,14 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
     return Autocomplete<OperationalZone>(
       initialValue: TextEditingValue(text: widget.selectedZone?.name ?? ''),
       optionsBuilder: (textEditingValue) {
-        return filterZones(
-          widget.zones,
-          textEditingValue.text,
-          widget.contractorName,
-        );
+        // When the field text equals the selected zone name, show all available
+        // zones instead of filtering — allows the user to change the selection
+        // without first clearing the field manually.
+        final selectedName = widget.selectedZone?.name ?? '';
+        final query = textEditingValue.text == selectedName
+            ? ''
+            : textEditingValue.text;
+        return filterZones(widget.zones, query, widget.contractorName);
       },
       displayStringForOption: (zone) => zone.name,
       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
@@ -221,7 +224,10 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
             elevation: 4,
             borderRadius: BorderRadius.circular(8),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 280, maxWidth: 480),
+              constraints: BoxConstraints(
+                maxHeight: 280,
+                maxWidth: (MediaQuery.sizeOf(context).width * 0.9).clamp(240.0, 480.0),
+              ),
               child: ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
@@ -241,7 +247,11 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
                           ? VeraProbColors.onTime
                           : VeraProbColors.warning,
                     ),
-                    title: Text(zone.name),
+                    title: Text(
+                      zone.name,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                     trailing: isContractor
                         ? Container(
                             padding: const EdgeInsets.symmetric(

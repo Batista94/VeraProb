@@ -39,7 +39,7 @@ class _ContractListView extends ConsumerWidget {
     final activeFilter = ref.watch(contractStatusFilterProvider);
 
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(VeraProbSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -106,7 +106,7 @@ class _ContractListView extends ConsumerWidget {
               ),
               _FilterChip(
                 label: 'Aguardando Aceite',
-                color: Colors.blue,
+                color: VeraProbColors.info,
                 selected:
                     activeFilter == ContractStatus.awaitingContractorAcceptance,
                 onSelected: (_) =>
@@ -162,10 +162,12 @@ class _ContractTable extends ConsumerWidget {
     return Card(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: SingleChildScrollView(
-          child: SingleChildScrollView(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: DataTable(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: DataTable(
               columnSpacing: 24,
               headingRowColor: WidgetStateProperty.all(
                 VeraProbColors.surfaceElevated,
@@ -190,7 +192,8 @@ class _ContractTable extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   DataRow _buildRow(
@@ -214,6 +217,8 @@ class _ContractTable extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                   color: VeraProbColors.textPrimary,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
               if (c.activePlanVersion > 0)
                 Text(
@@ -230,6 +235,8 @@ class _ContractTable extends ConsumerWidget {
           Text(
             c.contractorName,
             style: const TextStyle(color: VeraProbColors.textPrimary),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
         DataCell(
@@ -252,18 +259,12 @@ class _ContractTable extends ConsumerWidget {
                 tooltip: 'Clonar contrato',
                 onPressed: () => _showCloneDialog(context, ref, c),
               ),
-              TextButton(
+              OutlinedButton.icon(
                 onPressed: () {
                   ref.read(selectedContractIdProvider.notifier).state = c.id;
                 },
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Gerenciar'),
-                    SizedBox(width: 4),
-                    Icon(Icons.chevron_right, size: 16),
-                  ],
-                ),
+                icon: const Icon(Icons.chevron_right, size: 16),
+                label: const Text('Gerenciar'),
               ),
             ],
           ),
@@ -505,7 +506,7 @@ class _StatusChip extends StatelessWidget {
       ContractStatus.draft => ('RASCUNHO', VeraProbColors.neutral),
       ContractStatus.awaitingContractorAcceptance => (
         'AGUARDANDO ACEITE',
-        Colors.blue,
+        VeraProbColors.info,
       ),
       ContractStatus.active => ('ATIVO', VeraProbColors.success),
       ContractStatus.closed => ('ENCERRADO', VeraProbColors.error),

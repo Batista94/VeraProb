@@ -1,6 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-enum FleetStatusFilter { all, active, onTime, delayed, alerts, atStop }
+enum FleetStatusFilter {
+  all,
+  active,
+  onTime,
+  delayed,
+  alerts,
+  atStop,
+  kinematicAnomaly,
+}
 
 class CommandCenterFilterState {
   final FleetStatusFilter selectedFleetStatusFilter;

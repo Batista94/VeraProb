@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/super_admin/system_audit_log_entry.dart';
 import '../../../../infrastructure/providers/super_admin_providers.dart';
 
@@ -56,7 +57,7 @@ class _SuperAdminAuditLogScreenState
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const Icon(Icons.error_outline, size: 48, color: VeraProbColors.error),
                   const SizedBox(height: 12),
                   Text('Erro ao carregar logs: $err'),
                   const SizedBox(height: 12),
@@ -148,13 +149,13 @@ class _FilterBar extends StatelessWidget {
   Color _severityColor(String s) {
     switch (s) {
       case 'critical':
-        return Colors.red;
+        return VeraProbColors.error;
       case 'error':
-        return Colors.orange;
+        return VeraProbColors.warning;
       case 'warning':
-        return Colors.amber;
+        return VeraProbColors.delayed;
       default:
-        return Colors.blue;
+        return VeraProbColors.info;
     }
   }
 
@@ -173,7 +174,7 @@ class _LogList extends StatelessWidget {
       return const Center(
         child: Text(
           'Nenhum evento encontrado para os filtros selecionados.',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: VeraProbColors.textSecondary),
         ),
       );
     }
@@ -237,13 +238,13 @@ class _LogList extends StatelessWidget {
   Color _severityColor(String s) {
     switch (s) {
       case 'critical':
-        return Colors.red;
+        return VeraProbColors.error;
       case 'error':
-        return Colors.orange;
+        return VeraProbColors.warning;
       case 'warning':
-        return Colors.amber.shade700;
+        return VeraProbColors.delayed;
       default:
-        return Colors.blue;
+        return VeraProbColors.info;
     }
   }
 }

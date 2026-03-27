@@ -12,23 +12,38 @@ class SaveSlaTemplateHandler {
   SaveSlaTemplateHandler({required SlaTemplateRepository repository})
     : _repository = repository;
 
-  /// Creates a new [SlaTemplate] and persists it.
+  /// Creates or updates an [SlaTemplate] and persists it.
   ///
-  /// Returns the created template.
+  /// When [existingId] is provided the template is reconstituted with that ID
+  /// (upsert), preserving the original record. Otherwise a new UUID is generated.
+  ///
+  /// Returns the saved template.
   Future<SlaTemplate> handle({
     required String organizationId,
     required String name,
     String? description,
     TransportVertical? vertical,
     required SLAPenalties penalties,
+    String? existingId,
+    DateTime? existingCreatedAt,
   }) async {
-    final template = SlaTemplate.create(
-      organizationId: organizationId,
-      name: name,
-      description: description,
-      vertical: vertical,
-      penalties: penalties,
-    );
+    final template = existingId != null
+        ? SlaTemplate.reconstitute(
+            id: existingId,
+            organizationId: organizationId,
+            name: name,
+            description: description,
+            vertical: vertical,
+            penalties: penalties,
+            createdAt: existingCreatedAt ?? DateTime.now().toUtc(),
+          )
+        : SlaTemplate.create(
+            organizationId: organizationId,
+            name: name,
+            description: description,
+            vertical: vertical,
+            penalties: penalties,
+          );
 
     await _repository.save(template);
     return template;

@@ -4,6 +4,7 @@ import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../features/shared/providers/reporting_providers.dart';
 import '../../../../domain/sla_audit/billing_cycle_report.dart';
 import '../../../../state/providers/contract_providers.dart';
@@ -69,7 +70,7 @@ class _BillingCycleReportsScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao exportar CSV: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: VeraProbColors.error,
         ),
       );
     }
@@ -96,7 +97,7 @@ class _BillingCycleReportsScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao exportar PDF: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: VeraProbColors.error,
         ),
       );
     }
@@ -151,7 +152,11 @@ class _BillingCycleReportsScreenState
                   ...contracts.map(
                     (c) => DropdownMenuItem<String?>(
                       value: c.id,
-                      child: Text('${c.name} — ${c.contractorName}'),
+                      child: Text(
+                        '${c.name} — ${c.contractorName}',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ),
                   ),
                 ],
@@ -192,13 +197,13 @@ class _BillingCycleReportsScreenState
                 onPressed: _exportCsv,
                 icon: const Icon(Icons.table_view_rounded),
                 tooltip: 'Exportar CSV',
-                color: Colors.green.shade700,
+                color: VeraProbColors.success,
               ),
               IconButton(
                 onPressed: _exportPdf,
                 icon: const Icon(Icons.picture_as_pdf_rounded),
                 tooltip: 'Exportar PDF',
-                color: Colors.red.shade700,
+                color: VeraProbColors.error,
               ),
             ],
           ],
@@ -208,11 +213,11 @@ class _BillingCycleReportsScreenState
             padding: EdgeInsets.only(top: 6),
             child: Row(
               children: [
-                Icon(Icons.info_outline, size: 14, color: Colors.orange),
+                Icon(Icons.info_outline, size: 14, color: VeraProbColors.warning),
                 SizedBox(width: 4),
                 Text(
                   'Nenhum contrato selecionado — relatório agrega todos os contratos.',
-                  style: TextStyle(fontSize: 12, color: Colors.orange),
+                  style: TextStyle(fontSize: 12, color: VeraProbColors.warning),
                 ),
               ],
             ),
@@ -262,12 +267,12 @@ class _BillingCycleReportsScreenState
         _buildCard(
           'Perda',
           _formatCents(report.lostRevenue.cents),
-          color: Colors.red,
+          color: VeraProbColors.error,
         ),
         _buildCard(
           'Risco',
           _formatCents(report.revenueAtRisk.cents),
-          color: Colors.orange,
+          color: VeraProbColors.warning,
         ),
       ],
     );
@@ -300,18 +305,18 @@ class _BillingCycleReportsScreenState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: VeraProbColors.error.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red),
+        border: Border.all(color: VeraProbColors.error),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning, color: Colors.red),
+          const Icon(Icons.warning, color: VeraProbColors.error),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Relatório Incompleto: Faltam ${report.missingDates.length} dias operacionais.',
-              style: const TextStyle(color: Colors.red),
+              style: const TextStyle(color: VeraProbColors.error),
             ),
           ),
         ],

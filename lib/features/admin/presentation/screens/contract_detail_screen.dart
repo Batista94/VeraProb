@@ -45,7 +45,7 @@ class ContractDetailScreen extends ConsumerWidget {
       error: (e, _) => Center(
         child: Text(
           'Erro ao carregar contrato: $e',
-          style: const TextStyle(color: Colors.red),
+          style: const TextStyle(color: VeraProbColors.error),
         ),
       ),
     );
@@ -139,9 +139,9 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: VeraProbColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: VeraProbColors.border),
                 ),
                 child: SelectableText(
                   reviewLink,
@@ -179,7 +179,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+      ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -196,7 +196,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
         s.status == ContractStatus.draft && s.activePlanVersion > 0;
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(VeraProbSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -286,18 +286,18 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.08),
+                color: VeraProbColors.warning.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                border: Border.all(color: VeraProbColors.warning.withValues(alpha: 0.4)),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.amber, size: 18),
+                  Icon(Icons.info_outline, color: VeraProbColors.warning, size: 18),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Nenhum Plano Operacional declarado. Declare um plano antes de enviar para aprovação.',
-                      style: TextStyle(fontSize: 13, color: Colors.amber),
+                      style: TextStyle(fontSize: 13, color: VeraProbColors.warning),
                     ),
                   ),
                 ],
@@ -359,17 +359,17 @@ class _ExecutionsTab extends StatelessWidget {
             Icon(
               Icons.directions_bus_outlined,
               size: 48,
-              color: Colors.grey.shade400,
+              color: VeraProbColors.textDisabled,
             ),
             const SizedBox(height: 12),
             Text(
               'Nenhuma viagem projetada.',
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: VeraProbColors.textSecondary),
             ),
             const SizedBox(height: 4),
             Text(
               'Declare um plano operacional para começar o monitoramento.',
-              style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+              style: TextStyle(color: VeraProbColors.textDisabled, fontSize: 12),
             ),
           ],
         ),
@@ -378,22 +378,25 @@ class _ExecutionsTab extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SingleChildScrollView(
-          child: DataTable(
-            columnSpacing: 14,
-            headingTextStyle: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            child: DataTable(
+              columnSpacing: 14,
+              headingTextStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+              columns: const [
+                DataColumn(label: Text('Status')),
+                DataColumn(label: Text('Janela')),
+                DataColumn(label: Text('Veículo')),
+                DataColumn(label: Text('Valor'), numeric: true),
+              ],
+              rows: executions.map(_buildRow).toList(),
             ),
-            columns: const [
-              DataColumn(label: Text('Status')),
-              DataColumn(label: Text('Janela')),
-              DataColumn(label: Text('Veículo')),
-              DataColumn(label: Text('Valor'), numeric: true),
-            ],
-            rows: executions.map(_buildRow).toList(),
           ),
         ),
       ),
@@ -413,7 +416,7 @@ class _ExecutionsTab extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               color: (e.boundVehicleId == null && e.plannedVehicleId == null)
-                  ? Colors.grey.shade400
+                  ? VeraProbColors.textDisabled
                   : null,
             ),
           ),
@@ -628,10 +631,10 @@ class _ExecutionStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      ExecutionStatus.pending => ('Pendente', Colors.blue),
-      ExecutionStatus.executed => ('Executado', Colors.green),
-      ExecutionStatus.noShow => ('No-show', Colors.red),
-      ExecutionStatus.evidenceGap => ('Gap', Colors.orange),
+      ExecutionStatus.pending => ('Pendente', VeraProbColors.info),
+      ExecutionStatus.executed => ('Executado', VeraProbColors.success),
+      ExecutionStatus.noShow => ('No-show', VeraProbColors.error),
+      ExecutionStatus.evidenceGap => ('Gap', VeraProbColors.warning),
     };
 
     return Container(
@@ -665,11 +668,13 @@ class _MetaItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+          style: const TextStyle(fontSize: 10, color: VeraProbColors.textSecondary),
         ),
         Text(
           value,
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
         ),
       ],
     );

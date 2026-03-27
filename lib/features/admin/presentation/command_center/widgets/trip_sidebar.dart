@@ -53,7 +53,7 @@ class TripSidebar extends ConsumerWidget {
     return RebuildCounter(
       name: 'Sidebar',
       child: Container(
-        width: 280,
+        width: (MediaQuery.sizeOf(context).width * 0.22).clamp(240.0, 300.0),
         decoration: const BoxDecoration(
           color: VeraProbColors.surface,
           border: Border(right: BorderSide(color: VeraProbColors.border)),

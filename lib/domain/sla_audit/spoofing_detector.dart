@@ -1,4 +1,7 @@
-import 'dart:math' show asin, cos, pow, sqrt;
+import 'dart:math' show pow, sqrt;
+
+import 'package:veraprob/core/utils/geo_math.dart';
+
 import 'canonical_fact.dart';
 import 'spoofing_risk_score.dart';
 import 'spoofing_signal.dart';
@@ -64,7 +67,7 @@ class SpoofingDetector {
     double maxDistanceM = 0;
     for (int i = 0; i < movingFacts.length; i++) {
       for (int j = i + 1; j < movingFacts.length; j++) {
-        final d = _haversineMeters(
+        final d = GeoMath.haversineMeters(
           movingFacts[i].lat,
           movingFacts[i].lng,
           movingFacts[j].lat,
@@ -119,18 +122,4 @@ class SpoofingDetector {
     return stdDev < 0.1;
   }
 
-  // Pure Helper
-  static double _haversineMeters(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
-  ) {
-    const p = 0.017453292519943295; // pi / 180
-    final a =
-        0.5 -
-        cos((lat2 - lat1) * p) / 2 +
-        cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
-    return 12742 * asin(sqrt(a)) * 1000;
-  }
 }

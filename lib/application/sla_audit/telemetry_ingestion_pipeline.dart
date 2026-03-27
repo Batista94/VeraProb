@@ -1,6 +1,5 @@
-import 'dart:math' show asin, cos, sqrt;
-
 import '../../domain/entities/vehicle_operational_state.dart';
+import '../../domain/sla_audit/kinematic_guard.dart';
 import '../../domain/enums/connectivity_state.dart';
 import '../../domain/enums/motion_state.dart';
 import '../../domain/sla_audit/asset_status.dart';
@@ -86,21 +85,21 @@ class TelemetryIngestionPipeline {
   final AssetStatusRepository? _assetStatusRepo;
   final SpoofingDetector _spoofingDetector;
   final SpoofingAuditRepository? _spoofingRepo;
-
-  /// Maximum implied speed (km/h) allowed between consecutive facts.
-  /// Facts that imply a higher speed are discarded as kinematic anomalies.
-  final double maxImpliedSpeedKmh;
+  final KinematicGuard _kinematicGuard;
 
   TelemetryIngestionPipeline({
     required ContractualEvaluationEngine engine,
     AssetStatusRepository? assetStatusRepo,
     SpoofingDetector spoofingDetector = const SpoofingDetector(),
     SpoofingAuditRepository? spoofingRepo,
-    this.maxImpliedSpeedKmh = 200.0,
+    double maxImpliedSpeedKmh = 200.0,
   }) : _engine = engine,
        _assetStatusRepo = assetStatusRepo,
        _spoofingDetector = spoofingDetector,
-       _spoofingRepo = spoofingRepo;
+       _spoofingRepo = spoofingRepo,
+       _kinematicGuard = KinematicGuard(
+         maxSpeedCms: (maxImpliedSpeedKmh / 3.6 * 100).round(),
+       );
 
   /// Processes a batch of [CanonicalFact] records for the given [organizationId].
   ///
@@ -206,32 +205,15 @@ class TelemetryIngestionPipeline {
         continue;
       }
 
-      // ── Step 2: Sequential kinematic jump check (6.5.4) ─────────────────────
+      // ── Step 2: Sequential kinematic jump check (INV-17) ──────────────────────
       final deviceKey = '${fact.organizationId}|${fact.deviceId}';
       final lastFact = lastKnownFact[deviceKey];
 
       if (lastFact != null) {
-        final distanceM = _haversineMeters(
-          lastFact.lat,
-          lastFact.lng,
-          fact.lat,
-          fact.lng,
-        );
-        final timeDiffSeconds = fact.gpsTimestamp
-            .difference(lastFact.gpsTimestamp)
-            .inSeconds
-            .abs();
-
-        if (timeDiffSeconds > 0) {
-          final impliedKmh = (distanceM / timeDiffSeconds) * 3.6;
-          if (impliedKmh > maxImpliedSpeedKmh) {
-            skippedByKinematicJump++;
-            // Do NOT update _lastKnownFact — the previous valid point stands.
-            continue;
-          }
-        } else if (distanceM > 5.0) {
-          // Same timestamp but moved > 5m: hardware glitch
+        final kinematicResult = _kinematicGuard.validate(lastFact, fact);
+        if (kinematicResult.isViolation) {
           skippedByKinematicJump++;
+          // Do NOT update lastKnownFact — the previous valid point stands.
           continue;
         }
       }
@@ -312,18 +294,4 @@ class TelemetryIngestionPipeline {
     );
   }
 
-  // ── Haversine distance (metres) ──────────────────────────────────────────────
-  static double _haversineMeters(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
-  ) {
-    const p = 0.017453292519943295; // pi / 180
-    final a =
-        0.5 -
-        cos((lat2 - lat1) * p) / 2 +
-        cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
-    return 12742 * asin(sqrt(a)) * 1000;
-  }
 }

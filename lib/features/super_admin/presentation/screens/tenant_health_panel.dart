@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/super_admin/tenant_health_snapshot.dart';
 import '../../../../infrastructure/providers/super_admin_providers.dart';
 
@@ -21,7 +22,7 @@ class TenantHealthPanel extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const Icon(Icons.error_outline, size: 48, color: VeraProbColors.error),
             const SizedBox(height: 12),
             Text('Erro ao carregar tenants: $err'),
             const SizedBox(height: 12),
@@ -51,11 +52,11 @@ class _TenantTable extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.business_outlined, size: 64, color: Colors.grey),
+            Icon(Icons.business_outlined, size: 64, color: VeraProbColors.textDisabled),
             SizedBox(height: 16),
             Text(
               'Nenhum tenant cadastrado.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16, color: VeraProbColors.textSecondary),
             ),
           ],
         ),
@@ -89,7 +90,7 @@ class _TenantTable extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 headingRowColor: WidgetStateProperty.all(
-                  Colors.indigo.withValues(alpha: 0.08),
+                  VeraProbColors.superAdminSurface.withValues(alpha: 0.3),
                 ),
                 columns: const [
                   DataColumn(label: Text('Organização')),
@@ -121,7 +122,7 @@ class _TenantTable extends StatelessWidget {
               if (t.legalName != null)
                 Text(
                   t.legalName!,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  style: const TextStyle(fontSize: 11, color: VeraProbColors.textDisabled),
                 ),
             ],
           ),
@@ -132,14 +133,14 @@ class _TenantTable extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: t.isActive
-                  ? Colors.green.withValues(alpha: 0.15)
-                  : Colors.red.withValues(alpha: 0.15),
+                  ? VeraProbColors.success.withValues(alpha: 0.15)
+                  : VeraProbColors.error.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               t.isActive ? 'Ativo' : 'Inativo',
               style: TextStyle(
-                color: t.isActive ? Colors.green.shade700 : Colors.red.shade700,
+                color: t.isActive ? VeraProbColors.success : VeraProbColors.error,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -154,7 +155,7 @@ class _TenantTable extends StatelessWidget {
                 ? _formatDateTime(t.lastTelemetryAt!)
                 : '—',
             style: TextStyle(
-              color: t.lastTelemetryAt == null ? Colors.grey : null,
+              color: t.lastTelemetryAt == null ? VeraProbColors.textDisabled : null,
             ),
           ),
         ),
@@ -162,16 +163,16 @@ class _TenantTable extends StatelessWidget {
           t.hasCriticalAlerts
               ? Badge(
                   label: Text('${t.openCriticalAlertCount}'),
-                  backgroundColor: Colors.red,
+                  backgroundColor: VeraProbColors.error,
                   child: const Icon(
                     Icons.warning_amber,
-                    color: Colors.red,
+                    color: VeraProbColors.error,
                     size: 20,
                   ),
                 )
               : const Icon(
                   Icons.check_circle_outline,
-                  color: Colors.green,
+                  color: VeraProbColors.success,
                   size: 20,
                 ),
         ),

@@ -139,7 +139,10 @@ class _SlaTemplateEditorDialogState
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 620, maxHeight: 700),
+        constraints: BoxConstraints(
+          maxWidth: (MediaQuery.sizeOf(context).width * 0.92).clamp(320.0, 660.0),
+          maxHeight: (MediaQuery.sizeOf(context).height * 0.88).clamp(400.0, 740.0),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Form(
@@ -343,6 +346,8 @@ class _SlaTemplateEditorDialogState
                 : _descCtl.text.trim(),
             vertical: _selectedVertical,
             penalties: penalties,
+            existingId: widget.existing?.id,
+            existingCreatedAt: widget.existing?.createdAt,
           );
 
       ref.invalidate(slaTemplatesProvider);

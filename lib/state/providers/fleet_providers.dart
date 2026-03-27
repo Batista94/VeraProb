@@ -303,6 +303,8 @@ final filteredTripsProvider = Provider<List<OperationalTrip>>((ref) {
 
         case FleetStatusFilter.atStop:
           return t.status == TripStatus.atStop;
+        case FleetStatusFilter.kinematicAnomaly:
+          return t.requiresAttention;
         case FleetStatusFilter.all:
           return true;
       }

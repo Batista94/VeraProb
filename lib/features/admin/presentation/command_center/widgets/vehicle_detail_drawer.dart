@@ -9,6 +9,8 @@ import 'package:veraprob/domain/entities/operational_suggestion.dart';
 import 'package:veraprob/application/intelligence/suggestion_engine.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/presentation/shared/widgets/status_badge.dart';
+import 'package:latlong2/latlong.dart';
+import '../../shared/widgets/geofence_evidence_map.dart';
 import 'occurrence_modal.dart';
 import 'package:veraprob/domain/authority/commands/trips/update_trip_status_command.dart';
 import '../utils/ui_command_dispatcher.dart';
@@ -35,7 +37,7 @@ class VehicleDetailDrawer extends ConsumerWidget {
     final suggestion = SuggestionEngine().generateSuggestion(trip: trip);
 
     return Container(
-      width: 340,
+      width: (MediaQuery.sizeOf(context).width * 0.26).clamp(280.0, 360.0),
       decoration: const BoxDecoration(
         color: VeraProbColors.surface,
         border: Border(left: BorderSide(color: VeraProbColors.border)),
@@ -71,6 +73,11 @@ class VehicleDetailDrawer extends ConsumerWidget {
 
                   // Action Buttons
                   _ActionsSection(trip: trip),
+
+                  const Divider(height: 1, color: VeraProbColors.border),
+
+                  // Evidence Mini-Map (collapsed by default)
+                  _EvidenceMiniMapSection(trip: trip),
 
                   const Divider(height: 1, color: VeraProbColors.border),
 
@@ -581,6 +588,99 @@ class _ActionButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Evidence Mini-Map ─────────────────────────────────
+
+class _EvidenceMiniMapSection extends ConsumerWidget {
+  final OperationalTrip trip;
+
+  const _EvidenceMiniMapSection({required this.trip});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Resolve vehicle position from normalized state
+    final statesAsync = ref.watch(normalizedStateProvider);
+    final vehicleState = statesAsync.valueOrNull
+        ?.where((s) => s.tripId == trip.id)
+        .firstOrNull;
+
+    if (vehicleState == null) return const SizedBox.shrink();
+
+    final vehiclePos = LatLng(
+      vehicleState.latitude,
+      vehicleState.longitude,
+    );
+
+    return _CollapsibleSection(
+      title: 'EVIDÊNCIA VISUAL',
+      icon: Icons.map_outlined,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: GeofenceEvidenceMap(
+          infractionPoint: vehiclePos,
+          markerColor: trip.status.color,
+          height: 140,
+        ),
+      ),
+    );
+  }
+}
+
+class _CollapsibleSection extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _CollapsibleSection({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  State<_CollapsibleSection> createState() => _CollapsibleSectionState();
+}
+
+class _CollapsibleSectionState extends State<_CollapsibleSection> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(widget.icon, size: 14, color: VeraProbColors.textSecondary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: VeraProbTypography.caption.copyWith(
+                      letterSpacing: 1.0,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Icon(
+                  _isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  size: 18,
+                  color: VeraProbColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_isExpanded) widget.child,
+      ],
     );
   }
 }

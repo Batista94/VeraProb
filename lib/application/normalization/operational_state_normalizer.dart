@@ -1,5 +1,5 @@
 import 'dart:collection';
-import 'dart:math';
+import '../../core/utils/geo_math.dart';
 import '../../domain/entities/vehicle_position.dart';
 import '../../domain/entities/vehicle_operational_state.dart';
 import '../../domain/entities/stop.dart';
@@ -100,7 +100,7 @@ class OperationalStateNormalizer {
       // ── 3. Jump detection ─────────────────────────────
       if (buffer.isNotEmpty) {
         final prev = buffer.last;
-        final distM = _haversineMeters(
+        final distM = GeoMath.haversineMeters(
           prev.latitude,
           prev.longitude,
           raw.latitude,
@@ -303,7 +303,7 @@ class OperationalStateNormalizer {
     Stop? nearest;
 
     for (final stop in stops) {
-      final dist = _haversineMeters(lat, lng, stop.latitude, stop.longitude);
+      final dist = GeoMath.haversineMeters(lat, lng, stop.latitude, stop.longitude);
       if (dist < minDist) {
         minDist = dist;
         nearest = stop;
@@ -316,27 +316,4 @@ class OperationalStateNormalizer {
     return null;
   }
 
-  // ── Private: Haversine ────────────────────────────────
-
-  /// Distance in metres between two lat/lng points (Haversine formula).
-  static double _haversineMeters(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
-  ) {
-    const earthRadiusM = 6371000.0;
-    final dLat = _toRadians(lat2 - lat1);
-    final dLon = _toRadians(lon2 - lon1);
-    final a =
-        sin(dLat / 2) * sin(dLat / 2) +
-        cos(_toRadians(lat1)) *
-            cos(_toRadians(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return earthRadiusM * c;
-  }
-
-  static double _toRadians(double degrees) => degrees * pi / 180;
 }

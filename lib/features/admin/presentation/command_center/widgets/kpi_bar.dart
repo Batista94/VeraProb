@@ -74,6 +74,18 @@ class KpiBar extends ConsumerWidget {
             ),
             _divider(),
             _KpiChip(
+              icon: Icons.gps_off,
+              value: '${summary.alerts}',
+              label: 'Anomalias GPS',
+              color: VeraProbColors.delayed,
+              isSelected:
+                  statusFilter == FleetStatusFilter.kinematicAnomaly,
+              onTap: () => ref
+                  .read(commandCenterFilterProvider.notifier)
+                  .setStatusFilter(FleetStatusFilter.kinematicAnomaly),
+            ),
+            _divider(),
+            _KpiChip(
               icon: Icons.hail,
               value: '${summary.atStop}',
               label: 'No Ponto',

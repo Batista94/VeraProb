@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/super_admin/create_organization_command.dart';
 import '../../../../domain/super_admin/plan_type.dart';
 import '../../../../domain/sla_audit/domain_exception.dart';
@@ -200,7 +201,7 @@ class _CreateOrganizationWizardState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sessão expirada. Faça login novamente.'),
-          backgroundColor: Colors.red,
+          backgroundColor: VeraProbColors.error,
         ),
       );
       return;
@@ -254,14 +255,14 @@ class _CreateOrganizationWizardState
     } on DomainException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        SnackBar(content: Text(e.message), backgroundColor: VeraProbColors.error),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro inesperado: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: VeraProbColors.error,
         ),
       );
     } finally {
@@ -274,7 +275,7 @@ class _CreateOrganizationWizardState
     ScaffoldMessengerState messenger,
   ) {
     return AlertDialog(
-      icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
+      icon: const Icon(Icons.check_circle, color: VeraProbColors.success, size: 48),
       title: const Text('Organização Criada!'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -314,14 +315,14 @@ class _CreateOrganizationWizardState
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.amber.withValues(alpha: 0.1),
+              color: VeraProbColors.warning.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.amber.shade300),
+              border: Border.all(color: VeraProbColors.warning.withValues(alpha: 0.5)),
             ),
             child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.amber),
+                Icon(Icons.info_outline, size: 16, color: VeraProbColors.warning),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -430,7 +431,7 @@ class _CreateOrganizationWizardState
                 ? _submit
                 : () => _goToStep(_currentStep + 1),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo,
+              backgroundColor: VeraProbColors.superAdminSurface,
               foregroundColor: Colors.white,
             ),
             child: _isSubmitting
@@ -527,7 +528,7 @@ class _Step1FiscalData extends StatelessWidget {
                       ),
                     )
                   : cnpjApiError != null
-                  ? const Icon(Icons.error_outline, color: Colors.red)
+                  ? const Icon(Icons.error_outline, color: VeraProbColors.error)
                   : null,
             ),
             keyboardType: TextInputType.number,
@@ -558,13 +559,13 @@ class _Step1FiscalData extends StatelessWidget {
               padding: const EdgeInsets.only(top: 6, left: 4),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                  const Icon(Icons.check_circle, size: 14, color: VeraProbColors.success),
                   const SizedBox(width: 4),
                   Text(
                     'Dados preenchidos via ReceitaWS',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.green.shade700,
+                      color: VeraProbColors.success,
                     ),
                   ),
                   if (cnpjAutoInactive) ...[
@@ -572,12 +573,12 @@ class _Step1FiscalData extends StatelessWidget {
                     const Icon(
                       Icons.warning_amber,
                       size: 14,
-                      color: Colors.orange,
+                      color: VeraProbColors.warning,
                     ),
                     const SizedBox(width: 4),
                     const Text(
                       'Empresa inativa na Receita Federal',
-                      style: TextStyle(fontSize: 12, color: Colors.orange),
+                      style: TextStyle(fontSize: 12, color: VeraProbColors.warning),
                     ),
                   ],
                 ],
@@ -646,12 +647,12 @@ class _Step2Limits extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.indigo.withValues(alpha: 0.06),
+                color: VeraProbColors.superAdminSurface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.business, size: 16, color: Colors.indigo),
+                  const Icon(Icons.business, size: 16, color: VeraProbColors.secondary),
                   const SizedBox(width: 8),
                   Text('$tradeName — Plano $planLabel'),
                 ],
@@ -727,7 +728,7 @@ class _Step3AdminInvite extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.indigo.withValues(alpha: 0.06),
+              color: VeraProbColors.superAdminSurface.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
@@ -775,13 +776,13 @@ class _Step3AdminInvite extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.amber.withValues(alpha: 0.1),
+              color: VeraProbColors.warning.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.amber.shade300),
+              border: Border.all(color: VeraProbColors.warning.withValues(alpha: 0.5)),
             ),
             child: const Row(
               children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.amber),
+                Icon(Icons.info_outline, size: 16, color: VeraProbColors.warning),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -815,9 +816,9 @@ class _SummaryRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: Colors.indigo),
+          Icon(icon, size: 14, color: VeraProbColors.secondary),
           const SizedBox(width: 6),
-          Text('$label: ', style: const TextStyle(color: Colors.grey)),
+          Text('$label: ', style: const TextStyle(color: VeraProbColors.textSecondary)),
           Flexible(
             child: Text(
               value,

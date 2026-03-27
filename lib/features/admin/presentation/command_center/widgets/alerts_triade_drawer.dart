@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/alert_financial_impact.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/application/projections/providers/command_center_filter_provider.dart';
 import 'package:veraprob/state/providers/authority_providers.dart';
@@ -20,7 +21,7 @@ class AlertsTriadeDrawer extends ConsumerWidget {
     final alertTrips = trips.where((t) => t.requiresAttention).toList();
 
     return Container(
-      width: 340,
+      width: (MediaQuery.sizeOf(context).width * 0.26).clamp(280.0, 360.0),
       decoration: const BoxDecoration(
         color: VeraProbColors.surface,
         border: Border(
@@ -219,10 +220,14 @@ class _AlertCard extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      trip.routeDisplay,
-                      style: VeraProbTypography.sectionTitle.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Text(
+                        trip.routeDisplay,
+                        style: VeraProbTypography.sectionTitle.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],
@@ -263,6 +268,8 @@ class _AlertCard extends ConsumerWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 8),
+            _FinancialImpactBadge(delaySeconds: trip.delaySeconds),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -311,5 +318,68 @@ class _AlertCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// Displays an estimated financial impact badge based on delay seconds.
+///
+/// Uses a heuristic estimate (R$5/min) since the alert card does not
+/// carry full SLAPenalties context. The tier color communicates urgency.
+class _FinancialImpactBadge extends StatelessWidget {
+  final int delaySeconds;
+
+  const _FinancialImpactBadge({required this.delaySeconds});
+
+  @override
+  Widget build(BuildContext context) {
+    final delayMinutes = delaySeconds ~/ 60;
+    if (delayMinutes <= 0) return const SizedBox.shrink();
+
+    // Heuristic: R$5.00/min estimate for display purposes
+    final estimatedCents = delayMinutes * 500;
+    final tier = AlertSeverityTier.fromCents(estimatedCents);
+    final reais = (estimatedCents / 100).toStringAsFixed(2);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: _tierColor(tier).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: _tierColor(tier).withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.attach_money,
+            size: 14,
+            color: _tierColor(tier),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'Impacto estimado: R\$ $reais',
+            style: VeraProbTypography.caption.copyWith(
+              color: _tierColor(tier),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Color _tierColor(AlertSeverityTier tier) {
+    switch (tier) {
+      case AlertSeverityTier.low:
+        return VeraProbColors.textSecondary;
+      case AlertSeverityTier.medium:
+        return VeraProbColors.delayed;
+      case AlertSeverityTier.high:
+        return VeraProbColors.critical;
+      case AlertSeverityTier.critical:
+        return const Color(0xFFFF1744);
+    }
   }
 }

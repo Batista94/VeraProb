@@ -8,13 +8,11 @@ import 'package:google_fonts/google_fonts.dart';
 class VeraProbColors {
   VeraProbColors._();
 
-  // ── Premium Dark Theme (Deep Navy/Obsidian) ────────────────
-  static const Color background = Color(0xFF121212); // Softer than pure black
-  static const Color surface = Color(0xFF1E1E24); // Deep modern slate
-  static const Color surfaceElevated = Color(
-    0xFF2B2B36,
-  ); // Noticeable elevation
-  static const Color border = Color(0xFF333340);
+  // ── Industrial Slate/Zinc Theme (24/7 Fatigue Reduction) ───
+  static const Color background = Color(0xFF0F172A); // Slate-950
+  static const Color surface = Color(0xFF1E293B); // Slate-800
+  static const Color surfaceElevated = Color(0xFF334155); // Slate-700
+  static const Color border = Color(0xFF334155); // Slate-700 @40%
 
   // ── Status Colors (CFO & Ops Friendly, Desaturated for Dark Mode) ─
   static const Color onTime = Color(0xFF10B981); // Emerald Green
@@ -23,6 +21,9 @@ class VeraProbColors {
   static const Color scheduled = Color(0xFF60A5FA); // Desaturated Royal Blue
   static const Color neutral = Color(0xFF64748B);
 
+  // ── SuperAdmin Surface (INV-6 visual indicator) ─────────
+  static const Color superAdminSurface = Color(0xFF1E1B4B);
+
   // ── High-Impact Accents ─────────────────────────────────
   // A calmer, more premium teal.
   static const Color primary = Color(0xFF2DD4BF);
@@ -30,7 +31,7 @@ class VeraProbColors {
 
   // ── Premium Text Hierarchy ──────────────────────────────
   static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFF94A3B8);
+  static const Color textSecondary = Color(0xFF94A3B8); // Slate-400 ~4.5:1 on #0F172A (WCAG AA)
   static const Color textDisabled = Color(0xFF475569);
 
   // ── Semantic ─────────────────────────────────────────

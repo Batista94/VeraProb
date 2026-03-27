@@ -122,35 +122,42 @@ class AdminLayout extends ConsumerWidget {
                 ),
               ),
               Expanded(
-                child: Container(
-                  color: VeraProbColors.background,
-                  child: Column(
-                    children: [
-                      OnboardingProgressBanner(
-                        // Translating destination labels to actual index in AdminHome
-                        onNavigate: (destIdx) {
-                          ref.read(adminIndexProvider.notifier).state = destIdx;
-                          ref.read(selectedContractIdProvider.notifier).state =
-                              null;
-                        },
-                      ),
-                      if (ref.watch(selectedContractIdProvider) != null)
-                        _InternalBackButton(
-                          onBack: () =>
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1600),
+                    child: Container(
+                      color: VeraProbColors.background,
+                      child: Column(
+                        children: [
+                          OnboardingProgressBanner(
+                            // Translating destination labels to actual index in AdminHome
+                            onNavigate: (destIdx) {
+                              ref.read(adminIndexProvider.notifier).state =
+                                  destIdx;
                               ref
+                                  .read(selectedContractIdProvider.notifier)
+                                  .state = null;
+                            },
+                          ),
+                          if (ref.watch(selectedContractIdProvider) != null)
+                            _InternalBackButton(
+                              onBack: () =>
+                                  ref
                                       .read(selectedContractIdProvider.notifier)
-                                      .state =
-                                  null,
-                        ),
-                      Expanded(
-                        child: IndexedStack(
-                          index: selectedIndex,
-                          children: children
-                              .map((child) => _AnimatedPage(child: child))
-                              .toList(),
-                        ),
+                                      .state = null,
+                            ),
+                          Expanded(
+                            child: IndexedStack(
+                              index: selectedIndex,
+                              children: children
+                                  .map((child) => _AnimatedPage(child: child))
+                                  .toList(),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),

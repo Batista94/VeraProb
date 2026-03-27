@@ -180,7 +180,10 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
             elevation: 4,
             borderRadius: BorderRadius.circular(8),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 280, maxWidth: 480),
+              constraints: BoxConstraints(
+                maxHeight: 280,
+                maxWidth: (MediaQuery.sizeOf(context).width * 0.9).clamp(240.0, 480.0),
+              ),
               child: ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,

@@ -59,7 +59,7 @@ class OperationalZonesScreen extends ConsumerWidget {
     final zonesAsync = ref.watch(operationalZonesProvider);
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(VeraProbSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -525,7 +525,10 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 920, maxHeight: 680),
+        constraints: BoxConstraints(
+          maxWidth: (MediaQuery.sizeOf(context).width * 0.92).clamp(400.0, 960.0),
+          maxHeight: (MediaQuery.sizeOf(context).height * 0.88).clamp(480.0, 720.0),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(

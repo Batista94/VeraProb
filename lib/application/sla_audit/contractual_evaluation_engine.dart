@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:uuid/uuid.dart';
 
+import '../../core/utils/geo_math.dart';
 import '../../application/sla_audit/sla_ledger_mapper.dart';
 import '../../domain/entities/vehicle_operational_state.dart';
 import '../../domain/shared/money.dart';
@@ -192,7 +192,7 @@ class ContractualEvaluationEngine {
         }
       }
 
-      final distance = _haversineMeters(
+      final distance = GeoMath.haversineMeters(
         vehicleState.latitude,
         vehicleState.longitude,
         state.startLatitude,
@@ -436,26 +436,4 @@ class ContractualEvaluationEngine {
     return values.length == 1 ? values.first : 0;
   }
 
-  // ── Haversine ───────────────────────────────────────────
-
-  static double _haversineMeters(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
-  ) {
-    const earthRadiusM = 6371000.0;
-    final dLat = _toRadians(lat2 - lat1);
-    final dLon = _toRadians(lon2 - lon1);
-    final a =
-        sin(dLat / 2) * sin(dLat / 2) +
-        cos(_toRadians(lat1)) *
-            cos(_toRadians(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return earthRadiusM * c;
-  }
-
-  static double _toRadians(double degrees) => degrees * pi / 180;
 }

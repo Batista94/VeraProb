@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../admin/presentation/lock_screen.dart';
 import 'screens/tenant_health_panel.dart';
 import 'screens/create_organization_wizard.dart';
@@ -34,7 +35,7 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
             children: [
               // ── NavigationRail (indigo) ─────────────────────────────
               NavigationRail(
-                backgroundColor: Colors.indigo.shade900,
+                backgroundColor: VeraProbColors.superAdminSurface,
                 selectedIndex: _selectedIndex,
                 onDestinationSelected: (i) =>
                     setState(() => _selectedIndex = i),

@@ -94,6 +94,8 @@ class UserManagementScreen extends ConsumerWidget {
                           title: Text(
                             member.email,
                             style: VeraProbTypography.kpiLabel,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                           subtitle: Text(
                             'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
@@ -460,7 +462,12 @@ class _PendingInvitationTile extends StatelessWidget {
           size: 18,
         ),
       ),
-      title: Text(invitation.email, style: VeraProbTypography.kpiLabel),
+      title: Text(
+        invitation.email,
+        style: VeraProbTypography.kpiLabel,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+      ),
       subtitle: Text(
         '$roleLabel · Expira em: $expiryStr',
         style: VeraProbTypography.caption,

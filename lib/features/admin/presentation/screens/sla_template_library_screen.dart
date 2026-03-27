@@ -33,12 +33,12 @@ class _SlaTemplateLibraryScreenState
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(VeraProbSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
-            const SizedBox(height: 8),
+            const SizedBox(height: VeraProbSpacing.sm),
             Text(
               'Gerencie modelos SLA reutilizáveis para configuração rápida de contratos.',
               style: VeraProbTypography.bodyMedium.copyWith(
@@ -47,7 +47,7 @@ class _SlaTemplateLibraryScreenState
             ),
             const SizedBox(height: 20),
             _buildFilters(),
-            const SizedBox(height: 24),
+            const SizedBox(height: VeraProbSpacing.lg),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -116,19 +116,25 @@ class _SlaTemplateLibraryScreenState
           color: VeraProbColors.primary,
         ),
         const SizedBox(width: 12),
-        Text(
-          'Biblioteca de Modelos SLA',
-          style: VeraProbTypography.sectionTitle,
+        Flexible(
+          child: Text(
+            'Biblioteca de Modelos SLA',
+            style: VeraProbTypography.sectionTitle,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildFilters() {
-    return Row(
+    return Wrap(
+      spacing: 16,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        SizedBox(
-          width: 280,
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 200, maxWidth: 320),
           child: TextField(
             decoration: const InputDecoration(
               hintText: 'Buscar por nome...',
@@ -142,7 +148,6 @@ class _SlaTemplateLibraryScreenState
             onChanged: (v) => setState(() => _searchQuery = v),
           ),
         ),
-        const SizedBox(width: 16),
         DropdownButton<TransportVertical?>(
           value: _filterVertical,
           hint: const Text('Todas as verticais'),
@@ -196,7 +201,7 @@ class _SlaTemplateLibraryScreenState
       builder: (context, constraints) {
         final crossAxisCount = constraints.maxWidth > 900
             ? 3
-            : constraints.maxWidth > 550
+            : constraints.maxWidth > 650
             ? 2
             : 1;
         return GridView.builder(

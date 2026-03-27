@@ -70,6 +70,13 @@ final fleetStatusProjectionProvider = Provider<FleetStatusProjection>((ref) {
           passesFilter = false;
         }
         break;
+      case FleetStatusFilter.kinematicAnomaly:
+        // Kinematic anomalies surface through alerts, not trip status.
+        // Filter shows vehicles that require attention (alert-worthy).
+        if (!status.requiresAttention) {
+          passesFilter = false;
+        }
+        break;
     }
 
     if (!passesFilter) {

@@ -999,6 +999,9 @@ class _DeclareContractPlanFormState
 
   void _applyPenaltiesFromTemplate(SLAPenalties p) {
     setState(() {
+      _baseValueController.text = (p.baseTripValue.cents / 100.0)
+          .toStringAsFixed(2)
+          .replaceAll('.', ',');
       _noShowMultiplierController.text = p.noShowPenaltyMultiplier
           .toStringAsFixed(1)
           .replaceAll('.', ',');
@@ -1213,7 +1216,10 @@ class _DeclareContractPlanFormState
         const SizedBox(height: VeraProbSpacing.md),
 
         // ── Smart Defaults: Vertical dropdown ──────────────────────
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             SizedBox(
               width: 260,
@@ -1229,20 +1235,20 @@ class _DeclareContractPlanFormState
                     )
                     .toList(),
                 onChanged: (v) {
-                  if (v != null && v != TransportVertical.custom) {
+                  if (v == null || v == TransportVertical.custom) {
+                    setState(() => _baseValueController.text = '');
+                  } else {
                     _applyPenaltiesFromTemplate(SmartDefaults.defaultsFor(v));
                   }
                 },
               ),
             ),
-            const SizedBox(width: 16),
             // ── Load from Template (grouped: System + Org) ──────────
             OutlinedButton.icon(
               icon: const Icon(Icons.style, size: 16),
               label: const Text('Aplicar Modelo'),
               onPressed: () => _showTemplatePicker(allTemplatesAsync),
             ),
-            const SizedBox(width: 8),
             OutlinedButton.icon(
               icon: const Icon(Icons.save_outlined, size: 16),
               label: const Text('Salvar como Modelo'),
@@ -1802,8 +1808,8 @@ class _DeclareContractPlanFormState
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 800,
-          maxHeight: (MediaQuery.sizeOf(context).height * 0.9).clamp(500, 740),
+          maxWidth: (MediaQuery.sizeOf(context).width * 0.94).clamp(360.0, 860.0),
+          maxHeight: (MediaQuery.sizeOf(context).height * 0.9).clamp(500.0, 740.0),
         ),
         child: Column(
           children: [
