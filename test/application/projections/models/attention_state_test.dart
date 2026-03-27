@@ -36,7 +36,10 @@ void main() {
     });
 
     test('status interrupted → CRITICAL', () {
-      expect(derive(status: TripStatusView.interrupted), AttentionState.critical);
+      expect(
+        derive(status: TripStatusView.interrupted),
+        AttentionState.critical,
+      );
     });
 
     test('status noShow → CRITICAL', () {
@@ -44,7 +47,10 @@ void main() {
     });
 
     test('status maintenance → CRITICAL', () {
-      expect(derive(status: TripStatusView.maintenance), AttentionState.critical);
+      expect(
+        derive(status: TripStatusView.maintenance),
+        AttentionState.critical,
+      );
     });
 
     test('severity score exactly 50 → CRITICAL', () {
@@ -69,7 +75,10 @@ void main() {
 
     test('off-route overrides delayed status → CRITICAL not WARNING', () {
       expect(
-        derive(adherence: RouteAdherence.offRoute, status: TripStatusView.delayed),
+        derive(
+          adherence: RouteAdherence.offRoute,
+          status: TripStatusView.delayed,
+        ),
         AttentionState.critical,
       );
     });

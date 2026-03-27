@@ -117,25 +117,27 @@ class ContractQueryServiceInMemory implements ContractQueryService {
       organizationId: organizationId,
     );
     final planCount = plans.length;
-    final activePlanVersion =
-        plans.isEmpty
-            ? 0
-            : plans.map((p) => p.planVersion).reduce((a, b) => a > b ? a : b);
+    final activePlanVersion = plans.isEmpty
+        ? 0
+        : plans.map((p) => p.planVersion).reduce((a, b) => a > b ? a : b);
 
     // Execution state counters
     final allStates = await _executionStateRepository.findByContract(
       contractId,
       organizationId: organizationId,
     );
-    final totalSetsInProgress =
-        allStates.where((s) => s.status == ExecutionStatus.pending).length;
+    final totalSetsInProgress = allStates
+        .where((s) => s.status == ExecutionStatus.pending)
+        .length;
 
     // SLA health: executed / total * 100
     final totalSets = allStates.length;
-    final executedCount =
-        allStates.where((s) => s.status == ExecutionStatus.executed).length;
-    final slaHealthPercentage =
-        totalSets == 0 ? 0.0 : (executedCount / totalSets) * 100.0;
+    final executedCount = allStates
+        .where((s) => s.status == ExecutionStatus.executed)
+        .length;
+    final slaHealthPercentage = totalSets == 0
+        ? 0.0
+        : (executedCount / totalSets) * 100.0;
 
     return ContractSummaryView(
       id: contract.id,

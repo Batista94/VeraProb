@@ -108,7 +108,8 @@ class _ContractListView extends ConsumerWidget {
                 label: 'Aguardando Aceite',
                 color: VeraProbColors.info,
                 selected:
-                    activeFilter == ContractStatusView.awaitingContractorAcceptance,
+                    activeFilter ==
+                    ContractStatusView.awaitingContractorAcceptance,
                 onSelected: (_) =>
                     ref.read(contractStatusFilterProvider.notifier).state =
                         ContractStatusView.awaitingContractorAcceptance,
