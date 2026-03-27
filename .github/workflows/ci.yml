@@ -88,6 +88,9 @@ jobs:
       - name: Enforce Dart Formatting
         run: dart format --output=none --set-exit-if-changed .
 
+      - name: Dependency Intelligence (Outdated Audit)
+        run: flutter pub outdated --no-pub --color
+
       - name: VeraProb Forensic Scan
         run: |
           chmod +x scripts/pr_scanner.sh
@@ -132,6 +135,9 @@ jobs:
       - name: Seed local database
         run: supabase db seed
 
+      - name: Test Supabase Edge Functions
+        run: supabase test functions
+
       - name: Create stub .env for asset resolution
         run: echo "# CI stub — credentials injected via dart-define" > .env
 
@@ -143,6 +149,12 @@ jobs:
           flutter test --no-pub --coverage \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"
+
+      - name: Web Build Sanity Check (Smoke Test)
+        run: |
+          # Garante que o projeto consegue ser compilado antes do deploy de staging
+          # Ignora o build remoto e testa a integridade dos plugins nativos
+          flutter build web --no-pub --release --dart-define=ENV=ci_check
 
       - name: Install lcov
         run: sudo apt-get install -y lcov
@@ -161,4 +173,4 @@ jobs:
         uses: VeryGoodOpenSource/very_good_coverage@v3
         with:
           path: coverage/lcov_filtered.info
-          min_coverage: 60
+          min_coverage: 70
