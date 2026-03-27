@@ -7,7 +7,7 @@ void main() {
   final windowStart = DateTime.utc(2026, 3, 1, 10, 0);
   final windowEnd = DateTime.utc(2026, 3, 1, 10, 15);
 
-  final riskScore = SpoofingRiskScore(
+  const riskScore = SpoofingRiskScore(
     score: 0.85,
     signals: [SpoofingSignal.zeroEntropyAccuracy, SpoofingSignal.staticPositionWhileMoving],
   );

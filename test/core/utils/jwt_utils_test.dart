@@ -5,13 +5,13 @@ import 'package:veraprob/core/utils/jwt_utils.dart';
 
 void main() {
   group('decodeJwtPayload', () {
-    String _makeJwt(Map<String, dynamic> payload) {
+    String makeJwt(Map<String, dynamic> payload) {
       final encoded = base64Url.encode(utf8.encode(jsonEncode(payload)));
       return 'header.$encoded.signature';
     }
 
     test('decodes a well-formed JWT payload', () {
-      final jwt = _makeJwt({
+      final jwt = makeJwt({
         'sub': 'user-123',
         'organization_id': 'org-abc',
         'role': 'admin',
@@ -37,7 +37,7 @@ void main() {
     test('handles unpadded base64url payload', () {
       // base64Url may omit padding — normalize should handle it
       final payload = {'super_admin': true, 'org_id': null};
-      final jwt = _makeJwt(payload);
+      final jwt = makeJwt(payload);
 
       final result = decodeJwtPayload(jwt);
       expect(result['super_admin'], isTrue);

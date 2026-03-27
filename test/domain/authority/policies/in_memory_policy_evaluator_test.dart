@@ -8,7 +8,7 @@ void main() {
 
   AuthorizationContext makeContext({required String roleId}) {
     return AuthorizationContext(
-      actorId: ActorId('user-123'),
+      actorId: const ActorId('user-123'),
       roleId: RoleId(roleId),
       capturedAt: DateTime.utc(2026, 3, 1, 10, 0),
     );
@@ -23,7 +23,7 @@ void main() {
       final decision = await evaluator.evaluate(
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'supervisor'),
-        targetRef: TargetRef('trip', 'trip-1'),
+        targetRef: const TargetRef('trip', 'trip-1'),
       );
 
       expect(decision.isApproved, isTrue);
@@ -34,7 +34,7 @@ void main() {
       final decision = await evaluator.evaluate(
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'level1_operator'),
-        targetRef: TargetRef('trip', 'trip-1'),
+        targetRef: const TargetRef('trip', 'trip-1'),
       );
 
       expect(decision.isApproved, isFalse);
@@ -46,7 +46,7 @@ void main() {
       final decision = await evaluator.evaluate(
         actionType: OperationalActionType.acknowledgeAlert,
         context: makeContext(roleId: 'level1_operator'),
-        targetRef: TargetRef('trip', 'trip-1'),
+        targetRef: const TargetRef('trip', 'trip-1'),
       );
 
       expect(decision.isApproved, isTrue);
@@ -57,7 +57,7 @@ void main() {
       final decision = await evaluator.evaluate(
         actionType: OperationalActionType.acknowledgeAlert,
         context: context,
-        targetRef: TargetRef('trip', 'trip-2'),
+        targetRef: const TargetRef('trip', 'trip-2'),
       );
 
       expect(decision.actorId, context.actorId);

@@ -105,8 +105,8 @@ void main() {
     });
 
     test('equality is value-based', () {
-      expect(TargetRef('trip', 'abc'), equals(TargetRef('trip', 'abc')));
-      expect(TargetRef('trip', 'abc'), isNot(equals(TargetRef('trip', 'xyz'))));
+      expect(const TargetRef('trip', 'abc'), equals(const TargetRef('trip', 'abc')));
+      expect(const TargetRef('trip', 'abc'), isNot(equals(const TargetRef('trip', 'xyz'))));
     });
   });
 }

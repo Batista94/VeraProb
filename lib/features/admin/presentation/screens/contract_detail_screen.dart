@@ -352,7 +352,7 @@ class _ExecutionsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (executions.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -361,12 +361,12 @@ class _ExecutionsTab extends StatelessWidget {
               size: 48,
               color: VeraProbColors.textDisabled,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               'Nenhuma viagem projetada.',
               style: TextStyle(color: VeraProbColors.textSecondary),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               'Declare um plano operacional para começar o monitoramento.',
               style: TextStyle(color: VeraProbColors.textDisabled, fontSize: 12),

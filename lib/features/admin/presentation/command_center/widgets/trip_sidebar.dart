@@ -469,6 +469,8 @@ class _ActiveFilterBanner extends StatelessWidget {
         return VeraProbColors.critical;
       case FleetStatusFilter.atStop:
         return VeraProbColors.scheduled;
+      case FleetStatusFilter.kinematicAnomaly:
+        return VeraProbColors.delayed;
       case FleetStatusFilter.all:
         return VeraProbColors.textSecondary;
     }
@@ -486,6 +488,8 @@ class _ActiveFilterBanner extends StatelessWidget {
         return 'Alertas';
       case FleetStatusFilter.atStop:
         return 'No Ponto';
+      case FleetStatusFilter.kinematicAnomaly:
+        return 'Anomalias GPS';
       case FleetStatusFilter.all:
         return 'Todos';
     }

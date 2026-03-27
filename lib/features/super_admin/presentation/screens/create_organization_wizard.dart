@@ -561,7 +561,7 @@ class _Step1FiscalData extends StatelessWidget {
                 children: [
                   const Icon(Icons.check_circle, size: 14, color: VeraProbColors.success),
                   const SizedBox(width: 4),
-                  Text(
+                  const Text(
                     'Dados preenchidos via ReceitaWS',
                     style: TextStyle(
                       fontSize: 12,
