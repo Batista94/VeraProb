@@ -7,21 +7,18 @@ import '../../domain/super_admin/tenant_health_snapshot.dart';
 
 /// PostgreSQL implementation of [ISuperAdminRepository].
 ///
-/// Write RPCs use [_authenticatedClient] (main Supabase session) so that
-/// auth.uid() IS NOT NULL inside the RPC and the super_admin JWT claim is
-/// validated server-side (migration 20260405000007 intent).
+/// Read operations (`getAllTenantHealth`, `getSystemAuditLog`) are routed
+/// through the `super-admin-proxy` Edge Function (INV-3, INV-14).
+/// The service_role key lives exclusively in `Deno.env` on the server —
+/// it is NEVER present in the Flutter WASM bundle.
 ///
-/// Read queries use [_serviceRoleClient] (service_role key) to bypass the RLS
-/// hardening that blocks authenticated super admin reads on cross-tenant tables
-/// (migration 20260405000006).
+/// Write RPCs use [_authenticatedClient] directly so that `auth.uid()` is
+/// non-null inside the RPC and the super_admin JWT claim is validated
+/// server-side (migration 20260405000007 intent).
 class SupabaseSuperAdminRepository implements ISuperAdminRepository {
-  final SupabaseClient _serviceRoleClient;
   final SupabaseClient _authenticatedClient;
 
-  SupabaseSuperAdminRepository(
-    this._serviceRoleClient,
-    this._authenticatedClient,
-  );
+  SupabaseSuperAdminRepository(this._authenticatedClient);
 
   @override
   Future<String> createOrganization(CreateOrganizationCommand cmd) async {
@@ -67,14 +64,14 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
 
   @override
   Future<List<TenantHealthSnapshot>> getAllTenantHealth() async {
-    final data = await _serviceRoleClient
-        .from('super_admin_tenant_health_view')
-        .select();
+    final response = await _authenticatedClient.functions.invoke(
+      'super-admin-proxy',
+      body: {'action': 'list_tenant_health'},
+    );
 
-    return (data as List<dynamic>)
-        .map(
-          (row) => TenantHealthSnapshot.fromJson(row as Map<String, dynamic>),
-        )
+    final rows = (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
+    return rows
+        .map((row) => TenantHealthSnapshot.fromJson(row as Map<String, dynamic>))
         .toList();
   }
 
@@ -95,28 +92,19 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
     DateTime? toDate,
     int limit = 100,
   }) async {
-    var query = _serviceRoleClient
-        .from('system_audit_log')
-        .select('severity, event_type, occurred_at, organization_id, payload');
+    final params = <String, dynamic>{'limit': limit};
+    if (organizationId != null) params['organization_id'] = organizationId;
+    if (severity != null) params['severity'] = severity;
+    if (fromDate != null) params['from_date'] = fromDate.toIso8601String();
+    if (toDate != null) params['to_date'] = toDate.toIso8601String();
 
-    if (organizationId != null) {
-      query = query.eq('organization_id', organizationId);
-    }
-    if (severity != null) {
-      query = query.eq('severity', severity);
-    }
-    if (fromDate != null) {
-      query = query.gte('occurred_at', fromDate.toIso8601String());
-    }
-    if (toDate != null) {
-      query = query.lte('occurred_at', toDate.toIso8601String());
-    }
+    final response = await _authenticatedClient.functions.invoke(
+      'super-admin-proxy',
+      body: {'action': 'get_audit_log', 'params': params},
+    );
 
-    final data = await query
-        .order('occurred_at', ascending: false)
-        .limit(limit);
-
-    return (data as List<dynamic>)
+    final rows = (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
+    return rows
         .map((row) => SystemAuditLogEntry.fromJson(row as Map<String, dynamic>))
         .toList();
   }

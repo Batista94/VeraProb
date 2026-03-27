@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-03-26
-**Current Status:** Phase 9 in progress (9.6 pending · 9.7 partial ✅) · Phase 10.1 COMPLETED — Target Milestone: **READY FOR FIRST TENANT**
+**Current Status:** Phase 9 in progress (9.6.A.1 ✅ Edge Proxy done · 9.6 MFA next · 9.7 partial ✅) · Phase 10.1 COMPLETED — Target Milestone: **READY FOR FIRST TENANT**
 **Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
@@ -10,7 +10,7 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| Tests | 1059 passing · 18 skipped · 0 failures ✅ |
+| Tests | 1062 passing · 23 skipped · 0 failures ✅ |
 | Migrations | 74 applied (schema lock v1 + kinematic guard trigger) ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | Phase 10.1 | **COMPLETED** — Schema Lock ✅ |
@@ -18,9 +18,6 @@
 ---
 
 ## Phase 9 — VeraProb: De Protótipo de Engenharia a Produto B2B Operacional
-
-> [!CAUTION]
-> **CRITICAL SECURITY BLOCKER (PHASE 9.8)**: O sistema contém a `service_role` key no bundle Flutter. **NÃO DEPLOYAR EM PRODUÇÃO** até migração para Edge Proxy.
 
 ### [x] Phase 9.5 — Vínculo Dinâmico & UX do Operador ✅ CONCLUÍDA
 
@@ -30,9 +27,10 @@
 
 ### [ ] Phase 9.6 — Security & Data Foundation (The Shield)
 
-- **[CRITICAL] Edge Proxy Migration:** Removal of `service_role` from frontend and full migration to Edge Functions.
+- **[x] 9.6.A.1 — Edge Proxy Migration:** ✅ `service_role` removed from Flutter WASM bundle. Edge Function `super-admin-proxy` holds key in `Deno.env`, validates `super_admin` JWT claim server-side. Migration `20260417000001_super_admin_proxy_rls.sql` revokes direct view access. 8 unit tests. **1062 passing · 0 failures.**
+  - **Next action:** Deploy — `supabase functions deploy super-admin-proxy` + manual JWT verify.
+- **[ ] 9.6.A.2 — MFA for SuperAdmin:** TOTP enforcement + JWT Circuit Breakers. Next step.
 - **Entity Alias Mapping (UX):** Global translation layer from UUIDs to friendly names (Plates, Drivers, Customers) in the UI.
-- **Privileged Access:** MFA for SuperAdmin and JWT Circuit Breakers.
 - **[UX] Full Login Localization (PT-BR) & Alias Preview:** Full localization and removal of technical IDs from visual preview on the login screen.
 - **[UX] WCAG Contrast Overhaul:** Raise global luminosity of secondary texts (e.g., from Zinc-600 to Zinc-400) to ensure readability in high-luminosity OCC environments.
 - **[BIZ] Advanced Custom RBAC:** Granular permissions engine for custom roles (Legal/Finance/Operations) to isolate sensitive UI views (e.g., Financial sees R$, Legal sees Verdicts).
@@ -71,7 +69,7 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 
 ### Checklist "READY FOR FIRST TENANT"
 
-- [ ] MFA and Edge Proxy active (Total removal of `service_role`).
+- [~] MFA and Edge Proxy active (Total removal of `service_role`) — Edge Proxy ✅ done (9.6.A.1), MFA pending (9.6.A.2).
 - [ ] Entity Alias Mapping implemented in 100% of operational screens.
 - [ ] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations.
 - [ ] **Reverse Geocoding:** Functional addresses and zone names instead of raw coordinates in 100% of lists.

@@ -47,16 +47,6 @@ class EnvironmentConfig {
   /// Supabase anonymous/public key. In dev, overridden by .env file.
   static const supabaseAnonKey = String.fromEnvironment('SUPABASE_KEY');
 
-  /// Supabase service_role key for SuperAdmin client (Phase 9.2 — D3).
-  /// NEVER hard-code. Inject via --dart-define=SUPABASE_SERVICE_ROLE_KEY=...
-  /// Only used by SuperAdmin portal — never passed to tenant providers.
-  static const supabaseServiceRoleKey = String.fromEnvironment(
-    'SUPABASE_SERVICE_ROLE_KEY',
-  );
-
-  /// Returns true if the service_role key is available (SuperAdmin portal).
-  static bool get hasServiceRoleKey => supabaseServiceRoleKey.isNotEmpty;
-
   // ── Feature Flags ────────────────────────────────────
   /// Show debug banners and verbose logging only in dev/staging.
   static bool get showDebugBanner => !isProd;

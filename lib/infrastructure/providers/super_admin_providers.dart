@@ -1,9 +1,7 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../application/super_admin/create_organization_handler.dart';
-import '../../core/config/environment.dart';
 import '../../domain/super_admin/i_cnpj_lookup_service.dart';
 import '../../domain/super_admin/i_super_admin_repository.dart';
 import '../../domain/super_admin/system_audit_log_entry.dart';
@@ -11,49 +9,13 @@ import '../../domain/super_admin/tenant_health_snapshot.dart';
 import '../../infrastructure/super_admin/receita_ws_cnpj_service.dart';
 import '../../infrastructure/super_admin/supabase_super_admin_repository.dart';
 
-/// Isolated service_role Supabase client for SuperAdmin operations.
-///
-/// D3: instantiated with service_role key — never Supabase.initialize() again.
-/// Never passed to tenant providers.
-///
-/// Credential resolution order (mirrors SupabaseConfig.initialize):
-///  1. `--dart-define` values (CI/CD — production)
-///  2. `.env` file via dotenv (local dev — requires SUPABASE_SERVICE_ROLE_KEY)
-final superAdminSupabaseClientProvider = Provider<SupabaseClient>((ref) {
-  final url = EnvironmentConfig.supabaseUrl.isNotEmpty
-      ? EnvironmentConfig.supabaseUrl
-      : (dotenv.env['SUPABASE_URL'] ?? '');
-
-  final serviceKey = EnvironmentConfig.supabaseServiceRoleKey.isNotEmpty
-      ? EnvironmentConfig.supabaseServiceRoleKey
-      : (dotenv.env['SUPABASE_SERVICE_ROLE_KEY'] ?? '');
-
-  // EmptyLocalStorage prevents this client from recovering the user session
-  // from browser localStorage (which is shared with the main anon client via
-  // the same sb-<host>-auth-token key). Without this, auth.uid() returns
-  // the super admin's UUID inside RPCs instead of NULL, bypassing the
-  // service_role path in super_admin_create_organization / invite_first_admin.
-  return SupabaseClient(
-    url,
-    serviceKey,
-    authOptions: const FlutterAuthClientOptions(
-      localStorage: EmptyLocalStorage(),
-      autoRefreshToken: false,
-    ),
-  );
-});
-
 /// Repository provider for SuperAdmin data operations.
 ///
-/// Passes two clients:
-///  - service_role client (for cross-tenant reads that RLS would otherwise block)
-///  - authenticated client (for write RPCs that validate the super_admin JWT claim)
+/// Read operations are routed through the `super-admin-proxy` Edge Function
+/// (INV-3, INV-14) — the service_role key is a Deno secret on the server,
+/// never present in the Flutter WASM bundle.
 final superAdminRepositoryProvider = Provider<ISuperAdminRepository>((ref) {
-  final serviceRoleClient = ref.watch(superAdminSupabaseClientProvider);
-  return SupabaseSuperAdminRepository(
-    serviceRoleClient,
-    Supabase.instance.client,
-  );
+  return SupabaseSuperAdminRepository(Supabase.instance.client);
 });
 
 /// Provider that fetches all tenant health snapshots.

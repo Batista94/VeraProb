@@ -5,7 +5,8 @@ import 'tenant_health_snapshot.dart';
 /// Port for SuperAdmin data operations.
 ///
 /// Concrete implementation: [SupabaseSuperAdminRepository].
-/// All methods use the service_role client — never the anon client.
+/// Read methods are proxied through the `super-admin-proxy` Edge Function
+/// (INV-3, INV-14). Write RPCs use the authenticated session JWT.
 /// INV-4: Pure Dart interface — zero infrastructure dependencies.
 abstract class ISuperAdminRepository {
   /// Atomically creates a new organization and records an 'ORG_CREATED' billing event.
