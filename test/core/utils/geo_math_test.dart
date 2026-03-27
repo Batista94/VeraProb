@@ -20,8 +20,18 @@ void main() {
     });
 
     test('is symmetric', () {
-      final d1 = GeoMath.haversineMeters(-23.5505, -46.6333, -22.9068, -43.1729);
-      final d2 = GeoMath.haversineMeters(-22.9068, -43.1729, -23.5505, -46.6333);
+      final d1 = GeoMath.haversineMeters(
+        -23.5505,
+        -46.6333,
+        -22.9068,
+        -43.1729,
+      );
+      final d2 = GeoMath.haversineMeters(
+        -22.9068,
+        -43.1729,
+        -23.5505,
+        -46.6333,
+      );
       expect(d1, equals(d2));
     });
   });

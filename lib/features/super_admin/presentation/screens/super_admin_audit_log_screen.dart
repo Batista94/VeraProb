@@ -57,7 +57,11 @@ class _SuperAdminAuditLogScreenState
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: VeraProbColors.error),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: VeraProbColors.error,
+                  ),
                   const SizedBox(height: 12),
                   Text('Erro ao carregar logs: $err'),
                   const SizedBox(height: 12),

@@ -366,12 +366,7 @@ class _TelemetryRow {
   final String coords;
   final String verdict;
 
-  const _TelemetryRow(
-    this.vehicleId,
-    this.event,
-    this.coords,
-    this.verdict,
-  );
+  const _TelemetryRow(this.vehicleId, this.event, this.coords, this.verdict);
 }
 
 class _TelemetryRowWidget extends StatelessWidget {
@@ -380,11 +375,11 @@ class _TelemetryRowWidget extends StatelessWidget {
   const _TelemetryRowWidget({required this.row});
 
   Color _verdictColor() => switch (row.verdict) {
-        'GUILTY' => const Color(0xFFEF4444),
-        'COMPLIANT' => const Color(0xFF22C55E),
-        'INHIBITED' => const Color(0xFFF59E0B),
-        _ => const Color(0xFF6B7280),
-      };
+    'GUILTY' => const Color(0xFFEF4444),
+    'COMPLIANT' => const Color(0xFF22C55E),
+    'INHIBITED' => const Color(0xFFF59E0B),
+    _ => const Color(0xFF6B7280),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -427,9 +422,7 @@ class _TelemetryRowWidget extends StatelessWidget {
           decoration: BoxDecoration(
             color: _verdictColor().withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-              color: _verdictColor().withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: _verdictColor().withValues(alpha: 0.3)),
           ),
           child: Text(
             row.verdict,
@@ -456,10 +449,7 @@ class _NodeGraphPainter extends CustomPainter {
 
   static List<Offset> _buildNodes() {
     final rng = math.Random(42);
-    return List.generate(
-      24,
-      (_) => Offset(rng.nextDouble(), rng.nextDouble()),
-    );
+    return List.generate(24, (_) => Offset(rng.nextDouble(), rng.nextDouble()));
   }
 
   @override

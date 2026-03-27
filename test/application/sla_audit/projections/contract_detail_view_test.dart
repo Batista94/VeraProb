@@ -3,8 +3,8 @@ import 'package:veraprob/application/sla_audit/projections/contract_detail_view.
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
 import 'package:veraprob/domain/shared/money.dart';
-import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 
 void main() {
@@ -14,7 +14,7 @@ void main() {
     id: 'contract-abc',
     name: 'Rota Central',
     contractorName: 'Viação Express',
-    status: ContractStatus.active,
+    status: ContractStatusView.active,
     validFromUtc: now,
     validUntilUtc: now.add(const Duration(days: 365)),
     createdAtUtc: now,

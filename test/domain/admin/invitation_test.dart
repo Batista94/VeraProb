@@ -33,7 +33,9 @@ void main() {
 
       test('returns true when expiry is in the past', () {
         final inv = makeInvitation(
-          expiresAtUtc: DateTime.now().toUtc().subtract(const Duration(days: 1)),
+          expiresAtUtc: DateTime.now().toUtc().subtract(
+            const Duration(days: 1),
+          ),
         );
         expect(inv.isExpired, isTrue);
       });
@@ -68,7 +70,9 @@ void main() {
 
       test('returns false when expired', () {
         final inv = makeInvitation(
-          expiresAtUtc: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+          expiresAtUtc: DateTime.now().toUtc().subtract(
+            const Duration(hours: 1),
+          ),
         );
         expect(inv.isActive, isFalse);
       });

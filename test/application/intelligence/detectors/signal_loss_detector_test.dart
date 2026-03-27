@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/intelligence/detectors/signal_loss_detector.dart';
 import 'package:veraprob/domain/entities/operational_trip.dart';
-import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
-import 'package:veraprob/domain/enums/motion_state.dart';
-import 'package:veraprob/domain/enums/route_adherence.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
+import 'package:veraprob/application/normalization/models/route_adherence.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
 
 void main() {
@@ -37,7 +37,6 @@ void main() {
         status: status,
         scheduledStart: now,
       );
-
   group('SignalLossDetector', () {
     late SignalLossDetector detector;
     setUp(() => detector = const SignalLossDetector());

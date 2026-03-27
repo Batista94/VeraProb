@@ -213,7 +213,11 @@ class _BillingCycleReportsScreenState
             padding: EdgeInsets.only(top: 6),
             child: Row(
               children: [
-                Icon(Icons.info_outline, size: 14, color: VeraProbColors.warning),
+                Icon(
+                  Icons.info_outline,
+                  size: 14,
+                  color: VeraProbColors.warning,
+                ),
                 SizedBox(width: 4),
                 Text(
                   'Nenhum contrato selecionado — relatório agrega todos os contratos.',

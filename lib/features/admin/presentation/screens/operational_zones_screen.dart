@@ -526,8 +526,14 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: (MediaQuery.sizeOf(context).width * 0.92).clamp(400.0, 960.0),
-          maxHeight: (MediaQuery.sizeOf(context).height * 0.88).clamp(480.0, 720.0),
+          maxWidth: (MediaQuery.sizeOf(context).width * 0.92).clamp(
+            400.0,
+            960.0,
+          ),
+          maxHeight: (MediaQuery.sizeOf(context).height * 0.88).clamp(
+            480.0,
+            720.0,
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(24),

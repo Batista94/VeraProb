@@ -140,7 +140,21 @@
       "Bash(node -e \":*)",
       "Bash(tee /tmp/wasm_build.log)",
       "Bash(flutter clean:*)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(find /c/Projects/VeraProb/test/domain -type f -name *.dart)",
+      "Bash(__NEW_LINE_ff76cf134e6fe430__ comm:*)",
+      "Bash(__NEW_LINE_210ac24e032c0ac9__ echo:*)",
+      "Bash(__NEW_LINE_2f0c9173872248b6__ echo:*)",
+      "Bash(__NEW_LINE_782bbf6e33c50541__ find:*)",
+      "Bash(__NEW_LINE_f50d0c871f69fff9__ find:*)",
+      "Bash(python3:*)",
+      "Bash(sort -t\"\\(\" -k2 -n)",
+      "Bash(find /c/Projects/VeraProb -name *.env* -o -name env.example -o -name supabase.json)",
+      "Bash(find /c/Projects/VeraProb/lib/data -name *user* -o -name *auth*)",
+      "Bash(find /c/Projects/VeraProb/supabase -type f \\\\\\(-name *.sql -o -name *.ts -o -name *.json \\\\\\))",
+      "Bash(find /c/Projects/VeraProb/lib/presentation -name *.dart -type f)",
+      "Bash(find /c/Projects/VeraProb/lib/features -type f -name \"*.dart\" -exec grep -l \"DataTable\\\\|ListView\\\\|Table\\\\|Column\" {})",
+      "Bash(find /c/Projects/VeraProb/lib -path */domain/*zone* -o -path */domain/*geo*)"
     ]
   },
   "model": "sonnet"

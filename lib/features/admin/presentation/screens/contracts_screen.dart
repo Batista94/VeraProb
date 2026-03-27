@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/sla_audit/clone_contract_command.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
-import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -99,35 +99,35 @@ class _ContractListView extends ConsumerWidget {
               _FilterChip(
                 label: 'Rascunhos',
                 color: VeraProbColors.neutral,
-                selected: activeFilter == ContractStatus.draft,
+                selected: activeFilter == ContractStatusView.draft,
                 onSelected: (_) =>
                     ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatus.draft,
+                        ContractStatusView.draft,
               ),
               _FilterChip(
                 label: 'Aguardando Aceite',
                 color: VeraProbColors.info,
                 selected:
-                    activeFilter == ContractStatus.awaitingContractorAcceptance,
+                    activeFilter == ContractStatusView.awaitingContractorAcceptance,
                 onSelected: (_) =>
                     ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatus.awaitingContractorAcceptance,
+                        ContractStatusView.awaitingContractorAcceptance,
               ),
               _FilterChip(
                 label: 'Ativos',
                 color: VeraProbColors.success,
-                selected: activeFilter == ContractStatus.active,
+                selected: activeFilter == ContractStatusView.active,
                 onSelected: (_) =>
                     ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatus.active,
+                        ContractStatusView.active,
               ),
               _FilterChip(
                 label: 'Encerrados',
                 color: VeraProbColors.error,
-                selected: activeFilter == ContractStatus.closed,
+                selected: activeFilter == ContractStatusView.closed,
                 onSelected: (_) =>
                     ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatus.closed,
+                        ContractStatusView.closed,
               ),
             ],
           ),
@@ -168,32 +168,32 @@ class _ContractTable extends ConsumerWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(minWidth: constraints.maxWidth),
               child: DataTable(
-              columnSpacing: 24,
-              headingRowColor: WidgetStateProperty.all(
-                VeraProbColors.surfaceElevated,
+                columnSpacing: 24,
+                headingRowColor: WidgetStateProperty.all(
+                  VeraProbColors.surfaceElevated,
+                ),
+                headingTextStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: VeraProbColors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+                dataRowMaxHeight: 64,
+                rows: contracts.map((c) => _buildRow(context, ref, c)).toList(),
+                columns: const [
+                  DataColumn(label: Text('CONTRATO')),
+                  DataColumn(label: Text('CONTRATANTE')),
+                  DataColumn(label: Text('VIGÊNCIA')),
+                  DataColumn(label: Text('STATUS')),
+                  DataColumn(label: Text('SAÚDE SLA')),
+                  DataColumn(label: Text('')),
+                ],
               ),
-              headingTextStyle: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: VeraProbColors.textSecondary,
-                letterSpacing: 0.5,
-              ),
-              dataRowMaxHeight: 64,
-              rows: contracts.map((c) => _buildRow(context, ref, c)).toList(),
-              columns: const [
-                DataColumn(label: Text('CONTRATO')),
-                DataColumn(label: Text('CONTRATANTE')),
-                DataColumn(label: Text('VIGÊNCIA')),
-                DataColumn(label: Text('STATUS')),
-                DataColumn(label: Text('SAÚDE SLA')),
-                DataColumn(label: Text('')),
-              ],
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   DataRow _buildRow(
@@ -497,19 +497,19 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  final ContractStatus status;
+  final ContractStatusView status;
   const _StatusChip({required this.status});
 
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      ContractStatus.draft => ('RASCUNHO', VeraProbColors.neutral),
-      ContractStatus.awaitingContractorAcceptance => (
+      ContractStatusView.draft => ('RASCUNHO', VeraProbColors.neutral),
+      ContractStatusView.awaitingContractorAcceptance => (
         'AGUARDANDO ACEITE',
         VeraProbColors.info,
       ),
-      ContractStatus.active => ('ATIVO', VeraProbColors.success),
-      ContractStatus.closed => ('ENCERRADO', VeraProbColors.error),
+      ContractStatusView.active => ('ATIVO', VeraProbColors.success),
+      ContractStatusView.closed => ('ENCERRADO', VeraProbColors.error),
     };
 
     return Container(

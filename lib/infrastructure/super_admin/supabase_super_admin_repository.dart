@@ -69,9 +69,12 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
       body: {'action': 'list_tenant_health'},
     );
 
-    final rows = (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
+    final rows =
+        (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
     return rows
-        .map((row) => TenantHealthSnapshot.fromJson(row as Map<String, dynamic>))
+        .map(
+          (row) => TenantHealthSnapshot.fromJson(row as Map<String, dynamic>),
+        )
         .toList();
   }
 
@@ -103,7 +106,8 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
       body: {'action': 'get_audit_log', 'params': params},
     );
 
-    final rows = (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
+    final rows =
+        (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
     return rows
         .map((row) => SystemAuditLogEntry.fromJson(row as Map<String, dynamic>))
         .toList();

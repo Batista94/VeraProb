@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/submit_contract_for_approval_command.dart';
-import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -177,9 +177,9 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           ? 'Permissão negada. Faça logout e login novamente para atualizar suas credenciais.'
           : raw.replaceAll('Exception: ', '');
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
+      );
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -189,11 +189,12 @@ class _DetailViewState extends ConsumerState<_DetailView> {
   Widget build(BuildContext context) {
     final s = widget.detail.summary;
     final canDeclarePlan =
-        s.status != ContractStatus.closed &&
-        s.status != ContractStatus.awaitingContractorAcceptance;
-    final noPlan = s.status == ContractStatus.draft && s.activePlanVersion == 0;
+        s.status != ContractStatusView.closed &&
+        s.status != ContractStatusView.awaitingContractorAcceptance;
+    final noPlan =
+        s.status == ContractStatusView.draft && s.activePlanVersion == 0;
     final canSubmitForApproval =
-        s.status == ContractStatus.draft && s.activePlanVersion > 0;
+        s.status == ContractStatusView.draft && s.activePlanVersion > 0;
 
     return Padding(
       padding: const EdgeInsets.all(VeraProbSpacing.lg),
@@ -288,16 +289,25 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               decoration: BoxDecoration(
                 color: VeraProbColors.warning.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: VeraProbColors.warning.withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: VeraProbColors.warning.withValues(alpha: 0.4),
+                ),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline, color: VeraProbColors.warning, size: 18),
+                  Icon(
+                    Icons.info_outline,
+                    color: VeraProbColors.warning,
+                    size: 18,
+                  ),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Nenhum Plano Operacional declarado. Declare um plano antes de enviar para aprovação.',
-                      style: TextStyle(fontSize: 13, color: VeraProbColors.warning),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: VeraProbColors.warning,
+                      ),
                     ),
                   ),
                 ],
@@ -369,7 +379,10 @@ class _ExecutionsTab extends StatelessWidget {
             SizedBox(height: 4),
             Text(
               'Declare um plano operacional para começar o monitoramento.',
-              style: TextStyle(color: VeraProbColors.textDisabled, fontSize: 12),
+              style: TextStyle(
+                color: VeraProbColors.textDisabled,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -600,7 +613,7 @@ class _CountCard extends StatelessWidget {
 // ── Shared widgets ────────────────────────────────────────────────────────────
 
 class _StatusChip extends StatelessWidget {
-  final ContractStatus status;
+  final ContractStatusView status;
 
   const _StatusChip({required this.status});
 
@@ -608,16 +621,16 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return VeraProbChip(
       label: switch (status) {
-        ContractStatus.draft => 'Rascunho',
-        ContractStatus.awaitingContractorAcceptance => 'Aguardando Aceite',
-        ContractStatus.active => 'Ativo',
-        ContractStatus.closed => 'Encerrado',
+        ContractStatusView.draft => 'Rascunho',
+        ContractStatusView.awaitingContractorAcceptance => 'Aguardando Aceite',
+        ContractStatusView.active => 'Ativo',
+        ContractStatusView.closed => 'Encerrado',
       },
       color: switch (status) {
-        ContractStatus.draft => VeraProbColors.neutral,
-        ContractStatus.awaitingContractorAcceptance => VeraProbColors.info,
-        ContractStatus.active => VeraProbColors.success,
-        ContractStatus.closed => VeraProbColors.error,
+        ContractStatusView.draft => VeraProbColors.neutral,
+        ContractStatusView.awaitingContractorAcceptance => VeraProbColors.info,
+        ContractStatusView.active => VeraProbColors.success,
+        ContractStatusView.closed => VeraProbColors.error,
       },
     );
   }
@@ -668,7 +681,10 @@ class _MetaItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 10, color: VeraProbColors.textSecondary),
+          style: const TextStyle(
+            fontSize: 10,
+            color: VeraProbColors.textSecondary,
+          ),
         ),
         Text(
           value,

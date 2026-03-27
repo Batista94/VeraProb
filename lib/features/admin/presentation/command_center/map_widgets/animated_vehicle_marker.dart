@@ -3,8 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'vehicle_marker.dart';
-import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
-import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/trip_status_view.dart';
 import 'package:veraprob/application/projections/providers/fleet_attention_projection_provider.dart';
 import 'package:veraprob/application/projections/models/attention_state.dart';
 
@@ -149,7 +149,9 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
           .where((t) => t.id == state.tripId)
           .firstOrNull;
 
-      final status = trip?.status ?? _DefaultStatusHelper().status;
+      final status = trip?.status != null 
+          ? TripStatusView.values.byName(trip.status.name)
+          : _DefaultStatusHelper().status;
       final isSelected = state.tripId == widget.selectedId;
       final attention = widget.attentionProjection?.getContextFor(
         state.vehicleId,
@@ -192,5 +194,5 @@ class _VehicleAnimState {
 }
 
 class _DefaultStatusHelper {
-  TripStatus get status => TripStatus.scheduled;
+  TripStatusView get status => TripStatusView.scheduled;
 }

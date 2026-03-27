@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/utils/geo_math.dart';
 import '../../application/sla_audit/sla_ledger_mapper.dart';
-import '../../domain/entities/vehicle_operational_state.dart';
+import '../normalization/models/vehicle_operational_state.dart';
 import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/contractual_execution_state.dart';
 import '../../domain/sla_audit/execution_events.dart';
@@ -435,5 +435,4 @@ class ContractualEvaluationEngine {
         .toSet();
     return values.length == 1 ? values.first : 0;
   }
-
 }

@@ -345,18 +345,12 @@ class _FinancialImpactBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: _tierColor(tier).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: _tierColor(tier).withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: _tierColor(tier).withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.attach_money,
-            size: 14,
-            color: _tierColor(tier),
-          ),
+          Icon(Icons.attach_money, size: 14, color: _tierColor(tier)),
           const SizedBox(width: 4),
           Text(
             'Impacto estimado: R\$ $reais',

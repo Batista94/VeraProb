@@ -38,17 +38,11 @@ void main() {
 
   group('ShiftPattern.create — invariant validation', () {
     test('throws DomainException for negative index', () {
-      expect(
-        () => makePattern(index: -1),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makePattern(index: -1), throwsA(isA<DomainException>()));
     });
 
     test('throws DomainException for empty daysOfWeek', () {
-      expect(
-        () => makePattern(days: []),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makePattern(days: []), throwsA(isA<DomainException>()));
     });
 
     test('throws DomainException for invalid time format (no colon)', () {
@@ -110,11 +104,17 @@ void main() {
 
   group('isOvernight', () {
     test('returns false when departure is before arrival', () {
-      expect(makePattern(departure: '06:00', arrival: '08:00').isOvernight, isFalse);
+      expect(
+        makePattern(departure: '06:00', arrival: '08:00').isOvernight,
+        isFalse,
+      );
     });
 
     test('returns true when departure is after arrival (overnight shift)', () {
-      expect(makePattern(departure: '22:00', arrival: '06:00').isOvernight, isTrue);
+      expect(
+        makePattern(departure: '22:00', arrival: '06:00').isOvernight,
+        isTrue,
+      );
     });
   });
 

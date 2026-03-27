@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/normalization/operational_state_normalizer.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'package:veraprob/domain/entities/stop.dart';
-import 'package:veraprob/domain/enums/motion_state.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 
 void main() {
   late OperationalStateNormalizer normalizer;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:veraprob/domain/enums/trip_status.dart';
-import 'package:veraprob/domain/enums/motion_state.dart';
+import 'package:veraprob/application/normalization/models/trip_status_view.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/application/projections/models/attention_state.dart';
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
 
@@ -12,7 +12,7 @@ import 'package:veraprob/presentation/shared/trip_status_theme.dart';
 /// - CRITICAL (emergency): 18px dot, red ring border, pulsing halo
 /// - isSelected: white glow (blurRadius 12, spreadRadius 4)
 class VehicleMarkerWidget extends StatelessWidget {
-  final TripStatus status;
+  final TripStatusView status;
   final String routeLabel;
   final double? heading;
   final MotionState? motionState;
@@ -137,7 +137,7 @@ class VehicleMarkerWidget extends StatelessWidget {
       ),
       child:
           (motionState == MotionState.dwellingAtStop ||
-              status == TripStatus.atStop)
+              status == TripStatusView.atStop)
           ? Icon(Icons.hail, size: isSelected ? 10 : 8, color: Colors.white)
           : null,
     );

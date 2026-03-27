@@ -2,12 +2,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../application/sla_audit/projections/contract_detail_view.dart';
 import '../../application/sla_audit/projections/contract_query_service.dart';
+import '../../application/sla_audit/projections/contract_status_view.dart';
 import '../../application/sla_audit/projections/contract_summary_view.dart';
 import '../../application/sla_audit/projections/sla_execution_item_view.dart';
 import '../../application/sla_audit/projections/sla_execution_query_service.dart';
 import '../../core/config/supabase_client.dart';
 import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/contract_status.dart';
 import '../../domain/sla_audit/execution_status.dart';
 
 /// Postgres implementation of [ContractQueryService].
@@ -28,7 +28,7 @@ class PostgresContractQueryService implements ContractQueryService {
   @override
   Future<List<ContractSummaryView>> listContracts({
     required String organizationId,
-    ContractStatus? status,
+    ContractStatusView? status,
   }) async {
     var query = _client
         .from('contracts')
@@ -214,7 +214,7 @@ class PostgresContractQueryService implements ContractQueryService {
       id: row['id'] as String,
       name: row['name'] as String,
       contractorName: row['contractor_name'] as String,
-      status: ContractStatus.values.byName(row['status'] as String),
+      status: ContractStatusView.values.byName(row['status'] as String),
       validFromUtc: DateTime.parse(row['valid_from_utc'] as String).toUtc(),
       validUntilUtc: DateTime.parse(row['valid_until_utc'] as String).toUtc(),
       createdAtUtc: DateTime.parse(row['created_at_utc'] as String).toUtc(),

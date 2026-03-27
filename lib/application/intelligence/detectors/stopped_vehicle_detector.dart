@@ -2,8 +2,8 @@ import '../../../domain/entities/operational_trip.dart';
 import '../../../domain/entities/operational_warning.dart';
 import '../../../domain/entities/trip_event.dart';
 import '../../../domain/enums/trip_status.dart';
-import '../../../domain/entities/vehicle_operational_state.dart';
-import '../../../domain/enums/motion_state.dart';
+import '../../normalization/models/vehicle_operational_state.dart';
+import '../../normalization/models/motion_state.dart';
 import 'situation_detector.dart';
 
 /// Detects if a dispatched/enRoute vehicle is stopped for too long.

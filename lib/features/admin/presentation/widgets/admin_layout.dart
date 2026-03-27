@@ -136,16 +136,20 @@ class AdminLayout extends ConsumerWidget {
                               ref.read(adminIndexProvider.notifier).state =
                                   destIdx;
                               ref
-                                  .read(selectedContractIdProvider.notifier)
-                                  .state = null;
+                                      .read(selectedContractIdProvider.notifier)
+                                      .state =
+                                  null;
                             },
                           ),
                           if (ref.watch(selectedContractIdProvider) != null)
                             _InternalBackButton(
                               onBack: () =>
                                   ref
-                                      .read(selectedContractIdProvider.notifier)
-                                      .state = null,
+                                          .read(
+                                            selectedContractIdProvider.notifier,
+                                          )
+                                          .state =
+                                      null,
                             ),
                           Expanded(
                             child: IndexedStack(

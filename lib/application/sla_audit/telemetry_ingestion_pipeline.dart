@@ -1,7 +1,7 @@
-import '../../domain/entities/vehicle_operational_state.dart';
+import '../normalization/models/vehicle_operational_state.dart';
 import '../../domain/sla_audit/kinematic_guard.dart';
-import '../../domain/enums/connectivity_state.dart';
-import '../../domain/enums/motion_state.dart';
+import '../normalization/models/connectivity_state.dart';
+import '../normalization/models/motion_state.dart';
 import '../../domain/sla_audit/asset_status.dart';
 import '../../domain/sla_audit/asset_status_repository.dart';
 import '../../domain/sla_audit/canonical_fact.dart';
@@ -293,5 +293,4 @@ class TelemetryIngestionPipeline {
       source: fact.sourceAdapter,
     );
   }
-
 }

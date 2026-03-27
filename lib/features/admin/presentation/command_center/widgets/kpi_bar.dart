@@ -78,8 +78,7 @@ class KpiBar extends ConsumerWidget {
               value: '${summary.alerts}',
               label: 'Anomalias GPS',
               color: VeraProbColors.delayed,
-              isSelected:
-                  statusFilter == FleetStatusFilter.kinematicAnomaly,
+              isSelected: statusFilter == FleetStatusFilter.kinematicAnomaly,
               onTap: () => ref
                   .read(commandCenterFilterProvider.notifier)
                   .setStatusFilter(FleetStatusFilter.kinematicAnomaly),

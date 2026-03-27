@@ -31,7 +31,9 @@ class VeraProbColors {
 
   // ── Premium Text Hierarchy ──────────────────────────────
   static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFF94A3B8); // Slate-400 ~4.5:1 on #0F172A (WCAG AA)
+  static const Color textSecondary = Color(
+    0xFF94A3B8,
+  ); // Slate-400 ~4.5:1 on #0F172A (WCAG AA)
   static const Color textDisabled = Color(0xFF475569);
 
   // ── Semantic ─────────────────────────────────────────

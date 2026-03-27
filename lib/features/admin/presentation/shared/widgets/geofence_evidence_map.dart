@@ -81,8 +81,9 @@ class GeofenceEvidenceMap extends StatelessWidget {
                     radius: geofenceRadiusMeters,
                     useRadiusInMeter: true,
                     color: VeraProbColors.scheduled.withValues(alpha: 0.12),
-                    borderColor:
-                        VeraProbColors.scheduled.withValues(alpha: 0.6),
+                    borderColor: VeraProbColors.scheduled.withValues(
+                      alpha: 0.6,
+                    ),
                     borderStrokeWidth: 1.5,
                   ),
                 ],
@@ -207,10 +208,26 @@ class GeofenceEvidenceMap extends StatelessWidget {
     if (kIsWeb) return tileWidget;
     return ColorFiltered(
       colorFilter: const ColorFilter.matrix([
-        -0.8, 0.0, 0.0, 0.0, 40.0,
-        0.0, -0.8, 0.0, 0.0, 40.0,
-        0.0, 0.0, -0.8, 0.0, 50.0,
-        0.0, 0.0, 0.0, 1.0, 0.0,
+        -0.8,
+        0.0,
+        0.0,
+        0.0,
+        40.0,
+        0.0,
+        -0.8,
+        0.0,
+        0.0,
+        40.0,
+        0.0,
+        0.0,
+        -0.8,
+        0.0,
+        50.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
       ]),
       child: tileWidget,
     );

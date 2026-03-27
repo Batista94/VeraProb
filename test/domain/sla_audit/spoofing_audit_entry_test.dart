@@ -9,7 +9,10 @@ void main() {
 
   const riskScore = SpoofingRiskScore(
     score: 0.85,
-    signals: [SpoofingSignal.zeroEntropyAccuracy, SpoofingSignal.staticPositionWhileMoving],
+    signals: [
+      SpoofingSignal.zeroEntropyAccuracy,
+      SpoofingSignal.staticPositionWhileMoving,
+    ],
   );
 
   group('SpoofingAuditEntry.create', () {

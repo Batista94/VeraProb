@@ -609,10 +609,7 @@ class _EvidenceMiniMapSection extends ConsumerWidget {
 
     if (vehicleState == null) return const SizedBox.shrink();
 
-    final vehiclePos = LatLng(
-      vehicleState.latitude,
-      vehicleState.longitude,
-    );
+    final vehiclePos = LatLng(vehicleState.latitude, vehicleState.longitude);
 
     return _CollapsibleSection(
       title: 'EVIDÊNCIA VISUAL',
@@ -657,7 +654,11 @@ class _CollapsibleSectionState extends State<_CollapsibleSection> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
-                Icon(widget.icon, size: 14, color: VeraProbColors.textSecondary),
+                Icon(
+                  widget.icon,
+                  size: 14,
+                  color: VeraProbColors.textSecondary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

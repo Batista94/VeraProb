@@ -10,7 +10,7 @@ import '../../application/sla_audit/projections/contractual_financial_snapshot_g
 import '../../application/sla_audit/projections/sla_execution_query_service.dart';
 import '../../application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
 import '../../application/sla_audit/projections/sla_execution_summary.dart';
-import '../../domain/entities/vehicle_operational_state.dart';
+import '../../application/normalization/models/vehicle_operational_state.dart';
 import '../../domain/sla_audit/execution_status.dart';
 import '../../infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import '../../infrastructure/persistence/persistence_mode.dart';

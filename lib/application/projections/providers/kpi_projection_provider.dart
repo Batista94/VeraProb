@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../state/providers/fleet_providers.dart';
-import '../../../domain/enums/connectivity_state.dart';
+import '../../normalization/models/connectivity_state.dart';
 import '../models/command_center_kpis.dart';
 
 /// Provides high-level aggregated KPIs for the command center.

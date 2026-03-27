@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../normalization/models/trip_status_view.dart';
 import '../../../domain/enums/trip_status.dart';
 import '../../../state/providers/fleet_providers.dart';
 import '../models/attention_state.dart';
@@ -67,7 +68,7 @@ final fleetAttentionProjectionProvider = Provider<FleetAttentionProjection>((
   for (final state in states) {
     final trip = tripsByTripId[state.tripId];
     final attention = deriveAttentionState(
-      status: trip?.status ?? TripStatus.enRoute,
+      status: _mapToView(trip?.status ?? TripStatus.enRoute),
       severityScore: trip?.severityScore ?? 0,
       connectivity: state.connectivityState,
       adherence: state.routeAdherence,
@@ -111,3 +112,7 @@ final fleetAttentionProjectionProvider = Provider<FleetAttentionProjection>((
     vehicleStates: vehicleStates,
   );
 });
+
+TripStatusView _mapToView(TripStatus domain) {
+  return TripStatusView.values.byName(domain.name);
+}

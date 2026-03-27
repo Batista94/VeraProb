@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
-import '../enums/motion_state.dart';
-import '../enums/connectivity_state.dart';
-import '../enums/route_adherence.dart';
+import 'motion_state.dart';
+import 'connectivity_state.dart';
+import 'route_adherence.dart';
 
 /// The stabilized operational view of a vehicle at a point in time.
 ///

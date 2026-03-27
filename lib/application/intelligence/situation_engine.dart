@@ -7,7 +7,7 @@ import 'detectors/signal_loss_detector.dart';
 import 'detectors/situation_detector.dart';
 import 'detectors/stopped_vehicle_detector.dart';
 
-import '../../../domain/entities/vehicle_operational_state.dart';
+import '../normalization/models/vehicle_operational_state.dart';
 
 /// The core intelligence engine that analyzes active trips and detects issues.
 ///

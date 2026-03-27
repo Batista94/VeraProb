@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../domain/sla_audit/contract_status.dart';
+import 'contract_status_view.dart';
 
 /// Read model: individual [Contract] row for listing screens.
 ///
@@ -15,7 +15,7 @@ class ContractSummaryView extends Equatable {
   final String id;
   final String name;
   final String contractorName;
-  final ContractStatus status;
+  final ContractStatusView status;
   final DateTime validFromUtc;
   final DateTime validUntilUtc;
   final DateTime createdAtUtc;

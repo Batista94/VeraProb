@@ -121,5 +121,4 @@ class SpoofingDetector {
     // Moving vehicle with exactly identical heading in 15+ pings
     return stdDev < 0.1;
   }
-
 }

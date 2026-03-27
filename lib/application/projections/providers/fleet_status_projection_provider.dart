@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/entities/vehicle_operational_state.dart';
-import '../../../domain/enums/connectivity_state.dart';
+import '../../normalization/models/vehicle_operational_state.dart';
+import '../../normalization/models/connectivity_state.dart';
+import '../../normalization/models/route_adherence.dart';
 import '../../../domain/enums/trip_status.dart';
-import '../../../domain/enums/route_adherence.dart';
 import '../../../state/providers/fleet_providers.dart';
 import 'command_center_filter_provider.dart';
 import '../models/fleet_status_projection.dart';

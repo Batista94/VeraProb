@@ -33,9 +33,7 @@ class AlertImpactCalculator {
   /// Computes financial impact for a no-show alert.
   ///
   /// Uses `baseTripValue × noShowPenaltyMultiplier` from [SLAPenalties].
-  static AlertFinancialImpact forNoShow({
-    required SLAPenalties penalties,
-  }) {
+  static AlertFinancialImpact forNoShow({required SLAPenalties penalties}) {
     return AlertFinancialImpact.noShow(
       baseTripValue: penalties.baseTripValue,
       noShowMultiplier: penalties.noShowPenaltyMultiplier,

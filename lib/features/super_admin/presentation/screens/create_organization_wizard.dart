@@ -255,7 +255,10 @@ class _CreateOrganizationWizardState
     } on DomainException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: VeraProbColors.error),
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: VeraProbColors.error,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -275,7 +278,11 @@ class _CreateOrganizationWizardState
     ScaffoldMessengerState messenger,
   ) {
     return AlertDialog(
-      icon: const Icon(Icons.check_circle, color: VeraProbColors.success, size: 48),
+      icon: const Icon(
+        Icons.check_circle,
+        color: VeraProbColors.success,
+        size: 48,
+      ),
       title: const Text('Organização Criada!'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -317,12 +324,18 @@ class _CreateOrganizationWizardState
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: VeraProbColors.warning.withValues(alpha: 0.5)),
+              border: Border.all(
+                color: VeraProbColors.warning.withValues(alpha: 0.5),
+              ),
             ),
             child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline, size: 16, color: VeraProbColors.warning),
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: VeraProbColors.warning,
+                ),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -559,7 +572,11 @@ class _Step1FiscalData extends StatelessWidget {
               padding: const EdgeInsets.only(top: 6, left: 4),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle, size: 14, color: VeraProbColors.success),
+                  const Icon(
+                    Icons.check_circle,
+                    size: 14,
+                    color: VeraProbColors.success,
+                  ),
                   const SizedBox(width: 4),
                   const Text(
                     'Dados preenchidos via ReceitaWS',
@@ -578,7 +595,10 @@ class _Step1FiscalData extends StatelessWidget {
                     const SizedBox(width: 4),
                     const Text(
                       'Empresa inativa na Receita Federal',
-                      style: TextStyle(fontSize: 12, color: VeraProbColors.warning),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: VeraProbColors.warning,
+                      ),
                     ),
                   ],
                 ],
@@ -652,7 +672,11 @@ class _Step2Limits extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.business, size: 16, color: VeraProbColors.secondary),
+                  const Icon(
+                    Icons.business,
+                    size: 16,
+                    color: VeraProbColors.secondary,
+                  ),
                   const SizedBox(width: 8),
                   Text('$tradeName — Plano $planLabel'),
                 ],
@@ -778,11 +802,17 @@ class _Step3AdminInvite extends StatelessWidget {
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: VeraProbColors.warning.withValues(alpha: 0.5)),
+              border: Border.all(
+                color: VeraProbColors.warning.withValues(alpha: 0.5),
+              ),
             ),
             child: const Row(
               children: [
-                Icon(Icons.info_outline, size: 16, color: VeraProbColors.warning),
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: VeraProbColors.warning,
+                ),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -818,7 +848,10 @@ class _SummaryRow extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: VeraProbColors.secondary),
           const SizedBox(width: 6),
-          Text('$label: ', style: const TextStyle(color: VeraProbColors.textSecondary)),
+          Text(
+            '$label: ',
+            style: const TextStyle(color: VeraProbColors.textSecondary),
+          ),
           Flexible(
             child: Text(
               value,

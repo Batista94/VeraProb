@@ -1,14 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/projections/models/attention_state.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
-import 'package:veraprob/domain/enums/route_adherence.dart';
-import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/route_adherence.dart';
+import 'package:veraprob/application/normalization/models/trip_status_view.dart';
 
 void main() {
   group('deriveAttentionState', () {
     // Helper for the common "normal" baseline
     AttentionState derive({
-      TripStatus status = TripStatus.enRoute,
+      TripStatusView status = TripStatusView.enRoute,
       int severityScore = 0,
       ConnectivityState connectivity = ConnectivityState.healthy,
       RouteAdherence adherence = RouteAdherence.onRoute,
@@ -36,15 +36,15 @@ void main() {
     });
 
     test('status interrupted → CRITICAL', () {
-      expect(derive(status: TripStatus.interrupted), AttentionState.critical);
+      expect(derive(status: TripStatusView.interrupted), AttentionState.critical);
     });
 
     test('status noShow → CRITICAL', () {
-      expect(derive(status: TripStatus.noShow), AttentionState.critical);
+      expect(derive(status: TripStatusView.noShow), AttentionState.critical);
     });
 
     test('status maintenance → CRITICAL', () {
-      expect(derive(status: TripStatus.maintenance), AttentionState.critical);
+      expect(derive(status: TripStatusView.maintenance), AttentionState.critical);
     });
 
     test('severity score exactly 50 → CRITICAL', () {
@@ -61,7 +61,7 @@ void main() {
       expect(
         derive(
           connectivity: ConnectivityState.signalLost,
-          status: TripStatus.delayed,
+          status: TripStatusView.delayed,
         ),
         AttentionState.critical,
       );
@@ -69,7 +69,7 @@ void main() {
 
     test('off-route overrides delayed status → CRITICAL not WARNING', () {
       expect(
-        derive(adherence: RouteAdherence.offRoute, status: TripStatus.delayed),
+        derive(adherence: RouteAdherence.offRoute, status: TripStatusView.delayed),
         AttentionState.critical,
       );
     });
@@ -77,7 +77,7 @@ void main() {
     // ── WARNING path ───────────────────────────────────────────────────────
 
     test('status delayed → WARNING', () {
-      expect(derive(status: TripStatus.delayed), AttentionState.warning);
+      expect(derive(status: TripStatusView.delayed), AttentionState.warning);
     });
 
     test('severity score exactly 30 → WARNING', () {
@@ -97,7 +97,7 @@ void main() {
     test('all normal signals → NORMAL', () {
       expect(
         derive(
-          status: TripStatus.enRoute,
+          status: TripStatusView.enRoute,
           severityScore: 0,
           connectivity: ConnectivityState.healthy,
           adherence: RouteAdherence.onRoute,
@@ -128,7 +128,7 @@ void main() {
 
     test('completed status with score 0 → NORMAL', () {
       expect(
-        derive(status: TripStatus.completed, severityScore: 0),
+        derive(status: TripStatusView.completed, severityScore: 0),
         AttentionState.normal,
       );
     });

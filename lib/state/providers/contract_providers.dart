@@ -14,7 +14,7 @@ import '../../application/sla_audit/projections/contract_query_service.dart';
 import '../../application/sla_audit/projections/contract_query_service_in_memory.dart';
 import '../../application/sla_audit/projections/contract_summary_view.dart';
 import '../../application/sla_audit/shift_projection_service.dart';
-import '../../domain/sla_audit/contract_status.dart';
+import '../../application/sla_audit/projections/contract_status_view.dart';
 import '../../domain/services/rbac_service.dart';
 import '../../domain/sla_audit/contractual_rule_repository.dart';
 import '../../infrastructure/persistence/persistence_mode.dart';
@@ -148,7 +148,7 @@ final contractQueryServiceProvider = Provider<ContractQueryService>((ref) {
 final selectedContractIdProvider = StateProvider<String?>((ref) => null);
 
 /// Active status filter on the contracts list. Null = all statuses.
-final contractStatusFilterProvider = StateProvider<ContractStatus?>(
+final contractStatusFilterProvider = StateProvider<ContractStatusView?>(
   (ref) => null,
 );
 

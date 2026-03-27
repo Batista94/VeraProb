@@ -2,7 +2,7 @@ import '../../../domain/entities/operational_trip.dart';
 import '../../../domain/entities/operational_warning.dart';
 import '../../../domain/entities/trip_event.dart';
 
-import '../../../domain/entities/vehicle_operational_state.dart';
+import '../../normalization/models/vehicle_operational_state.dart';
 
 /// Base interface for all situation detectors.
 ///

@@ -1808,8 +1808,14 @@ class _DeclareContractPlanFormState
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: (MediaQuery.sizeOf(context).width * 0.94).clamp(360.0, 860.0),
-          maxHeight: (MediaQuery.sizeOf(context).height * 0.9).clamp(500.0, 740.0),
+          maxWidth: (MediaQuery.sizeOf(context).width * 0.94).clamp(
+            360.0,
+            860.0,
+          ),
+          maxHeight: (MediaQuery.sizeOf(context).height * 0.9).clamp(
+            500.0,
+            740.0,
+          ),
         ),
         child: Column(
           children: [

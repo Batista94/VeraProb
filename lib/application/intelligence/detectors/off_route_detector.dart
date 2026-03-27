@@ -1,8 +1,8 @@
 import '../../../domain/entities/operational_trip.dart';
 import '../../../domain/entities/operational_warning.dart';
 import '../../../domain/entities/trip_event.dart';
-import '../../../domain/entities/vehicle_operational_state.dart';
-import '../../../domain/enums/route_adherence.dart';
+import '../../normalization/models/vehicle_operational_state.dart';
+import '../../normalization/models/route_adherence.dart';
 import 'situation_detector.dart';
 
 /// Detects if a vehicle has deviated significantly from its assigned route.

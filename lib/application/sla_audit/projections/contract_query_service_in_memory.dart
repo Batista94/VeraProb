@@ -5,6 +5,7 @@ import '../../../domain/sla_audit/execution_status.dart';
 import '../../../domain/sla_audit/plan_declaration_repository.dart';
 import 'contract_detail_view.dart';
 import 'contract_query_service.dart';
+import 'contract_status_view.dart';
 import 'contract_summary_view.dart';
 import 'sla_execution_item_view.dart';
 import 'sla_execution_query_service.dart';
@@ -32,11 +33,11 @@ class ContractQueryServiceInMemory implements ContractQueryService {
   @override
   Future<List<ContractSummaryView>> listContracts({
     required String organizationId,
-    ContractStatus? status,
+    ContractStatusView? status,
   }) async {
     final contracts = await _contractRepository.findByOrganization(
       organizationId,
-      status: status,
+      status: _mapToDomainStatus(status),
     );
 
     final views = <ContractSummaryView>[];
@@ -116,33 +117,31 @@ class ContractQueryServiceInMemory implements ContractQueryService {
       organizationId: organizationId,
     );
     final planCount = plans.length;
-    final activePlanVersion = plans.isEmpty
-        ? 0
-        : plans.map((p) => p.planVersion).reduce((a, b) => a > b ? a : b);
+    final activePlanVersion =
+        plans.isEmpty
+            ? 0
+            : plans.map((p) => p.planVersion).reduce((a, b) => a > b ? a : b);
 
     // Execution state counters
     final allStates = await _executionStateRepository.findByContract(
       contractId,
       organizationId: organizationId,
     );
-    final totalSetsInProgress = allStates
-        .where((s) => s.status == ExecutionStatus.pending)
-        .length;
+    final totalSetsInProgress =
+        allStates.where((s) => s.status == ExecutionStatus.pending).length;
 
     // SLA health: executed / total * 100
     final totalSets = allStates.length;
-    final executedCount = allStates
-        .where((s) => s.status == ExecutionStatus.executed)
-        .length;
-    final slaHealthPercentage = totalSets == 0
-        ? 0.0
-        : (executedCount / totalSets) * 100.0;
+    final executedCount =
+        allStates.where((s) => s.status == ExecutionStatus.executed).length;
+    final slaHealthPercentage =
+        totalSets == 0 ? 0.0 : (executedCount / totalSets) * 100.0;
 
     return ContractSummaryView(
       id: contract.id,
       name: contract.name,
       contractorName: contract.contractorName,
-      status: contract.status,
+      status: _mapFromDomainStatus(contract.status),
       validFromUtc: contract.validFromUtc,
       validUntilUtc: contract.validUntilUtc,
       createdAtUtc: contract.createdAtUtc,
@@ -153,5 +152,14 @@ class ContractQueryServiceInMemory implements ContractQueryService {
       slaHealthPercentage: slaHealthPercentage,
       financialCeilingCents: contract.financialCeiling?.cents,
     );
+  }
+
+  ContractStatus? _mapToDomainStatus(ContractStatusView? view) {
+    if (view == null) return null;
+    return ContractStatus.values.byName(view.name);
+  }
+
+  ContractStatusView _mapFromDomainStatus(ContractStatus domain) {
+    return ContractStatusView.values.byName(domain.name);
   }
 }

@@ -140,8 +140,14 @@ class _SlaTemplateEditorDialogState
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: (MediaQuery.sizeOf(context).width * 0.92).clamp(320.0, 660.0),
-          maxHeight: (MediaQuery.sizeOf(context).height * 0.88).clamp(400.0, 740.0),
+          maxWidth: (MediaQuery.sizeOf(context).width * 0.92).clamp(
+            320.0,
+            660.0,
+          ),
+          maxHeight: (MediaQuery.sizeOf(context).height * 0.88).clamp(
+            400.0,
+            740.0,
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(24),

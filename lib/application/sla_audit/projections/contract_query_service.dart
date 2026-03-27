@@ -1,4 +1,4 @@
-import '../../../domain/sla_audit/contract_status.dart';
+import 'contract_status_view.dart';
 import 'contract_detail_view.dart';
 import 'contract_summary_view.dart';
 
@@ -15,7 +15,7 @@ abstract class ContractQueryService {
   /// Ordered by [ContractSummaryView.createdAtUtc] descending.
   Future<List<ContractSummaryView>> listContracts({
     required String organizationId,
-    ContractStatus? status,
+    ContractStatusView? status,
   });
 
   /// Returns the full detail view for a single contract.

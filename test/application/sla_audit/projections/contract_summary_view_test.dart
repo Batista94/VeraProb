@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
-import 'package:veraprob/domain/sla_audit/contract_status.dart';
 
 void main() {
   final base = DateTime.utc(2024, 1, 1);
@@ -9,7 +9,7 @@ void main() {
   final activated = DateTime.utc(2024, 1, 2);
 
   ContractSummaryView makeView({
-    ContractStatus status = ContractStatus.active,
+    ContractStatusView status = ContractStatusView.active,
     DateTime? activatedAtUtc,
     int? financialCeilingCents,
     double slaHealthPercentage = 80.0,
@@ -43,8 +43,8 @@ void main() {
     });
 
     test('different status produces inequality', () {
-      final v1 = makeView(status: ContractStatus.active);
-      final v2 = makeView(status: ContractStatus.closed);
+      final v1 = makeView(status: ContractStatusView.active);
+      final v2 = makeView(status: ContractStatusView.closed);
       expect(v1, isNot(equals(v2)));
     });
 

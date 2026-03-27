@@ -22,7 +22,11 @@ class TenantHealthPanel extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: VeraProbColors.error),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: VeraProbColors.error,
+            ),
             const SizedBox(height: 12),
             Text('Erro ao carregar tenants: $err'),
             const SizedBox(height: 12),
@@ -52,11 +56,18 @@ class _TenantTable extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.business_outlined, size: 64, color: VeraProbColors.textDisabled),
+            Icon(
+              Icons.business_outlined,
+              size: 64,
+              color: VeraProbColors.textDisabled,
+            ),
             SizedBox(height: 16),
             Text(
               'Nenhum tenant cadastrado.',
-              style: TextStyle(fontSize: 16, color: VeraProbColors.textSecondary),
+              style: TextStyle(
+                fontSize: 16,
+                color: VeraProbColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -122,7 +133,10 @@ class _TenantTable extends StatelessWidget {
               if (t.legalName != null)
                 Text(
                   t.legalName!,
-                  style: const TextStyle(fontSize: 11, color: VeraProbColors.textDisabled),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: VeraProbColors.textDisabled,
+                  ),
                 ),
             ],
           ),
@@ -140,7 +154,9 @@ class _TenantTable extends StatelessWidget {
             child: Text(
               t.isActive ? 'Ativo' : 'Inativo',
               style: TextStyle(
-                color: t.isActive ? VeraProbColors.success : VeraProbColors.error,
+                color: t.isActive
+                    ? VeraProbColors.success
+                    : VeraProbColors.error,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -155,7 +171,9 @@ class _TenantTable extends StatelessWidget {
                 ? _formatDateTime(t.lastTelemetryAt!)
                 : '—',
             style: TextStyle(
-              color: t.lastTelemetryAt == null ? VeraProbColors.textDisabled : null,
+              color: t.lastTelemetryAt == null
+                  ? VeraProbColors.textDisabled
+                  : null,
             ),
           ),
         ),

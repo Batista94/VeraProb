@@ -9,7 +9,7 @@ import '../../data/services/fleet_simulation_service.dart';
 import '../../domain/entities/operational_trip.dart';
 import '../../domain/sla_audit/sla_ledger_entry.dart';
 import '../../domain/entities/vehicle_position.dart';
-import '../../domain/entities/vehicle_operational_state.dart';
+import '../../application/normalization/models/vehicle_operational_state.dart';
 import '../../application/audit/audit_service.dart';
 import '../../application/normalization/operational_state_normalizer.dart';
 import '../../application/adapters/operational_data_provider.dart';

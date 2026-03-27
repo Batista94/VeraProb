@@ -1,11 +1,11 @@
 import 'dart:collection';
 import '../../core/utils/geo_math.dart';
 import '../../domain/entities/vehicle_position.dart';
-import '../../domain/entities/vehicle_operational_state.dart';
 import '../../domain/entities/stop.dart';
-import '../../domain/enums/motion_state.dart';
-import '../../domain/enums/connectivity_state.dart';
-import '../../domain/enums/route_adherence.dart';
+import 'models/vehicle_operational_state.dart';
+import 'models/motion_state.dart';
+import 'models/connectivity_state.dart';
+import 'models/route_adherence.dart';
 
 /// Converts raw GPS telemetry into stabilized operational state.
 ///
@@ -303,7 +303,12 @@ class OperationalStateNormalizer {
     Stop? nearest;
 
     for (final stop in stops) {
-      final dist = GeoMath.haversineMeters(lat, lng, stop.latitude, stop.longitude);
+      final dist = GeoMath.haversineMeters(
+        lat,
+        lng,
+        stop.latitude,
+        stop.longitude,
+      );
       if (dist < minDist) {
         minDist = dist;
         nearest = stop;
@@ -315,5 +320,4 @@ class OperationalStateNormalizer {
     }
     return null;
   }
-
 }

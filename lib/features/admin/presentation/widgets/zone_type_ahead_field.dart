@@ -226,7 +226,10 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: 280,
-                maxWidth: (MediaQuery.sizeOf(context).width * 0.9).clamp(240.0, 480.0),
+                maxWidth: (MediaQuery.sizeOf(context).width * 0.9).clamp(
+                  240.0,
+                  480.0,
+                ),
               ),
               child: ListView.builder(
                 padding: EdgeInsets.zero,
