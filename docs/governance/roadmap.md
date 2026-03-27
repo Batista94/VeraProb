@@ -30,6 +30,8 @@
 - **[x] 9.6.A.1 — Edge Proxy Migration:** ✅ `service_role` removed from Flutter WASM bundle. Edge Function `super-admin-proxy` holds key in `Deno.env`, validates `super_admin` JWT claim server-side. Migration `20260417000001_super_admin_proxy_rls.sql` revokes direct view access. 8 unit tests. **1062 passing · 0 failures.**
   - **Next action:** Deploy — `supabase functions deploy super-admin-proxy` + manual JWT verify.
 - **[ ] 9.6.A.2 — MFA for SuperAdmin:** TOTP enforcement + JWT Circuit Breakers. Next step.
+- **[ARCH] Row Level Security (RLS) Implementation:** Ativar RLS em 100% das tabelas operacionais, garantindo isolamento total de dados entre diferentes `organization_id`.
+- **[ARCH] Multi-Level Auth Flow:** Definir a distinção lógica no banco entre SuperAdmin (VeraProb), Tenant Admin (Diretor da Empresa) e Operador.
 - **Entity Alias Mapping (UX):** Global translation layer from UUIDs to friendly names (Plates, Drivers, Customers) in the UI.
 - **[UX] Full Login Localization (PT-BR) & Alias Preview:** Full localization and removal of technical IDs from visual preview on the login screen.
 - **[UX] WCAG Contrast Overhaul:** Raise global luminosity of secondary texts (e.g., from Zinc-600 to Zinc-400) to ensure readability in high-luminosity OCC environments.
@@ -59,6 +61,13 @@
 - **Hard Quota Enforcement:** Database triggers for `max_vehicles` and `max_contracts` limits.
 - **[BIZ] Predictive Tenant Provisioning:** SuperAdmin Wizard logic for auto-filling limits based on Selected Plan.
 - **[UX] Login Split-Screen Refactor:** Transition to split-screen (40/60) Desktop layout to establish Forensic Authority.
+- **[UX] Smart CNPJ Protocol:** Implementar máscara dinâmica (00.000.000/0000-00), trava de unicidade no banco (Unique Constraint) e validação de dígito verificador.
+- **[UX] Global Info Tooltips:** Substituição de descrições extensas por ícones de informação flutuantes para reduzir a carga cognitiva do operador e limpeza visual.
+- **[UX] Searchable Entity Mapping:** Unificar a lógica de busca/filtro por Nome e CNPJ no cadastro de contratos e tenants.
+- **[UX] Universal CSV Importer (Bootstrap Edition):** Interface de mapeamento dinâmico de colunas para ingestão de qualquer rastreador sem necessidade de código customizado por tenant.
+- **[UX] Smart Contextual Geocoding:** Camada de tradução de coordenadas usando OpenStreetMap (Nominatim) + Queries Espaciais no banco para exibir nomes de zonas e endereços humanos em vez de Lat/Long.
+- **[BIZ] Manual CSV Importer (V1):** Interface básica para upload e mapeamento manual de colunas de telemetria para validação do motor.
+- **[BIZ] Tenant Admin Invitations:** Sistema de convites via e-mail (Resend) para o primeiro acesso de gestores de empresas.
 
 ---
 
@@ -69,6 +78,18 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 
 ### Checklist "READY FOR FIRST TENANT"
 
+- [ ] **Relatório PDF em nível 'Executive Grade'** com Sumário de ROI.
+- [ ] **Validação rigorosa de CNPJ** (Máscara + Unicidade) em todo o sistema.
+- [ ] **Função de Reenviar Convite e Arquivamento de Tenants** ativa.
+- [ ] **Importador de contratos via CSV** com validador de dados.
+- [ ] **Importador Universal de CSV** funcional com mapeamento persistente por tenant.
+- [ ] **Relatório PDF em formato de 'Certificado'** com Sumário Executivo.
+- [ ] **Bot de evidências (Telegram)** integrado à Fila Auditora.
+- [ ] **Histórico de Meta-Auditoria** ativo para alteração de regras SLA.
+- [ ] **RLS validada** e testada contra vazamento de dados entre tenants.
+- [ ] **Fluxo de convite e ativação de conta** para novos administradores funcional.
+- [ ] **Banco de dados preparado com organization_id** em todas as tabelas transacionais.
+- [ ] **Tooltips de interface** aplicados em 100% dos campos complexos.
 - [~] MFA and Edge Proxy active (Total removal of `service_role`) — Edge Proxy ✅ done (9.6.A.1), MFA pending (9.6.A.2).
 - [ ] Entity Alias Mapping implemented in 100% of operational screens.
 - [ ] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations.
@@ -105,6 +126,11 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 ### [ ] Phase 10.4 — OCC UX Polish (Diferential Refinement)
 
 - Cognitive load audit · Verdict traceable in ≤1 click · WCAG 2.2 AA.
+- **[UX] Forensic Audit Context:** Enriquecer o card da Fila Auditora com Histórico de Recorrência (ex: '3ª infração deste veículo/motorista no mês') e visualização comparativa direta entre o dado observado e o limite contratual.
+- **[UX] Actionable Verdicts:** Alterar linguagem passiva ('Validar/Rejeitar') para linguagem de autoridade ('Selar Veredito' / 'Solicitar Mais Provas').
+- **[BIZ] Telegram Evidence Bot Integration:** Gateway gratuito para motoristas enviarem fotos/provas preventivas diretamente para o card de auditoria via Telegram API (Custo R$ 0).
+- **[UX] Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz Policial', 'Parada Autorizada') que preenchem justificativa e anexam regras de tolerância automaticamente.
+- **[UX] Ingestion Health Monitor:** Widget de integridade que sinaliza 'Gaps' de sinal ou falhas de hardware antes da geração do relatório final.
 - **[UX] Invite Link UX Masking:** Replace tokenized raw URLs with a professional invite modal featuring "Copy to Clipboard" and "Access Credential" visual.
 - **[BIZ] Contextual Legal Acceptance:** Block first access until Tenant Admin accepts Terms of Use and Privacy Policy (Telemetry-specific).
 - **[UX] Predictive SLA Breach Alerts:** Monitoring interface for imminent risk (ETA vs SLA calculation) to allow manager action before contract violation.
@@ -121,8 +147,9 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 
 *This phase separates simple SaaS clones from a hardened forensic auditing tool.*
 
-- **Cryptographic Evidence Export (PDF):** Infringement reports in PDF containing SHA-256 Hash (INV-23) visible in footer for legal validity.
-- **Tenant Brand Identity:** Logo upload and primary color definition for exported reports (Basic white-label for credibility).
+- **[BIZ] Executive-Grade 'Audit Certificate' PDF:** Motor de PDF (Dart pdf package) para gerar dossiês com Sumário de ROI, Selo de Autenticidade e Hash SHA-256 (INV-23) em destaque. Refatoração total do exportador de relatórios com Branding do Tenant (Logo/Cores) e remoção de IDs técnicos.
+- **[BIZ] Evidence Package (One-Click Dossier):** Função de exportação consolidada contendo Telemetria + Provas Fotográficas + Snapshot do Contrato assinado.
+- **[BIZ] Tenant Lifecycle Management:** Funções de 'Reenviar Convite', 'Editar Dados' e 'Arquivar Tenant' (Soft Delete para preservar a Cadeia de Custódia de dados passados).
 - **Automated Billing Provisioning (Stripe/Stax):** Integration/placeholder for billing account provisioning at Org creation.
 - **Support Impersonation Security:** "Grant Support Access" button with mandatory audit log and auto-expiry.
 - **Tenant Heartbeat Dashboard:** SuperAdmin view of "Signal Health" (GPS success rate vs hardware failures).
@@ -133,11 +160,13 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 
 *Hardening the product against real-world operational challenges and financial disputes.*
 
+- **[BIZ] Bulk Contract Importer (CSV):** Implementar motor de carga em massa para contratos com etapa de Pre-flight Validation (exibe erros de formatação antes de gravar no banco).
 - **[BIZ] Human Verdict Affirmation:** Add 'Affirm Violation' (Seals Hash) or 'Inhibit Violation' (Mandatory comment) action buttons directly on the audit detail screen.
 - **[BIZ] Progressive Penalty Engine (INV-28):** Support for time-scaled fines that increase based on infringement duration.
 - **[BIZ] Penalty Stop-Loss Cap:** Maximum penalty limit field per event for legal and financial risk protection.
 - **[BIZ] Immutable Rule Snapshot:** Linking the 'exact version' of SLA rules to the verdict at the time of infringement to shield evidence.
-- **[BIZ] SLA Sandbox Simulator:** 'What-if' simulation tool in the SLA Model Library to predict financial impact of contractual rule changes.
+- **[BIZ] SLA Sandbox (ROI Simulator):** Lógica em SQL/Edge Functions para simular 'E se...' (What-if analysis) rodando novos modelos de SLA contra dados históricos para provar economia financeira.
+- **[BIZ] Carrier Performance Ranking:** Dashboard de 'Leaderboard' que classifica transportadores por índice de violações e conformidade contratual.
 - **[BIZ] Ingestion Health Monitor:** Real-time data integrity dashboard to detect telemetry gaps and hardware failures.
 - **[BIZ] Digital Audit Acknowledgement:** Carrier/driver fine acceptance workflow to accelerate billing cycles.
 - **[BIZ] One-Click Evidence Package:** Instant forensic dossier generator (Map + Telemetry + Hash + Contract) in PDF for defense against undue fines.
@@ -161,7 +190,9 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 *Hardening the platform for multi-national corporations and high-stakes auditing integrity.*
 
 - **[BIZ] Multi-Level Org Hierarchy:** Sub-tenant structure for large corporations (HQ > Branch > Cost Center) with rule inheritance and data isolation.
+- **[BIZ] Immutable Admin Log (Meta-Audit):** Implementar tabela de auditoria de sistema (Meta-Audit) para registrar quem alterou regras de SLA e configurações críticas, blindando o sistema contra fraude interna.
 - **[BIZ] Configuration Audit Log:** Immutable meta-audit of changes to SLA models, contracts, and permissions (Who changed the rule and when?).
+- **[BIZ] Rule-Version Snapshot:** Mecanismo que vincula a 'fotografia' exata da regra de SLA ao veredito no momento da infração, garantindo proteção jurídica retroativa.
 - **[BIZ] Systemic Fraud Detection:** Automatic behavioral alerts for operator deviations (e.g., excessive inhibitions for specific carriers).
 
 ---
