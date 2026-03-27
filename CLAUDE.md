@@ -22,11 +22,12 @@ VeraProb is an **Automated SLA Compliance & Financial Protection Platform** (the
 
 ## 📍 LIVE STATUS: Phase 9.6
 
-**Current Objective:** [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
+**Current Objective:** Security & Data Foundation (The Shield) — [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
 
-- **Status:** Phase 9.5 (SLA Template Library) completed ✅.
-- **Next Step:** Start implementation of `Kinematic Guard & Cockpit UI` (Phase 9.6).
+- **Done:** Phase 9.5 (SLA Template Library) ✅ · Phase 9.7 partial (Kinematic Guard INV-17, Alert Heuristics, GeoMath) ✅
+- **Next Step:** Implement **Phase 9.6** — Edge Proxy Migration (remove `service_role` from Flutter bundle), Entity Alias Mapping, MFA for SuperAdmin.
 - **Test Mandate:** 100% unit coverage for domain logic; manual validation for UX.
+- **SECURITY BLOCKER:** Do NOT advance to UI-only phases (9.7 remaining, 9.8) until Phase 9.6 Security is sealed. See [`security.md`](.claude/rules/security.md).
 
 ---
 
