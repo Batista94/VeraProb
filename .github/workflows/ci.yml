@@ -89,7 +89,7 @@ jobs:
         run: dart format --output=none --set-exit-if-changed .
 
       - name: Dependency Intelligence (Outdated Audit)
-        run: flutter pub outdated --no-pub --color
+        run: flutter pub outdated
 
       - name: VeraProb Forensic Scan
         run: |

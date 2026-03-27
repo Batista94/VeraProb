@@ -182,6 +182,7 @@ class PostgresContractualExecutionStateRepository
   ) async {
     await _client.from('execution_state_transitions').insert({
       'execution_state_id': state.id,
+      'organization_id': state.organizationId,
       'previous_status': previousStatus?.name,
       'new_status': state.status.name,
       'transitioned_at_utc': DateTime.now().toUtc().toIso8601String(),
