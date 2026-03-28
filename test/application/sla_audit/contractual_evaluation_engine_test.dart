@@ -706,7 +706,7 @@ void main() {
     group('Rules Evaluation', () {
       test('minGeofenceCoverage updates requiredDwell from config', () async {
         await seedPlanWithRules('c-dwell', 1, [
-          RuleSnapshotItem(
+          const RuleSnapshotItem(
             ruleId: 'r-dwell',
             ruleType: SlaRuleType.minGeofenceCoverage,
             config: {'min_dwell_seconds': 10},
@@ -742,7 +742,7 @@ void main() {
 
       test('excessiveSpeed rule triggers SANCTION_RECOMMENDED', () async {
         await seedPlanWithRules('c-speed', 1, [
-          RuleSnapshotItem(
+          const RuleSnapshotItem(
             ruleId: 'r-speed',
             ruleType: SlaRuleType.excessiveSpeed,
             config: {'max_speed_kmh': 60, 'fine_cents': 200000},
@@ -782,14 +782,14 @@ void main() {
         );
 
         await seedPlanWithRules('c-sort', 1, [
-          RuleSnapshotItem(
+          const RuleSnapshotItem(
             ruleId: 'r-2',
             ruleType: SlaRuleType.excessiveSpeed,
             config: {'max_speed_kmh': 10},
             ruleVersion: 1,
             evaluationOrder: 2,
           ),
-          RuleSnapshotItem(
+          const RuleSnapshotItem(
             ruleId: 'r-1',
             ruleType: SlaRuleType.minGeofenceCoverage,
             config: {'min_dwell_seconds': 100},

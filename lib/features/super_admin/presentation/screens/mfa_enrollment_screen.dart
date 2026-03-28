@@ -63,7 +63,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
 
       if (isNotEnabled && kDebugMode) {
         if (!mounted) return;
-        Navigator.of(context).pushAndRemoveUntil(
+        await Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const SuperAdminShell()),
           (_) => false,
         );
