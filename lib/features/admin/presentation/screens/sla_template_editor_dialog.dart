@@ -152,8 +152,7 @@ class _SlaTemplateEditorDialogState
   }
 
   void _handlePrimaryAction() {
-    final valid =
-        _formKeys[_currentStep].currentState?.validate() ?? false;
+    final valid = _formKeys[_currentStep].currentState?.validate() ?? false;
     if (!valid) return;
     if (_currentStep < 2) {
       setState(() => _currentStep++);
@@ -237,10 +236,7 @@ class _SlaTemplateEditorDialogState
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-              child: _WizardHeader(
-                currentStep: _currentStep,
-                isEdit: isEdit,
-              ),
+              child: _WizardHeader(currentStep: _currentStep, isEdit: isEdit),
             ),
             const Divider(height: 1, color: VeraProbColors.border),
             Expanded(
@@ -419,17 +415,17 @@ class _SlaTemplateEditorDialogState
               child: _currentStep < 2
                   ? const Text('Próximo')
                   : (_isSaving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(
-                              VeraProbColors.background,
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(
+                                VeraProbColors.background,
+                              ),
                             ),
-                          ),
-                        )
-                      : Text(isEdit ? 'Salvar' : 'Criar')),
+                          )
+                        : Text(isEdit ? 'Salvar' : 'Criar')),
             ),
           ],
         ),
@@ -473,11 +469,10 @@ class _WizardHeader extends StatelessWidget {
                 state: i < currentStep
                     ? _StepState.completed
                     : i == currentStep
-                        ? _StepState.active
-                        : _StepState.pending,
+                    ? _StepState.active
+                    : _StepState.pending,
               ),
-              if (i < 2)
-                _StepConnector(active: currentStep > i),
+              if (i < 2) _StepConnector(active: currentStep > i),
             ],
           ],
         ),

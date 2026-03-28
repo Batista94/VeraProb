@@ -213,25 +213,27 @@ void main() {
       expect(v1.evidenceHash, isNot(v2.evidenceHash));
     });
 
-    test('evidenceHash unchanged when no geofence — backwards compat (INV-7)',
-        () {
-      final withGeofence = VerdictEvidence.create(
-        clauseRef: 'no-show-penalty-rule-1',
-        ruleId: 'rule-001',
-        ruleVersion: 1,
-        primaryEvidenceLat: -23.5505,
-        primaryEvidenceLng: -46.6333,
-        primaryEvidenceTimestampUtc: validTimestamp,
-        deltaValue: 15.0,
-        thresholdValue: 0.0,
-        fineCents: const Money(150000),
-        confidenceScore: 100,
-      );
-      final withoutGeofence = makeValid();
-      // Both have identical core fields → same hash (geofence fields don't alter
-      // hash when null, ensuring old DB records remain valid)
-      expect(withGeofence.evidenceHash, withoutGeofence.evidenceHash);
-    });
+    test(
+      'evidenceHash unchanged when no geofence — backwards compat (INV-7)',
+      () {
+        final withGeofence = VerdictEvidence.create(
+          clauseRef: 'no-show-penalty-rule-1',
+          ruleId: 'rule-001',
+          ruleVersion: 1,
+          primaryEvidenceLat: -23.5505,
+          primaryEvidenceLng: -46.6333,
+          primaryEvidenceTimestampUtc: validTimestamp,
+          deltaValue: 15.0,
+          thresholdValue: 0.0,
+          fineCents: const Money(150000),
+          confidenceScore: 100,
+        );
+        final withoutGeofence = makeValid();
+        // Both have identical core fields → same hash (geofence fields don't alter
+        // hash when null, ensuring old DB records remain valid)
+        expect(withGeofence.evidenceHash, withoutGeofence.evidenceHash);
+      },
+    );
 
     test('toJson/fromJson round-trips geofence fields', () {
       final original = VerdictEvidence.create(
@@ -255,26 +257,28 @@ void main() {
       expect(restored.geofenceRadiusMeters, original.geofenceRadiusMeters);
     });
 
-    test('fromJson with old records missing geofence fields deserializes as null',
-        () {
-      final legacyJson = {
-        'clause_ref': 'ATR-001',
-        'rule_id': 'rule-legacy',
-        'rule_version': 1,
-        'primary_evidence_lat': -23.5505,
-        'primary_evidence_lng': -46.6333,
-        'primary_evidence_timestamp_utc': validTimestamp.toIso8601String(),
-        'evidence_hash': 'abc123',
-        'delta_value': 10.0,
-        'threshold_value': 0.0,
-        'fine_cents': 50000,
-        'confidence_score': 100,
-        // No geofence fields — simulates old DB row
-      };
-      final v = VerdictEvidence.fromJson(legacyJson);
-      expect(v.geofenceCenterLat, isNull);
-      expect(v.geofenceCenterLng, isNull);
-      expect(v.geofenceRadiusMeters, isNull);
-    });
+    test(
+      'fromJson with old records missing geofence fields deserializes as null',
+      () {
+        final legacyJson = {
+          'clause_ref': 'ATR-001',
+          'rule_id': 'rule-legacy',
+          'rule_version': 1,
+          'primary_evidence_lat': -23.5505,
+          'primary_evidence_lng': -46.6333,
+          'primary_evidence_timestamp_utc': validTimestamp.toIso8601String(),
+          'evidence_hash': 'abc123',
+          'delta_value': 10.0,
+          'threshold_value': 0.0,
+          'fine_cents': 50000,
+          'confidence_score': 100,
+          // No geofence fields — simulates old DB row
+        };
+        final v = VerdictEvidence.fromJson(legacyJson);
+        expect(v.geofenceCenterLat, isNull);
+        expect(v.geofenceCenterLng, isNull);
+        expect(v.geofenceRadiusMeters, isNull);
+      },
+    );
   });
 }

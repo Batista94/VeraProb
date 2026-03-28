@@ -58,7 +58,8 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
       }
     } on AuthApiException catch (e) {
       // Graceful degradation for Local Dev: if MFA is disabled on server, allow SuperAdmin access.
-      final isNotEnabled = e.code == 'mfa_totp_enroll_not_enabled' ||
+      final isNotEnabled =
+          e.code == 'mfa_totp_enroll_not_enabled' ||
           e.message.contains('MFA enroll is disabled');
 
       if (isNotEnabled && kDebugMode) {

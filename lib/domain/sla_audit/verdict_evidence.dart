@@ -165,8 +165,8 @@ class VerdictEvidence extends Equatable {
       confidenceScore: json['confidence_score'] as int,
       geofenceCenterLat: (json['geofence_center_lat'] as num?)?.toDouble(),
       geofenceCenterLng: (json['geofence_center_lng'] as num?)?.toDouble(),
-      geofenceRadiusMeters:
-          (json['geofence_radius_meters'] as num?)?.toDouble(),
+      geofenceRadiusMeters: (json['geofence_radius_meters'] as num?)
+          ?.toDouble(),
     );
   }
 

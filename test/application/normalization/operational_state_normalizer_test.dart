@@ -177,8 +177,8 @@ void main() {
 
   test('exercises buffer eviction when length > 3', () {
     for (int i = 1; i <= 5; i++) {
-        normalizer.normalize([createPing(i.toDouble(), i.toDouble())], now: now);
-        now = now.add(const Duration(seconds: 6));
+      normalizer.normalize([createPing(i.toDouble(), i.toDouble())], now: now);
+      now = now.add(const Duration(seconds: 6));
     }
     // No crash, buffer should have been pruned to 3
     final out = normalizer.normalize([createPing(6, 6)], now: now);

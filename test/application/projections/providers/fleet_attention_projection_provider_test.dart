@@ -40,7 +40,9 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         enrichedTripsProvider.overrideWithValue([mockTrip]),
-        normalizedStateProvider.overrideWith((ref) => Stream.value([mockState])),
+        normalizedStateProvider.overrideWith(
+          (ref) => Stream.value([mockState]),
+        ),
       ],
     );
 
@@ -48,58 +50,107 @@ void main() {
     await container.read(normalizedStateProvider.future);
     final projection = container.read(fleetAttentionProjectionProvider);
 
-    expect(projection.getContextFor('v-1').attentionState, AttentionState.normal);
+    expect(
+      projection.getContextFor('v-1').attentionState,
+      AttentionState.normal,
+    );
   });
 
-  test('FleetAttentionProjectionProvider activates focus mode when critical', () async {
-    final mockTrip = OperationalTrip(
-      id: 'trip-critical',
-      vehicleId: 'v-crit',
-      routeId: 'r-1',
-      scheduledStart: DateTime.now(),
-      status: TripStatus.interrupted,
-      severityScore: 100,
-      delaySeconds: 0,
-    );
+  test(
+    'FleetAttentionProjectionProvider activates focus mode when critical',
+    () async {
+      final mockTrip = OperationalTrip(
+        id: 'trip-critical',
+        vehicleId: 'v-crit',
+        routeId: 'r-1',
+        scheduledStart: DateTime.now(),
+        status: TripStatus.interrupted,
+        severityScore: 100,
+        delaySeconds: 0,
+      );
 
-    final mockState = VehicleOperationalState(
-      vehicleId: 'v-crit',
-      tripId: 'trip-critical',
-      latitude: 0,
-      longitude: 0,
-      smoothedSpeed: 0,
-      motionState: MotionState.stopped,
-      connectivityState: ConnectivityState.healthy,
-      routeAdherence: RouteAdherence.onRoute,
-      lastRawPingAt: DateTime.now(),
-      stateChangedAt: DateTime.now(),
-      confidence: 1.0,
-      source: 'test',
-    );
+      final mockState = VehicleOperationalState(
+        vehicleId: 'v-crit',
+        tripId: 'trip-critical',
+        latitude: 0,
+        longitude: 0,
+        smoothedSpeed: 0,
+        motionState: MotionState.stopped,
+        connectivityState: ConnectivityState.healthy,
+        routeAdherence: RouteAdherence.onRoute,
+        lastRawPingAt: DateTime.now(),
+        stateChangedAt: DateTime.now(),
+        confidence: 1.0,
+        source: 'test',
+      );
 
-    final container = ProviderContainer(
-      overrides: [
-        enrichedTripsProvider.overrideWithValue([mockTrip]),
-        normalizedStateProvider.overrideWith((ref) => Stream.value([mockState])),
-      ],
-    );
+      final container = ProviderContainer(
+        overrides: [
+          enrichedTripsProvider.overrideWithValue([mockTrip]),
+          normalizedStateProvider.overrideWith(
+            (ref) => Stream.value([mockState]),
+          ),
+        ],
+      );
 
-    await container.read(normalizedStateProvider.future);
-    final projection = container.read(fleetAttentionProjectionProvider);
+      await container.read(normalizedStateProvider.future);
+      final projection = container.read(fleetAttentionProjectionProvider);
 
-    expect(projection.isFocusModeActive, true);
-    expect(projection.getContextFor('v-crit').attentionState, AttentionState.critical);
-  });
+      expect(projection.isFocusModeActive, true);
+      expect(
+        projection.getContextFor('v-crit').attentionState,
+        AttentionState.critical,
+      );
+    },
+  );
 
   test('dimming occurs for normal vehicles when critical exists', () async {
     final trips = [
-        OperationalTrip(id: 't-crit', vehicleId: 'v-crit', routeId: 'r-1', scheduledStart: DateTime.now(), status: TripStatus.interrupted),
-        OperationalTrip(id: 't-norm', vehicleId: 'v-norm', routeId: 'r-2', scheduledStart: DateTime.now(), status: TripStatus.enRoute),
+      OperationalTrip(
+        id: 't-crit',
+        vehicleId: 'v-crit',
+        routeId: 'r-1',
+        scheduledStart: DateTime.now(),
+        status: TripStatus.interrupted,
+      ),
+      OperationalTrip(
+        id: 't-norm',
+        vehicleId: 'v-norm',
+        routeId: 'r-2',
+        scheduledStart: DateTime.now(),
+        status: TripStatus.enRoute,
+      ),
     ];
 
     final states = [
-        VehicleOperationalState(vehicleId: 'v-crit', tripId: 't-crit', latitude: 0, longitude: 0, smoothedSpeed: 0, motionState: MotionState.moving, connectivityState: ConnectivityState.healthy, routeAdherence: RouteAdherence.onRoute, lastRawPingAt: DateTime.now(), stateChangedAt: DateTime.now(), confidence: 1.0, source: 'test'),
-        VehicleOperationalState(vehicleId: 'v-norm', tripId: 't-norm', latitude: 0, longitude: 0, smoothedSpeed: 0, motionState: MotionState.moving, connectivityState: ConnectivityState.healthy, routeAdherence: RouteAdherence.onRoute, lastRawPingAt: DateTime.now(), stateChangedAt: DateTime.now(), confidence: 1.0, source: 'test'),
+      VehicleOperationalState(
+        vehicleId: 'v-crit',
+        tripId: 't-crit',
+        latitude: 0,
+        longitude: 0,
+        smoothedSpeed: 0,
+        motionState: MotionState.moving,
+        connectivityState: ConnectivityState.healthy,
+        routeAdherence: RouteAdherence.onRoute,
+        lastRawPingAt: DateTime.now(),
+        stateChangedAt: DateTime.now(),
+        confidence: 1.0,
+        source: 'test',
+      ),
+      VehicleOperationalState(
+        vehicleId: 'v-norm',
+        tripId: 't-norm',
+        latitude: 0,
+        longitude: 0,
+        smoothedSpeed: 0,
+        motionState: MotionState.moving,
+        connectivityState: ConnectivityState.healthy,
+        routeAdherence: RouteAdherence.onRoute,
+        lastRawPingAt: DateTime.now(),
+        stateChangedAt: DateTime.now(),
+        confidence: 1.0,
+        source: 'test',
+      ),
     ];
 
     final container = ProviderContainer(

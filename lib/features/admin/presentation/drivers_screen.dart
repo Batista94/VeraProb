@@ -869,7 +869,9 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: VeraProbColors.error.withValues(alpha: 0.08),
+                              color: VeraProbColors.error.withValues(
+                                alpha: 0.08,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: VeraProbColors.error.withValues(
