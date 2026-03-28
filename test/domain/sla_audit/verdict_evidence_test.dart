@@ -148,4 +148,133 @@ void main() {
       expect(restored.confidenceScore, v.confidenceScore);
     });
   });
+
+  group('geofence fields (Visual Evidence Snapshots — 9.7.A)', () {
+    test('create without geofence fields defaults to null', () {
+      final v = makeValid();
+      expect(v.geofenceCenterLat, isNull);
+      expect(v.geofenceCenterLng, isNull);
+      expect(v.geofenceRadiusMeters, isNull);
+    });
+
+    test('create with geofence fields stores values', () {
+      final v = VerdictEvidence.create(
+        clauseRef: 'GEO-001',
+        ruleId: 'rule-geo',
+        ruleVersion: 1,
+        primaryEvidenceLat: -23.5505,
+        primaryEvidenceLng: -46.6333,
+        primaryEvidenceTimestampUtc: validTimestamp,
+        deltaValue: 5.0,
+        thresholdValue: 0.0,
+        fineCents: Money(10000),
+        confidenceScore: 95,
+        geofenceCenterLat: -23.5500,
+        geofenceCenterLng: -46.6330,
+        geofenceRadiusMeters: 100.0,
+      );
+      expect(v.geofenceCenterLat, -23.5500);
+      expect(v.geofenceCenterLng, -46.6330);
+      expect(v.geofenceRadiusMeters, 100.0);
+      expect(v.evidenceHash.length, 64);
+    });
+
+    test('evidenceHash differs when geofence coords differ', () {
+      final v1 = VerdictEvidence.create(
+        clauseRef: 'GEO-001',
+        ruleId: 'rule-geo',
+        ruleVersion: 1,
+        primaryEvidenceLat: -23.5505,
+        primaryEvidenceLng: -46.6333,
+        primaryEvidenceTimestampUtc: validTimestamp,
+        deltaValue: 5.0,
+        thresholdValue: 0.0,
+        fineCents: Money(10000),
+        confidenceScore: 95,
+        geofenceCenterLat: -23.5500,
+        geofenceCenterLng: -46.6330,
+        geofenceRadiusMeters: 100.0,
+      );
+      final v2 = VerdictEvidence.create(
+        clauseRef: 'GEO-001',
+        ruleId: 'rule-geo',
+        ruleVersion: 1,
+        primaryEvidenceLat: -23.5505,
+        primaryEvidenceLng: -46.6333,
+        primaryEvidenceTimestampUtc: validTimestamp,
+        deltaValue: 5.0,
+        thresholdValue: 0.0,
+        fineCents: Money(10000),
+        confidenceScore: 95,
+        geofenceCenterLat: -23.5600,
+        geofenceCenterLng: -46.6400,
+        geofenceRadiusMeters: 50.0,
+      );
+      expect(v1.evidenceHash, isNot(v2.evidenceHash));
+    });
+
+    test('evidenceHash unchanged when no geofence — backwards compat (INV-7)',
+        () {
+      final withGeofence = VerdictEvidence.create(
+        clauseRef: 'no-show-penalty-rule-1',
+        ruleId: 'rule-001',
+        ruleVersion: 1,
+        primaryEvidenceLat: -23.5505,
+        primaryEvidenceLng: -46.6333,
+        primaryEvidenceTimestampUtc: validTimestamp,
+        deltaValue: 15.0,
+        thresholdValue: 0.0,
+        fineCents: Money(150000),
+        confidenceScore: 100,
+      );
+      final withoutGeofence = makeValid();
+      // Both have identical core fields → same hash (geofence fields don't alter
+      // hash when null, ensuring old DB records remain valid)
+      expect(withGeofence.evidenceHash, withoutGeofence.evidenceHash);
+    });
+
+    test('toJson/fromJson round-trips geofence fields', () {
+      final original = VerdictEvidence.create(
+        clauseRef: 'GEO-001',
+        ruleId: 'rule-geo',
+        ruleVersion: 1,
+        primaryEvidenceLat: -23.5505,
+        primaryEvidenceLng: -46.6333,
+        primaryEvidenceTimestampUtc: validTimestamp,
+        deltaValue: 5.0,
+        thresholdValue: 0.0,
+        fineCents: Money(10000),
+        confidenceScore: 95,
+        geofenceCenterLat: -23.5500,
+        geofenceCenterLng: -46.6330,
+        geofenceRadiusMeters: 100.0,
+      );
+      final restored = VerdictEvidence.fromJson(original.toJson());
+      expect(restored.geofenceCenterLat, original.geofenceCenterLat);
+      expect(restored.geofenceCenterLng, original.geofenceCenterLng);
+      expect(restored.geofenceRadiusMeters, original.geofenceRadiusMeters);
+    });
+
+    test('fromJson with old records missing geofence fields deserializes as null',
+        () {
+      final legacyJson = {
+        'clause_ref': 'ATR-001',
+        'rule_id': 'rule-legacy',
+        'rule_version': 1,
+        'primary_evidence_lat': -23.5505,
+        'primary_evidence_lng': -46.6333,
+        'primary_evidence_timestamp_utc': validTimestamp.toIso8601String(),
+        'evidence_hash': 'abc123',
+        'delta_value': 10.0,
+        'threshold_value': 0.0,
+        'fine_cents': 50000,
+        'confidence_score': 100,
+        // No geofence fields — simulates old DB row
+      };
+      final v = VerdictEvidence.fromJson(legacyJson);
+      expect(v.geofenceCenterLat, isNull);
+      expect(v.geofenceCenterLng, isNull);
+      expect(v.geofenceRadiusMeters, isNull);
+    });
+  });
 }

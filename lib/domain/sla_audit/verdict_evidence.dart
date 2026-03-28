@@ -42,6 +42,14 @@ class VerdictEvidence extends Equatable {
   /// Engine confidence in the verdict, 0-100. 100 = deterministic sweep.
   final int confidenceScore;
 
+  /// Optional geofence center coordinates (e.g., bus stop position).
+  /// Present for geofence-binding violations; null for other rule types.
+  final double? geofenceCenterLat;
+  final double? geofenceCenterLng;
+
+  /// Geofence radius in metres. Present when [geofenceCenterLat] is set.
+  final double? geofenceRadiusMeters;
+
   const VerdictEvidence._({
     required this.clauseRef,
     required this.ruleId,
@@ -54,6 +62,9 @@ class VerdictEvidence extends Equatable {
     required this.thresholdValue,
     required this.fineCents,
     required this.confidenceScore,
+    this.geofenceCenterLat,
+    this.geofenceCenterLng,
+    this.geofenceRadiusMeters,
   });
 
   /// Creates a new [VerdictEvidence], computing [evidenceHash] from the bundle.
@@ -70,6 +81,9 @@ class VerdictEvidence extends Equatable {
     required double thresholdValue,
     required Money fineCents,
     required int confidenceScore,
+    double? geofenceCenterLat,
+    double? geofenceCenterLng,
+    double? geofenceRadiusMeters,
   }) {
     if (clauseRef.isEmpty) {
       throw const DomainException('clauseRef must not be empty');
@@ -109,6 +123,9 @@ class VerdictEvidence extends Equatable {
       deltaValue: deltaValue,
       thresholdValue: thresholdValue,
       fineCents: fineCents.cents,
+      geofenceCenterLat: geofenceCenterLat,
+      geofenceCenterLng: geofenceCenterLng,
+      geofenceRadiusMeters: geofenceRadiusMeters,
     );
 
     return VerdictEvidence._(
@@ -123,10 +140,14 @@ class VerdictEvidence extends Equatable {
       thresholdValue: thresholdValue,
       fineCents: fineCents,
       confidenceScore: confidenceScore,
+      geofenceCenterLat: geofenceCenterLat,
+      geofenceCenterLng: geofenceCenterLng,
+      geofenceRadiusMeters: geofenceRadiusMeters,
     );
   }
 
   /// Reconstitutes from persistence. Does NOT recompute hash — trusts stored value.
+  /// Backwards-compatible: geofence fields are optional and default to null.
   factory VerdictEvidence.fromJson(Map<String, dynamic> json) {
     return VerdictEvidence._(
       clauseRef: json['clause_ref'] as String,
@@ -142,23 +163,35 @@ class VerdictEvidence extends Equatable {
       thresholdValue: (json['threshold_value'] as num).toDouble(),
       fineCents: Money(json['fine_cents'] as int),
       confidenceScore: json['confidence_score'] as int,
+      geofenceCenterLat: (json['geofence_center_lat'] as num?)?.toDouble(),
+      geofenceCenterLng: (json['geofence_center_lng'] as num?)?.toDouble(),
+      geofenceRadiusMeters:
+          (json['geofence_radius_meters'] as num?)?.toDouble(),
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'clause_ref': clauseRef,
-    'rule_id': ruleId,
-    'rule_version': ruleVersion,
-    'primary_evidence_lat': primaryEvidenceLat,
-    'primary_evidence_lng': primaryEvidenceLng,
-    'primary_evidence_timestamp_utc': primaryEvidenceTimestampUtc
-        .toIso8601String(),
-    'evidence_hash': evidenceHash,
-    'delta_value': deltaValue,
-    'threshold_value': thresholdValue,
-    'fine_cents': fineCents.cents,
-    'confidence_score': confidenceScore,
-  };
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{
+      'clause_ref': clauseRef,
+      'rule_id': ruleId,
+      'rule_version': ruleVersion,
+      'primary_evidence_lat': primaryEvidenceLat,
+      'primary_evidence_lng': primaryEvidenceLng,
+      'primary_evidence_timestamp_utc': primaryEvidenceTimestampUtc
+          .toIso8601String(),
+      'evidence_hash': evidenceHash,
+      'delta_value': deltaValue,
+      'threshold_value': thresholdValue,
+      'fine_cents': fineCents.cents,
+      'confidence_score': confidenceScore,
+    };
+    if (geofenceCenterLat != null) {
+      map['geofence_center_lat'] = geofenceCenterLat;
+      map['geofence_center_lng'] = geofenceCenterLng;
+      map['geofence_radius_meters'] = geofenceRadiusMeters;
+    }
+    return map;
+  }
 
   // ── Private hash helpers ──────────────────────────────────────────────────
 
@@ -173,8 +206,11 @@ class VerdictEvidence extends Equatable {
     required double deltaValue,
     required double thresholdValue,
     required int fineCents,
+    double? geofenceCenterLat,
+    double? geofenceCenterLng,
+    double? geofenceRadiusMeters,
   }) {
-    final canonical = {
+    final canonical = <String, dynamic>{
       'clause_ref': clauseRef,
       'rule_id': ruleId,
       'rule_version': ruleVersion,
@@ -185,6 +221,13 @@ class VerdictEvidence extends Equatable {
       'threshold_value': thresholdValue,
       'fine_cents': fineCents,
     };
+    // Geofence fields are included in the hash only when present.
+    // Null fields are omitted to preserve backwards-compat hash stability (INV-7).
+    if (geofenceCenterLat != null) {
+      canonical['geofence_center_lat'] = geofenceCenterLat;
+      canonical['geofence_center_lng'] = geofenceCenterLng;
+      canonical['geofence_radius_meters'] = geofenceRadiusMeters;
+    }
     return sha256.convert(utf8.encode(jsonEncode(canonical))).toString();
   }
 

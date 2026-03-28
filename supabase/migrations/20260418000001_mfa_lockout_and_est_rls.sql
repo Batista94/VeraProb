@@ -100,6 +100,7 @@ END;
 $$;
 
 -- C.2 Reset lockout on successful MFA verification.
+-- Uses UPDATE instead of DELETE to preserve append-only schema semantics (INV-DB).
 CREATE OR REPLACE FUNCTION public.reset_mfa_lockout(p_user_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
@@ -107,7 +108,11 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  DELETE FROM super_admin_mfa_lockouts WHERE user_id = p_user_id;
+  UPDATE super_admin_mfa_lockouts
+  SET failed_attempts = 0,
+      locked_until    = NULL,
+      last_attempt    = NOW()
+  WHERE user_id = p_user_id;
 END;
 $$;
 
@@ -131,9 +136,13 @@ BEGIN
     );
   END IF;
 
-  -- Auto-expire stale lockout
+  -- Auto-expire stale lockout: reset state instead of DELETE (INV-DB: append-only).
   IF v_row.locked_until IS NOT NULL AND v_row.locked_until <= NOW() THEN
-    DELETE FROM super_admin_mfa_lockouts WHERE user_id = p_user_id;
+    UPDATE super_admin_mfa_lockouts
+    SET failed_attempts = 0,
+        locked_until    = NULL,
+        last_attempt    = NOW()
+    WHERE user_id = p_user_id;
     RETURN jsonb_build_object(
       'failed_attempts', 0,
       'locked_until', NULL,

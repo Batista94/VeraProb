@@ -166,7 +166,12 @@
       "Bash(sed 's/.*CREATE TABLE[^a-z]*//')",
       "Bash(sed 's/\\(.*$//')",
       "Bash(find /c/Projects/VeraProb -type f -name *9.6* -o -type f -name *mfa*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(find C:/Projects/VeraProb -name *kinematic*test* -o -name *alert*test* -o -name *evidence*test*)",
+      "Bash(find test:*)",
+      "Bash(find lib/features/admin/presentation -name *drawer* -o -name *driver*)",
+      "Bash(find test/ -name *.dart)",
+      "Bash(find lib/features/super_admin -name *.dart)"
     ]
   },
   "model": "sonnet"

@@ -28,21 +28,21 @@ VeraProb is an **Automated SLA Compliance & Financial Protection Platform** (the
 
 ---
 
-## 📍 LIVE STATUS: Phase 9.7 (The Brain)
+## 📍 LIVE STATUS: Phase 9.8 (The Body)
 
-**Current Objective:** Core Forensic Intelligence — Finalizing Evidence Snapshots & Wizard. [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
+**Current Objective:** Resilience & Operational Hub — Sidebar Hub Refactor + Background Sync. [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
 
-- **Done:** Phase 9.5 ✅ · Phase 9.6 ✅ (Shield) · Kinematic Guard ✅ · GeoMath ✅
-- **Tests:** 1048 passing (+6 new MFA tests) · 23 skipped · 0 failures ✅
+- **Done:** Phase 9.5 ✅ · Phase 9.6 ✅ (Shield) · Phase 9.7 ✅ (Brain — Visual Evidence Snapshots, SLA Wizard, Dark Sync)
+- **Tests:** 1066 passing · 64 skipped · 0 failures ✅
 - **Next Up:**
-  1. **Visual Evidence Snapshots:** Mini-map generation in audit cards.
-  2. **Wait for Final RLS Audit:** Verification of data isolation between tenants.
+  1. **Sidebar Hub Refactor:** Consolidate setup menus into Admin Hub (<8 items in sidebar).
+  2. **Final RLS Audit:** Verification of data isolation between tenants.
 
 ---
 
 ## 🛠️ Assistant Commands
 
-- `/veraprob-pr-scanner` — Forensic PR scanner (run before any code review)
+- `/veraprob-pr-scanner` — Deterministic PR scanner: `bash scripts/pr_full_scanner.sh` (run before any code review)
 - `/hostile-defense-attorney` — RLS and financial verdict auditor
 - `/iot-chaos-simulator` — Chaos tests for EvaluationEngine
 - `/test-driven-development` — TDD workflow

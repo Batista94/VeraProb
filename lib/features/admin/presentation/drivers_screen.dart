@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/logger_service.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../shared/domain/entities/driver.dart';
 import '../../shared/providers.dart';
 import '../../../domain/enums/user_role.dart';
@@ -714,23 +715,22 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return SlideTransition(
       position: _slideAnimation,
       child: Material(
         elevation: 8,
+        color: VeraProbColors.surface,
         child: Container(
           width: 420,
-          color: Colors.white,
+          color: VeraProbColors.surface,
           child: Column(
             children: [
               // Drawer header
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200),
+                    bottom: BorderSide(color: VeraProbColors.border),
                   ),
                 ),
                 child: Row(
@@ -738,24 +738,20 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withValues(
-                          alpha: 0.4,
-                        ),
+                        color: VeraProbColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.person_add_alt_1,
                         size: 22,
-                        color: colorScheme.primary,
+                        color: VeraProbColors.primary,
                       ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(
                         'Cadastrar motorista',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: VeraProbTypography.sectionTitle,
                       ),
                     ),
                     IconButton(
@@ -779,10 +775,12 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF3E8FD),
+                            color: VeraProbColors.surfaceElevated,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: const Color(0xFFCE93D8),
+                              color: VeraProbColors.primary.withValues(
+                                alpha: 0.3,
+                              ),
                               width: 0.5,
                             ),
                           ),
@@ -792,15 +790,13 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
                               const Icon(
                                 Icons.info_outline,
                                 size: 18,
-                                color: Color(0xFF7B1FA2),
+                                color: VeraProbColors.primary,
                               ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                   'Este cadastro registra o motorista na frota. O acesso ao sistema é configurado separadamente.',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.purple.shade800,
+                                  style: VeraProbTypography.bodyMedium.copyWith(
                                     height: 1.4,
                                   ),
                                 ),
@@ -813,10 +809,8 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
                         // Name field
                         Text(
                           'Nome completo',
-                          style: TextStyle(
-                            fontSize: 13,
+                          style: VeraProbTypography.caption.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade800,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -842,10 +836,8 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
                         // CNH field
                         Text(
                           'Número da CNH',
-                          style: TextStyle(
-                            fontSize: 13,
+                          style: VeraProbTypography.caption.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade800,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -877,25 +869,27 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade50,
+                              color: VeraProbColors.error.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.red.shade200),
+                              border: Border.all(
+                                color: VeraProbColors.error.withValues(
+                                  alpha: 0.4,
+                                ),
+                              ),
                             ),
                             child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.warning_amber,
                                   size: 18,
-                                  color: Colors.red.shade700,
+                                  color: VeraProbColors.error,
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.red.shade800,
-                                    ),
+                                    style: VeraProbTypography.bodyMedium
+                                        .copyWith(color: VeraProbColors.error),
                                   ),
                                 ),
                               ],
@@ -910,8 +904,8 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
               // Drawer footer
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: VeraProbColors.border)),
                 ),
                 child: Row(
                   children: [
@@ -938,7 +932,9 @@ class _DriverFormDrawerState extends ConsumerState<_DriverFormDrawer>
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    VeraProbColors.background,
+                                  ),
                                 ),
                               )
                             : const Text(

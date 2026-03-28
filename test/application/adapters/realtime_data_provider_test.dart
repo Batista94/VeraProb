@@ -119,7 +119,9 @@ void main() {
         emissions.add(snapshot);
       });
 
-      final staleTimestamp = DateTime.now().subtract(const Duration(minutes: 5));
+      final staleTimestamp = DateTime.now().subtract(
+        const Duration(minutes: 5),
+      );
       final freshTimestamp = DateTime.now();
 
       final firstPayload = PostgresChangePayload(
@@ -163,7 +165,7 @@ void main() {
       // In the real world, this would be an update or another trip that is actually old data.
       provider.onPayloadReceived(stalePayload);
       await Future.delayed(Duration.zero);
-      
+
       // Since stalePayload is 5 mins old, it should be evicted immediately after being added to buffer.
       // So the snapshot will still only have trip-fresh.
       // BUT, since the snapshot (trip-fresh) is the same as the PREVIOUS snapshot (trip-fresh), it WON'T emit!

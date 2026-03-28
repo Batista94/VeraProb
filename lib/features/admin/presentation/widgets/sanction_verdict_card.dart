@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../application/sla_audit/projections/sanction_queue_item_view.dart';
-import '../../../../core/config/constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/enums/user_role.dart';
 import '../../../../state/providers/auditor_queue_providers.dart';
 import '../../../../state/providers/auth_providers.dart';
 import '../screens/widgets/investigation_modal.dart';
+import '../shared/widgets/geofence_evidence_map.dart';
 
 /// Business Verdict Tool card for the Auditor Queue.
 ///
@@ -202,12 +203,27 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
 
             const SizedBox(height: 12),
 
-            // Mini-map static thumbnail
+            // Mini-map with geofence overlay (INV-23 — visual evidence snapshot)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _MiniMapThumbnail(
-                lat: evidence.primaryEvidenceLat,
-                lng: evidence.primaryEvidenceLng,
+              child: Semantics(
+                label:
+                    'Local da infração: ${evidence.primaryEvidenceLat.toStringAsFixed(4)}, ${evidence.primaryEvidenceLng.toStringAsFixed(4)}',
+                excludeSemantics: true,
+                child: GeofenceEvidenceMap(
+                  infractionPoint: LatLng(
+                    evidence.primaryEvidenceLat,
+                    evidence.primaryEvidenceLng,
+                  ),
+                  geofenceCenter: evidence.geofenceCenterLat != null
+                      ? LatLng(
+                          evidence.geofenceCenterLat!,
+                          evidence.geofenceCenterLng!,
+                        )
+                      : null,
+                  geofenceRadiusMeters: evidence.geofenceRadiusMeters ?? 50.0,
+                  height: 120,
+                ),
               ),
             ),
 
@@ -409,87 +425,6 @@ class _FactColumn extends StatelessWidget {
           style: VeraProbTypography.dataValue.copyWith(color: valueColor),
         ),
       ],
-    );
-  }
-}
-
-class _MiniMapThumbnail extends StatelessWidget {
-  final double lat;
-  final double lng;
-  const _MiniMapThumbnail({required this.lat, required this.lng});
-
-  @override
-  Widget build(BuildContext context) {
-    const key = AppConstants.mapTilerKey;
-    const isKeyConfigured = key != 'get_your_own_key';
-
-    return Semantics(
-      label:
-          'Local da infração: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
-      excludeSemantics: true,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          height: 120,
-          width: double.infinity,
-          child: isKeyConfigured
-              ? Image.network(
-                  'https://api.maptiler.com/maps/dataviz-dark/static/'
-                  '$lng,$lat,14/560x240.png'
-                  '?key=$key'
-                  '&markers=$lng,$lat',
-                  fit: BoxFit.cover,
-                  loadingBuilder: (_, child, progress) {
-                    if (progress == null) return child;
-                    return Container(
-                      color: VeraProbColors.surfaceElevated,
-                      child: const Align(
-                        alignment: Alignment.topCenter,
-                        child: LinearProgressIndicator(
-                          backgroundColor: Colors.transparent,
-                          color: VeraProbColors.primary,
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, err, stack) =>
-                      _MapFallback(lat: lat, lng: lng),
-                )
-              : _MapFallback(lat: lat, lng: lng),
-        ),
-      ),
-    );
-  }
-}
-
-class _MapFallback extends StatelessWidget {
-  final double lat;
-  final double lng;
-  const _MapFallback({required this.lat, required this.lng});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: VeraProbColors.surfaceElevated,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.location_off,
-            size: 24,
-            color: VeraProbColors.textDisabled,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
-            style: const TextStyle(
-              fontSize: 11,
-              color: VeraProbColors.textDisabled,
-              fontFamily: 'monospace',
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

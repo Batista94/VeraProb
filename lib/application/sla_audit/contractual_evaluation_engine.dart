@@ -350,6 +350,9 @@ class ContractualEvaluationEngine {
             thresholdValue: 0.0,
             fineCents: Money(penaltyCents),
             confidenceScore: 100,
+            geofenceCenterLat: state.startLatitude,
+            geofenceCenterLng: state.startLongitude,
+            geofenceRadiusMeters: state.startRadiusMeters.toDouble(),
           );
 
           final recommendedEvent = SanctionRecommendedEvent(

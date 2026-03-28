@@ -705,19 +705,15 @@ void main() {
 
     group('Rules Evaluation', () {
       test('minGeofenceCoverage updates requiredDwell from config', () async {
-        await seedPlanWithRules(
-          'c-dwell',
-          1,
-          [
-            RuleSnapshotItem(
-              ruleId: 'r-dwell',
-              ruleType: SlaRuleType.minGeofenceCoverage,
-              config: {'min_dwell_seconds': 10},
-              ruleVersion: 1,
-              evaluationOrder: 1,
-            ),
-          ],
-        );
+        await seedPlanWithRules('c-dwell', 1, [
+          RuleSnapshotItem(
+            ruleId: 'r-dwell',
+            ruleType: SlaRuleType.minGeofenceCoverage,
+            config: {'min_dwell_seconds': 10},
+            ruleVersion: 1,
+            evaluationOrder: 1,
+          ),
+        ]);
         final state = makeExecState(contractId: 'c-dwell');
         await repo.save(state);
 
@@ -725,36 +721,52 @@ void main() {
         final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
         final t11 = DateTime.utc(2026, 3, 1, 6, 30, 11);
 
-        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
-        await engine.processVehicleState(vehicle, nowUtc: t11, organizationId: 'org-1');
+        await engine.processVehicleState(
+          vehicle,
+          nowUtc: t0,
+          organizationId: 'org-1',
+        );
+        await engine.processVehicleState(
+          vehicle,
+          nowUtc: t11,
+          organizationId: 'org-1',
+        );
 
         final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.executed, reason: 'Dwell 10s should be enough');
+        expect(
+          result!.status,
+          ExecutionStatus.executed,
+          reason: 'Dwell 10s should be enough',
+        );
       });
 
       test('excessiveSpeed rule triggers SANCTION_RECOMMENDED', () async {
-        await seedPlanWithRules(
-          'c-speed',
-          1,
-          [
-            RuleSnapshotItem(
-              ruleId: 'r-speed',
-              ruleType: SlaRuleType.excessiveSpeed,
-              config: {'max_speed_kmh': 60, 'fine_cents': 200000},
-              ruleVersion: 1,
-              evaluationOrder: 1,
-            ),
-          ],
-        );
+        await seedPlanWithRules('c-speed', 1, [
+          RuleSnapshotItem(
+            ruleId: 'r-speed',
+            ruleType: SlaRuleType.excessiveSpeed,
+            config: {'max_speed_kmh': 60, 'fine_cents': 200000},
+            ruleVersion: 1,
+            evaluationOrder: 1,
+          ),
+        ]);
         final state = makeExecState(contractId: 'c-speed');
         await repo.save(state);
 
-        final vehicle = makeVehicleState().copyWith(smoothedSpeed: 85.0); // 25kmh over limit
+        final vehicle = makeVehicleState().copyWith(
+          smoothedSpeed: 85.0,
+        ); // 25kmh over limit
         final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
 
-        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
+        await engine.processVehicleState(
+          vehicle,
+          nowUtc: t0,
+          organizationId: 'org-1',
+        );
 
-        final entries = ledger.entries.where((e) => e.type == 'SANCTION_RECOMMENDED').toList();
+        final entries = ledger.entries
+            .where((e) => e.type == 'SANCTION_RECOMMENDED')
+            .toList();
         expect(entries, hasLength(1));
         expect(entries.first.payload['verdict_evidence']['fine_cents'], 200000);
         expect(entries.first.payload['verdict_evidence']['delta_value'], 25.0);
@@ -769,26 +781,22 @@ void main() {
           traceRepo: traceRepo,
         );
 
-        await seedPlanWithRules(
-          'c-sort',
-          1,
-          [
-            RuleSnapshotItem(
-              ruleId: 'r-2',
-              ruleType: SlaRuleType.excessiveSpeed,
-              config: {'max_speed_kmh': 10},
-              ruleVersion: 1,
-              evaluationOrder: 2,
-            ),
-            RuleSnapshotItem(
-              ruleId: 'r-1',
-              ruleType: SlaRuleType.minGeofenceCoverage,
-              config: {'min_dwell_seconds': 100},
-              ruleVersion: 1,
-              evaluationOrder: 1,
-            ),
-          ],
-        );
+        await seedPlanWithRules('c-sort', 1, [
+          RuleSnapshotItem(
+            ruleId: 'r-2',
+            ruleType: SlaRuleType.excessiveSpeed,
+            config: {'max_speed_kmh': 10},
+            ruleVersion: 1,
+            evaluationOrder: 2,
+          ),
+          RuleSnapshotItem(
+            ruleId: 'r-1',
+            ruleType: SlaRuleType.minGeofenceCoverage,
+            config: {'min_dwell_seconds': 100},
+            ruleVersion: 1,
+            evaluationOrder: 1,
+          ),
+        ]);
         final state = makeExecState(contractId: 'c-sort');
         await repo.save(state);
 

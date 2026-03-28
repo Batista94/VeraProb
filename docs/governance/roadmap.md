@@ -17,16 +17,16 @@
 
 ---
 
-### [ ] Phase 9.7 — Core Forensic Intelligence (The Brain) · PARTIAL ✅
+### [x] Phase 9.7 — Core Forensic Intelligence (The Brain) ✅ COMPLETE
 
 - **[x] Kinematic Guard (INV-17):** ✅ Physical validation ($v = \Delta d / \Delta t$) — domain service + DB trigger (`vp_kinematic_guard`) on `canonical_facts`. Flags `KINEMATIC_ANOMALY`. Full TDD coverage (8 tests).
 - **[x] Heurísticas de Alerta:** ✅ `AlertFinancialImpact` VO + `AlertImpactCalculator` — real-time R$ impact for delay, no-show, kinematic anomaly. Severity tiers (low/medium/high/critical).
 - **[x] GeoMath Consolidation:** ✅ `haversineMeters()` / `impliedSpeedCms()` centralized in `lib/core/utils/geo_math.dart`.
-- **[ ] Visual Evidence Snapshots:** Generation of mini-map with geofence overlay in audit cards.
-- **[ ] [UX] SLA Creation Wizard:** Refactor 'New SLA Model' modal into stepped interface (Wizard) to eliminate layout bugs.
-- **[ ] [UX] SLA Parameter Grouping:** Logical grouping of fields by category (Temporal, Behavioral, Financial) to reduce cognitive load.
-- **[ ] [UX] Side Drawer Dark Sync:** Unify registration drawers (e.g., Drivers) with the Industrial Deep Theme to prevent visual fatigue.
-- **[ ] Industrial Deep Theme:** Interface in Slate/Zinc tones to reduce visual fatigue 24/7.
+- **[x] Visual Evidence Snapshots:** ✅ `GeofenceEvidenceMap` widget (`flutter_map` + `latlong2`) renders interactive mini-map with geofence circle, track polyline, and infraction marker in audit cards. `VerdictEvidence` extended with geofence coordinate fields (INV-7 backwards-compat hash). 6 new tests.
+- **[x] [UX] SLA Creation Wizard:** ✅ `SlaTemplateEditorDialog` refactored to 3-step wizard (Identidade → Temporal → Financeiro) with `AnimatedSwitcher` transitions, per-step `FormState` validation, `_WizardHeader` + `_StepDot` + `_StepConnector` components.
+- **[x] [UX] SLA Parameter Grouping:** ✅ Fields logically grouped by category across wizard steps — eliminates layout bugs from flat `Wrap` grid.
+- **[x] [UX] Side Drawer Dark Sync:** ✅ Driver registration drawer fully synchronized with Industrial Deep Theme (`VeraProbColors` / `VeraProbTypography` tokens — zero hardcoded `Colors.*` remaining).
+- **[x] Industrial Deep Theme:** ✅ Interface in Slate/Zinc tones applied across all modified components. `app_theme.dart` palette: Slate-950/800/700.
 
 ### [ ] Phase 9.8 — Resilience & Operational Hub (The Body)
 
