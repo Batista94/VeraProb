@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 class DataSeeder {
   final SupabaseClient _supabase;
@@ -180,6 +181,7 @@ class DataSeeder {
 
     // 5. Create Financial Snapshot for the Dashboard using the real schema
     await _supabase.from('contractual_financial_snapshot').insert({
+      'id': const Uuid().v4(), 
       'organization_id': organizationId,
       'contract_id': contract['id'],
       'operational_date_utc': yesterday.toIso8601String().split('T').first,
@@ -193,6 +195,78 @@ class DataSeeder {
       'total_obligations': 4,
       'executed_count': 4,
     });
+
+    // 6. Seed some RAW Telemetry for the Map
+    await seedVehicles();
+    await seedTelemetry();
+  }
+
+  Future<void> seedVehicles() async {
+    final vehicles = [
+      {'plate': 'BRA-2026', 'model': 'Volvo FH 540', 'capacity': 40000},
+      {'plate': 'VPR-0001', 'model': 'Scania R 450', 'capacity': 35000},
+    ];
+
+    for (var v in vehicles) {
+      final exists = await _supabase
+          .from('vehicles')
+          .select()
+          .eq('plate', v['plate']!)
+          .maybeSingle();
+
+      if (exists == null) {
+        final payload = Map<String, dynamic>.from(v);
+        payload['organization_id'] = organizationId;
+        await _supabase.from('vehicles').insert(payload);
+      }
+    }
+  }
+
+  Future<void> seedTelemetry() async {
+    // 1. Get a vehicle
+    final vehicle = await _supabase
+        .from('vehicles')
+        .select()
+        .eq('organization_id', organizationId)
+        .limit(1)
+        .single();
+
+    final now = DateTime.now().toUtc();
+    final rawId = const Uuid().v4();
+
+    // 2. Create a Sealed Raw Payload
+    await _supabase.from('raw_telemetry_payloads').insert({
+      'id': rawId,
+      'organization_id': organizationId,
+      'provider_name': 'SASCAR',
+      'device_id': 'DEV-${vehicle['plate']}',
+      'raw_payload': {'simulated': true, 'batch': now.millisecondsSinceEpoch},
+      'payload_hash': 'hash-${now.millisecondsSinceEpoch}',
+    });
+
+    // 3. Create a Breadcrumb (Route simulation near SP)
+    final points = [
+      {'lat': -23.5505, 'lng': -46.6333}, // Mark 0
+      {'lat': -23.5515, 'lng': -46.6343}, // Mark 1
+      {'lat': -23.5525, 'lng': -46.6353}, // Mark 2 (Infraction point maybe)
+      {'lat': -23.5535, 'lng': -46.6363}, // Mark 3
+    ];
+
+    for (int i = 0; i < points.length; i++) {
+      await _supabase.from('canonical_facts').insert({
+        'organization_id': organizationId,
+        'raw_payload_id': rawId,
+        'asset_id': vehicle['id'],
+        'device_id': 'DEV-${vehicle['plate']}',
+        'gps_timestamp': now.subtract(Duration(minutes: points.length - i)).toIso8601String(),
+        'received_at_utc': now.toIso8601String(),
+        'lat': points[i]['lat'],
+        'lng': points[i]['lng'],
+        'speed_cms': 8000, // 80 km/h approx
+        'source_adapter': 'SASCAR_V1',
+        'integrity_flag': 'OK',
+      });
+    }
   }
 
   Future<void> seedActiveSanctions() async {
