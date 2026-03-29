@@ -590,16 +590,16 @@ class _Step1FiscalData extends StatelessWidget {
                 runSpacing: 4,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Row(
+                  const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check_circle,
                         size: 14,
                         color: VeraProbColors.success,
                       ),
-                      const SizedBox(width: 4),
-                      const Text(
+                      SizedBox(width: 4),
+                      Text(
                         'Dados preenchidos via ReceitaWS',
                         style: TextStyle(
                           fontSize: 12,
@@ -609,16 +609,16 @@ class _Step1FiscalData extends StatelessWidget {
                     ],
                   ),
                   if (cnpjAutoInactive)
-                    Row(
+                    const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.warning_amber,
                           size: 14,
                           color: VeraProbColors.warning,
                         ),
-                        const SizedBox(width: 4),
-                        const Text(
+                        SizedBox(width: 4),
+                        Text(
                           'Empresa inativa na Receita Federal',
                           style: TextStyle(
                             fontSize: 12,
