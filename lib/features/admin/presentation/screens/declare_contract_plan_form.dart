@@ -1735,7 +1735,8 @@ class _DeclareContractPlanFormState
           runSpacing: 12,
           children: [
             SizedBox(
-              width: (MediaQuery.sizeOf(context).width - 80) /
+              width:
+                  (MediaQuery.sizeOf(context).width - 80) /
                   (MediaQuery.sizeOf(context).width < 600 ? 1 : 2),
               child: _KpiCard(
                 icon: Icons.shield_outlined,
@@ -1747,7 +1748,8 @@ class _DeclareContractPlanFormState
               ),
             ),
             SizedBox(
-              width: (MediaQuery.sizeOf(context).width - 80) /
+              width:
+                  (MediaQuery.sizeOf(context).width - 80) /
                   (MediaQuery.sizeOf(context).width < 600 ? 1 : 2),
               child: _KpiCard(
                 icon: Icons.warning_amber_rounded,
@@ -1766,7 +1768,8 @@ class _DeclareContractPlanFormState
           runSpacing: 12,
           children: [
             SizedBox(
-              width: (MediaQuery.sizeOf(context).width - 80) /
+              width:
+                  (MediaQuery.sizeOf(context).width - 80) /
                   (MediaQuery.sizeOf(context).width < 600 ? 1 : 2),
               child: _KpiCard(
                 icon: Icons.money_off,
@@ -1779,7 +1782,8 @@ class _DeclareContractPlanFormState
             ),
             if (relativeRisk != null) ...[
               SizedBox(
-                width: (MediaQuery.sizeOf(context).width - 80) /
+                width:
+                    (MediaQuery.sizeOf(context).width - 80) /
                     (MediaQuery.sizeOf(context).width < 600 ? 1 : 2),
                 child: _KpiCard(
                   icon: Icons.account_balance_wallet_outlined,
@@ -1792,7 +1796,8 @@ class _DeclareContractPlanFormState
               ),
             ] else ...[
               SizedBox(
-                width: (MediaQuery.sizeOf(context).width - 80) /
+                width:
+                    (MediaQuery.sizeOf(context).width - 80) /
                     (MediaQuery.sizeOf(context).width < 600 ? 1 : 2),
                 child: const _KpiCard(
                   icon: Icons.lock_outline,

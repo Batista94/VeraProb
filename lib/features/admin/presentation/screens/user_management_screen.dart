@@ -74,105 +74,110 @@ class UserManagementScreen extends ConsumerWidget {
                     data: (members) => members.isEmpty
                         ? const SizedBox.shrink()
                         : Column(
-                      children: List.generate(members.length * 2 - 1, (i) {
-                        if (i.isOdd) {
-                          return const Divider(color: VeraProbColors.border);
-                        }
-                        final member = members[i ~/ 2];
-                        final isSelf = member.userId == currentUserId;
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: VeraProbColors.primary.withValues(
-                              alpha: 0.1,
-                            ),
-                            child: Text(
-                              member.email[0].toUpperCase(),
-                              style: const TextStyle(
-                                color: VeraProbColors.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          title: Text(
-                            member.email,
-                            style: VeraProbTypography.kpiLabel,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                          subtitle: Text(
-                            'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
-                            style: VeraProbTypography.caption,
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (!isSelf)
-                                DropdownButton<String>(
-                                  value: member.role,
-                                  underline: const SizedBox(),
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: 'TENANT_ADMIN',
-                                      child: Text('Administrador'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'OPERATOR',
-                                      child: Text('Operador'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'AUDITOR',
-                                      child: Text('Auditor'),
-                                    ),
-                                  ],
-                                  onChanged: (newRole) => _changeRole(
-                                    context,
-                                    ref,
-                                    member.userId,
-                                    newRole!,
-                                  ),
-                                )
-                              else
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: VeraProbColors.surface,
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color: VeraProbColors.border,
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Você (Admin)',
-                                    style: TextStyle(
+                            children: List.generate(members.length * 2 - 1, (
+                              i,
+                            ) {
+                              if (i.isOdd) {
+                                return const Divider(
+                                  color: VeraProbColors.border,
+                                );
+                              }
+                              final member = members[i ~/ 2];
+                              final isSelf = member.userId == currentUserId;
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: VeraProbColors.primary
+                                      .withValues(alpha: 0.1),
+                                  child: Text(
+                                    member.email[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      color: VeraProbColors.primary,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
-                              const SizedBox(width: 16),
-                              if (!isSelf)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.person_remove_outlined,
-                                    color: VeraProbColors.error,
-                                    size: 20,
-                                  ),
-                                  tooltip: 'Remover membro',
-                                  onPressed: () => _confirmRemove(
-                                    context,
-                                    ref,
-                                    member.userId,
-                                    member.email,
-                                  ),
+                                title: Text(
+                                  member.email,
+                                  style: VeraProbTypography.kpiLabel,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
-                            ],
+                                subtitle: Text(
+                                  'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
+                                  style: VeraProbTypography.caption,
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (!isSelf)
+                                      DropdownButton<String>(
+                                        value: member.role,
+                                        underline: const SizedBox(),
+                                        items: const [
+                                          DropdownMenuItem(
+                                            value: 'TENANT_ADMIN',
+                                            child: Text('Administrador'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'OPERATOR',
+                                            child: Text('Operador'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'AUDITOR',
+                                            child: Text('Auditor'),
+                                          ),
+                                        ],
+                                        onChanged: (newRole) => _changeRole(
+                                          context,
+                                          ref,
+                                          member.userId,
+                                          newRole!,
+                                        ),
+                                      )
+                                    else
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: VeraProbColors.surface,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                          border: Border.all(
+                                            color: VeraProbColors.border,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Você (Admin)',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    const SizedBox(width: 16),
+                                    if (!isSelf)
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.person_remove_outlined,
+                                          color: VeraProbColors.error,
+                                          size: 20,
+                                        ),
+                                        tooltip: 'Remover membro',
+                                        onPressed: () => _confirmRemove(
+                                          context,
+                                          ref,
+                                          member.userId,
+                                          member.email,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            }),
                           ),
-                        );
-                      }),
-                    ),
                   ),
 
                   // ── Pending invitations ──────────────────────────────────

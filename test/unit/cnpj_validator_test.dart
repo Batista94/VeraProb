@@ -61,7 +61,10 @@ void main() {
       });
 
       test('strips existing mask before reformatting', () {
-        expect(CnpjValidator.format('11.222.333/0001-81'), '11.222.333/0001-81');
+        expect(
+          CnpjValidator.format('11.222.333/0001-81'),
+          '11.222.333/0001-81',
+        );
       });
 
       test('returns empty string for empty input', () {

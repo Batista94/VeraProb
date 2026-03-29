@@ -47,7 +47,9 @@ void main() {
       expect(find.text('Organização'), findsOneWidget);
     });
 
-    testWidgets('renders settings content on first tab by default', (tester) async {
+    testWidgets('renders settings content on first tab by default', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -59,7 +61,9 @@ void main() {
       expect(find.text('CONFIGURAÇÕES DO SISTEMA'), findsOneWidget);
     });
 
-    testWidgets('tab switch to Equipe shows user management content', (tester) async {
+    testWidgets('tab switch to Equipe shows user management content', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -73,7 +77,9 @@ void main() {
       expect(find.text('Gestão de Usuários'), findsOneWidget);
     });
 
-    testWidgets('tab switch to Organização shows org settings content', (tester) async {
+    testWidgets('tab switch to Organização shows org settings content', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);

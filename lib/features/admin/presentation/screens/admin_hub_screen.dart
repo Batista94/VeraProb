@@ -45,9 +45,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen>
         children: [
           Container(
             decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: VeraProbColors.border),
-              ),
+              border: Border(bottom: BorderSide(color: VeraProbColors.border)),
             ),
             child: TabBar(
               controller: _tabController,

@@ -101,19 +101,22 @@ void main() {
         );
       });
 
-      test('throws DomainException for CNPJ with valid length but invalid check digit', () async {
-        // 11222333000182 — last digit changed from 1 → 2, passes length check but fails modulo-11
-        await expectLater(
-          handler.handle(_validCmd(cnpj: '11222333000182')),
-          throwsA(
-            isA<DomainException>().having(
-              (e) => e.message,
-              'message',
-              contains('inválido'),
+      test(
+        'throws DomainException for CNPJ with valid length but invalid check digit',
+        () async {
+          // 11222333000182 — last digit changed from 1 → 2, passes length check but fails modulo-11
+          await expectLater(
+            handler.handle(_validCmd(cnpj: '11222333000182')),
+            throwsA(
+              isA<DomainException>().having(
+                (e) => e.message,
+                'message',
+                contains('inválido'),
+              ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
     });
 
     group('required field validation', () {
@@ -208,34 +211,44 @@ void main() {
       // createOrganization throws a sentinel Exception so the invite step is
       // never reached, avoiding the need to mock SupabaseClient.rpc().
 
-      test('auto-fills starter limits when maxVehicles/maxActiveContracts are null', () async {
-        CreateOrganizationCommand? captured;
-        when(() => mockRepo.createOrganization(any())).thenAnswer((inv) {
-          captured = inv.positionalArguments.first as CreateOrganizationCommand;
-          throw Exception('stop here');
-        });
+      test(
+        'auto-fills starter limits when maxVehicles/maxActiveContracts are null',
+        () async {
+          CreateOrganizationCommand? captured;
+          when(() => mockRepo.createOrganization(any())).thenAnswer((inv) {
+            captured =
+                inv.positionalArguments.first as CreateOrganizationCommand;
+            throw Exception('stop here');
+          });
 
-        final cmd = CreateOrganizationCommand(
-          legalName: 'Transportes Silva Ltda.',
-          tradeName: 'Silva Logística',
-          cnpj: '11222333000181',
-          timezone: 'America/Sao_Paulo',
-          currencyCode: 'BRL',
-          planType: PlanType.starter.dbValue,
-          // maxVehicles and maxActiveContracts intentionally omitted (null)
-          initialAdminEmail: 'admin@empresa.com.br',
-          superAdminUserId: 'super-admin-uuid-123',
-        );
+          final cmd = CreateOrganizationCommand(
+            legalName: 'Transportes Silva Ltda.',
+            tradeName: 'Silva Logística',
+            cnpj: '11222333000181',
+            timezone: 'America/Sao_Paulo',
+            currencyCode: 'BRL',
+            planType: PlanType.starter.dbValue,
+            // maxVehicles and maxActiveContracts intentionally omitted (null)
+            initialAdminEmail: 'admin@empresa.com.br',
+            superAdminUserId: 'super-admin-uuid-123',
+          );
 
-        await expectLater(
-          handler.handle(cmd),
-          throwsA(isNot(isA<DomainException>())),
-        );
+          await expectLater(
+            handler.handle(cmd),
+            throwsA(isNot(isA<DomainException>())),
+          );
 
-        expect(captured, isNotNull);
-        expect(captured!.maxVehicles, PlanLimits.maxVehicles(PlanType.starter));
-        expect(captured!.maxActiveContracts, PlanLimits.maxContracts(PlanType.starter));
-      });
+          expect(captured, isNotNull);
+          expect(
+            captured!.maxVehicles,
+            PlanLimits.maxVehicles(PlanType.starter),
+          );
+          expect(
+            captured!.maxActiveContracts,
+            PlanLimits.maxContracts(PlanType.starter),
+          );
+        },
+      );
 
       test('preserves explicit limits when provided', () async {
         CreateOrganizationCommand? captured;
@@ -245,7 +258,9 @@ void main() {
         });
 
         await expectLater(
-          handler.handle(_validCmd()), // maxVehicles: 50, maxActiveContracts: 10
+          handler.handle(
+            _validCmd(),
+          ), // maxVehicles: 50, maxActiveContracts: 10
           throwsA(isNot(isA<DomainException>())),
         );
 

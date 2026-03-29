@@ -18,8 +18,7 @@ abstract final class PlanLimits {
   };
 
   /// Returns the max vehicles for [planType], or `null` for unlimited.
-  static int? maxVehicles(PlanType planType) =>
-      defaults[planType]!.maxVehicles;
+  static int? maxVehicles(PlanType planType) => defaults[planType]!.maxVehicles;
 
   /// Returns the max active contracts for [planType], or `null` for unlimited.
   static int? maxContracts(PlanType planType) =>

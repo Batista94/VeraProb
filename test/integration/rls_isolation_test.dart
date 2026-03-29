@@ -724,35 +724,32 @@ void main() async {
     );
 
     // ── Case 17: service_manifests — cross-tenant SELECT ─────────────────
-    test(
-      'Case 17 — INV-1: Org A cannot SELECT Org B service_manifests',
-      () async {
-        // Seed a service_manifest for Org B via the admin client (bypasses RLS).
-        // Uses orgBContractId as the FK; gracefully skips if schema changed.
-        final manifestId = _uuid.v4();
-        try {
-          await adminClient.from('service_manifests').upsert({
-            'id': manifestId,
-            'organization_id': _orgBId,
-            'contract_id': orgBContractId,
-            'name': 'RLS Test Manifest B',
-            'created_at': DateTime.now().toUtc().toIso8601String(),
-          }, onConflict: 'id');
-        } catch (_) {
-          // Schema mismatch / missing required column — assert empty is still valid.
-        }
+    test('Case 17 — INV-1: Org A cannot SELECT Org B service_manifests', () async {
+      // Seed a service_manifest for Org B via the admin client (bypasses RLS).
+      // Uses orgBContractId as the FK; gracefully skips if schema changed.
+      final manifestId = _uuid.v4();
+      try {
+        await adminClient.from('service_manifests').upsert({
+          'id': manifestId,
+          'organization_id': _orgBId,
+          'contract_id': orgBContractId,
+          'name': 'RLS Test Manifest B',
+          'created_at': DateTime.now().toUtc().toIso8601String(),
+        }, onConflict: 'id');
+      } catch (_) {
+        // Schema mismatch / missing required column — assert empty is still valid.
+      }
 
-        final result = await orgAClient
-            .from('service_manifests')
-            .select('id')
-            .eq('organization_id', _orgBId);
-        expect(
-          result,
-          isEmpty,
-          reason: 'Org A must not see Org B service_manifests via RLS (INV-1)',
-        );
-      },
-    );
+      final result = await orgAClient
+          .from('service_manifests')
+          .select('id')
+          .eq('organization_id', _orgBId);
+      expect(
+        result,
+        isEmpty,
+        reason: 'Org A must not see Org B service_manifests via RLS (INV-1)',
+      );
+    });
 
     // ── Case 18: audit_packages — immutability trigger blocks DELETE ───────
     test(
@@ -776,10 +773,8 @@ void main() async {
 
         // The immutability trigger (INV-7) must reject DELETE on audit_packages.
         await expectLater(
-          () async => adminClient
-              .from('audit_packages')
-              .delete()
-              .eq('id', packageId),
+          () async =>
+              adminClient.from('audit_packages').delete().eq('id', packageId),
           throwsA(isA<PostgrestException>()),
           reason:
               'Immutability trigger must block DELETE on audit_packages (INV-7)',
@@ -839,7 +834,11 @@ void main() async {
 
         try {
           final session = cvClient.auth.currentSession;
-          expect(session, isNotNull, reason: 'CONTRACTOR_VIEWER must be able to sign in');
+          expect(
+            session,
+            isNotNull,
+            reason: 'CONTRACTOR_VIEWER must be able to sign in',
+          );
 
           // Decode JWT to verify dual-key claims are present (INV-2).
           final parts = session!.accessToken.split('.');
@@ -860,12 +859,14 @@ void main() async {
           expect(
             payload['organization_id'],
             _orgAId,
-            reason: 'CONTRACTOR_VIEWER JWT must contain organization_id (INV-2)',
+            reason:
+                'CONTRACTOR_VIEWER JWT must contain organization_id (INV-2)',
           );
           expect(
             payload['contractor_id'],
             contractorId,
-            reason: 'CONTRACTOR_VIEWER JWT must contain contractor_id (INV-2, INV-20)',
+            reason:
+                'CONTRACTOR_VIEWER JWT must contain contractor_id (INV-2, INV-20)',
           );
         } finally {
           await cvClient.auth.signOut();

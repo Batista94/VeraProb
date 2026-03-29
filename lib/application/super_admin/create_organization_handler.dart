@@ -54,7 +54,8 @@ class CreateOrganizationHandler {
 
     // 5. Auto-fill quota limits from PlanLimits defaults when not explicitly provided
     final planType = PlanType.fromDb(cmd.planType);
-    final effectiveCmd = (cmd.maxVehicles == null || cmd.maxActiveContracts == null)
+    final effectiveCmd =
+        (cmd.maxVehicles == null || cmd.maxActiveContracts == null)
         ? CreateOrganizationCommand(
             legalName: cmd.legalName,
             tradeName: cmd.tradeName,

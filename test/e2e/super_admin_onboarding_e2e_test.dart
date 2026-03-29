@@ -34,13 +34,19 @@ String _uniqueCnpj() {
   final nums = base.split('').map(int.parse).toList();
 
   const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  final sum1 = List.generate(12, (i) => nums[i] * w1[i]).fold(0, (a, b) => a + b);
+  final sum1 = List.generate(
+    12,
+    (i) => nums[i] * w1[i],
+  ).fold(0, (a, b) => a + b);
   final rem1 = sum1 % 11;
   final d1 = rem1 < 2 ? 0 : 11 - rem1;
 
   final nums13 = [...nums, d1];
   const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  final sum2 = List.generate(13, (i) => nums13[i] * w2[i]).fold(0, (a, b) => a + b);
+  final sum2 = List.generate(
+    13,
+    (i) => nums13[i] * w2[i],
+  ).fold(0, (a, b) => a + b);
   final rem2 = sum2 % 11;
   final d2 = rem2 < 2 ? 0 : 11 - rem2;
 
