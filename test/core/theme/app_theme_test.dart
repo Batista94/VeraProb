@@ -33,9 +33,7 @@ void _setupMocks() {
   when(() => _mockClient.getUrl(any())).thenAnswer((_) async => request);
   when(() => request.headers).thenReturn(headers);
   when(() => request.close()).thenAnswer((_) async => response);
-  when(
-    () => response.statusCode,
-  ).thenReturn(404); // Not found para forçar fallback gracioso
+  when(() => response.statusCode).thenReturn(404);
   when(() => response.contentLength).thenReturn(0);
 }
 
@@ -47,25 +45,27 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AppTheme Coverage', () {
-    test('VeraProbColors access', () {
+    testWidgets('VeraProbColors access', (WidgetTester tester) async {
       expect(VeraProbColors.background, const Color(0xFF0F172A));
       expect(VeraProbColors.primary, const Color(0xFF2DD4BF));
       expect(VeraProbColors.success, VeraProbColors.onTime);
       expect(VeraProbColors.warning, VeraProbColors.delayed);
       expect(VeraProbColors.error, VeraProbColors.critical);
       expect(VeraProbColors.info, VeraProbColors.scheduled);
+      await tester.pumpAndSettle();
     });
 
-    test('VeraProbSpacing access', () {
+    testWidgets('VeraProbSpacing access', (WidgetTester tester) async {
       expect(VeraProbSpacing.xs, 4.0);
       expect(VeraProbSpacing.sectionPadding, const EdgeInsets.all(16.0));
       expect(
         VeraProbSpacing.cardPadding,
         const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       );
+      await tester.pumpAndSettle();
     });
 
-    test('VeraProbTypography access', () {
+    testWidgets('VeraProbTypography access', (WidgetTester tester) async {
       expect(VeraProbTypography.kpiValue.fontSize, 28);
       expect(VeraProbTypography.kpiLabel.fontWeight, FontWeight.w600);
       expect(VeraProbTypography.sectionTitle.color, VeraProbColors.textPrimary);
@@ -75,24 +75,33 @@ void main() {
       expect(VeraProbTypography.badge.letterSpacing, 0.5);
       expect(VeraProbTypography.dataValue.fontWeight, FontWeight.w600);
       expect(VeraProbTypography.fieldLabel.fontSize, 11);
+      await tester.pumpAndSettle();
     });
 
-    test('AppTheme.darkTheme properties', () {
+    testWidgets('AppTheme.darkTheme properties', (WidgetTester tester) async {
       final theme = AppTheme.darkTheme;
       expect(theme.brightness, Brightness.dark);
       expect(theme.scaffoldBackgroundColor, VeraProbColors.background);
       expect(theme.colorScheme.primary, VeraProbColors.primary);
+      await tester.pumpAndSettle();
     });
 
-    test('AppTheme.lightTheme properties', () {
+    testWidgets('AppTheme.lightTheme properties', (WidgetTester tester) async {
       final theme = AppTheme.lightTheme;
       expect(theme.brightness, Brightness.light);
+      expect(theme.scaffoldBackgroundColor, VeraProbColors.lightBackground);
+      expect(theme.colorScheme.primary, VeraProbColors.primary);
+      expect(theme.colorScheme.surface, VeraProbColors.lightSurface);
+      expect(theme.appBarTheme.backgroundColor, VeraProbColors.lightSurface);
+      expect(theme.cardTheme.color, VeraProbColors.lightSurface);
+      await tester.pumpAndSettle();
     });
 
-    test('AppTheme helpers', () {
+    testWidgets('AppTheme helpers', (WidgetTester tester) async {
       expect(AppTheme.primaryColor, VeraProbColors.primary);
       expect(AppTheme.surfaceColor, VeraProbColors.background);
       expect(AppTheme.primaryGradient, isA<Gradient>());
+      await tester.pumpAndSettle();
     });
   });
 }

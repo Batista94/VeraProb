@@ -12,7 +12,7 @@ class VeraProbColors {
   static const Color background = Color(0xFF0F172A); // Slate-950
   static const Color surface = Color(0xFF1E293B); // Slate-800
   static const Color surfaceElevated = Color(0xFF334155); // Slate-700
-  static const Color border = Color(0xFF334155); // Slate-700 @40%
+  static const Color border = Color(0x66334155); // Slate-700 @40%
 
   // ── Status Colors (CFO & Ops Friendly, Desaturated for Dark Mode) ─
   static const Color onTime = Color(0xFF10B981); // Emerald Green
@@ -29,12 +29,19 @@ class VeraProbColors {
   static const Color primary = Color(0xFF2DD4BF);
   static const Color secondary = Color(0xFF818CF8); // Desaturated Indigo
 
-  // ── Premium Text Hierarchy ──────────────────────────────
+  // ── Premium Text Hierarchy (Dark Mode Defaults) ──────────
   static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(
-    0xFF94A3B8,
-  ); // Slate-400 ~4.5:1 on #0F172A (WCAG AA)
+  static const Color textSecondary = Color(0xFF94A3B8); // Slate-400
   static const Color textDisabled = Color(0xFF475569);
+
+  // ── Light Mode Palette (Zinc/Slate) ─────────────────────
+  static const Color lightBackground = Color(0xFFF8FAFC); // Slate-50
+  static const Color lightSurface = Color(0xFFFFFFFF);
+  static const Color lightSurfaceElevated = Color(0xFFF1F5F9); // Slate-100
+  static const Color lightBorder = Color(0xFFE2E8F0); // Slate-200
+  static const Color lightTextPrimary = Color(0xFF0F172A); // Slate-950
+  static const Color lightTextSecondary = Color(0xFF475569); // Slate-600
+  static const Color lightTextDisabled = Color(0xFF94A3B8); // Slate-400
 
   // ── Semantic ─────────────────────────────────────────
   static const success = onTime;
@@ -72,7 +79,18 @@ class VeraProbTypography {
   VeraProbTypography._();
 
   // Use Inter as the premium bridge between UI and Data
-  static TextStyle get base => GoogleFonts.inter();
+  static TextStyle get base {
+    try {
+      // Direct check to avoid any side effects in test zones
+      if (!GoogleFonts.config.allowRuntimeFetching) {
+        return const TextStyle(fontFamily: 'Roboto');
+      }
+      return GoogleFonts.inter();
+    } catch (_) {
+      // Ultimate fallback to avoid crashing the theme initialization
+      return const TextStyle(fontFamily: 'Roboto');
+    }
+  }
 
   static TextStyle get kpiValue => base.copyWith(
     fontSize: 28,
@@ -128,7 +146,6 @@ class VeraProbTypography {
     color: VeraProbColors.textPrimary,
   );
 
-  /// For form field labels and section sub-headers inside forms.
   static TextStyle get fieldLabel => base.copyWith(
     fontSize: 11,
     fontWeight: FontWeight.w500,
@@ -141,166 +158,437 @@ class VeraProbTypography {
 class AppTheme {
   AppTheme._();
 
-  static final darkTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    fontFamily: GoogleFonts.inter().fontFamily,
-    scaffoldBackgroundColor: VeraProbColors.background,
-    colorScheme: const ColorScheme.dark(
-      primary: VeraProbColors.primary,
-      secondary: VeraProbColors.secondary,
-      surface: VeraProbColors.surface,
-      error: VeraProbColors.error,
-      onPrimary: Colors.white,
-      onSecondary: Colors.white,
-      onSurface: VeraProbColors.textPrimary,
-      onError: Colors.white,
-      surfaceContainer: VeraProbColors.surface,
-      surfaceContainerHigh: VeraProbColors.surfaceElevated,
-    ),
-    textTheme: GoogleFonts.interTextTheme(
-      const TextTheme(
-        headlineMedium: TextStyle(
-          color: VeraProbColors.textPrimary,
-          fontWeight: FontWeight.bold,
-        ),
-        titleLarge: TextStyle(
-          color: VeraProbColors.textPrimary,
-          fontWeight: FontWeight.w600,
-        ),
-        bodyMedium: TextStyle(color: VeraProbColors.textPrimary),
-        bodySmall: TextStyle(color: VeraProbColors.textSecondary),
-      ),
-    ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: VeraProbColors.surface,
-      foregroundColor: VeraProbColors.textPrimary,
-      elevation: 0,
-      centerTitle: false,
-      toolbarHeight: 64, // Slightly taller for premium feel
-    ),
-    cardTheme: CardThemeData(
-      color: VeraProbColors.surface,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: VeraProbColors.border, width: 1),
-      ),
-      margin: EdgeInsets.zero,
-    ),
-    dividerTheme: const DividerThemeData(
-      color: VeraProbColors.border,
-      thickness: 1,
-      space: 1,
-    ),
-    iconTheme: const IconThemeData(
-      color: VeraProbColors.textSecondary,
-      size: 20,
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: VeraProbColors.surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: VeraProbColors.border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: VeraProbColors.border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: VeraProbColors.primary, width: 1.5),
-      ),
-      labelStyle: const TextStyle(
-        color: VeraProbColors.textSecondary,
-        fontSize: 13,
-      ),
-      hintStyle: const TextStyle(
-        color: VeraProbColors.textDisabled,
-        fontSize: 13,
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: VeraProbColors.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        elevation: 0,
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-          letterSpacing: 0.3,
-        ),
-      ),
-    ),
-    navigationRailTheme: NavigationRailThemeData(
-      backgroundColor:
-          VeraProbColors.background, // Match background so it blends natively
-      indicatorColor: VeraProbColors.primary.withValues(alpha: 0.15),
-      selectedIconTheme: const IconThemeData(
-        color: VeraProbColors.primary,
-        size: 24,
-      ),
-      unselectedIconTheme: const IconThemeData(
-        color: VeraProbColors.textDisabled,
-        size: 24,
-      ),
-      selectedLabelTextStyle: const TextStyle(
-        color: VeraProbColors.textPrimary,
-        fontWeight: FontWeight.w600,
-        fontSize: 13,
-      ),
-      unselectedLabelTextStyle: const TextStyle(
-        color: VeraProbColors.textDisabled,
-        fontWeight: FontWeight.w500,
-        fontSize: 13,
-      ),
-    ),
-    datePickerTheme: DatePickerThemeData(
-      backgroundColor: VeraProbColors.surfaceElevated,
-      headerBackgroundColor: VeraProbColors.surface,
-      headerForegroundColor: VeraProbColors.textPrimary,
-      surfaceTintColor:
-          Colors.transparent, // Disable Material 3 subtle tint parsing
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: VeraProbColors.border, width: 1),
-      ),
-      dayStyle: VeraProbTypography.bodyMedium,
-      weekdayStyle: VeraProbTypography.caption,
-      yearStyle: VeraProbTypography.bodyMedium,
-      todayBorder: const BorderSide(color: VeraProbColors.primary),
-      todayForegroundColor: WidgetStateProperty.all(VeraProbColors.primary),
-      dayOverlayColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return VeraProbColors.primary;
-        }
-        return null; // Defer to default
-      }),
-      dayForegroundColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return VeraProbColors.background; // Dark text on bright primary
-        }
-        return VeraProbColors.textPrimary;
-      }),
-      cancelButtonStyle: TextButton.styleFrom(
-        foregroundColor: VeraProbColors.textSecondary,
-      ),
-      confirmButtonStyle: TextButton.styleFrom(
-        foregroundColor: VeraProbColors.primary,
-      ),
-    ),
-  );
+  static final darkTheme = _buildDarkTheme();
 
-  static final lightTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.light,
-    colorSchemeSeed: VeraProbColors.primary,
-    fontFamily: GoogleFonts.inter().fontFamily,
-  );
+  static ThemeData _buildDarkTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      fontFamily: VeraProbTypography.base.fontFamily,
+      scaffoldBackgroundColor: VeraProbColors.background,
+      colorScheme: const ColorScheme.dark(
+        primary: VeraProbColors.primary,
+        secondary: VeraProbColors.secondary,
+        surface: VeraProbColors.surface,
+        error: VeraProbColors.error,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: VeraProbColors.textPrimary,
+        onError: Colors.white,
+        surfaceContainer: VeraProbColors.surface,
+        surfaceContainerHigh: VeraProbColors.surfaceElevated,
+        outline: VeraProbColors.border,
+      ),
+      textTheme: (() {
+        final textTheme = TextTheme(
+          headlineLarge: VeraProbTypography.kpiValue,
+          headlineMedium: VeraProbTypography.kpiValue.copyWith(fontSize: 24),
+          titleLarge: VeraProbTypography.sectionTitle.copyWith(fontSize: 18),
+          titleMedium: VeraProbTypography.sectionTitle,
+          titleSmall: VeraProbTypography.fieldLabel.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+          bodyLarge: VeraProbTypography.dataValue,
+          bodyMedium: VeraProbTypography.bodyMedium,
+          bodySmall: VeraProbTypography.bodySmall,
+          labelLarge: VeraProbTypography.badge.copyWith(fontSize: 12),
+          labelMedium: VeraProbTypography.badge,
+          labelSmall: VeraProbTypography.caption,
+        );
+
+        try {
+          // Pre-emptive check to avoid async errors in test zones
+          if (!GoogleFonts.config.allowRuntimeFetching) {
+            return textTheme;
+          }
+          return GoogleFonts.interTextTheme(textTheme);
+        } catch (_) {
+          return textTheme;
+        }
+      })(),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: VeraProbColors.surface,
+        foregroundColor: VeraProbColors.textPrimary,
+        elevation: 0,
+        centerTitle: false,
+        toolbarHeight: 64,
+      ),
+      cardTheme: CardThemeData(
+        color: VeraProbColors.surface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: VeraProbColors.border, width: 1),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      iconTheme: const IconThemeData(
+        color: VeraProbColors.textSecondary,
+        size: 20,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: VeraProbColors.border,
+        thickness: 1,
+        space: 1,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: VeraProbColors.surface,
+        disabledColor: VeraProbColors.surface,
+        selectedColor: VeraProbColors.primary.withValues(alpha: 0.15),
+        secondarySelectedColor: VeraProbColors.secondary.withValues(
+          alpha: 0.15,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        labelStyle: VeraProbTypography.badge.copyWith(
+          color: VeraProbColors.textPrimary,
+        ),
+        secondaryLabelStyle: VeraProbTypography.badge.copyWith(
+          color: VeraProbColors.primary,
+        ),
+        brightness: Brightness.dark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: VeraProbColors.border),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: VeraProbColors.surface,
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titleTextStyle: VeraProbTypography.sectionTitle.copyWith(fontSize: 18),
+        contentTextStyle: VeraProbTypography.bodyMedium,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: VeraProbColors.surfaceElevated,
+        contentTextStyle: VeraProbTypography.bodyMedium,
+        actionTextColor: VeraProbColors.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return VeraProbColors.primary;
+          }
+          return VeraProbColors.textDisabled;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return VeraProbColors.primary.withValues(alpha: 0.3);
+          }
+          return VeraProbColors.surfaceElevated;
+        }),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return VeraProbColors.primary;
+          }
+          return Colors.transparent;
+        }),
+        side: const BorderSide(color: VeraProbColors.textDisabled),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.all(VeraProbColors.primary),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: VeraProbColors.surface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: VeraProbColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: VeraProbColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(
+            color: VeraProbColors.primary,
+            width: 1.5,
+          ),
+        ),
+        labelStyle: VeraProbTypography.fieldLabel,
+        hintStyle: VeraProbTypography.caption,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: VeraProbColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+          textStyle: VeraProbTypography.badge.copyWith(
+            fontSize: 13,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: VeraProbColors.textPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          side: const BorderSide(color: VeraProbColors.border),
+          textStyle: VeraProbTypography.badge.copyWith(
+            fontSize: 13,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: VeraProbColors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          textStyle: VeraProbTypography.badge.copyWith(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: VeraProbColors.background,
+        indicatorColor: VeraProbColors.primary.withValues(alpha: 0.15),
+        selectedIconTheme: const IconThemeData(
+          color: VeraProbColors.primary,
+          size: 24,
+        ),
+        unselectedIconTheme: const IconThemeData(
+          color: VeraProbColors.textDisabled,
+          size: 24,
+        ),
+        selectedLabelTextStyle: VeraProbTypography.sectionTitle.copyWith(
+          fontSize: 13,
+        ),
+        unselectedLabelTextStyle: VeraProbTypography.caption.copyWith(
+          fontSize: 13,
+        ),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: VeraProbColors.surfaceElevated,
+        headerBackgroundColor: VeraProbColors.surface,
+        headerForegroundColor: VeraProbColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: VeraProbColors.border, width: 1),
+        ),
+        dayStyle: VeraProbTypography.bodyMedium,
+        weekdayStyle: VeraProbTypography.caption,
+        yearStyle: VeraProbTypography.bodyMedium,
+        todayBorder: const BorderSide(color: VeraProbColors.primary),
+        todayForegroundColor: WidgetStateProperty.all(VeraProbColors.primary),
+        dayOverlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return VeraProbColors.primary;
+          }
+          return null;
+        }),
+        dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return VeraProbColors.background;
+          }
+          return VeraProbColors.textPrimary;
+        }),
+        cancelButtonStyle: TextButton.styleFrom(
+          foregroundColor: VeraProbColors.textSecondary,
+        ),
+        confirmButtonStyle: TextButton.styleFrom(
+          foregroundColor: VeraProbColors.primary,
+        ),
+      ),
+    );
+  }
+
+  static final lightTheme = _buildLightTheme();
+
+  static ThemeData _buildLightTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      fontFamily: VeraProbTypography.base.fontFamily,
+      scaffoldBackgroundColor: VeraProbColors.lightBackground,
+      colorScheme: const ColorScheme.light(
+        primary: VeraProbColors.primary,
+        secondary: VeraProbColors.secondary,
+        surface: VeraProbColors.lightSurface,
+        error: VeraProbColors.error,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: VeraProbColors.lightTextPrimary,
+        onError: Colors.white,
+        surfaceContainer: VeraProbColors.lightSurface,
+        surfaceContainerHigh: VeraProbColors.lightSurfaceElevated,
+      ),
+      textTheme: (() {
+        const textTheme = TextTheme(
+          headlineMedium: TextStyle(
+            color: VeraProbColors.lightTextPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+          titleLarge: TextStyle(
+            color: VeraProbColors.lightTextPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+          bodyMedium: TextStyle(color: VeraProbColors.lightTextPrimary),
+          bodySmall: TextStyle(color: VeraProbColors.lightTextSecondary),
+        );
+
+        try {
+          // Pre-emptive check to avoid async errors in test zones
+          if (!GoogleFonts.config.allowRuntimeFetching) {
+            return textTheme;
+          }
+          return GoogleFonts.interTextTheme(textTheme);
+        } catch (_) {
+          return textTheme;
+        }
+      })(),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: VeraProbColors.lightSurface,
+        foregroundColor: VeraProbColors.lightTextPrimary,
+        elevation: 0,
+        centerTitle: false,
+        toolbarHeight: 64,
+      ),
+      cardTheme: CardThemeData(
+        color: VeraProbColors.lightSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: VeraProbColors.lightBorder, width: 1),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: VeraProbColors.lightBorder,
+        thickness: 1,
+        space: 1,
+      ),
+      iconTheme: const IconThemeData(
+        color: VeraProbColors.lightTextSecondary,
+        size: 20,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: VeraProbColors.lightSurface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: VeraProbColors.lightBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: VeraProbColors.lightBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(
+            color: VeraProbColors.primary,
+            width: 1.5,
+          ),
+        ),
+        labelStyle: const TextStyle(
+          color: VeraProbColors.lightTextSecondary,
+          fontSize: 13,
+        ),
+        hintStyle: const TextStyle(
+          color: VeraProbColors.lightTextDisabled,
+          fontSize: 13,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: VeraProbColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: VeraProbColors.lightBackground,
+        indicatorColor: VeraProbColors.primary.withValues(alpha: 0.1),
+        selectedIconTheme: const IconThemeData(
+          color: VeraProbColors.primary,
+          size: 24,
+        ),
+        unselectedIconTheme: const IconThemeData(
+          color: VeraProbColors.lightTextDisabled,
+          size: 24,
+        ),
+        selectedLabelTextStyle: const TextStyle(
+          color: VeraProbColors.lightTextPrimary,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
+        unselectedLabelTextStyle: const TextStyle(
+          color: VeraProbColors.lightTextDisabled,
+          fontWeight: FontWeight.w500,
+          fontSize: 13,
+        ),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: VeraProbColors.lightSurface,
+        headerBackgroundColor: VeraProbColors.primary,
+        headerForegroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: VeraProbColors.lightBorder, width: 1),
+        ),
+        dayStyle: VeraProbTypography.bodyMedium.copyWith(
+          color: VeraProbColors.lightTextPrimary,
+        ),
+        weekdayStyle: VeraProbTypography.caption.copyWith(
+          color: VeraProbColors.lightTextSecondary,
+        ),
+        yearStyle: VeraProbTypography.bodyMedium.copyWith(
+          color: VeraProbColors.lightTextPrimary,
+        ),
+        todayBorder: const BorderSide(color: VeraProbColors.primary),
+        todayForegroundColor: WidgetStateProperty.all(VeraProbColors.primary),
+        dayOverlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return VeraProbColors.primary;
+          }
+          return null;
+        }),
+        dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.white;
+          }
+          return VeraProbColors.lightTextPrimary;
+        }),
+        cancelButtonStyle: TextButton.styleFrom(
+          foregroundColor: VeraProbColors.lightTextSecondary,
+        ),
+        confirmButtonStyle: TextButton.styleFrom(
+          foregroundColor: VeraProbColors.primary,
+        ),
+      ),
+    );
+  }
 
   // ── Helpers for custom widgets ──────────────────────────
   static Color get primaryColor => VeraProbColors.primary;
