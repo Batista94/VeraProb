@@ -178,10 +178,11 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           Text(_error!, style: const TextStyle(color: Colors.red)),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () async => await Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const AdminLockScreen()),
-              (_) => false,
-            ),
+            onPressed: () async =>
+                await Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+                  (_) => false,
+                ),
             child: const Text('Voltar ao Login'),
           ),
         ],

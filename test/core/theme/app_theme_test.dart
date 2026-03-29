@@ -7,8 +7,11 @@ import 'package:veraprob/core/theme/app_theme.dart';
 
 // Mock para interceptar chamadas HTTP do GoogleFonts durante os testes
 class MockHttpClient extends Mock implements HttpClient {}
+
 class MockHttpClientRequest extends Mock implements HttpClientRequest {}
+
 class MockHttpClientResponse extends Mock implements HttpClientResponse {}
+
 class MockHttpHeaders extends Mock implements HttpHeaders {}
 
 class TestHttpOverrides extends HttpOverrides {
@@ -20,7 +23,7 @@ final _mockClient = MockHttpClient();
 
 void _setupMocks() {
   HttpOverrides.global = TestHttpOverrides();
-  
+
   final request = MockHttpClientRequest();
   final response = MockHttpClientResponse();
   final headers = MockHttpHeaders();
@@ -30,7 +33,9 @@ void _setupMocks() {
   when(() => _mockClient.getUrl(any())).thenAnswer((_) async => request);
   when(() => request.headers).thenReturn(headers);
   when(() => request.close()).thenAnswer((_) async => response);
-  when(() => response.statusCode).thenReturn(404); // Not found para forçar fallback gracioso
+  when(
+    () => response.statusCode,
+  ).thenReturn(404); // Not found para forçar fallback gracioso
   when(() => response.contentLength).thenReturn(0);
 }
 
@@ -38,7 +43,7 @@ void main() {
   // Garantir que mocks e configurações de rede ocorram antes de qualquer acesso ao AppTheme
   _setupMocks();
   GoogleFonts.config.allowRuntimeFetching = false;
-  
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AppTheme Coverage', () {
