@@ -181,7 +181,7 @@ class DataSeeder {
 
     // 5. Create Financial Snapshot for the Dashboard using the real schema
     await _supabase.from('contractual_financial_snapshot').insert({
-      'id': const Uuid().v4(), 
+      'id': const Uuid().v4(),
       'organization_id': organizationId,
       'contract_id': contract['id'],
       'operational_date_utc': yesterday.toIso8601String().split('T').first,
@@ -258,7 +258,9 @@ class DataSeeder {
         'raw_payload_id': rawId,
         'asset_id': vehicle['id'],
         'device_id': 'DEV-${vehicle['plate']}',
-        'gps_timestamp': now.subtract(Duration(minutes: points.length - i)).toIso8601String(),
+        'gps_timestamp': now
+            .subtract(Duration(minutes: points.length - i))
+            .toIso8601String(),
         'received_at_utc': now.toIso8601String(),
         'lat': points[i]['lat'],
         'lng': points[i]['lng'],
