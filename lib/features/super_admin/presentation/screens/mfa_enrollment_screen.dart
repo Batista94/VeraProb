@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -43,7 +44,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
   @override
   void initState() {
     super.initState();
-    _startEnrollment();
+    unawaited(_startEnrollment());
   }
 
   Future<void> _startEnrollment() async {
@@ -124,8 +125,8 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
     }
   }
 
-  void _navigateToShell() {
-    Navigator.of(context).pushAndRemoveUntil(
+  Future<void> _navigateToShell() async {
+    await Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const MfaChallengeScreen()),
       (_) => false,
     );
@@ -177,7 +178,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           Text(_error!, style: const TextStyle(color: Colors.red)),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+            onPressed: () async => await Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (_) => const AdminLockScreen()),
               (_) => false,
             ),
@@ -318,7 +319,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             onChanged: (value) {
               if (_error != null) setState(() => _error = null);
-              if (value.length == 6) _confirmEnrollment();
+              if (value.length == 6) unawaited(_confirmEnrollment());
             },
           ),
         ),

@@ -1,0 +1,368 @@
+[1m[0;34mStep 1: Running Original Forensic Scanner...[0m
+
+[1m════════════════════════════════════════════════════════════[0m
+[1m  VeraProb PR Scanner — 2026-03-28 21:11 UTC[0m
+[1m  Base branch: main[0m
+[1m════════════════════════════════════════════════════════════[0m
+
+[1m[0;34m══════════════════════════════════════════════════════════[0m
+[1m[0;34m  PILLAR A — Forensic Invariant Checks[0m
+[1m[0;34m══════════════════════════════════════════════════════════[0m
+
+  A1 — Wasm-Ready: scanning lib/ for forbidden dart:html / dart:js imports...
+  [0;32m[PASS] [0mNo forbidden dart:html/dart:js imports
+
+  A2 — Financial Precision: scanning lib/ for double/float near financial terms...
+  [0;32m[PASS] [0mNo floating-point monetary storage in domain/application layers
+
+  A3 — UTC Determinism: scanning lib/ for DateTime.now() without .toUtc()...
+  [0;32m[PASS] [0mAll DateTime.now() calls use .toUtc()
+
+  A4 — Zero-Downtime DB: scanning changed migrations for destructive operations...
+  [0;31m[1m[BLOCK][0m [0;31m[DB-BLOCK] Destructive migration in supabase/migrations/20260418000001_mfa_lockout_and_est_rls.sql — append-only schema required (INV-DB)[0m
+         [0;31m→ supabase/migrations/20260418000001_mfa_lockout_and_est_rls.sql: 110:  DELETE FROM super_admin_mfa_lockouts WHERE user_id = p_user_id;[0m
+         [0;31m→ supabase/migrations/20260418000001_mfa_lockout_and_est_rls.sql: 136:    DELETE FROM super_admin_mfa_lockouts WHERE user_id = p_user_id;[0m
+
+[1m[0;34m══════════════════════════════════════════════════════════[0m
+[1m[0;34m  PILLAR B — Static Quality & Clean Code Metrics[0m
+[1m[0;34m══════════════════════════════════════════════════════════[0m
+
+  B1 — Dart Analyzer: running flutter analyze --no-pub...
+       (this may take 10–30 seconds)
+  [0;32m[PASS] [0mflutter analyze: clean
+
+  B2 — Format Check: running dart format check on lib/...
+  [1;33m[WARN] [0m[FORMAT-WARN] Unformatted files detected — run: dart format lib/
+         [1;33m(Run 'dart format lib/' to auto-fix before committing)[0m
+
+  B3 — Complexity Check: scanning for large file deltas (>200 lines added)...
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/admin/presentation/lock_screen.dart added 452 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/admin/presentation/screens/auditor_queue_screen.dart added 206 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/admin/presentation/screens/declare_contract_plan_form.dart added 391 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/admin/presentation/screens/sla_template_editor_dialog.dart added 421 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/admin/presentation/screens/sla_template_library_screen.dart added 399 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/admin/presentation/shared/widgets/geofence_evidence_map.dart added 235 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/admin/presentation/widgets/sanction_verdict_card.dart added 673 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/super_admin/presentation/screens/create_organization_wizard.dart added 890 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/super_admin/presentation/screens/mfa_challenge_screen.dart added 295 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/super_admin/presentation/screens/mfa_enrollment_screen.dart added 444 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/super_admin/presentation/screens/super_admin_audit_log_screen.dart added 254 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] lib/features/super_admin/presentation/screens/tenant_health_panel.dart added 209 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/application/sla_audit/approve_sanction_handler_test.dart added 208 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/application/sla_audit/audit_package_service_test.dart added 221 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/application/sla_audit/close_contract_handler_test.dart added 204 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/application/sla_audit/contractual_evaluation_engine_test.dart added 518 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/application/sla_audit/phase5_contract_lifecycle_compliance_test.dart added 238 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/application/sla_audit/shadow_mode_service_test.dart added 234 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/domain/sla_audit/evidence_payload_test.dart added 204 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/infrastructure/postgres/super_admin_repository_postgres_test.dart added 265 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository_test.dart added 204 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/infrastructure/super_admin/supabase_mfa_repository_test.dart added 300 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/infrastructure/super_admin/supabase_super_admin_repository_test.dart added 263 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/integration/invariants_mt9_test.dart added 322 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/integration/jwt_hook_e2e_test.dart added 390 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/integration/rls_isolation_test.dart added 644 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/smoke/supabase_smoke_test.dart added 309 lines — LLM must audit cyclomatic complexity
+  [1;33m[WARN] [0m[COMPLEXITY-WARN] test/validation/phase5_4_validation_scenarios_test.dart added 519 lines — LLM must audit cyclomatic complexity
+
+[1m[0;34m══════════════════════════════════════════════════════════[0m
+[1m[0;34m  PILLAR C — Cost Efficiency & Automated Security[0m
+[1m[0;34m══════════════════════════════════════════════════════════[0m
+
+  C1 — Secret Detection: scanning lib/ for hardcoded secrets / API keys...
+  [0;32m[PASS] [0mNo hardcoded secret patterns detected in lib/
+
+  C2 — Dependency Audit: scanning pubspec.yaml for new dependencies...
+  [1;33m[WARN] [0m[DEP-WARN] New dependencies detected in pubspec.yaml — manual license and security review required (INV-25 / Free-Tier Gate)
+         [1;33m→ + qr_flutter: ^4.1.0[0m
+         [1;33m→ + posthog_flutter: ^5.21.0[0m
+         [1;33m→ + web: ^1.1.1[0m
+         [1;33m→ + project: veraprob[0m
+         [1;33m→ + org: veraprob[0m
+
+  C3 — Test Coverage Gate: checking for missing test files for changed domain/application sources...
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/intelligence/detectors/situation_detector.dart — expected: test/application/intelligence/detectors/situation_detector_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/normalization/models/connectivity_state.dart — expected: test/application/normalization/models/connectivity_state_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/normalization/models/motion_state.dart — expected: test/application/normalization/models/motion_state_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/normalization/models/route_adherence.dart — expected: test/application/normalization/models/route_adherence_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/normalization/models/trip_status_view.dart — expected: test/application/normalization/models/trip_status_view_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/projections/models/fleet_status_projection.dart — expected: test/application/projections/models/fleet_status_projection_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/projections/providers/audit_log_projection_provider.dart — expected: test/application/projections/providers/audit_log_projection_provider_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/projections/providers/command_center_filter_provider.dart — expected: test/application/projections/providers/command_center_filter_provider_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/projections/providers/fleet_status_projection_provider.dart — expected: test/application/projections/providers/fleet_status_projection_provider_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/projections/providers/kpi_projection_provider.dart — expected: test/application/projections/providers/kpi_projection_provider_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/sla_audit/approve_sanction_command.dart — expected: test/application/sla_audit/approve_sanction_command_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/sla_audit/export_service.dart — expected: test/application/sla_audit/export_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/sla_audit/pdf_export_service.dart — expected: test/application/sla_audit/pdf_export_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/sla_audit/projections/contract_query_service.dart — expected: test/application/sla_audit/projections/contract_query_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/sla_audit/projections/contract_query_service_in_memory.dart — expected: test/application/sla_audit/projections/contract_query_service_in_memory_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/sla_audit/projections/contract_status_view.dart — expected: test/application/sla_audit/projections/contract_status_view_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/sla_audit/projections/contractual_financial_snapshot_generator.dart — expected: test/application/sla_audit/projections/contractual_financial_snapshot_generator_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/sla_audit/projections/executive_dashboard_view.dart — expected: test/application/sla_audit/projections/executive_dashboard_view_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/sla_audit/projections/sanction_queue_query_service.dart — expected: test/application/sla_audit/projections/sanction_queue_query_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/sla_audit/reject_sanction_command.dart — expected: test/application/sla_audit/reject_sanction_command_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/super_admin/create_organization_result.dart — expected: test/application/super_admin/create_organization_result_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/application/super_admin/super_admin_invitation_command_service.dart — expected: test/application/super_admin/super_admin_invitation_command_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/core/services/logger_service.dart — expected: test/core/services/logger_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/core/services/notification_service.dart — expected: test/core/services/notification_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/core/utils/data_seeder.dart — expected: test/core/utils/data_seeder_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/data/services/telemetry_service.dart — expected: test/data/services/telemetry_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/dev/performance_metrics.dart — expected: test/dev/performance_metrics_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/admin/organization.dart — expected: test/domain/admin/organization_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/authority/commands/trips/create_trip_event_command.dart — expected: test/domain/authority/commands/trips/create_trip_event_command_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/authority/core/authority_types.dart — expected: test/domain/authority/core/authority_types_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/authority/decision/authorization_decision.dart — expected: test/domain/authority/decision/authorization_decision_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/enums/trip_status.dart — expected: test/domain/enums/trip_status_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/enums/user_permissions.dart — expected: test/domain/enums/user_permissions_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/enums/user_role.dart — expected: test/domain/enums/user_role_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/attestation_header.dart — expected: test/domain/sla_audit/attestation_header_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/contract_review_token_repository.dart — expected: test/domain/sla_audit/contract_review_token_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/contractual_rule.dart — expected: test/domain/sla_audit/contractual_rule_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/evaluation_trace.dart — expected: test/domain/sla_audit/evaluation_trace_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/execution_events.dart — expected: test/domain/sla_audit/execution_events_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/sanction_review_queue_repository.dart — expected: test/domain/sla_audit/sanction_review_queue_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/service_manifest_repository.dart — expected: test/domain/sla_audit/service_manifest_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/sla_audit_ledger_repository.dart — expected: test/domain/sla_audit/sla_audit_ledger_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/sla_ledger_entry.dart — expected: test/domain/sla_audit/sla_ledger_entry_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/sla_template_repository.dart — expected: test/domain/sla_audit/sla_template_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/sla_audit/spoofing_risk_score.dart — expected: test/domain/sla_audit/spoofing_risk_score_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/super_admin/cnpj_company_data.dart — expected: test/domain/super_admin/cnpj_company_data_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/super_admin/create_organization_command.dart — expected: test/domain/super_admin/create_organization_command_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/super_admin/i_cnpj_lookup_service.dart — expected: test/domain/super_admin/i_cnpj_lookup_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/super_admin/i_mfa_repository.dart — expected: test/domain/super_admin/i_mfa_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/super_admin/i_super_admin_repository.dart — expected: test/domain/super_admin/i_super_admin_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/super_admin/mfa_challenge_result.dart — expected: test/domain/super_admin/mfa_challenge_result_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/super_admin/mfa_enrollment_result.dart — expected: test/domain/super_admin/mfa_enrollment_result_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/super_admin/plan_type.dart — expected: test/domain/super_admin/plan_type_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/super_admin/system_audit_log_entry.dart — expected: test/domain/super_admin/system_audit_log_entry_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/domain/super_admin/tenant_billing_event.dart — expected: test/domain/super_admin/tenant_billing_event_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/admin/postgres_invitation_command_service.dart — expected: test/infrastructure/admin/postgres_invitation_command_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/admin/postgres_invitation_query_service.dart — expected: test/infrastructure/admin/postgres_invitation_query_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/admin/postgres_organization_repository.dart — expected: test/infrastructure/admin/postgres_organization_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/admin/postgres_user_management_command_service.dart — expected: test/infrastructure/admin/postgres_user_management_command_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/audit/postgres_audit_service.dart — expected: test/infrastructure/audit/postgres_audit_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/observability/analytics_service.dart — expected: test/infrastructure/observability/analytics_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/observability/sentry_observer.dart — expected: test/infrastructure/observability/sentry_observer_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/providers/mfa_providers.dart — expected: test/infrastructure/providers/mfa_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/providers/super_admin_providers.dart — expected: test/infrastructure/providers/super_admin_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/in_memory_sanction_review_queue_repository.dart — expected: test/infrastructure/sla_audit/in_memory_sanction_review_queue_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/in_memory_service_manifest_repository.dart — expected: test/infrastructure/sla_audit/in_memory_service_manifest_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/in_memory_sla_template_repository.dart — expected: test/infrastructure/sla_audit/in_memory_sla_template_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/in_memory_spoofing_audit_repository.dart — expected: test/infrastructure/sla_audit/in_memory_spoofing_audit_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/postgres_contract_query_service.dart — expected: test/infrastructure/sla_audit/postgres_contract_query_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart — expected: test/infrastructure/sla_audit/postgres_contractual_execution_state_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/postgres_contractual_financial_snapshot_repository.dart — expected: test/infrastructure/sla_audit/postgres_contractual_financial_snapshot_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/postgres_sanction_queue_query_service.dart — expected: test/infrastructure/sla_audit/postgres_sanction_queue_query_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/postgres_sanction_review_queue_repository.dart — expected: test/infrastructure/sla_audit/postgres_sanction_review_queue_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/postgres_service_manifest_repository.dart — expected: test/infrastructure/sla_audit/postgres_service_manifest_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart — expected: test/infrastructure/sla_audit/postgres_sla_audit_ledger_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/postgres_sla_template_repository.dart — expected: test/infrastructure/sla_audit/postgres_sla_template_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/postgres_spoofing_audit_repository.dart — expected: test/infrastructure/sla_audit/postgres_spoofing_audit_repository_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/sla_audit/sla_persistence_provider.dart — expected: test/infrastructure/sla_audit/sla_persistence_provider_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/infrastructure/super_admin/receita_ws_cnpj_service.dart — expected: test/infrastructure/super_admin/receita_ws_cnpj_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/presentation/shared/trip_status_theme.dart — expected: test/presentation/shared/trip_status_theme_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/presentation/shared/widgets/live_indicator.dart — expected: test/presentation/shared/widgets/live_indicator_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/presentation/shared/widgets/veraprob_chip.dart — expected: test/presentation/shared/widgets/veraprob_chip_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/presentation/shared/widgets/veraprob_header.dart — expected: test/presentation/shared/widgets/veraprob_header_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/presentation/shell/admin_shell.dart — expected: test/presentation/shell/admin_shell_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/presentation/shell/billing_cycle_reports_screen.dart — expected: test/presentation/shell/billing_cycle_reports_screen_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/presentation/shell/contractor_portal_screen.dart — expected: test/presentation/shell/contractor_portal_screen_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/presentation/shell/executive_dashboard_screen.dart — expected: test/presentation/shell/executive_dashboard_screen_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/presentation/shell/settings_screen.dart — expected: test/presentation/shell/settings_screen_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/presentation/shell/widgets/onboarding_progress_banner.dart — expected: test/presentation/shell/widgets/onboarding_progress_banner_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/state/providers/auditor_queue_providers.dart — expected: test/state/providers/auditor_queue_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/state/providers/auth_providers.dart — expected: test/state/providers/auth_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/state/providers/contract_providers.dart — expected: test/state/providers/contract_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/state/providers/fleet_providers.dart — expected: test/state/providers/fleet_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/state/providers/service_manifest_providers.dart — expected: test/state/providers/service_manifest_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/state/providers/sla_providers.dart — expected: test/state/providers/sla_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/state/providers/sla_template_providers.dart — expected: test/state/providers/sla_template_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/state/providers/super_admin_auth_providers.dart — expected: test/state/providers/super_admin_auth_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for lib/state/providers/telemetry_providers.dart — expected: test/state/providers/telemetry_providers_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for scripts/calc_coverage.dart — expected: scripts/calc_coverage_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for scripts/coverage_report.dart — expected: scripts/coverage_report_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for test/domain/authority/hardening/mocks/mock_mutator_service.dart — expected: test/domain/authority/hardening/mocks/mock_mutator_service_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for test/domain/authority/hardening/mocks/strict_mock_policy_evaluator.dart — expected: test/domain/authority/hardening/mocks/strict_mock_policy_evaluator_test.dart (coverage gate >60%)
+  [1;33m[WARN] [0m[TEST-WARN] No test file for test/infrastructure/postgres/postgres_test_config.dart — expected: test/infrastructure/postgres/postgres_test_config_test.dart (coverage gate >60%)
+
+  C4 — Leaky Abstraction: scanning lib/features/ for direct domain imports...
+  [1;33m[WARN] [0m[LEAK-WARN] Domain imports found in lib/features/ — domain types must flow through application-layer ViewModels/DTOs (INV-4 / Lens 2)
+         [0;31m→ lib/features/admin/presentation/command_center/utils/ui_command_dispatcher.dart:4:import 'package:veraprob/domain/authority/commands/operational_command.dart';[0m
+         [0;31m→ lib/features/admin/presentation/command_center/widgets/alerts_triade_drawer.dart:4:import 'package:veraprob/domain/sla_audit/alert_financial_impact.dart';[0m
+         [0;31m→ lib/features/admin/presentation/command_center/widgets/occurrence_modal.dart:4:import 'package:veraprob/domain/enums/event_type.dart';[0m
+         [0;31m→ lib/features/admin/presentation/command_center/widgets/trip_sidebar.dart:4:import 'package:veraprob/domain/entities/operational_trip.dart';[0m
+         [0;31m→ lib/features/admin/presentation/command_center/widgets/vehicle_detail_drawer.dart:4:import 'package:veraprob/domain/entities/operational_trip.dart';[0m
+         [0;31m→ lib/features/admin/presentation/command_center/widgets/vehicle_detail_drawer.dart:5:import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';[0m
+         [0;31m→ lib/features/admin/presentation/command_center/widgets/vehicle_detail_drawer.dart:7:import 'package:veraprob/domain/enums/trip_status.dart';[0m
+         [0;31m→ lib/features/admin/presentation/command_center/widgets/vehicle_detail_drawer.dart:8:import 'package:veraprob/domain/entities/operational_suggestion.dart';[0m
+         [0;31m→ lib/features/admin/presentation/command_center/widgets/vehicle_detail_drawer.dart:15:import 'package:veraprob/domain/authority/commands/trips/update_trip_status_command.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/contracts_screen.dart:8:import 'package:veraprob/domain/sla_audit/domain_exception.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/contract_detail_screen.dart:10:import 'package:veraprob/domain/sla_audit/execution_status.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/contract_detail_screen.dart:11:import 'package:veraprob/domain/shared/money.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/create_contract_form.dart:7:import 'package:veraprob/domain/sla_audit/domain_exception.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/create_contract_form.dart:11:import 'package:veraprob/domain/sla_audit/contractor.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/declare_contract_plan_form.dart:10:import 'package:veraprob/domain/sla_audit/domain_exception.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/declare_contract_plan_form.dart:11:import 'package:veraprob/domain/sla_audit/operational_zone.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/declare_contract_plan_form.dart:12:import 'package:veraprob/domain/sla_audit/shift_pattern.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/declare_contract_plan_form.dart:13:import 'package:veraprob/domain/sla_audit/sla_penalties.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/declare_contract_plan_form.dart:14:import 'package:veraprob/domain/sla_audit/vehicle_category.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/declare_contract_plan_form.dart:15:import 'package:veraprob/domain/sla_audit/week_cycle.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/declare_contract_plan_form.dart:16:import 'package:veraprob/domain/shared/money.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/declare_contract_plan_form.dart:21:import 'package:veraprob/domain/sla_audit/sla_template.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/declare_contract_plan_form.dart:22:import 'package:veraprob/domain/sla_audit/smart_defaults.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/declare_contract_plan_form.dart:23:import 'package:veraprob/domain/sla_audit/transport_vertical.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/operational_zones_screen.dart:12:import 'package:veraprob/domain/sla_audit/domain_exception.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/operational_zones_screen.dart:13:import 'package:veraprob/domain/sla_audit/operational_zone.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/sla_audit_screen.dart:5:import 'package:veraprob/domain/shared/money.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/sla_audit_screen.dart:8:import 'package:veraprob/domain/sla_audit/execution_status.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/widgets/investigation_modal.dart:6:import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/widgets/investigation_modal.dart:7:import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';[0m
+         [0;31m→ lib/features/admin/presentation/screens/widgets/_sla_execution_detail_drawer.dart:5:import 'package:veraprob/domain/sla_audit/execution_status.dart';[0m
+         [0;31m→ lib/features/admin/presentation/widgets/contractor_type_ahead_field.dart:4:import 'package:veraprob/domain/sla_audit/contractor.dart';[0m
+         [0;31m→ lib/features/admin/presentation/widgets/zone_type_ahead_field.dart:4:import 'package:veraprob/domain/sla_audit/operational_zone.dart';[0m
+         [0;31m→ lib/features/assets/data/repositories/transit_route_repository.dart:1:import 'package:veraprob/domain/entities/transit_route.dart';[0m
+         [0;31m→ lib/features/assets/data/repositories/transit_route_repository_impl.dart:2:import 'package:veraprob/domain/entities/transit_route.dart';[0m
+         [0;31m→ lib/features/assets/data/repositories/vehicle_asset_repository.dart:1:import 'package:veraprob/domain/entities/vehicle.dart';[0m
+         [0;31m→ lib/features/assets/data/repositories/vehicle_asset_repository.dart:2:import 'package:veraprob/domain/enums/vehicle_status.dart';[0m
+         [0;31m→ lib/features/assets/data/repositories/vehicle_asset_repository_impl.dart:2:import 'package:veraprob/domain/entities/vehicle.dart';[0m
+         [0;31m→ lib/features/assets/data/repositories/vehicle_asset_repository_impl.dart:3:import 'package:veraprob/domain/enums/vehicle_status.dart';[0m
+
+[1m[0;34m══════════════════════════════════════════════════════════[0m
+[1m[0;34m  PILLAR D — Strict Type-Safety Audit (Phase 8.5)[0m
+[1m[0;34m══════════════════════════════════════════════════════════[0m
+
+  D1 — Strict Casting: checking for implicit dynamic casts (INV-4)...
+  [0;32m[PASS] [0mDomain layer: 0 strict-type violations (INV-4 compliant)
+
+[1m════════════════════════════════════════════════════════════[0m
+[1m  SCAN SUMMARY[0m
+[1m════════════════════════════════════════════════════════════[0m
+
+  [1mBLOCKS  (hard failures, exit 1):[0m  1
+  [1mWARNINGS (flagged for LLM review):[0m 134
+
+  [0;31m[1m❌ VERDICT: PR BLOCKED — 1 invariant violation(s) detected.[0m
+  [0;31m   The Lead Reviewer MUST issue [NO-GO] immediately.[0m
+  [0;31m   Fix all [BLOCK] violations and re-run this script.[0m
+
+[0;31mOriginal scanner reported hard blocks.[0m
+
+[1m[0;34mStep 2: Deterministic Pattern Scan (Lead Reviewer Mode)...[0m
+
+[1m[0;34mStep 3: Regression Impact Analysis...[0m
+  [1;33m[1m[REGRESSION-ALERT][0m Changes in migrations or domain detected.
+    → lib/domain/admin/organization.dart
+    → lib/domain/authority/commands/trips/create_trip_event_command.dart
+    → lib/domain/authority/core/authority_types.dart
+    → lib/domain/authority/decision/authorization_decision.dart
+    → lib/domain/entities/audit_log.dart
+    → lib/domain/entities/operational_trip.dart
+    → lib/domain/enums/trip_status.dart
+    → lib/domain/enums/user_permissions.dart
+    → lib/domain/enums/user_role.dart
+    → lib/domain/sla_audit/alert_financial_impact.dart
+    → lib/domain/sla_audit/attestation_header.dart
+    → lib/domain/sla_audit/canonical_fact.dart
+    → lib/domain/sla_audit/contract_review_token_repository.dart
+    → lib/domain/sla_audit/contractual_rule.dart
+    → lib/domain/sla_audit/evaluation_trace.dart
+    → lib/domain/sla_audit/evidence_payload.dart
+    → lib/domain/sla_audit/execution_events.dart
+    → lib/domain/sla_audit/kinematic_guard.dart
+    → lib/domain/sla_audit/kinematic_validation_result.dart
+    → lib/domain/sla_audit/rule_snapshot.dart
+    → lib/domain/sla_audit/sanction_review_queue_entry.dart
+    → lib/domain/sla_audit/sanction_review_queue_repository.dart
+    → lib/domain/sla_audit/service_manifest.dart
+    → lib/domain/sla_audit/service_manifest_repository.dart
+    → lib/domain/sla_audit/shadow_mode_simulation.dart
+    → lib/domain/sla_audit/sla_audit_ledger_repository.dart
+    → lib/domain/sla_audit/sla_ledger_entry.dart
+    → lib/domain/sla_audit/sla_template.dart
+    → lib/domain/sla_audit/sla_template_repository.dart
+    → lib/domain/sla_audit/smart_defaults.dart
+    → lib/domain/sla_audit/spoofing_detector.dart
+    → lib/domain/sla_audit/spoofing_risk_score.dart
+    → lib/domain/sla_audit/transport_vertical.dart
+    → lib/domain/sla_audit/verdict_evidence.dart
+    → lib/domain/super_admin/cnpj_company_data.dart
+    → lib/domain/super_admin/create_organization_command.dart
+    → lib/domain/super_admin/i_cnpj_lookup_service.dart
+    → lib/domain/super_admin/i_mfa_repository.dart
+    → lib/domain/super_admin/i_super_admin_repository.dart
+    → lib/domain/super_admin/mfa_challenge_result.dart
+    → lib/domain/super_admin/mfa_enrollment_result.dart
+    → lib/domain/super_admin/mfa_status.dart
+    → lib/domain/super_admin/mfa_verification_result.dart
+    → lib/domain/super_admin/plan_type.dart
+    → lib/domain/super_admin/system_audit_log_entry.dart
+    → lib/domain/super_admin/tenant_billing_event.dart
+    → lib/domain/super_admin/tenant_health_snapshot.dart
+    → supabase/migrations/20200101000000_enable_extensions.sql
+    → supabase/migrations/20260101000000_base_schema.sql
+    → supabase/migrations/20260304195300_sla_audit_hardening.sql
+    → supabase/migrations/20260305175500_contract_rules.sql
+    → supabase/migrations/20260310000000_contract_lifecycle.sql
+    → supabase/migrations/20260310180000_core_schema_recovery.sql
+    → supabase/migrations/20260310190000_fix_rls_recovery_tables.sql
+    → supabase/migrations/20260310210000_fix_rls_jwt_paths_and_missing_columns.sql
+    → supabase/migrations/20260310220000_schema_sync_dart_domain.sql
+    → supabase/migrations/20260310240000_contracts_financial_ceiling.sql
+    → supabase/migrations/20260311000000_b2b_refactoring_foundation.sql
+    → supabase/migrations/20260315000001_zone_scope.sql
+    → supabase/migrations/20260316000001_cse_rls_fix.sql
+    → supabase/migrations/20260317000001_rls_jwt_path_unification.sql
+    → supabase/migrations/20260317000002_organizations_enrichment.sql
+    → supabase/migrations/20260317000003_fix_jwt_hook_null_safety.sql
+    → supabase/migrations/20260318000001_contractors_table.sql
+    → supabase/migrations/20260318000002_zones_contractor_fk.sql
+    → supabase/migrations/20260319000001_org_management_rpc.sql
+    → supabase/migrations/20260320000001_invitations.sql
+    → supabase/migrations/20260320000002_invitation_rpcs.sql
+    → supabase/migrations/20260321000001_contract_approval_workflow.sql
+    → supabase/migrations/20260322000001_asset_org_isolation.sql
+    → supabase/migrations/20260322000002_vehicles_table.sql
+    → supabase/migrations/20260324000001_rule_studio_rpcs.sql
+    → supabase/migrations/20260325000001_anti_corruption_edge.sql
+    → supabase/migrations/20260326000001_kinematic_guard_trigger.sql
+    → supabase/migrations/20260401000002_shadow_mode_simulations.sql
+    → supabase/migrations/20260403000003_pii_masking.sql
+    → supabase/migrations/20260404120000_ledger_v2_immutability_triggers.sql
+    → supabase/migrations/20260405000001_super_admin_foundation.sql
+    → supabase/migrations/20260405000002_tenant_billing_events.sql
+    → supabase/migrations/20260405000003_super_admin_tenant_health_view.sql
+    → supabase/migrations/20260405000004_system_audit_log_org_id.sql
+    → supabase/migrations/20260405000005_super_admin_rpcs.sql
+    → supabase/migrations/20260405000006_super_admin_rls_hardening.sql
+    → supabase/migrations/20260405000007_super_admin_rpcs_service_role_bypass.sql
+    → supabase/migrations/20260406000001_sanction_review_queue.sql
+    → supabase/migrations/20260406000002_sanction_queue_trigger.sql
+    → supabase/migrations/20260406000003_sanction_escalation_log.sql
+    → supabase/migrations/20260406000004_pending_sanctions_rpc.sql
+    → supabase/migrations/20260407000000_fix_srq_rls_jwt_path.sql
+    → supabase/migrations/20260408000001_unique_cnpj.sql
+    → supabase/migrations/20260408000002_fix_queue_rls_role.sql
+    → supabase/migrations/20260408000003_billing_org_name.sql
+    → supabase/migrations/20260409000001_fix_trigger_and_audit_log.sql
+    → supabase/migrations/20260410000001_fix_jwt_hook_toplevel_claims.sql
+    → supabase/migrations/20260410000002_fix_rls_role_path.sql
+    → supabase/migrations/20260411000001_user_roles_enrich_and_fix_auth.sql
+    → supabase/migrations/20260412000001_fix_accept_invitation_rpc.sql
+    → supabase/migrations/20260413000001_fix_accept_invitation_security.sql
+    → supabase/migrations/20260414000001_fix_jwt_hook_appmeta_null_guard.sql
+    → supabase/migrations/20260415000001_fix_ledger_v1_rls_and_immutability.sql
+    → supabase/migrations/20260415000002_snapshot_last_ledger_entry_text.sql
+    → supabase/migrations/20260416000001_add_vertical_to_sla_templates.sql
+    → supabase/migrations/20260416000002_service_manifests.sql
+    → supabase/migrations/20260417000001_super_admin_proxy_rls.sql
+    → supabase/migrations/20260418000001_mfa_lockout_and_est_rls.sql
+
+[1m════════════════════════════════════════════════════════════[0m
+[1m  LEAD REVIEWER VERDICT (Deterministic Mode)[0m
+════════════════════════════════════════════════════════════
+  Deterministic Blocks: 
+  Deterministic Warns:  
+  Regression Alert:    YES
+
+  FINAL VERDICT:        [1m[REVISE][0m
+════════════════════════════════════════════════════════════

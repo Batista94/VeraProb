@@ -185,7 +185,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         originZoneId: s['origin_zone_id'],
         destinationZoneId: s['destination_zone_id'],
         operationalDate: s['operational_date'] != null
-            ? DateTime.parse(s['operational_date'])
+            ? DateTime.parse('${s['operational_date']}T00:00:00.000Z')
             : null,
         shiftPatternIndex: s['shift_pattern_index'],
         delayToleranceMinutes: s['delay_tolerance_minutes'],

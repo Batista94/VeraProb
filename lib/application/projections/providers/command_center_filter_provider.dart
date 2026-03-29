@@ -25,13 +25,15 @@ class CommandCenterFilterState {
     FleetStatusFilter? selectedFleetStatusFilter,
     int? selectedSeverityFilter,
     String? followVehicleId,
+    bool clearSeverity = false,
     bool clearFollow = false,
   }) {
     return CommandCenterFilterState(
       selectedFleetStatusFilter:
           selectedFleetStatusFilter ?? this.selectedFleetStatusFilter,
-      selectedSeverityFilter:
-          selectedSeverityFilter ?? this.selectedSeverityFilter,
+      selectedSeverityFilter: clearSeverity
+          ? null
+          : (selectedSeverityFilter ?? this.selectedSeverityFilter),
       followVehicleId: clearFollow
           ? null
           : (followVehicleId ?? this.followVehicleId),
@@ -52,7 +54,11 @@ class CommandCenterFilterNotifier
   }
 
   void setSeverityFilter(int? severity) {
-    state = state.copyWith(selectedSeverityFilter: severity);
+    if (severity == null || (state.selectedSeverityFilter == severity)) {
+      state = state.copyWith(clearSeverity: true);
+    } else {
+      state = state.copyWith(selectedSeverityFilter: severity);
+    }
   }
 
   void setFollowVehicleId(String? vehicleId) {

@@ -1,0 +1,24 @@
+00:00 +0: loading C:/Projects/VeraProb/test/core/utils/data_seeder_test.dart
+00:00 +0: DataSeeder Integration Tests (setUpAll)
+supabase.supabase_flutter: INFO: ***** Supabase init completed ***** 
+00:00 +0: DataSeeder Integration Tests seedDrivers inserts default drivers
+00:00 +0 -1: DataSeeder Integration Tests seedDrivers inserts default drivers [E]
+  Expected: <3>
+    Actual: <0>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test\core\utils\data_seeder_test.dart 44:9          main.<fn>.<fn>
+  
+00:00 +0 -1: DataSeeder Integration Tests seedRoutes inserts default routes
+00:01 +0 -2: DataSeeder Integration Tests seedRoutes inserts default routes [E]
+  Expected: <4>
+    Actual: <0>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test\core\utils\data_seeder_test.dart 56:9          main.<fn>.<fn>
+  
+00:01 +0 -2: DataSeeder Integration Tests seedActiveSanctions creates recommendations
+00:01 +1 -2: DataSeeder Integration Tests (tearDownAll)
+00:01 +1 -2: Some tests failed.

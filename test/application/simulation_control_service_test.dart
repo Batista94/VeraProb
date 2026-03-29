@@ -191,7 +191,13 @@ void main() {
       },
     );
 
-    test('Ocurrence dispatches contractual evidence via port', () async {
+    test('Interruption dispatches contractual evidence', () async {
+      when(
+        () => mockSimulation.updateTripStatus('t_i', TripStatus.interrupted),
+      ).thenReturn(TripStatus.enRoute);
+      when(
+        () => mockSimulation.getTripById('t_i'),
+      ).thenReturn(null); // tests null safety on line 81
       when(
         () => mockSimulation.addEvent(
           tripId: any(named: 'tripId'),
@@ -202,32 +208,100 @@ void main() {
         ),
       ).thenReturn(
         TripEvent(
-          id: '3',
-          tripId: 't_3',
-          eventType: EventType.manualOverride,
+          id: 'i1',
+          tripId: 't_i',
+          eventType: EventType.statusChange,
           createdAt: DateTime.now(),
         ),
       );
 
-      await service.createTripEvent(
-        't_3',
-        EventType.manualOverride,
-        metadata: {'type': 'Accident'},
-        notes: 'Test occurrence',
-      );
+      await service.updateTripStatus('t_i', TripStatus.interrupted);
 
       verify(
-        () => mockEventPort.dispatchOccurrenceRegistered(
-          organizationId: any(named: 'organizationId'),
-          tripId: any(named: 'tripId'),
-          vehicleId: any(named: 'vehicleId'),
-          operatorId: any(named: 'operatorId'),
-          occurrenceType: any(named: 'occurrenceType'),
-          notes: any(named: 'notes'),
-          metadata: any(named: 'metadata'),
+        () => mockEventPort.dispatchTripInterrupted(
+          organizationId: 'org-1',
+          tripId: 't_i',
+          vehicleId: null,
+          operatorId: 'test_operator',
+          reason: any(named: 'reason'),
           occurredAtUtc: any(named: 'occurredAtUtc'),
         ),
       ).called(1);
+    });
+
+    test('resolveAlert calls updateTripStatus', () async {
+      when(
+        () => mockSimulation.updateTripStatus(any(), any()),
+      ).thenReturn(TripStatus.delayed);
+      when(
+        () => mockSimulation.addEvent(
+          tripId: any(named: 'tripId'),
+          eventType: any(named: 'eventType'),
+          fromStatus: any(named: 'fromStatus'),
+          toStatus: any(named: 'toStatus'),
+          metadata: any(named: 'metadata'),
+        ),
+      ).thenReturn(
+        TripEvent(
+          id: 'r1',
+          tripId: 't_r',
+          eventType: EventType.statusChange,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      await service.resolveAlert('t_r');
+      verify(
+        () => mockSimulation.updateTripStatus('t_r', TripStatus.enRoute),
+      ).called(1);
+    });
+
+    test('getEventsForTrip and getTripById delegation', () {
+      when(() => mockSimulation.getEventsForTrip('t_1')).thenReturn([]);
+      when(() => mockSimulation.getTripById('t_1')).thenReturn(null);
+
+      expect(service.getEventsForTrip('t_1'), isEmpty);
+      expect(service.getTripById('t_1'), isNull);
+    });
+
+    test('logAction error handling', () async {
+      when(
+        () => mockSimulation.updateTripStatus(any(), any()),
+      ).thenReturn(TripStatus.scheduled);
+      when(
+        () => mockSimulation.addEvent(
+          tripId: any(named: 'tripId'),
+          eventType: any(named: 'eventType'),
+          fromStatus: any(named: 'fromStatus'),
+          toStatus: any(named: 'toStatus'),
+          metadata: any(named: 'metadata'),
+        ),
+      ).thenReturn(
+        TripEvent(
+          id: 'e1',
+          tripId: 't1',
+          eventType: EventType.statusChange,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      when(
+        () => mockAudit.logAction(
+          organizationId: any(named: 'organizationId'),
+          operatorId: any(named: 'operatorId'),
+          actionType: any(named: 'actionType'),
+          entityId: any(named: 'entityId'),
+          oldValue: any(named: 'oldValue'),
+          newValue: any(named: 'newValue'),
+          reason: any(named: 'reason'),
+        ),
+      ).thenAnswer((_) async => throw Exception('audit error'));
+
+      // This should hit line 56
+      await service.updateTripStatus('t1', TripStatus.enRoute);
+
+      // Hit line 123
+      await service.createTripEvent('t1', EventType.statusChange);
     });
   });
 }

@@ -1,0 +1,13 @@
+Analyzing VeraProb...                                           
+
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\features\super_admin\presentation\screens\mfa_enrollment_screen.dart:66:31 - unawaited_futures
+   info - Use 'const' with the constructor to improve performance - test\application\sla_audit\contractual_evaluation_engine_test.dart:712:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\application\sla_audit\contractual_evaluation_engine_test.dart:740:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\application\sla_audit\contractual_evaluation_engine_test.dart:776:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\application\sla_audit\contractual_evaluation_engine_test.dart:783:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\domain\sla_audit\verdict_evidence_test.dart:170:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\domain\sla_audit\verdict_evidence_test.dart:192:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\domain\sla_audit\verdict_evidence_test.dart:207:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\domain\sla_audit\verdict_evidence_test.dart:227:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\domain\sla_audit\verdict_evidence_test.dart:246:20 - prefer_const_constructors
+

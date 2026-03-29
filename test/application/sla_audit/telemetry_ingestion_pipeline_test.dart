@@ -17,10 +17,28 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_executio
 import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_detector.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_audit_repository.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_audit_entry.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_risk_score.dart';
 
 void main() {
   setUpAll(() {
     tz_data.initializeTimeZones();
+    registerFallbackValue(SpoofingRiskScore.zero());
+    registerFallbackValue(
+      SpoofingAuditEntry.create(
+        organizationId: 'o',
+        deviceId: 'd',
+        assetId: 'a',
+        windowStart: DateTime.now(),
+        windowEnd: DateTime.now(),
+        riskScore: SpoofingRiskScore.zero(),
+        factsAnalyzed: 0,
+        factIds: [],
+      ),
+    );
   });
 
   // ── Geofence: São Paulo downtown ──────────────────────────────────────────
@@ -486,5 +504,61 @@ void main() {
       expect(result.skippedByKinematicJump, 1); // only Device A's t2
       expect(result.processed, 3); // Device A t1 + Device B t1 + Device B t2
     });
+    // ── 8.8: Anti-Spoofing Detector ──────────────────────────────────────────
+    group('8.8 — Anti-Spoofing Detector (INV-21)', () {
+      test(
+        'suspected spoofing batch is flagged and audited, not processed',
+        () async {
+          final mockDetector = _MockSpoofingDetector();
+          final mockSpoofingRepo = _MockSpoofingRepo();
+          final pipelineWithMocks = TelemetryIngestionPipeline(
+            engine: engine,
+            spoofingDetector: mockDetector,
+            spoofingRepo: mockSpoofingRepo,
+          );
+
+          final t1 = DateTime.utc(2026, 3, 1, 6, 0, 0);
+          final fact = makeFact(gpsTimestamp: t1);
+
+          // Algorithmic detection triggers
+          when(
+            () => mockDetector.analyze(any()),
+          ).thenReturn(const SpoofingRiskScore(score: 0.95, signals: []));
+          when(() => mockSpoofingRepo.append(any())).thenAnswer((_) async {});
+
+          final result = await pipelineWithMocks.process([
+            fact,
+          ], organizationId: 'org-1');
+
+          expect(result.suspectedSpoofingCount, 1);
+          expect(result.processed, 0);
+
+          // Verify audit log was written
+          verify(() => mockSpoofingRepo.append(any())).called(1);
+        },
+      );
+
+      test('manual confirmed spoofing flag skips processing', () async {
+        final t1 = DateTime.utc(2026, 3, 1, 6, 0, 0);
+        final confirmedFact = makeFact(
+          gpsTimestamp: t1,
+          flag: IngestionIntegrityFlag.confirmedSpoofing,
+        );
+
+        final result = await pipeline.process([
+          confirmedFact,
+        ], organizationId: 'org-1');
+
+        expect(
+          result.suspectedSpoofingCount,
+          1,
+        ); // logic uses this counter for both types
+        expect(result.processed, 0);
+      });
+    });
   });
 }
+
+class _MockSpoofingDetector extends Mock implements SpoofingDetector {}
+
+class _MockSpoofingRepo extends Mock implements SpoofingAuditRepository {}

@@ -1,0 +1,10 @@
+Changed lib\domain\sla_audit\verdict_evidence.dart
+Changed lib\features\admin\presentation\drivers_screen.dart
+Changed lib\features\admin\presentation\screens\sla_template_editor_dialog.dart
+Changed lib\features\super_admin\presentation\screens\mfa_enrollment_screen.dart
+Changed test\application\adapters\realtime_data_provider_test.dart
+Changed test\application\normalization\operational_state_normalizer_test.dart
+Changed test\application\projections\providers\fleet_attention_projection_provider_test.dart
+Changed test\application\sla_audit\contractual_evaluation_engine_test.dart
+Changed test\domain\sla_audit\verdict_evidence_test.dart
+Formatted 602 files (9 changed) in 5.68 seconds.

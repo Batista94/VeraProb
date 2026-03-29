@@ -1,0 +1,18 @@
+00:00 +0: loading C:/Projects/VeraProb/test/infrastructure/postgres/plan_declaration_repository_postgres_test.dart
+00:00 +0: PostgresPlanDeclarationRepository (setUpAll)
+supabase.supabase_flutter: INFO: ***** Supabase init completed ***** 
+00:00 +0: PostgresPlanDeclarationRepository save and findById - Manual Plan
+00:01 +1: PostgresPlanDeclarationRepository save and findByContract - B2B Plan (Shift Patterns)
+00:01 +2: PostgresPlanDeclarationRepository findByOrganization
+00:01 +3: PostgresPlanDeclarationRepository saveProjectedSets - Idempotency vs Update
+00:01 +3 -1: PostgresPlanDeclarationRepository saveProjectedSets - Idempotency vs Update [E]
+  Expected: DateTime:<2026-06-01 00:00:00.000Z>
+    Actual: DateTime:<2026-06-01 00:00:00.000>
+  
+  package:matcher                                                                    expect
+  package:flutter_test/src/widget_tester.dart 473:18                                 expect
+  test\infrastructure\postgres\plan_declaration_repository_postgres_test.dart 240:9  main.<fn>.<fn>
+  
+00:01 +3 -1: PostgresPlanDeclarationRepository save - Duplicate Version throws Exception
+00:01 +4 -1: PostgresPlanDeclarationRepository (tearDownAll)
+00:01 +4 -1: Some tests failed.

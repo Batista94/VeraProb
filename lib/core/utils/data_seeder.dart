@@ -21,6 +21,7 @@ class DataSeeder {
           .from('drivers')
           .select()
           .eq('license_number', d['license_number']!)
+          .eq('organization_id', organizationId)
           .maybeSingle();
 
       if (exists == null) {
@@ -64,6 +65,7 @@ class DataSeeder {
           .from('routes')
           .select()
           .eq('gtfs_route_id', r['gtfs_route_id']!)
+          .eq('organization_id', organizationId)
           .maybeSingle();
 
       if (exists == null) {

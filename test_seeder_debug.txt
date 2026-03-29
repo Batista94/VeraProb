@@ -1,0 +1,29 @@
+00:00 +0: loading C:/Projects/VeraProb/test/core/utils/data_seeder_test.dart
+00:00 +0: DataSeeder Integration Tests (setUpAll)
+supabase.supabase_flutter: INFO: ***** Supabase init completed ***** 
+00:00 +0: DataSeeder Integration Tests seedDrivers inserts default drivers
+00:01 +0 -1: DataSeeder Integration Tests seedDrivers inserts default drivers [E]
+  Expected: <3>
+    Actual: <0>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test\core\utils\data_seeder_test.dart 37:9          main.<fn>.<fn>
+  
+00:01 +0 -1: DataSeeder Integration Tests seedRoutes inserts default routes
+00:01 +0 -2: DataSeeder Integration Tests seedRoutes inserts default routes [E]
+  Expected: <4>
+    Actual: <0>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test\core\utils\data_seeder_test.dart 49:9          main.<fn>.<fn>
+  
+00:01 +0 -2: DataSeeder Integration Tests seedActiveSanctions creates recommendations
+00:01 +0 -3: DataSeeder Integration Tests seedActiveSanctions creates recommendations [E]
+  PostgrestException(message: insert or update on table "contracts" violates foreign key constraint "contracts_organization_id_fkey", code: 23503, details: Key (organization_id)=(dffbdd8e-c834-4edd-9d18-4c64c6c67782) is not present in table "organizations"., hint: null)
+  package:postgrest/src/postgrest_builder.dart 299:7   PostgrestBuilder._parseResponse
+  package:postgrest/src/postgrest_builder.dart 174:14  PostgrestBuilder._execute
+  
+00:01 +0 -3: DataSeeder Integration Tests (tearDownAll)
+00:01 +0 -3: Some tests failed.
