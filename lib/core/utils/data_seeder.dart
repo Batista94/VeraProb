@@ -185,6 +185,7 @@ class DataSeeder {
       'organization_id': organizationId,
       'contract_id': contract['id'],
       'operational_date_utc': yesterday.toIso8601String().split('T').first,
+      'operational_timezone': 'America/Sao_Paulo',
       'closed_at_utc': DateTime.now().toUtc().toIso8601String(),
       'total_contracted_revenue_cents': 40000,
       'protected_revenue_cents': 20000,

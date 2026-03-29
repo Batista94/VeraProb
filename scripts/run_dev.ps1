@@ -37,7 +37,12 @@ $efJob = Start-Job -ScriptBlock {
 }
 Write-Host "   Edge Functions job ID: $($efJob.Id)" -ForegroundColor DarkGray
 
-# 3. Run on Chrome (Flutter Web). .env is read automatically by flutter_dotenv.
+# 3. Clean and get dependencies to ensure UI structural changes are reflected.
+Write-Host "🧹 Limpando cache e baixando dependências (flutter clean && flutter pub get)..." -ForegroundColor Cyan
+flutter clean
+flutter pub get
+
+# 4. Run on Chrome (Flutter Web). .env is read automatically by flutter_dotenv.
 flutter run -d chrome --dart-define=ENV=dev
 
 # Cleanup Edge Function job when Flutter exits

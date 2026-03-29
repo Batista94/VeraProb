@@ -71,7 +71,9 @@ class UserManagementScreen extends ConsumerWidget {
                         style: const TextStyle(color: VeraProbColors.error),
                       ),
                     ),
-                    data: (members) => Column(
+                    data: (members) => members.isEmpty
+                        ? const SizedBox.shrink()
+                        : Column(
                       children: List.generate(members.length * 2 - 1, (i) {
                         if (i.isOdd) {
                           return const Divider(color: VeraProbColors.border);

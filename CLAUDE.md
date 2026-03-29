@@ -30,12 +30,12 @@ VeraProb is an **Automated SLA Compliance & Financial Protection Platform** (the
 
 ## 📍 LIVE STATUS: Phase 9.8 (The Body)
 
-**Current Objective:** Resilience & Operational Hub — Sidebar Hub Refactor + Background Sync. [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
+**Current Objective:** Resilience & Operational Hub — Hard Quota Enforcement + Sync. [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
 
-- **Done:** Phase 9.5 ✅ · Phase 9.6 ✅ (Shield) · Phase 9.7 ✅ (Brain — Visual Evidence Snapshots, SLA Wizard, Dark Sync)
+- **Done:** Phase 9.7 ✅ · 9.8.B (Sidebar Hub Refactor) ✅ · 9.8.C (Smart CNPJ Protocol) ✅
 - **Tests:** 1066 passing · 64 skipped · 0 failures ✅
 - **Next Up:**
-  1. **Sidebar Hub Refactor:** Consolidate setup menus into Admin Hub (<8 items in sidebar).
+  1. **9.8.D — Hard Quota Enforcement:** Database triggers for `max_vehicles`/`max_contracts` + SuperAdmin logic.
   2. **Final RLS Audit:** Verification of data isolation between tenants.
 
 ---

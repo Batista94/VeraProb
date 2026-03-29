@@ -2,7 +2,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../application/admin/invite_user_handler.dart';
 import '../../application/admin/invite_user_command.dart';
+import '../../core/utils/cnpj_validator.dart';
 import '../../domain/enums/user_permissions.dart';
+import '../../domain/super_admin/plan_limits.dart';
+import '../../domain/super_admin/plan_type.dart';
 import '../../domain/enums/user_role.dart';
 import '../../domain/services/rbac_service.dart';
 import '../../domain/sla_audit/domain_exception.dart';
@@ -30,10 +33,9 @@ class CreateOrganizationHandler {
       throw const DomainException('Unauthorized: canManageTenants required.');
     }
 
-    // 2. CNPJ validation — strip non-digits, must be 14 digits
-    final cnpjDigits = cmd.cnpj.replaceAll(RegExp(r'\D'), '');
-    if (cnpjDigits.length != 14) {
-      throw const DomainException('CNPJ inválido: deve conter 14 dígitos.');
+    // 2. CNPJ validation — modulo-11 check-digit (INV-18: CnpjValidator is pure Dart)
+    if (!CnpjValidator.isValid(cmd.cnpj)) {
+      throw const DomainException('CNPJ inválido.');
     }
 
     // 3. Required fields validation
@@ -50,10 +52,28 @@ class CreateOrganizationHandler {
       throw const DomainException('E-mail inválido.');
     }
 
-    // 5. Create org + billing event (atomic RPC via service_role)
+    // 5. Auto-fill quota limits from PlanLimits defaults when not explicitly provided
+    final planType = PlanType.fromDb(cmd.planType);
+    final effectiveCmd = (cmd.maxVehicles == null || cmd.maxActiveContracts == null)
+        ? CreateOrganizationCommand(
+            legalName: cmd.legalName,
+            tradeName: cmd.tradeName,
+            cnpj: cmd.cnpj,
+            timezone: cmd.timezone,
+            currencyCode: cmd.currencyCode,
+            planType: cmd.planType,
+            maxVehicles: cmd.maxVehicles ?? PlanLimits.maxVehicles(planType),
+            maxActiveContracts:
+                cmd.maxActiveContracts ?? PlanLimits.maxContracts(planType),
+            initialAdminEmail: cmd.initialAdminEmail,
+            superAdminUserId: cmd.superAdminUserId,
+          )
+        : cmd;
+
+    // 6. Create org + billing event (atomic RPC via service_role)
     late final String orgId;
     try {
-      orgId = await _repository.createOrganization(cmd);
+      orgId = await _repository.createOrganization(effectiveCmd);
     } on PostgrestException catch (e) {
       if (e.code == '23505' &&
           (e.message.contains('cnpj') ||
@@ -65,7 +85,7 @@ class CreateOrganizationHandler {
       rethrow;
     }
 
-    // 6. Invite first admin via SuperAdminInvitationCommandService (D4: bypasses TENANT_ADMIN check)
+    // 7. Invite first admin via SuperAdminInvitationCommandService (D4: bypasses TENANT_ADMIN check)
     //    IDs generated in Dart by InviteUserHandler — satisfies INV-7.
     final invitationService = SuperAdminInvitationCommandService(
       _authenticatedClient,
@@ -84,7 +104,7 @@ class CreateOrganizationHandler {
       ),
     );
 
-    // 7. Return immutable result
+    // 8. Return immutable result
     return CreateOrganizationResult(orgId: orgId, invitationToken: token);
   }
 

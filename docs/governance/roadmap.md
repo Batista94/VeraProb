@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-03-26
-**Current Status:** Phase 9.7 — Core Forensic Intelligence (The Brain) · [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
+**Current Status:** Phase 9.8 — Resilience & Operational Hub (The Body) · [ACTIVE: 9.8.D - Hard Quota Enforcement]
 **Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
@@ -17,34 +17,18 @@
 
 ---
 
-### [x] Phase 9.7 — Core Forensic Intelligence (The Brain) ✅ COMPLETE
-
-- **[x] Kinematic Guard (INV-17):** ✅ Physical validation ($v = \Delta d / \Delta t$) — domain service + DB trigger (`vp_kinematic_guard`) on `canonical_facts`. Flags `KINEMATIC_ANOMALY`. Full TDD coverage (8 tests).
-- **[x] Heurísticas de Alerta:** ✅ `AlertFinancialImpact` VO + `AlertImpactCalculator` — real-time R$ impact for delay, no-show, kinematic anomaly. Severity tiers (low/medium/high/critical).
-- **[x] GeoMath Consolidation:** ✅ `haversineMeters()` / `impliedSpeedCms()` centralized in `lib/core/utils/geo_math.dart`.
-- **[x] Visual Evidence Snapshots:** ✅ `GeofenceEvidenceMap` widget (`flutter_map` + `latlong2`) renders interactive mini-map with geofence circle, track polyline, and infraction marker in audit cards. `VerdictEvidence` extended with geofence coordinate fields (INV-7 backwards-compat hash). 6 new tests.
-- **[x] [UX] SLA Creation Wizard:** ✅ `SlaTemplateEditorDialog` refactored to 3-step wizard (Identidade → Temporal → Financeiro) with `AnimatedSwitcher` transitions, per-step `FormState` validation, `_WizardHeader` + `_StepDot` + `_StepConnector` components.
-- **[x] [UX] SLA Parameter Grouping:** ✅ Fields logically grouped by category across wizard steps — eliminates layout bugs from flat `Wrap` grid.
-- **[x] [UX] Side Drawer Dark Sync:** ✅ Driver registration drawer fully synchronized with Industrial Deep Theme (`VeraProbColors` / `VeraProbTypography` tokens — zero hardcoded `Colors.*` remaining).
-- **[x] Industrial Deep Theme:** ✅ Interface in Slate/Zinc tones applied across all modified components. `app_theme.dart` palette: Slate-950/800/700.
-
 ### [ ] Phase 9.8 — Resilience & Operational Hub (The Body)
 
-- **[UX] Sidebar Hub Refactor:** Consolidate setup menus into the Admin Hub, reducing the operational sidebar (<8 items).
-- **Background Sync Resilience:** Local SQLite buffer to ensure Chain of Custody in zones without signal.
-- **Driver Defense Portal:** Interface for submitting preventive justifications (photos/proofs) linked to audit.
-- **Heartbeat Monitor:** Logic to differentiate hardware sabotage from network failures.
-- **Late-Arrival Window Protocol (INV-12):** 48-hour window for deterministic reprocessing.
-- **Hard Quota Enforcement:** Database triggers for `max_vehicles` and `max_contracts` limits.
-- **[BIZ] Predictive Tenant Provisioning:** SuperAdmin Wizard logic for auto-filling limits based on Selected Plan.
-- **[UX] Login Split-Screen Refactor:** Transition to split-screen (40/60) Desktop layout to establish Forensic Authority.
-- **[UX] Smart CNPJ Protocol:** Implementar máscara dinâmica (00.000.000/0000-00), trava de unicidade no banco (Unique Constraint) e validação de dígito verificador.
-- **[UX] Global Info Tooltips:** Substituição de descrições extensas por ícones de informação flutuantes para reduzir a carga cognitiva do operador e limpeza visual.
-- **[UX] Searchable Entity Mapping:** Unificar a lógica de busca/filtro por Nome e CNPJ no cadastro de contratos e tenants.
-- **[UX] Universal CSV Importer (Bootstrap Edition):** Interface de mapeamento dinâmico de colunas para ingestão de qualquer rastreador sem necessidade de código customizado por tenant.
-- **[UX] Smart Contextual Geocoding:** Camada de tradução de coordenadas usando OpenStreetMap (Nominatim) + Queries Espaciais no banco para exibir nomes de zonas e endereços humanos em vez de Lat/Long.
-- **[BIZ] Manual CSV Importer (V1):** Interface básica para upload e mapeamento manual de colunas de telemetria para validação do motor.
-- **[BIZ] Tenant Admin Invitations:** Sistema de convites via e-mail (Resend) para o primeiro acesso de gestores de empresas.
+- **[x] 9.8.A — RLS JWT path hotfix + 7 new integration tests:** ✅ Corrigido vazamento potencial de tenant ID no path do JWT e cobertura de testes.
+- **[x] 9.8.B — Sidebar Hub Refactor (8 → 6 items):** ✅ Hub administrativo centralizado com redução de carga visual lateral.
+- **[x] 9.8.C — Smart CNPJ Protocol:** ✅ Máscara dinâmica, trava Unique no Postgres e validação Modulo-11 completa.
+- **[ ] 9.8.D — Hard Quota Enforcement + Predictive Provisioning (NEXT SESSION START):** Database triggers para `max_vehicles`/`max_contracts` + SuperAdmin logic.
+- **[ ] 9.8.E — Global InfoTooltip widget:** Substituição de textos longos por ícones informativos contextuais.
+- **[ ] 9.8.F — Searchable Entity Mapping:** Unificação de busca por Nome/CNPJ em contratos e tenants.
+- **[ ] 9.8.G — Heartbeat Monitor projection:** Diferenciação entre sabotagem de hardware e falha de rede.
+- **[ ] 9.8.H — Background Sync Resilience (LocalFactQueue):** Buffer SQLite para garantir Chain of Custody offline.
+- **[ ] 9.8.I — Late-Arrival Window Protocol (INV-12):** Janela de 48h para processamento determinístico.
+- **[ ] 9.8.J — Driver Defense Portal (MVP):** Portal para submissão de justificativas preventivas vinculadas à auditoria.
 
 ---
 

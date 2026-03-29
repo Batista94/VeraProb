@@ -98,35 +98,35 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                           children: [
                             TextFormField(
                               controller: _nameController,
+                              readOnly: true,
                               decoration: const InputDecoration(
                                 labelText: 'Nome da Organização',
+                                prefixIcon: Icon(Icons.lock_outline, size: 20),
                                 helperText:
-                                    'Nome exibido em relatórios e faturas.',
+                                    'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
                               ),
-                              validator: (v) =>
-                                  v?.isEmpty ?? true ? 'Obrigatório' : null,
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
                               controller: _timezoneController,
+                              readOnly: true,
                               decoration: const InputDecoration(
                                 labelText: 'Fuso Horário',
+                                prefixIcon: Icon(Icons.lock_outline, size: 20),
                                 helperText:
-                                    'Ex: America/Sao_Paulo (usado para cálculos de SLA).',
+                                    'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
                               ),
-                              validator: (v) =>
-                                  v?.isEmpty ?? true ? 'Obrigatório' : null,
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
                               controller: _currencyController,
+                              readOnly: true,
                               decoration: const InputDecoration(
                                 labelText: 'Código da Moeda',
+                                prefixIcon: Icon(Icons.lock_outline, size: 20),
                                 helperText:
-                                    'Ex: BRL, USD (usado para valores financeiros).',
+                                    'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
                               ),
-                              validator: (v) =>
-                                  v?.isEmpty ?? true ? 'Obrigatório' : null,
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
@@ -181,9 +181,6 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
       final command = UpdateOrgSettingsCommand(
         organizationId: orgId!,
         callerRole: role,
-        name: _nameController.text.trim(),
-        timezone: _timezoneController.text.trim(),
-        currencyCode: _currencyController.text.trim(),
         logoUrl: _logoUrlController.text.trim().isEmpty
             ? null
             : _logoUrlController.text.trim(),

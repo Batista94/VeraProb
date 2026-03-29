@@ -16,13 +16,35 @@ import 'package:veraprob/application/super_admin/create_organization_handler.dar
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_super_admin_repository.dart';
 
+import 'package:veraprob/core/utils/cnpj_validator.dart';
+
 import '../infrastructure/postgres/postgres_test_config.dart';
 
 const _uuid = Uuid();
 
+/// Generates a structurally valid CNPJ using the modulo-11 algorithm.
+///
+/// Uses timestamp-derived digits for the first 12 positions (base), then
+/// computes the two check digits deterministically so the result passes
+/// [CnpjValidator.isValid].
 String _uniqueCnpj() {
   final ts = DateTime.now().millisecondsSinceEpoch.toString().padLeft(14, '0');
-  return ts.substring(ts.length - 14);
+  // Take last 12 digits as the base (positions 0–11); compute check digits.
+  final base = ts.substring(ts.length - 12);
+  final nums = base.split('').map(int.parse).toList();
+
+  const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  final sum1 = List.generate(12, (i) => nums[i] * w1[i]).fold(0, (a, b) => a + b);
+  final rem1 = sum1 % 11;
+  final d1 = rem1 < 2 ? 0 : 11 - rem1;
+
+  final nums13 = [...nums, d1];
+  const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  final sum2 = List.generate(13, (i) => nums13[i] * w2[i]).fold(0, (a, b) => a + b);
+  final rem2 = sum2 % 11;
+  final d2 = rem2 < 2 ? 0 : 11 - rem2;
+
+  return '$base$d1$d2';
 }
 
 void main() async {

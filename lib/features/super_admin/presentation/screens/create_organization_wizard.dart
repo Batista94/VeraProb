@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/cnpj_input_formatter.dart';
+import '../../../../core/utils/cnpj_validator.dart';
 import '../../../../domain/super_admin/create_organization_command.dart';
 import '../../../../domain/super_admin/plan_type.dart';
 import '../../../../domain/sla_audit/domain_exception.dart';
@@ -112,6 +114,16 @@ class _CreateOrganizationWizardState
       }
       return;
     }
+
+    // Structural validation (immediate check-digit check)
+    if (!CnpjValidator.isValid(digits)) {
+      setState(() {
+        _cnpjApiError = 'CNPJ inválido';
+        _cnpjChecking = false;
+      });
+      return;
+    }
+
     setState(() {
       _cnpjChecking = true;
       _cnpjApiError = null;
@@ -363,7 +375,9 @@ class _CreateOrganizationWizardState
   @override
   Widget build(BuildContext context) {
     return Stepper(
-      type: StepperType.horizontal,
+      type: MediaQuery.sizeOf(context).width < 720
+          ? StepperType.vertical
+          : StepperType.horizontal,
       currentStep: _currentStep,
       onStepTapped: (step) {
         if (step <= _highestStepReached) _goToStep(step);
@@ -547,12 +561,13 @@ class _Step1FiscalData extends StatelessWidget {
             keyboardType: TextInputType.number,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
-              _CnpjInputFormatter(),
+              CnpjInputFormatter(),
             ],
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
               final digits = v.replaceAll(RegExp(r'\D'), '');
               if (digits.length != 14) return 'CNPJ deve ter 14 dígitos';
+              if (!CnpjValidator.isValid(digits)) return 'CNPJ inválido';
               return null;
             },
           ),
@@ -570,37 +585,48 @@ class _Step1FiscalData extends StatelessWidget {
           if (cnpjAutoFilled && cnpjApiError == null)
             Padding(
               padding: const EdgeInsets.only(top: 6, left: 4),
-              child: Row(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.check_circle,
-                    size: 14,
-                    color: VeraProbColors.success,
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Dados preenchidos via ReceitaWS',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: VeraProbColors.success,
-                    ),
-                  ),
-                  if (cnpjAutoInactive) ...[
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.warning_amber,
-                      size: 14,
-                      color: VeraProbColors.warning,
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Empresa inativa na Receita Federal',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: VeraProbColors.warning,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        size: 14,
+                        color: VeraProbColors.success,
                       ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Dados preenchidos via ReceitaWS',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: VeraProbColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (cnpjAutoInactive)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.warning_amber,
+                          size: 14,
+                          color: VeraProbColors.warning,
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Empresa inativa na Receita Federal',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: VeraProbColors.warning,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
                 ],
               ),
             ),
@@ -670,15 +696,20 @@ class _Step2Limits extends StatelessWidget {
                 color: VeraProbColors.superAdminSurface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   const Icon(
                     Icons.business,
                     size: 16,
                     color: VeraProbColors.secondary,
                   ),
-                  const SizedBox(width: 8),
-                  Text('$tradeName — Plano $planLabel'),
+                  Text(
+                    '$tradeName — Plano $planLabel',
+                    style: const TextStyle(fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -806,19 +837,18 @@ class _Step3AdminInvite extends StatelessWidget {
                 color: VeraProbColors.warning.withValues(alpha: 0.5),
               ),
             ),
-            child: const Row(
+            child: const Wrap(
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 Icon(
                   Icons.info_outline,
                   size: 16,
                   color: VeraProbColors.warning,
                 ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Um convite válido por 7 dias será enviado para este e-mail com permissão de Administrador.',
-                    style: TextStyle(fontSize: 12),
-                  ),
+                Text(
+                  'Um convite válido por 7 dias será enviado para este e-mail com permissão de Administrador.',
+                  style: TextStyle(fontSize: 12),
                 ),
               ],
             ),
@@ -865,26 +895,3 @@ class _SummaryRow extends StatelessWidget {
   }
 }
 
-// ── CNPJ Input Formatter (00.000.000/0000-00) ─────────────────────────────────
-
-class _CnpjInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length && i < 14; i++) {
-      if (i == 2 || i == 5) buffer.write('.');
-      if (i == 8) buffer.write('/');
-      if (i == 12) buffer.write('-');
-      buffer.write(digits[i]);
-    }
-    final formatted = buffer.toString();
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}

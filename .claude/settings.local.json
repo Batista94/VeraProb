@@ -171,7 +171,16 @@
       "Bash(find test:*)",
       "Bash(find lib/features/admin/presentation -name *drawer* -o -name *driver*)",
       "Bash(find test/ -name *.dart)",
-      "Bash(find lib/features/super_admin -name *.dart)"
+      "Bash(find lib/features/super_admin -name *.dart)",
+      "Bash(xargs -I {} basename {} .dart)",
+      "Bash(sed 's/CREATE TABLE //')",
+      "Bash(sed 's/ \\(.*//')",
+      "Bash(sed 's/ALTER TABLE //')",
+      "Bash(sed 's/public\\\\.//')",
+      "Bash(find /c/Projects/VeraProb/test -name *_test.dart -type f)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(sort -t: -k2 -nr)",
+      "Bash(find lib:*)"
     ]
   },
   "model": "sonnet"

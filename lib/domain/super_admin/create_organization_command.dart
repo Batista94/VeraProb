@@ -10,8 +10,13 @@ class CreateOrganizationCommand {
   final String timezone;
   final String currencyCode;
   final String planType;
-  final int maxVehicles;
-  final int maxActiveContracts;
+
+  /// Max vehicles quota. `null` means "derive from [planType] defaults at handler time".
+  final int? maxVehicles;
+
+  /// Max active contracts quota. `null` means "derive from [planType] defaults at handler time".
+  final int? maxActiveContracts;
+
   final String initialAdminEmail;
   final String superAdminUserId;
 
@@ -22,8 +27,8 @@ class CreateOrganizationCommand {
     required this.timezone,
     required this.currencyCode,
     required this.planType,
-    required this.maxVehicles,
-    required this.maxActiveContracts,
+    this.maxVehicles,
+    this.maxActiveContracts,
     required this.initialAdminEmail,
     required this.superAdminUserId,
   });

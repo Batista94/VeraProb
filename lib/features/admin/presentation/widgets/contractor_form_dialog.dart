@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/cnpj_input_formatter.dart';
+import '../../../../core/utils/cnpj_validator.dart';
 import '../../../../domain/sla_audit/contractor.dart';
 import '../../../../application/sla_audit/save_contractor_command.dart';
 import '../../../../state/providers/auth_providers.dart';
@@ -108,6 +110,14 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
                     labelText: 'CNPJ / Tax ID',
                     hintText: '00.000.000/0001-00',
                   ),
+                  inputFormatters: [CnpjInputFormatter()],
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    final digits = v.replaceAll(RegExp(r'\D'), '');
+                    if (digits.length != 14) return 'CNPJ incompleto';
+                    if (!CnpjValidator.isValid(digits)) return 'CNPJ inválido';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

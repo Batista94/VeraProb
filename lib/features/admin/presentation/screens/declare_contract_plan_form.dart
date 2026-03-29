@@ -1730,9 +1730,13 @@ class _DeclareContractPlanFormState
               ],
             ),
           ),
-        Row(
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
           children: [
-            Expanded(
+            SizedBox(
+              width: (MediaQuery.sizeOf(context).width - 80) /
+                  (MediaQuery.sizeOf(context).width < 600 ? 1 : 2),
               child: _KpiCard(
                 icon: Icons.shield_outlined,
                 label: 'Receita Protegida',
@@ -1742,8 +1746,9 @@ class _DeclareContractPlanFormState
                     'Soma dos valores contratuais por viagem × volume mensal projetado.',
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
+            SizedBox(
+              width: (MediaQuery.sizeOf(context).width - 80) /
+                  (MediaQuery.sizeOf(context).width < 600 ? 1 : 2),
               child: _KpiCard(
                 icon: Icons.warning_amber_rounded,
                 label: 'Exposição No-Show',
@@ -1756,9 +1761,13 @@ class _DeclareContractPlanFormState
           ],
         ),
         const SizedBox(height: 12),
-        Row(
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
           children: [
-            Expanded(
+            SizedBox(
+              width: (MediaQuery.sizeOf(context).width - 80) /
+                  (MediaQuery.sizeOf(context).width < 600 ? 1 : 2),
               child: _KpiCard(
                 icon: Icons.money_off,
                 label: 'Penalidade Máx.',
@@ -1769,8 +1778,9 @@ class _DeclareContractPlanFormState
               ),
             ),
             if (relativeRisk != null) ...[
-              const SizedBox(width: 12),
-              Expanded(
+              SizedBox(
+                width: (MediaQuery.sizeOf(context).width - 80) /
+                    (MediaQuery.sizeOf(context).width < 600 ? 1 : 2),
                 child: _KpiCard(
                   icon: Icons.account_balance_wallet_outlined,
                   label: 'Risco Relativo',
@@ -1781,9 +1791,10 @@ class _DeclareContractPlanFormState
                 ),
               ),
             ] else ...[
-              const SizedBox(width: 12),
-              const Expanded(
-                child: _KpiCard(
+              SizedBox(
+                width: (MediaQuery.sizeOf(context).width - 80) /
+                    (MediaQuery.sizeOf(context).width < 600 ? 1 : 2),
+                child: const _KpiCard(
                   icon: Icons.lock_outline,
                   label: 'Risco Relativo',
                   value: '—',
@@ -1916,7 +1927,9 @@ class _DeclareContractPlanFormState
               ),
             Expanded(
               child: Stepper(
-                type: StepperType.horizontal,
+                type: MediaQuery.sizeOf(context).width < 720
+                    ? StepperType.vertical
+                    : StepperType.horizontal,
                 currentStep: _currentStep,
                 onStepContinue: _onStepContinue,
                 onStepCancel: _onStepCancel,
@@ -2195,32 +2208,52 @@ class _ReviewRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.sizeOf(context).width < 480;
+    final content = [
+      SizedBox(
+        width: isNarrow ? null : 130,
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: VeraProbColors.textSecondary,
+          ),
+        ),
+      ),
+      if (isNarrow) const SizedBox(height: 2),
+      Expanded(
+        flex: isNarrow ? 0 : 1,
+        child: Text(
+          value,
+          style: const TextStyle(
+            fontSize: 12,
+            color: VeraProbColors.textPrimary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    ];
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: VeraProbColors.textSecondary),
-          const SizedBox(width: 6),
-          SizedBox(
-            width: 130,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: VeraProbColors.textSecondary,
-              ),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(icon, size: 14, color: VeraProbColors.textSecondary),
           ),
+          const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 12,
-                color: VeraProbColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: isNarrow
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: content,
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: content,
+                  ),
           ),
         ],
       ),

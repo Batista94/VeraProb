@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/super_admin/create_organization_handler.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
+import 'package:veraprob/domain/super_admin/plan_limits.dart';
+import 'package:veraprob/domain/super_admin/plan_type.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -59,7 +61,7 @@ void main() {
               isA<DomainException>().having(
                 (e) => e.message,
                 'message',
-                contains('14 dígitos'),
+                contains('inválido'),
               ),
             ),
           );
@@ -77,17 +79,16 @@ void main() {
       );
 
       test(
-        'strips formatting before counting (00.000.000/0001-99 has 14 digits)',
+        'strips formatting before validation (formatted valid CNPJ passes)',
         () async {
-          // The handler should NOT throw for a formatted CNPJ with 14 underlying digits.
-          // It will proceed to the repo call — we verify no DomainException is thrown
-          // for the CNPJ itself (the subsequent repo call will throw, which is fine).
+          // 11.222.333/0001-81 — formatted form of a structurally valid CNPJ.
+          // Handler strips mask, validates check digits, then proceeds to repo.
           when(
             () => mockRepo.createOrganization(any()),
           ).thenThrow(Exception('repo not connected'));
 
           await expectLater(
-            handler.handle(_validCmd(cnpj: '00.000.000/0001-99')),
+            handler.handle(_validCmd(cnpj: '11.222.333/0001-81')),
             throwsA(isNot(isA<DomainException>())),
           );
         },
@@ -97,6 +98,20 @@ void main() {
         await expectLater(
           handler.handle(_validCmd(cnpj: '')),
           throwsA(isA<DomainException>()),
+        );
+      });
+
+      test('throws DomainException for CNPJ with valid length but invalid check digit', () async {
+        // 11222333000182 — last digit changed from 1 → 2, passes length check but fails modulo-11
+        await expectLater(
+          handler.handle(_validCmd(cnpj: '11222333000182')),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains('inválido'),
+            ),
+          ),
         );
       });
     });
@@ -185,6 +200,58 @@ void main() {
         );
 
         verifyNever(() => mockRepo.createOrganization(any()));
+      });
+    });
+
+    group('quota auto-fill from PlanType', () {
+      // These tests verify what the handler passes to the repo.
+      // createOrganization throws a sentinel Exception so the invite step is
+      // never reached, avoiding the need to mock SupabaseClient.rpc().
+
+      test('auto-fills starter limits when maxVehicles/maxActiveContracts are null', () async {
+        CreateOrganizationCommand? captured;
+        when(() => mockRepo.createOrganization(any())).thenAnswer((inv) {
+          captured = inv.positionalArguments.first as CreateOrganizationCommand;
+          throw Exception('stop here');
+        });
+
+        final cmd = CreateOrganizationCommand(
+          legalName: 'Transportes Silva Ltda.',
+          tradeName: 'Silva Logística',
+          cnpj: '11222333000181',
+          timezone: 'America/Sao_Paulo',
+          currencyCode: 'BRL',
+          planType: PlanType.starter.dbValue,
+          // maxVehicles and maxActiveContracts intentionally omitted (null)
+          initialAdminEmail: 'admin@empresa.com.br',
+          superAdminUserId: 'super-admin-uuid-123',
+        );
+
+        await expectLater(
+          handler.handle(cmd),
+          throwsA(isNot(isA<DomainException>())),
+        );
+
+        expect(captured, isNotNull);
+        expect(captured!.maxVehicles, PlanLimits.maxVehicles(PlanType.starter));
+        expect(captured!.maxActiveContracts, PlanLimits.maxContracts(PlanType.starter));
+      });
+
+      test('preserves explicit limits when provided', () async {
+        CreateOrganizationCommand? captured;
+        when(() => mockRepo.createOrganization(any())).thenAnswer((inv) {
+          captured = inv.positionalArguments.first as CreateOrganizationCommand;
+          throw Exception('stop here');
+        });
+
+        await expectLater(
+          handler.handle(_validCmd()), // maxVehicles: 50, maxActiveContracts: 10
+          throwsA(isNot(isA<DomainException>())),
+        );
+
+        expect(captured, isNotNull);
+        expect(captured!.maxVehicles, 50);
+        expect(captured!.maxActiveContracts, 10);
       });
     });
   });

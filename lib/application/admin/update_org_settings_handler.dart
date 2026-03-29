@@ -30,12 +30,12 @@ class UpdateOrgSettingsHandler {
       );
     }
 
-    // 3. Apply changes (value object with copyWith)
+    // 3. Apply changes (only if fields are provided)
     final updatedOrg = org.copyWith(
-      name: command.name,
-      timezone: command.timezone,
-      currencyCode: command.currencyCode,
-      logoUrl: command.logoUrl,
+      name: command.name ?? org.name,
+      timezone: command.timezone ?? org.timezone,
+      currencyCode: command.currencyCode ?? org.currencyCode,
+      logoUrl: command.logoUrl ?? org.logoUrl,
     );
 
     // 4. Persist
