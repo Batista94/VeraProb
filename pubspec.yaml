@@ -37,6 +37,7 @@ dependencies:
   sentry_flutter: ^9.15.0
   posthog_flutter: ^5.21.0
   web: ^1.1.1
+  postgres: ^3.5.9
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.1
