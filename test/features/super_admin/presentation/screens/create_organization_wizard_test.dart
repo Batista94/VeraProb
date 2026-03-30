@@ -15,8 +15,9 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
 
 class MockCnpjLookupService extends Mock implements ICnpjLookupService {}
- 
-class MockCreateOrganizationHandler extends Mock implements CreateOrganizationHandler {}
+
+class MockCreateOrganizationHandler extends Mock
+    implements CreateOrganizationHandler {}
 
 class FakeCreateOrganizationCommand extends Fake
     implements CreateOrganizationCommand {}
@@ -34,15 +35,17 @@ void main() {
     mockRepo = MockSuperAdminRepository();
     mockLookup = MockCnpjLookupService();
     mockHandler = MockCreateOrganizationHandler();
- 
+
     // Default behaviors
     when(() => mockRepo.checkCnpjExists(any())).thenAnswer((_) async => false);
     when(() => mockLookup.lookup(any())).thenAnswer((_) async => null);
-    when(() => mockHandler.sendInviteNotification(
-      email: any(named: 'email'),
-      inviteUrl: any(named: 'inviteUrl'),
-      orgName: any(named: 'orgName'),
-    )).thenAnswer((_) async => {});
+    when(
+      () => mockHandler.sendInviteNotification(
+        email: any(named: 'email'),
+        inviteUrl: any(named: 'inviteUrl'),
+        orgName: any(named: 'orgName'),
+      ),
+    ).thenAnswer((_) async => {});
   });
 
   Widget createWizard(
@@ -117,9 +120,7 @@ void main() {
       var successCalled = false;
 
       // Mock Success Responses
-      when(
-        () => mockHandler.handle(any()),
-      ).thenAnswer(
+      when(() => mockHandler.handle(any())).thenAnswer(
         (_) async => const CreateOrganizationResult(
           orgId: orgId,
           invitationToken: 'mock-token',
@@ -289,7 +290,7 @@ void main() {
 
         // Verify error handling (Snackbar)
         expect(
-          find.textContaining('Exception: Forensic Permission Denied'),
+          find.text('Forensic Permission Denied'),
           findsOneWidget,
         );
       },

@@ -42,7 +42,7 @@ void main() async {
         _userAEmail = 'admin_a_$timestamp@veraprob.test';
         _userBEmail = 'admin_b_$timestamp@veraprob.test';
         _operatorEmail = 'operator_a_$timestamp@veraprob.test';
-        
+
         adminClient = SupabaseClient(
           PostgresTestConfig.supabaseUrl,
           PostgresTestConfig.serviceRoleKey,
@@ -59,7 +59,7 @@ void main() async {
           id: _orgBId,
           name: 'RedTeam — Target Beta',
         );
- 
+
         final userAId = await _ensureUser(
           adminClient,
           email: _userAEmail,
@@ -409,7 +409,10 @@ Future<void> _ensureOrg(
   required String id,
   required String name,
 }) async {
-  final randomCnpj = DateTime.now().microsecondsSinceEpoch.toString().substring(0, 14);
+  final randomCnpj = DateTime.now().microsecondsSinceEpoch.toString().substring(
+    0,
+    14,
+  );
   await admin.from('organizations').upsert({
     'id': id,
     'name': name,

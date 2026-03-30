@@ -142,8 +142,8 @@ void main() {
               windowEndUtc: windowEnd,
             );
 
-        final stateA_initial = makeInitialState();
-        await execRepo.save(stateA_initial);
+        final stateAInitial = makeInitialState();
+        await execRepo.save(stateAInitial);
 
         // RUN A: Single Batch
         await pipeline.process(facts, organizationId: orgId);
@@ -164,8 +164,8 @@ void main() {
           traceRepo: traceRepo,
         );
         pipeline = TelemetryIngestionPipeline(engine: engine);
-        final stateB_initial = makeInitialState();
-        await execRepo.save(stateB_initial);
+        final stateBInitial = makeInitialState();
+        await execRepo.save(stateBInitial);
 
         // RUN B: Multiple Batches
         await pipeline.process([facts[0]], organizationId: orgId);

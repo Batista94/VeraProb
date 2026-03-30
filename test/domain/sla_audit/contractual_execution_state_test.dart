@@ -223,19 +223,20 @@ void main() {
       );
     });
 
-    test('no transitions allowed after finalization (noShow)', () {
+    test('bindExecution allowed after finalization (noShow) for late arrival re-evaluation (INV-12)', () {
       final state = makeState();
       state.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
 
-      expect(
-        () => state.bindExecution(
-          vehicleId: 'v-1',
-          latitude: -23.55,
-          longitude: -46.63,
-          timestampUtc: DateTime.utc(2026, 3, 1, 7, 5),
-        ),
-        throwsA(isA<DomainException>()),
+      // Should not throw, but successfully update status to executed
+      state.bindExecution(
+        vehicleId: 'v-1',
+        latitude: -23.55,
+        longitude: -46.63,
+        timestampUtc: DateTime.utc(2026, 3, 1, 7, 5),
       );
+
+      expect(state.status, ExecutionStatus.executed);
+      expect(state.boundVehicleId, 'v-1');
     });
 
     test('updateEvaluationTimestamp updates without state change', () {

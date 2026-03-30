@@ -8,25 +8,26 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../infrastructure/postgres/postgres_test_config.dart';
 
-void main() {
-  const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
-
-  final skipReason = supabaseUrl.isEmpty
-      ? 'SUPABASE_URL not configured — skipping integration tests'
-      : null;
+void main() async {
+  final isRunning = await PostgresTestConfig.isSupabaseRunning();
+  const skipReason =
+      'Supabase local não está rodando — execute `supabase start`';
 
   late final SupabaseClient client;
 
   setUpAll(() async {
-    if (supabaseUrl.isNotEmpty) {
-      client = SupabaseClient(supabaseUrl, supabaseKey);
+    if (isRunning) {
+      client = SupabaseClient(
+        PostgresTestConfig.supabaseUrl,
+        PostgresTestConfig.serviceRoleKey,
+      );
     }
   });
 
-  group('sanction_escalation_log — DB invariants', () {
-    test('UPDATE is blocked by trigger (INV-1)', skip: skipReason, () async {
+  group('sanction_escalation_log — DB invariants', skip: isRunning ? null : skipReason, () {
+    test('UPDATE is blocked by trigger (INV-1)', () async {
       // Attempt direct update (trigger should block it)
       expect(
         () async => client
@@ -38,7 +39,7 @@ void main() {
       );
     });
 
-    test('DELETE is blocked by trigger (INV-1)', skip: skipReason, () async {
+    test('DELETE is blocked by trigger (INV-1)', () async {
       expect(
         () async => client
             .from('sanction_escalation_log')

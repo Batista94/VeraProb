@@ -32,11 +32,12 @@ const _uuid = Uuid();
 // Stable sentinel IDs for this test suite.
 // Using deterministic UUIDs avoids collisions across runs while keeping
 // seeds idempotent via ON CONFLICT DO NOTHING patterns.
-const _orgAId = '00000000-1111-0000-0000-000000000001';
-const _orgBId = '00000000-2222-0000-0000-000000000001';
-const _userAEmail = 'rls_test_user_a@veraprob.test';
-const _userBEmail = 'rls_test_user_b@veraprob.test';
-const _contractorViewerEmail = 'rls_test_contractor_viewer@veraprob.test';
+// Actually, random UIUDs avoid quota accumulation (max_contracts=10).
+final _orgAId = _uuid.v4();
+final _orgBId = _uuid.v4();
+final _userAEmail = 'rls_a_${_uuid.v4().substring(0, 8)}@veraprob.test';
+final _userBEmail = 'rls_b_${_uuid.v4().substring(0, 8)}@veraprob.test';
+final _contractorViewerEmail = 'rls_cv_${_uuid.v4().substring(0, 8)}@veraprob.test';
 const _testPassword = 'TestPassword123!';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

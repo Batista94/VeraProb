@@ -16,30 +16,28 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../infrastructure/postgres/postgres_test_config.dart';
 
-void main() {
-  // These tests require a live Supabase connection and are skipped in CI
-  // when SUPABASE_URL is not configured.
-  const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
-
-  final skipReason = supabaseUrl.isEmpty
-      ? 'SUPABASE_URL not configured — skipping integration tests'
-      : null;
+void main() async {
+  final isRunning = await PostgresTestConfig.isSupabaseRunning();
+  const skipReason =
+      'Supabase local não está rodando — execute `supabase start`';
 
   late final SupabaseClient client;
-  const orgId = '00000000-0000-0000-0000-000000000003';
+  const orgId = PostgresTestConfig.testOrgId;
 
   setUpAll(() async {
-    if (supabaseUrl.isNotEmpty) {
-      client = SupabaseClient(supabaseUrl, supabaseKey);
+    if (isRunning) {
+      client = SupabaseClient(
+        PostgresTestConfig.supabaseUrl,
+        PostgresTestConfig.serviceRoleKey,
+      );
     }
   });
 
-  group('sanction_review_queue — DB invariants', () {
+  group('sanction_review_queue — DB invariants', skip: isRunning ? null : skipReason, () {
     test(
       'trigger auto-populates queue on SANCTION_RECOMMENDED insert',
-      skip: skipReason,
       () async {
         final fakeEvidence = {
           'clause_ref': 'rule-int-001',
@@ -87,7 +85,6 @@ void main() {
 
     test(
       'duplicate SANCTION_RECOMMENDED insert → only one queue row (INV-24)',
-      skip: skipReason,
       () async {
         final fakeEvidence = {
           'clause_ref': 'rule-int-002',
@@ -148,7 +145,6 @@ void main() {
 
     test(
       'UPDATE on immutable field → restrict_violation (INV-1)',
-      skip: skipReason,
       () async {
         final rows = await client
             .from('sanction_review_queue')

@@ -243,8 +243,14 @@ class _CreateOrganizationWizardState
 
       // Capturar messenger e URL antes do showDialog (contexto seguro)
       final messenger = ScaffoldMessenger.of(context);
+      
+      String baseUrl = 'http://localhost';
+      try {
+        baseUrl = Uri.base.origin;
+      } catch (_) {}
+      
       final inviteUrl =
-          '${Uri.base.origin}/accept-invite?token=${result.invitationToken}';
+          '$baseUrl/accept-invite?token=${result.invitationToken}';
 
       // Fire invitation email — silent failure (link in dialog is the fallback)
       unawaited(
@@ -254,6 +260,11 @@ class _CreateOrganizationWizardState
           orgName: cmd.tradeName,
         ),
       );
+
+      // Stop loader before showing dialog, otherwise pumpAndSettle times out
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
 
       // Success dialog
       await showDialog<void>(

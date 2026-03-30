@@ -23,6 +23,7 @@ void main() async {
       late PostgresContractQueryService service;
       const uuid = Uuid();
       const organizationId = PostgresTestConfig.testOrgId;
+      final List<String> createdContracts = [];
 
       setUpAll(() async {
         if (isRunning) {
@@ -35,8 +36,18 @@ void main() async {
         }
       });
 
+      tearDown(() async {
+        if (isRunning && createdContracts.isNotEmpty) {
+          for (final id in createdContracts) {
+            await client.from('contracts').delete().eq('id', id);
+          }
+          createdContracts.clear();
+        }
+      });
+
       test('listContracts returns summaries from DB', () async {
         final contractId = uuid.v4();
+        createdContracts.add(contractId);
 
         // Seed a contract
         await client.from('contracts').insert({
@@ -67,6 +78,7 @@ void main() async {
         'getContractDetail returns full detail including financial summary',
         () async {
           final contractId = uuid.v4();
+          createdContracts.add(contractId);
 
           // Seed contract
           await client.from('contracts').insert({
