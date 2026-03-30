@@ -54,6 +54,26 @@ class InMemoryContractualExecutionStateRepository
   }
 
   @override
+  Future<List<ContractualExecutionState>> findActiveInWindow(
+    DateTime nowUtc, {
+    required String organizationId,
+  }) async {
+    final results = _store.values.where((s) {
+      final isReevaluable =
+          s.status == ExecutionStatus.pending ||
+          s.status == ExecutionStatus.noShow ||
+          s.status == ExecutionStatus.evidenceGap;
+
+      return s.organizationId == organizationId &&
+          isReevaluable &&
+          !s.windowStartUtc.isAfter(nowUtc) &&
+          !s.windowEndUtc.isBefore(nowUtc);
+    }).toList();
+
+    return UnmodifiableListView(results);
+  }
+
+  @override
   Future<List<ContractualExecutionState>> findExpiredPending(
     DateTime nowUtc, {
     required String organizationId,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../domain/enums/user_role.dart';
 import '../../../../state/providers/admin_providers.dart';
 import '../../../../state/providers/auth_providers.dart';
 import '../../../../application/admin/update_org_settings_command.dart';
@@ -34,6 +35,8 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final orgAsync = ref.watch(orgSettingsProvider);
+    final userRole = ref.watch(currentUserRoleProvider);
+    final isSuperAdmin = userRole == UserRole.superAdmin;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -98,34 +101,52 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                           children: [
                             TextFormField(
                               controller: _nameController,
-                              readOnly: true,
-                              decoration: const InputDecoration(
+                              readOnly: !isSuperAdmin,
+                              decoration: InputDecoration(
                                 labelText: 'Nome da Organização',
-                                prefixIcon: Icon(Icons.lock_outline, size: 20),
-                                helperText:
-                                    'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
+                                prefixIcon: Icon(
+                                  isSuperAdmin
+                                      ? Icons.edit_outlined
+                                      : Icons.lock_outline,
+                                  size: 20,
+                                ),
+                                helperText: isSuperAdmin
+                                    ? 'Atualização permitida para Super Admin.'
+                                    : 'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
                               ),
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
                               controller: _timezoneController,
-                              readOnly: true,
-                              decoration: const InputDecoration(
+                              readOnly: !isSuperAdmin,
+                              decoration: InputDecoration(
                                 labelText: 'Fuso Horário',
-                                prefixIcon: Icon(Icons.lock_outline, size: 20),
-                                helperText:
-                                    'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
+                                prefixIcon: Icon(
+                                  isSuperAdmin
+                                      ? Icons.access_time
+                                      : Icons.lock_outline,
+                                  size: 20,
+                                ),
+                                helperText: isSuperAdmin
+                                    ? 'Atualização permitida para Super Admin.'
+                                    : 'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
                               ),
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
                               controller: _currencyController,
-                              readOnly: true,
-                              decoration: const InputDecoration(
+                              readOnly: !isSuperAdmin,
+                              decoration: InputDecoration(
                                 labelText: 'Código da Moeda',
-                                prefixIcon: Icon(Icons.lock_outline, size: 20),
-                                helperText:
-                                    'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
+                                prefixIcon: Icon(
+                                  isSuperAdmin
+                                      ? Icons.monetization_on_outlined
+                                      : Icons.lock_outline,
+                                  size: 20,
+                                ),
+                                helperText: isSuperAdmin
+                                    ? 'Atualização permitida para Super Admin.'
+                                    : 'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
                               ),
                             ),
                             const SizedBox(height: 24),
@@ -181,6 +202,13 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
       final command = UpdateOrgSettingsCommand(
         organizationId: orgId!,
         callerRole: role,
+        name: role == UserRole.superAdmin ? _nameController.text.trim() : null,
+        timezone: role == UserRole.superAdmin
+            ? _timezoneController.text.trim()
+            : null,
+        currencyCode: role == UserRole.superAdmin
+            ? _currencyController.text.trim()
+            : null,
         logoUrl: _logoUrlController.text.trim().isEmpty
             ? null
             : _logoUrlController.text.trim(),

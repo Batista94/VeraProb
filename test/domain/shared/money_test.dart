@@ -41,6 +41,16 @@ void main() {
       expect(result2.cents, 1333); // 1333.0 rounds to 1333
     });
 
+    test('multiplyByBps handles basis points correctly', () {
+      const money = Money(1000); // $10.00
+
+      // 150 BPS = 1.5x
+      expect(money.multiplyByBps(150), const Money(1500));
+
+      // 33 BPS = 0.33x ($3.30)
+      expect(money.multiplyByBps(33), const Money(330));
+    });
+
     test('equality is based on cents value', () {
       const m1 = Money(1050);
       final m2 = Money.fromDouble(10.50);

@@ -30,8 +30,12 @@ void main() {
       final orgB = uuid.v4();
 
       // 1. Setup Organizations (Service Role context)
-      await conn.execute("INSERT INTO organizations (id, name, legal_name, is_active) VALUES ('$orgA', 'Alpha Corp', 'Alpha Legal', true)");
-      await conn.execute("INSERT INTO organizations (id, name, legal_name, is_active) VALUES ('$orgB', 'Beta Corp', 'Beta Legal', true)");
+      await conn.execute(
+        "INSERT INTO organizations (id, name, legal_name, is_active) VALUES ('$orgA', 'Alpha Corp', 'Alpha Legal', true)",
+      );
+      await conn.execute(
+        "INSERT INTO organizations (id, name, legal_name, is_active) VALUES ('$orgB', 'Beta Corp', 'Beta Legal', true)",
+      );
 
       // 2. Insert test data for both
       await conn.execute("""
@@ -45,14 +49,24 @@ void main() {
 
       // 3. Switch to Org Alpha Context (Simulate JWT claims)
       await conn.run((tx) async {
-        await tx.execute("SET LOCAL request.jwt.claims = '{\"app_metadata\": {\"org_id\": \"$orgA\"}}'");
+        await tx.execute(
+          "SET LOCAL request.jwt.claims = '{\"app_metadata\": {\"org_id\": \"$orgA\"}}'",
+        );
 
         // 4. BREACH ATTEMPT: Try to read Beta's ledger
         final results = await tx.execute("SELECT * FROM sla_audit_ledger_v2");
-        
+
         // Verify isolation: Should only see 1 row (Org Alpha)
-        expect(results.length, 1, reason: 'RLS should filter out Org Beta data');
-        expect(results.first.toColumnMap()['organization_id'].toString(), orgA, reason: 'Returned row must belong to Org Alpha');
+        expect(
+          results.length,
+          1,
+          reason: 'RLS should filter out Org Beta data',
+        );
+        expect(
+          results.first.toColumnMap()['organization_id'].toString(),
+          orgA,
+          reason: 'Returned row must belong to Org Alpha',
+        );
 
         // 5. BREACH ATTEMPT: Try to insert data for Beta from Alpha's context
         try {
@@ -62,8 +76,11 @@ void main() {
           """);
           fail('RLS should have rejected cross-tenant insertion');
         } catch (e) {
-          expect(e.toString(), contains('violates row-level security policy'), 
-              reason: 'Database must throw RLS violation exception');
+          expect(
+            e.toString(),
+            contains('violates row-level security policy'),
+            reason: 'Database must throw RLS violation exception',
+          );
         }
       });
     });

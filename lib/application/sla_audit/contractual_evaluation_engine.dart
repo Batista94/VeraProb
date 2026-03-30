@@ -84,13 +84,13 @@ class ContractualEvaluationEngine {
     // Falls back to processing time only if override [nowUtc] is provided.
     final now = nowUtc ?? vehicleState.lastRawPingAt;
 
-    final pendingStates = await _executionRepo.findPendingInWindow(
+    final activeStates = await _executionRepo.findActiveInWindow(
       now,
       organizationId: organizationId,
     );
-    if (pendingStates.isEmpty) return;
+    if (activeStates.isEmpty) return;
 
-    final eligible = pendingStates.where(
+    final eligible = activeStates.where(
       (s) =>
           s.plannedVehicleId == null ||
           s.plannedVehicleId == vehicleState.vehicleId,
@@ -211,7 +211,8 @@ class ContractualEvaluationEngine {
         final dwellDuration = now.difference(firstEntry);
 
         if (dwellDuration.inSeconds >= requiredDwell) {
-          if (state.status != ExecutionStatus.pending) continue;
+          // If already executed (from a previous fact), nothing to do.
+          if (state.status == ExecutionStatus.executed) continue;
 
           state.bindExecution(
             vehicleId: vehicleState.vehicleId,

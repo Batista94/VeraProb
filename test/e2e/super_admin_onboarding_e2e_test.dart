@@ -160,6 +160,40 @@ void main() async {
             reason: 'Token do handler deve coincidir com o token no banco',
           );
 
+          // 6. Audit log com snapshot do actor (INV-33: Enterprise Identity Standard)
+          final auditLogs = await serviceRoleClient
+              .from('system_audit_log')
+              .select()
+              .eq('organization_id', result.orgId)
+              .eq('event_type', 'ORGANIZATION_CREATE');
+
+          expect(
+            auditLogs,
+            isNotEmpty,
+            reason: 'Deve ter audit log ORGANIZATION_CREATE',
+          );
+
+          final payload = auditLogs.first['payload'] as Map<String, dynamic>;
+          final actor = payload['actor'] as Map<String, dynamic>;
+
+          expect(
+            actor['id'],
+            equals(superAdminUserId),
+            reason:
+                'Audit log deve capturar o ID do super admin que criou a org',
+          );
+          expect(
+            actor['role'],
+            equals('super_admin'),
+            reason: 'Audit log deve capturar o role super_admin',
+          );
+          expect(
+            actor['email'],
+            equals('system@veraprob.internal'),
+            reason:
+                'Audit log em testes E2E (service_role) deve usar o email de sistema',
+          );
+
           // ignore: avoid_print
           print(
             '[E2E] Onboarding concluído em ${stopwatch.elapsed.inSeconds}s '

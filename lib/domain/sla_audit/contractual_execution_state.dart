@@ -26,8 +26,10 @@ import 'execution_status.dart';
 /// pending → executed   (via bindExecution)
 /// pending → noShow     (via markNoShow, only after window expires)
 /// pending → evidenceGap (via markEvidenceGap)
+/// noShow → executed    (via bindExecution — INV-12: Late Arrival Re-evaluation)
 /// ```
-/// All non-pending states are **final** — no further transitions allowed.
+/// Transitions to 'executed' are final. Transitions to 'noShow' or 'evidenceGap'
+/// can be re-evaluated if older facts arrive (INV-12).
 class ContractualExecutionState {
   // ── Identity ──────────────────────────────────────────────
   final String id;
@@ -176,7 +178,10 @@ class ContractualExecutionState {
 
   /// Binds a vehicle to this obligation, marking it as [ExecutionStatus.executed].
   ///
-  /// Allowed only when [status] == [ExecutionStatus.pending].
+  /// Allowed only when [status] is [ExecutionStatus.pending], [ExecutionStatus.noShow],
+  /// or [ExecutionStatus.evidenceGap].
+  /// Transitions from noShow/evidenceGap represent late-arrival re-evaluations (INV-12).
+  ///
   /// Throws [DomainException] if the transition is invalid.
   void bindExecution({
     required String vehicleId,
@@ -184,8 +189,11 @@ class ContractualExecutionState {
     required double longitude,
     required DateTime timestampUtc,
   }) {
-    _assertPending('bindExecution');
-
+    if (_status == ExecutionStatus.executed) {
+      throw const DomainException(
+        'Cannot call bindExecution: already in executed status',
+      );
+    }
     _status = ExecutionStatus.executed;
     _boundVehicleId = vehicleId;
     _bindingTimestampUtc = timestampUtc;

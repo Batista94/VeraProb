@@ -10,12 +10,7 @@ void main() {
 
   final lines = lcovFile.readAsLinesSync();
 
-  final excludePatterns = [
-    RegExp(r'\.g\.dart$'),
-    RegExp(r'\.freezed\.dart$'),
-    RegExp(r'lib[/\\]features[/\\]'),
-    RegExp(r'lib[/\\]presentation[/\\]'),
-  ];
+  final excludePatterns = [RegExp(r'\.g\.dart$'), RegExp(r'\.freezed\.dart$')];
 
   String currentFile = '';
   bool skip = false;

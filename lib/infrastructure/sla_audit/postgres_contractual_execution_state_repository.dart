@@ -134,6 +134,27 @@ class PostgresContractualExecutionStateRepository
   }
 
   @override
+  Future<List<ContractualExecutionState>> findActiveInWindow(
+    DateTime nowUtc, {
+    required String organizationId,
+  }) async {
+    final now = nowUtc.toIso8601String();
+    final List<dynamic> data = await _client
+        .from('execution_states')
+        .select()
+        .eq('organization_id', organizationId)
+        .filter(
+          'status',
+          'in',
+          '(${ExecutionStatus.pending.name},${ExecutionStatus.noShow.name},${ExecutionStatus.evidenceGap.name})',
+        )
+        .lte('window_start_utc', now)
+        .gte('window_end_utc', now);
+
+    return data.map((d) => _mapToEntity(d)).toList();
+  }
+
+  @override
   Future<List<ContractualExecutionState>> findExpiredPending(
     DateTime nowUtc, {
     required String organizationId,

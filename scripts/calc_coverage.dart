@@ -11,12 +11,7 @@ void main() {
   final lines = lcovFile.readAsLinesSync();
 
   // Exclusion patterns matching the CI filter
-  final excludePatterns = [
-    RegExp(r'\.g\.dart$'),
-    RegExp(r'\.freezed\.dart$'),
-    RegExp(r'lib[/\\]features[/\\]'),
-    RegExp(r'lib[/\\]presentation[/\\]'),
-  ];
+  final excludePatterns = [RegExp(r'\.g\.dart$'), RegExp(r'\.freezed\.dart$')];
 
   int totalFound = 0;
   int totalHit = 0;
