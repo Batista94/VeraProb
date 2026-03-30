@@ -127,20 +127,23 @@ void main() {
         final windowStart = DateTime.utc(2026, 3, 1, 10, 0);
         final windowEnd = DateTime.utc(2026, 3, 1, 11, 0);
 
-        final initialState = ContractualExecutionState.create(
-          organizationId: orgId,
-          setId: setId,
-          contractId: contractId,
-          planVersion: 1,
-          startLatitude: -23.5,
-          startLongitude: -46.6,
-          startRadiusMeters: 500,
-          contractualValue: const Money(1000),
-          noShowPenaltyMultiplier: 1.5,
-          windowStartUtc: windowStart,
-          windowEndUtc: windowEnd,
-        );
-        await execRepo.save(initialState);
+        ContractualExecutionState makeInitialState() =>
+            ContractualExecutionState.create(
+              organizationId: orgId,
+              setId: setId,
+              contractId: contractId,
+              planVersion: 1,
+              startLatitude: -23.5,
+              startLongitude: -46.6,
+              startRadiusMeters: 500,
+              contractualValue: const Money(1000),
+              noShowPenaltyMultiplier: 1.5,
+              windowStartUtc: windowStart,
+              windowEndUtc: windowEnd,
+            );
+
+        final stateA_initial = makeInitialState();
+        await execRepo.save(stateA_initial);
 
         // RUN A: Single Batch
         await pipeline.process(facts, organizationId: orgId);
@@ -161,7 +164,8 @@ void main() {
           traceRepo: traceRepo,
         );
         pipeline = TelemetryIngestionPipeline(engine: engine);
-        await execRepo.save(initialState);
+        final stateB_initial = makeInitialState();
+        await execRepo.save(stateB_initial);
 
         // RUN B: Multiple Batches
         await pipeline.process([facts[0]], organizationId: orgId);

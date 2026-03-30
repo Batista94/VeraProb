@@ -189,9 +189,12 @@ class ContractualExecutionState {
     required double longitude,
     required DateTime timestampUtc,
   }) {
-    if (_status == ExecutionStatus.executed) {
-      throw const DomainException(
-        'Cannot call bindExecution: already in executed status',
+    if (_status != ExecutionStatus.pending &&
+        _status != ExecutionStatus.noShow &&
+        _status != ExecutionStatus.evidenceGap) {
+      throw DomainException(
+        'Cannot call bindExecution: current status is $_status '
+        '(only pending, noShow or evidenceGap allow transitions to executed)',
       );
     }
     _status = ExecutionStatus.executed;

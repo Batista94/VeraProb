@@ -14,7 +14,7 @@ void main() {
           port: 54322,
           database: 'postgres',
           username: 'postgres',
-          password: 'veraprob123!',
+          password: 'postgres',
         ),
         settings: const ConnectionSettings(sslMode: SslMode.disable),
       );
@@ -39,12 +39,12 @@ void main() {
 
       // 2. Insert test data for both
       await conn.execute("""
-        INSERT INTO sla_audit_ledger_v2 (organization_id, timestamp, action_type, entity_id, operator_id) 
-        VALUES ('$orgA', NOW(), 'TEST_ACTION', 'entity-a', 'user-a')
+        INSERT INTO sla_audit_ledger_v2 (organization_id, occurred_at_utc, type, contract_id, operator_id) 
+        VALUES ('$orgA', NOW(), 'TEST_ACTION', '$orgA', 'user-a')
       """);
       await conn.execute("""
-        INSERT INTO sla_audit_ledger_v2 (organization_id, timestamp, action_type, entity_id, operator_id) 
-        VALUES ('$orgB', NOW(), 'TEST_ACTION', 'entity-b', 'user-b')
+        INSERT INTO sla_audit_ledger_v2 (organization_id, occurred_at_utc, type, contract_id, operator_id) 
+        VALUES ('$orgB', NOW(), 'TEST_ACTION', '$orgB', 'user-b')
       """);
 
       // 3. Switch to Org Alpha Context (Simulate JWT claims)
@@ -71,8 +71,8 @@ void main() {
         // 5. BREACH ATTEMPT: Try to insert data for Beta from Alpha's context
         try {
           await tx.execute("""
-            INSERT INTO sla_audit_ledger_v2 (organization_id, timestamp, action_type, entity_id, operator_id) 
-            VALUES ('$orgB', NOW(), 'DATA_BREACH', 'entity-b', 'user-a')
+            INSERT INTO sla_audit_ledger_v2 (organization_id, occurred_at_utc, type, contract_id, operator_id) 
+            VALUES ('$orgB', NOW(), 'DATA_BREACH', '$orgB', 'user-a')
           """);
           fail('RLS should have rejected cross-tenant insertion');
         } catch (e) {

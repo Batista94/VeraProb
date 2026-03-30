@@ -7,10 +7,16 @@ import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/create_organization_wizard.dart';
 import 'package:veraprob/infrastructure/providers/super_admin_providers.dart';
+import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
+import 'package:veraprob/application/super_admin/create_organization_handler.dart';
+import 'package:veraprob/application/super_admin/create_organization_result.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
 
 class MockCnpjLookupService extends Mock implements ICnpjLookupService {}
+ 
+class MockCreateOrganizationHandler extends Mock implements CreateOrganizationHandler {}
 
 class FakeCreateOrganizationCommand extends Fake
     implements CreateOrganizationCommand {}
@@ -18,6 +24,7 @@ class FakeCreateOrganizationCommand extends Fake
 void main() {
   late MockSuperAdminRepository mockRepo;
   late MockCnpjLookupService mockLookup;
+  late MockCreateOrganizationHandler mockHandler;
 
   setUpAll(() {
     registerFallbackValue(FakeCreateOrganizationCommand());
@@ -26,10 +33,16 @@ void main() {
   setUp(() {
     mockRepo = MockSuperAdminRepository();
     mockLookup = MockCnpjLookupService();
-
+    mockHandler = MockCreateOrganizationHandler();
+ 
     // Default behaviors
     when(() => mockRepo.checkCnpjExists(any())).thenAnswer((_) async => false);
     when(() => mockLookup.lookup(any())).thenAnswer((_) async => null);
+    when(() => mockHandler.sendInviteNotification(
+      email: any(named: 'email'),
+      inviteUrl: any(named: 'inviteUrl'),
+      orgName: any(named: 'orgName'),
+    )).thenAnswer((_) async => {});
   });
 
   Widget createWizard(
@@ -41,6 +54,8 @@ void main() {
       overrides: [
         superAdminRepositoryProvider.overrideWithValue(repo),
         cnpjLookupServiceProvider.overrideWithValue(lookup),
+        createOrganizationHandlerProvider.overrideWithValue(mockHandler),
+        currentSuperAdminIdProvider.overrideWithValue('mock-super-admin-id'),
       ],
       child: MaterialApp(
         home: Scaffold(
@@ -103,18 +118,13 @@ void main() {
 
       // Mock Success Responses
       when(
-        () => mockRepo.createOrganization(any()),
-      ).thenAnswer((_) async => orgId);
-      when(
-        () => mockRepo.inviteFirstAdmin(
-          orgId: any(named: 'orgId'),
-          email: any(named: 'email'),
-          token: any(named: 'token'),
-          invitationId: any(named: 'invitationId'),
-          expiresAtUtc: any(named: 'expiresAtUtc'),
-          superAdminUserId: any(named: 'superAdminUserId'),
+        () => mockHandler.handle(any()),
+      ).thenAnswer(
+        (_) async => const CreateOrganizationResult(
+          orgId: orgId,
+          invitationToken: 'mock-token',
         ),
-      ).thenAnswer((_) async => {});
+      );
 
       await tester.pumpWidget(
         createWizard(
@@ -147,7 +157,7 @@ void main() {
           of: find.text('CNPJ *'),
           matching: find.byType(TextFormField),
         ),
-        '12.345.678/0001-90',
+        '11.444.777/0001-61',
       );
 
       await tester.pump(const Duration(milliseconds: 800)); // Debounce
@@ -210,8 +220,8 @@ void main() {
       'Wizard Error: Repository failure displays forensic error snackbar',
       (tester) async {
         when(
-          () => mockRepo.createOrganization(any()),
-        ).thenThrow(Exception('Forensic Permission Denied'));
+          () => mockHandler.handle(any()),
+        ).thenThrow(const DomainException('Forensic Permission Denied'));
 
         await tester.pumpWidget(createWizard(mockRepo, mockLookup));
         await tester.pumpAndSettle();
@@ -236,7 +246,7 @@ void main() {
             of: find.text('CNPJ *'),
             matching: find.byType(TextFormField),
           ),
-          '12.345.678/0001-90',
+          '11.444.777/0001-61',
         );
         await tester.pump(const Duration(milliseconds: 800));
         await tester.pumpAndSettle();

@@ -27,7 +27,7 @@ enum UserPermission {
 const Map<UserPermission, Set<UserRole>> rolePermissions = {
   UserPermission.canEditSlaRules: {UserRole.admin},
   UserPermission.canInviteUsers: {UserRole.admin, UserRole.superAdmin},
-  UserPermission.canManageOrganization: {UserRole.admin},
+  UserPermission.canManageOrganization: {UserRole.admin, UserRole.superAdmin},
   UserPermission.canApproveContractAcceptance: {UserRole.admin},
   UserPermission.canManageUsers: {UserRole.admin},
 

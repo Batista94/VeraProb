@@ -16,11 +16,11 @@ import '../infrastructure/postgres/postgres_test_config.dart';
 const _uuid = Uuid();
 
 // Stabilized Sentinel IDs for the Red Team session
-const _orgAId = '00000000-1111-0000-0000-000000000001';
-const _orgBId = '00000000-2222-0000-0000-000000000001';
-const _userAEmail = 'redteam_admin_a@veraprob.test';
-const _userBEmail = 'redteam_admin_b@veraprob.test';
-const _operatorEmail = 'redteam_operator_a@veraprob.test';
+late String _orgAId;
+late String _orgBId;
+late String _userAEmail;
+late String _userBEmail;
+late String _operatorEmail;
 const _testPassword = 'RedTeamPassword123!';
 
 void main() async {
@@ -36,6 +36,13 @@ void main() async {
       late SupabaseClient operatorClient;
 
       setUpAll(() async {
+        final timestamp = DateTime.now().microsecondsSinceEpoch.toString();
+        _orgAId = _uuid.v4();
+        _orgBId = _uuid.v4();
+        _userAEmail = 'admin_a_$timestamp@veraprob.test';
+        _userBEmail = 'admin_b_$timestamp@veraprob.test';
+        _operatorEmail = 'operator_a_$timestamp@veraprob.test';
+        
         adminClient = SupabaseClient(
           PostgresTestConfig.supabaseUrl,
           PostgresTestConfig.serviceRoleKey,
@@ -52,7 +59,7 @@ void main() async {
           id: _orgBId,
           name: 'RedTeam — Target Beta',
         );
-
+ 
         final userAId = await _ensureUser(
           adminClient,
           email: _userAEmail,
@@ -142,6 +149,16 @@ void main() async {
             'message': 'Unauthorized bypass attempt detected (simulated)',
             'attacker_mock': 'RedTeam',
           },
+        });
+
+        // Seed a contractor for LGPD PII testing (Target Alpha)
+        await adminClient.from('contractors').upsert({
+          'id': '00000000-1111-0000-0000-0000000000C1',
+          'organization_id': _orgAId,
+          'name': 'PII Test Contractor',
+          'contact_name': 'Legit Owner',
+          'tax_id': '11444777000161',
+          'primary_email': 'legit_owner@business.com',
         });
 
         // ── Step 3: Login to Tenants ───────────────────────────────────────
@@ -251,17 +268,7 @@ void main() async {
       test(
         'AUDIT 4 — LGPD PII Masking: OPERATOR role sees masked CNPJ and Email',
         () async {
-          // Seed a contractor with real PII via admin
-          final contractorId = _uuid.v4();
-          await adminClient.from('contractors').upsert({
-            'id': contractorId,
-            'organization_id': _orgAId,
-            'name': 'PII Test Contractor',
-            'tax_id': '12345678000199', // CNPJ
-            'primary_email': 'legit_owner@business.com',
-            'cnpj': '12345678000199',
-          });
-
+          const contractorId = '00000000-1111-0000-0000-0000000000C1';
           final res = await operatorClient
               .from('contractors_view')
               .select('tax_id, primary_email')
@@ -402,10 +409,11 @@ Future<void> _ensureOrg(
   required String id,
   required String name,
 }) async {
+  final randomCnpj = DateTime.now().microsecondsSinceEpoch.toString().substring(0, 14);
   await admin.from('organizations').upsert({
     'id': id,
     'name': name,
-    'cnpj': id.replaceAll('-', '').substring(0, 14),
+    'cnpj': randomCnpj,
   }, onConflict: 'id');
 }
 

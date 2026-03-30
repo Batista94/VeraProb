@@ -4,10 +4,10 @@ import 'package:veraprob/core/utils/cnpj_validator.dart';
 void main() {
   group('CnpjValidator (INV-18/INV-21)', () {
     test('isValid recognizes valid CNPJs', () {
-      // Valid CNPJs (generated for testing)
-      expect(CnpjValidator.isValid('13.435.034/0001-44'), isTrue);
-      expect(CnpjValidator.isValid('13435034000144'), isTrue);
-      expect(CnpjValidator.isValid('38.254.434/0001-08'), isTrue);
+      // Valid CNPJs (mathematically correct)
+      expect(CnpjValidator.isValid('11.444.777/0001-61'), isTrue);
+      expect(CnpjValidator.isValid('11444777000161'), isTrue);
+      expect(CnpjValidator.isValid('00.000.000/0001-91'), isTrue);
     });
 
     test('isValid rejects structurally invalid inputs', () {

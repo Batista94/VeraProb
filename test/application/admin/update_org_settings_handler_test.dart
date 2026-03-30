@@ -26,11 +26,6 @@ void main() {
     );
   });
 
-  setUp(() {
-    repository = MockOrganizationRepository();
-    handler = UpdateOrgSettingsHandler(repository: repository);
-  });
-
   final org = Organization(
     id: 'org-1',
     name: 'Old Name',
@@ -40,7 +35,15 @@ void main() {
     createdAt: DateTime.now(),
   );
 
-  UpdateOrgSettingsCommand makeCommand({UserRole role = UserRole.admin}) {
+  setUp(() {
+    repository = MockOrganizationRepository();
+    handler = UpdateOrgSettingsHandler(repository: repository);
+
+    // Default mock behavior for successful org lookup
+    when(() => repository.findById(any())).thenAnswer((_) async => org);
+  });
+
+  UpdateOrgSettingsCommand makeCommand({UserRole role = UserRole.superAdmin}) {
     return UpdateOrgSettingsCommand(
       organizationId: 'org-1',
       callerRole: role,
@@ -51,7 +54,7 @@ void main() {
   }
 
   group('UpdateOrgSettingsHandler', () {
-    test('Rejeita operator/auditor', () async {
+    test('Rejeita operator/auditor/admin para campos críticos', () async {
       expect(
         () => handler.handle(makeCommand(role: UserRole.operator)),
         throwsException,
@@ -60,14 +63,18 @@ void main() {
         () => handler.handle(makeCommand(role: UserRole.auditor)),
         throwsException,
       );
+      expect(
+        () => handler.handle(makeCommand(role: UserRole.admin)),
+        throwsException,
+      );
       verifyNever(() => repository.update(any()));
     });
 
-    test('Passa para admin com args corretos', () async {
+    test('Passa para superAdmin com args corretos', () async {
       when(() => repository.findById('org-1')).thenAnswer((_) async => org);
       when(() => repository.update(any())).thenAnswer((_) async => {});
 
-      await handler.handle(makeCommand(role: UserRole.admin));
+      await handler.handle(makeCommand(role: UserRole.superAdmin));
 
       final captured =
           verify(() => repository.update(captureAny())).captured.single
