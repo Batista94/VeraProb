@@ -13,7 +13,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_rep
 class _QuotaExceededContractRepository implements ContractRepository {
   @override
   Future<void> save(Contract contract) async {
-    throw PostgrestException(
+    throw const PostgrestException(
       message: 'Cota de contratos ativos atingida para este tenant.',
       code: 'P0001',
     );

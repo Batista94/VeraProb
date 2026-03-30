@@ -59,8 +59,9 @@ void main() {
       });
 
       test('accepts starter plan', () async {
-        when(() => mockRepo.updateOrganizationQuota(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
         await expectLater(
           handler.handle(_validCmd(newPlanType: 'starter')),
           completes,
@@ -68,8 +69,9 @@ void main() {
       });
 
       test('accepts professional plan', () async {
-        when(() => mockRepo.updateOrganizationQuota(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
         await expectLater(
           handler.handle(_validCmd(newPlanType: 'professional')),
           completes,
@@ -77,8 +79,9 @@ void main() {
       });
 
       test('accepts enterprise plan with null limits', () async {
-        when(() => mockRepo.updateOrganizationQuota(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
         await expectLater(
           handler.handle(
             _validCmd(
@@ -129,8 +132,9 @@ void main() {
       });
 
       test('accepts null maxVehicles (unlimited — enterprise)', () async {
-        when(() => mockRepo.updateOrganizationQuota(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
         await expectLater(
           handler.handle(
             _validCmd(
@@ -144,8 +148,9 @@ void main() {
       });
 
       test('accepts maxVehicles = 1 (minimum positive)', () async {
-        when(() => mockRepo.updateOrganizationQuota(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
         await expectLater(
           handler.handle(_validCmd(newMaxVehicles: 1)),
           completes,
@@ -164,14 +169,17 @@ void main() {
           reason: 'Upgrade requested',
         );
 
-        when(() => mockRepo.updateOrganizationQuota(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
 
         await handler.handle(cmd);
 
-        final captured = verify(
-          () => mockRepo.updateOrganizationQuota(captureAny()),
-        ).captured.single as UpdateOrganizationQuotaCommand;
+        final captured =
+            verify(
+                  () => mockRepo.updateOrganizationQuota(captureAny()),
+                ).captured.single
+                as UpdateOrganizationQuotaCommand;
 
         expect(captured.organizationId, 'org-abc');
         expect(captured.newPlanType, 'professional');
@@ -185,7 +193,7 @@ void main() {
     group('P0001 passthrough', () {
       test('wraps P0001 PostgrestException as DomainException', () async {
         when(() => mockRepo.updateOrganizationQuota(any())).thenThrow(
-          PostgrestException(
+          const PostgrestException(
             message: 'Cota de veículos atingida.',
             code: 'P0001',
           ),
@@ -205,10 +213,7 @@ void main() {
 
       test('rethrows non-P0001 PostgrestException', () async {
         when(() => mockRepo.updateOrganizationQuota(any())).thenThrow(
-          PostgrestException(
-            message: 'Connection error',
-            code: '08000',
-          ),
+          const PostgrestException(message: 'Connection error', code: '08000'),
         );
 
         await expectLater(
