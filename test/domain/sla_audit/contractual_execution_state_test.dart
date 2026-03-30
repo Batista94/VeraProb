@@ -223,21 +223,24 @@ void main() {
       );
     });
 
-    test('bindExecution allowed after finalization (noShow) for late arrival re-evaluation (INV-12)', () {
-      final state = makeState();
-      state.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
+    test(
+      'bindExecution allowed after finalization (noShow) for late arrival re-evaluation (INV-12)',
+      () {
+        final state = makeState();
+        state.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
 
-      // Should not throw, but successfully update status to executed
-      state.bindExecution(
-        vehicleId: 'v-1',
-        latitude: -23.55,
-        longitude: -46.63,
-        timestampUtc: DateTime.utc(2026, 3, 1, 7, 5),
-      );
+        // Should not throw, but successfully update status to executed
+        state.bindExecution(
+          vehicleId: 'v-1',
+          latitude: -23.55,
+          longitude: -46.63,
+          timestampUtc: DateTime.utc(2026, 3, 1, 7, 5),
+        );
 
-      expect(state.status, ExecutionStatus.executed);
-      expect(state.boundVehicleId, 'v-1');
-    });
+        expect(state.status, ExecutionStatus.executed);
+        expect(state.boundVehicleId, 'v-1');
+      },
+    );
 
     test('updateEvaluationTimestamp updates without state change', () {
       final state = makeState();

@@ -289,10 +289,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify error handling (Snackbar)
-        expect(
-          find.text('Forensic Permission Denied'),
-          findsOneWidget,
-        );
+        expect(find.text('Forensic Permission Denied'), findsOneWidget);
       },
     );
   });

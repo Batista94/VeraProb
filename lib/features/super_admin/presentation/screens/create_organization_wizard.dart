@@ -243,12 +243,12 @@ class _CreateOrganizationWizardState
 
       // Capturar messenger e URL antes do showDialog (contexto seguro)
       final messenger = ScaffoldMessenger.of(context);
-      
+
       String baseUrl = 'http://localhost';
       try {
         baseUrl = Uri.base.origin;
       } catch (_) {}
-      
+
       final inviteUrl =
           '$baseUrl/accept-invite?token=${result.invitationToken}';
 

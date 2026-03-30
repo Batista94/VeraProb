@@ -35,117 +35,118 @@ void main() async {
     }
   });
 
-  group('sanction_review_queue — DB invariants', skip: isRunning ? null : skipReason, () {
-    test(
-      'trigger auto-populates queue on SANCTION_RECOMMENDED insert',
-      () async {
-        final fakeEvidence = {
-          'clause_ref': 'rule-int-001',
-          'rule_id': 'rule-int-001',
-          'rule_version': 1,
-          'primary_evidence_lat': -23.5505,
-          'primary_evidence_lng': -46.6333,
-          'primary_evidence_timestamp_utc': '2026-04-06T10:00:00.000Z',
-          'evidence_hash': 'a' * 64,
-          'delta_value': 15.0,
-          'threshold_value': 0.0,
-          'fine_cents': 150000,
-          'confidence_score': 100,
-        };
+  group(
+    'sanction_review_queue — DB invariants',
+    skip: isRunning ? null : skipReason,
+    () {
+      test(
+        'trigger auto-populates queue on SANCTION_RECOMMENDED insert',
+        () async {
+          final fakeEvidence = {
+            'clause_ref': 'rule-int-001',
+            'rule_id': 'rule-int-001',
+            'rule_version': 1,
+            'primary_evidence_lat': -23.5505,
+            'primary_evidence_lng': -46.6333,
+            'primary_evidence_timestamp_utc': '2026-04-06T10:00:00.000Z',
+            'evidence_hash': 'a' * 64,
+            'delta_value': 15.0,
+            'threshold_value': 0.0,
+            'fine_cents': 150000,
+            'confidence_score': 100,
+          };
 
-        // Insert a SANCTION_RECOMMENDED ledger entry
-        final ledgerRow = await client
-            .from('sla_audit_ledger_v2')
-            .insert({
-              'organization_id': orgId,
-              'type': 'SANCTION_RECOMMENDED',
-              'set_id': '00000000-0000-0000-0000-000000000101',
-              'contract_id': '00000000-0000-0000-0000-000000000100',
-              'plan_version': 1,
-              'occurred_at_utc': DateTime.now().toUtc().toIso8601String(),
-              'payload': {'verdict_evidence': fakeEvidence},
-            })
-            .select('id')
-            .single();
-
-        final ledgerEntryId = ledgerRow['id'] as String;
-
-        // Verify queue entry was auto-created by the trigger
-        await Future.delayed(const Duration(milliseconds: 200));
-        final queueRows = await client
-            .from('sanction_review_queue')
-            .select()
-            .eq('ledger_entry_id', ledgerEntryId);
-
-        expect((queueRows as List).length, 1);
-        expect(queueRows.first['status'], 'pending');
-        expect(queueRows.first['organization_id'], orgId);
-      },
-    );
-
-    test(
-      'duplicate SANCTION_RECOMMENDED insert → only one queue row (INV-24)',
-      () async {
-        final fakeEvidence = {
-          'clause_ref': 'rule-int-002',
-          'rule_id': 'rule-int-002',
-          'rule_version': 1,
-          'primary_evidence_lat': -23.5505,
-          'primary_evidence_lng': -46.6333,
-          'primary_evidence_timestamp_utc': '2026-04-06T11:00:00.000Z',
-          'evidence_hash': 'b' * 64,
-          'delta_value': 10.0,
-          'threshold_value': 0.0,
-          'fine_cents': 100000,
-          'confidence_score': 100,
-        };
-
-        // Insert first ledger entry
-        final ledgerRow1 = await client
-            .from('sla_audit_ledger_v2')
-            .insert({
-              'organization_id': orgId,
-              'type': 'SANCTION_RECOMMENDED',
-              'set_id': '00000000-0000-0000-0000-000000000201',
-              'contract_id': '00000000-0000-0000-0000-000000000200',
-              'plan_version': 1,
-              'occurred_at_utc': DateTime.now().toUtc().toIso8601String(),
-              'payload': {'verdict_evidence': fakeEvidence},
-            })
-            .select('id')
-            .single();
-
-        final ledgerEntryId = ledgerRow1['id'] as String;
-        await Future.delayed(const Duration(milliseconds: 200));
-
-        // Attempt direct duplicate insert into queue
-        await client
-            .from('sanction_review_queue')
-            .upsert(
-              {
+          // Insert a SANCTION_RECOMMENDED ledger entry
+          final ledgerRow = await client
+              .from('sla_audit_ledger_v2')
+              .insert({
                 'organization_id': orgId,
-                'ledger_entry_id': ledgerEntryId,
+                'type': 'SANCTION_RECOMMENDED',
+                'set_id': '00000000-0000-0000-0000-000000000101',
+                'contract_id': '00000000-0000-0000-0000-000000000100',
+                'plan_version': 1,
+                'occurred_at_utc': DateTime.now().toUtc().toIso8601String(),
+                'payload': {'verdict_evidence': fakeEvidence},
+              })
+              .select('id')
+              .single();
+
+          final ledgerEntryId = ledgerRow['id'] as String;
+
+          // Verify queue entry was auto-created by the trigger
+          await Future.delayed(const Duration(milliseconds: 200));
+          final queueRows = await client
+              .from('sanction_review_queue')
+              .select()
+              .eq('ledger_entry_id', ledgerEntryId);
+
+          expect((queueRows as List).length, 1);
+          expect(queueRows.first['status'], 'pending');
+          expect(queueRows.first['organization_id'], orgId);
+        },
+      );
+
+      test(
+        'duplicate SANCTION_RECOMMENDED insert → only one queue row (INV-24)',
+        () async {
+          final fakeEvidence = {
+            'clause_ref': 'rule-int-002',
+            'rule_id': 'rule-int-002',
+            'rule_version': 1,
+            'primary_evidence_lat': -23.5505,
+            'primary_evidence_lng': -46.6333,
+            'primary_evidence_timestamp_utc': '2026-04-06T11:00:00.000Z',
+            'evidence_hash': 'b' * 64,
+            'delta_value': 10.0,
+            'threshold_value': 0.0,
+            'fine_cents': 100000,
+            'confidence_score': 100,
+          };
+
+          // Insert first ledger entry
+          final ledgerRow1 = await client
+              .from('sla_audit_ledger_v2')
+              .insert({
+                'organization_id': orgId,
+                'type': 'SANCTION_RECOMMENDED',
                 'set_id': '00000000-0000-0000-0000-000000000201',
                 'contract_id': '00000000-0000-0000-0000-000000000200',
-                'verdict_evidence': fakeEvidence,
-                'status': 'pending',
-              },
-              onConflict: 'ledger_entry_id',
-              ignoreDuplicates: true,
-            );
+                'plan_version': 1,
+                'occurred_at_utc': DateTime.now().toUtc().toIso8601String(),
+                'payload': {'verdict_evidence': fakeEvidence},
+              })
+              .select('id')
+              .single();
 
-        final queueRows = await client
-            .from('sanction_review_queue')
-            .select()
-            .eq('ledger_entry_id', ledgerEntryId);
+          final ledgerEntryId = ledgerRow1['id'] as String;
+          await Future.delayed(const Duration(milliseconds: 200));
 
-        expect((queueRows as List).length, 1); // exactly one
-      },
-    );
+          // Attempt direct duplicate insert into queue
+          await client
+              .from('sanction_review_queue')
+              .upsert(
+                {
+                  'organization_id': orgId,
+                  'ledger_entry_id': ledgerEntryId,
+                  'set_id': '00000000-0000-0000-0000-000000000201',
+                  'contract_id': '00000000-0000-0000-0000-000000000200',
+                  'verdict_evidence': fakeEvidence,
+                  'status': 'pending',
+                },
+                onConflict: 'ledger_entry_id',
+                ignoreDuplicates: true,
+              );
 
-    test(
-      'UPDATE on immutable field → restrict_violation (INV-1)',
-      () async {
+          final queueRows = await client
+              .from('sanction_review_queue')
+              .select()
+              .eq('ledger_entry_id', ledgerEntryId);
+
+          expect((queueRows as List).length, 1); // exactly one
+        },
+      );
+
+      test('UPDATE on immutable field → restrict_violation (INV-1)', () async {
         final rows = await client
             .from('sanction_review_queue')
             .select('id, organization_id')
@@ -169,7 +170,7 @@ void main() async {
               .eq('id', rowId),
           throwsA(anything),
         );
-      },
-    );
-  });
+      });
+    },
+  );
 }

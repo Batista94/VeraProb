@@ -26,27 +26,31 @@ void main() async {
     }
   });
 
-  group('sanction_escalation_log — DB invariants', skip: isRunning ? null : skipReason, () {
-    test('UPDATE is blocked by trigger (INV-1)', () async {
-      // Attempt direct update (trigger should block it)
-      expect(
-        () async => client
-            .from('sanction_escalation_log')
-            .update({'delivery_status': 'delivered'})
-            .eq('id', 'non-existent-id'),
-        // PostgreSQL trigger raises restrict_violation — Supabase wraps it
-        throwsA(anything),
-      );
-    });
+  group(
+    'sanction_escalation_log — DB invariants',
+    skip: isRunning ? null : skipReason,
+    () {
+      test('UPDATE is blocked by trigger (INV-1)', () async {
+        // Attempt direct update (trigger should block it)
+        expect(
+          () async => client
+              .from('sanction_escalation_log')
+              .update({'delivery_status': 'delivered'})
+              .eq('id', 'non-existent-id'),
+          // PostgreSQL trigger raises restrict_violation — Supabase wraps it
+          throwsA(anything),
+        );
+      });
 
-    test('DELETE is blocked by trigger (INV-1)', () async {
-      expect(
-        () async => client
-            .from('sanction_escalation_log')
-            .delete()
-            .eq('id', 'non-existent-id'),
-        throwsA(anything),
-      );
-    });
-  });
+      test('DELETE is blocked by trigger (INV-1)', () async {
+        expect(
+          () async => client
+              .from('sanction_escalation_log')
+              .delete()
+              .eq('id', 'non-existent-id'),
+          throwsA(anything),
+        );
+      });
+    },
+  );
 }

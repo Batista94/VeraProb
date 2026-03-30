@@ -37,7 +37,8 @@ final _orgAId = _uuid.v4();
 final _orgBId = _uuid.v4();
 final _userAEmail = 'rls_a_${_uuid.v4().substring(0, 8)}@veraprob.test';
 final _userBEmail = 'rls_b_${_uuid.v4().substring(0, 8)}@veraprob.test';
-final _contractorViewerEmail = 'rls_cv_${_uuid.v4().substring(0, 8)}@veraprob.test';
+final _contractorViewerEmail =
+    'rls_cv_${_uuid.v4().substring(0, 8)}@veraprob.test';
 const _testPassword = 'TestPassword123!';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
