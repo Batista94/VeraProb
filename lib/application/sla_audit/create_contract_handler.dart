@@ -1,5 +1,8 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../domain/sla_audit/contract.dart';
 import '../../domain/sla_audit/contract_repository.dart';
+import '../../domain/sla_audit/domain_exception.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
 import '../../domain/shared/money.dart';
 import 'create_contract_command.dart';
@@ -44,7 +47,12 @@ class CreateContractHandler {
     );
 
     // 2. Persist aggregate
-    await _contractRepository.save(contract);
+    try {
+      await _contractRepository.save(contract);
+    } on PostgrestException catch (e) {
+      if (e.code == 'P0001') throw DomainException(e.message);
+      rethrow;
+    }
 
     // 3. Append domain events to the immutable ledger
     for (final event in contract.domainEvents) {

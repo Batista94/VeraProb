@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../application/super_admin/create_organization_handler.dart';
+import '../../application/super_admin/update_organization_quota_handler.dart';
 import '../../domain/super_admin/i_cnpj_lookup_service.dart';
 import '../../domain/super_admin/i_super_admin_repository.dart';
 import '../../domain/super_admin/system_audit_log_entry.dart';
@@ -25,6 +26,13 @@ final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthSnapshot>>(
     return repo.getAllTenantHealth();
   },
 );
+
+/// Provider that wires [UpdateOrganizationQuotaHandler] with its dependencies.
+final updateOrganizationQuotaHandlerProvider =
+    Provider<UpdateOrganizationQuotaHandler>((ref) {
+      final repo = ref.watch(superAdminRepositoryProvider);
+      return UpdateOrganizationQuotaHandler(repo);
+    });
 
 /// Provider that wires [CreateOrganizationHandler] with its dependencies.
 final createOrganizationHandlerProvider = Provider<CreateOrganizationHandler>((

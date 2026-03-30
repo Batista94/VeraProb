@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../core/services/logger_service.dart';
 import '../../../../../domain/entities/vehicle.dart';
 import '../../../../../domain/enums/vehicle_status.dart';
@@ -603,10 +604,16 @@ class _VehicleFormDrawerState extends ConsumerState<_VehicleFormDrawer>
         error: e,
         stackTrace: stack,
       );
+      String? msg;
+      if (e is PostgrestException && e.code == 'P0001') {
+        msg = e.message;
+      } else if (e.toString().contains('uq_vehicles_org_plate')) {
+        msg = 'Esta placa já está cadastrada na frota.';
+      } else {
+        msg = 'Não foi possível salvar o veículo agora. Tente novamente.';
+      }
       setState(() {
-        _errorMessage = e.toString().contains('uq_vehicles_org_plate')
-            ? 'Esta placa já está cadastrada na frota.'
-            : 'Não foi possível salvar o veículo agora. Tente novamente.';
+        _errorMessage = msg;
         _isSaving = false;
       });
     }

@@ -4,6 +4,7 @@ import '../../domain/super_admin/create_organization_command.dart';
 import '../../domain/super_admin/i_super_admin_repository.dart';
 import '../../domain/super_admin/system_audit_log_entry.dart';
 import '../../domain/super_admin/tenant_health_snapshot.dart';
+import '../../domain/super_admin/update_organization_quota_command.dart';
 
 /// PostgreSQL implementation of [ISuperAdminRepository].
 ///
@@ -111,5 +112,22 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
     return rows
         .map((row) => SystemAuditLogEntry.fromJson(row as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<void> updateOrganizationQuota(
+    UpdateOrganizationQuotaCommand cmd,
+  ) async {
+    await _authenticatedClient.rpc(
+      'super_admin_update_organization_quota',
+      params: {
+        'p_org_id': cmd.organizationId,
+        'p_new_plan_type': cmd.newPlanType,
+        'p_new_max_vehicles': cmd.newMaxVehicles,
+        'p_new_max_contracts': cmd.newMaxActiveContracts,
+        'p_super_admin_user_id': cmd.superAdminUserId,
+        'p_reason': cmd.reason,
+      },
+    );
   }
 }

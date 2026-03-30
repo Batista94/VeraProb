@@ -17,6 +17,7 @@ import 'package:uuid/uuid.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
 import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
+import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_super_admin_repository.dart';
 
 import 'postgres_test_config.dart';
@@ -162,6 +163,220 @@ void main() async {
             );
           },
         );
+      });
+
+      // ── updateOrganizationQuota ────────────────────────────────────────────
+
+      group('updateOrganizationQuota', () {
+        test('updates plan_type and quotas on existing org', () async {
+          final cnpj = _uniqueCnpj();
+          final superAdminId = _uuid.v4();
+          final orgId = await repo.createOrganization(
+            CreateOrganizationCommand(
+              legalName: 'Quota Test Ltda.',
+              tradeName: 'QuotaCo',
+              cnpj: cnpj,
+              timezone: 'America/Sao_Paulo',
+              currencyCode: 'BRL',
+              planType: 'starter',
+              maxVehicles: 10,
+              maxActiveContracts: 5,
+              initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+              superAdminUserId: superAdminId,
+            ),
+          );
+
+          await repo.updateOrganizationQuota(
+            UpdateOrganizationQuotaCommand(
+              organizationId: orgId,
+              newPlanType: 'professional',
+              newMaxVehicles: 100,
+              newMaxActiveContracts: 50,
+              superAdminUserId: superAdminId,
+              reason: 'Upgrade for integration test',
+            ),
+          );
+
+          final row = await serviceRoleClient
+              .from('organizations')
+              .select('plan_type, max_vehicles, max_active_contracts')
+              .eq('id', orgId)
+              .single();
+
+          expect(row['plan_type'], equals('professional'));
+          expect(row['max_vehicles'], equals(100));
+          expect(row['max_active_contracts'], equals(50));
+        });
+
+        test('records PLAN_CHANGED billing event (INV-7)', () async {
+          final cnpj = _uniqueCnpj();
+          final superAdminId = _uuid.v4();
+          final orgId = await repo.createOrganization(
+            CreateOrganizationCommand(
+              legalName: 'Event Test Ltda.',
+              tradeName: 'EventCo',
+              cnpj: cnpj,
+              timezone: 'America/Sao_Paulo',
+              currencyCode: 'BRL',
+              planType: 'starter',
+              maxVehicles: 10,
+              maxActiveContracts: 5,
+              initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+              superAdminUserId: superAdminId,
+            ),
+          );
+
+          await repo.updateOrganizationQuota(
+            UpdateOrganizationQuotaCommand(
+              organizationId: orgId,
+              newPlanType: 'enterprise',
+              newMaxVehicles: null,
+              newMaxActiveContracts: null,
+              superAdminUserId: superAdminId,
+            ),
+          );
+
+          final events = await serviceRoleClient
+              .from('tenant_billing_events')
+              .select()
+              .eq('organization_id', orgId)
+              .eq('event_type', 'PLAN_CHANGED');
+
+          expect(events, isNotEmpty);
+          final ev = events.first as Map;
+          expect(ev['old_plan'], equals('starter'));
+          expect(ev['new_plan'], equals('enterprise'));
+          expect(ev['changed_by_super_admin_id'], equals(superAdminId));
+        });
+
+        test('PLAN_CHANGED billing event is immutable (INV-7)', () async {
+          final cnpj = _uniqueCnpj();
+          final superAdminId = _uuid.v4();
+          final orgId = await repo.createOrganization(
+            CreateOrganizationCommand(
+              legalName: 'Immutable Test Ltda.',
+              tradeName: 'ImmutCo',
+              cnpj: cnpj,
+              timezone: 'America/Sao_Paulo',
+              currencyCode: 'BRL',
+              planType: 'starter',
+              maxVehicles: 5,
+              maxActiveContracts: 2,
+              initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+              superAdminUserId: superAdminId,
+            ),
+          );
+
+          await repo.updateOrganizationQuota(
+            UpdateOrganizationQuotaCommand(
+              organizationId: orgId,
+              newPlanType: 'professional',
+              newMaxVehicles: 50,
+              newMaxActiveContracts: 20,
+              superAdminUserId: superAdminId,
+            ),
+          );
+
+          final events = await serviceRoleClient
+              .from('tenant_billing_events')
+              .select('id')
+              .eq('organization_id', orgId)
+              .eq('event_type', 'PLAN_CHANGED');
+          final eventId = (events.first as Map)['id'] as String;
+
+          await expectLater(
+            serviceRoleClient
+                .from('tenant_billing_events')
+                .update({'reason': 'tampered'}).eq('id', eventId),
+            throwsException,
+          );
+        });
+      });
+
+      // ── Hard quota triggers — P0001 ────────────────────────────────────────
+
+      group('Hard quota triggers — P0001', () {
+        test('vehicle insert blocked when vehicle quota exceeded', () async {
+          final cnpj = _uniqueCnpj();
+          final superAdminId = _uuid.v4();
+          final orgId = await repo.createOrganization(
+            CreateOrganizationCommand(
+              legalName: 'Quota Veh Test Ltda.',
+              tradeName: 'VehQuotaCo',
+              cnpj: cnpj,
+              timezone: 'America/Sao_Paulo',
+              currencyCode: 'BRL',
+              planType: 'starter',
+              maxVehicles: 1,
+              maxActiveContracts: 5,
+              initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+              superAdminUserId: superAdminId,
+            ),
+          );
+
+          // Insert first vehicle — should succeed
+          await serviceRoleClient.from('vehicles').insert({
+            'id': _uuid.v4(),
+            'organization_id': orgId,
+            'plate': 'TST${DateTime.now().millisecondsSinceEpoch % 9000 + 1000}',
+            'status': 'available',
+          });
+
+          // Second vehicle should be blocked by quota trigger (P0001)
+          await expectLater(
+            serviceRoleClient.from('vehicles').insert({
+              'id': _uuid.v4(),
+              'organization_id': orgId,
+              'plate': 'BLK${DateTime.now().millisecondsSinceEpoch % 9000 + 1000}',
+              'status': 'available',
+            }),
+            throwsException,
+          );
+        });
+
+        test('contract insert blocked when active contract quota exceeded', () async {
+          final cnpj = _uniqueCnpj();
+          final superAdminId = _uuid.v4();
+          final orgId = await repo.createOrganization(
+            CreateOrganizationCommand(
+              legalName: 'Quota Ctr Test Ltda.',
+              tradeName: 'CtrQuotaCo',
+              cnpj: cnpj,
+              timezone: 'America/Sao_Paulo',
+              currencyCode: 'BRL',
+              planType: 'starter',
+              maxVehicles: 10,
+              maxActiveContracts: 1,
+              initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+              superAdminUserId: superAdminId,
+            ),
+          );
+
+          // Insert first active contract — should succeed
+          await serviceRoleClient.from('contracts').insert({
+            'id': _uuid.v4(),
+            'organization_id': orgId,
+            'name': 'Contrato 1',
+            'contractor_name': 'Transp. A',
+            'status': 'active',
+            'valid_from_utc': '2026-01-01T00:00:00Z',
+            'valid_until_utc': '2026-12-31T23:59:59Z',
+          });
+
+          // Second active contract should be blocked (P0001)
+          await expectLater(
+            serviceRoleClient.from('contracts').insert({
+              'id': _uuid.v4(),
+              'organization_id': orgId,
+              'name': 'Contrato 2',
+              'contractor_name': 'Transp. B',
+              'status': 'active',
+              'valid_from_utc': '2026-01-01T00:00:00Z',
+              'valid_until_utc': '2026-12-31T23:59:59Z',
+            }),
+            throwsException,
+          );
+        });
       });
 
       // ── getAllTenantHealth ──────────────────────────────────────────────────

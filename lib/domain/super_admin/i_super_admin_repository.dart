@@ -1,6 +1,7 @@
 import 'create_organization_command.dart';
 import 'system_audit_log_entry.dart';
 import 'tenant_health_snapshot.dart';
+import 'update_organization_quota_command.dart';
 
 /// Port for SuperAdmin data operations.
 ///
@@ -40,4 +41,10 @@ abstract class ISuperAdminRepository {
     DateTime? toDate,
     int limit,
   });
+
+  /// Updates an existing organization's plan type and quota limits.
+  ///
+  /// Atomically updates the organizations row and appends a 'PLAN_CHANGED'
+  /// billing event (INV-7). NULL limits = unlimited (enterprise tier).
+  Future<void> updateOrganizationQuota(UpdateOrganizationQuotaCommand command);
 }

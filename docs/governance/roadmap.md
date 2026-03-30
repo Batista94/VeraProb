@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
-**Revision:** 2026-03-26
-**Current Status:** Phase 9.8 — Resilience & Operational Hub (The Body) · [ACTIVE: 9.8.D - Hard Quota Enforcement]
+**Revision:** 2026-03-30
+**Current Status:** Phase 9.8 — Resilience & Operational Hub (The Body) · [NEXT: 9.8.E - Global InfoTooltip]
 **Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
@@ -10,8 +10,8 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| Tests | 1048 passing (+6 new MFA tests) · 23 skipped · 0 failures ✅ |
-| Migrations | 74 applied (schema lock v1 + kinematic guard trigger) ✅ |
+| Tests | 1169 passing · 96 skipped · 0 failures ✅ |
+| Migrations | 75 applied (schema lock v1 + kinematic guard + hard quota triggers + update quota RPC) ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | Phase 10.1 | **COMPLETED** — Schema Lock ✅ |
 
@@ -22,7 +22,7 @@
 - **[x] 9.8.A — RLS JWT path hotfix + 7 new integration tests:** ✅ Corrigido vazamento potencial de tenant ID no path do JWT e cobertura de testes.
 - **[x] 9.8.B — Sidebar Hub Refactor (8 → 6 items):** ✅ Hub administrativo centralizado com redução de carga visual lateral.
 - **[x] 9.8.C — Smart CNPJ Protocol:** ✅ Máscara dinâmica, trava Unique no Postgres e validação Modulo-11 completa.
-- **[ ] 9.8.D — Hard Quota Enforcement + Predictive Provisioning (NEXT SESSION START):** Database triggers para `max_vehicles`/`max_contracts` + SuperAdmin logic.
+- **[x] 9.8.D — Hard Quota Enforcement + Predictive Provisioning:** ✅ DB triggers P0001 em `vehicles`/`contracts`, RPC `super_admin_update_organization_quota`, `UpdateOrganizationQuotaHandler`, `_EditQuotaDialog` modal, quota ratio columns verde/laranja/vermelho no dashboard. 14 novos testes.
 - **[ ] 9.8.E — Global InfoTooltip widget:** Substituição de textos longos por ícones informativos contextuais.
 - **[ ] 9.8.F — Searchable Entity Mapping:** Unificação de busca por Nome/CNPJ em contratos e tenants.
 - **[ ] 9.8.G — Heartbeat Monitor projection:** Diferenciação entre sabotagem de hardware e falha de rede.

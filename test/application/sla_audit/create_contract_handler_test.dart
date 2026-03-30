@@ -1,10 +1,36 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/sla_audit/create_contract_command.dart';
 import 'package:veraprob/application/sla_audit/create_contract_handler.dart';
+import 'package:veraprob/domain/sla_audit/contract.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+
+/// Fake repository that raises a Postgres P0001 on [save].
+class _QuotaExceededContractRepository implements ContractRepository {
+  @override
+  Future<void> save(Contract contract) async {
+    throw PostgrestException(
+      message: 'Cota de contratos ativos atingida para este tenant.',
+      code: 'P0001',
+    );
+  }
+
+  @override
+  Future<Contract?> findById(
+    String id, {
+    required String organizationId,
+  }) async => null;
+
+  @override
+  Future<List<Contract>> findByOrganization(
+    String organizationId, {
+    ContractStatus? status,
+  }) async => [];
+}
 
 void main() {
   late InMemoryContractRepository repository;
@@ -122,6 +148,41 @@ void main() {
         status: ContractStatus.active,
       );
       expect(active, isEmpty);
+    });
+  });
+
+  group('P0001 quota enforcement', () {
+    late _QuotaExceededContractRepository quotaRepo;
+    late InMemorySlaAuditLedgerRepository quotaLedger;
+    late CreateContractHandler quotaHandler;
+
+    setUp(() {
+      quotaRepo = _QuotaExceededContractRepository();
+      quotaLedger = InMemorySlaAuditLedgerRepository();
+      quotaHandler = CreateContractHandler(
+        contractRepository: quotaRepo,
+        ledger: quotaLedger,
+      );
+    });
+
+    test('wraps P0001 PostgrestException as DomainException', () async {
+      await expectLater(
+        quotaHandler.handle(makeCommand()),
+        throwsA(
+          isA<DomainException>().having(
+            (e) => e.message,
+            'message',
+            contains('Cota de contratos ativos'),
+          ),
+        ),
+      );
+    });
+
+    test('ledger remains empty when quota is exceeded', () async {
+      try {
+        await quotaHandler.handle(makeCommand());
+      } catch (_) {}
+      expect(quotaLedger.entries, isEmpty);
     });
   });
 }
