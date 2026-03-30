@@ -112,10 +112,11 @@ void main() async {
       final jwt = session!.accessToken;
       final parts = jwt.split('.');
       String base64Str = parts[1];
-      while (base64Str.length % 4 != 0) base64Str += '=';
+      while (base64Str.length % 4 != 0) {
+        base64Str += '=';
+      }
       final payload = jsonDecode(utf8.decode(base64Decode(base64Str.replaceAll('-', '+').replaceAll('_', '/')))) as Map<String, dynamic>;
       
-      print('DEBUG JWT CLAIMS: $payload');
       
       expect(payload['organization_id'], equals(_orgAId));
       expect(payload['app_metadata']['role'], equals('TENANT_ADMIN'));
@@ -175,7 +176,6 @@ void main() async {
           .eq('id', contractorId)
           .single();
       
-      print('DEBUG AUDIT 4 RESULT: $res');
 
       expect(res['tax_id'], equals('XX.XXX.XXX/XXXX-XX'), reason: 'LGPD Breach: OPERATOR saw raw CNPJ');
       expect(res['primary_email'], contains('****@business.com'), reason: 'LGPD Breach: OPERATOR saw raw Email localpart');
@@ -188,7 +188,6 @@ void main() async {
           .limit(1)
           .single();
       
-      print('DEBUG AUDIT 5 RESULT: $res');
 
       expect(res['tax_id'], isNot(equals('XX.XXX.XXX/XXXX-XX')), reason: 'UX Degradation: ADMIN saw masked CNPJ');
       expect(res['primary_email'], isNot(contains('****')), reason: 'UX Degradation: ADMIN saw masked Email');
