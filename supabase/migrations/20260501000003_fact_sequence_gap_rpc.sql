@@ -14,7 +14,6 @@ CREATE OR REPLACE FUNCTION get_missed_facts(
 )
 RETURNS TABLE (
   id           uuid,
-  content_hash text,
   device_id    text,
   gps_timestamp timestamptz,
   received_at  timestamptz
@@ -26,7 +25,6 @@ SET search_path = public
 AS $$
   SELECT
     id,
-    content_hash,
     device_id,
     gps_timestamp,
     received_at_utc AS received_at
