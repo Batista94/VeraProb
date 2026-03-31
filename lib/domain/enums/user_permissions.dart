@@ -17,6 +17,10 @@ enum UserPermission {
   canApproveSanctions,
   canRejectSanctions,
 
+  // Justification permissions (Phase 9.8.J)
+  canSubmitJustification,
+  canReviewJustifications,
+
   // SuperAdmin-exclusive permissions
   canManageTenants,
   canViewAllTenants,
@@ -44,6 +48,10 @@ const Map<UserPermission, Set<UserRole>> rolePermissions = {
 
   UserPermission.canApproveSanctions: {UserRole.admin, UserRole.auditor},
   UserPermission.canRejectSanctions: {UserRole.admin, UserRole.auditor},
+
+  // Justification permissions (Phase 9.8.J)
+  UserPermission.canSubmitJustification: {UserRole.admin, UserRole.operator},
+  UserPermission.canReviewJustifications: {UserRole.admin, UserRole.operator},
 
   // SuperAdmin-exclusive
   UserPermission.canManageTenants: {UserRole.superAdmin},

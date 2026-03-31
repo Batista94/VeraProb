@@ -98,6 +98,9 @@ class AlertDerivationService {
 
       case ExecutionStatus.pending:
         return null; // No alert for pending evaluations
+
+      case ExecutionStatus.inhibited:
+        return null; // Penalty suppressed by approved justification — no alert
     }
   }
 }

@@ -365,7 +365,7 @@ class DataSeeder {
         await _supabase.from('vehicles').insert({
           'organization_id': organizationId,
           'plate': plate,
-          'model': 'Mockado ${i}',
+          'model': 'Mockado $i',
           'capacity': 30000 + i,
         });
       }

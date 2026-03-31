@@ -270,6 +270,56 @@ class SlaLedgerMapper {
       );
     }
 
+    if (event is JustificationSubmittedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'JUSTIFICATION_SUBMITTED',
+        operatorId: event.actorUserId,
+        setId: event.setId,
+        contractId: event.contractId,
+        planVersion: event.planVersion,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'justification_id': event.justificationId,
+          'actor_id': event.actorUserId,
+        },
+      );
+    }
+
+    if (event is JustificationApprovedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'JUSTIFICATION_APPROVED',
+        operatorId: event.actorUserId,
+        setId: event.setId,
+        contractId: event.contractId,
+        planVersion: event.planVersion,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'justification_id': event.justificationId,
+          'actor_id': event.actorUserId,
+          'actor_email': event.actorEmail,
+        },
+      );
+    }
+
+    if (event is JustificationRejectedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'JUSTIFICATION_REJECTED',
+        operatorId: event.actorUserId,
+        setId: event.setId,
+        contractId: event.contractId,
+        planVersion: event.planVersion,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'justification_id': event.justificationId,
+          'actor_id': event.actorUserId,
+          'actor_email': event.actorEmail,
+        },
+      );
+    }
+
     // Generic fallback for unknown events
     return SlaLedgerEntry(
       organizationId: event.organizationId,

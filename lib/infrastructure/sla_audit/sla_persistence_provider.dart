@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/sla_audit/contract_repository.dart';
 import '../../domain/sla_audit/contractual_execution_state_repository.dart';
 import '../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import '../../domain/sla_audit/justification/justification_repository.dart';
 import '../../domain/sla_audit/plan_declaration_repository.dart';
 import '../../domain/sla_audit/sanction_review_queue_repository.dart';
 import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
@@ -14,6 +15,8 @@ import 'in_memory_contractual_financial_snapshot_repository.dart';
 import 'in_memory_plan_declaration_repository.dart';
 import 'in_memory_sanction_review_queue_repository.dart';
 import 'in_memory_sla_audit_ledger_repository.dart';
+import 'justification/in_memory_justification_repository.dart';
+import 'justification/postgres_justification_repository.dart';
 import 'postgres_contract_repository.dart';
 import 'postgres_contractual_execution_state_repository.dart';
 import 'postgres_contractual_financial_snapshot_repository.dart';
@@ -79,3 +82,12 @@ final sanctionReviewQueueRepositoryProvider =
         PersistenceMode.postgres => PostgresSanctionReviewQueueRepository(),
       };
     });
+
+final justificationRepositoryProvider = Provider<JustificationRepository>((
+  ref,
+) {
+  return switch (ref.watch(persistenceModeProvider)) {
+    PersistenceMode.inMemory => InMemoryJustificationRepository(),
+    PersistenceMode.postgres => PostgresJustificationRepository(),
+  };
+});

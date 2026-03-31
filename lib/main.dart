@@ -12,6 +12,7 @@ import 'features/shared/providers.dart';
 import 'features/shared/widgets/error_boundary.dart';
 import 'features/admin/presentation/lock_screen.dart';
 import 'features/admin/presentation/screens/accept_invite_screen.dart';
+import 'features/admin/presentation/screens/driver_justification_page.dart';
 import 'features/admin/presentation/screens/review_contract_screen.dart';
 import 'core/config/supabase_client.dart';
 import 'infrastructure/persistence/persistence_mode.dart';
@@ -59,6 +60,7 @@ void main() async {
           uri.path.contains('accept-invite') && queryToken != null;
       final isReviewContractRoute =
           uri.path.contains('review-contract') && queryToken != null;
+      final isJustifyRoute = uri.path.contains('justify') && queryToken != null;
 
       runApp(
         ProviderScope(
@@ -71,6 +73,7 @@ void main() async {
           child: VeraProbAdminApp(
             inviteToken: isInviteRoute ? queryToken : null,
             reviewContractToken: isReviewContractRoute ? queryToken : null,
+            justifyToken: isJustifyRoute ? queryToken : null,
           ),
         ),
       );
@@ -81,11 +84,13 @@ void main() async {
 class VeraProbAdminApp extends ConsumerStatefulWidget {
   final String? inviteToken;
   final String? reviewContractToken;
+  final String? justifyToken;
 
   const VeraProbAdminApp({
     super.key,
     this.inviteToken,
     this.reviewContractToken,
+    this.justifyToken,
   });
 
   @override
@@ -117,7 +122,9 @@ class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
       ],
       supportedLocales: const [Locale('pt', 'BR')],
       locale: const Locale('pt', 'BR'),
-      home: widget.reviewContractToken != null
+      home: widget.justifyToken != null
+          ? DriverJustificationPage(token: widget.justifyToken!)
+          : widget.reviewContractToken != null
           ? ReviewContractScreen(token: widget.reviewContractToken!)
           : widget.inviteToken != null
           ? AcceptInviteScreen(token: widget.inviteToken!)

@@ -209,3 +209,67 @@ class SanctionDisputedEvent extends DomainEvent {
     required this.verdictEvidence,
   });
 }
+
+// ── Justification Events (Phase 9.8.J) ──────────────────────────────────────
+
+/// Emitted when a contractor/driver submits a justification for a SLA event.
+class JustificationSubmittedEvent extends DomainEvent {
+  final String justificationId;
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final String actorUserId;
+
+  const JustificationSubmittedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.justificationId,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.actorUserId,
+  });
+}
+
+/// Emitted when an admin/operator approves a justification.
+/// Triggers INHIBITED state on the linked execution (INV-15).
+class JustificationApprovedEvent extends DomainEvent {
+  final String justificationId;
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final String actorUserId;
+  final String actorEmail;
+
+  const JustificationApprovedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.justificationId,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.actorUserId,
+    required this.actorEmail,
+  });
+}
+
+/// Emitted when an admin/operator rejects a justification.
+class JustificationRejectedEvent extends DomainEvent {
+  final String justificationId;
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final String actorUserId;
+  final String actorEmail;
+
+  const JustificationRejectedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.justificationId,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.actorUserId,
+    required this.actorEmail,
+  });
+}

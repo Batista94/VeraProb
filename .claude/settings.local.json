@@ -14,7 +14,8 @@
       "Bash(find:*)",
       "Bash(supabase:*)",
       "Bash(bash scripts/pr_scanner.sh*)",
-      "Read(//c/Projects/VeraProb/**)"
+      "Read(//c/Projects/VeraProb/**)",
+      "Bash(bash scripts/pr_full_scanner.sh)"
     ]
   },
   "model": "sonnet"

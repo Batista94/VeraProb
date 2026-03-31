@@ -28,7 +28,7 @@
 - **[x] 9.8.G — Heartbeat Monitor Projection:** ✅ `HeartbeatClassifier` (domínio puro), `HeartbeatMonitorView` + `HeartbeatQueryService`, `SupabaseHeartbeatQueryService`, SQL VIEW `vw_device_heartbeat_status` + RPC `get_device_heartbeat_status`, `HeartbeatStatusCard` widget. 20 novos testes TDD.
 - **[x] 9.8.H — Background Sync Resilience (LocalFactQueue):** ✅ Edge Ledger SQLite (drift + WasmDatabase) — PendingFact VO, ChainIntegrityVerifier, InMemory + Drift repos, SupabaseSyncHandshakeService, LocalSyncOrchestrator, ConnectivityNotifier, EdgeLedgerStatusBadge. SQL RPC `get_missed_facts`. INV-8/11/12/18/23 compliant. 143 novos testes TDD.
 - **[x] 9.8.I — Late-Arrival Window Protocol (INV-12):** ✅ `LateArrivalWindowPolicy` (pure Dart domain, INV-18), 48h gate in `ContractualEvaluationEngine.processVehicleState` (`receivedAtUtc` param), pipeline wiring for `lateArrival` facts. 12 novos testes TDD (8 domain + 4 integration). INV-12/13/16/18 compliant.
-- **[ ] 9.8.J — Driver Defense Portal (MVP):** Portal para submissão de justificativas preventivas vinculadas à auditoria.
+- **[ ] 9.8.J — Driver Defense Portal:** Portal para submissão de justificativas preventivas vinculadas à auditoria.
 
 ---
 

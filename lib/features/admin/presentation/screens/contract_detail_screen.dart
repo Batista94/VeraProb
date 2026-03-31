@@ -648,6 +648,7 @@ class _ExecutionStatusChip extends StatelessWidget {
       ExecutionStatus.executed => ('Executado', VeraProbColors.success),
       ExecutionStatus.noShow => ('No-show', VeraProbColors.error),
       ExecutionStatus.evidenceGap => ('Gap', VeraProbColors.warning),
+      ExecutionStatus.inhibited => ('Inibido', VeraProbColors.textSecondary),
     };
 
     return Container(

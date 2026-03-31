@@ -13,4 +13,7 @@ enum ExecutionStatus {
 
   /// Insufficient telemetry evidence to determine execution.
   evidenceGap,
+
+  /// Penalty suppressed because an approved justification was received (INV-15).
+  inhibited,
 }

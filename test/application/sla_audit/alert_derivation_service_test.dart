@@ -43,6 +43,8 @@ void main() {
         break;
       case ExecutionStatus.pending:
         break;
+      case ExecutionStatus.inhibited:
+        break;
     }
 
     return state;

@@ -102,6 +102,11 @@ class ContractualFinancialSnapshotGenerator {
           revenueAtRisk = revenueAtRisk + value;
           evidenceGapCount++;
           break;
+        case ExecutionStatus.inhibited:
+          // Penalty suppressed — counts as protected revenue for reconciliation
+          protectedRevenue = protectedRevenue + value;
+          executedCount++;
+          break;
       }
     }
 
@@ -184,6 +189,10 @@ class ContractualFinancialSnapshotGenerator {
         case ExecutionStatus.evidenceGap:
           revenueAtRisk = revenueAtRisk + value;
           evidenceGapCount++;
+          break;
+        case ExecutionStatus.inhibited:
+          protectedRevenue = protectedRevenue + value;
+          executedCount++;
           break;
       }
     }

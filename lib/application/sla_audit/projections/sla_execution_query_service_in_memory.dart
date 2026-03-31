@@ -52,6 +52,10 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
           evidenceGap++;
           revenueAtRisk = revenueAtRisk + s.contractualValue;
           break;
+        case ExecutionStatus.inhibited:
+          executed++;
+          protectedRevenue = protectedRevenue + s.contractualValue;
+          break;
       }
     }
 
