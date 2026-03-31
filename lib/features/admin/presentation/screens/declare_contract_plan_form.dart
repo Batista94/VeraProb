@@ -24,6 +24,8 @@ import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
 import 'package:veraprob/state/providers/sla_template_providers.dart';
 import 'package:veraprob/application/sla_audit/sla_template_presets.dart';
 
+import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
+
 import '../widgets/zone_type_ahead_field.dart';
 import '../widgets/transport_vertical_chip.dart';
 
@@ -1325,12 +1327,11 @@ class _DeclareContractPlanFormState
             suffixText: ' x',
             border: OutlineInputBorder(),
             isDense: true,
-            suffixIcon: Tooltip(
+            suffixIcon: InfoTooltip(
               message:
                   'Alavanca Financeira: penalidade aplicada ao valor base '
                   'da viagem em caso de No-Show.\n'
                   'Ex.: 1,5x = 150% do valor contratual cobrado do operador.',
-              child: Icon(Icons.help_outline, size: 16),
             ),
           ),
           onSubmitted: (_) =>
@@ -1444,12 +1445,11 @@ class _DeclareContractPlanFormState
                             suffixText: ' min',
                             border: OutlineInputBorder(),
                             isDense: true,
-                            suffixIcon: Tooltip(
+                            suffixIcon: InfoTooltip(
                               message:
                                   'Atraso (em minutos) a partir do qual o sistema '
                                   'classifica automaticamente a execução como No-Show. '
                                   'Padrão de mercado: 60 min.',
-                              child: Icon(Icons.help_outline, size: 16),
                             ),
                           ),
                         ),
@@ -2085,14 +2085,7 @@ class _KpiCard extends StatelessWidget {
               ),
               if (tooltip != null) ...[
                 const SizedBox(width: 4),
-                Tooltip(
-                  message: tooltip!,
-                  child: const Icon(
-                    Icons.help_outline,
-                    size: 12,
-                    color: VeraProbColors.textDisabled,
-                  ),
-                ),
+                InfoTooltip(message: tooltip!, iconSize: 12),
               ],
             ],
           ),

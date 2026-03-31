@@ -8,11 +8,32 @@ import '../../../../application/sla_audit/delete_contractor_command.dart';
 import '../widgets/contractor_form_dialog.dart';
 
 /// Screen for managing Contractors (CRUD).
-class ContractorManagementScreen extends ConsumerWidget {
+class ContractorManagementScreen extends ConsumerStatefulWidget {
   const ContractorManagementScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ContractorManagementScreen> createState() =>
+      _ContractorManagementScreenState();
+}
+
+class _ContractorManagementScreenState
+    extends ConsumerState<ContractorManagementScreen> {
+  String _searchQuery = '';
+
+  List<Contractor> _filterContractors(List<Contractor> list) {
+    if (_searchQuery.isEmpty) return list;
+    final q = _searchQuery.toLowerCase();
+    return list
+        .where(
+          (c) =>
+              c.name.toLowerCase().contains(q) ||
+              (c.taxId?.toLowerCase().contains(q) ?? false),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final contractorsAsync = ref.watch(contractorListProvider);
 
     return Scaffold(
@@ -38,7 +59,7 @@ class ContractorManagementScreen extends ConsumerWidget {
                 FilledButton.icon(
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Novo Contratante'),
-                  onPressed: () => _showForm(context, ref),
+                  onPressed: () => _showForm(context),
                 ),
               ],
             ),
@@ -49,7 +70,18 @@ class ContractorManagementScreen extends ConsumerWidget {
                 color: VeraProbColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
+            TextField(
+              key: const Key('contractor_search_field'),
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search, size: 20),
+                hintText: 'Buscar por nome ou CNPJ',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+            const SizedBox(height: 16),
             Expanded(
               child: contractorsAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -59,8 +91,9 @@ class ContractorManagementScreen extends ConsumerWidget {
                     style: const TextStyle(color: VeraProbColors.error),
                   ),
                 ),
-                data: (contractors) {
-                  if (contractors.isEmpty) {
+                data: (all) {
+                  final contractors = _filterContractors(all);
+                  if (all.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -81,10 +114,21 @@ class ContractorManagementScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 24),
                           FilledButton(
-                            onPressed: () => _showForm(context, ref),
+                            onPressed: () => _showForm(context),
                             child: const Text('Cadastrar Primeiro'),
                           ),
                         ],
+                      ),
+                    );
+                  }
+
+                  if (contractors.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'Nenhum resultado para "$_searchQuery".',
+                        style: VeraProbTypography.bodyMedium.copyWith(
+                          color: VeraProbColors.textSecondary,
+                        ),
                       ),
                     );
                   }
@@ -124,7 +168,7 @@ class ContractorManagementScreen extends ConsumerWidget {
                               icon: const Icon(Icons.edit_outlined, size: 20),
                               tooltip: 'Editar',
                               onPressed: () =>
-                                  _showForm(context, ref, existing: contractor),
+                                  _showForm(context, existing: contractor),
                             ),
                             IconButton(
                               icon: const Icon(
@@ -134,7 +178,7 @@ class ContractorManagementScreen extends ConsumerWidget {
                               ),
                               tooltip: 'Deletar',
                               onPressed: () =>
-                                  _confirmDelete(context, ref, contractor),
+                                  _confirmDelete(context, contractor),
                             ),
                           ],
                         ),
@@ -150,7 +194,7 @@ class ContractorManagementScreen extends ConsumerWidget {
     );
   }
 
-  void _showForm(BuildContext context, WidgetRef ref, {Contractor? existing}) {
+  void _showForm(BuildContext context, {Contractor? existing}) {
     showContractorFormDialog(context, existing: existing).then((saved) {
       if (saved != null) ref.invalidate(contractorListProvider);
     });
@@ -158,7 +202,6 @@ class ContractorManagementScreen extends ConsumerWidget {
 
   Future<void> _confirmDelete(
     BuildContext context,
-    WidgetRef ref,
     Contractor contractor,
   ) async {
     final confirmed = await showDialog<bool>(

@@ -30,11 +30,30 @@ class ContractsScreen extends ConsumerWidget {
   }
 }
 
-class _ContractListView extends ConsumerWidget {
+class _ContractListView extends ConsumerStatefulWidget {
   const _ContractListView();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ContractListView> createState() => _ContractListViewState();
+}
+
+class _ContractListViewState extends ConsumerState<_ContractListView> {
+  String _searchQuery = '';
+
+  List<ContractSummaryView> _filterContracts(List<ContractSummaryView> list) {
+    if (_searchQuery.isEmpty) return list;
+    final q = _searchQuery.toLowerCase();
+    return list
+        .where(
+          (c) =>
+              c.name.toLowerCase().contains(q) ||
+              c.contractorName.toLowerCase().contains(q),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final contractsAsync = ref.watch(contractListProvider);
     final activeFilter = ref.watch(contractStatusFilterProvider);
 
@@ -88,7 +107,22 @@ class _ContractListView extends ConsumerWidget {
 
           Wrap(
             spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              SizedBox(
+                width: 260,
+                child: TextField(
+                  key: const Key('contract_search_field'),
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.search, size: 20),
+                    hintText: 'Buscar por nome ou contratante',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                ),
+              ),
               _FilterChip(
                 label: 'Todos',
                 selected: activeFilter == null,
@@ -136,9 +170,11 @@ class _ContractListView extends ConsumerWidget {
 
           Expanded(
             child: contractsAsync.when(
-              data: (contracts) => contracts.isEmpty
-                  ? const _EmptyState()
-                  : _ContractTable(contracts: contracts),
+              data: (all) {
+                final contracts = _filterContracts(all);
+                if (contracts.isEmpty) return const _EmptyState();
+                return _ContractTable(contracts: contracts);
+              },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Text(

@@ -180,7 +180,8 @@
       "Bash(find /c/Projects/VeraProb/test -name *_test.dart -type f)",
       "Bash(xargs -I {} basename {})",
       "Bash(sort -t: -k2 -nr)",
-      "Bash(find lib:*)"
+      "Bash(find lib:*)",
+      "Bash(find /c/Projects/VeraProb/test -name *shared* -o -name *info* -o -name *tooltip*)"
     ]
   },
   "model": "sonnet"

@@ -14,6 +14,7 @@ import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 import 'package:veraprob/presentation/shared/widgets/veraprob_header.dart';
 import 'package:veraprob/presentation/shared/widgets/veraprob_chip.dart';
 
@@ -158,15 +159,12 @@ class _ZoneList extends ConsumerWidget {
               _TypeChip(label: z.type.label),
               if (!hasGeofence) ...[
                 const SizedBox(width: 8),
-                const Tooltip(
+                const InfoTooltip(
                   message:
                       'Sem geofence — o motor de avaliação não pode auditar '
                       'chegada/partida automaticamente.',
-                  child: Icon(
-                    Icons.location_off,
-                    size: 16,
-                    color: VeraProbColors.warning,
-                  ),
+                  variant: InfoTooltipVariant.warning,
+                  icon: Icons.location_off,
                 ),
               ],
             ],

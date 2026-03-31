@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-03-30
-**Current Status:** Phase 9.8 — Resilience & Operational Hub (The Body) · [NEXT: 9.8.E - Global InfoTooltip]
+**Current Status:** Phase 9.8 — Resilience & Operational Hub (The Body) · [NEXT: 9.8.H - Background Sync Resilience]
 **Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
@@ -10,8 +10,8 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| Tests | 1169 passing · 96 skipped · 0 failures ✅ |
-| Migrations | 75 applied (schema lock v1 + kinematic guard + hard quota triggers + update quota RPC) ✅ |
+| Tests | 1217 passing · 96 skipped · 0 failures ✅ |
+| Migrations | 76 applied (schema lock v1 + kinematic guard + hard quota triggers + update quota RPC + heartbeat view) ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | Phase 10.1 | **COMPLETED** — Schema Lock ✅ |
 
@@ -23,9 +23,9 @@
 - **[x] 9.8.B — Sidebar Hub Refactor (8 → 6 items):** ✅ Hub administrativo centralizado com redução de carga visual lateral.
 - **[x] 9.8.C — Smart CNPJ Protocol:** ✅ Máscara dinâmica, trava Unique no Postgres e validação Modulo-11 completa.
 - **[x] 9.8.D — Hard Quota Enforcement + Predictive Provisioning:** ✅ DB triggers P0001 em `vehicles`/`contracts`, RPC `super_admin_update_organization_quota`, `UpdateOrganizationQuotaHandler`, `_EditQuotaDialog` modal, quota ratio columns verde/laranja/vermelho no dashboard. 14 novos testes.
-- **[ ] 9.8.E — Global InfoTooltip widget:** Substituição de textos longos por ícones informativos contextuais.
-- **[ ] 9.8.F — Searchable Entity Mapping:** Unificação de busca por Nome/CNPJ em contratos e tenants.
-- **[ ] 9.8.G — Heartbeat Monitor projection:** Diferenciação entre sabotagem de hardware e falha de rede.
+- **[x] 9.8.E — Global InfoTooltip widget:** ✅ `InfoTooltip` widget com `InfoTooltipVariant` enum; 4 migrações em `declare_contract_plan_form.dart` e `operational_zones_screen.dart`. 18 novos testes TDD.
+- **[x] 9.8.F — Searchable Entity Mapping:** ✅ Busca unificada por Nome/CNPJ em `contracts_screen` e `contractor_management_screen`. Client-side filtering. 10 novos testes TDD.
+- **[x] 9.8.G — Heartbeat Monitor Projection:** ✅ `HeartbeatClassifier` (domínio puro), `HeartbeatMonitorView` + `HeartbeatQueryService`, `SupabaseHeartbeatQueryService`, SQL VIEW `vw_device_heartbeat_status` + RPC `get_device_heartbeat_status`, `HeartbeatStatusCard` widget. 20 novos testes TDD.
 - **[ ] 9.8.H — Background Sync Resilience (LocalFactQueue):** Buffer SQLite para garantir Chain of Custody offline.
 - **[ ] 9.8.I — Late-Arrival Window Protocol (INV-12):** Janela de 48h para processamento determinístico.
 - **[ ] 9.8.J — Driver Defense Portal (MVP):** Portal para submissão de justificativas preventivas vinculadas à auditoria.
@@ -50,10 +50,10 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - [ ] **RLS validada** e testada contra vazamento de dados entre tenants.
 - [ ] **Fluxo de convite e ativação de conta** para novos administradores funcional.
 - [ ] **Banco de dados preparado com organization_id** em todas as tabelas transacionais.
-- [ ] **Tooltips de interface** aplicados em 100% dos campos complexos.
+- [x] **Tooltips de interface** — `InfoTooltip` global widget criado; campos No-Show e geofence migrados ✅ *(cobertura 100% dos campos complexos pendente de auditoria final)*
 - [x] MFA and Edge Proxy active (Total removal of `service_role`) — Edge Proxy ✅ done (9.6.A.1), MFA ✅ done (9.6.A.2).
   - *NOTE: Local MFA validation is currently bypassed in Dev mode when server support is absent. Full end-to-end validation with TOTP enrollment MUST be confirmed in Staging/HMG before production release (INV-6).*
-- [ ] Entity Alias Mapping implemented in 100% of operational screens.
+- [x] **Entity Alias Mapping:** Search by Name/CNPJ in `ContractsScreen` and `ContractorManagementScreen` ✅ *(cobertura 100% das telas listadas em 9.8.F — auditoria de telas adicionais pendente)*
 - [ ] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations.
 - [ ] **Reverse Geocoding:** Functional addresses and zone names instead of raw coordinates in 100% of lists.
 - [ ] **Custom RBAC:** Support for basic view isolation between Legal and Financial roles.
