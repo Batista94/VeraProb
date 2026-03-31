@@ -38,6 +38,9 @@ dependencies:
   posthog_flutter: ^5.21.0
   web: ^1.1.1
   postgres: ^3.5.9
+  # ── 9.8.H Edge Ledger (LocalFactQueue) ──────────────────────────────────
+  drift: ^2.22.0
+  drift_flutter: ^0.2.4
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.1
@@ -47,6 +50,8 @@ dev_dependencies:
     sdk: flutter
   mocktail: ^1.0.3
   flutter_lints: ^6.0.0
+  build_runner: ^2.4.0
+  drift_dev: ^2.22.0
 
 flutter:
   uses-material-design: true

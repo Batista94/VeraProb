@@ -1,0 +1,222 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact.dart';
+import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
+
+void main() {
+  // ── Shared helpers ──────────────────────────────────────────────────────────
+  final receivedAt = DateTime.utc(2026, 5, 1, 10, 0, 0);
+  final gpsTs = DateTime.utc(2026, 5, 1, 9, 55, 0);
+
+  CanonicalFact makeCanonicalFact({String id = ''}) {
+    final fact = CanonicalFact.create(
+      organizationId: 'org-abc',
+      rawPayloadId: 'raw-001',
+      assetId: 'asset-1',
+      deviceId: 'DEV-001',
+      sourceAdapter: 'SASCAR_V1',
+      receivedAtUtc: receivedAt,
+      gpsTimestamp: gpsTs,
+      lat: -23.5505,
+      lng: -46.6333,
+      speedCms: 1389,
+      headingDegrees: 90,
+      accuracyMeters: 12.0,
+      integrityFlag: IngestionIntegrityFlag.ok,
+    );
+    return fact;
+  }
+
+  // ── fromIncomingFact ────────────────────────────────────────────────────────
+  group('PendingFact.fromIncomingFact()', () {
+    test('mirrors factId from CanonicalFact.id', () {
+      final fact = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(fact, localSequence: 1);
+      expect(pending.factId, fact.id);
+    });
+
+    test('sets syncStatus to pending', () {
+      final fact = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(fact, localSequence: 1);
+      expect(pending.syncStatus, SyncStatus.pending);
+    });
+
+    test('retryCount starts at 0', () {
+      final fact = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(fact, localSequence: 1);
+      expect(pending.retryCount, 0);
+    });
+
+    test('errorMessage is null on creation', () {
+      final fact = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(fact, localSequence: 1);
+      expect(pending.errorMessage, isNull);
+    });
+
+    test('queuedAtUtc uses injected nowUtc', () {
+      final fact = makeCanonicalFact();
+      final now = DateTime.utc(2026, 5, 1, 12, 0, 0);
+      final pending = PendingFact.fromIncomingFact(
+        fact,
+        localSequence: 1,
+        nowUtc: now,
+      );
+      expect(pending.queuedAtUtc, now);
+    });
+
+    test('receivedAtUtc mirrors CanonicalFact.receivedAtUtc', () {
+      final fact = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(fact, localSequence: 1);
+      expect(pending.receivedAtUtc, fact.receivedAtUtc);
+    });
+
+    test('contentHash is SHA-256 of factPayloadJson', () {
+      final fact = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(fact, localSequence: 1);
+      final expected =
+          sha256.convert(utf8.encode(pending.factPayloadJson)).toString();
+      expect(pending.contentHash, expected);
+    });
+
+    test('localSequence is stored correctly', () {
+      final fact = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(fact, localSequence: 42);
+      expect(pending.localSequence, 42);
+    });
+  });
+
+  // ── verifyIntegrity ─────────────────────────────────────────────────────────
+  group('PendingFact.verifyIntegrity()', () {
+    test('returns true for an unmodified PendingFact', () {
+      final fact = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(fact, localSequence: 1);
+      expect(pending.verifyIntegrity(), isTrue);
+    });
+
+    test('returns false when contentHash is tampered', () {
+      final fact = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(fact, localSequence: 1);
+
+      // Reconstitute with a corrupted hash — simulates SQLite row mutation.
+      final tampered = PendingFact.reconstitute(
+        factId: pending.factId,
+        organizationId: pending.organizationId,
+        contentHash: 'deadbeef' * 8, // wrong hash
+        factPayloadJson: pending.factPayloadJson,
+        receivedAtUtc: pending.receivedAtUtc,
+        queuedAtUtc: pending.queuedAtUtc,
+        syncStatus: pending.syncStatus,
+        localSequence: pending.localSequence,
+        retryCount: pending.retryCount,
+      );
+
+      expect(tampered.verifyIntegrity(), isFalse);
+    });
+
+    test('returns false when factPayloadJson is tampered', () {
+      final fact = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(fact, localSequence: 1);
+
+      final corruptedJson = pending.factPayloadJson.replaceFirst(
+        '"lat":-23.5505',
+        '"lat":-99.0000',
+      );
+
+      final tampered = PendingFact.reconstitute(
+        factId: pending.factId,
+        organizationId: pending.organizationId,
+        contentHash: pending.contentHash, // original hash — now mismatches
+        factPayloadJson: corruptedJson,
+        receivedAtUtc: pending.receivedAtUtc,
+        queuedAtUtc: pending.queuedAtUtc,
+        syncStatus: pending.syncStatus,
+        localSequence: pending.localSequence,
+        retryCount: pending.retryCount,
+      );
+
+      expect(tampered.verifyIntegrity(), isFalse);
+    });
+  });
+
+  // ── reconstitute ─────────────────────────────────────────────────────────
+  group('PendingFact.reconstitute()', () {
+    test('round-trips all fields without validation', () {
+      final fact = makeCanonicalFact();
+      final original = PendingFact.fromIncomingFact(fact, localSequence: 7);
+
+      final reconstituted = PendingFact.reconstitute(
+        factId: original.factId,
+        organizationId: original.organizationId,
+        contentHash: original.contentHash,
+        factPayloadJson: original.factPayloadJson,
+        receivedAtUtc: original.receivedAtUtc,
+        queuedAtUtc: original.queuedAtUtc,
+        syncStatus: SyncStatus.acknowledged,
+        localSequence: original.localSequence,
+        retryCount: 3,
+        errorMessage: 'timeout',
+      );
+
+      expect(reconstituted.factId, original.factId);
+      expect(reconstituted.syncStatus, SyncStatus.acknowledged);
+      expect(reconstituted.retryCount, 3);
+      expect(reconstituted.errorMessage, 'timeout');
+      expect(reconstituted.verifyIntegrity(), isTrue);
+    });
+  });
+
+  // ── toCanonicalFact ────────────────────────────────────────────────────────
+  group('PendingFact.toCanonicalFact()', () {
+    test('reconstructs a CanonicalFact with the same field values', () {
+      final original = makeCanonicalFact();
+      final pending = PendingFact.fromIncomingFact(original, localSequence: 1);
+      final restored = pending.toCanonicalFact();
+
+      expect(restored.id, original.id);
+      expect(restored.organizationId, original.organizationId);
+      expect(restored.deviceId, original.deviceId);
+      expect(restored.lat, original.lat);
+      expect(restored.lng, original.lng);
+      expect(restored.speedCms, original.speedCms);
+      expect(restored.integrityFlag, original.integrityFlag);
+      expect(restored.receivedAtUtc, original.receivedAtUtc);
+      expect(restored.gpsTimestamp, original.gpsTimestamp);
+    });
+  });
+
+  // ── Equatable ─────────────────────────────────────────────────────────────
+  group('PendingFact equality', () {
+    test('two PendingFacts with the same factId are equal', () {
+      final fact = makeCanonicalFact();
+      final a = PendingFact.fromIncomingFact(fact, localSequence: 1);
+      final b = PendingFact.reconstitute(
+        factId: a.factId,
+        organizationId: a.organizationId,
+        contentHash: a.contentHash,
+        factPayloadJson: a.factPayloadJson,
+        receivedAtUtc: a.receivedAtUtc,
+        queuedAtUtc: a.queuedAtUtc,
+        syncStatus: SyncStatus.failed,
+        localSequence: 99,
+        retryCount: 5,
+      );
+      expect(a, equals(b));
+    });
+
+    test('two PendingFacts with different factIds are not equal', () {
+      final a = PendingFact.fromIncomingFact(
+        makeCanonicalFact(),
+        localSequence: 1,
+      );
+      final b = PendingFact.fromIncomingFact(
+        makeCanonicalFact(),
+        localSequence: 2,
+      );
+      expect(a, isNot(b));
+    });
+  });
+}

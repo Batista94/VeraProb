@@ -32,10 +32,11 @@ VeraProb is an **Automated SLA Compliance & Financial Protection Platform** (the
 
 **Current Objective:** Resilience & Operational Hub — Background Sync Resilience. [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
 
-- **Done:** Phase 9.7 ✅ · 9.8.B ✅ · 9.8.C ✅ · 9.8.D (Hard Quota Enforcement) ✅ · 9.8.E (Global InfoTooltip) ✅ · 9.8.F (Searchable Entity Mapping) ✅ · 9.8.G (Heartbeat Monitor) ✅
-- **Tests:** 1217 passing · 96 skipped · 0 failures ✅
+- **Done:** Phase 9.7 ✅ · 9.8.B ✅ · 9.8.C ✅ · 9.8.D (Hard Quota Enforcement) ✅ · 9.8.E (Global InfoTooltip) ✅ · 9.8.F (Searchable Entity Mapping) ✅ · 9.8.G (Heartbeat Monitor) ✅ · 9.8.H (Background Sync Resilience / LocalFactQueue) ✅
+- **Tests:** 1360 passing · 18 skipped · 0 failures ✅
 - **Next Up:**
-  1. **9.8.H — Background Sync Resilience (LocalFactQueue):** SQLite buffer for offline Chain of Custody.
+  1. **9.8.I — Late-Arrival Window Protocol (INV-12):** 48h window for deterministic re-processing.
+  2. **9.8.J — Driver Defense Portal (MVP):** Portal for preventive justification submission linked to audit.
 
 ---
 
