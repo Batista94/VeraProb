@@ -28,7 +28,7 @@
 - **[x] 9.8.G — Heartbeat Monitor Projection:** ✅ `HeartbeatClassifier` (domínio puro), `HeartbeatMonitorView` + `HeartbeatQueryService`, `SupabaseHeartbeatQueryService`, SQL VIEW `vw_device_heartbeat_status` + RPC `get_device_heartbeat_status`, `HeartbeatStatusCard` widget. 20 novos testes TDD.
 - **[x] 9.8.H — Background Sync Resilience (LocalFactQueue):** ✅ Edge Ledger SQLite (drift + WasmDatabase) — PendingFact VO, ChainIntegrityVerifier, InMemory + Drift repos, SupabaseSyncHandshakeService, LocalSyncOrchestrator, ConnectivityNotifier, EdgeLedgerStatusBadge. SQL RPC `get_missed_facts`. INV-8/11/12/18/23 compliant. 143 novos testes TDD.
 - **[x] 9.8.I — Late-Arrival Window Protocol (INV-12):** ✅ `LateArrivalWindowPolicy` (pure Dart domain, INV-18), 48h gate in `ContractualEvaluationEngine.processVehicleState` (`receivedAtUtc` param), pipeline wiring for `lateArrival` facts. 12 novos testes TDD (8 domain + 4 integration). INV-12/13/16/18 compliant.
-- **[ ] 9.8.J — Driver Defense Portal:** Portal para submissão de justificativas preventivas vinculadas à auditoria.
+- **[x] 9.8.J — Driver Defense Portal:** ✅ Portal para submissão de justificativas preventivas vinculadas à auditoria.
 
 ---
 
@@ -40,16 +40,16 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 ### Checklist "READY FOR FIRST TENANT"
 
 - [ ] **Relatório PDF em nível 'Executive Grade'** com Sumário de ROI.
-- [ ] **Validação rigorosa de CNPJ** (Máscara + Unicidade) em todo o sistema.
+- [x] **Validação rigorosa de CNPJ** (Máscara + Unicidade) em todo o sistema.
 - [ ] **Função de Reenviar Convite e Arquivamento de Tenants** ativa.
 - [ ] **Importador de contratos via CSV** com validador de dados.
 - [ ] **Importador Universal de CSV** funcional com mapeamento persistente por tenant.
 - [ ] **Relatório PDF em formato de 'Certificado'** com Sumário Executivo.
 - [ ] **Bot de evidências (Telegram)** integrado à Fila Auditora.
 - [ ] **Histórico de Meta-Auditoria** ativo para alteração de regras SLA.
-- [ ] **RLS validada** e testada contra vazamento de dados entre tenants.
+- [x] **RLS validada** e testada contra vazamento de dados entre tenants.
 - [ ] **Fluxo de convite e ativação de conta** para novos administradores funcional.
-- [ ] **Banco de dados preparado com organization_id** em todas as tabelas transacionais.
+- [x] **Banco de dados preparado com organization_id** em todas as tabelas transacionais.
 - [x] **Tooltips de interface** — `InfoTooltip` global widget criado; campos No-Show e geofence migrados ✅ *(cobertura 100% dos campos complexos pendente de auditoria final)*
 - [x] MFA and Edge Proxy active (Total removal of `service_role`) — Edge Proxy ✅ done (9.6.A.1), MFA ✅ done (9.6.A.2).
   - *NOTE: Local MFA validation is currently bypassed in Dev mode when server support is absent. Full end-to-end validation with TOTP enrollment MUST be confirmed in Staging/HMG before production release (INV-6).*
@@ -59,10 +59,10 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - [ ] **Custom RBAC:** Support for basic view isolation between Legal and Financial roles.
 - [ ] **Audit Log:** Registration of critical changes in SLA models for governance.
 - [ ] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
-- [ ] **Sidebar Refactor:** Simplified sidebar (<8 items) with centralized Admin Hub.
+- [x] **Sidebar Refactor:** Simplified sidebar (<8 items) with centralized Admin Hub.
 - [ ] **Industrial Deep Forms:** Dark theme (Industrial Deep) applied to 100% of form and drawer components.
 - [ ] **SLA Sandbox:** Functional 'Sandbox' system for basic SLA model simulation.
-- [ ] **UI Stability:** Refactored SLA modal free of layout bugs and overflow errors.
+- [x] **UI Stability:** Refactored SLA modal free of layout bugs and overflow errors.
 - [ ] **Financial Guard:** 'Stop-Loss' logic available in contract and penalty setup.
 - [ ] **Evidence Snapshot:** Operational rules snapshot integrated into the Evidence Ledger for forensic immutability.
 - [ ] ROI Dashboard with Bento Grid and 'Savings BRL' visible.

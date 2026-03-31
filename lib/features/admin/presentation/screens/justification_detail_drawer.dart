@@ -302,9 +302,9 @@ class _JustificationDetailDrawerState
     final state = ref.read(justificationActionStateProvider(id));
     if (!state.hasError) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Justificativa rejeitada.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Justificativa rejeitada.')));
     }
   }
 
