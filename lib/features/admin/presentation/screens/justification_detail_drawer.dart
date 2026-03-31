@@ -153,7 +153,7 @@ class _JustificationDetailDrawerState
                               child: ElevatedButton(
                                 onPressed: actionState.isLoading
                                     ? null
-                                    : () => _reject(context, id),
+                                    : () => _reject(id),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: VeraProbColors.error,
                                   foregroundColor: Colors.white,
@@ -179,7 +179,7 @@ class _JustificationDetailDrawerState
                               child: ElevatedButton.icon(
                                 onPressed: actionState.isLoading
                                     ? null
-                                    : () => _approve(context, id),
+                                    : () => _approve(id),
                                 icon: actionState.isLoading
                                     ? const SizedBox(
                                         width: 14,
@@ -234,7 +234,7 @@ class _JustificationDetailDrawerState
     );
   }
 
-  Future<void> _approve(BuildContext context, String id) async {
+  Future<void> _approve(String id) async {
     final orgId = ref.read(currentOrganizationIdProvider);
     final userId = ref.read(currentOperatorIdProvider);
     final role = ref.read(currentUserRoleProvider);
@@ -254,18 +254,18 @@ class _JustificationDetailDrawerState
           callerEmail: email,
         );
 
-    if (mounted) {
-      final state = ref.read(justificationActionStateProvider(id));
-      if (!state.hasError && mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Justificativa aprovada com sucesso.')),
-        );
-      }
+    if (!mounted) return;
+
+    final state = ref.read(justificationActionStateProvider(id));
+    if (!state.hasError) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Justificativa aprovada com sucesso.')),
+      );
     }
   }
 
-  Future<void> _reject(BuildContext context, String id) async {
+  Future<void> _reject(String id) async {
     final notes = _rejectNotesController.text.trim();
     if (notes.length < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -297,14 +297,14 @@ class _JustificationDetailDrawerState
           rejectionNotes: notes,
         );
 
-    if (mounted) {
-      final state = ref.read(justificationActionStateProvider(id));
-      if (!state.hasError && mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Justificativa rejeitada.')),
-        );
-      }
+    if (!mounted) return;
+
+    final state = ref.read(justificationActionStateProvider(id));
+    if (!state.hasError) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Justificativa rejeitada.')),
+      );
     }
   }
 

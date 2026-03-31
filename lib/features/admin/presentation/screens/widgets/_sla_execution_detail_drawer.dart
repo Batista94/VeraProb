@@ -325,7 +325,7 @@ class _SolicitarDefesaButtonState
     extends ConsumerState<_SolicitarDefesaButton> {
   bool _loading = false;
 
-  Future<void> _generate(BuildContext context) async {
+  Future<void> _generate() async {
     final orgId = ref.read(currentOrganizationIdProvider);
     final userId = ref.read(currentOperatorIdProvider);
     final role = ref.read(currentUserRoleProvider);
@@ -468,7 +468,7 @@ class _SolicitarDefesaButtonState
   @override
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
-      onPressed: _loading ? null : () => _generate(context),
+      onPressed: _loading ? null : () => _generate(),
       icon: _loading
           ? const SizedBox(
               width: 14,
