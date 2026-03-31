@@ -6,21 +6,21 @@ import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
 import 'package:veraprob/infrastructure/local_fact_db/in_memory_local_fact_queue_repository.dart';
 
 CanonicalFact makeCanonicalFact({int seq = 1}) => CanonicalFact.create(
-      organizationId: 'org-test',
-      rawPayloadId: 'raw-$seq',
-      deviceId: 'DEV-$seq',
-      sourceAdapter: 'SASCAR_V1',
-      receivedAtUtc: DateTime.utc(2026, 5, 1, 10, seq, 0),
-      gpsTimestamp: DateTime.utc(2026, 5, 1, 9, seq, 0),
-      lat: -23.0,
-      lng: -46.0,
-      integrityFlag: IngestionIntegrityFlag.ok,
-    );
+  organizationId: 'org-test',
+  rawPayloadId: 'raw-$seq',
+  deviceId: 'DEV-$seq',
+  sourceAdapter: 'SASCAR_V1',
+  receivedAtUtc: DateTime.utc(2026, 5, 1, 10, seq, 0),
+  gpsTimestamp: DateTime.utc(2026, 5, 1, 9, seq, 0),
+  lat: -23.0,
+  lng: -46.0,
+  integrityFlag: IngestionIntegrityFlag.ok,
+);
 
 PendingFact makePending({int seq = 1}) => PendingFact.fromIncomingFact(
-      makeCanonicalFact(seq: seq),
-      localSequence: seq,
-    );
+  makeCanonicalFact(seq: seq),
+  localSequence: seq,
+);
 
 void main() {
   late InMemoryLocalFactQueueRepository repo;
@@ -38,15 +38,17 @@ void main() {
       expect(pending.length, 1);
     });
 
-    test('is idempotent — enqueue same factId twice stores only one record',
-        () async {
-      final fact = makePending();
-      await repo.enqueue(fact);
-      await repo.enqueue(fact);
+    test(
+      'is idempotent — enqueue same factId twice stores only one record',
+      () async {
+        final fact = makePending();
+        await repo.enqueue(fact);
+        await repo.enqueue(fact);
 
-      final pending = await repo.getPending(limit: 100);
-      expect(pending.length, 1);
-    });
+        final pending = await repo.getPending(limit: 100);
+        expect(pending.length, 1);
+      },
+    );
 
     test('preserves all fields of the enqueued fact', () async {
       final fact = makePending(seq: 7);
@@ -112,20 +114,22 @@ void main() {
       expect(await repo.getLastAcknowledged(), isNull);
     });
 
-    test('returns the acknowledged fact with the highest localSequence',
-        () async {
-      await repo.enqueue(makePending(seq: 1));
-      await repo.enqueue(makePending(seq: 2));
-      await repo.enqueue(makePending(seq: 3));
+    test(
+      'returns the acknowledged fact with the highest localSequence',
+      () async {
+        await repo.enqueue(makePending(seq: 1));
+        await repo.enqueue(makePending(seq: 2));
+        await repo.enqueue(makePending(seq: 3));
 
-      final facts = await repo.getPending(limit: 100);
-      await repo.acknowledge(facts[0].factId); // seq 1
-      await repo.acknowledge(facts[2].factId); // seq 3
+        final facts = await repo.getPending(limit: 100);
+        await repo.acknowledge(facts[0].factId); // seq 1
+        await repo.acknowledge(facts[2].factId); // seq 3
 
-      final last = await repo.getLastAcknowledged();
-      expect(last, isNotNull);
-      expect(last!.localSequence, 3);
-    });
+        final last = await repo.getLastAcknowledged();
+        expect(last, isNotNull);
+        expect(last!.localSequence, 3);
+      },
+    );
   });
 
   // ── markFailed ───────────────────────────────────────────────────────────
@@ -212,10 +216,7 @@ void main() {
 
   group('watchPendingCount()', () {
     test('emits 0 initially', () async {
-      await expectLater(
-        repo.watchPendingCount().first,
-        completion(0),
-      );
+      await expectLater(repo.watchPendingCount().first, completion(0));
     });
 
     test('emits updated count after enqueue', () async {
@@ -236,22 +237,24 @@ void main() {
       expect(collected.length, greaterThanOrEqualTo(2));
     });
 
-    test('count decreases after clearAcknowledged removes old entries',
-        () async {
-      final oldFact = PendingFact.fromIncomingFact(
-        makeCanonicalFact(seq: 1),
-        localSequence: 1,
-        nowUtc: DateTime.utc(2026, 1, 1),
-      );
-      await repo.enqueue(oldFact);
-      await repo.acknowledge(oldFact.factId);
+    test(
+      'count decreases after clearAcknowledged removes old entries',
+      () async {
+        final oldFact = PendingFact.fromIncomingFact(
+          makeCanonicalFact(seq: 1),
+          localSequence: 1,
+          nowUtc: DateTime.utc(2026, 1, 1),
+        );
+        await repo.enqueue(oldFact);
+        await repo.acknowledge(oldFact.factId);
 
-      final before = await repo.watchPendingCount().first;
-      await repo.clearAcknowledged(olderThan: const Duration(hours: 48));
-      final after = await repo.watchPendingCount().first;
+        final before = await repo.watchPendingCount().first;
+        await repo.clearAcknowledged(olderThan: const Duration(hours: 48));
+        final after = await repo.watchPendingCount().first;
 
-      expect(before, 1);
-      expect(after, 0);
-    });
+        expect(before, 1);
+        expect(after, 0);
+      },
+    );
   });
 }

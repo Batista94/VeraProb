@@ -66,9 +66,9 @@ class LocalSyncOrchestrator {
     required LocalFactQueueRepository queue,
     required SyncHandshakeService handshake,
     ChainIntegrityVerifier verifier = const ChainIntegrityVerifier(),
-  })  : _queue = queue,
-        _handshake = handshake,
-        _verifier = verifier;
+  }) : _queue = queue,
+       _handshake = handshake,
+       _verifier = verifier;
 
   // ── Public API ────────────────────────────────────────────────────────────
 
@@ -112,7 +112,8 @@ class LocalSyncOrchestrator {
 
     // Determine the handshake anchor.
     final lastAcked = await _queue.getLastAcknowledged();
-    final anchor = lastAcked?.receivedAtUtc ??
+    final anchor =
+        lastAcked?.receivedAtUtc ??
         DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
 
     // Perform handshake to discover gaps (result reserved for future gap-ID use).

@@ -20,6 +20,7 @@ import '../../domain/sla_audit/engine_evaluation_result.dart';
 import '../../domain/sla_audit/operational_alert_repository.dart';
 import '../../domain/sla_audit/evidence_payload.dart';
 import '../../domain/sla_audit/verdict_evidence.dart';
+import '../../domain/sla_audit/late_arrival_window_policy.dart';
 import 'alert_derivation_service.dart';
 
 /// Application Service: Reactive evaluation engine for contractual
@@ -78,6 +79,7 @@ class ContractualEvaluationEngine {
   Future<void> processVehicleState(
     VehicleOperationalState vehicleState, {
     DateTime? nowUtc,
+    DateTime? receivedAtUtc,
     required String organizationId,
   }) async {
     // INV-12: Strictly use Event Time (gps_timestamp) for evaluation.
@@ -115,6 +117,21 @@ class ContractualEvaluationEngine {
             state.windowStartUtc.add(Duration(minutes: gracePeriodMinutes)),
           )) {
         continue;
+      }
+
+      // INV-12: 48h Late-Arrival Enforcement.
+      // When receivedAtUtc is provided (only for lateArrival facts), enforce the
+      // 48h reprocessing window. noShow and evidenceGap states past the cutoff
+      // are final — the verdict cannot be overturned by a late fact.
+      if (receivedAtUtc != null &&
+          (state.status == ExecutionStatus.noShow ||
+              state.status == ExecutionStatus.evidenceGap)) {
+        if (!LateArrivalWindowPolicy.isWithinReprocessingWindow(
+          windowEndUtc: state.windowEndUtc,
+          receivedAtUtc: receivedAtUtc,
+        )) {
+          continue;
+        }
       }
 
       // Deterministic deterministic execution order

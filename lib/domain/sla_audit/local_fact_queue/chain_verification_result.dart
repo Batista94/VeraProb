@@ -22,8 +22,7 @@ class ChainVerificationResult extends Equatable {
   });
 
   /// Creates a successful result (all facts intact).
-  const ChainVerificationResult.valid()
-    : this._(isValid: true);
+  const ChainVerificationResult.valid() : this._(isValid: true);
 
   /// Creates a failure result identifying the first tampered fact.
   const ChainVerificationResult.failure({
@@ -36,9 +35,5 @@ class ChainVerificationResult extends Equatable {
        );
 
   @override
-  List<Object?> get props => [
-    isValid,
-    firstFailureIndex,
-    firstFailingFactId,
-  ];
+  List<Object?> get props => [isValid, firstFailureIndex, firstFailingFactId];
 }

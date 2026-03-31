@@ -243,7 +243,9 @@ void main() {
             deviceId: 'DEV1',
             rawPayloadId: 'PL',
             sourceAdapter: 'GPS',
-            receivedAtUtc: DateTime.now().toUtc(),
+            // Use a receivedAtUtc within the INV-12 48h reprocessing window
+            // (window ends 2026-03-01 11:00 → cutoff is 2026-03-03 11:00).
+            receivedAtUtc: DateTime.utc(2026, 3, 1, 12, 0),
             gpsTimestamp: t15,
             lat: -23.5001,
             lng: -46.6001,

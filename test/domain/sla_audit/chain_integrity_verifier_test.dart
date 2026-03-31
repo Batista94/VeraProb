@@ -47,7 +47,11 @@ void main() {
     });
 
     test('multiple intact facts all pass', () {
-      final facts = [makePending(seq: 1), makePending(seq: 2), makePending(seq: 3)];
+      final facts = [
+        makePending(seq: 1),
+        makePending(seq: 2),
+        makePending(seq: 3),
+      ];
       final result = verifier.verify(facts);
       expect(result.isValid, isTrue);
     });

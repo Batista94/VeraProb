@@ -241,9 +241,14 @@ class TelemetryIngestionPipeline {
       final vehicleState = _factToVehicleState(fact);
 
       // ── Step 5: Feed engine with gpsTimestamp as the clock (INV-12) ──────────
+      // For lateArrival facts, also pass receivedAtUtc so the engine can enforce
+      // the 48h reprocessing window (INV-12: Late-Arrival Window Policy).
       await _engine.processVehicleState(
         vehicleState,
         nowUtc: fact.gpsTimestamp,
+        receivedAtUtc: fact.integrityFlag == IngestionIntegrityFlag.lateArrival
+            ? fact.receivedAtUtc
+            : null,
         organizationId: organizationId,
       );
 

@@ -29,13 +29,14 @@ final localFactDatabaseProvider = Provider<LocalFactDatabase>((ref) {
 ///
 /// Uses [InMemoryLocalFactQueueRepository] in tests (`PersistenceMode.inMemory`)
 /// and [DriftLocalFactQueueRepository] in production (`PersistenceMode.postgres`).
-final localFactQueueRepositoryProvider =
-    Provider<LocalFactQueueRepository>((ref) {
+final localFactQueueRepositoryProvider = Provider<LocalFactQueueRepository>((
+  ref,
+) {
   return switch (ref.watch(persistenceModeProvider)) {
     PersistenceMode.inMemory => InMemoryLocalFactQueueRepository(),
     PersistenceMode.postgres => DriftLocalFactQueueRepository(
-        ref.watch(localFactDatabaseProvider),
-      ),
+      ref.watch(localFactDatabaseProvider),
+    ),
   };
 });
 
@@ -68,7 +69,8 @@ final pendingFactCountProvider = StreamProvider<int>((ref) {
 
 /// Watches Supabase auth events and triggers [LocalSyncOrchestrator.onConnectionRestored]
 /// on reconnect, filling any sequence gaps in the local fact queue.
-final connectivityNotifierProvider = AutoDisposeNotifierProvider<
-    ConnectivityNotifier, EdgeLedgerConnectionState>(
-  ConnectivityNotifier.new,
-);
+final connectivityNotifierProvider =
+    AutoDisposeNotifierProvider<
+      ConnectivityNotifier,
+      EdgeLedgerConnectionState
+    >(ConnectivityNotifier.new);

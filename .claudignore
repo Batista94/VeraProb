@@ -1,0 +1,17 @@
+# Claude Code ignore file
+# Prevents indexing of large/non-code directories to save tokens
+
+node_modules/
+build/
+.dart_tool/
+.git/
+coverage/
+*.log
+tmp/
+*.exe
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

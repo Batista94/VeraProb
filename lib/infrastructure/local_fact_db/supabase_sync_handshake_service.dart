@@ -21,13 +21,15 @@ class SupabaseSyncHandshakeService implements SyncHandshakeService {
     required String organizationId,
     required DateTime clientLastSeenAtUtc,
   }) async {
-    final rows = await _client.rpc(
-      'get_missed_facts',
-      params: {
-        'p_org_id': organizationId,
-        'p_after_utc': clientLastSeenAtUtc.toIso8601String(),
-      },
-    ) as List<dynamic>;
+    final rows =
+        await _client.rpc(
+              'get_missed_facts',
+              params: {
+                'p_org_id': organizationId,
+                'p_after_utc': clientLastSeenAtUtc.toIso8601String(),
+              },
+            )
+            as List<dynamic>;
 
     final missingFactIds = rows
         .cast<Map<String, dynamic>>()

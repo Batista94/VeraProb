@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-03-31
-**Current Status:** Phase 9.8 — Resilience & Operational Hub (The Body) · [NEXT: 9.8.I - Late-Arrival Window Protocol]
+**Current Status:** Phase 9.8 — Resilience & Operational Hub (The Body) · [NEXT: 9.8.J - Driver Defense Portal]
 **Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
@@ -10,7 +10,7 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| Tests | 1360 passing · 18 skipped · 0 failures ✅ |
+| Tests | 1372 passing · 18 skipped · 0 failures ✅ |
 | Migrations | 76 applied (schema lock v1 + kinematic guard + hard quota triggers + update quota RPC + heartbeat view) ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | Phase 10.1 | **COMPLETED** — Schema Lock ✅ |
@@ -27,7 +27,7 @@
 - **[x] 9.8.F — Searchable Entity Mapping:** ✅ Busca unificada por Nome/CNPJ em `contracts_screen` e `contractor_management_screen`. Client-side filtering. 10 novos testes TDD.
 - **[x] 9.8.G — Heartbeat Monitor Projection:** ✅ `HeartbeatClassifier` (domínio puro), `HeartbeatMonitorView` + `HeartbeatQueryService`, `SupabaseHeartbeatQueryService`, SQL VIEW `vw_device_heartbeat_status` + RPC `get_device_heartbeat_status`, `HeartbeatStatusCard` widget. 20 novos testes TDD.
 - **[x] 9.8.H — Background Sync Resilience (LocalFactQueue):** ✅ Edge Ledger SQLite (drift + WasmDatabase) — PendingFact VO, ChainIntegrityVerifier, InMemory + Drift repos, SupabaseSyncHandshakeService, LocalSyncOrchestrator, ConnectivityNotifier, EdgeLedgerStatusBadge. SQL RPC `get_missed_facts`. INV-8/11/12/18/23 compliant. 143 novos testes TDD.
-- **[ ] 9.8.I — Late-Arrival Window Protocol (INV-12):** Janela de 48h para processamento determinístico.
+- **[x] 9.8.I — Late-Arrival Window Protocol (INV-12):** ✅ `LateArrivalWindowPolicy` (pure Dart domain, INV-18), 48h gate in `ContractualEvaluationEngine.processVehicleState` (`receivedAtUtc` param), pipeline wiring for `lateArrival` facts. 12 novos testes TDD (8 domain + 4 integration). INV-12/13/16/18 compliant.
 - **[ ] 9.8.J — Driver Defense Portal (MVP):** Portal para submissão de justificativas preventivas vinculadas à auditoria.
 
 ---

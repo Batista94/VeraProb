@@ -208,9 +208,7 @@ class _EdgeLedgerDetailDialog extends StatelessWidget {
           onPressed: () {
             Navigator.of(context).pop();
             // Retry is best-effort; orchestrator handles idempotency.
-            ref
-                .read(localSyncOrchestratorProvider)
-                .drainFailed('');
+            ref.read(localSyncOrchestratorProvider).drainFailed('');
           },
           child: const Text('Retry Now'),
         ),

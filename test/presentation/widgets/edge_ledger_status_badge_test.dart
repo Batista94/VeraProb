@@ -25,8 +25,9 @@ Widget _wrap(Widget child, {List<Override> overrides = const []}) =>
 
 void main() {
   group('EdgeLedgerStatusBadge', () {
-    testWidgets('shows Synced chip when count is 0 and connected',
-        (tester) async {
+    testWidgets('shows Synced chip when count is 0 and connected', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           const EdgeLedgerStatusBadge(),
@@ -34,7 +35,8 @@ void main() {
             pendingFactCountProvider.overrideWith((_) => Stream.value(0)),
             connectivityNotifierProvider.overrideWith(
               _FakeConnectivityNotifier.new.callWith(
-                  EdgeLedgerConnectionState.connected),
+                EdgeLedgerConnectionState.connected,
+              ),
             ),
           ],
         ),
@@ -53,7 +55,8 @@ void main() {
             pendingFactCountProvider.overrideWith((_) => Stream.value(7)),
             connectivityNotifierProvider.overrideWith(
               _FakeConnectivityNotifier.new.callWith(
-                  EdgeLedgerConnectionState.connected),
+                EdgeLedgerConnectionState.connected,
+              ),
             ),
           ],
         ),
@@ -64,8 +67,9 @@ void main() {
       expect(find.byIcon(Icons.sync_outlined), findsOneWidget);
     });
 
-    testWidgets('shows Syncing chip when connection state is syncing',
-        (tester) async {
+    testWidgets('shows Syncing chip when connection state is syncing', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           const EdgeLedgerStatusBadge(),
@@ -73,7 +77,8 @@ void main() {
             pendingFactCountProvider.overrideWith((_) => Stream.value(3)),
             connectivityNotifierProvider.overrideWith(
               _FakeConnectivityNotifier.new.callWith(
-                  EdgeLedgerConnectionState.syncing),
+                EdgeLedgerConnectionState.syncing,
+              ),
             ),
           ],
         ),
@@ -94,7 +99,8 @@ void main() {
             ),
             connectivityNotifierProvider.overrideWith(
               _FakeConnectivityNotifier.new.callWith(
-                  EdgeLedgerConnectionState.connected),
+                EdgeLedgerConnectionState.connected,
+              ),
             ),
           ],
         ),
@@ -113,7 +119,8 @@ void main() {
             pendingFactCountProvider.overrideWith((_) => Stream.value(5)),
             connectivityNotifierProvider.overrideWith(
               _FakeConnectivityNotifier.new.callWith(
-                  EdgeLedgerConnectionState.connected),
+                EdgeLedgerConnectionState.connected,
+              ),
             ),
           ],
         ),
@@ -136,7 +143,8 @@ void main() {
             pendingFactCountProvider.overrideWith((_) => Stream.value(2)),
             connectivityNotifierProvider.overrideWith(
               _FakeConnectivityNotifier.new.callWith(
-                  EdgeLedgerConnectionState.connected),
+                EdgeLedgerConnectionState.connected,
+              ),
             ),
           ],
         ),

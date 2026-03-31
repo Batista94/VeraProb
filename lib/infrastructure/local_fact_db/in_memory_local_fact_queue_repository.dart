@@ -31,10 +31,9 @@ class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
 
   @override
   Future<PendingFact?> getLastAcknowledged() async {
-    final acked = _facts
-        .where((f) => f.syncStatus == SyncStatus.acknowledged)
-        .toList()
-      ..sort((a, b) => a.localSequence.compareTo(b.localSequence));
+    final acked =
+        _facts.where((f) => f.syncStatus == SyncStatus.acknowledged).toList()
+          ..sort((a, b) => a.localSequence.compareTo(b.localSequence));
     return acked.isEmpty ? null : acked.last;
   }
 
@@ -100,17 +99,16 @@ class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
     SyncStatus? syncStatus,
     int? retryCount,
     String? errorMessage,
-  }) =>
-      PendingFact.reconstitute(
-        factId: f.factId,
-        organizationId: f.organizationId,
-        contentHash: f.contentHash,
-        factPayloadJson: f.factPayloadJson,
-        receivedAtUtc: f.receivedAtUtc,
-        queuedAtUtc: f.queuedAtUtc,
-        syncStatus: syncStatus ?? f.syncStatus,
-        localSequence: f.localSequence,
-        retryCount: retryCount ?? f.retryCount,
-        errorMessage: errorMessage ?? f.errorMessage,
-      );
+  }) => PendingFact.reconstitute(
+    factId: f.factId,
+    organizationId: f.organizationId,
+    contentHash: f.contentHash,
+    factPayloadJson: f.factPayloadJson,
+    receivedAtUtc: f.receivedAtUtc,
+    queuedAtUtc: f.queuedAtUtc,
+    syncStatus: syncStatus ?? f.syncStatus,
+    localSequence: f.localSequence,
+    retryCount: retryCount ?? f.retryCount,
+    errorMessage: errorMessage ?? f.errorMessage,
+  );
 }

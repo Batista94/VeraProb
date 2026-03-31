@@ -20,6 +20,217 @@ void main() {
     tz_data.initializeTimeZones();
   });
 
+  group('INV-12: 48h Enforcement Boundary', () {
+    late InMemoryContractualExecutionStateRepository execRepo;
+    late InMemoryPlanDeclarationRepository planRepo;
+    late InMemorySlaAuditLedgerRepository ledger;
+    late ContractualEvaluationEngine engine;
+    late TelemetryIngestionPipeline pipeline;
+
+    const orgId = 'org-48h';
+    const setId = 'set-48h';
+    const contractId = 'c-48h';
+    const geoLat = -23.5505;
+    const geoLng = -46.6333;
+
+    // Window: 10:00–11:00 on 2026-03-01
+    final windowStart = DateTime.utc(2026, 3, 1, 10, 0);
+    final windowEnd = DateTime.utc(2026, 3, 1, 11, 0);
+    // gpsTimestamps inside the window (two facts needed to satisfy 30s dwell)
+    final gpsInside0 = DateTime.utc(2026, 3, 1, 10, 30, 0);
+    final gpsInside1 = DateTime.utc(2026, 3, 1, 10, 31, 0);
+
+    setUp(() {
+      execRepo = InMemoryContractualExecutionStateRepository();
+      planRepo = InMemoryPlanDeclarationRepository();
+      ledger = InMemorySlaAuditLedgerRepository();
+      final traceRepo = InMemoryEvaluationTraceRepository();
+
+      engine = ContractualEvaluationEngine(
+        executionRepo: execRepo,
+        planRepo: planRepo,
+        ledgerRepo: ledger,
+        traceRepo: traceRepo,
+      );
+
+      pipeline = TelemetryIngestionPipeline(
+        engine: engine,
+        assetStatusRepo: InMemoryAssetStatusRepository(),
+      );
+    });
+
+    Future<void> seedNoShow() async {
+      final plan = PlanDeclaration.reconstitute(
+        id: 'plan-48h',
+        organizationId: orgId,
+        contractId: contractId,
+        planVersion: 1,
+        declaredAtUtc: DateTime.utc(2026, 1, 1),
+        declaredByUserId: 'user-1',
+        originalFileHash: 'hash-48h',
+        services: [],
+        ruleSnapshot: const RuleSnapshot([]),
+      );
+      await planRepo.save(plan);
+
+      final state = ContractualExecutionState.create(
+        organizationId: orgId,
+        setId: setId,
+        contractId: contractId,
+        planVersion: 1,
+        startLatitude: geoLat,
+        startLongitude: geoLng,
+        startRadiusMeters: 100,
+        contractualValue: const Money(15000),
+        noShowPenaltyMultiplier: 1.5,
+        windowStartUtc: windowStart,
+        windowEndUtc: windowEnd,
+      );
+      await execRepo.save(state);
+
+      // Sweep at 11:30 → noShow
+      await engine.sweepExpiredObligations(
+        nowUtc: DateTime.utc(2026, 3, 1, 11, 30),
+        organizationId: orgId,
+      );
+
+      final sweptStatus = (await execRepo.findBySetId(setId))?.status;
+      assert(
+        sweptStatus == ExecutionStatus.noShow,
+        'Pre-condition: state must be noShow after sweep',
+      );
+    }
+
+    /// Returns two facts (t+0 and t+1min) with the same [receivedAt].
+    /// Two facts are required so the engine accumulates 60s of dwell
+    /// time (≥30s default threshold) and calls bindExecution.
+    List<CanonicalFact> makeLateFactPair(DateTime receivedAt) => [
+      CanonicalFact.create(
+        organizationId: orgId,
+        rawPayloadId: 'raw-a-${receivedAt.millisecondsSinceEpoch}',
+        assetId: 'asset-48h',
+        deviceId: 'DEV-48H',
+        sourceAdapter: 'GPS',
+        receivedAtUtc: receivedAt,
+        gpsTimestamp: gpsInside0,
+        lat: geoLat,
+        lng: geoLng,
+        speedCms: 0,
+        integrityFlag: IngestionIntegrityFlag.lateArrival,
+      ),
+      CanonicalFact.create(
+        organizationId: orgId,
+        rawPayloadId: 'raw-b-${receivedAt.millisecondsSinceEpoch}',
+        assetId: 'asset-48h',
+        deviceId: 'DEV-48H',
+        sourceAdapter: 'GPS',
+        receivedAtUtc: receivedAt,
+        gpsTimestamp: gpsInside1,
+        lat: geoLat,
+        lng: geoLng,
+        speedCms: 0,
+        integrityFlag: IngestionIntegrityFlag.lateArrival,
+      ),
+    ];
+
+    test(
+      'upgrades noShow to executed when fact arrives 47h after windowEndUtc',
+      () async {
+        await seedNoShow();
+
+        final received = windowEnd.add(const Duration(hours: 47));
+        await pipeline.process(
+          makeLateFactPair(received),
+          organizationId: orgId,
+        );
+
+        final finalState = await execRepo.findBySetId(setId);
+        expect(
+          finalState?.status,
+          equals(ExecutionStatus.executed),
+          reason: 'Fact within 48h window must overturn noShow',
+        );
+      },
+    );
+
+    test(
+      'upgrades noShow to executed when fact arrives exactly 48h after windowEndUtc (inclusive)',
+      () async {
+        await seedNoShow();
+
+        final received = windowEnd.add(const Duration(hours: 48));
+        await pipeline.process(
+          makeLateFactPair(received),
+          organizationId: orgId,
+        );
+
+        final finalState = await execRepo.findBySetId(setId);
+        expect(
+          finalState?.status,
+          equals(ExecutionStatus.executed),
+          reason: 'Fact at exactly 48h boundary must still overturn noShow',
+        );
+      },
+    );
+
+    test(
+      'noShow verdict is final when fact arrives 48h + 1s after windowEndUtc',
+      () async {
+        await seedNoShow();
+
+        final received = windowEnd.add(const Duration(hours: 48, seconds: 1));
+        await pipeline.process(
+          makeLateFactPair(received),
+          organizationId: orgId,
+        );
+
+        final finalState = await execRepo.findBySetId(setId);
+        expect(
+          finalState?.status,
+          equals(ExecutionStatus.noShow),
+          reason: 'Fact past 48h boundary must NOT overturn noShow',
+        );
+      },
+    );
+
+    test(
+      'first valid fact (24h) wins even when a second fact arrives past 48h',
+      () async {
+        await seedNoShow();
+
+        final withinWindow = windowEnd.add(const Duration(hours: 24));
+        final outsideWindow = windowEnd.add(const Duration(hours: 72));
+
+        // Process within-window fact pair first; past-window pair would be a no-op
+        await pipeline.process(
+          makeLateFactPair(withinWindow),
+          organizationId: orgId,
+        );
+
+        final afterFirst = await execRepo.findBySetId(setId);
+        expect(
+          afterFirst?.status,
+          equals(ExecutionStatus.executed),
+          reason: 'First fact (24h) must upgrade noShow to executed',
+        );
+
+        // Processing a past-window fact pair afterward must not break the executed state
+        await pipeline.process(
+          makeLateFactPair(outsideWindow),
+          organizationId: orgId,
+        );
+
+        final finalState = await execRepo.findBySetId(setId);
+        expect(
+          finalState?.status,
+          equals(ExecutionStatus.executed),
+          reason:
+              'Executed state must not be disturbed by a subsequent late fact',
+        );
+      },
+    );
+  });
+
   group('INV-12: Deterministic Late-Arrival Replay', () {
     late InMemoryContractualExecutionStateRepository execRepo;
     late InMemoryPlanDeclarationRepository planRepo;

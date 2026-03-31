@@ -111,11 +111,10 @@ class FakeLocalFactQueueRepository implements LocalFactQueueRepository {
   List<PendingFact> get all => List.unmodifiable(_facts);
   int get count => _facts.length;
 
-  PendingFact? byId(String factId) =>
-      _facts.cast<PendingFact?>().firstWhere(
-            (f) => f?.factId == factId,
-            orElse: () => null,
-          );
+  PendingFact? byId(String factId) => _facts.cast<PendingFact?>().firstWhere(
+    (f) => f?.factId == factId,
+    orElse: () => null,
+  );
 }
 
 // ── Fake handshake service ─────────────────────────────────────────────────
@@ -172,14 +171,12 @@ void main() {
   late FakeSyncHandshakeService handshake;
 
   HandshakeResult emptyHandshake() => HandshakeResult(
-        lastServerFactReceivedAt: DateTime.utc(2026, 5, 1),
-        missingFactIds: const [],
-      );
+    lastServerFactReceivedAt: DateTime.utc(2026, 5, 1),
+    missingFactIds: const [],
+  );
 
-  LocalSyncOrchestrator makeOrchestrator() => LocalSyncOrchestrator(
-        queue: repo,
-        handshake: handshake,
-      );
+  LocalSyncOrchestrator makeOrchestrator() =>
+      LocalSyncOrchestrator(queue: repo, handshake: handshake);
 
   setUp(() {
     repo = FakeLocalFactQueueRepository();
@@ -208,16 +205,18 @@ void main() {
       expect(repo.all.first.syncStatus, SyncStatus.acknowledged);
     });
 
-    test('is idempotent — same fact delivered twice results in one entry',
-        () async {
-      final orchestrator = makeOrchestrator();
-      final fact = makeCanonicalFact();
+    test(
+      'is idempotent — same fact delivered twice results in one entry',
+      () async {
+        final orchestrator = makeOrchestrator();
+        final fact = makeCanonicalFact();
 
-      await orchestrator.receiveAndBuffer(fact);
-      await orchestrator.receiveAndBuffer(fact);
+        await orchestrator.receiveAndBuffer(fact);
+        await orchestrator.receiveAndBuffer(fact);
 
-      expect(repo.count, 1);
-    });
+        expect(repo.count, 1);
+      },
+    );
 
     test('assigns monotonically increasing localSequence', () async {
       final orchestrator = makeOrchestrator();
@@ -288,25 +287,26 @@ void main() {
       );
     });
 
-    test('is idempotent — re-syncing same facts does not create duplicates',
-        () async {
-      final orchestrator = makeOrchestrator();
-      final facts = [makeCanonicalFact(seq: 1), makeCanonicalFact(seq: 2)];
+    test(
+      'is idempotent — re-syncing same facts does not create duplicates',
+      () async {
+        final orchestrator = makeOrchestrator();
+        final facts = [makeCanonicalFact(seq: 1), makeCanonicalFact(seq: 2)];
 
-      await orchestrator.onConnectionRestored(
-        organizationId: 'org-test',
-        missingFacts: facts,
-      );
-      await orchestrator.onConnectionRestored(
-        organizationId: 'org-test',
-        missingFacts: facts,
-      );
+        await orchestrator.onConnectionRestored(
+          organizationId: 'org-test',
+          missingFacts: facts,
+        );
+        await orchestrator.onConnectionRestored(
+          organizationId: 'org-test',
+          missingFacts: facts,
+        );
 
-      expect(repo.count, 2);
-    });
+        expect(repo.count, 2);
+      },
+    );
 
-    test('records integrity failure for tampered fact and skips enqueue',
-        () async {
+    test('records integrity failure for tampered fact and skips enqueue', () async {
       final orchestrator = makeOrchestrator();
       final goodFact = makeCanonicalFact(seq: 1);
 
@@ -403,10 +403,7 @@ void main() {
       final orchestrator = makeOrchestrator();
 
       // Should not throw.
-      await expectLater(
-        orchestrator.drainFailed('org-test'),
-        completes,
-      );
+      await expectLater(orchestrator.drainFailed('org-test'), completes);
     });
   });
 

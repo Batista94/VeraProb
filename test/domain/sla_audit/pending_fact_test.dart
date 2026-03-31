@@ -77,8 +77,9 @@ void main() {
     test('contentHash is SHA-256 of factPayloadJson', () {
       final fact = makeCanonicalFact();
       final pending = PendingFact.fromIncomingFact(fact, localSequence: 1);
-      final expected =
-          sha256.convert(utf8.encode(pending.factPayloadJson)).toString();
+      final expected = sha256
+          .convert(utf8.encode(pending.factPayloadJson))
+          .toString();
       expect(pending.contentHash, expected);
     });
 

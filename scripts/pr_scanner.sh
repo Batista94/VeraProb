@@ -73,9 +73,21 @@ pass() {
 }
 
 print_hits() {
+  local limit=${1:-5}
+  local count=0
+  local total=$(echo "$1" | grep -c "^" || echo "0")
+  
   while IFS= read -r line; do
-    [[ -n "$line" ]] && echo -e "         ${RED}→ $line${NC}"
+    [[ -z "$line" ]] && continue
+    if (( count < limit )); then
+      echo -e "         ${RED}→ $line${NC}"
+    fi
+    count=$((count + 1))
   done
+  
+  if (( count > limit )); then
+    echo -e "         ${YELLOW}... and $((count - limit)) more hits (truncated to save tokens)${NC}"
+  fi
 }
 
 cd "$PROJECT_DIR"
@@ -104,7 +116,7 @@ WASM_HITS=$(grep -rn --include="*.dart" \
 
 if [[ -n "$WASM_HITS" ]]; then
   block "[WASM-BLOCK] dart:html/dart:js forbidden — use dart:js_interop (INV-4)"
-  echo "$WASM_HITS" | print_hits
+  echo "$WASM_HITS" | print_hits 5
 else
   pass "No forbidden dart:html/dart:js imports"
 fi
@@ -123,7 +135,7 @@ FIN_HITS=$(grep -rn --include="*.dart" \
 if [[ -n "$FIN_HITS" ]]; then
   block "[FIN-BLOCK] double/float storing monetary value in domain/application — use BIGINT cents (INV-2)"
   echo "         (Checked: lib/domain/ + lib/application/ | Excluded: multipliers, rates, toDouble(), comments)"
-  echo "$FIN_HITS" | print_hits
+  echo "$FIN_HITS" | print_hits 5
 else
   pass "No floating-point monetary storage in domain/application layers"
 fi
@@ -151,7 +163,7 @@ UTC_HITS=$(grep -rn --include="*.dart" \
 
 if [[ -n "$UTC_HITS" ]]; then
   block "[UTC-BLOCK] DateTime.now() without .toUtc() — all timestamps must be UTC (INV-3)"
-  echo "$UTC_HITS" | print_hits
+  echo "$UTC_HITS" | print_hits 5
 else
   pass "All DateTime.now() calls use .toUtc()"
 fi
@@ -187,9 +199,7 @@ else
         || true)
       if [[ -n "$DB_HITS" ]]; then
         block "[DB-BLOCK] Destructive migration in $migration_file — append-only schema required (INV-DB)"
-        echo "$DB_HITS" | while IFS= read -r line; do
-          [[ -n "$line" ]] && echo -e "         ${RED}→ $migration_file: $line${NC}"
-        done
+        echo "$DB_HITS" | print_hits 3
         DB_BLOCK_FOUND=1
       fi
     fi
@@ -218,16 +228,12 @@ ANALYZE_INFOS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+info •" || true)
 
 if [[ -n "$ANALYZE_ERRORS" ]]; then
   block "[ANALYZE-BLOCK] flutter analyze reported errors — fix before merge"
-  echo "$ANALYZE_ERRORS" | while IFS= read -r line; do
-    [[ -n "$line" ]] && echo -e "         ${RED}→ $(echo "$line" | xargs)${NC}"
-  done
+  echo "$ANALYZE_ERRORS" | print_hits 10
 fi
 
 if [[ -n "$ANALYZE_WARNINGS" ]]; then
   warn "[ANALYZE-WARN] flutter analyze reported warnings — LLM neural review required"
-  echo "$ANALYZE_WARNINGS" | while IFS= read -r line; do
-    [[ -n "$line" ]] && echo -e "         ${YELLOW}→ $(echo "$line" | xargs)${NC}"
-  done
+  echo "$ANALYZE_WARNINGS" | print_hits 10
 fi
 
 if [[ -n "$ANALYZE_INFOS" ]]; then
@@ -313,7 +319,7 @@ SECRET_HITS=$(grep -rn --include="*.dart" \
   || true)
 if [[ -n "$SECRET_HITS" ]]; then
   block "[SECRET-BLOCK] Hardcoded secret or API key pattern detected — move to .env / Env class (Security / INV-25)"
-  echo "$SECRET_HITS" | print_hits
+  echo "$SECRET_HITS" | print_hits 5
 else
   pass "No hardcoded secret patterns detected in lib/"
 fi
@@ -415,7 +421,7 @@ rm -f "$STRICT_OPTIONS"
 DOMAIN_STRICT=$(echo "$STRICT_OUTPUT" | grep "lib/domain/" || true)
 if [[ -n "$DOMAIN_STRICT" ]]; then
   block "[STRICT-BLOCK] Implicit dynamic cast in Domain layer — fix with 'as Type' (INV-4)"
-  echo "$DOMAIN_STRICT" | print_hits
+  echo "$DOMAIN_STRICT" | print_hits 10
 else
   pass "Domain layer: 0 strict-type violations (INV-4 compliant)"
 fi
