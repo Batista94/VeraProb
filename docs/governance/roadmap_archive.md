@@ -60,6 +60,12 @@ Utilize este arquivo apenas para consulta histórica. O estado atual deve ser gu
 - **Deliverables:** Kinematic Guard (INV-17) triggering `KINEMATIC_ANOMALY` on-chain · `AlertFinancialImpact` VO with R$ real-time impact · GeoMath consolidation · `GeofenceEvidenceMap` visual snapshots · SLA Creation 3-Step Wizard · Industrial Deep Theme (Slate-950/800).
 - 14 new tests · Dark Sync across all drawers · Geo-coordinate forensic hash (INV-7).
 
+### Phase 9.8 — Resilience & Operational Hub (The Body) ✅ CONCLUÍDA
+
+- **Data:** 2026-03-31
+- **Deliverables:** RLS JWT path hotfix · Sidebar Hub Refactor (8 → 6 items) · Smart CNPJ Protocol · Hard Quota Enforcement + Predictive Provisioning · Global InfoTooltip widget · Searchable Entity Mapping · Heartbeat Monitor Projection · Background Sync Resilience (LocalFactQueue) · Late-Arrival Window Protocol (INV-12) · Driver Defense Portal.
+- +250 tests TDD/Integration · INV-8/11/12/13/16/18/23 compliant.
+
 ---
 
 ## Phase 10 — CI/CD & Launch Preparation

@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-03-31
-**Current Status:** Phase 9.8 — Resilience & Operational Hub (The Body) · [NEXT: 9.8.J - Driver Defense Portal]
+**Current Status:** Phase 10.2 — WASM Build Validation · [NEXT: 10.3 - Shadow Mode]
 **Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
@@ -13,22 +13,10 @@
 | Tests | 1372 passing · 18 skipped · 0 failures ✅ |
 | Migrations | 76 applied (schema lock v1 + kinematic guard + hard quota triggers + update quota RPC + heartbeat view) ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
+| Phase 9.8 | **COMPLETED** — Resilience & Operational Hub ✅ |
 | Phase 10.1 | **COMPLETED** — Schema Lock ✅ |
 
 ---
-
-### [ ] Phase 9.8 — Resilience & Operational Hub (The Body)
-
-- **[x] 9.8.A — RLS JWT path hotfix + 7 new integration tests:** ✅ Corrigido vazamento potencial de tenant ID no path do JWT e cobertura de testes.
-- **[x] 9.8.B — Sidebar Hub Refactor (8 → 6 items):** ✅ Hub administrativo centralizado com redução de carga visual lateral.
-- **[x] 9.8.C — Smart CNPJ Protocol:** ✅ Máscara dinâmica, trava Unique no Postgres e validação Modulo-11 completa.
-- **[x] 9.8.D — Hard Quota Enforcement + Predictive Provisioning:** ✅ DB triggers P0001 em `vehicles`/`contracts`, RPC `super_admin_update_organization_quota`, `UpdateOrganizationQuotaHandler`, `_EditQuotaDialog` modal, quota ratio columns verde/laranja/vermelho no dashboard. 14 novos testes.
-- **[x] 9.8.E — Global InfoTooltip widget:** ✅ `InfoTooltip` widget com `InfoTooltipVariant` enum; 4 migrações em `declare_contract_plan_form.dart` e `operational_zones_screen.dart`. 18 novos testes TDD.
-- **[x] 9.8.F — Searchable Entity Mapping:** ✅ Busca unificada por Nome/CNPJ em `contracts_screen` e `contractor_management_screen`. Client-side filtering. 10 novos testes TDD.
-- **[x] 9.8.G — Heartbeat Monitor Projection:** ✅ `HeartbeatClassifier` (domínio puro), `HeartbeatMonitorView` + `HeartbeatQueryService`, `SupabaseHeartbeatQueryService`, SQL VIEW `vw_device_heartbeat_status` + RPC `get_device_heartbeat_status`, `HeartbeatStatusCard` widget. 20 novos testes TDD.
-- **[x] 9.8.H — Background Sync Resilience (LocalFactQueue):** ✅ Edge Ledger SQLite (drift + WasmDatabase) — PendingFact VO, ChainIntegrityVerifier, InMemory + Drift repos, SupabaseSyncHandshakeService, LocalSyncOrchestrator, ConnectivityNotifier, EdgeLedgerStatusBadge. SQL RPC `get_missed_facts`. INV-8/11/12/18/23 compliant. 143 novos testes TDD.
-- **[x] 9.8.I — Late-Arrival Window Protocol (INV-12):** ✅ `LateArrivalWindowPolicy` (pure Dart domain, INV-18), 48h gate in `ContractualEvaluationEngine.processVehicleState` (`receivedAtUtc` param), pipeline wiring for `lateArrival` facts. 12 novos testes TDD (8 domain + 4 integration). INV-12/13/16/18 compliant.
-- **[x] 9.8.J — Driver Defense Portal:** ✅ Portal para submissão de justificativas preventivas vinculadas à auditoria.
 
 ---
 
