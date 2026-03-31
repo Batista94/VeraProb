@@ -322,4 +322,115 @@ class DataSeeder {
     // await _supabase.from('drivers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     // await _supabase.from('routes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   }
+
+  // ── Phase 9 Scenarios (Resilience & Operational Hub) ────────────────────────
+  Future<void> seedPhase9() async {
+    await seedSmartCnpjContractors();
+    await seedQuotaLimits();
+    await seedHeartbeatAndLateArrivalScenarios();
+  }
+
+  Future<void> seedSmartCnpjContractors() async {
+    final contractors = [
+      {'name': 'Logística Águia S/A', 'cnpj': '61219049000196'},
+      {'name': 'Transportes Veloz', 'cnpj': '11444777000161'},
+    ];
+
+    for (var c in contractors) {
+      final exists = await _supabase
+          .from('contractors')
+          .select()
+          .eq('cnpj', c['cnpj']!)
+          .maybeSingle();
+      if (exists == null) {
+        final payload = Map<String, dynamic>.from(c);
+        payload['organization_id'] = organizationId;
+        payload['status'] = 'active';
+        await _supabase.from('contractors').insert(payload);
+      }
+    }
+  }
+
+  Future<void> seedQuotaLimits() async {
+    // Generate enough vehicles to reach > 80% of max_vehicles (default 50) => 42 vehicles
+    // This turns the predictive quota indicator orange/red in the Dashboard
+    for (int i = 0; i < 42; i++) {
+      final plate = 'MOC-${1000 + i}';
+      final exists = await _supabase
+          .from('vehicles')
+          .select()
+          .eq('plate', plate)
+          .maybeSingle();
+      if (exists == null) {
+        await _supabase.from('vehicles').insert({
+          'organization_id': organizationId,
+          'plate': plate,
+          'model': 'Mockado ${i}',
+          'capacity': 30000 + i,
+        });
+      }
+    }
+  }
+
+  Future<void> seedHeartbeatAndLateArrivalScenarios() async {
+    final vehicle = await _supabase
+        .from('vehicles')
+        .select()
+        .eq('organization_id', organizationId)
+        .limit(1)
+        .maybeSingle();
+
+    if (vehicle == null) return;
+
+    final vehicleId = vehicle['id'];
+    final deviceId = "DEV-${vehicle['plate']}";
+    final now = DateTime.now().toUtc();
+
+    // Heartbeat: Critical (Last 25 hours) - Tests 9.8.G
+    await _supabase.from('canonical_facts').insert({
+      'organization_id': organizationId,
+      'raw_payload_id': const Uuid().v4(),
+      'asset_id': vehicleId,
+      'device_id': deviceId,
+      'gps_timestamp': now
+          .subtract(const Duration(hours: 25))
+          .toIso8601String(),
+      'received_at_utc': now
+          .subtract(const Duration(hours: 25))
+          .toIso8601String(),
+      'lat': -23.51,
+      'lng': -46.61,
+      'speed_cms': 0,
+      'source_adapter': 'SASCAR_V1',
+      'integrity_flag': 'OK',
+    });
+
+    // Late-Arrival Valid (40h ago) - Tests 9.8.I In-window payload
+    await _supabase.from('canonical_facts').insert({
+      'organization_id': organizationId,
+      'raw_payload_id': const Uuid().v4(),
+      'asset_id': vehicleId,
+      'device_id': deviceId,
+      'gps_timestamp': now
+          .subtract(const Duration(hours: 40))
+          .toIso8601String(),
+      'received_at_utc': now.toIso8601String(), // Arrived NOW
+      'lat': -23.52, 'lng': -46.62, 'speed_cms': 6000,
+      'source_adapter': 'SASCAR_V1', 'integrity_flag': 'OK',
+    });
+
+    // Late-Arrival Expired (50h ago) - Tests 9.8.I Out-of-window payload
+    await _supabase.from('canonical_facts').insert({
+      'organization_id': organizationId,
+      'raw_payload_id': const Uuid().v4(),
+      'asset_id': vehicleId,
+      'device_id': deviceId,
+      'gps_timestamp': now
+          .subtract(const Duration(hours: 50))
+          .toIso8601String(),
+      'received_at_utc': now.toIso8601String(), // Arrived NOW
+      'lat': -23.53, 'lng': -46.63, 'speed_cms': 7000,
+      'source_adapter': 'SASCAR_V1', 'integrity_flag': 'OK',
+    });
+  }
 }

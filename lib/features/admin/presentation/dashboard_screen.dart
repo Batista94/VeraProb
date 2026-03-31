@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widgets/charts_section.dart';
@@ -19,6 +20,7 @@ class DashboardScreen extends ConsumerWidget {
       await seeder.seedRoutes();
       await seeder.seedHistoricalData();
       await seeder.seedActiveSanctions();
+      await seeder.seedPhase9();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -110,17 +112,18 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                ElevatedButton.icon(
-                  onPressed: () => _seedData(context, ref),
-                  icon: const Icon(Icons.bolt_rounded, size: 18),
-                  label: const Text('SIMULAR OPERAÇÃO'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber.shade900,
-                    foregroundColor: Colors.white,
-                    elevation: 4,
-                    shadowColor: Colors.amber.shade900.withValues(alpha: 0.3),
+                if (kDebugMode)
+                  ElevatedButton.icon(
+                    onPressed: () => _seedData(context, ref),
+                    icon: const Icon(Icons.bolt_rounded, size: 18),
+                    label: const Text('SIMULAR OPERAÇÃO'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade900,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shadowColor: Colors.amber.shade900.withValues(alpha: 0.3),
+                    ),
                   ),
-                ),
               ],
             );
           },
