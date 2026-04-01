@@ -68,18 +68,18 @@ class ShadowComparisonReport extends Equatable {
 
   @override
   List<Object?> get props => [
-        organizationId,
-        fromUtc,
-        toUtc,
-        totalEvaluated,
-        totalCompared,
-        matchRate,
-        falsePositiveCount,
-        falseNegativeCount,
-        pendingManualCount,
-        criticalDivergenceDetected,
-        generatedAtUtc,
-      ];
+    organizationId,
+    fromUtc,
+    toUtc,
+    totalEvaluated,
+    totalCompared,
+    matchRate,
+    falsePositiveCount,
+    falseNegativeCount,
+    pendingManualCount,
+    criticalDivergenceDetected,
+    generatedAtUtc,
+  ];
 }
 
 /// Orchestrates divergence analysis between shadow engine verdicts and

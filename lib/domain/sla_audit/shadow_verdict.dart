@@ -181,9 +181,7 @@ class ShadowVerdict extends Equatable {
         json['verdict_evidence'] as Map<String, dynamic>,
       ),
       traceabilityHash: json['traceability_hash'] as String,
-      divergenceType: _divergenceFromString(
-        json['divergence_type'] as String,
-      ),
+      divergenceType: _divergenceFromString(json['divergence_type'] as String),
       manualVerdict: json['manual_verdict'] as String?,
       manualVerdictAtUtc: json['manual_verdict_at_utc'] != null
           ? DateTime.parse(json['manual_verdict_at_utc'] as String)
@@ -194,21 +192,21 @@ class ShadowVerdict extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'organization_id': organizationId,
-        'set_id': setId,
-        'contract_id': contractId,
-        'engine_verdict': engineVerdict,
-        'engine_verdict_at_utc': engineVerdictAtUtc.toIso8601String(),
-        'engine_version': engineVersion,
-        'verdict_evidence': verdictEvidence.toJson(),
-        'traceability_hash': traceabilityHash,
-        'divergence_type': _divergenceToString(divergenceType),
-        'manual_verdict': manualVerdict,
-        'manual_verdict_at_utc': manualVerdictAtUtc?.toIso8601String(),
-        'manual_reviewed_by': manualReviewedBy,
-        'created_at': createdAtUtc.toIso8601String(),
-      };
+    'id': id,
+    'organization_id': organizationId,
+    'set_id': setId,
+    'contract_id': contractId,
+    'engine_verdict': engineVerdict,
+    'engine_verdict_at_utc': engineVerdictAtUtc.toIso8601String(),
+    'engine_version': engineVersion,
+    'verdict_evidence': verdictEvidence.toJson(),
+    'traceability_hash': traceabilityHash,
+    'divergence_type': _divergenceToString(divergenceType),
+    'manual_verdict': manualVerdict,
+    'manual_verdict_at_utc': manualVerdictAtUtc?.toIso8601String(),
+    'manual_reviewed_by': manualReviewedBy,
+    'created_at': createdAtUtc.toIso8601String(),
+  };
 
   /// Returns an updated copy with the human auditor's decision applied.
   ///

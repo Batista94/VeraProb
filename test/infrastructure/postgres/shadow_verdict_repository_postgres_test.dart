@@ -23,33 +23,32 @@ void main() async {
       final verdictTime = DateTime.utc(2026, 6, 15, 10, 0);
 
       VerdictEvidence makeEvidence() => VerdictEvidence.create(
-            clauseRef: 'clause-int-test',
-            ruleId: 'rule-001',
-            ruleVersion: 1,
-            primaryEvidenceLat: -23.5505,
-            primaryEvidenceLng: -46.6333,
-            primaryEvidenceTimestampUtc: verdictTime,
-            deltaValue: 15.0,
-            thresholdValue: 0.0,
-            fineCents: Money(150000),
-            confidenceScore: 100,
-          );
+        clauseRef: 'clause-int-test',
+        ruleId: 'rule-001',
+        ruleVersion: 1,
+        primaryEvidenceLat: -23.5505,
+        primaryEvidenceLng: -46.6333,
+        primaryEvidenceTimestampUtc: verdictTime,
+        deltaValue: 15.0,
+        thresholdValue: 0.0,
+        fineCents: const Money(150000),
+        confidenceScore: 100,
+      );
 
       ShadowVerdict makeVerdict({
         required String setId,
         required String contractId,
         String engineVerdict = 'noShow',
-      }) =>
-          ShadowVerdict.fromEngineResult(
-            organizationId: PostgresTestConfig.testOrgId,
-            setId: setId,
-            contractId: contractId,
-            engineVerdict: engineVerdict,
-            engineVerdictAtUtc: verdictTime,
-            engineVersion: 'veraprob-core_v3',
-            verdictEvidence: makeEvidence(),
-            createdAtUtc: DateTime.now().toUtc(),
-          );
+      }) => ShadowVerdict.fromEngineResult(
+        organizationId: PostgresTestConfig.testOrgId,
+        setId: setId,
+        contractId: contractId,
+        engineVerdict: engineVerdict,
+        engineVerdictAtUtc: verdictTime,
+        engineVersion: 'veraprob-core_v3',
+        verdictEvidence: makeEvidence(),
+        createdAtUtc: DateTime.now().toUtc(),
+      );
 
       setUpAll(() async {
         if (isRunning) {
@@ -61,53 +60,57 @@ void main() async {
 
       // ── 1. save() — round-trip and idempotency ──────────────────────────────
 
-      test('1. save() persists a shadow verdict and can be fetched back',
-          () async {
-        final setId = uuid.v4();
-        final contractId = uuid.v4();
-        final verdict = makeVerdict(setId: setId, contractId: contractId);
+      test(
+        '1. save() persists a shadow verdict and can be fetched back',
+        () async {
+          final setId = uuid.v4();
+          final contractId = uuid.v4();
+          final verdict = makeVerdict(setId: setId, contractId: contractId);
 
-        await repo.save(verdict);
+          await repo.save(verdict);
 
-        final results = await repo.findByOrganization(
-          organizationId: PostgresTestConfig.testOrgId,
-          fromUtc: DateTime.utc(2026, 1, 1),
-          toUtc: DateTime.utc(2027, 1, 1),
-        );
+          final results = await repo.findByOrganization(
+            organizationId: PostgresTestConfig.testOrgId,
+            fromUtc: DateTime.utc(2026, 1, 1),
+            toUtc: DateTime.utc(2027, 1, 1),
+          );
 
-        final saved = results.where((v) => v.setId == setId).toList();
-        expect(saved, hasLength(1));
-        expect(saved.first.contractId, contractId);
-        expect(saved.first.engineVerdict, 'noShow');
-        expect(
-          saved.first.divergenceType,
-          ShadowDivergenceType.pendingManual,
-        );
-        expect(saved.first.traceabilityHash, isNotEmpty);
-      });
+          final saved = results.where((v) => v.setId == setId).toList();
+          expect(saved, hasLength(1));
+          expect(saved.first.contractId, contractId);
+          expect(saved.first.engineVerdict, 'noShow');
+          expect(
+            saved.first.divergenceType,
+            ShadowDivergenceType.pendingManual,
+          );
+          expect(saved.first.traceabilityHash, isNotEmpty);
+        },
+      );
 
-      test('2. save() is idempotent — second call with same key is a no-op',
-          () async {
-        final setId = uuid.v4();
-        final contractId = uuid.v4();
-        final verdict = makeVerdict(setId: setId, contractId: contractId);
+      test(
+        '2. save() is idempotent — second call with same key is a no-op',
+        () async {
+          final setId = uuid.v4();
+          final contractId = uuid.v4();
+          final verdict = makeVerdict(setId: setId, contractId: contractId);
 
-        await repo.save(verdict);
-        await repo.save(verdict); // must not throw or duplicate
+          await repo.save(verdict);
+          await repo.save(verdict); // must not throw or duplicate
 
-        final results = await repo.findByOrganization(
-          organizationId: PostgresTestConfig.testOrgId,
-          fromUtc: DateTime.utc(2026, 1, 1),
-          toUtc: DateTime.utc(2027, 1, 1),
-        );
+          final results = await repo.findByOrganization(
+            organizationId: PostgresTestConfig.testOrgId,
+            fromUtc: DateTime.utc(2026, 1, 1),
+            toUtc: DateTime.utc(2027, 1, 1),
+          );
 
-        final matching = results.where((v) => v.setId == setId).toList();
-        expect(
-          matching,
-          hasLength(1),
-          reason: 'Duplicate save must be silently ignored (INV-11)',
-        );
-      });
+          final matching = results.where((v) => v.setId == setId).toList();
+          expect(
+            matching,
+            hasLength(1),
+            reason: 'Duplicate save must be silently ignored (INV-11)',
+          );
+        },
+      );
 
       // ── 2. findByOrganization() — filtering and ordering ───────────────────
 
@@ -136,7 +139,10 @@ void main() async {
         await repo.save(makeVerdict(setId: setId, contractId: contractId));
 
         const otherOrg = '00000000-0000-0000-0000-000000000099';
-        await PostgresTestConfig.ensureSentinelOrg(client: client, id: otherOrg);
+        await PostgresTestConfig.ensureSentinelOrg(
+          client: client,
+          id: otherOrg,
+        );
 
         final results = await repo.findByOrganization(
           organizationId: otherOrg, // other org
@@ -153,45 +159,50 @@ void main() async {
 
       // ── 3. findDivergent() ──────────────────────────────────────────────────
 
-      test('5. findDivergent() returns only false_positive and false_negative',
-          () async {
-        final setId = uuid.v4();
-        final contractId = uuid.v4();
-        final base = makeVerdict(setId: setId, contractId: contractId);
+      test(
+        '5. findDivergent() returns only false_positive and false_negative',
+        () async {
+          final setId = uuid.v4();
+          final contractId = uuid.v4();
+          final base = makeVerdict(setId: setId, contractId: contractId);
 
-        // Promote to false_positive by applying withManualVerdict
-        final classified = base.withManualVerdict(
-          manualVerdict: 'rejected',
-          manualVerdictAtUtc: DateTime.now().toUtc(),
-          manualReviewedBy: '00000000-0000-0000-0000-000000000002',
-        );
+          // Promote to false_positive by applying withManualVerdict
+          final classified = base.withManualVerdict(
+            manualVerdict: 'rejected',
+            manualVerdictAtUtc: DateTime.now().toUtc(),
+            manualReviewedBy: '00000000-0000-0000-0000-000000000002',
+          );
 
-        // Save the base first (idempotency key = setId::contractId)
-        // then update manually via raw client to simulate syncManualVerdicts
-        await repo.save(base);
-        await client
-            .from('shadow_verdicts')
-            .update({
-              'manual_verdict': classified.manualVerdict,
-              'manual_verdict_at_utc':
-                  classified.manualVerdictAtUtc!.toIso8601String(),
-              'manual_reviewed_by': classified.manualReviewedBy,
-              'divergence_type': 'false_positive',
-            })
-            .eq('organization_id', PostgresTestConfig.testOrgId)
-            .eq('set_id', setId)
-            .eq('contract_id', contractId);
+          // Save the base first (idempotency key = setId::contractId)
+          // then update manually via raw client to simulate syncManualVerdicts
+          await repo.save(base);
+          await client
+              .from('shadow_verdicts')
+              .update({
+                'manual_verdict': classified.manualVerdict,
+                'manual_verdict_at_utc': classified.manualVerdictAtUtc!
+                    .toIso8601String(),
+                'manual_reviewed_by': classified.manualReviewedBy,
+                'divergence_type': 'false_positive',
+              })
+              .eq('organization_id', PostgresTestConfig.testOrgId)
+              .eq('set_id', setId)
+              .eq('contract_id', contractId);
 
-        final divergent = await repo.findDivergent(
-          organizationId: PostgresTestConfig.testOrgId,
-          fromUtc: DateTime.utc(2026, 1, 1),
-          toUtc: DateTime.utc(2027, 1, 1),
-        );
+          final divergent = await repo.findDivergent(
+            organizationId: PostgresTestConfig.testOrgId,
+            fromUtc: DateTime.utc(2026, 1, 1),
+            toUtc: DateTime.utc(2027, 1, 1),
+          );
 
-        final match = divergent.where((v) => v.setId == setId).toList();
-        expect(match, hasLength(1));
-        expect(match.first.divergenceType, ShadowDivergenceType.falsePositive);
-      });
+          final match = divergent.where((v) => v.setId == setId).toList();
+          expect(match, hasLength(1));
+          expect(
+            match.first.divergenceType,
+            ShadowDivergenceType.falsePositive,
+          );
+        },
+      );
 
       // ── 4. syncManualVerdicts() ─────────────────────────────────────────────
 
@@ -254,8 +265,9 @@ void main() async {
               .from('shadow_verdicts')
               .update({
                 'manual_verdict': 'rejected',
-                'manual_verdict_at_utc':
-                    DateTime.now().toUtc().toIso8601String(),
+                'manual_verdict_at_utc': DateTime.now()
+                    .toUtc()
+                    .toIso8601String(),
                 'manual_reviewed_by': uuid.v4(),
                 'divergence_type': 'false_positive',
               })
@@ -264,8 +276,11 @@ void main() async {
               .eq('contract_id', contractId);
 
           const otherOrg = '00000000-0000-0000-0000-000000000099';
-          await PostgresTestConfig.ensureSentinelOrg(client: client, id: otherOrg);
-          
+          await PostgresTestConfig.ensureSentinelOrg(
+            client: client,
+            id: otherOrg,
+          );
+
           // Create an isolated repo pointing at an org with no pending verdicts
           final isolatedRepo = PostgresShadowVerdictRepository(client);
           final count = await isolatedRepo.syncManualVerdicts(
@@ -276,8 +291,6 @@ void main() async {
         },
       );
     },
-    skip: !isRunning
-        ? 'Skipped: Local Supabase environment is offline.'
-        : null,
+    skip: !isRunning ? 'Skipped: Local Supabase environment is offline.' : null,
   );
 }

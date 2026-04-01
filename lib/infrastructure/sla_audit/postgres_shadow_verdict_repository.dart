@@ -21,7 +21,8 @@ class PostgresShadowVerdictRepository implements ShadowVerdictRepository {
     : _client = client ?? supabase;
 
   // ── Column projection (security rule: no select('*')) ─────────────────────
-  static const _columns = 'id, organization_id, set_id, contract_id, '
+  static const _columns =
+      'id, organization_id, set_id, contract_id, '
       'engine_verdict, engine_verdict_at_utc, engine_version, '
       'verdict_evidence, traceability_hash, divergence_type, '
       'manual_verdict, manual_verdict_at_utc, manual_reviewed_by, created_at';
@@ -33,24 +34,27 @@ class PostgresShadowVerdictRepository implements ShadowVerdictRepository {
 
   @override
   Future<void> save(ShadowVerdict verdict) async {
-    await _client.from('shadow_verdicts').upsert(
-      {
-        'id': verdict.id,
-        'organization_id': verdict.organizationId,
-        'set_id': verdict.setId,
-        'contract_id': verdict.contractId,
-        'engine_verdict': verdict.engineVerdict,
-        'engine_verdict_at_utc': verdict.engineVerdictAtUtc.toIso8601String(),
-        'engine_version': verdict.engineVersion,
-        'verdict_evidence': verdict.verdictEvidence.toJson(),
-        'traceability_hash': verdict.traceabilityHash,
-        'divergence_type': _divergenceToString(verdict.divergenceType),
-        'created_at': verdict.createdAtUtc.toIso8601String(),
-      },
-      // UPSERT: second call for the same obligation is silently ignored (INV-11).
-      onConflict: 'organization_id,set_id,contract_id',
-      ignoreDuplicates: true,
-    );
+    await _client
+        .from('shadow_verdicts')
+        .upsert(
+          {
+            'id': verdict.id,
+            'organization_id': verdict.organizationId,
+            'set_id': verdict.setId,
+            'contract_id': verdict.contractId,
+            'engine_verdict': verdict.engineVerdict,
+            'engine_verdict_at_utc': verdict.engineVerdictAtUtc
+                .toIso8601String(),
+            'engine_version': verdict.engineVersion,
+            'verdict_evidence': verdict.verdictEvidence.toJson(),
+            'traceability_hash': verdict.traceabilityHash,
+            'divergence_type': _divergenceToString(verdict.divergenceType),
+            'created_at': verdict.createdAtUtc.toIso8601String(),
+          },
+          // UPSERT: second call for the same obligation is silently ignored (INV-11).
+          onConflict: 'organization_id,set_id,contract_id',
+          ignoreDuplicates: true,
+        );
   }
 
   // ── Read ───────────────────────────────────────────────────────────────────
@@ -140,7 +144,7 @@ class PostgresShadowVerdictRepository implements ShadowVerdictRepository {
       final srq = srqByKey[key];
       if (srq == null) continue;
 
-      final manualVerdict = srq['status'] as String;     // 'applied' | 'rejected'
+      final manualVerdict = srq['status'] as String; // 'applied' | 'rejected'
       final reviewedAt = srq['reviewed_at'] as String?;
       final reviewedBy = srq['reviewed_by'] as String?;
 
@@ -156,8 +160,8 @@ class PostgresShadowVerdictRepository implements ShadowVerdictRepository {
           .from('shadow_verdicts')
           .update({
             'manual_verdict': classified.manualVerdict,
-            'manual_verdict_at_utc':
-                classified.manualVerdictAtUtc?.toIso8601String(),
+            'manual_verdict_at_utc': classified.manualVerdictAtUtc
+                ?.toIso8601String(),
             'manual_reviewed_by': classified.manualReviewedBy,
             'divergence_type': _divergenceToString(classified.divergenceType),
           })

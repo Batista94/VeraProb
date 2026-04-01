@@ -12,7 +12,7 @@
 # PILLAR B: Static Quality
 #   B1 — Dart Analyzer:    Blocks on errors; warns on warnings
 #   B2 — Format Check:     Warns on unformatted files
-#   B3 — Complexity Check: Warns on files with >200 lines added
+#   B3 — God Class Check: Warns on files approaching 1,000 lines (maintainability limit)
 #
 # PILLAR C: Cost Efficiency & Automated Security
 #   C1 — Secret Detection:    Blocks hardcoded API keys / service tokens
@@ -257,7 +257,7 @@ fi
 
 # ── B3: Large File Delta Warning ─────────────────────────────────────────────
 echo ""
-echo "  B3 — Complexity Check: scanning for large file deltas (>200 lines added)..."
+echo "  B3 — God Class Check: scanning for files approaching 1,000 lines..."
 
 CHANGED_DART=""
 normalize_paths() {
@@ -277,29 +277,22 @@ if [[ -n "$CHANGED_DART" ]]; then
   while IFS= read -r dart_file; do
     [[ -z "$dart_file" ]] && continue
     dart_file=$(echo "$dart_file" | tr '\\' '/')
-    LINES_ADDED=0
-    if git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
-      LINES_ADDED=$(git diff "$BASE_BRANCH"...HEAD -- "$dart_file" 2>/dev/null \
-        | grep "^+" | grep -vc "^+++" || echo "0")
-    fi
-    LINES_ADDED=$(echo "$LINES_ADDED" | tr -d '[:space:]')
-    [[ ! "$LINES_ADDED" =~ ^[0-9]+$ ]] && LINES_ADDED=0
-    if (( LINES_ADDED == 0 )); then
-      LINES_ADDED=$(git diff HEAD~1 HEAD -- "$dart_file" 2>/dev/null \
-        | grep "^+" | grep -vc "^+++" || echo "0")
-      LINES_ADDED=$(echo "$LINES_ADDED" | tr -d '[:space:]')
-      [[ ! "$LINES_ADDED" =~ ^[0-9]+$ ]] && LINES_ADDED=0
-    fi
-    if (( LINES_ADDED > 200 )); then
-      warn "[COMPLEXITY-WARN] $dart_file added $LINES_ADDED lines — LLM must audit cyclomatic complexity"
-      COMPLEXITY_FLAGS=$((COMPLEXITY_FLAGS + 1))
+    if [[ -f "$dart_file" ]]; then
+      TOTAL_LINES=$(wc -l < "$dart_file" | tr -d ' ' || echo "0")
+      if (( TOTAL_LINES >= 1000 )); then
+        block "[GOD-CLASS-BLOCK] $dart_file has $TOTAL_LINES lines — exceeds 1,000 line limit (Refactor required)"
+        COMPLEXITY_FLAGS=$((COMPLEXITY_FLAGS + 1))
+      elif (( TOTAL_LINES >= 800 )); then
+        warn "[GOD-CLASS-WARN] $dart_file approaching God Class status ($TOTAL_LINES lines) — plan refactoring"
+        COMPLEXITY_FLAGS=$((COMPLEXITY_FLAGS + 1))
+      fi
     fi
   done <<< "$CHANGED_DART"
   if [[ $COMPLEXITY_FLAGS -eq 0 ]]; then
-    pass "No files with extreme line count changes (>200 lines added)"
+    pass "All modified files are within safe maintainability limits (<800 lines)"
   fi
 else
-  echo -e "  ${NC}[INFO]  No changed Dart files found for complexity check"
+  echo -e "  ${NC}[INFO]  No changed Dart files found for God Class check"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────

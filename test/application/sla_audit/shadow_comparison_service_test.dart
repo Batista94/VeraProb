@@ -16,17 +16,17 @@ void main() {
   const reviewer = 'auditor-uuid-001';
 
   VerdictEvidence makeEvidence() => VerdictEvidence.create(
-        clauseRef: 'clause-1',
-        ruleId: 'rule-001',
-        ruleVersion: 1,
-        primaryEvidenceLat: -23.5505,
-        primaryEvidenceLng: -46.6333,
-        primaryEvidenceTimestampUtc: verdictTime,
-        deltaValue: 15.0,
-        thresholdValue: 0.0,
-        fineCents: Money(150000),
-        confidenceScore: 100,
-      );
+    clauseRef: 'clause-1',
+    ruleId: 'rule-001',
+    ruleVersion: 1,
+    primaryEvidenceLat: -23.5505,
+    primaryEvidenceLng: -46.6333,
+    primaryEvidenceTimestampUtc: verdictTime,
+    deltaValue: 15.0,
+    thresholdValue: 0.0,
+    fineCents: const Money(150000),
+    confidenceScore: 100,
+  );
 
   ShadowVerdict makeVerdict({
     required String setId,
@@ -123,16 +123,20 @@ void main() {
 
   group('generateReport — matchRate calculation', () {
     test('matchRate is 100% when all compared verdicts match', () async {
-      await repo.save(makeVerdict(
-        setId: 'set-1',
-        contractId: 'c-1',
-        manualVerdict: 'applied', // noShow + applied → match
-      ));
-      await repo.save(makeVerdict(
-        setId: 'set-2',
-        contractId: 'c-2',
-        manualVerdict: 'applied',
-      ));
+      await repo.save(
+        makeVerdict(
+          setId: 'set-1',
+          contractId: 'c-1',
+          manualVerdict: 'applied', // noShow + applied → match
+        ),
+      );
+      await repo.save(
+        makeVerdict(
+          setId: 'set-2',
+          contractId: 'c-2',
+          manualVerdict: 'applied',
+        ),
+      );
 
       final report = await service.generateReport(
         organizationId: orgId,
@@ -149,16 +153,20 @@ void main() {
 
     test('matchRate is 0% when all compared verdicts diverge', () async {
       // noShow + rejected → false_positive
-      await repo.save(makeVerdict(
-        setId: 'set-1',
-        contractId: 'c-1',
-        manualVerdict: 'rejected',
-      ));
-      await repo.save(makeVerdict(
-        setId: 'set-2',
-        contractId: 'c-2',
-        manualVerdict: 'rejected',
-      ));
+      await repo.save(
+        makeVerdict(
+          setId: 'set-1',
+          contractId: 'c-1',
+          manualVerdict: 'rejected',
+        ),
+      );
+      await repo.save(
+        makeVerdict(
+          setId: 'set-2',
+          contractId: 'c-2',
+          manualVerdict: 'rejected',
+        ),
+      );
 
       final report = await service.generateReport(
         organizationId: orgId,
@@ -173,18 +181,26 @@ void main() {
 
     test('matchRate excludes pendingManual entries from denominator', () async {
       // 1 match, 1 false_positive, 2 pending → compared=2 → matchRate=50%
-      await repo.save(makeVerdict(
-        setId: 'set-1',
-        contractId: 'c-1',
-        manualVerdict: 'applied',   // match
-      ));
-      await repo.save(makeVerdict(
-        setId: 'set-2',
-        contractId: 'c-2',
-        manualVerdict: 'rejected',  // false_positive
-      ));
-      await repo.save(makeVerdict(setId: 'set-3', contractId: 'c-3'));  // pending
-      await repo.save(makeVerdict(setId: 'set-4', contractId: 'c-4'));  // pending
+      await repo.save(
+        makeVerdict(
+          setId: 'set-1',
+          contractId: 'c-1',
+          manualVerdict: 'applied', // match
+        ),
+      );
+      await repo.save(
+        makeVerdict(
+          setId: 'set-2',
+          contractId: 'c-2',
+          manualVerdict: 'rejected', // false_positive
+        ),
+      );
+      await repo.save(
+        makeVerdict(setId: 'set-3', contractId: 'c-3'),
+      ); // pending
+      await repo.save(
+        makeVerdict(setId: 'set-4', contractId: 'c-4'),
+      ); // pending
 
       final report = await service.generateReport(
         organizationId: orgId,
@@ -202,52 +218,63 @@ void main() {
   // ── False positive / false negative counts ─────────────────────────────────
 
   group('generateReport — FP / FN classification', () {
-    test('correctly counts false positives (engine penalty, human rejected)',
-        () async {
-      await repo.save(makeVerdict(
-        setId: 'set-1',
-        contractId: 'c-1',
-        manualVerdict: 'rejected', // noShow + rejected → FP
-      ));
+    test(
+      'correctly counts false positives (engine penalty, human rejected)',
+      () async {
+        await repo.save(
+          makeVerdict(
+            setId: 'set-1',
+            contractId: 'c-1',
+            manualVerdict: 'rejected', // noShow + rejected → FP
+          ),
+        );
 
-      final report = await service.generateReport(
-        organizationId: orgId,
-        fromUtc: windowStart,
-        toUtc: windowEnd,
-      );
+        final report = await service.generateReport(
+          organizationId: orgId,
+          fromUtc: windowStart,
+          toUtc: windowEnd,
+        );
 
-      expect(report.falsePositiveCount, 1);
-      expect(report.falseNegativeCount, 0);
-    });
+        expect(report.falsePositiveCount, 1);
+        expect(report.falseNegativeCount, 0);
+      },
+    );
 
-    test('correctly counts false negatives (evidenceGap, human applied)',
-        () async {
-      await repo.save(makeVerdict(
-        setId: 'set-1',
-        contractId: 'c-1',
-        engineVerdict: 'evidenceGap',
-        manualVerdict: 'applied', // evidenceGap + applied → FN
-      ));
+    test(
+      'correctly counts false negatives (evidenceGap, human applied)',
+      () async {
+        await repo.save(
+          makeVerdict(
+            setId: 'set-1',
+            contractId: 'c-1',
+            engineVerdict: 'evidenceGap',
+            manualVerdict: 'applied', // evidenceGap + applied → FN
+          ),
+        );
 
-      final report = await service.generateReport(
-        organizationId: orgId,
-        fromUtc: windowStart,
-        toUtc: windowEnd,
-      );
+        final report = await service.generateReport(
+          organizationId: orgId,
+          fromUtc: windowStart,
+          toUtc: windowEnd,
+        );
 
-      expect(report.falseNegativeCount, 1);
-      expect(report.falsePositiveCount, 0);
-    });
+        expect(report.falseNegativeCount, 1);
+        expect(report.falsePositiveCount, 0);
+      },
+    );
 
     test(
       'inhibited + applied is counted as false negative (not hidden as match)',
       () async {
-        await repo.save(makeVerdict(
-          setId: 'set-1',
-          contractId: 'c-1',
-          engineVerdict: 'inhibited',
-          manualVerdict: 'applied', // inhibited + applied → FN (engine too lenient)
-        ));
+        await repo.save(
+          makeVerdict(
+            setId: 'set-1',
+            contractId: 'c-1',
+            engineVerdict: 'inhibited',
+            manualVerdict:
+                'applied', // inhibited + applied → FN (engine too lenient)
+          ),
+        );
 
         final report = await service.generateReport(
           organizationId: orgId,
@@ -262,12 +289,14 @@ void main() {
     );
 
     test('inhibited + rejected is counted as match', () async {
-      await repo.save(makeVerdict(
-        setId: 'set-1',
-        contractId: 'c-1',
-        engineVerdict: 'inhibited',
-        manualVerdict: 'rejected', // inhibited + rejected → match
-      ));
+      await repo.save(
+        makeVerdict(
+          setId: 'set-1',
+          contractId: 'c-1',
+          engineVerdict: 'inhibited',
+          manualVerdict: 'rejected', // inhibited + rejected → match
+        ),
+      );
 
       final report = await service.generateReport(
         organizationId: orgId,
@@ -280,17 +309,23 @@ void main() {
     });
 
     test('divergentEntries contains only FP and FN entries', () async {
-      await repo.save(makeVerdict(
-        setId: 'set-1',
-        contractId: 'c-1',
-        manualVerdict: 'applied',  // match — must not appear
-      ));
-      await repo.save(makeVerdict(
-        setId: 'set-2',
-        contractId: 'c-2',
-        manualVerdict: 'rejected', // false_positive — must appear
-      ));
-      await repo.save(makeVerdict(setId: 'set-3', contractId: 'c-3')); // pending
+      await repo.save(
+        makeVerdict(
+          setId: 'set-1',
+          contractId: 'c-1',
+          manualVerdict: 'applied', // match — must not appear
+        ),
+      );
+      await repo.save(
+        makeVerdict(
+          setId: 'set-2',
+          contractId: 'c-2',
+          manualVerdict: 'rejected', // false_positive — must appear
+        ),
+      );
+      await repo.save(
+        makeVerdict(setId: 'set-3', contractId: 'c-3'),
+      ); // pending
 
       final report = await service.generateReport(
         organizationId: orgId,
@@ -312,17 +347,21 @@ void main() {
     test('does NOT fire when matchRate == threshold exactly', () async {
       // 4 match, 1 FP → matchRate = 80.0% — exactly at threshold, not below
       for (var i = 1; i <= 4; i++) {
-        await repo.save(makeVerdict(
-          setId: 'set-$i',
-          contractId: 'c-$i',
-          manualVerdict: 'applied', // match
-        ));
+        await repo.save(
+          makeVerdict(
+            setId: 'set-$i',
+            contractId: 'c-$i',
+            manualVerdict: 'applied', // match
+          ),
+        );
       }
-      await repo.save(makeVerdict(
-        setId: 'set-5',
-        contractId: 'c-5',
-        manualVerdict: 'rejected', // FP
-      ));
+      await repo.save(
+        makeVerdict(
+          setId: 'set-5',
+          contractId: 'c-5',
+          manualVerdict: 'rejected', // FP
+        ),
+      );
 
       final report = await service.generateReport(
         organizationId: orgId,
@@ -341,17 +380,21 @@ void main() {
         criticalDivergenceThreshold: 80.0,
       );
       for (var i = 1; i <= 3; i++) {
-        await repo.save(makeVerdict(
-          setId: 'set-$i',
-          contractId: 'c-$i',
-          manualVerdict: 'applied', // match
-        ));
+        await repo.save(
+          makeVerdict(
+            setId: 'set-$i',
+            contractId: 'c-$i',
+            manualVerdict: 'applied', // match
+          ),
+        );
       }
-      await repo.save(makeVerdict(
-        setId: 'set-4',
-        contractId: 'c-4',
-        manualVerdict: 'rejected', // FP → matchRate = 75%
-      ));
+      await repo.save(
+        makeVerdict(
+          setId: 'set-4',
+          contractId: 'c-4',
+          manualVerdict: 'rejected', // FP → matchRate = 75%
+        ),
+      );
 
       final report = await strictService.generateReport(
         organizationId: orgId,
@@ -363,20 +406,22 @@ void main() {
       expect(report.criticalDivergenceDetected, isTrue);
     });
 
-    test('does NOT fire when totalCompared is zero (no human decisions yet)',
-        () async {
-      await repo.save(makeVerdict(setId: 'set-1', contractId: 'c-1'));
-      await repo.save(makeVerdict(setId: 'set-2', contractId: 'c-2'));
+    test(
+      'does NOT fire when totalCompared is zero (no human decisions yet)',
+      () async {
+        await repo.save(makeVerdict(setId: 'set-1', contractId: 'c-1'));
+        await repo.save(makeVerdict(setId: 'set-2', contractId: 'c-2'));
 
-      final report = await service.generateReport(
-        organizationId: orgId,
-        fromUtc: windowStart,
-        toUtc: windowEnd,
-      );
+        final report = await service.generateReport(
+          organizationId: orgId,
+          fromUtc: windowStart,
+          toUtc: windowEnd,
+        );
 
-      expect(report.totalCompared, 0);
-      expect(report.criticalDivergenceDetected, isFalse);
-    });
+        expect(report.totalCompared, 0);
+        expect(report.criticalDivergenceDetected, isFalse);
+      },
+    );
 
     test('threshold is configurable below default 80%', () async {
       final lenientService = ShadowComparisonService(
@@ -384,16 +429,20 @@ void main() {
         criticalDivergenceThreshold: 50.0,
       );
       // 1 match, 1 FP → matchRate = 50% (exactly at 50% threshold)
-      await repo.save(makeVerdict(
-        setId: 'set-1',
-        contractId: 'c-1',
-        manualVerdict: 'applied',
-      ));
-      await repo.save(makeVerdict(
-        setId: 'set-2',
-        contractId: 'c-2',
-        manualVerdict: 'rejected',
-      ));
+      await repo.save(
+        makeVerdict(
+          setId: 'set-1',
+          contractId: 'c-1',
+          manualVerdict: 'applied',
+        ),
+      );
+      await repo.save(
+        makeVerdict(
+          setId: 'set-2',
+          contractId: 'c-2',
+          manualVerdict: 'rejected',
+        ),
+      );
 
       final report = await lenientService.generateReport(
         organizationId: orgId,
@@ -417,9 +466,7 @@ void main() {
           organizationId: orgId,
           fromUtc: windowStart,
           toUtc: windowEnd,
-        ))
-            .first
-            .divergenceType,
+        )).first.divergenceType,
         ShadowDivergenceType.pendingManual,
       );
 

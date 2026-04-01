@@ -106,8 +106,7 @@ class InMemoryShadowVerdictRepository implements ShadowVerdictRepository {
     _pendingDecisions.clear();
   }
 
-  static String _key(String setId, String contractId) =>
-      '$setId::$contractId';
+  static String _key(String setId, String contractId) => '$setId::$contractId';
 }
 
 class _ManualDecision {

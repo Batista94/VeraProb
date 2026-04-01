@@ -10,17 +10,17 @@ void main() {
   final baseTime = DateTime.utc(2026, 6, 1, 10, 0);
 
   VerdictEvidence makeEvidence() => VerdictEvidence.create(
-        clauseRef: 'no-show-clause-1',
-        ruleId: 'rule-001',
-        ruleVersion: 1,
-        primaryEvidenceLat: -23.5505,
-        primaryEvidenceLng: -46.6333,
-        primaryEvidenceTimestampUtc: baseTime,
-        deltaValue: 15.0,
-        thresholdValue: 0.0,
-        fineCents: Money(150000),
-        confidenceScore: 100,
-      );
+    clauseRef: 'no-show-clause-1',
+    ruleId: 'rule-001',
+    ruleVersion: 1,
+    primaryEvidenceLat: -23.5505,
+    primaryEvidenceLng: -46.6333,
+    primaryEvidenceTimestampUtc: baseTime,
+    deltaValue: 15.0,
+    thresholdValue: 0.0,
+    fineCents: const Money(150000),
+    confidenceScore: 100,
+  );
 
   ShadowVerdict makeVerdict({String engineVerdict = 'noShow'}) =>
       ShadowVerdict.fromEngineResult(
@@ -373,11 +373,12 @@ void main() {
     });
 
     test('falseNegative divergence survives round-trip', () {
-      final original = makeVerdict(engineVerdict: 'inhibited').withManualVerdict(
-        manualVerdict: 'applied',
-        manualVerdictAtUtc: reviewTime,
-        manualReviewedBy: reviewer,
-      );
+      final original = makeVerdict(engineVerdict: 'inhibited')
+          .withManualVerdict(
+            manualVerdict: 'applied',
+            manualVerdictAtUtc: reviewTime,
+            manualReviewedBy: reviewer,
+          );
       final restored = ShadowVerdict.fromJson(original.toJson());
       expect(restored.divergenceType, ShadowDivergenceType.falseNegative);
     });

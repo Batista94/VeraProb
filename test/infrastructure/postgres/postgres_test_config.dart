@@ -37,17 +37,14 @@ class PostgresTestConfig {
       return;
     }
 
-    final effectiveClient = client ??
-        SupabaseClient(
-          supabaseUrl,
-          supabaseAnonKey,
-        );
-    
-    // CNPJ must be unique and usually 14 digits. We'll use a deterministic 
+    final effectiveClient =
+        client ?? SupabaseClient(supabaseUrl, supabaseAnonKey);
+
+    // CNPJ must be unique and usually 14 digits. We'll use a deterministic
     // derivation from the UUID to avoid collisions between different test orgs.
     final stripped = effectiveId.replaceAll('-', '');
     final numericCnpj = stripped.substring(stripped.length - 14);
-    
+
     await effectiveClient.from('organizations').upsert({
       'id': effectiveId,
       'name': name ?? 'Sentinel Integration Test Org',
