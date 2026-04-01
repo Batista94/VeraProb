@@ -32,6 +32,7 @@ void main() async {
         PostgresTestConfig.supabaseUrl,
         PostgresTestConfig.serviceRoleKey,
       );
+      await PostgresTestConfig.ensureSentinelOrg(client: client);
     }
   });
 

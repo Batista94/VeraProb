@@ -20,6 +20,7 @@ void main() async {
       setUpAll(() async {
         if (isRunning) {
           client = await PostgresTestConfig.createClient();
+          await PostgresTestConfig.ensureSentinelOrg(client: client);
           repository = PostgresContractualFinancialSnapshotRepository(
             client: client,
           );

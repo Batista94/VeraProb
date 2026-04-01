@@ -78,6 +78,19 @@ class EnvironmentConfig {
     defaultValue: 'get_your_own_key',
   );
 
+  // ── Engine Version ───────────────────────────────────
+  /// WASM build version stamp for the EvaluationEngine.
+  ///
+  /// Injected at build time via `--dart-define=ENGINE_VERSION=...`.
+  /// Used in [ShadowVerdict] as the immutable [engineVersion] field so that
+  /// every shadow execution is traceable to the exact binary that produced it.
+  ///
+  /// CI/CD must pass this value explicitly. The default guards local dev only.
+  static const engineVersion = String.fromEnvironment(
+    'ENGINE_VERSION',
+    defaultValue: 'veraprob-core_v3',
+  );
+
   // ── Validation ───────────────────────────────────────
   /// Returns true if the minimum required credentials are present.
   /// Only fails silently in dev (in-memory test mode).

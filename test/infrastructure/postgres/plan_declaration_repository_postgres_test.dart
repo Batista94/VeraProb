@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
@@ -26,6 +26,7 @@ void main() async {
       setUpAll(() async {
         if (isRunning) {
           client = await PostgresTestConfig.createClient();
+          await PostgresTestConfig.ensureSentinelOrg(client: client);
           repository = PostgresPlanDeclarationRepository(client);
         }
       });
@@ -146,6 +147,10 @@ void main() async {
           services: [service],
         );
 
+        await PostgresTestConfig.ensureSentinelOrg(
+          client: client,
+          id: organizationId,
+        );
         await repository.save(plan);
 
         final orgPlans = await repository.findByOrganization(organizationId);

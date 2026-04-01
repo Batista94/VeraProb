@@ -55,6 +55,8 @@ void main() async {
           PostgresTestConfig.serviceRoleKey,
         );
 
+        await PostgresTestConfig.ensureSentinelOrg(client: client);
+
         // Seed: insert a SANCTION_RECOMMENDED ledger entry.
         // The trigger `trg_auto_enqueue_sanction` auto-populates the queue.
         final row = await client

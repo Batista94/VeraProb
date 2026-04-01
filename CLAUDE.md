@@ -25,6 +25,7 @@ VeraProb is an **Automated SLA Compliance & Financial Protection Platform** (the
 - **MFA Bypass (INV-6):** SuperAdmin MFA check is **BYPASSED in `kDebugMode`** (Local Dev) to maintain compatibility with local Supabase CLI instances.
 - **PROD REQUIREMENT:** MFA **MUST BE ENABLED** in Supabase Dashboard for Staging and Production environments. The bypass only functions during local development (`kDebugMode`).
 - **Audit:** Any release to Staging requires full end-to-end verification of the TOTP enrollment and challenge flow.
+- **Supply Chain Security:** This is a **Pure Flutter/Dart** project. DO NOT introduce `package.json`, `node_modules`, or Node-based tooling to the root. This project is intentionally isolated from the Node.js/Axios supply chain vulnerabilities (e.g., Axios 1.14.1 / 0.30.4 Trojans).
 
 ---
 

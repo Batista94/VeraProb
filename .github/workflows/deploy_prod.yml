@@ -74,9 +74,9 @@ jobs:
           supabase functions deploy notify-invite --no-verify-jwt
 
   build-prod:
-    name: Build Web → Production
+    name: Build Web (WASM) → Production
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     needs: migrate-prod
     environment: production
 
@@ -105,7 +105,7 @@ jobs:
       - name: Create stub .env
         run: echo "# CI stub — credentials injected via dart-define" > .env
 
-      - name: Build Web (Production)
+      - name: Build Web (WASM — Production)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -114,7 +114,7 @@ jobs:
           POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
         run: |
-          flutter build web \
+          flutter build web --wasm \
             --dart-define=ENV=prod \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_KEY="$SUPABASE_KEY" \

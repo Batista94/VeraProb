@@ -48,9 +48,9 @@ jobs:
           supabase functions deploy notify-invite --no-verify-jwt
 
   build-staging:
-    name: Build Web → Staging
+    name: Build Web (WASM) → Staging
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     needs: migrate-staging
     environment: staging
 
@@ -91,7 +91,7 @@ jobs:
           POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
         run: |
-          flutter build web \
+          flutter build web --wasm \
             --dart-define=ENV=staging \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_KEY="$SUPABASE_KEY" \

@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
-**Revision:** 2026-03-31
-**Current Status:** Phase 10.2 — WASM Build Validation · [NEXT: 10.3 - Shadow Mode]
+**Revision:** 2026-04-01
+**Current Status:** Phase 10.4 — OCC UX Polish · [NEXT: 10.5 - First Pilot]
 **Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
@@ -10,13 +10,13 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| Tests | 1372 passing · 18 skipped · 0 failures ✅ |
-| Migrations | 76 applied (schema lock v1 + kinematic guard + hard quota triggers + update quota RPC + heartbeat view) ✅ |
+| Tests | 1510 passing · 6 skipped · 0 failures ✅ |
+| Migrations | 77 applied (schema lock v1 + shadow mode v1) ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | Phase 9.8 | **COMPLETED** — Resilience & Operational Hub ✅ |
 | Phase 10.1 | **COMPLETED** — Schema Lock ✅ |
-
----
+| Phase 10.2 | **COMPLETED** — WASM Build Validation ✅ |
+| Phase 10.3 | **COMPLETED** — Shadow Mode ✅ |
 
 ---
 
@@ -65,13 +65,32 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 
 ## Phase 10 — CI/CD & Launch Preparation
 
-### [ ] Phase 10.2 — WASM Build Validation
+### [x] Phase 10.2 — WASM Build Validation
 
-- Build web sem `dart:html`/`dart:js` · Freezed up-to-date.
+- **Status:** COMPLETED ✅
+- **Build:** `flutter build web --wasm` succeeded (193s). `main.dart.wasm` (5.5MB) produced.
+- **Dependencies:** All core libs (file_saver, posthog_flutter, drift_flutter, fl_chart, flutter_map) compile cleanly under dart2wasm.
+- **CI/CD:**
+  - `ci.yml`: Added `wasm-build` job (parallel to test). Artifacts stored for 3 days.
+  - `deploy_staging.yml` / `deploy_prod.yml`: Migrated to `--wasm` (timeout 30m).
+- **Optimization Note:** Drift OPFS performs best with COOP/COEP headers. Documentation updated for hosting config.
+- **Performance:** EvaluationEngine (Pure Dart) benefits directly from near-native arithmetic performance.
 
-### [ ] Phase 10.3 — Shadow Mode
+### [x] Phase 10.3 — Shadow Mode
 
-- EvaluationEngine paralelo validado contra fluxos manuais.
+- **Status:** COMPLETED ✅
+- **Engine:** Parallel `ShadowComparisonService` implemented to validate asynchronous verdicts without blocking the main flow.
+- **Deliverables:**
+  - `shadow_verdicts` table and Persistence (Postgres & In-Memory).
+  - Domain models and repositories for `ShadowVerdict`.
+  - Service for automated comparison between simulation and shadow results.
+- **Validation:**
+  - Comprehensive test suite (1510+ tests total) covering Domain, Application, and Infrastructure layers.
+  - **ShadowComparisonServicePostgresTest** added to verify divergence and inhibited logic against real database.
+  - Test infrastructure consolidated via `PostgresTestConfig` singleton/cache patterns.
+  - SQL Schema migration applied (`20260601000001_shadow_verdicts.sql`).
+- **Technical Results:** Comparison logic successfully identifies discrepancies between Evaluation Engine results and persisted state for forensic audit. 80% Critical Divergence threshold validated under actual stress.
+- **CI/CD Alignment:** Integration suite enforced in PRs with explicit `services: postgres` support.
 
 ### [ ] Phase 10.4 — OCC UX Polish (Diferential Refinement)
 

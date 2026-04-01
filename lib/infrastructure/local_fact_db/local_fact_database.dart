@@ -10,6 +10,7 @@ part 'local_fact_database.g.dart';
 
 // ── Table definition ─────────────────────────────────────────────────────────
 
+@DataClassName('PendingFactRow')
 class PendingFacts extends Table {
   TextColumn get factId => text()();
   TextColumn get organizationId => text()();
@@ -46,9 +47,9 @@ class LocalFactDatabase extends _$LocalFactDatabase {
 
 // ── Mapper helpers ────────────────────────────────────────────────────────────
 
-/// Converts a drift row (generated [PendingFact]) to the domain
+/// Converts a drift row (generated [PendingFactRow]) to the domain
 /// [domain.PendingFact] value object.
-extension DriftRowToDomain on PendingFact {
+extension DriftRowToDomain on PendingFactRow {
   domain.PendingFact toDomain() => domain.PendingFact.reconstitute(
     factId: factId,
     organizationId: organizationId,

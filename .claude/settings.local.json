@@ -15,7 +15,10 @@
       "Bash(supabase:*)",
       "Bash(bash scripts/pr_scanner.sh*)",
       "Read(//c/Projects/VeraProb/**)",
-      "Bash(bash scripts/pr_full_scanner.sh)"
+      "Bash(bash scripts/pr_full_scanner.sh)",
+      "Bash(2)",
+      "Bash(docker network:*)",
+      "Bash(psql:*)"
     ]
   },
   "model": "sonnet"

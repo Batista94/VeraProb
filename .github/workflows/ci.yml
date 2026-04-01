@@ -101,7 +101,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: analyze
-
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 54322:54322 # Use a non-conflicting port for the explicit container
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -174,3 +188,54 @@ jobs:
         with:
           path: coverage/lcov_filtered.info
           min_coverage: 70
+
+  wasm-build:
+    name: WASM Build Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: analyze
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create stub .env
+        run: echo "# CI stub — credentials injected via dart-define" > .env
+
+      - name: WASM Build (dart2wasm target)
+        run: |
+          flutter build web --wasm --no-pub --release \
+            --dart-define=ENV=ci_check
+
+      - name: Verify WASM artifact present
+        run: |
+          if [ ! -f build/web/main.dart.wasm ]; then
+            echo "::error::main.dart.wasm not found — WASM build did not produce expected output"
+            exit 1
+          fi
+          echo "WASM artifact confirmed: $(du -h build/web/main.dart.wasm | cut -f1)"
+
+      - name: Upload WASM build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-build-${{ github.sha }}
+          path: build/web/
+          retention-days: 3

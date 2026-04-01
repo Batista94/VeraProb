@@ -1,9 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
-import '../../domain/sla_audit/local_fact_queue/pending_fact.dart'
-    as domain
-    show PendingFact;
+import '../../domain/sla_audit/local_fact_queue/pending_fact.dart' as domain;
 import '../../domain/sla_audit/local_fact_queue/sync_status.dart';
 import 'local_fact_database.dart';
 

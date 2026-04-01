@@ -4,7 +4,7 @@ part of 'local_fact_database.dart';
 
 // ignore_for_file: type=lint
 class $PendingFactsTable extends PendingFacts
-    with TableInfo<$PendingFactsTable, PendingFact> {
+    with TableInfo<$PendingFactsTable, PendingFactRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -140,7 +140,7 @@ class $PendingFactsTable extends PendingFacts
   static const String $name = 'pending_facts';
   @override
   VerificationContext validateIntegrity(
-    Insertable<PendingFact> instance, {
+    Insertable<PendingFactRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -248,9 +248,9 @@ class $PendingFactsTable extends PendingFacts
   @override
   Set<GeneratedColumn> get $primaryKey => {factId};
   @override
-  PendingFact map(Map<String, dynamic> data, {String? tablePrefix}) {
+  PendingFactRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return PendingFact(
+    return PendingFactRow(
       factId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}fact_id'],
@@ -300,7 +300,7 @@ class $PendingFactsTable extends PendingFacts
   }
 }
 
-class PendingFact extends DataClass implements Insertable<PendingFact> {
+class PendingFactRow extends DataClass implements Insertable<PendingFactRow> {
   final String factId;
   final String organizationId;
   final String contentHash;
@@ -311,7 +311,7 @@ class PendingFact extends DataClass implements Insertable<PendingFact> {
   final int retryCount;
   final String? errorMessage;
   final int localSequence;
-  const PendingFact({
+  const PendingFactRow({
     required this.factId,
     required this.organizationId,
     required this.contentHash,
@@ -358,12 +358,12 @@ class PendingFact extends DataClass implements Insertable<PendingFact> {
     );
   }
 
-  factory PendingFact.fromJson(
+  factory PendingFactRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return PendingFact(
+    return PendingFactRow(
       factId: serializer.fromJson<String>(json['factId']),
       organizationId: serializer.fromJson<String>(json['organizationId']),
       contentHash: serializer.fromJson<String>(json['contentHash']),
@@ -393,7 +393,7 @@ class PendingFact extends DataClass implements Insertable<PendingFact> {
     };
   }
 
-  PendingFact copyWith({
+  PendingFactRow copyWith({
     String? factId,
     String? organizationId,
     String? contentHash,
@@ -404,7 +404,7 @@ class PendingFact extends DataClass implements Insertable<PendingFact> {
     int? retryCount,
     Value<String?> errorMessage = const Value.absent(),
     int? localSequence,
-  }) => PendingFact(
+  }) => PendingFactRow(
     factId: factId ?? this.factId,
     organizationId: organizationId ?? this.organizationId,
     contentHash: contentHash ?? this.contentHash,
@@ -416,8 +416,8 @@ class PendingFact extends DataClass implements Insertable<PendingFact> {
     errorMessage: errorMessage.present ? errorMessage.value : this.errorMessage,
     localSequence: localSequence ?? this.localSequence,
   );
-  PendingFact copyWithCompanion(PendingFactsCompanion data) {
-    return PendingFact(
+  PendingFactRow copyWithCompanion(PendingFactsCompanion data) {
+    return PendingFactRow(
       factId: data.factId.present ? data.factId.value : this.factId,
       organizationId: data.organizationId.present
           ? data.organizationId.value
@@ -451,7 +451,7 @@ class PendingFact extends DataClass implements Insertable<PendingFact> {
 
   @override
   String toString() {
-    return (StringBuffer('PendingFact(')
+    return (StringBuffer('PendingFactRow(')
           ..write('factId: $factId, ')
           ..write('organizationId: $organizationId, ')
           ..write('contentHash: $contentHash, ')
@@ -482,7 +482,7 @@ class PendingFact extends DataClass implements Insertable<PendingFact> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is PendingFact &&
+      (other is PendingFactRow &&
           other.factId == this.factId &&
           other.organizationId == this.organizationId &&
           other.contentHash == this.contentHash &&
@@ -495,7 +495,7 @@ class PendingFact extends DataClass implements Insertable<PendingFact> {
           other.localSequence == this.localSequence);
 }
 
-class PendingFactsCompanion extends UpdateCompanion<PendingFact> {
+class PendingFactsCompanion extends UpdateCompanion<PendingFactRow> {
   final Value<String> factId;
   final Value<String> organizationId;
   final Value<String> contentHash;
@@ -540,7 +540,7 @@ class PendingFactsCompanion extends UpdateCompanion<PendingFact> {
        queuedAtUtc = Value(queuedAtUtc),
        syncStatus = Value(syncStatus),
        localSequence = Value(localSequence);
-  static Insertable<PendingFact> custom({
+  static Insertable<PendingFactRow> custom({
     Expression<String>? factId,
     Expression<String>? organizationId,
     Expression<String>? contentHash,
@@ -877,21 +877,21 @@ class $$PendingFactsTableTableManager
         RootTableManager<
           _$LocalFactDatabase,
           $PendingFactsTable,
-          PendingFact,
+          PendingFactRow,
           $$PendingFactsTableFilterComposer,
           $$PendingFactsTableOrderingComposer,
           $$PendingFactsTableAnnotationComposer,
           $$PendingFactsTableCreateCompanionBuilder,
           $$PendingFactsTableUpdateCompanionBuilder,
           (
-            PendingFact,
+            PendingFactRow,
             BaseReferences<
               _$LocalFactDatabase,
               $PendingFactsTable,
-              PendingFact
+              PendingFactRow
             >,
           ),
-          PendingFact,
+          PendingFactRow,
           PrefetchHooks Function()
         > {
   $$PendingFactsTableTableManager(
@@ -971,17 +971,17 @@ typedef $$PendingFactsTableProcessedTableManager =
     ProcessedTableManager<
       _$LocalFactDatabase,
       $PendingFactsTable,
-      PendingFact,
+      PendingFactRow,
       $$PendingFactsTableFilterComposer,
       $$PendingFactsTableOrderingComposer,
       $$PendingFactsTableAnnotationComposer,
       $$PendingFactsTableCreateCompanionBuilder,
       $$PendingFactsTableUpdateCompanionBuilder,
       (
-        PendingFact,
-        BaseReferences<_$LocalFactDatabase, $PendingFactsTable, PendingFact>,
+        PendingFactRow,
+        BaseReferences<_$LocalFactDatabase, $PendingFactsTable, PendingFactRow>,
       ),
-      PendingFact,
+      PendingFactRow,
       PrefetchHooks Function()
     >;
 

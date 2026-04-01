@@ -22,6 +22,42 @@ class PostgresTestConfig {
   /// evitar colisões entre runs sem precisar de fixture de organização real.
   static const String testOrgId = '00000000-0000-0000-0000-000000000001';
 
+  static final Set<String> _seededOrgs = {};
+
+  /// Garante que uma organização existe no banco para evitar violações de FK.
+  /// Se [id] for nulo, usa [testOrgId].
+  static Future<void> ensureSentinelOrg({
+    SupabaseClient? client,
+    String? id,
+    String? name,
+  }) async {
+    final effectiveId = id ?? testOrgId;
+
+    if (_seededOrgs.contains(effectiveId)) {
+      return;
+    }
+
+    final effectiveClient = client ??
+        SupabaseClient(
+          supabaseUrl,
+          supabaseAnonKey,
+        );
+    
+    // CNPJ must be unique and usually 14 digits. We'll use a deterministic 
+    // derivation from the UUID to avoid collisions between different test orgs.
+    final stripped = effectiveId.replaceAll('-', '');
+    final numericCnpj = stripped.substring(stripped.length - 14);
+    
+    await effectiveClient.from('organizations').upsert({
+      'id': effectiveId,
+      'name': name ?? 'Sentinel Integration Test Org',
+      'cnpj': numericCnpj,
+      'created_at': DateTime.now().toUtc().toIso8601String(),
+    }, onConflict: 'id');
+
+    _seededOrgs.add(effectiveId);
+  }
+
   static Future<SupabaseClient> createClient() async {
     // Mocking SharedPreferences to avoid MissingPluginException in unit tests
     // when Supabase.initialize is called.
