@@ -74,10 +74,13 @@ pass() {
 
 print_hits() {
   local limit=${1:-5}
+  local input_str
+  input_str=$(cat -)
   local count=0
-  local total=$(echo "$1" | grep -c "^" || echo "0")
+  local total
+  total=$(echo "$input_str" | grep -c "^" || echo "0")
   
-  while IFS= read -r line; do
+  echo "$input_str" | while IFS= read -r line; do
     [[ -z "$line" ]] && continue
     if (( count < limit )); then
       echo -e "         ${RED}→ $line${NC}"

@@ -14,9 +14,7 @@ import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
-import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
-
-import 'zone_ui_utils.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/zone_ui_utils.dart';
 
 /// Opens the zone create/edit dialog.
 /// Returns the saved [OperationalZone] on success, null on cancel.
@@ -333,7 +331,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
       children: [
         // ── Tipo ──────────────────────────────────────────
         DropdownButtonFormField<ZoneType>(
-          value: _selectedType,
+          initialValue: _selectedType,
           decoration: const InputDecoration(labelText: 'Tipo *'),
           items: ZoneType.values
               .map(

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
-
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
@@ -9,8 +7,8 @@ import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 import 'package:veraprob/presentation/shared/widgets/veraprob_header.dart';
 import 'package:veraprob/presentation/shared/widgets/veraprob_chip.dart';
 
-import 'widgets/_zone_form_dialog.dart';
-import 'widgets/zone_ui_utils.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/_zone_form_dialog.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/zone_ui_utils.dart';
 
 // ── Screen ───────────────────────────────────────────────────
 

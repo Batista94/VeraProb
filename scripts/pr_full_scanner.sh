@@ -59,7 +59,7 @@ if [[ -z "$CHANGED_FILES" ]]; then
   echo "No changes detected in Git Diff."
 else
   # Use Node.js to parse the JSON and apply rules for efficiency/portability
-  node -e "
+  node.exe -e "
 const fs = require('fs');
 const { execSync } = require('child_process');
 
@@ -132,7 +132,7 @@ fi
 # (Since the Node script doesn't update bash variables easily, I'll just run it again or 
 # parse its output. Let's adjust the node script to output a parsable count).
 
-RESULTS=$(node -e "
+RESULTS=$(node.exe -e "
 const fs = require('fs');
 const patterns = JSON.parse(fs.readFileSync('$PATTERNS_JSON', 'utf8'));
 const files = \`$CHANGED_FILES\`.split('\n').filter(f => f.length > 0);

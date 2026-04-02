@@ -18,9 +18,9 @@ import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
 
-import '../widgets/zone_type_ahead_field.dart';
-
+import 'widgets/declare_plan/declare_plan_dialog_header.dart';
 import 'widgets/declare_plan/declare_plan_ui_utils.dart';
+import 'widgets/declare_plan/declare_plan_zones_step.dart';
 import 'widgets/declare_plan/shift_draft_snapshot.dart';
 import 'widgets/declare_plan/shift_pattern_step.dart';
 import 'widgets/declare_plan/_sla_penalties_step.dart';
@@ -495,105 +495,6 @@ class _DeclareContractPlanFormState
 
   // ── UI Builders ──────────────────────────────────────────────
 
-  Widget _buildStep1() {
-    final zonesAsync = ref.watch(operationalZonesProvider);
-
-    return zonesAsync.when(
-      loading: () => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
-        ),
-      ),
-      error: (e, _) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          'Erro ao carregar zonas operacionais: $e',
-          style: const TextStyle(color: VeraProbColors.error),
-        ),
-      ),
-      data: (zones) {
-        final contractorZones = zones
-            .where(
-              (z) =>
-                  z.contractorLabel == widget.contractorName &&
-                  widget.contractorName.isNotEmpty,
-            )
-            .toList();
-        final otherZones = zones
-            .where(
-              (z) =>
-                  z.contractorLabel != widget.contractorName ||
-                  widget.contractorName.isEmpty,
-            )
-            .toList();
-        final sortedZones = [...contractorZones, ...otherZones];
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Selecione as zonas operacionais (geofences) que delineiam esta rota B2B.',
-              style: TextStyle(color: VeraProbColors.textSecondary),
-            ),
-            const SizedBox(height: VeraProbSpacing.md),
-            ZoneTypeAheadField(
-              key: ValueKey('origin_$_selectedOriginZoneId'),
-              label: 'Zona de Partida',
-              prefixIcon: Icons.business,
-              zones: sortedZones,
-              selectedZone: _selectedOriginZone,
-              contractorName: widget.contractorName,
-              onInvalidateZones: () =>
-                  ref.refresh(operationalZonesProvider.future),
-              onChanged: (zone) => setState(() {
-                _selectedOriginZone = zone;
-                _selectedOriginZoneId = zone?.id;
-              }),
-              onGeofenceConfigured: (zone) =>
-                  setState(() => _selectedOriginZone = zone),
-            ),
-            Center(
-              child: IconButton(
-                icon: const Icon(
-                  Icons.swap_vert,
-                  color: VeraProbColors.primary,
-                ),
-                tooltip: 'Inverter Origem/Destino',
-                onPressed: () {
-                  setState(() {
-                    final tmpZone = _selectedOriginZone;
-                    _selectedOriginZone = _selectedDestinationZone;
-                    _selectedDestinationZone = tmpZone;
-                    final tmpId = _selectedOriginZoneId;
-                    _selectedOriginZoneId = _selectedDestinationZoneId;
-                    _selectedDestinationZoneId = tmpId;
-                  });
-                },
-              ),
-            ),
-            ZoneTypeAheadField(
-              key: ValueKey('destination_$_selectedDestinationZoneId'),
-              label: 'Zona de Chegada (Destino)',
-              prefixIcon: Icons.location_on,
-              zones: sortedZones,
-              selectedZone: _selectedDestinationZone,
-              contractorName: widget.contractorName,
-              onInvalidateZones: () =>
-                  ref.refresh(operationalZonesProvider.future),
-              onChanged: (zone) => setState(() {
-                _selectedDestinationZone = zone;
-                _selectedDestinationZoneId = zone?.id;
-              }),
-              onGeofenceConfigured: (zone) =>
-                  setState(() => _selectedDestinationZone = zone),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildStep2() {
     return ShiftPatternStep(
       confirmedShiftsCount: _confirmedShiftDrafts.length,
@@ -678,64 +579,10 @@ class _DeclareContractPlanFormState
         ),
         child: Column(
           children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(24).copyWith(bottom: 0),
-              child: Row(
-                children: [
-                  const Icon(Icons.playlist_add_check_outlined),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Configurar Padrão de Fretamento (B2B)',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          widget.contractName,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: VeraProbColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_confirmedShiftDrafts.isNotEmpty)
-                    Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: VeraProbColors.info.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: VeraProbColors.info.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Text(
-                        '${_confirmedShiftDrafts.length + 1} turnos',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: VeraProbColors.info,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 18),
-                    onPressed: () => Navigator.of(context).pop(false),
-                    padding: EdgeInsets.zero,
-                  ),
-                ],
-              ),
+            DeclarePlanDialogHeader(
+              contractName: widget.contractName,
+              confirmedShiftsCount: _confirmedShiftDrafts.length,
+              onClose: () => Navigator.of(context).pop(false),
             ),
             const Divider(height: 24),
             if (_errorMessage != null)
@@ -833,7 +680,35 @@ class _DeclareContractPlanFormState
                 steps: [
                   Step(
                     title: const Text('Zonas Operacionais'),
-                    content: _buildStep1(),
+                    content: DeclarePlanZonesStep(
+                      contractorName: widget.contractorName,
+                      selectedOriginZone: _selectedOriginZone,
+                      selectedOriginZoneId: _selectedOriginZoneId,
+                      selectedDestinationZone: _selectedDestinationZone,
+                      selectedDestinationZoneId: _selectedDestinationZoneId,
+                      onOriginChanged: (zone) => setState(() {
+                        _selectedOriginZone = zone;
+                        _selectedOriginZoneId = zone?.id;
+                      }),
+                      onOriginConfigured: (zone) =>
+                          setState(() => _selectedOriginZone = zone),
+                      onDestinationChanged: (zone) => setState(() {
+                        _selectedDestinationZone = zone;
+                        _selectedDestinationZoneId = zone?.id;
+                      }),
+                      onDestinationConfigured: (zone) =>
+                          setState(() => _selectedDestinationZone = zone),
+                      onSwap: () {
+                        setState(() {
+                          final tmpZone = _selectedOriginZone;
+                          _selectedOriginZone = _selectedDestinationZone;
+                          _selectedDestinationZone = tmpZone;
+                          final tmpId = _selectedOriginZoneId;
+                          _selectedOriginZoneId = _selectedDestinationZoneId;
+                          _selectedDestinationZoneId = tmpId;
+                        });
+                      },
+                    ),
                     isActive: _currentStep >= 0,
                     state: _currentStep > 0
                         ? StepState.complete

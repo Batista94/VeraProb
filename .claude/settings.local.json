@@ -18,7 +18,9 @@
       "Bash(bash scripts/pr_full_scanner.sh)",
       "Bash(2)",
       "Bash(docker network:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(dart format:*)",
+      "Read(//tmp/**)"
     ]
   },
   "model": "sonnet"
