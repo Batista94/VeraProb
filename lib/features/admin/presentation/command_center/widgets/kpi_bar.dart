@@ -4,6 +4,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/application/projections/providers/command_center_filter_provider.dart';
 import 'package:veraprob/dev/performance_metrics.dart';
+import 'package:veraprob/state/providers/sla_risk_providers.dart';
 
 /// The KPI bar at the top of the Command Center.
 /// Shows key fleet metrics in real-time.
@@ -94,6 +95,23 @@ class KpiBar extends ConsumerWidget {
                   .read(commandCenterFilterProvider.notifier)
                   .setStatusFilter(FleetStatusFilter.atStop),
             ),
+            _divider(),
+            ref
+                .watch(atRiskSlaCountProvider)
+                .when(
+                  data: (count) => _KpiChip(
+                    icon: Icons.alarm_rounded,
+                    value: '$count',
+                    label: 'SLA em Risco',
+                    color: count > 0
+                        ? VeraProbColors.warning
+                        : VeraProbColors.textDisabled,
+                    isSelected: false,
+                    onTap: () {},
+                  ),
+                  loading: () => const SizedBox(width: 80),
+                  error: (e, s) => const SizedBox.shrink(),
+                ),
             const Spacer(),
             // Average delay
             if (summary.avgDelayMinutes > 0)

@@ -919,7 +919,7 @@ void main() {
       );
 
       test(
-        'engine NEVER emits SANCTION_APPLIED directly (human-in-loop)',
+        'engine NEVER emits VERDICT_SEALED directly (human-in-loop)',
         () async {
           await seedPlanWithPenaltyRule('c-penalty-3', 1);
           final state = makeExecState(
@@ -933,13 +933,13 @@ void main() {
             organizationId: 'org-1',
           );
 
-          final applied = ledger.entries.where(
-            (e) => e.type == 'SANCTION_APPLIED',
+          final sealed = ledger.entries.where(
+            (e) => e.type == 'VERDICT_SEALED',
           );
           expect(
-            applied,
+            sealed,
             isEmpty,
-            reason: 'Engine must never emit SANCTION_APPLIED',
+            reason: 'Engine must never emit VERDICT_SEALED',
           );
         },
       );

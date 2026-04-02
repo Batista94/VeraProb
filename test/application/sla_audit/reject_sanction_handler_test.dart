@@ -60,6 +60,7 @@ void main() {
           const RejectSanctionCommand(
             queueEntryId: 'entry-001',
             rejectedByUserId: 'user-op',
+            actorEmail: 'op@test.com',
             rejectionReason: 'GPS data was inconclusive.',
             callerRole: UserRole.operator,
             organizationId: 'org-1',
@@ -79,6 +80,7 @@ void main() {
           const RejectSanctionCommand(
             queueEntryId: 'entry-001',
             rejectedByUserId: 'auditor-1',
+            actorEmail: 'auditor@test.com',
             rejectionReason: 'too short', // 9 chars
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
@@ -96,6 +98,7 @@ void main() {
           const RejectSanctionCommand(
             queueEntryId: 'entry-001',
             rejectedByUserId: 'auditor-1',
+            actorEmail: 'auditor@test.com',
             rejectionReason: '          ', // 10 spaces, trims to empty
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
@@ -113,6 +116,7 @@ void main() {
           const RejectSanctionCommand(
             queueEntryId: 'entry-001',
             rejectedByUserId: 'auditor-1',
+            actorEmail: 'auditor@test.com',
             rejectionReason: '  1234567890  ', // 10 non-whitespace chars
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
@@ -143,6 +147,7 @@ void main() {
           const RejectSanctionCommand(
             queueEntryId: 'entry-001',
             rejectedByUserId: 'auditor-1',
+            actorEmail: 'auditor@test.com',
             rejectionReason: 'GPS data was inconclusive for this route.',
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
@@ -154,13 +159,14 @@ void main() {
   });
 
   group('Happy path', () {
-    test('appends SANCTION_REJECTED to ledger with reason', () async {
+    test('appends VERDICT_REFUSED to ledger with actor_email', () async {
       await queueRepo.enqueue(makePendingEntry());
 
       await handler.handle(
         const RejectSanctionCommand(
           queueEntryId: 'entry-001',
           rejectedByUserId: 'auditor-1',
+          actorEmail: 'auditor@veraprob.com',
           rejectionReason: 'GPS data was inconclusive for this route.',
           callerRole: UserRole.auditor,
           organizationId: 'org-1',
@@ -169,12 +175,13 @@ void main() {
 
       final entries = ledger.entries;
       expect(entries.length, 1);
-      expect(entries.first.type, 'SANCTION_REJECTED');
+      expect(entries.first.type, 'VERDICT_REFUSED');
       expect(
         entries.first.payload['rejection_reason'],
         'GPS data was inconclusive for this route.',
       );
       expect(entries.first.payload['verdict_evidence'], isNotNull);
+      expect(entries.first.payload['actor_email'], 'auditor@veraprob.com');
     });
 
     test('updates queue entry status to rejected', () async {
@@ -184,6 +191,7 @@ void main() {
         const RejectSanctionCommand(
           queueEntryId: 'entry-001',
           rejectedByUserId: 'auditor-1',
+          actorEmail: 'auditor@veraprob.com',
           rejectionReason: 'GPS data was inconclusive for this route.',
           callerRole: UserRole.auditor,
           organizationId: 'org-1',

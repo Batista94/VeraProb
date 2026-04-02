@@ -81,3 +81,12 @@ final currentOperatorNameProvider = Provider<String>((ref) {
   final authState = ref.watch(authStateProvider).valueOrNull;
   return authState?.session?.user.userMetadata?['name'] ?? 'Operador';
 });
+
+/// Current operator Email — used for Pillar C (Audit Trail) forensic logging.
+///
+/// Every sealed/refused verdict logs this email alongside the user ID
+/// in the immutable ledger for forensic traceability.
+final currentOperatorEmailProvider = Provider<String>((ref) {
+  final authState = ref.watch(authStateProvider).valueOrNull;
+  return authState?.session?.user.email ?? '';
+});

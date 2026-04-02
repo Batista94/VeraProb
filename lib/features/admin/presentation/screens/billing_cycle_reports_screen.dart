@@ -20,8 +20,10 @@ class BillingCycleReportsScreen extends ConsumerStatefulWidget {
 
 class _BillingCycleReportsScreenState
     extends ConsumerState<BillingCycleReportsScreen> {
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
-  DateTime _endDate = DateTime.now();
+  DateTime _startDate = DateTime.now().toUtc().subtract(
+    const Duration(days: 30),
+  );
+  DateTime _endDate = DateTime.now().toUtc();
   String? _selectedContractId;
   bool _isLoading = false;
   BillingCycleReport? _report;
@@ -57,7 +59,8 @@ class _BillingCycleReportsScreenState
       final csv = ref.read(exportServiceProvider).generateCsv(_report!);
       final bytes = Uint8List.fromList(utf8.encode('\uFEFF$csv')); // UTF-8 BOM
       await FileSaver.instance.saveFile(
-        name: 'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}',
+        name:
+            'relatorio_auditoria_${DateTime.now().toUtc().millisecondsSinceEpoch}',
         bytes: bytes,
         fileExtension: 'csv',
         mimeType: MimeType.csv,
@@ -84,7 +87,8 @@ class _BillingCycleReportsScreenState
           .generatePdf(_report!);
       final pdfBytes = Uint8List.fromList(pdfList);
       await FileSaver.instance.saveFile(
-        name: 'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}',
+        name:
+            'relatorio_auditoria_${DateTime.now().toUtc().millisecondsSinceEpoch}',
         bytes: pdfBytes,
         fileExtension: 'pdf',
         mimeType: MimeType.pdf,

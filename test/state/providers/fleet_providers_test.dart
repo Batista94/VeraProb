@@ -89,7 +89,7 @@ void main() {
     });
 
     test('calculates correct KPIs for mixed fleet', () {
-      final now = DateTime.now();
+      final now = DateTime.now().toUtc();
       final trip1 = OperationalTrip(
         id: 't1',
         routeId: 'r1',

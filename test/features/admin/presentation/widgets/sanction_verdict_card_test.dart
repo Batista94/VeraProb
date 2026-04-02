@@ -51,6 +51,7 @@ Widget _buildCard(SanctionQueueItemView item) {
       pendingSanctionsStreamProvider.overrideWith(
         (ref) => Stream.value([item]),
       ),
+      sanctionWindowProvider.overrideWith((ref, setId) async => null),
     ],
     child: MaterialApp(
       home: Scaffold(
@@ -85,8 +86,8 @@ void main() {
       await tester.pumpWidget(_buildCard(_makeItem()));
       await tester.pump();
 
-      expect(find.text('VALIDAR'), findsOneWidget);
-      expect(find.text('REJEITAR'), findsOneWidget);
+      expect(find.text('SELAR VEREDITO'), findsOneWidget);
+      expect(find.text('RECUSAR VEREDITO'), findsOneWidget);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -103,7 +104,7 @@ void main() {
       // Rejection field should not be visible before tap
       expect(find.byType(TextField), findsNothing);
 
-      await tester.tap(find.text('REJEITAR'));
+      await tester.tap(find.text('RECUSAR VEREDITO'));
       await tester.pump();
 
       // Rejection reason text field appears after tap

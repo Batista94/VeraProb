@@ -337,7 +337,7 @@ class ContractualEvaluationEngine {
       await _commitEvaluationResults(state, now, decisions);
 
       // INV-23: Emit SANCTION_RECOMMENDED when a penalty was assessed.
-      // The engine RECOMMENDS — it never emits SANCTION_APPLIED directly.
+      // The engine RECOMMENDS — it never emits VERDICT_SEALED directly.
       // The DB trigger auto-populates sanction_review_queue on INSERT.
       if (penaltyCents != null && penaltyCents > 0) {
         // Build VerdictEvidence from the no-show context.

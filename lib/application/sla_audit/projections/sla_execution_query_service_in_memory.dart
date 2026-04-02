@@ -114,6 +114,16 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
     return filtered.map(_toItemView).toList();
   }
 
+  @override
+  Future<SlaExecutionItemView?> findBySetId(
+    String setId, {
+    required String organizationId,
+  }) async {
+    final states = await _repo.findAll(organizationId: organizationId);
+    final match = states.where((s) => s.setId == setId).firstOrNull;
+    return match != null ? _toItemView(match) : null;
+  }
+
   // ── Mapper ──────────────────────────────────────────────
 
   static SlaExecutionItemView _toItemView(ContractualExecutionState s) {

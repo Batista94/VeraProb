@@ -147,13 +147,16 @@ class SanctionRecommendedEvent extends DomainEvent {
   });
 }
 
-/// Emitted when an auditor/admin approves a recommended sanction.
+/// Emitted when an auditor/admin seals a recommended sanction.
+///
+/// Pillar C: [actorEmail] provides forensic traceability of the human actor.
 class SanctionAppliedEvent extends DomainEvent {
   final String setId;
   final String contractId;
   final int planVersion;
   final String queueEntryId;
   final String approvedByUserId;
+  final String actorEmail;
   final VerdictEvidence verdictEvidence;
 
   const SanctionAppliedEvent({
@@ -164,17 +167,21 @@ class SanctionAppliedEvent extends DomainEvent {
     required this.planVersion,
     required this.queueEntryId,
     required this.approvedByUserId,
+    required this.actorEmail,
     required this.verdictEvidence,
   });
 }
 
-/// Emitted when an auditor/admin rejects a recommended sanction.
+/// Emitted when an auditor/admin refuses a recommended sanction.
+///
+/// Pillar C: [actorEmail] provides forensic traceability of the human actor.
 class SanctionRejectedEvent extends DomainEvent {
   final String setId;
   final String contractId;
   final int planVersion;
   final String queueEntryId;
   final String rejectedByUserId;
+  final String actorEmail;
   final String rejectionReason;
   final VerdictEvidence verdictEvidence;
 
@@ -186,6 +193,7 @@ class SanctionRejectedEvent extends DomainEvent {
     required this.planVersion,
     required this.queueEntryId,
     required this.rejectedByUserId,
+    required this.actorEmail,
     required this.rejectionReason,
     required this.verdictEvidence,
   });

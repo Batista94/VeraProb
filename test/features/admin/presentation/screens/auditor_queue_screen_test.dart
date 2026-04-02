@@ -36,7 +36,7 @@ void main() {
       await tester.pumpWidget(_buildScreen());
       await tester.pumpAndSettle();
 
-      expect(find.text('Fila Auditora'), findsOneWidget);
+      expect(find.text('Tribunal de Auditoria'), findsOneWidget);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -48,7 +48,7 @@ void main() {
       await tester.pumpWidget(_buildScreen());
       await tester.pumpAndSettle();
 
-      expect(find.text('Nenhuma sanção pendente'), findsOneWidget);
+      expect(find.text('Nenhum veredito pendente'), findsOneWidget);
 
       addTearDown(tester.view.resetPhysicalSize);
     });

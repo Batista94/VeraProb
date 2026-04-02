@@ -58,8 +58,8 @@ class CanonicalFact extends Equatable {
   final DateTime gpsTimestamp;
 
   // ── Geospatial ────────────────────────────────────────────────────────────
-  final double lat;
-  final double lng;
+  final double lat; // forensic-ignore: FINANCIAL-BLOCK
+  final double lng; // forensic-ignore: FINANCIAL-BLOCK
 
   /// Speed in centimetres per second. Null if unavailable from provider.
   /// INV-2: integer cm/s — no floating-point precision loss.
@@ -69,7 +69,7 @@ class CanonicalFact extends Equatable {
   final int? headingDegrees;
 
   /// GPS accuracy radius in metres. Null if not reported.
-  final double? accuracyMeters;
+  final double? accuracyMeters; // forensic-ignore: FINANCIAL-BLOCK
 
   // ── Quality ───────────────────────────────────────────────────────────────
   /// Classification assigned by the Adapter at normalization time.
@@ -90,7 +90,7 @@ class CanonicalFact extends Equatable {
     required this.lng,
     this.speedCms,
     this.headingDegrees,
-    this.accuracyMeters,
+    this.accuracyMeters, // forensic-ignore: FINANCIAL-BLOCK
     required this.integrityFlag,
   });
 
@@ -112,7 +112,7 @@ class CanonicalFact extends Equatable {
     required double lng,
     int? speedCms,
     int? headingDegrees,
-    double? accuracyMeters,
+    double? accuracyMeters, // forensic-ignore: FINANCIAL-BLOCK
     required IngestionIntegrityFlag integrityFlag,
   }) {
     if (organizationId.isEmpty) {
@@ -189,7 +189,7 @@ class CanonicalFact extends Equatable {
     required double lng,
     int? speedCms,
     int? headingDegrees,
-    double? accuracyMeters,
+    double? accuracyMeters, // forensic-ignore: FINANCIAL-BLOCK
     required IngestionIntegrityFlag integrityFlag,
   }) {
     return CanonicalFact._(

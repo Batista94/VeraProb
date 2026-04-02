@@ -11,7 +11,7 @@ import 'sla_ledger_mapper.dart';
 /// Application handler for [ApproveSanctionCommand].
 ///
 /// Enforces Human-in-the-Loop: only this handler can generate a
-/// `SANCTION_APPLIED` ledger entry. The engine NEVER does this directly.
+/// `VERDICT_SEALED` ledger entry. The engine NEVER does this directly.
 ///
 /// Contains NO domain logic — authorization and idempotency guards are
 /// application-layer concerns. Ledger append is irreversible (INV-1).
@@ -29,7 +29,7 @@ class ApproveSanctionHandler {
        _rbac = rbac;
 
   /// Handles the command by transitioning the queue entry to [applied]
-  /// and appending a `SANCTION_APPLIED` entry to the immutable ledger.
+  /// and appending a `VERDICT_SEALED` entry to the immutable ledger.
   ///
   /// Throws [DomainException] if:
   /// - [callerRole] does not have [UserPermission.canApproveSanctions]
@@ -70,10 +70,11 @@ class ApproveSanctionHandler {
       planVersion: 0, // planVersion is not carried in the queue entry
       queueEntryId: entry.id,
       approvedByUserId: command.approvedByUserId,
+      actorEmail: command.actorEmail,
       verdictEvidence: entry.verdictEvidence,
     );
 
-    // 5. Append SANCTION_APPLIED to the immutable ledger (INV-1)
+    // 5. Append VERDICT_SEALED to the immutable ledger (INV-1, Pillar C)
     await _ledger.append(SlaLedgerMapper.mapToEntry(event));
 
     // 6. Update queue entry status to applied

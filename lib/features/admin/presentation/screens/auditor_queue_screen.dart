@@ -8,10 +8,10 @@ import '../../../../state/providers/auth_providers.dart';
 import '../../../../state/providers/sla_providers.dart';
 import '../widgets/sanction_verdict_card.dart';
 
-/// Auditor Queue Screen — Human-in-the-Loop review of engine-recommended sanctions.
+/// Tribunal de Auditoria — Human-in-the-Loop review of engine-recommended sanctions.
 ///
 /// Displays pending [SanctionQueueItemView] cards backed by Supabase Realtime.
-/// Every card exposes VALIDAR / REJEITAR / DISPUTAR actions.
+/// Every card exposes SELAR VEREDITO / RECUSAR VEREDITO / SOLICITAR PROVA FORENSE.
 /// Satisfies INV-23: full VerdictEvidence provenance is shown per sanction.
 class AuditorQueueScreen extends ConsumerWidget {
   const AuditorQueueScreen({super.key});
@@ -144,9 +144,9 @@ class _Header extends StatelessWidget {
     );
     return Row(
       children: [
-        const Icon(Icons.approval_outlined, color: VeraProbColors.primary),
+        const Icon(Icons.gavel_rounded, color: VeraProbColors.primary),
         const SizedBox(width: 12),
-        Text('Fila Auditora', style: VeraProbTypography.sectionTitle),
+        Text('Tribunal de Auditoria', style: VeraProbTypography.sectionTitle),
         const SizedBox(width: 12),
         if (count > 0)
           Container(
@@ -181,20 +181,20 @@ class _EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
-            Icons.check_circle_outline,
+            Icons.gavel_outlined,
             size: 56,
             color: VeraProbColors.textDisabled,
           ),
           const SizedBox(height: 16),
           Text(
-            'Nenhuma sanção pendente',
+            'Nenhum veredito pendente',
             style: VeraProbTypography.sectionTitle.copyWith(
               color: VeraProbColors.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
           const Text(
-            'Todas as recomendações do engine foram revisadas.',
+            'Todos os vereditos foram selados ou recusados.',
             style: TextStyle(color: VeraProbColors.textDisabled),
           ),
           const SizedBox(height: 24),

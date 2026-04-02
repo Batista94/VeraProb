@@ -8,7 +8,7 @@ enum SanctionReviewStatus { pending, applied, rejected, disputed }
 /// Entity representing a pending human review of an engine-recommended sanction.
 ///
 /// Implements **Human-in-the-Loop** for INV-23: the engine RECOMMENDS,
-/// auditors APPROVE. No `SANCTION_APPLIED` ever enters the ledger without
+/// auditors APPROVE. No `VERDICT_SEALED` ever enters the ledger without
 /// explicit human action.
 ///
 /// **Identity:** equality is based exclusively on [id].

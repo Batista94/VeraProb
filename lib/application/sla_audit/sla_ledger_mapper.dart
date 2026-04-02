@@ -222,7 +222,7 @@ class SlaLedgerMapper {
     if (event is SanctionAppliedEvent) {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
-        type: 'SANCTION_APPLIED',
+        type: 'VERDICT_SEALED',
         operatorId: event.approvedByUserId,
         setId: event.setId,
         contractId: event.contractId,
@@ -231,6 +231,7 @@ class SlaLedgerMapper {
         payload: {
           'queue_entry_id': event.queueEntryId,
           'approved_by_user_id': event.approvedByUserId,
+          'actor_email': event.actorEmail,
           'verdict_evidence': event.verdictEvidence.toJson(),
         },
       );
@@ -239,7 +240,7 @@ class SlaLedgerMapper {
     if (event is SanctionRejectedEvent) {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
-        type: 'SANCTION_REJECTED',
+        type: 'VERDICT_REFUSED',
         operatorId: event.rejectedByUserId,
         setId: event.setId,
         contractId: event.contractId,
@@ -248,6 +249,7 @@ class SlaLedgerMapper {
         payload: {
           'queue_entry_id': event.queueEntryId,
           'rejected_by_user_id': event.rejectedByUserId,
+          'actor_email': event.actorEmail,
           'rejection_reason': event.rejectionReason,
           'verdict_evidence': event.verdictEvidence.toJson(),
         },

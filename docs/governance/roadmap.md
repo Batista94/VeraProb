@@ -92,11 +92,22 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - **Technical Results:** Comparison logic successfully identifies discrepancies between Evaluation Engine results and persisted state for forensic audit. 80% Critical Divergence threshold validated under actual stress.
 - **CI/CD Alignment:** Integration suite enforced in PRs with explicit `services: postgres` support.
 
-### [ ] Phase 10.4 — OCC UX Polish (Diferential Refinement)
+### [ ] Phase 10.4 — OCC UX Polish (Differential Refinement)
+
+- **Status:** EM ANDAMENTO — WS-1 Concluído ✅
+- **Deliverables:**
+  - [x] **WS-1: Forensic Authority Language & Sealed Verdict Lock** (Verbs forensicized, 🔒 locked state implemented, Pillar C audit trail active).
+  - [ ] **WS-2: Predictive SLA Breach Alerts** (Dynamic Risk Buffer + Risk Thermometer visual).
+  - [ ] **WS-3: Ingestion Health & Confidence Score** (Signal Integrity monitor + Double confirmation logic).
+  - [ ] **WS-4: Telegram Evidence Bot** (Deno Edge Function + Hot-linking to Verdict Cards).
+  - [ ] **WS-5: Telemetry Map-Sync** (Reactive repositioning on click).
+  - [ ] **WS-6: Recurrence & Contractual Context** (Infringement history on cards).
+  - [ ] **WS-7: Operational Macros** (1-Click standard justifications).
+  - [ ] **WS-8: UX Polish Bundle** (Invitations, empty states, sparklines).
 
 - Cognitive load audit · Verdict traceable in ≤1 click · WCAG 2.2 AA.
 - **[UX] Forensic Audit Context:** Enriquecer o card da Fila Auditora com Histórico de Recorrência (ex: '3ª infração deste veículo/motorista no mês') e visualização comparativa direta entre o dado observado e o limite contratual.
-- **[UX] Actionable Verdicts:** Alterar linguagem passiva ('Validar/Rejeitar') para linguagem de autoridade ('Selar Veredito' / 'Solicitar Mais Provas').
+- [x] **[UX] Actionable Verdicts:** Alterar linguagem passiva ('Validar/Rejeitar') para linguagem de autoridade ('Selar Veredito' / 'Recusar Veredito' / 'Solicitar Prova Forense').
 - **[BIZ] Telegram Evidence Bot Integration:** Gateway gratuito para motoristas enviarem fotos/provas preventivas diretamente para o card de auditoria via Telegram API (Custo R$ 0).
 - **[UX] Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz Policial', 'Parada Autorizada') que preenchem justificativa e anexam regras de tolerância automaticamente.
 - **[UX] Ingestion Health Monitor:** Widget de integridade que sinaliza 'Gaps' de sinal ou falhas de hardware antes da geração do relatório final.

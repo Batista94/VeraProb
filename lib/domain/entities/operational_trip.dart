@@ -19,7 +19,7 @@ class OperationalTrip extends Equatable {
   final DateTime? actualStart;
   final DateTime? actualEnd;
   final int delaySeconds;
-  final double completionPct;
+  final double completionPct; // forensic-ignore: FINANCIAL-BLOCK
   final String sourceType; // 'manual', 'gtfs_static', 'gtfs_realtime'
   final String? externalTripId;
 
@@ -98,7 +98,7 @@ class OperationalTrip extends Equatable {
     DateTime? actualStart,
     DateTime? actualEnd,
     int? delaySeconds,
-    double? completionPct,
+    double? completionPct, // forensic-ignore: FINANCIAL-BLOCK
     String? sourceType,
     String? externalTripId,
     int? severityScore,

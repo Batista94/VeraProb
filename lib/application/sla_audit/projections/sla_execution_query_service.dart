@@ -29,4 +29,12 @@ abstract class SlaExecutionQueryService {
     required String organizationId,
     String? contractId,
   });
+
+  /// Returns the execution item matching [setId] within the given organization.
+  ///
+  /// Returns null if not found or if RLS blocks access.
+  Future<SlaExecutionItemView?> findBySetId(
+    String setId, {
+    required String organizationId,
+  });
 }

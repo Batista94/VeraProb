@@ -9,6 +9,9 @@ import '../../../../state/providers/auth_providers.dart';
 import '../../../../state/providers/rule_studio_providers.dart';
 import '../../../../presentation/shared/widgets/veraprob_header.dart';
 import '../../../../presentation/shared/widgets/veraprob_chip.dart';
+import 'widgets/rule_studio/rule_studio_shared.dart';
+import 'widgets/rule_studio/rule_studio_impact_panel.dart';
+import 'widgets/rule_studio/rule_studio_history_panel.dart';
 
 // ── Screen ───────────────────────────────────────────────────────────────────
 
@@ -144,7 +147,7 @@ class _Body extends ConsumerWidget {
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
                   error: (e, _) => _ErrorState(message: e.toString()),
-                  data: (history) => _VersionHistoryPanel(history: history),
+                  data: (history) => RuleVersionHistoryPanel(history: history),
                 ),
               ),
             ],
@@ -188,14 +191,14 @@ class _RuleCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              _RuleTypeIcon(ruleType: ruleType),
+              RuleTypeIcon(ruleType: ruleType),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _ruleTypeLabel(ruleType),
+                      ruleTypeLabel(ruleType),
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -458,10 +461,10 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: Row(
         children: [
-          _RuleTypeIcon(ruleType: widget.ruleType),
+          RuleTypeIcon(ruleType: widget.ruleType),
           const SizedBox(width: 10),
           Text(
-            _ruleTypeLabel(widget.ruleType),
+            ruleTypeLabel(widget.ruleType),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
         ],
@@ -509,7 +512,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
               ..._buildFields(),
               const SizedBox(height: 16),
               // ── Financial Impact Simulation ───────────────────
-              _ImpactSimulationPanel(
+              RuleImpactSimulationPanel(
                 ruleType: widget.ruleType,
                 currentRule: widget.currentRule,
                 controllers: _controllers,
@@ -546,7 +549,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
   List<Widget> _buildFields() {
     return switch (widget.ruleType.value) {
       'MAX_TOLERANCE_DELAY' => [
-        _ParamField(
+        RuleParamField(
           label: 'Tolerância de Atraso (minutos)',
           hint: 'Ex: 5',
           controller: _controllers['threshold_minutes']!,
@@ -556,7 +559,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
         ),
       ],
       'MAX_EVIDENCE_GAP' => [
-        _ParamField(
+        RuleParamField(
           label: 'Lacuna Máxima de Evidência (segundos)',
           hint: 'Ex: 300',
           controller: _controllers['max_gap_seconds']!,
@@ -566,7 +569,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
         ),
       ],
       'MIN_GEOFENCE_COVERAGE' => [
-        _ParamField(
+        RuleParamField(
           label: 'Permanência Mínima no Geofence (segundos)',
           hint: 'Ex: 30',
           controller: _controllers['min_dwell_seconds']!,
@@ -576,7 +579,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
         ),
       ],
       'NO_SHOW_PENALTY' => [
-        _ParamField(
+        RuleParamField(
           label: 'Valor da Penalidade No-Show (R\$)',
           hint: 'Ex: 150.00',
           controller: _controllers['penalty_amount_cents']!,
@@ -590,616 +593,7 @@ class _RuleEditDialogState extends ConsumerState<_RuleEditDialog> {
   }
 }
 
-// ── Financial Impact Simulation Panel ─────────────────────────────────────────
-
-class _ImpactSimulationPanel extends StatelessWidget {
-  const _ImpactSimulationPanel({
-    required this.ruleType,
-    required this.currentRule,
-    required this.controllers,
-    required this.expanded,
-    required this.onToggle,
-  });
-
-  final SlaRuleType ruleType;
-  final RuleVersionHistoryEntry? currentRule;
-  final Map<String, TextEditingController> controllers;
-  final bool expanded;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VeraProbColors.border),
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: onToggle,
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.insights_outlined,
-                    size: 16,
-                    color: VeraProbColors.secondary,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Simulação de Impacto Financeiro',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: VeraProbColors.secondary,
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    expanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    size: 16,
-                    color: VeraProbColors.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (expanded)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: _ImpactBody(
-                ruleType: ruleType,
-                currentRule: currentRule,
-                controllers: controllers,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ImpactBody extends StatelessWidget {
-  const _ImpactBody({
-    required this.ruleType,
-    required this.currentRule,
-    required this.controllers,
-  });
-
-  final SlaRuleType ruleType;
-  final RuleVersionHistoryEntry? currentRule;
-  final Map<String, TextEditingController> controllers;
-
-  @override
-  Widget build(BuildContext context) {
-    if (currentRule == null) {
-      return const Text(
-        'Configure e salve a primeira versão da regra para habilitar simulações comparativas.',
-        style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
-      );
-    }
-
-    final rows = _buildImpactRows();
-    if (rows.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Divider(color: VeraProbColors.border, height: 1),
-        const SizedBox(height: 10),
-        const Text(
-          'Alteração de Parâmetro',
-          style: TextStyle(
-            fontSize: 11,
-            color: VeraProbColors.textDisabled,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...rows,
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: VeraProbColors.warning.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: const Row(
-            children: [
-              Icon(
-                Icons.warning_amber_outlined,
-                size: 12,
-                color: VeraProbColors.warning,
-              ),
-              SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Simulação qualitativa — impacto quantitativo disponível na Phase 7 (Audit Exports).',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: VeraProbColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _buildImpactRows() {
-    final c = currentRule!.config;
-    return switch (ruleType.value) {
-      'MAX_TOLERANCE_DELAY' => [
-        _ImpactRow(
-          label: 'Tolerância',
-          current: '${c['threshold_minutes']} min',
-          proposed: '${controllers['threshold_minutes']!.text} min',
-          impactWhenIncreased: 'Menos penalidades — mais leniente com atrasos',
-          impactWhenDecreased: 'Mais penalidades — penaliza atrasos menores',
-          currentValue: (c['threshold_minutes'] as num?)?.toDouble() ?? 0,
-          proposedText: controllers['threshold_minutes']!.text,
-        ),
-      ],
-      'MAX_EVIDENCE_GAP' => [
-        _ImpactRow(
-          label: 'Lacuna máx.',
-          current: '${c['max_gap_seconds']} s',
-          proposed: '${controllers['max_gap_seconds']!.text} s',
-          impactWhenIncreased: 'Mais permissivo com lacunas de telemetria',
-          impactWhenDecreased:
-              'Invalida mais evidências — pode aumentar no-shows',
-          currentValue: (c['max_gap_seconds'] as num?)?.toDouble() ?? 0,
-          proposedText: controllers['max_gap_seconds']!.text,
-        ),
-      ],
-      'MIN_GEOFENCE_COVERAGE' => [
-        _ImpactRow(
-          label: 'Permanência mín.',
-          current: '${c['min_dwell_seconds']} s',
-          proposed: '${controllers['min_dwell_seconds']!.text} s',
-          impactWhenIncreased: 'Exigência maior — mais viagens rejeitadas',
-          impactWhenDecreased: 'Exigência menor — mais viagens validadas',
-          currentValue: (c['min_dwell_seconds'] as num?)?.toDouble() ?? 0,
-          proposedText: controllers['min_dwell_seconds']!.text,
-        ),
-      ],
-      'NO_SHOW_PENALTY' => [
-        _ImpactRow(
-          label: 'Penalidade',
-          current:
-              'R\$ ${(((c['penalty_amount_cents'] as int?) ?? 0) / 100).toStringAsFixed(2)}',
-          proposed: 'R\$ ${controllers['penalty_amount_cents']!.text}',
-          impactWhenIncreased: 'Maior recuperação financeira por no-show',
-          impactWhenDecreased: 'Menor recuperação financeira por no-show',
-          currentValue:
-              ((c['penalty_amount_cents'] as num?)?.toDouble() ?? 0) / 100,
-          proposedText: controllers['penalty_amount_cents']!.text,
-        ),
-      ],
-      _ => [],
-    };
-  }
-}
-
-class _ImpactRow extends StatelessWidget {
-  const _ImpactRow({
-    required this.label,
-    required this.current,
-    required this.proposed,
-    required this.impactWhenIncreased,
-    required this.impactWhenDecreased,
-    required this.currentValue,
-    required this.proposedText,
-  });
-
-  final String label;
-  final String current;
-  final String proposed;
-  final String impactWhenIncreased;
-  final String impactWhenDecreased;
-  final double currentValue;
-  final String proposedText;
-
-  @override
-  Widget build(BuildContext context) {
-    final proposedValue = double.tryParse(proposedText) ?? currentValue;
-    final delta = proposedValue - currentValue;
-    final unchanged = delta.abs() < 0.001;
-
-    final impactText = unchanged
-        ? 'Sem alteração'
-        : delta > 0
-        ? impactWhenIncreased
-        : impactWhenDecreased;
-
-    final impactColor = unchanged
-        ? VeraProbColors.textDisabled
-        : delta > 0
-        ? VeraProbColors.warning
-        : VeraProbColors.info;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: VeraProbColors.textDisabled,
-                  ),
-                ),
-                Row(
-                  children: [
-                    Text(
-                      current,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: VeraProbColors.textSecondary,
-                        decoration: TextDecoration.lineThrough,
-                      ),
-                    ),
-                    const Icon(
-                      Icons.arrow_right_alt,
-                      size: 14,
-                      color: VeraProbColors.textDisabled,
-                    ),
-                    Text(
-                      proposed,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: VeraProbColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Text(
-              impactText,
-              textAlign: TextAlign.end,
-              style: TextStyle(fontSize: 11, color: impactColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Version History Panel ─────────────────────────────────────────────────────
-
-class _VersionHistoryPanel extends StatelessWidget {
-  const _VersionHistoryPanel({required this.history});
-
-  final List<RuleVersionHistoryEntry> history;
-
-  @override
-  Widget build(BuildContext context) {
-    if (history.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.history_outlined,
-              size: 48,
-              color: VeraProbColors.textDisabled.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Nenhuma regra configurada ainda.',
-              style: TextStyle(
-                fontSize: 13,
-                color: VeraProbColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Group by rule type
-    final grouped = <SlaRuleType, List<RuleVersionHistoryEntry>>{};
-    for (final entry in history) {
-      grouped.putIfAbsent(entry.ruleType, () => []).add(entry);
-    }
-
-    return ListView(
-      children: grouped.entries.map((e) {
-        return _HistoryGroup(ruleType: e.key, entries: e.value);
-      }).toList(),
-    );
-  }
-}
-
-class _HistoryGroup extends StatefulWidget {
-  const _HistoryGroup({required this.ruleType, required this.entries});
-
-  final SlaRuleType ruleType;
-  final List<RuleVersionHistoryEntry> entries;
-
-  @override
-  State<_HistoryGroup> createState() => _HistoryGroupState();
-}
-
-class _HistoryGroupState extends State<_HistoryGroup> {
-  bool _expanded = true;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VeraProbColors.border),
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                children: [
-                  _RuleTypeIcon(ruleType: widget.ruleType, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    _ruleTypeLabel(widget.ruleType),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: VeraProbColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${widget.entries.length} versões',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: VeraProbColors.textSecondary,
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    size: 14,
-                    color: VeraProbColors.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_expanded)
-            ...widget.entries.map((entry) => _HistoryRow(entry: entry)),
-        ],
-      ),
-    );
-  }
-}
-
-class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({required this.entry});
-
-  final RuleVersionHistoryEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: VeraProbColors.border)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: entry.isActive
-                  ? VeraProbColors.onTime
-                  : VeraProbColors.textDisabled,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'v${entry.ruleVersion}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: VeraProbColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    if (entry.isActive)
-                      const Text(
-                        '(ativa)',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: VeraProbColors.onTime,
-                        ),
-                      ),
-                  ],
-                ),
-                Text(
-                  _formatDateRange(entry),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: VeraProbColors.textDisabled,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            _configSummary(entry),
-            style: const TextStyle(
-              fontSize: 11,
-              color: VeraProbColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDateRange(RuleVersionHistoryEntry entry) {
-    final from = _fmtDate(entry.activeFromUtc);
-    if (entry.isActive) return 'Desde $from';
-    final to = _fmtDate(entry.activeToUtc!);
-    return '$from → $to';
-  }
-
-  String _fmtDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-
-  String _configSummary(RuleVersionHistoryEntry e) {
-    final c = e.config;
-    return switch (e.ruleType.value) {
-      'MAX_TOLERANCE_DELAY' => '${c['threshold_minutes']} min',
-      'MAX_EVIDENCE_GAP' => '${c['max_gap_seconds']} s',
-      'MIN_GEOFENCE_COVERAGE' => '${c['min_dwell_seconds']} s',
-      'NO_SHOW_PENALTY' =>
-        'R\$ ${(((c['penalty_amount_cents'] as int?) ?? 0) / 100).toStringAsFixed(2)}',
-      _ => '',
-    };
-  }
-}
-
-// ── Shared Widgets ────────────────────────────────────────────────────────────
-
-class _RuleTypeIcon extends StatelessWidget {
-  const _RuleTypeIcon({required this.ruleType, this.size = 20});
-
-  final SlaRuleType ruleType;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final (icon, color) = switch (ruleType.value) {
-      'MAX_TOLERANCE_DELAY' => (
-        Icons.schedule_outlined,
-        VeraProbColors.warning,
-      ),
-      'MAX_EVIDENCE_GAP' => (
-        Icons.signal_cellular_connected_no_internet_0_bar,
-        VeraProbColors.info,
-      ),
-      'MIN_GEOFENCE_COVERAGE' => (
-        Icons.location_on_outlined,
-        VeraProbColors.onTime,
-      ),
-      'NO_SHOW_PENALTY' => (Icons.money_off_outlined, VeraProbColors.error),
-      _ => (Icons.rule_outlined, VeraProbColors.textSecondary),
-    };
-
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Icon(icon, size: size, color: color),
-    );
-  }
-}
-
-class _ParamField extends StatelessWidget {
-  const _ParamField({
-    required this.label,
-    required this.hint,
-    required this.controller,
-    required this.inputType,
-    required this.helpText,
-  });
-
-  final String label;
-  final String hint;
-  final TextEditingController controller;
-  final TextInputType inputType;
-  final String helpText;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: VeraProbColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          keyboardType: inputType,
-          style: const TextStyle(color: VeraProbColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: VeraProbColors.textDisabled),
-            filled: true,
-            fillColor: VeraProbColors.surfaceElevated,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: VeraProbColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: VeraProbColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: VeraProbColors.primary),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 10,
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          helpText,
-          style: const TextStyle(
-            fontSize: 11,
-            color: VeraProbColors.textDisabled,
-          ),
-        ),
-      ],
-    );
-  }
-}
+// ── Error State ───────────────────────────────────────────────────────────────
 
 class _ErrorState extends StatelessWidget {
   const _ErrorState({required this.message});
@@ -1215,13 +609,3 @@ class _ErrorState extends StatelessWidget {
     );
   }
 }
-
-// ── Shared helper ─────────────────────────────────────────────────────────────
-
-String _ruleTypeLabel(SlaRuleType type) => switch (type.value) {
-  'MAX_TOLERANCE_DELAY' => 'Tolerância de Atraso',
-  'MAX_EVIDENCE_GAP' => 'Lacuna de Evidência',
-  'MIN_GEOFENCE_COVERAGE' => 'Permanência Mínima no Geofence',
-  'NO_SHOW_PENALTY' => 'Penalidade No-Show',
-  _ => type.value,
-};

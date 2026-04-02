@@ -5,10 +5,15 @@ import 'package:latlong2/latlong.dart';
 import '../../../../application/sla_audit/projections/sanction_queue_item_view.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/enums/user_role.dart';
+import '../../../../domain/sla_audit/sanction_review_queue_entry.dart';
+import '../../../../domain/sla_audit/signal_integrity_monitor.dart';
+import '../../../../domain/sla_audit/sla_breach_risk_calculator.dart';
 import '../../../../state/providers/auditor_queue_providers.dart';
 import '../../../../state/providers/auth_providers.dart';
 import '../screens/widgets/investigation_modal.dart';
 import '../shared/widgets/geofence_evidence_map.dart';
+import 'ingestion_health_widget.dart';
+import 'risk_thermometer_widget.dart';
 
 /// Business Verdict Tool card for the Auditor Queue.
 ///
@@ -72,6 +77,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final evidence = item.verdictEvidence;
     final actionState = ref.watch(sanctionActionStateProvider(item.id));
     final isLoading = actionState is AsyncLoading;
+    final isLocked = item.status != SanctionReviewStatus.pending;
 
     // Async contract name resolution — RLS enforces tenant isolation.
     final contractNameAsync = ref.watch(contractNameProvider(item.contractId));
@@ -83,218 +89,333 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final unit = _unitForClause(evidence.clauseRef);
     final confidenceColor = _confidenceColor(evidence.confidenceScore);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: VeraProbColors.surface,
-          border: Border(
-            left: BorderSide(color: VeraProbColors.error, width: 3),
-            top: BorderSide(color: VeraProbColors.border),
-            right: BorderSide(color: VeraProbColors.border),
-            bottom: BorderSide(color: VeraProbColors.border),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Zona 1: Identity Strip ─────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Row(
-                children: [
-                  _ClauseBadge(clauseRef: evidence.clauseRef),
-                  const Spacer(),
-                  Text(
-                    _formatLocalDate(item.createdAtUtc),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: VeraProbColors.textDisabled,
-                    ),
-                  ),
-                ],
+    return Opacity(
+      opacity: isLocked ? 0.6 : 1.0,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: VeraProbColors.surface,
+            border: Border(
+              left: BorderSide(
+                color: isLocked
+                    ? VeraProbColors.textDisabled
+                    : VeraProbColors.error,
+                width: 3,
               ),
+              top: const BorderSide(color: VeraProbColors.border),
+              right: const BorderSide(color: VeraProbColors.border),
+              bottom: const BorderSide(color: VeraProbColors.border),
             ),
-
-            const SizedBox(height: 12),
-
-            // ── Zona 2: Financial Hero ─────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
+          ),
+          child: Stack(
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // ── Zona 1: Identity Strip ─────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                    child: Row(
                       children: [
-                        Semantics(
-                          label:
-                              'Multa: ${item.formattedFine}. Validar ou rejeitar esta sanção.',
-                          child: Text(
-                            item.formattedFine,
-                            style: VeraProbTypography.kpiValue.copyWith(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: VeraProbColors.error,
-                              letterSpacing: -0.5,
-                            ),
+                        _ClauseBadge(clauseRef: evidence.clauseRef),
+                        const Spacer(),
+                        Text(
+                          _formatLocalDate(item.createdAtUtc),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: VeraProbColors.textDisabled,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                displayName,
-                                style: VeraProbTypography.dataValue,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '· ${item.setId}',
-                              style: VeraProbTypography.bodyMedium.copyWith(
-                                color: VeraProbColors.textSecondary,
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  _ConfidenceBadge(
-                    score: evidence.confidenceScore,
-                    color: confidenceColor,
+
+                  const SizedBox(height: 12),
+
+                  // ── Zona 2: Financial Hero ─────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Semantics(
+                                label:
+                                    'Multa: ${item.formattedFine}. Validar ou rejeitar esta sanção.',
+                                child: Text(
+                                  item.formattedFine,
+                                  style: VeraProbTypography.kpiValue.copyWith(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w800,
+                                    color: VeraProbColors.error,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      displayName,
+                                      style: VeraProbTypography.dataValue,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '· ${item.setId}',
+                                    style: VeraProbTypography.bodyMedium
+                                        .copyWith(
+                                          color: VeraProbColors.textSecondary,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        _ConfidenceBadge(
+                          score: evidence.confidenceScore,
+                          color: confidenceColor,
+                        ),
+                      ],
+                    ),
                   ),
+
+                  const SizedBox(height: 16),
+                  const Divider(color: VeraProbColors.border, height: 1),
+
+                  // ── Zona 3: Infraction Summary ─────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _FactColumn(
+                            label: 'DIFERENÇA OBSERVADA',
+                            value:
+                                '${evidence.deltaValue.toStringAsFixed(1)} $unit',
+                            valueColor: VeraProbColors.warning,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _FactColumn(
+                            label: 'LIMITE CONTRATUAL',
+                            value:
+                                '${evidence.thresholdValue.toStringAsFixed(1)} $unit',
+                            valueColor: VeraProbColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Mini-map with geofence overlay (INV-23 — visual evidence snapshot)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Semantics(
+                      label:
+                          'Local da infração: ${evidence.primaryEvidenceLat.toStringAsFixed(4)}, ${evidence.primaryEvidenceLng.toStringAsFixed(4)}',
+                      excludeSemantics: true,
+                      child: GeofenceEvidenceMap(
+                        infractionPoint: LatLng(
+                          evidence.primaryEvidenceLat,
+                          evidence.primaryEvidenceLng,
+                        ),
+                        geofenceCenter: evidence.geofenceCenterLat != null
+                            ? LatLng(
+                                evidence.geofenceCenterLat!,
+                                evidence.geofenceCenterLng!,
+                              )
+                            : null,
+                        geofenceRadiusMeters:
+                            evidence.geofenceRadiusMeters ?? 50.0,
+                        height: 120,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                  const Divider(color: VeraProbColors.border, height: 1),
+
+                  // ── Zona 3.5: Ingestion Health (WS-3) ──────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                    child: IngestionHealthWidget(
+                      report: SignalIntegrityReport(
+                        gaps: const [],
+                        integrityScore: evidence.confidenceScore,
+                        totalSilentSeconds: 0,
+                        totalSpanSeconds: 0,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // ── Zona 3.6: Risk Thermometer (WS-2) ──────────────────────────
+                  _RiskThermometerZone(item: item),
+
+                  const Divider(color: VeraProbColors.border, height: 1),
+
+                  // ── Zona 4: Forensic Seal ──────────────────────────────────────
+                  _ForensicSealRow(item: item),
+
+                  // ── Error feedback ─────────────────────────────────────────────
+                  if (actionState is AsyncError) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: VeraProbColors.error.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          actionState.error.toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: VeraProbColors.error,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  // ── Rejection reason field ─────────────────────────────────────
+                  if (_showRejectField)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: _RejectReasonField(controller: _rejectController),
+                    ),
+
+                  // ── Zona 5: Action Row ─────────────────────────────────────
+                  if (!isLocked)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                      child: _VerdictActionRow(
+                        isLoading: isLoading,
+                        showRejectField: _showRejectField,
+                        rejectController: _rejectController,
+                        formattedFine: item.formattedFine,
+                        onApprove: () => _onApprove(context),
+                        onRejectTap: () => setState(
+                          () => _showRejectField = !_showRejectField,
+                        ),
+                        onRejectConfirm: () => _onReject(context),
+                        onRequestMoreProof: () => _onRequestMoreProof(context),
+                      ),
+                    ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 16),
-            const Divider(color: VeraProbColors.border, height: 1),
-
-            // ── Zona 3: Infraction Summary ─────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _FactColumn(
-                      label: 'DIFERENÇA OBSERVADA',
-                      value: '${evidence.deltaValue.toStringAsFixed(1)} $unit',
-                      valueColor: VeraProbColors.warning,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _FactColumn(
-                      label: 'LIMITE CONTRATUAL',
-                      value:
-                          '${evidence.thresholdValue.toStringAsFixed(1)} $unit',
-                      valueColor: VeraProbColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Mini-map with geofence overlay (INV-23 — visual evidence snapshot)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Semantics(
-                label:
-                    'Local da infração: ${evidence.primaryEvidenceLat.toStringAsFixed(4)}, ${evidence.primaryEvidenceLng.toStringAsFixed(4)}',
-                excludeSemantics: true,
-                child: GeofenceEvidenceMap(
-                  infractionPoint: LatLng(
-                    evidence.primaryEvidenceLat,
-                    evidence.primaryEvidenceLng,
-                  ),
-                  geofenceCenter: evidence.geofenceCenterLat != null
-                      ? LatLng(
-                          evidence.geofenceCenterLat!,
-                          evidence.geofenceCenterLng!,
-                        )
-                      : null,
-                  geofenceRadiusMeters: evidence.geofenceRadiusMeters ?? 50.0,
-                  height: 120,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-            const Divider(color: VeraProbColors.border, height: 1),
-
-            // ── Zona 4: Forensic Seal ──────────────────────────────────────
-            _ForensicSealRow(item: item),
-
-            // ── Error feedback ─────────────────────────────────────────────
-            if (actionState is AsyncError) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: VeraProbColors.error.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    actionState.error.toString(),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: VeraProbColors.error,
+              // ── LOCKED overlay badge (INV-7: Immutability) ──────────
+              if (isLocked)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Tooltip(
+                    message: 'Veredito selado — Imutável (INV-7)',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: VeraProbColors.textDisabled.withValues(
+                          alpha: 0.2,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.lock,
+                            size: 12,
+                            color: VeraProbColors.textDisabled,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'SELADO',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: VeraProbColors.textDisabled,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
-
-            // ── Rejection reason field ─────────────────────────────────────
-            if (_showRejectField)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: _RejectReasonField(controller: _rejectController),
-              ),
-
-            // ── Zona 5: Action Row ─────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
-              child: _VerdictActionRow(
-                isLoading: isLoading,
-                showRejectField: _showRejectField,
-                rejectController: _rejectController,
-                formattedFine: item.formattedFine,
-                onApprove: () => _onApprove(context),
-                onRejectTap: () =>
-                    setState(() => _showRejectField = !_showRejectField),
-                onRejectConfirm: () => _onReject(context),
-                onRequestMoreProof: () => _onRequestMoreProof(context),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Future<void> _onApprove(BuildContext context) async {
+    final evidence = widget.item.verdictEvidence;
+
+    // WS-3: Use requiresDoubleConfirmation from integrity score
+    final integrityReport = SignalIntegrityReport(
+      gaps: const [],
+      integrityScore: evidence.confidenceScore,
+      totalSilentSeconds: 0,
+      totalSpanSeconds: 0,
+    );
+
+    if (integrityReport.requiresDoubleConfirmation) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('⚠ Integridade Baixa'),
+          content: Text(
+            'O score de integridade é ${evidence.confidenceScore}%. '
+            'Confirma o selamento deste veredito?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: VeraProbColors.warning,
+              ),
+              child: const Text('Confirmar Selamento'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+
     final userId = ref.read(currentOperatorIdProvider) ?? '';
+    final email = ref.read(currentOperatorEmailProvider);
     await ref
         .read(sanctionActionStateProvider(widget.item.id).notifier)
         .approve(
           queueEntryId: widget.item.id,
           approvedByUserId: userId,
+          actorEmail: email,
           callerRole: UserRole.auditor,
           organizationId: widget.item.organizationId,
         );
     // Force stream re-query so the card disappears without requiring a second click.
-    // Supabase Realtime UPDATE events may not re-filter the local cache when a row
-    // moves out of the `.eq('status', 'pending')` predicate.
     final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
     if (actionState is AsyncData) {
       ref.invalidate(pendingSanctionsStreamProvider);
@@ -303,11 +424,13 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
 
   Future<void> _onReject(BuildContext context) async {
     final userId = ref.read(currentOperatorIdProvider) ?? '';
+    final email = ref.read(currentOperatorEmailProvider);
     await ref
         .read(sanctionActionStateProvider(widget.item.id).notifier)
         .reject(
           queueEntryId: widget.item.id,
           rejectedByUserId: userId,
+          actorEmail: email,
           rejectionReason: _rejectController.text,
           callerRole: UserRole.auditor,
           organizationId: widget.item.organizationId,
@@ -326,7 +449,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-          'Solicitação enviada. Motorista será notificado para complementar evidências.',
+          'Solicitação enviada. Motorista será notificado para enviar prova forense.',
         ),
       ),
     );
@@ -334,6 +457,38 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
 }
 
 // ── Sub-widgets ────────────────────────────────────────────────────────────────
+
+/// Renders the Risk Thermometer for this sanction's historical breach proximity.
+///
+/// Watches [sanctionWindowProvider] asynchronously — shows a placeholder while
+/// the SLA window is being resolved. Uses [primaryEvidenceTimestampUtc] as
+/// [currentEtaUtc] to reconstruct how deep into the buffer the infraction fell.
+class _RiskThermometerZone extends ConsumerWidget {
+  final SanctionQueueItemView item;
+  const _RiskThermometerZone({required this.item});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final windowAsync = ref.watch(sanctionWindowProvider(item.setId));
+
+    return windowAsync.when(
+      loading: () => const SizedBox(height: 80),
+      error: (e, s) => const SizedBox.shrink(),
+      data: (window) {
+        if (window == null) return const SizedBox.shrink();
+        final report = const SlaBreachRiskCalculator().evaluate(
+          windowStartUtc: window.start,
+          windowEndUtc: window.end,
+          currentEtaUtc: item.verdictEvidence.primaryEvidenceTimestampUtc,
+        );
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: RiskThermometerWidget(report: report),
+        );
+      },
+    );
+  }
+}
 
 class _ClauseBadge extends StatelessWidget {
   final String clauseRef;
@@ -384,7 +539,7 @@ class _ConfidenceBadge extends StatelessWidget {
             ),
           ),
           Text(
-            'CONFIANÇA',
+            'INTEGRIDADE',
             style: VeraProbTypography.badge.copyWith(
               color: color,
               fontSize: 8,
@@ -542,7 +697,7 @@ class _VerdictActionRow extends StatelessWidget {
       runSpacing: 8,
       children: [
         Semantics(
-          label: 'Validar sanção — confirmar multa de $formattedFine',
+          label: 'Selar veredito — confirmar multa de $formattedFine',
           child: FilledButton.icon(
             onPressed: isLoading ? null : onApprove,
             icon: isLoading
@@ -551,8 +706,8 @@ class _VerdictActionRow extends StatelessWidget {
                     height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.check_circle_rounded, size: 16),
-            label: const Text('VALIDAR'),
+                : const Icon(Icons.gavel_rounded, size: 16),
+            label: const Text('SELAR VEREDITO'),
             style: FilledButton.styleFrom(
               backgroundColor: VeraProbColors.success,
               foregroundColor: VeraProbColors.background,
@@ -568,7 +723,7 @@ class _VerdictActionRow extends StatelessWidget {
               return FilledButton.icon(
                 onPressed: isLoading || !canConfirm ? null : onRejectConfirm,
                 icon: const Icon(Icons.block_rounded, size: 16),
-                label: const Text('CONFIRMAR REJEIÇÃO'),
+                label: const Text('CONFIRMAR RECUSA'),
                 style: FilledButton.styleFrom(
                   backgroundColor: VeraProbColors.error,
                   padding: const EdgeInsets.symmetric(
@@ -582,8 +737,8 @@ class _VerdictActionRow extends StatelessWidget {
         else
           OutlinedButton.icon(
             onPressed: isLoading ? null : onRejectTap,
-            icon: const Icon(Icons.cancel_outlined, size: 16),
-            label: const Text('REJEITAR'),
+            icon: const Icon(Icons.block_rounded, size: 16),
+            label: const Text('RECUSAR VEREDITO'),
             style: OutlinedButton.styleFrom(
               foregroundColor: VeraProbColors.error,
               side: const BorderSide(color: VeraProbColors.error),
@@ -591,11 +746,11 @@ class _VerdictActionRow extends StatelessWidget {
             ),
           ),
         Semantics(
-          label: 'Solicitar evidências adicionais ao motorista',
+          label: 'Solicitar prova forense ao motorista',
           child: TextButton.icon(
             onPressed: isLoading ? null : onRequestMoreProof,
-            icon: const Icon(Icons.pending_actions_outlined, size: 16),
-            label: const Text('SOLICITAR MAIS PROVAS'),
+            icon: const Icon(Icons.find_in_page_outlined, size: 16),
+            label: const Text('SOLICITAR PROVA FORENSE'),
             style: TextButton.styleFrom(
               foregroundColor: VeraProbColors.warning,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

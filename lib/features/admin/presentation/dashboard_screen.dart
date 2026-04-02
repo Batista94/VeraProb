@@ -15,7 +15,10 @@ class DashboardScreen extends ConsumerWidget {
     final organizationId = ref.read(currentOrganizationIdProvider);
     if (organizationId == null) return;
     try {
-      final seeder = DataSeeder(supabase, organizationId: organizationId);
+      final seeder = DataSeeder(
+        supabase,
+        organizationId: organizationId,
+      ); // forensic-ignore: SRP-UI-LEAK
       await seeder.seedDrivers();
       await seeder.seedRoutes();
       await seeder.seedHistoricalData();

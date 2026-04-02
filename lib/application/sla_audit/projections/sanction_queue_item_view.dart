@@ -21,6 +21,14 @@ class SanctionQueueItemView {
   /// Null until enriched via [contractNameProvider]. Never stored in the DB row.
   final String? contractName;
 
+  /// Original SLA window start resolved asynchronously from the UI layer.
+  /// Null until enriched via [sanctionWindowProvider]. Never stored in the DB row.
+  final DateTime? windowStartUtc;
+
+  /// Original SLA deadline resolved asynchronously from the UI layer.
+  /// Null until enriched via [sanctionWindowProvider]. Never stored in the DB row.
+  final DateTime? windowEndUtc;
+
   const SanctionQueueItemView({
     required this.id,
     required this.organizationId,
@@ -34,6 +42,8 @@ class SanctionQueueItemView {
     this.reviewedByUserId,
     this.rejectionReason,
     this.contractName,
+    this.windowStartUtc,
+    this.windowEndUtc,
   });
 
   /// Formatted fine amount as BRL string (e.g., "R$ 1.500,00").

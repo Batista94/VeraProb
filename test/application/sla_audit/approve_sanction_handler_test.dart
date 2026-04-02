@@ -63,6 +63,7 @@ void main() {
           const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'user-op',
+            actorEmail: 'op@test.com',
             callerRole: UserRole.operator,
             organizationId: 'org-1',
           ),
@@ -79,6 +80,7 @@ void main() {
           const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'user-cv',
+            actorEmail: 'cv@test.com',
             callerRole: UserRole.contractorViewer,
             organizationId: 'org-1',
           ),
@@ -95,6 +97,7 @@ void main() {
           const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'auditor-1',
+            actorEmail: 'auditor@test.com',
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
           ),
@@ -111,6 +114,7 @@ void main() {
           const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'admin-1',
+            actorEmail: 'admin@test.com',
             callerRole: UserRole.admin,
             organizationId: 'org-1',
           ),
@@ -143,6 +147,7 @@ void main() {
           const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'auditor-1',
+            actorEmail: 'auditor@test.com',
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
           ),
@@ -161,6 +166,7 @@ void main() {
           const ApproveSanctionCommand(
             queueEntryId: 'entry-001',
             approvedByUserId: 'auditor-evil',
+            actorEmail: 'evil@other.com',
             callerRole: UserRole.auditor,
             organizationId: 'org-2', // wrong org
           ),
@@ -171,13 +177,14 @@ void main() {
   });
 
   group('Happy path', () {
-    test('appends SANCTION_APPLIED to ledger', () async {
+    test('appends VERDICT_SEALED to ledger with actor_email', () async {
       await queueRepo.enqueue(makePendingEntry());
 
       await handler.handle(
         const ApproveSanctionCommand(
           queueEntryId: 'entry-001',
           approvedByUserId: 'auditor-1',
+          actorEmail: 'auditor@veraprob.com',
           callerRole: UserRole.auditor,
           organizationId: 'org-1',
         ),
@@ -185,8 +192,10 @@ void main() {
 
       final entries = ledger.entries;
       expect(entries.length, 1);
-      expect(entries.first.type, 'SANCTION_APPLIED');
+      expect(entries.first.type, 'VERDICT_SEALED');
       expect(entries.first.payload['verdict_evidence'], isNotNull);
+      expect(entries.first.payload['actor_email'], 'auditor@veraprob.com');
+      expect(entries.first.payload['approved_by_user_id'], 'auditor-1');
     });
 
     test('updates queue entry status to applied', () async {
@@ -196,6 +205,7 @@ void main() {
         const ApproveSanctionCommand(
           queueEntryId: 'entry-001',
           approvedByUserId: 'auditor-1',
+          actorEmail: 'auditor@veraprob.com',
           callerRole: UserRole.auditor,
           organizationId: 'org-1',
         ),

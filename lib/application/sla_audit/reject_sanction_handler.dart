@@ -27,7 +27,7 @@ class RejectSanctionHandler {
        _rbac = rbac;
 
   /// Handles the command by transitioning the queue entry to [rejected]
-  /// and appending a `SANCTION_REJECTED` entry to the immutable ledger.
+  /// and appending a `VERDICT_REFUSED` entry to the immutable ledger.
   ///
   /// Throws [DomainException] if:
   /// - [callerRole] does not have [UserPermission.canRejectSanctions]
@@ -76,11 +76,12 @@ class RejectSanctionHandler {
       planVersion: 0,
       queueEntryId: entry.id,
       rejectedByUserId: command.rejectedByUserId,
+      actorEmail: command.actorEmail,
       rejectionReason: command.rejectionReason.trim(),
       verdictEvidence: entry.verdictEvidence,
     );
 
-    // 6. Append SANCTION_REJECTED to the immutable ledger (INV-1)
+    // 6. Append VERDICT_REFUSED to the immutable ledger (INV-1, Pillar C)
     await _ledger.append(SlaLedgerMapper.mapToEntry(event));
 
     // 7. Update queue entry status to rejected

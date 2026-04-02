@@ -9,6 +9,8 @@ import '../../application/sla_audit/reject_sanction_handler.dart';
 import '../../domain/enums/user_role.dart';
 import '../../domain/services/rbac_service.dart';
 import '../../infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'auth_providers.dart';
+import 'sla_providers.dart';
 
 // ── Realtime stream of pending sanctions ─────────────────────────────────────
 
@@ -54,6 +56,28 @@ final contractNameProvider = FutureProvider.autoDispose.family<String?, String>(
   },
 );
 
+// ── SLA window enrichment ─────────────────────────────────────────────────────
+
+/// Resolves the original SLA window (start + end) for a sanction queue item
+/// identified by [setId].
+///
+/// Returns null if the execution state is not found or RLS blocks access.
+/// Follows the same lazy-enrichment pattern as [contractNameProvider].
+final sanctionWindowProvider = FutureProvider.autoDispose
+    .family<({DateTime start, DateTime end})?, String>((ref, setId) async {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return null;
+
+      final service = ref.watch(slaExecutionQueryServiceProvider);
+      final item = await service.findBySetId(
+        setId,
+        organizationId: organizationId,
+      );
+      if (item == null) return null;
+
+      return (start: item.windowStartUtc, end: item.windowEndUtc);
+    });
+
 // ── Per-sanction action state ─────────────────────────────────────────────────
 
 /// Loading/error state for approve/reject actions on a specific sanction card.
@@ -88,6 +112,7 @@ class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> approve({
     required String queueEntryId,
     required String approvedByUserId,
+    required String actorEmail,
     required UserRole callerRole,
     required String organizationId,
   }) async {
@@ -97,6 +122,7 @@ class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
         ApproveSanctionCommand(
           queueEntryId: queueEntryId,
           approvedByUserId: approvedByUserId,
+          actorEmail: actorEmail,
           callerRole: callerRole,
           organizationId: organizationId,
         ),
@@ -107,6 +133,7 @@ class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> reject({
     required String queueEntryId,
     required String rejectedByUserId,
+    required String actorEmail,
     required String rejectionReason,
     required UserRole callerRole,
     required String organizationId,
@@ -117,6 +144,7 @@ class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
         RejectSanctionCommand(
           queueEntryId: queueEntryId,
           rejectedByUserId: rejectedByUserId,
+          actorEmail: actorEmail,
           rejectionReason: rejectionReason,
           callerRole: callerRole,
           organizationId: organizationId,

@@ -119,6 +119,41 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
   }
 
   @override
+  Future<SlaExecutionItemView?> findBySetId(
+    String setId, {
+    required String organizationId,
+  }) async {
+    final row = await _client
+        .from('execution_states')
+        .select()
+        .eq('organization_id', organizationId)
+        .eq('set_id', setId)
+        .limit(1)
+        .maybeSingle();
+
+    if (row == null) return null;
+
+    return SlaExecutionItemView(
+      setId: row['set_id'] as String,
+      contractId: row['contract_id'] as String,
+      status: ExecutionStatus.values.byName(row['status'] as String),
+      windowStartUtc: DateTime.parse(row['window_start_utc'] as String).toUtc(),
+      windowEndUtc: DateTime.parse(row['window_end_utc'] as String).toUtc(),
+      plannedVehicleId: row['planned_vehicle_id'] as String?,
+      boundVehicleId: row['bound_vehicle_id'] as String?,
+      boundAtUtc: row['binding_timestamp_utc'] != null
+          ? DateTime.parse(row['binding_timestamp_utc'] as String).toUtc()
+          : null,
+      startLatitude: (row['start_latitude'] as num).toDouble(),
+      startLongitude: (row['start_longitude'] as num).toDouble(),
+      startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
+      contractualValue: Money((row['contractual_value_cents'] as num).toInt()),
+      noShowPenaltyMultiplier: (row['no_show_penalty_multiplier'] as num)
+          .toDouble(),
+    );
+  }
+
+  @override
   Future<List<SlaExecutionItemView>> listByWindow(
     DateTime startUtc,
     DateTime endUtc, {
