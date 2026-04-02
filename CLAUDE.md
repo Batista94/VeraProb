@@ -29,14 +29,14 @@ VeraProb is an **Automated SLA Compliance & Financial Protection Platform** (the
 
 ---
 
-## 📍 LIVE STATUS: Phase 9.8 (The Body)
+## 📍 LIVE STATUS: Phase 10.4 (The Polish & Differential)
 
-**Current Objective:** Resilience & Operational Hub — Background Sync Resilience. [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
+**Current Objective:** OCC UX Polish — Ingestion Health & Alerts. [READY FOR FIRST TENANT](docs/governance/roadmap.md#milestone-gate-ready-for-first-tenant)
 
-- **Done:** Phase 9.7 ✅ · 9.8.B ✅ · 9.8.C ✅ · 9.8.D (Hard Quota Enforcement) ✅ · 9.8.E (Global InfoTooltip) ✅ · 9.8.F (Searchable Entity Mapping) ✅ · 9.8.G (Heartbeat Monitor) ✅ · 9.8.H (Background Sync Resilience / LocalFactQueue) ✅ · 9.8.I (Late-Arrival Window Protocol) ✅
-- **Tests:** 1535 passing · 18 skipped · 0 failures ✅
+- **Done:** Phase 9.8 ✅ · 10.1 (Schema Lock) ✅ · 10.2 (WASM) ✅ · 10.3 (Shadow Mode) ✅ · 10.4.WS-1 ✅ · 10.4.WS-2 ✅ · 10.4.WS-3 ✅ · 10.4.WS-6 ✅
+- **Tests:** 1571 passing · 18 skipped · 0 failures ✅
 - **Next Up:**
-  1. **9.8.J — Driver Defense Portal (MVP):** Portal for preventive justification submission linked to audit.
+  1. **10.4.WS-4 — Telegram Evidence Bot:** Deno Edge Function + Hot-linking to Verdict Cards.
 
 ---
 

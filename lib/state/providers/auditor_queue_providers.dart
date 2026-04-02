@@ -8,6 +8,8 @@ import '../../application/sla_audit/reject_sanction_command.dart';
 import '../../application/sla_audit/reject_sanction_handler.dart';
 import '../../domain/enums/user_role.dart';
 import '../../domain/services/rbac_service.dart';
+import '../../domain/sla_audit/infraction_recurrence_report.dart';
+import '../../domain/sla_audit/vehicle_infraction_recurrence_service.dart';
 import '../../infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'auth_providers.dart';
 import 'sla_providers.dart';
@@ -76,6 +78,28 @@ final sanctionWindowProvider = FutureProvider.autoDispose
       if (item == null) return null;
 
       return (start: item.windowStartUtc, end: item.windowEndUtc);
+    });
+
+// ── Vehicle infraction recurrence ─────────────────────────────────────────────
+
+/// Computes the monthly recurrence context for a vehicle plate.
+///
+/// Key format: "$queueEntryId|$vehiclePlate|$organizationId"
+///
+/// Returns null when [vehiclePlate] is empty (no plate = no recurrence context).
+final vehicleInfractionRecurrenceProvider = FutureProvider.autoDispose
+    .family<InfractionRecurrenceReport?, String>((ref, key) async {
+      final parts = key.split('|');
+      if (parts.length != 3 || parts[1].isEmpty) return null;
+      final service = VehicleInfractionRecurrenceService(
+        repository: ref.watch(vehicleInfractionRecurrenceRepositoryProvider),
+      );
+      return service.computeRecurrence(
+        organizationId: parts[2],
+        vehiclePlate: parts[1],
+        referenceUtc: DateTime.now().toUtc(),
+        currentQueueEntryId: parts[0],
+      );
     });
 
 // ── Per-sanction action state ─────────────────────────────────────────────────

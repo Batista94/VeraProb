@@ -29,6 +29,13 @@ class SanctionReviewQueueEntry extends Equatable {
   final String? reviewedByUserId;
   final String? rejectionReason;
 
+  /// Denormalized vehicle plate, resolved at INSERT time by the DB trigger
+  /// (migration 20260610000001_srq_vehicle_plate.sql). Nullable — unbound
+  /// vehicles or legacy rows may not have a plate.
+  ///
+  /// Excluded from [props]: identity is [id]-based, not plate-based.
+  final String? vehiclePlate;
+
   const SanctionReviewQueueEntry({
     required this.id,
     required this.organizationId,
@@ -41,6 +48,7 @@ class SanctionReviewQueueEntry extends Equatable {
     this.reviewedAtUtc,
     this.reviewedByUserId,
     this.rejectionReason,
+    this.vehiclePlate,
   });
 
   SanctionReviewQueueEntry copyWith({
@@ -61,6 +69,7 @@ class SanctionReviewQueueEntry extends Equatable {
       reviewedAtUtc: reviewedAtUtc ?? this.reviewedAtUtc,
       reviewedByUserId: reviewedByUserId ?? this.reviewedByUserId,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      vehiclePlate: vehiclePlate,
     );
   }
 

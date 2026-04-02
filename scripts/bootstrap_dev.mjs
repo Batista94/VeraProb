@@ -82,7 +82,7 @@ function readSupabaseStatus() {
       return null;
     };
     return {
-      url:        get('Project URL', 'API URL'),
+      url:        get('API URL', 'Project URL'),
       anonKey:    get('Publishable', 'anon key'),
       serviceKey: get('Secret', 'service_role key'),
     };
@@ -112,7 +112,15 @@ function resolveConfig() {
     || status.serviceKey
     || '';
 
-  return { url: url.replace(/\/$/, ''), anonKey, serviceKey };
+  const finalUrl = url.replace(/\/$/, '');
+
+  // Safety check: common mistake is pointing to Studio (54323) instead of API (54321)
+  if (finalUrl.includes(':54323')) {
+    console.warn('\x1b[33m  AVISO: SUPABASE_URL parece estar apontando para o Studio (54323).');
+    console.warn('         O script de bootstrap precisa do API URL (geralmente :54321).\x1b[0m\n');
+  }
+
+  return { url: finalUrl, anonKey, serviceKey };
 }
 
 // ── Helpers HTTP ───────────────────────────────────────────────────────────────

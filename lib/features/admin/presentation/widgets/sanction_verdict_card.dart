@@ -12,7 +12,9 @@ import '../../../../state/providers/auditor_queue_providers.dart';
 import '../../../../state/providers/auth_providers.dart';
 import '../screens/widgets/investigation_modal.dart';
 import '../shared/widgets/geofence_evidence_map.dart';
+import 'ghost_bar_widget.dart';
 import 'ingestion_health_widget.dart';
+import 'recurrence_badge_widget.dart';
 import 'risk_thermometer_widget.dart';
 
 /// Business Verdict Tool card for the Auditor Queue.
@@ -192,29 +194,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   const SizedBox(height: 16),
                   const Divider(color: VeraProbColors.border, height: 1),
 
-                  // ── Zona 3: Infraction Summary ─────────────────────────────────
+                  // ── Zona 3: Infraction Summary — Ghost Bars (WS-6) ────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _FactColumn(
-                            label: 'DIFERENÇA OBSERVADA',
-                            value:
-                                '${evidence.deltaValue.toStringAsFixed(1)} $unit',
-                            valueColor: VeraProbColors.warning,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _FactColumn(
-                            label: 'LIMITE CONTRATUAL',
-                            value:
-                                '${evidence.thresholdValue.toStringAsFixed(1)} $unit',
-                            valueColor: VeraProbColors.textPrimary,
-                          ),
-                        ),
-                      ],
+                    child: GhostBarWidget(
+                      deltaValue: evidence.deltaValue,
+                      thresholdValue: evidence.thresholdValue,
+                      unit: unit,
+                      clauseRef: evidence.clauseRef,
                     ),
                   ),
 
@@ -265,6 +252,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
 
                   // ── Zona 3.6: Risk Thermometer (WS-2) ──────────────────────────
                   _RiskThermometerZone(item: item),
+
+                  // ── Zona 3.7: Recurrence Badge (WS-6) ─────────────────────────
+                  _RecurrenceZone(item: item),
 
                   const Divider(color: VeraProbColors.border, height: 1),
 
@@ -490,6 +480,35 @@ class _RiskThermometerZone extends ConsumerWidget {
   }
 }
 
+/// Renders the monthly recurrence badge for a vehicle's infraction history.
+///
+/// Hidden (SizedBox.shrink) when no [vehiclePlate] is available on the item
+/// (legacy rows or unbound vehicles). Shows a loading placeholder while the
+/// async provider resolves.
+class _RecurrenceZone extends ConsumerWidget {
+  final SanctionQueueItemView item;
+  const _RecurrenceZone({required this.item});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final plate = item.vehiclePlate;
+    if (plate == null || plate.isEmpty) return const SizedBox.shrink();
+
+    final key = '${item.id}|$plate|${item.organizationId}';
+    return ref.watch(vehicleInfractionRecurrenceProvider(key)).when(
+      loading: () => const SizedBox(height: 48),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (report) {
+        if (report == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+          child: RecurrenceBadgeWidget(report: report),
+        );
+      },
+    );
+  }
+}
+
 class _ClauseBadge extends StatelessWidget {
   final String clauseRef;
   const _ClauseBadge({required this.clauseRef});
@@ -552,37 +571,6 @@ class _ConfidenceBadge extends StatelessWidget {
   }
 }
 
-class _FactColumn extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color valueColor;
-  const _FactColumn({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: VeraProbTypography.caption.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.0,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: VeraProbTypography.dataValue.copyWith(color: valueColor),
-        ),
-      ],
-    );
-  }
-}
 
 class _ForensicSealRow extends StatelessWidget {
   final SanctionQueueItemView item;

@@ -29,6 +29,10 @@ class SanctionQueueItemView {
   /// Null until enriched via [sanctionWindowProvider]. Never stored in the DB row.
   final DateTime? windowEndUtc;
 
+  /// Denormalized vehicle plate from the DB row (see INV-1 trigger).
+  /// Null for legacy rows or unbound vehicles.
+  final String? vehiclePlate;
+
   const SanctionQueueItemView({
     required this.id,
     required this.organizationId,
@@ -44,6 +48,7 @@ class SanctionQueueItemView {
     this.contractName,
     this.windowStartUtc,
     this.windowEndUtc,
+    this.vehiclePlate,
   });
 
   /// Formatted fine amount as BRL string (e.g., "R$ 1.500,00").
@@ -88,6 +93,7 @@ class SanctionQueueItemView {
           : null,
       reviewedByUserId: row['reviewed_by'] as String?,
       rejectionReason: row['rejection_reason'] as String?,
+      vehiclePlate: row['vehicle_plate'] as String?,
     );
   }
 
@@ -104,6 +110,7 @@ class SanctionQueueItemView {
       reviewedAtUtc: entry.reviewedAtUtc,
       reviewedByUserId: entry.reviewedByUserId,
       rejectionReason: entry.rejectionReason,
+      vehiclePlate: entry.vehiclePlate,
     );
   }
 }

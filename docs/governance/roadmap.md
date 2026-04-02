@@ -10,7 +10,7 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| Tests | 1510 passing · 6 skipped · 0 failures ✅ |
+| Tests | 1571 passing · 18 skipped · 0 failures ✅ |
 | Migrations | 77 applied (schema lock v1 + shadow mode v1) ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | Phase 9.8 | **COMPLETED** — Resilience & Operational Hub ✅ |
@@ -94,19 +94,19 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 
 ### [ ] Phase 10.4 — OCC UX Polish (Differential Refinement)
 
-- **Status:** EM ANDAMENTO — WS-1 Concluído ✅
+- **Status:** EM ANDAMENTO — WS-1, WS-2, WS-3, WS-6 Concluídos ✅
 - **Deliverables:**
   - [x] **WS-1: Forensic Authority Language & Sealed Verdict Lock** (Verbs forensicized, 🔒 locked state implemented, Pillar C audit trail active).
-  - [ ] **WS-2: Predictive SLA Breach Alerts** (Dynamic Risk Buffer + Risk Thermometer visual).
-  - [ ] **WS-3: Ingestion Health & Confidence Score** (Signal Integrity monitor + Double confirmation logic).
+  - [x] **WS-2: Predictive SLA Breach Alerts** (Dynamic Risk Buffer + Risk Thermometer visual).
+  - [x] **WS-3: Ingestion Health & Confidence Score** (Signal Integrity monitor + Double confirmation logic).
   - [ ] **WS-4: Telegram Evidence Bot** (Deno Edge Function + Hot-linking to Verdict Cards).
   - [ ] **WS-5: Telemetry Map-Sync** (Reactive repositioning on click).
-  - [ ] **WS-6: Recurrence & Contractual Context** (Infringement history on cards).
+  - [x] **WS-6: Recurrence & Contractual Context** (Infringement history on cards).
   - [ ] **WS-7: Operational Macros** (1-Click standard justifications).
   - [ ] **WS-8: UX Polish Bundle** (Invitations, empty states, sparklines).
 
 - Cognitive load audit · Verdict traceable in ≤1 click · WCAG 2.2 AA.
-- **[UX] Forensic Audit Context:** Enriquecer o card da Fila Auditora com Histórico de Recorrência (ex: '3ª infração deste veículo/motorista no mês') e visualização comparativa direta entre o dado observado e o limite contratual.
+- [x] **[UX] Forensic Audit Context:** Enriquecer o card da Fila Auditora com Histórico de Recorrência (ex: '3ª infração deste veículo/motorista no mês') e visualização comparativa direta entre o dado observado e o limite contratual.
 - [x] **[UX] Actionable Verdicts:** Alterar linguagem passiva ('Validar/Rejeitar') para linguagem de autoridade ('Selar Veredito' / 'Recusar Veredito' / 'Solicitar Prova Forense').
 - **[BIZ] Telegram Evidence Bot Integration:** Gateway gratuito para motoristas enviarem fotos/provas preventivas diretamente para o card de auditoria via Telegram API (Custo R$ 0).
 - **[UX] Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz Policial', 'Parada Autorizada') que preenchem justificativa e anexam regras de tolerância automaticamente.

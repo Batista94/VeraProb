@@ -10,7 +10,9 @@
 /// marcados como SKIP (não FAIL) — mesmo comportamento dos outros testes postgres.
 library;
 
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -47,6 +49,62 @@ String _uniqueCnpj() {
   return ts.substring(ts.length - 14);
 }
 
+Future<String> _ensureUser(
+  String email,
+  String password, {
+  required String supabaseUrl,
+  required String serviceRoleKey,
+}) async {
+  final res = await http.post(
+    Uri.parse('$supabaseUrl/auth/v1/admin/users'),
+    headers: {
+      'apikey': serviceRoleKey,
+      'Authorization': 'Bearer $serviceRoleKey',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({
+      'email': email,
+      'password': password,
+      'email_confirm': true,
+    }),
+  );
+
+  if (res.statusCode == 201 || res.statusCode == 200) {
+    return jsonDecode(res.body)['id'] as String;
+  }
+  // Try to find if already exists
+  final search = await http.get(
+    Uri.parse('$supabaseUrl/auth/v1/admin/users'),
+    headers: {
+      'apikey': serviceRoleKey,
+      'Authorization': 'Bearer $serviceRoleKey',
+    },
+  );
+  
+  final decoded = jsonDecode(search.body);
+  List users;
+  if (decoded is List) {
+    users = decoded;
+  } else if (decoded is Map && decoded.containsKey('users')) {
+    users = decoded['users'] as List;
+  } else {
+    throw Exception('Unexpected Auth Admin API response: $decoded');
+  }
+
+  return users.firstWhere((u) => u['email'] == email)['id'] as String;
+}
+
+Future<SupabaseClient> _signIn(
+  String email,
+  String password, {
+  required String supabaseUrl,
+  required String anonKey,
+}) async {
+  final client = SupabaseClient(supabaseUrl, anonKey);
+  await client.auth.signInWithPassword(email: email, password: password);
+  return client;
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 void main() async {
@@ -61,7 +119,9 @@ void main() async {
       // Integration tests use service_role client to bypass RLS for test setup.
       // The repository takes a single authenticated client (Phase 9.6 refactor).
       late SupabaseClient serviceRoleClient;
+      late SupabaseClient superAdminClient;
       late SupabaseSuperAdminRepository repo;
+      late SupabaseSuperAdminRepository superAdminRepo;
 
       setUpAll(() async {
         // Inicializa Supabase.instance (SharedPreferences mock, auth) —
@@ -72,11 +132,53 @@ void main() async {
           PostgresTestConfig.supabaseUrl,
           PostgresTestConfig.serviceRoleKey,
         );
+
+        // 1. Ensure SuperAdmin user exists in Auth and public.super_admin_users
+        const email = 'super_admin_test@veraprob.com';
+        const password = 'SuperPassword123!';
+        final superAdminId = await _ensureUser(
+          email,
+          password,
+          supabaseUrl: PostgresTestConfig.supabaseUrl,
+          serviceRoleKey: PostgresTestConfig.serviceRoleKey,
+        );
+
+        // 2. Force super_admin=true metadata (INV-14 enforcement in Deno)
+        await http.put(
+          Uri.parse(
+            '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users/$superAdminId',
+          ),
+          headers: {
+            'apikey': PostgresTestConfig.serviceRoleKey,
+            'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'app_metadata': {'super_admin': true},
+          }),
+        );
+
+        // 3. Ensure organization record for super_admin_users table (if needed)
+        await serviceRoleClient.from('super_admin_users').upsert({
+          'user_id': superAdminId,
+          'email': email,
+        }, onConflict: 'user_id');
+
+        // 4. Sign in to get valid JWT for proxy calls
+        superAdminClient = await _signIn(
+          email,
+          password,
+          supabaseUrl: PostgresTestConfig.supabaseUrl,
+          anonKey: PostgresTestConfig.supabaseAnonKey,
+        );
+
         repo = SupabaseSuperAdminRepository(serviceRoleClient);
+        superAdminRepo = SupabaseSuperAdminRepository(superAdminClient);
       });
 
       tearDownAll(() async {
         await serviceRoleClient.dispose();
+        await superAdminClient.dispose();
       });
 
       // ── createOrganization ─────────────────────────────────────────────────
@@ -394,15 +496,13 @@ void main() async {
 
       group(
         'getAllTenantHealth',
-        skip:
-            'Requires super-admin-proxy Edge Function deployed (supabase functions serve)',
         () {
           test('retorna lista de TenantHealthSnapshot', () async {
             // Cria uma org de teste para garantir que a view tenha pelo menos uma linha
             final cnpj = _uniqueCnpj();
             await repo.createOrganization(_testCmd(cnpj));
 
-            final snapshots = await repo.getAllTenantHealth();
+            final snapshots = await superAdminRepo.getAllTenantHealth();
 
             expect(snapshots, isA<List<TenantHealthSnapshot>>());
             expect(snapshots, isNotEmpty);
@@ -419,7 +519,7 @@ void main() async {
               final cnpj = _uniqueCnpj();
               final orgId = await repo.createOrganization(_testCmd(cnpj));
 
-              final snapshots = await repo.getAllTenantHealth();
+              final snapshots = await superAdminRepo.getAllTenantHealth();
               final match = snapshots.where((s) => s.id == orgId).toList();
 
               expect(
@@ -439,11 +539,9 @@ void main() async {
 
       group(
         'getSystemAuditLog',
-        skip:
-            'Requires super-admin-proxy Edge Function deployed (supabase functions serve)',
         () {
           test('retorna lista sem filtro', () async {
-            final logs = await repo.getSystemAuditLog(limit: 10);
+            final logs = await superAdminRepo.getSystemAuditLog(limit: 10);
             expect(logs, isA<List<SystemAuditLogEntry>>());
           });
 
@@ -459,7 +557,7 @@ void main() async {
               'source': 'test_suite',
             });
 
-            final filtered = await repo.getSystemAuditLog(
+            final filtered = await superAdminRepo.getSystemAuditLog(
               organizationId: orgId,
               limit: 50,
             );
@@ -473,7 +571,7 @@ void main() async {
           });
 
           test('filtra por severity corretamente', () async {
-            final logs = await repo.getSystemAuditLog(
+            final logs = await superAdminRepo.getSystemAuditLog(
               severity: 'error',
               limit: 20,
             );

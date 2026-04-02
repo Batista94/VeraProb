@@ -102,6 +102,7 @@ class PostgresSanctionReviewQueueRepository
           : null,
       reviewedByUserId: row['reviewed_by'] as String?,
       rejectionReason: row['rejection_reason'] as String?,
+      vehiclePlate: row['vehicle_plate'] as String?,
     );
   }
 }
