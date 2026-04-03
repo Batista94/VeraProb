@@ -37,7 +37,7 @@ class StrictMockPolicyEvaluator implements AuthorityPolicyEvaluator {
       policyVersion: 'test_mock_v1',
       result: result,
       reason: reason,
-      occurredAt: DateTime.now(),
+      occurredAt: DateTime.now().toUtc(),
       contextSnapshot: context.toJson(),
     );
   }

@@ -36,7 +36,10 @@ void main() async {
       late SupabaseClient operatorClient;
 
       setUpAll(() async {
-        final timestamp = DateTime.now().microsecondsSinceEpoch.toString();
+        final timestamp = DateTime.now()
+            .toUtc()
+            .microsecondsSinceEpoch
+            .toString();
         _orgAId = _uuid.v4();
         _orgBId = _uuid.v4();
         _userAEmail = 'admin_a_$timestamp@veraprob.test';
@@ -409,10 +412,11 @@ Future<void> _ensureOrg(
   required String id,
   required String name,
 }) async {
-  final randomCnpj = DateTime.now().microsecondsSinceEpoch.toString().substring(
-    0,
-    14,
-  );
+  final randomCnpj = DateTime.now()
+      .toUtc()
+      .microsecondsSinceEpoch
+      .toString()
+      .substring(0, 14);
   await admin.from('organizations').upsert({
     'id': id,
     'name': name,

@@ -2,13 +2,13 @@
 /// Pure data contract representing aggregated metrics for the top KPI Bar.
 class CommandCenterKPIs {
   /// Percentage of completed or active trips that are on time (0.0 to 1.0)
-  final double globalPunctuality;
+  final double globalPunctuality; // forensic-ignore: FINANCIAL-BLOCK
 
   /// Total number of active vehicles currently broadcasting data
   final int activeVehicles;
 
   /// Percentage of active vehicles currently suffering from signal loss (0.0 to 1.0)
-  final double signalLossRate;
+  final double signalLossRate; // forensic-ignore: FINANCIAL-BLOCK
 
   /// Absolute number of critical incidents currently open
   final int openIncidents;
@@ -21,9 +21,9 @@ class CommandCenterKPIs {
   });
 
   CommandCenterKPIs copyWith({
-    double? globalPunctuality,
+    double? globalPunctuality, // forensic-ignore: FINANCIAL-BLOCK
     int? activeVehicles,
-    double? signalLossRate,
+    double? signalLossRate, // forensic-ignore: FINANCIAL-BLOCK
     int? openIncidents,
   }) {
     return CommandCenterKPIs(

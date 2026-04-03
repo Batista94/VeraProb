@@ -30,13 +30,13 @@ class SlaBreachRiskReport extends Equatable {
   /// The 15% safety buffer duration for this window.
   final Duration buffer;
 
-  /// Risk ratio relative to the buffer window.
+  /// Risk ratio relative to the buffer window in Basis Points.
   ///
   /// Negative = comfortably before the buffer.
-  /// 0.0 = buffer entry point.
-  /// 1.0 = SLA deadline.
-  /// > 1.0 = past the deadline (breach).
-  final double riskPercentage;
+  /// 0 = buffer entry point.
+  /// 10,000 = SLA deadline.
+  /// > 10,000 = past the deadline (breach).
+  final int riskBps;
 
   /// Original trip start time (UTC).
   final DateTime windowStartUtc;
@@ -44,33 +44,33 @@ class SlaBreachRiskReport extends Equatable {
   /// SLA deadline (UTC).
   final DateTime windowEndUtc;
 
-  /// The ETA or event time used for this evaluation (UTC).
+  /// The ETA or factEvent time used for this evaluation (UTC).
   final DateTime evaluatedAtUtc;
 
   const SlaBreachRiskReport({
     required this.buffer,
-    required this.riskPercentage,
+    required this.riskBps,
     required this.windowStartUtc,
     required this.windowEndUtc,
     required this.evaluatedAtUtc,
   });
 
-  /// Whether the UI should show a pulsing animation (riskPercentage ≥ 0.85).
-  bool get requiresPulse => riskPercentage >= 0.85;
+  /// Whether the UI should show a pulsing animation (riskBps ≥ 8500).
+  bool get requiresPulse => riskBps >= 8500;
 
   /// Classifies the current risk into a named level.
   SlaRiskLevel get riskLevel {
-    if (riskPercentage >= 1.0) return SlaRiskLevel.breached;
-    if (riskPercentage >= 0.85) return SlaRiskLevel.critical;
-    if (riskPercentage >= 0.50) return SlaRiskLevel.moderate;
-    if (riskPercentage >= 0.0) return SlaRiskLevel.low;
+    if (riskBps >= 10000) return SlaRiskLevel.breached;
+    if (riskBps >= 8500) return SlaRiskLevel.critical;
+    if (riskBps >= 5000) return SlaRiskLevel.moderate;
+    if (riskBps >= 0) return SlaRiskLevel.low;
     return SlaRiskLevel.safe;
   }
 
   @override
   List<Object?> get props => [
     buffer,
-    riskPercentage,
+    riskBps,
     windowStartUtc,
     windowEndUtc,
     evaluatedAtUtc,
@@ -96,13 +96,13 @@ class SlaBreachRiskReport extends Equatable {
 /// - Deterministic: same inputs → same output.
 class SlaBreachRiskCalculator {
   /// Fraction of total trip duration used as the safety buffer (15%).
-  static const double bufferFraction = 0.15;
+  static const int bufferFractionBps = 1500;
 
   /// Lower bound of the critical zone (triggers pulse animation).
-  static const double criticalThreshold = 0.85;
+  static const int criticalThresholdBps = 8500;
 
   /// Lower bound of the moderate zone.
-  static const double moderateThreshold = 0.50;
+  static const int moderateThresholdBps = 5000;
 
   const SlaBreachRiskCalculator();
 
@@ -131,18 +131,22 @@ class SlaBreachRiskCalculator {
       );
     }
 
-    final bufferSeconds = (totalSeconds * bufferFraction).round();
+    final bufferSeconds = (totalSeconds * bufferFractionBps) ~/ 10000;
     final riskWindowStart = windowEndUtc.subtract(
       Duration(seconds: bufferSeconds),
     );
     final elapsedIntoBuffer = currentEtaUtc
         .difference(riskWindowStart)
         .inSeconds;
-    final riskPercentage = elapsedIntoBuffer / bufferSeconds;
+
+    // Avoid division by zero if buffer is somehow 0
+    final riskBps = bufferSeconds > 0
+        ? (elapsedIntoBuffer * 10000) ~/ bufferSeconds
+        : (elapsedIntoBuffer >= 0 ? 10000 : -10000);
 
     return SlaBreachRiskReport(
       buffer: Duration(seconds: bufferSeconds),
-      riskPercentage: riskPercentage,
+      riskBps: riskBps,
       windowStartUtc: windowStartUtc,
       windowEndUtc: windowEndUtc,
       evaluatedAtUtc: currentEtaUtc,

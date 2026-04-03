@@ -8,7 +8,7 @@ void main() {
       final tripInTransit = OperationalTrip(
         id: '1',
         routeId: 'r1',
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
         status: TripStatus.enRoute,
       );
       expect(tripInTransit.isActive, isTrue);
@@ -21,7 +21,7 @@ void main() {
       final tripCompleted = OperationalTrip(
         id: '1',
         routeId: 'r1',
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
         status: TripStatus.completed,
       );
       expect(tripCompleted.isTerminal, isTrue);
@@ -37,7 +37,7 @@ void main() {
       final normalTrip = OperationalTrip(
         id: '1',
         routeId: 'r1',
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
         status: TripStatus.enRoute,
         severityScore: 10,
       );
@@ -56,7 +56,7 @@ void main() {
       final trip = OperationalTrip(
         id: '1',
         routeId: 'r1',
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
       expect(trip.isFullyAssigned, isFalse);
 
@@ -68,7 +68,7 @@ void main() {
       final onTime = OperationalTrip(
         id: '1',
         routeId: 'r1',
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
         delaySeconds: 0,
       );
       expect(onTime.delayDisplay, 'No horário');
@@ -84,7 +84,7 @@ void main() {
       final trip = OperationalTrip(
         id: '1',
         routeId: 'r1',
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
       expect(trip.routeDisplay, 'r1');
 

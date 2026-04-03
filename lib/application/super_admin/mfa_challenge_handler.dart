@@ -1,7 +1,8 @@
 import '../../domain/sla_audit/domain_exception.dart';
 import '../../domain/super_admin/i_mfa_repository.dart';
 import '../../domain/super_admin/mfa_challenge_result.dart';
-import '../../domain/super_admin/mfa_verification_result.dart';
+import '../../domain/super_admin/mfa_verification_result.dart' as domain;
+import 'mfa_result_view.dart';
 
 /// Handles MFA challenge creation and TOTP verification for SuperAdmin.
 ///
@@ -29,15 +30,28 @@ class MfaChallengeHandler {
   }
 
   /// Verifies a TOTP code against a challenge.
-  Future<MfaVerificationResult> verify({
+  ///
+  /// Returns a [MfaVerificationView] so the presentation layer never imports
+  /// the domain [MfaVerificationResult] directly (C4 isolation).
+  Future<MfaVerificationView> verify({
     required String factorId,
     required String challengeId,
     required String code,
-  }) {
-    return _repository.verifyChallenge(
+  }) async {
+    final result = await _repository.verifyChallenge(
       factorId: factorId,
       challengeId: challengeId,
       code: code,
     );
+    return switch (result) {
+      domain.MfaVerificationSuccess() => const MfaVerificationSuccess(),
+      domain.MfaVerificationFailure(:final failedAttempts, :final isLockedOut, :final lockedUntil, :final message) =>
+        MfaVerificationFailure(
+          failedAttempts: failedAttempts,
+          isLockedOut: isLockedOut,
+          lockedUntil: lockedUntil,
+          message: message,
+        ),
+    };
   }
 }

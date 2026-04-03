@@ -20,7 +20,7 @@ void main() {
         timezone: 'UTC',
         currencyCode: 'USD',
         isActive: true,
-        createdAt: DateTime.now(),
+        createdAt: DateTime.now().toUtc(),
       );
     });
 

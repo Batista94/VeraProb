@@ -13,7 +13,7 @@ void main() {
       'should create with valid parameters (including gracePeriodMinutes)',
       () {
         final penalties = SLAPenalties.create(
-          noShowPenaltyMultiplier: 1.5,
+          noShowPenaltyBps: 15000,
           delayToleranceMinutes: 15,
           delayPenaltyPerMinute: delayPenalty,
           downgradePenaltyFlat: downgradePenalty,
@@ -21,7 +21,7 @@ void main() {
           baseTripValue: baseValue,
         );
 
-        expect(penalties.noShowPenaltyMultiplier, 1.5);
+        expect(penalties.noShowPenaltyBps, 15000);
         expect(penalties.delayToleranceMinutes, 15);
         expect(penalties.gracePeriodMinutes, 10);
         expect(penalties.baseTripValue, baseValue);
@@ -30,7 +30,7 @@ void main() {
 
     test('should default gracePeriodMinutes to 0', () {
       final penalties = SLAPenalties.create(
-        noShowPenaltyMultiplier: 1.5,
+        noShowPenaltyBps: 15000,
         delayToleranceMinutes: 15,
         delayPenaltyPerMinute: delayPenalty,
         downgradePenaltyFlat: downgradePenalty,
@@ -42,7 +42,7 @@ void main() {
     test('should throw DomainException for negative gracePeriodMinutes', () {
       expect(
         () => SLAPenalties.create(
-          noShowPenaltyMultiplier: 1.5,
+          noShowPenaltyBps: 15000,
           delayToleranceMinutes: 15,
           delayPenaltyPerMinute: delayPenalty,
           downgradePenaltyFlat: downgradePenalty,
@@ -55,7 +55,7 @@ void main() {
     group('serialization', () {
       test('round-trip serialization keeps gracePeriodMinutes', () {
         final original = SLAPenalties.create(
-          noShowPenaltyMultiplier: 1.5,
+          noShowPenaltyBps: 15000,
           delayToleranceMinutes: 15,
           delayPenaltyPerMinute: delayPenalty,
           downgradePenaltyFlat: downgradePenalty,
@@ -73,7 +73,7 @@ void main() {
         'fromJson should support missing gracePeriodMinutes (backward compat)',
         () {
           final json = {
-            'noShowPenaltyMultiplier': 1.5,
+            'noShowPenaltyBps': 15000,
             'delayToleranceMinutes': 15,
             'delayPenaltyPerMinuteCents': 50,
             'downgradePenaltyFlatCents': 5000,

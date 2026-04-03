@@ -37,17 +37,17 @@ class SupabaseHeartbeatQueryService implements HeartbeatQueryService {
     final devices = rows.map((dynamic raw) {
       final row = raw as Map<String, dynamic>;
       final gapSeconds = (row['gap_seconds'] as num).toInt();
-      final fleetActiveRatio =
-          (row['fleet_active_ratio'] as num?)?.toDouble() ?? 0.0;
+      final fleetActiveBps =
+          ((row['fleet_active_ratio'] as num?)?.toDouble() ?? 0.0 * 10000).toInt();
 
-      final classification = _classifier.classify(gapSeconds, fleetActiveRatio);
+      final classification = _classifier.classify(gapSeconds, fleetActiveBps);
 
       return DeviceHeartbeatStatus(
         assetId: row['asset_id'] as String,
         lastSeenAtUtc: DateTime.parse(row['last_seen_utc'] as String).toUtc(),
         gapSeconds: gapSeconds,
         classification: classification,
-        fleetActiveRatio: fleetActiveRatio,
+        fleetActiveBps: fleetActiveBps,
       );
     }).toList();
 

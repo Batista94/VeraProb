@@ -51,8 +51,8 @@ final class DwellRequirementEvidence extends EvidencePayload {
 
 /// Evidence for a speed violation sanction (INV-23).
 final class SpeedViolationEvidence extends EvidencePayload {
-  final double actualSpeedKmh;
-  final double limitSpeedKmh;
+  final double actualSpeedKmh; // Physical Metric - Double Required
+  final double limitSpeedKmh; // Physical Metric - Double Required
 
   const SpeedViolationEvidence({
     required this.actualSpeedKmh,
@@ -75,7 +75,7 @@ final class SpeedViolationEvidence extends EvidencePayload {
 
 /// Evidence produced when a vehicle successfully binds to a geofence.
 final class GeofenceBindingEvidence extends EvidencePayload {
-  final double distanceMeters;
+  final double distanceMeters; // Physical Metric - Double Required
   final int allowedRadiusMeters;
   final int actualDwellSeconds;
   final int requiredDwellSeconds;

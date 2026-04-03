@@ -27,7 +27,7 @@ void main() {
         AuthorizationContext mockSession() => AuthorizationContext(
           actorId: const ActorId('stress-actor'),
           roleId: const RoleId('stresser'),
-          capturedAt: DateTime.now(),
+          capturedAt: DateTime.now().toUtc(),
         );
 
         final bus = AuthorizingCommandBus(

@@ -1,5 +1,4 @@
 import '../../../application/operational_control_service.dart';
-import '../../../domain/entities/operational_trip.dart';
 import '../../../domain/entities/operational_warning.dart';
 import 'detectors/delay_detector.dart';
 import 'detectors/off_route_detector.dart';

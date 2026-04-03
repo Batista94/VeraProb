@@ -1,19 +1,18 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/config/supabase_client.dart';
-import 'data/repositories/vehicle_repository.dart';
-import 'data/services/gtfs_realtime_service.dart';
-import 'domain/entities/vehicle_position.dart';
+import 'package:veraprob/infrastructure/shared/vehicle_repository.dart';
+import 'package:veraprob/infrastructure/shared/gtfs_realtime_service.dart';
+import 'package:veraprob/application/shared/vehicle_position_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'data/repositories/driver_repository.dart';
-import 'domain/entities/driver.dart';
-import 'data/repositories/driver_repository_impl.dart';
-import 'data/repositories/trip_repository.dart';
-import 'data/repositories/trip_repository_impl.dart';
-import '../assets/data/repositories/vehicle_asset_repository.dart';
-import '../assets/data/repositories/vehicle_asset_repository_impl.dart';
-import '../assets/data/repositories/transit_route_repository.dart';
-import '../assets/data/repositories/transit_route_repository_impl.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/infrastructure/shared/trip_repository_impl.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+export 'package:veraprob/state/providers/assets_providers.dart'
+    show
+        driverRepositoryProvider,
+        vehicleAssetRepositoryProvider,
+        transitRouteRepositoryProvider,
+        driverListProvider;
 
 // Services
 final gtfsServiceProvider = Provider((ref) => GtfsRealtimeService());
@@ -25,16 +24,7 @@ final sharedPreferencesProvider = Provider<SharedPreferences>(
 // Repositories
 final vehicleRepositoryProvider = Provider<IVehiclePositionService>((ref) {
   final gtfsService = ref.read(gtfsServiceProvider);
-  return VehicleRepository(supabase, gtfsService);
-});
-
-final driverRepositoryProvider = Provider<IDriverRepository>(
-  (ref) => DriverRepositoryImpl(supabase),
-);
-
-final driverListProvider = FutureProvider<List<Driver>>((ref) {
-  final repository = ref.read(driverRepositoryProvider);
-  return repository.getDrivers();
+  return VehicleRepository(gtfsService);
 });
 
 final currentDriverProvider = StateProvider<Driver?>((ref) => null);
@@ -51,25 +41,20 @@ final searchQueryStreamProvider = StreamProvider<String>((ref) async* {
 });
 
 final tripRepositoryProvider = Provider<ITripRepository>((ref) {
-  return TripRepositoryImpl(supabase);
+  return TripRepositoryImpl(ref.watch(supabaseClientProvider));
 });
 
-final vehicleAssetRepositoryProvider = Provider<IVehicleAssetRepository>((ref) {
-  return VehicleAssetRepositoryImpl(supabase);
-});
-
-final transitRouteRepositoryProvider = Provider<ITransitRouteRepository>((ref) {
-  return TransitRouteRepositoryImpl(supabase);
-});
-
-final vehiclePositionsStreamProvider = StreamProvider<List<VehiclePosition>>((
+final vehiclePositionsStreamProvider =
+    StreamProvider<List<VehiclePositionView>>((
   ref,
 ) {
   final repository = ref.read(vehicleRepositoryProvider);
   final allPositions = repository.getVehiclePositions();
 
   // Watch filters
-  final queryAsync = ref.watch(searchQueryStreamProvider);
+  final queryAsync = ref.watch(
+    searchQueryStreamProvider,
+  );
   final query = queryAsync.value?.toLowerCase() ?? '';
 
   return allPositions.map((positions) {
@@ -85,6 +70,7 @@ final vehiclePositionsStreamProvider = StreamProvider<List<VehiclePosition>>((
       }).toList();
     }
 
-    return filtered;
+    // Map to View Model
+    return filtered.map(VehiclePositionView.fromDomain).toList();
   });
 });

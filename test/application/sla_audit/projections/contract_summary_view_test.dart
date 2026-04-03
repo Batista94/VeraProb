@@ -12,7 +12,7 @@ void main() {
     ContractStatusView status = ContractStatusView.active,
     DateTime? activatedAtUtc,
     int? financialCeilingCents,
-    double slaHealthPercentage = 80.0,
+    int slaHealthBps = 8000,
   }) => ContractSummaryView(
     id: 'c1',
     name: 'Test Contract',
@@ -25,7 +25,7 @@ void main() {
     planCount: 2,
     activePlanVersion: 3,
     totalSetsInProgress: 5,
-    slaHealthPercentage: slaHealthPercentage,
+    slaHealthBps: slaHealthBps,
     financialCeilingCents: financialCeilingCents,
   );
 
@@ -58,9 +58,9 @@ void main() {
       expect(v.financialCeilingCents, isNull);
     });
 
-    test('slaHealthPercentage is stored correctly', () {
-      final v = makeView(slaHealthPercentage: 95.5);
-      expect(v.slaHealthPercentage, 95.5);
+    test('slaHealthBps is stored correctly', () {
+      final v = makeView(slaHealthBps: 9550);
+      expect(v.slaHealthBps, 9550);
     });
   });
 }

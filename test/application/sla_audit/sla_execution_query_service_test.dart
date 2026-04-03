@@ -24,7 +24,7 @@ void main() {
     DateTime? windowStart,
     DateTime? windowEnd,
     Money contractualValue = const Money(15000),
-    double noShowPenaltyMultiplier = 1.5,
+    int noShowPenaltyBps = 15000,
   }) {
     return ContractualExecutionState.create(
       organizationId: 'org-1',
@@ -35,7 +35,7 @@ void main() {
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
       windowStartUtc: windowStart ?? DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0),
     );
@@ -272,16 +272,16 @@ void main() {
         // 1. Pending: contractualValue = 50.0 → should not affect any revenue
         final pending = makeState(
           setId: 'fin-pending',
-          contractualValue: Money.fromDouble(50.0),
-          noShowPenaltyMultiplier: 1.0,
+          contractualValue: const Money(5000),
+          noShowPenaltyBps: 10000,
         );
         await repo.save(pending);
 
         // 2. Executed: contractualValue = 200.0 → protectedRevenue only
         final executed = makeState(
           setId: 'fin-exec',
-          contractualValue: Money.fromDouble(200.0),
-          noShowPenaltyMultiplier: 2.0,
+          contractualValue: const Money(20000),
+          noShowPenaltyBps: 20000,
         );
         executed.bindExecution(
           vehicleId: 'v-1',
@@ -294,8 +294,8 @@ void main() {
         // 3. NoShow: contractualValue = 100.0, multiplier = 1.5 → lostRevenue = 150 only
         final noShow = makeState(
           setId: 'fin-noshow',
-          contractualValue: Money.fromDouble(100.0),
-          noShowPenaltyMultiplier: 1.5,
+          contractualValue: const Money(10000),
+          noShowPenaltyBps: 15000,
           windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
         );
         noShow.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
@@ -304,8 +304,8 @@ void main() {
         // 4. EvidenceGap: contractualValue = 80.0 → revenueAtRisk only
         final gap = makeState(
           setId: 'fin-gap',
-          contractualValue: Money.fromDouble(80.0),
-          noShowPenaltyMultiplier: 1.0,
+          contractualValue: const Money(8000),
+          noShowPenaltyBps: 10000,
         );
         gap.markEvidenceGap(DateTime.utc(2026, 3, 1, 6, 45));
         await repo.save(gap);

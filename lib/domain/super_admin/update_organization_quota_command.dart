@@ -1,6 +1,6 @@
 /// Immutable command DTO for updating an existing tenant's plan and quota limits.
 ///
-/// Contains ZERO logic — pure data transfer object.
+/// Contains ZERO logic — pure information transfer object.
 /// INV-4: Pure Dart — zero infrastructure dependencies.
 class UpdateOrganizationQuotaCommand {
   /// UUID of the organization to update.
@@ -18,7 +18,7 @@ class UpdateOrganizationQuotaCommand {
   /// UUID of the SuperAdmin performing this change (audit trail).
   final String superAdminUserId;
 
-  /// Optional reason recorded in the billing event.
+  /// Optional reason recorded in the billing factEvent.
   final String? reason;
 
   const UpdateOrganizationQuotaCommand({

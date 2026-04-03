@@ -17,6 +17,5 @@ class InMemoryVehicleInfractionRecurrenceRepository
     required String vehiclePlate,
     required DateTime referenceUtc,
     required String excludeQueueEntryId,
-  }) async =>
-      const [];
+  }) async => const [];
 }

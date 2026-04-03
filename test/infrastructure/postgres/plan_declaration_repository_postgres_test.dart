@@ -46,7 +46,7 @@ void main() async {
           endLongitude: -46.6334,
           endRadiusMeters: 100,
           contractualValue: const Money(10000),
-          noShowPenaltyMultiplier: 1.5,
+          noShowPenaltyBps: 15000,
         );
 
         final plan = PlanDeclaration.create(
@@ -86,7 +86,7 @@ void main() async {
           originZoneId: 'zone-a',
           destinationZoneId: 'zone-b',
           penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1.5,
+            noShowPenaltyBps: 15000,
             delayToleranceMinutes: 15,
             delayPenaltyPerMinute: const Money(100),
             downgradePenaltyFlat: const Money(5000),
@@ -133,7 +133,7 @@ void main() async {
           endLongitude: -46.6334,
           endRadiusMeters: 100,
           contractualValue: const Money(20000),
-          noShowPenaltyMultiplier: 2.0,
+          noShowPenaltyBps: 20000,
         );
 
         final plan = PlanDeclaration.create(
@@ -191,7 +191,7 @@ void main() async {
           originZoneId: z1,
           destinationZoneId: z2,
           penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1.5,
+            noShowPenaltyBps: 15000,
             delayToleranceMinutes: 10,
             delayPenaltyPerMinute: const Money(50),
             downgradePenaltyFlat: const Money(1000),
@@ -228,7 +228,7 @@ void main() async {
           endLongitude: -46.2,
           endRadiusMeters: 500,
           contractualValue: const Money(5000),
-          noShowPenaltyMultiplier: 1.5,
+          noShowPenaltyBps: 15000,
           delayToleranceMinutes: 10,
           delayPenaltyPerMinute: const Money(50),
           downgradePenaltyFlat: const Money(1000),
@@ -279,7 +279,7 @@ void main() async {
               endLongitude: 0,
               endRadiusMeters: 1,
               contractualValue: const Money(1),
-              noShowPenaltyMultiplier: 1,
+              noShowPenaltyBps: 10000,
             ),
           ],
         );
@@ -310,7 +310,7 @@ void main() async {
               endLongitude: 0,
               endRadiusMeters: 1,
               contractualValue: const Money(1),
-              noShowPenaltyMultiplier: 1,
+              noShowPenaltyBps: 10000,
             ),
           ],
         );

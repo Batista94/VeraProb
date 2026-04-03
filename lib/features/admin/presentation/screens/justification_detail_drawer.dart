@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/enums/user_permissions.dart';
-import '../../../../domain/services/rbac_service.dart';
-import '../../../../domain/sla_audit/justification/justification_status.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import '../../../../state/providers/auth_providers.dart';
 import '../../../../state/providers/justification_providers.dart';
 import 'widgets/justification_status_badge.dart';

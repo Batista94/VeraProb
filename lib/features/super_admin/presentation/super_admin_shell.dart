@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../state/providers/auth_providers.dart';
 import '../../admin/presentation/lock_screen.dart';
 import 'screens/tenant_health_panel.dart';
 import 'screens/create_organization_wizard.dart';
@@ -71,7 +71,7 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
                     icon: const Icon(Icons.logout, color: Colors.white54),
                     tooltip: 'Sair',
                     onPressed: () async {
-                      await Supabase.instance.client.auth.signOut();
+                      await ref.read(authRepositoryProvider).signOut();
                       if (context.mounted) {
                         await Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(

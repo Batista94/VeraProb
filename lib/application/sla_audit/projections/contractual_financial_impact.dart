@@ -14,14 +14,14 @@ class ContractualFinancialImpact extends Equatable {
   final Money protectedRevenue;
   final Money revenueAtRisk;
   final Money lostRevenue;
-  final double riskPercentage;
-  final double lossPercentage;
+  final int riskPercentageBps;
+  final int lossPercentageBps;
 
   /// Penalty erosion relative to the contract's financial ceiling.
   ///
   /// `lostRevenue / financialCeiling × 100`. Null when no ceiling is set.
   /// > 100% means the ceiling has been exceeded.
-  final double? marginErosionPercent;
+  final int? marginErosionBps;
 
   const ContractualFinancialImpact({
     this.contractId,
@@ -30,9 +30,9 @@ class ContractualFinancialImpact extends Equatable {
     required this.protectedRevenue,
     required this.revenueAtRisk,
     required this.lostRevenue,
-    required this.riskPercentage,
-    required this.lossPercentage,
-    this.marginErosionPercent,
+    required this.riskPercentageBps,
+    required this.lossPercentageBps,
+    this.marginErosionBps,
   });
 
   @override
@@ -43,8 +43,8 @@ class ContractualFinancialImpact extends Equatable {
     protectedRevenue,
     revenueAtRisk,
     lostRevenue,
-    riskPercentage,
-    lossPercentage,
-    marginErosionPercent,
+    riskPercentageBps,
+    lossPercentageBps,
+    marginErosionBps,
   ];
 }

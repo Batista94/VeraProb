@@ -3,7 +3,7 @@ import 'asset_status_event.dart';
 
 /// Repository interface for [AssetStatusEvent] records.
 ///
-/// Status is event-sourced: [getCurrentStatus] replays events to derive
+/// Status is factEvent-sourced: [getCurrentStatus] replays events to derive
 /// the current status. Writes are append-only (INV-1).
 abstract class AssetStatusRepository {
   /// Returns the current [AssetStatus] of the given asset, derived by
@@ -22,6 +22,6 @@ abstract class AssetStatusRepository {
     required String organizationId,
   });
 
-  /// Appends a new status transition event (INV-1: no update/delete).
-  Future<void> append(AssetStatusEvent event);
+  /// Appends a new status transition factEvent (INV-1: no update/delete).
+  Future<void> append(AssetStatusEvent domainEvent);
 }

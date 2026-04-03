@@ -28,7 +28,10 @@ const _uuid = Uuid();
 /// computes the two check digits deterministically so the result passes
 /// [CnpjValidator.isValid].
 String _uniqueCnpj() {
-  final ts = DateTime.now().millisecondsSinceEpoch.toString().padLeft(14, '0');
+  final ts = DateTime.now().toUtc().millisecondsSinceEpoch.toString().padLeft(
+    14,
+    '0',
+  );
   // Take last 12 digits as the base (positions 0–11); compute check digits.
   final base = ts.substring(ts.length - 12);
   final nums = base.split('').map(int.parse).toList();

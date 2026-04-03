@@ -47,8 +47,8 @@ class ContractualFinancialTrendQueryServiceInMemory
         protectedRevenue: snapshot.protectedRevenue,
         revenueAtRisk: snapshot.revenueAtRisk,
         lostRevenue: snapshot.lostRevenue,
-        riskPercentage: snapshot.riskPercentage,
-        lossPercentage: snapshot.lossPercentage,
+        riskPercentageBps: snapshot.riskPercentageBps,
+        lossPercentageBps: snapshot.lossPercentageBps,
       );
     }).toList();
   }

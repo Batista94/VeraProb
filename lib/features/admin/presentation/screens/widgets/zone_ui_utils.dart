@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 extension ZoneTypeUi on ZoneType {
   IconData get icon => switch (this) {

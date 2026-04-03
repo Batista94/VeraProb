@@ -22,6 +22,7 @@ enum ConnectivityState {
 
   /// Visual confidence factor: 1.0 = perfect, 0.0 = no signal.
   double get confidence {
+    // Physical Metric - Double Required
     switch (this) {
       case ConnectivityState.healthy:
         return 1.0;

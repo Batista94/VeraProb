@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/entities/operational_trip.dart';
-import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/application/operational_control_service.dart' show OperationalTrip, TripStatus;
+import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart' show SlaLedgerEntry;
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
-import 'package:veraprob/domain/enums/trip_status.dart';
-import 'package:veraprob/domain/entities/operational_suggestion.dart';
-import 'package:veraprob/application/intelligence/suggestion_engine.dart';
+import 'package:veraprob/application/intelligence/suggestion_engine.dart' show OperationalSuggestion, SuggestionAction, SuggestionEngine;
+import 'package:veraprob/application/authority/operational_command_bus.dart' show UpdateTripStatusCommand;
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/presentation/shared/widgets/status_badge.dart';
 import 'package:latlong2/latlong.dart';
 import '../../shared/widgets/geofence_evidence_map.dart';
 import 'occurrence_modal.dart';
-import 'package:veraprob/domain/authority/commands/trips/update_trip_status_command.dart';
 import '../utils/ui_command_dispatcher.dart';
 import 'event_tile_widget.dart';
 
@@ -198,7 +196,7 @@ class _InfoSection extends StatelessWidget {
           _InfoRow(
             Icons.trending_up,
             'Progresso',
-            '${trip.completionPct.toStringAsFixed(0)}%',
+            '${(trip.completionBps / 100).toStringAsFixed(0)}%',
           ),
           _InfoRow(
             Icons.schedule,

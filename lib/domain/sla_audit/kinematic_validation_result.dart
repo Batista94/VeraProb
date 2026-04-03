@@ -25,7 +25,7 @@ class KinematicValidationResult extends Equatable {
   final int maxAllowedSpeedCms;
 
   /// Haversine distance in metres between the two facts.
-  final double distanceMeters;
+  final double distanceMeters; // Physical Metric - Double Required
 
   /// Elapsed seconds between the two GPS timestamps.
   final int elapsedSeconds;
@@ -40,7 +40,7 @@ class KinematicValidationResult extends Equatable {
   });
 
   factory KinematicValidationResult.ok({
-    required double distanceMeters,
+    required double distanceMeters, // Physical Metric - Double Required
     required int elapsedSeconds,
     required int? impliedSpeedCms,
     required int maxAllowedSpeedCms,
@@ -56,7 +56,7 @@ class KinematicValidationResult extends Equatable {
 
   factory KinematicValidationResult.violation({
     required KinematicViolationType type,
-    required double distanceMeters,
+    required double distanceMeters, // Physical Metric - Double Required
     required int elapsedSeconds,
     required int? impliedSpeedCms,
     required int maxAllowedSpeedCms,

@@ -107,5 +107,5 @@ final executiveDashboardProvider = FutureProvider<ExecutiveDashboardView>((
 /// FPS sub-score extracted for widgets that only need the gauge value.
 final financialProtectionScoreProvider = Provider<double>((ref) {
   final dashboard = ref.watch(executiveDashboardProvider).valueOrNull;
-  return dashboard?.financialProtectionScore ?? 0.0;
+  return (dashboard?.financialProtectionScore ?? 0) / 100.0;
 });

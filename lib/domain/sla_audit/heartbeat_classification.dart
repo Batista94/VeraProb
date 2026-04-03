@@ -38,16 +38,16 @@ class DeviceHeartbeatStatus extends Equatable {
   /// Classification result from [HeartbeatClassifier].
   final HeartbeatClassification classification;
 
-  /// Ratio of fleet devices actively reporting at the time of evaluation.
-  /// Range: 0.0 (all offline) → 1.0 (all online).
-  final double fleetActiveRatio;
+  /// Ratio of fleet devices actively reporting in Basis Points.
+  /// Range: 0 (all offline) → 10,000 (all online).
+  final int fleetActiveBps;
 
   const DeviceHeartbeatStatus({
     required this.assetId,
     required this.lastSeenAtUtc,
     required this.gapSeconds,
     required this.classification,
-    required this.fleetActiveRatio,
+    required this.fleetActiveBps,
   });
 
   @override
@@ -56,6 +56,6 @@ class DeviceHeartbeatStatus extends Equatable {
     lastSeenAtUtc,
     gapSeconds,
     classification,
-    fleetActiveRatio,
+    fleetActiveBps,
   ];
 }

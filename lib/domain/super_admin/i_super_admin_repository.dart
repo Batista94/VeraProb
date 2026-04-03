@@ -3,14 +3,14 @@ import 'system_audit_log_entry.dart';
 import 'tenant_health_snapshot.dart';
 import 'update_organization_quota_command.dart';
 
-/// Port for SuperAdmin data operations.
+/// Port for SuperAdmin information operations.
 ///
 /// Concrete implementation: [SupabaseSuperAdminRepository].
 /// Read methods are proxied through the `super-admin-proxy` Edge Function
 /// (INV-3, INV-14). Write RPCs use the authenticated session JWT.
 /// INV-4: Pure Dart interface — zero infrastructure dependencies.
 abstract class ISuperAdminRepository {
-  /// Atomically creates a new organization and records an 'ORG_CREATED' billing event.
+  /// Atomically creates a new organization and records an 'ORG_CREATED' billing factEvent.
   ///
   /// Returns the new organization's UUID.
   Future<String> createOrganization(CreateOrganizationCommand command);
@@ -45,6 +45,6 @@ abstract class ISuperAdminRepository {
   /// Updates an existing organization's plan type and quota limits.
   ///
   /// Atomically updates the organizations row and appends a 'PLAN_CHANGED'
-  /// billing event (INV-7). NULL limits = unlimited (enterprise tier).
+  /// billing factEvent (INV-7). NULL limits = unlimited (enterprise tier).
   Future<void> updateOrganizationQuota(UpdateOrganizationQuotaCommand command);
 }

@@ -1,18 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/alert_impact_calculator.dart';
 import 'package:veraprob/domain/shared/money.dart';
-import 'package:veraprob/domain/sla_audit/alert_financial_impact.dart';
 import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
 
 SLAPenalties _makePenalties({
   Money delayPenaltyPerMinute = const Money(500),
-  double noShowMultiplier = 2.0,
+  int noShowBps = 20000,
   Money baseTripValue = const Money(10000),
   int delayToleranceMinutes = 5,
   int noShowThresholdMinutes = 60,
 }) {
   return SLAPenalties.create(
-    noShowPenaltyMultiplier: noShowMultiplier,
+    noShowPenaltyBps: noShowBps,
     delayToleranceMinutes: delayToleranceMinutes,
     delayPenaltyPerMinute: delayPenaltyPerMinute,
     downgradePenaltyFlat: const Money(5000),
@@ -86,7 +85,7 @@ void main() {
       test('computes impact as baseTripValue × multiplier', () {
         final penalties = _makePenalties(
           baseTripValue: const Money(15000), // R$150.00
-          noShowMultiplier: 2.0,
+          noShowBps: 20000,
         );
 
         final impact = AlertImpactCalculator.forNoShow(penalties: penalties);
@@ -99,7 +98,7 @@ void main() {
       test('critical tier for high-value no-show', () {
         final penalties = _makePenalties(
           baseTripValue: const Money(30000), // R$300.00
-          noShowMultiplier: 2.0,
+          noShowBps: 20000,
         );
 
         final impact = AlertImpactCalculator.forNoShow(penalties: penalties);

@@ -81,7 +81,7 @@ void main() {
         simulationName: 'Março 2026',
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
-        baselineDisputeRate: 60.0,
+        baselineDisputeRateBps: 6000,
         manualEnforcementCostPerIncident: const Money(5000),
         platformSubscriptionCost: const Money(50000),
         generatedByUserId: 'user-admin-1',
@@ -99,7 +99,7 @@ void main() {
         simulationName: 'Test',
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
-        baselineDisputeRate: 60.0, // 60% would have been disputed (lost)
+        baselineDisputeRateBps: 6000, // 60% would have been disputed (lost)
         manualEnforcementCostPerIncident: const Money(0),
         platformSubscriptionCost: const Money(100000),
         generatedByUserId: 'user-admin-1',
@@ -123,7 +123,7 @@ void main() {
         simulationName: 'Test',
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
-        baselineDisputeRate: 50.0,
+        baselineDisputeRateBps: 5000,
         manualEnforcementCostPerIncident: const Money(
           2000,
         ), // R$ 20 per incident
@@ -146,15 +146,15 @@ void main() {
         simulationName: 'Test',
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
-        baselineDisputeRate: 60.0,
+        baselineDisputeRateBps: 6000,
         manualEnforcementCostPerIncident: const Money(0),
         platformSubscriptionCost: const Money(6000), // R$ 60
         generatedByUserId: 'user-admin-1',
       );
 
       // actualLost = 10000; simulatedLost = 4000; protected = 6000
-      // roi = 6000 / 6000 × 100 = 100%
-      expect(sim.roiPercentage, closeTo(100.0, 0.01));
+      // roi = 6000 / 6000 * 10000 = 10000 bps
+      expect(sim.roiPercentageBps, equals(10000));
     });
 
     test('same parameters → same ROI (idempotency)', () async {
@@ -165,7 +165,7 @@ void main() {
         simulationName: 'Test',
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
-        baselineDisputeRate: 55.0,
+        baselineDisputeRateBps: 5500,
         manualEnforcementCostPerIncident: const Money(1000),
         platformSubscriptionCost: const Money(50000),
         generatedByUserId: 'user-admin-1',
@@ -176,13 +176,13 @@ void main() {
         simulationName: 'Test',
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
-        baselineDisputeRate: 55.0,
+        baselineDisputeRateBps: 5500,
         manualEnforcementCostPerIncident: const Money(1000),
         platformSubscriptionCost: const Money(50000),
         generatedByUserId: 'user-admin-1',
       );
 
-      expect(sim1.roiPercentage, equals(sim2.roiPercentage));
+      expect(sim1.roiPercentageBps, equals(sim2.roiPercentageBps));
       expect(sim1.simulatedLostRevenue, equals(sim2.simulatedLostRevenue));
       expect(
         sim1.revenueProtectedByPlatform,
@@ -204,13 +204,13 @@ void main() {
             simulationName: 'Test',
             periodStartUtc: periodStart,
             periodEndUtc: periodEnd,
-            baselineDisputeRate: 50.0,
+            baselineDisputeRateBps: 5000,
             manualEnforcementCostPerIncident: const Money(0),
             platformSubscriptionCost: const Money(100000),
             generatedByUserId: 'user-admin-1',
           );
 
-          expect(sim.evidenceQualityRate, equals(100.0));
+          expect(sim.evidenceQualityRateBps, equals(10000));
         },
       );
 
@@ -247,13 +247,13 @@ void main() {
             simulationName: 'Test',
             periodStartUtc: periodStart,
             periodEndUtc: periodEnd,
-            baselineDisputeRate: 50.0,
+            baselineDisputeRateBps: 5000,
             manualEnforcementCostPerIncident: const Money(0),
             platformSubscriptionCost: const Money(100000),
             generatedByUserId: 'user-admin-1',
           );
 
-          expect(sim.evidenceQualityRate, closeTo(80.0, 0.01));
+          expect(sim.evidenceQualityRateBps, equals(8000));
         },
       );
 
@@ -286,7 +286,7 @@ void main() {
             simulationName: 'Test',
             periodStartUtc: periodStart,
             periodEndUtc: periodEnd,
-            baselineDisputeRate: 50.0,
+            baselineDisputeRateBps: 5000,
             manualEnforcementCostPerIncident: const Money(0),
             platformSubscriptionCost: const Money(100000),
             generatedByUserId: 'user-admin-1',
@@ -333,13 +333,13 @@ void main() {
             simulationName: 'Test',
             periodStartUtc: periodStart,
             periodEndUtc: periodEnd,
-            baselineDisputeRate: 50.0,
+            baselineDisputeRateBps: 5000,
             manualEnforcementCostPerIncident: const Money(0),
             platformSubscriptionCost: const Money(100000),
             generatedByUserId: 'user-admin-1',
           );
 
-          expect(sim.evidenceQualityRate, equals(100.0));
+          expect(sim.evidenceQualityRateBps, equals(10000));
           expect(
             sim.evidenceQualityAttribution.toLowerCase(),
             contains('excelente'),
@@ -361,7 +361,7 @@ void main() {
           simulationName: 'Fevereiro 2026',
           periodStartUtc: DateTime.utc(2026, 2, 1),
           periodEndUtc: DateTime.utc(2026, 2, 28),
-          baselineDisputeRate: 50.0,
+          baselineDisputeRateBps: 5000,
           manualEnforcementCostPerIncident: const Money(0),
           platformSubscriptionCost: const Money(50000),
           generatedByUserId: 'user-1',
@@ -372,7 +372,7 @@ void main() {
           simulationName: 'Março 2026',
           periodStartUtc: periodStart,
           periodEndUtc: periodEnd,
-          baselineDisputeRate: 50.0,
+          baselineDisputeRateBps: 5000,
           manualEnforcementCostPerIncident: const Money(0),
           platformSubscriptionCost: const Money(50000),
           generatedByUserId: 'user-1',
@@ -391,7 +391,7 @@ void main() {
         simulationName: 'Other Org Sim',
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
-        baselineDisputeRate: 50.0,
+        baselineDisputeRateBps: 5000,
         manualEnforcementCostPerIncident: const Money(0),
         platformSubscriptionCost: const Money(50000),
         generatedByUserId: 'user-1',

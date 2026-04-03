@@ -40,12 +40,10 @@ class ContractualExecutionState {
 
   // ── Geofence (denormalized from ContractualServiceExecution) ───
   /// Start geofence center latitude. Immutable after creation.
+  // GPS Coordinate - Precision Required
   final double startLatitude;
-
-  /// Start geofence center longitude. Immutable after creation.
+  // GPS Coordinate - Precision Required
   final double startLongitude;
-
-  /// Start geofence radius in meters. Immutable after creation.
   final int startRadiusMeters;
 
   // ── Vehicle Planning ──────────────────────────────────────────
@@ -56,8 +54,8 @@ class ContractualExecutionState {
   /// Contractual value of this service obligation.
   final Money contractualValue;
 
-  /// Multiplier applied to contractualValue on NoShow. >= 1.0.
-  final double noShowPenaltyMultiplier;
+  /// Multiplier applied to contractualValue on NoShow. In bps (e.g. 15000 = 1.5x).
+  final int noShowPenaltyBps;
 
   // ── Time Window ───────────────────────────────────────────
   final DateTime windowStartUtc;
@@ -70,7 +68,9 @@ class ContractualExecutionState {
   // ── Binding Evidence (only when executed) ─────────────────
   String? _boundVehicleId;
   DateTime? _bindingTimestampUtc;
+  // GPS Coordinate - Precision Required
   double? _bindingLatitude;
+  // GPS Coordinate - Precision Required
   double? _bindingLongitude;
 
   String? get boundVehicleId => _boundVehicleId;
@@ -104,7 +104,7 @@ class ContractualExecutionState {
     required this.startRadiusMeters,
     this.plannedVehicleId,
     required this.contractualValue,
-    required this.noShowPenaltyMultiplier,
+    required this.noShowPenaltyBps,
     required this.windowStartUtc,
     required this.windowEndUtc,
     required ExecutionStatus status,
@@ -128,12 +128,12 @@ class ContractualExecutionState {
     required String setId,
     required String contractId,
     required int planVersion,
-    required double startLatitude,
-    required double startLongitude,
+    required double startLatitude, // Physical Metric - Double Required
+    required double startLongitude, // Physical Metric - Double Required
     required int startRadiusMeters,
     String? plannedVehicleId,
     required Money contractualValue,
-    required double noShowPenaltyMultiplier,
+    required int noShowPenaltyBps,
     required DateTime windowStartUtc,
     required DateTime windowEndUtc,
   }) {
@@ -147,8 +147,8 @@ class ContractualExecutionState {
       throw const DomainException('contractualValue must be greater than 0');
     }
 
-    if (noShowPenaltyMultiplier < 1.0) {
-      throw const DomainException('noShowPenaltyMultiplier must be >= 1.0');
+    if (noShowPenaltyBps < 10000) {
+      throw const DomainException('noShowPenaltyBps must be >= 10000 (1.0x)');
     }
 
     final now = DateTime.now().toUtc();
@@ -164,7 +164,7 @@ class ContractualExecutionState {
       startRadiusMeters: startRadiusMeters,
       plannedVehicleId: plannedVehicleId,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
       windowStartUtc: windowStartUtc,
       windowEndUtc: windowEndUtc,
       status: ExecutionStatus.pending,
@@ -185,7 +185,9 @@ class ContractualExecutionState {
   /// Throws [DomainException] if the transition is invalid.
   void bindExecution({
     required String vehicleId,
+    // GPS Coordinate - Precision Required
     required double latitude,
+    // GPS Coordinate - Precision Required
     required double longitude,
     required DateTime timestampUtc,
   }) {
@@ -304,12 +306,12 @@ class ContractualExecutionState {
     required String setId,
     required String contractId,
     required int planVersion,
-    required double startLatitude,
+    required double startLatitude, // Physical Metric - Double Required
     required double startLongitude,
     required int startRadiusMeters,
     String? plannedVehicleId,
     required Money contractualValue,
-    required double noShowPenaltyMultiplier,
+    required int noShowPenaltyBps,
     required DateTime windowStartUtc,
     required DateTime windowEndUtc,
     required ExecutionStatus status,
@@ -333,7 +335,7 @@ class ContractualExecutionState {
       startRadiusMeters: startRadiusMeters,
       plannedVehicleId: plannedVehicleId,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
       windowStartUtc: windowStartUtc,
       windowEndUtc: windowEndUtc,
       status: status,

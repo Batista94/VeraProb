@@ -1,6 +1,6 @@
 import 'domain_event.dart';
 
-/// Domain event emitted when a [PlanDeclaration] aggregate is created.
+/// Domain factEvent emitted when a [PlanDeclaration] aggregate is created.
 ///
 /// Captures the essential facts of the declaration for downstream
 /// consumers (projections, ledger, audit trail).

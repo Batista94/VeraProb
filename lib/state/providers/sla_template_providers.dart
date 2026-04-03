@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import '../../application/sla_audit/projections/sla_template_view.dart';
 import '../../application/sla_audit/clone_sla_template_handler.dart';
 import '../../application/sla_audit/save_sla_template_handler.dart';
 import '../../application/sla_audit/sla_template_presets.dart';
@@ -42,41 +42,49 @@ final cloneSlaTemplateHandlerProvider = Provider<CloneSlaTemplateHandler>((
 // ── System presets ───────────────────────────────────────────
 
 /// System-provided SLA template presets (read-only, not persisted in DB).
-final slaTemplatePresetsProvider = Provider<List<SlaTemplate>>((ref) {
-  return SlaTemplatePresets.systemPresets();
+final slaTemplatePresetsProvider = Provider<List<SlaTemplateView>>((ref) {
+  return SlaTemplatePresets.systemPresets()
+      .map(SlaTemplateView.fromDomain)
+      .toList();
 });
 
 // ── Org templates ────────────────────────────────────────────
 
 /// All [SlaTemplate]s for the current organization, ordered by name.
-final slaTemplatesProvider = FutureProvider<List<SlaTemplate>>((ref) async {
+final slaTemplatesProvider = FutureProvider<List<SlaTemplateView>>((ref) async {
   final orgId = ref.watch(currentOrganizationIdProvider);
   if (orgId == null) return const [];
 
-  return ref.watch(slaTemplateRepositoryProvider).findByOrganization(orgId);
+  final templates =
+      await ref.watch(slaTemplateRepositoryProvider).findByOrganization(orgId);
+  return templates.map(SlaTemplateView.fromDomain).toList();
 });
 
 /// Merges system presets + org templates into a single list.
 /// Presets appear first, then org templates sorted by name.
-final allTemplatesProvider = FutureProvider<List<SlaTemplate>>((ref) async {
+final allTemplatesProvider = FutureProvider<List<SlaTemplateView>>((
+  ref,
+) async {
   final presets = ref.watch(slaTemplatePresetsProvider);
   final orgTemplates = await ref.watch(slaTemplatesProvider.future);
   return [...presets, ...orgTemplates];
 });
 
 /// Finds a template by [id] — checks presets first, then org templates.
-final slaTemplateByIdProvider = FutureProvider.family<SlaTemplate?, String>((
+final slaTemplateByIdProvider = FutureProvider.family<SlaTemplateView?, String>((
   ref,
   id,
 ) async {
   if (SlaTemplatePresets.isPreset(id)) {
-    return SlaTemplatePresets.findById(id);
+    final domain = SlaTemplatePresets.findById(id);
+    return domain != null ? SlaTemplateView.fromDomain(domain) : null;
   }
   final orgId = ref.watch(currentOrganizationIdProvider);
   if (orgId == null) return null;
-  return ref
+  final domain = await ref
       .watch(slaTemplateRepositoryProvider)
       .findById(id, organizationId: orgId);
+  return domain != null ? SlaTemplateView.fromDomain(domain) : null;
 });
 
 // ── Mutations ────────────────────────────────────────────────

@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/sla_audit/create_contract_command.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
-import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import '../widgets/contractor_type_ahead_field.dart';
+import 'package:veraprob/features/admin/presentation/widgets/contractor_type_ahead_field.dart';
 
 class CreateContractForm extends ConsumerStatefulWidget {
   const CreateContractForm({super.key});
@@ -33,7 +33,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
   final _descriptionController = TextEditingController();
   final _financialCeilingController = TextEditingController();
 
-  Contractor? _selectedContractor;
+  ContractorView? _selectedContractor;
   DateTime? _validFrom;
   DateTime? _validUntil;
   bool _isSubmitting = false;
@@ -63,8 +63,8 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
   Future<void> _pickDate({required bool isStart}) async {
     final initial = isStart
-        ? (_validFrom ?? DateTime.now())
-        : (_validUntil ?? DateTime.now());
+        ? (_validFrom ?? DateTime.now().toUtc())
+        : (_validUntil ?? DateTime.now().toUtc());
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,

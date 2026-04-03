@@ -29,33 +29,33 @@ class ExecutiveDashboardView {
   // ── KPI 2: Taxa de Recuperação de Penalidades ──────────────────────────────
   /// (lostRevenue.applied / lostRevenue.potential) × 100.
   /// Higher = more penalties successfully applied.
-  final double penaltyRecoveryRate;
+  final int penaltyRecoveryRate;
 
   // ── KPI 3: Dispute-to-Resolution Ratio ────────────────────────────────────
   /// (compensatingEntries.count / noShow.count) × 100. Lower = better.
-  final double disputeToResolutionRatio;
+  final int disputeToResolutionRatio;
 
   // ── KPI 4: Financial Protection Score (FPS) ────────────────────────────────
   /// Composite score [0–100].
-  final double financialProtectionScore;
+  final int financialProtectionScore;
 
   // ── FPS sub-scores (for drill-down and attribution display) ────────────────
   /// executedCount / totalObligations × 100.
-  final double complianceScore;
+  final int complianceScore;
 
   /// canonical_facts.OK_count / total_facts × 100.
   /// Low value → display hardware attribution, NOT software failure.
-  final double evidenceScore;
+  final int evidenceScore;
 
   /// lostRevenue.applied / lostRevenue.potential × 100.
-  final double recoveryScore;
+  final int recoveryScore;
 
   /// Trend: month-over-month compliance improvement (sigmoid 0–100, 50 = neutral).
-  final double trendScore;
+  final int trendScore;
 
   // ── KPI 5: SLA Compliance Trend ────────────────────────────────────────────
   /// Last 12 monthly compliance rates. Index 0 = oldest, last = most recent.
-  final List<double> complianceTrend;
+  final List<int> complianceTrend;
 
   // ── Obligation counts ──────────────────────────────────────────────────────
   final int totalObligations;
@@ -65,8 +65,12 @@ class ExecutiveDashboardView {
 
   // ── FPS zone ───────────────────────────────────────────────────────────────
   FpsZone get fpsZone {
-    if (financialProtectionScore >= 80) return FpsZone.protected;
-    if (financialProtectionScore >= 60) return FpsZone.moderate;
+    if (financialProtectionScore >= 8000) {
+      return FpsZone.protected;
+    }
+    if (financialProtectionScore >= 6000) {
+      return FpsZone.moderate;
+    }
     return FpsZone.highRisk;
   }
 
@@ -122,52 +126,52 @@ class ExecutiveDashboardView {
     required int okCanonicalFacts,
     required int totalCanonicalFacts,
     required int compensatingEntryCount,
-    required List<double> complianceTrend,
+    required List<int> complianceTrend,
     required List<String> recentSealedPackageIds,
     ShadowModeSimulation? latestShadowMode,
-    double? previousMonthComplianceRate,
+    int? previousMonthComplianceBps,
   }) {
     // Sub-scores
-    final complianceScore = totalObligations > 0
-        ? (executedCount / totalObligations * 100).clamp(0.0, 100.0)
-        : 100.0;
+    final complianceScoreBps = totalObligations > 0
+        ? (executedCount * 10000 ~/ totalObligations).clamp(0, 10000)
+        : 10000;
 
-    final evidenceScore = totalCanonicalFacts > 0
-        ? (okCanonicalFacts / totalCanonicalFacts * 100).clamp(0.0, 100.0)
-        : 100.0;
+    final evidenceScoreBps = totalCanonicalFacts > 0
+        ? (okCanonicalFacts * 10000 ~/ totalCanonicalFacts).clamp(0, 10000)
+        : 10000;
 
     // Recovery: ratio of penalties actually applied vs potential no-shows
     final potentialLoss = noShowCount + evidenceGapCount;
     final appliedPenalties = potentialLoss - compensatingEntryCount;
-    final recoveryScore = potentialLoss > 0
-        ? (appliedPenalties / potentialLoss * 100).clamp(0.0, 100.0)
-        : 100.0;
+    final recoveryScoreBps = potentialLoss > 0
+        ? (appliedPenalties * 10000 ~/ potentialLoss).clamp(0, 10000)
+        : 10000;
 
     // Trend: sigmoid of compliance improvement over 3 months
-    final currentCompliance = complianceScore;
-    final trendDelta = previousMonthComplianceRate != null
-        ? currentCompliance - previousMonthComplianceRate
+    final currentCompliance = complianceScoreBps;
+    final trendDelta = previousMonthComplianceBps != null
+        ? (currentCompliance - previousMonthComplianceBps).toDouble() / 100.0
         : 0.0;
-    final trendScore = _sigmoid(trendDelta);
+    final trendScoreBps = (ExecutiveDashboardView._sigmoid(trendDelta) * 100).round().clamp(0, 10000);
 
     // FPS composite
-    final fps =
-        ((40 * complianceScore +
-                    25 * evidenceScore +
-                    20 * recoveryScore +
-                    15 * trendScore) /
+    final fpsBps =
+        ((40 * complianceScoreBps +
+                    25 * evidenceScoreBps +
+                    20 * recoveryScoreBps +
+                    15 * trendScoreBps) ~/
                 100)
-            .clamp(0.0, 100.0);
+            .clamp(0, 10000);
 
     // Penalty recovery rate
-    final penaltyRecoveryRate = potentialLoss > 0
-        ? (appliedPenalties / potentialLoss * 100).clamp(0.0, 100.0)
-        : 100.0;
+    final penaltyRecoveryRateBps = potentialLoss > 0
+        ? (appliedPenalties * 10000 ~/ potentialLoss).clamp(0, 10000)
+        : 10000;
 
     // Dispute ratio
-    final disputeRatio = noShowCount > 0
-        ? (compensatingEntryCount / noShowCount * 100).clamp(0.0, 100.0)
-        : 0.0;
+    final disputeRatioBps = noShowCount > 0
+        ? (compensatingEntryCount * 10000 ~/ noShowCount).clamp(0, 10000)
+        : 0;
 
     return ExecutiveDashboardView(
       organizationId: organizationId,
@@ -177,13 +181,13 @@ class ExecutiveDashboardView {
       totalContractedRevenue: totalContractedRevenue,
       revenueAtRisk: revenueAtRisk,
       lostRevenue: lostRevenue,
-      penaltyRecoveryRate: penaltyRecoveryRate,
-      disputeToResolutionRatio: disputeRatio,
-      financialProtectionScore: fps,
-      complianceScore: complianceScore,
-      evidenceScore: evidenceScore,
-      recoveryScore: recoveryScore,
-      trendScore: trendScore,
+      penaltyRecoveryRate: penaltyRecoveryRateBps,
+      disputeToResolutionRatio: disputeRatioBps,
+      financialProtectionScore: fpsBps,
+      complianceScore: complianceScoreBps,
+      evidenceScore: evidenceScoreBps,
+      recoveryScore: recoveryScoreBps,
+      trendScore: trendScoreBps,
       complianceTrend: List.unmodifiable(complianceTrend),
       totalObligations: totalObligations,
       executedCount: executedCount,
@@ -209,7 +213,7 @@ class ExecutiveDashboardView {
         complianceScore: 0,
         evidenceScore: 0,
         recoveryScore: 0,
-        trendScore: 50,
+        trendScore: 5000,
         complianceTrend: const [],
         totalObligations: 0,
         executedCount: 0,
@@ -226,20 +230,17 @@ class ExecutiveDashboardView {
   }
 
   static double _exp(double x) {
-    // Dart's math.exp equivalent using series approximation is not needed;
-    // use the built-in via import dart:math — but domain must be pure Dart (INV-4).
-    // dart:math is a Dart SDK library — no Flutter/Supabase dependency.
     return _dartExp(x);
   }
 
   // ignore: non_constant_identifier_names
   static double _dartExp(double x) {
-    // Use the identity: e^x via Taylor series (sufficient for small deltas)
-    // For delta in [-20, 20], the sigmoid is effectively 0 or 1 anyway.
-    // We rely on the core Dart math: dart:math is permitted (INV-4 = no FLUTTER).
-    // Using a simple iterative approach to avoid importing dart:math:
-    if (x > 20) return double.maxFinite / 2; // sigmoid → 1
-    if (x < -20) return 0.0000001; // sigmoid → 0
+    if (x > 20) {
+      return double.maxFinite / 2; // sigmoid → 1
+    }
+    if (x < -20) {
+      return 0.0000001; // sigmoid → 0
+    }
     double result = 1.0;
     double term = 1.0;
     for (int n = 1; n <= 20; n++) {

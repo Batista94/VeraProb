@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
 
 import 'contractor_form_dialog.dart';
 
 // ── Filter helper ─────────────────────────────────────────────
 
-List<Contractor> filterContractors(List<Contractor> contractors, String query) {
-  if (query.isEmpty) return contractors;
+List<ContractorView> filterContractors(
+  List<ContractorView> contractors,
+  String query,
+) {
+  if (query.isEmpty) {
+    return contractors;
+  }
 
   final lower = query.toLowerCase();
   return contractors
@@ -29,16 +34,16 @@ class ContractorTypeAheadField extends StatefulWidget {
   final IconData prefixIcon;
 
   /// Full list of contractors available for the organization.
-  final List<Contractor> contractors;
+  final List<ContractorView> contractors;
 
   /// The currently selected contractor.
-  final Contractor? selectedContractor;
+  final ContractorView? selectedContractor;
 
   /// Invalidates the contractors cache after the modal creates/edits a contractor.
   final Future<void> Function() onInvalidateContractors;
 
   /// Called when the user selects an existing contractor or after contractor creation.
-  final ValueChanged<Contractor?> onChanged;
+  final ValueChanged<ContractorView?> onChanged;
 
   const ContractorTypeAheadField({
     super.key,
@@ -111,9 +116,10 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
   Widget _buildCreateButton() {
     final query = _textController.text.trim();
     final hasExactMatch =
-        query.isNotEmpty &&
         widget.contractors.any(
-          (c) => c.name.toLowerCase() == query.toLowerCase(),
+          (c) =>
+              c.name.toLowerCase() ==
+              query.toLowerCase(),
         );
     if (hasExactMatch) return const SizedBox.shrink();
 
@@ -138,7 +144,7 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
   }
 
   Widget _buildAutocomplete() {
-    return Autocomplete<Contractor>(
+    return Autocomplete<ContractorView>(
       initialValue: TextEditingValue(
         text: widget.selectedContractor?.name ?? '',
       ),

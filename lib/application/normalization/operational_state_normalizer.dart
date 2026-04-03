@@ -23,15 +23,19 @@ import 'models/route_adherence.dart';
 class OperationalStateNormalizer {
   // ── Configuration ─────────────────────────────────────
   final Duration debounceDuration;
-  final double jumpThresholdMeters;
+  final double jumpThresholdMeters; // Physical Metric - Double Required
   final Duration degradedThreshold;
   final Duration signalLostThreshold;
-  final double stopRadiusMeters;
-  final double movingSpeedThreshold; // km/h
-  final double slowTrafficThreshold; // km/h
+  final double stopRadiusMeters; // Physical Metric - Double Required
+  final double movingSpeedThreshold; // km/h // Physical Metric - Double Required
+  final double slowTrafficThreshold; // km/h // Physical Metric - Double Required
   final Duration stoppedMinDuration;
   final Duration slowTrafficMinDuration;
-  static const List<double> _smoothingWeights = [0.15, 0.25, 0.60];
+  static const List<double> _smoothingWeights = [
+    0.15,
+    0.25,
+    0.60,
+  ]; // Physical Metric - Double Required
 
   OperationalStateNormalizer({
     this.debounceDuration = const Duration(seconds: 5),
@@ -212,6 +216,7 @@ class OperationalStateNormalizer {
 
   /// Returns (latitude, longitude) as a weighted average of the buffer.
   (double, double) _applySmoothing(Queue<VehiclePosition> buffer) {
+    // Physical Metric - Double Required
     if (buffer.length == 1) {
       return (buffer.first.latitude, buffer.first.longitude);
     }
@@ -223,7 +228,7 @@ class OperationalStateNormalizer {
     );
     final weightSum = weights.reduce((a, b) => a + b);
 
-    double lat = 0, lng = 0;
+    double lat = 0, lng = 0; // Physical Metric - Double Required
     for (int i = 0; i < positions.length; i++) {
       final w = weights[i] / weightSum;
       lat += positions[i].latitude * w;
@@ -234,13 +239,14 @@ class OperationalStateNormalizer {
 
   /// Returns smoothed speed in km/h as weighted average.
   double _smoothSpeed(Queue<VehiclePosition> buffer) {
+    // Physical Metric - Double Required
     final positions = buffer.toList();
     final weights = _smoothingWeights.sublist(
       _smoothingWeights.length - positions.length,
     );
     final weightSum = weights.reduce((a, b) => a + b);
 
-    double speed = 0;
+    double speed = 0; // Physical Metric - Double Required
     for (int i = 0; i < positions.length; i++) {
       final w = weights[i] / weightSum;
       speed += (positions[i].speed ?? 0.0) * w;
@@ -252,8 +258,8 @@ class OperationalStateNormalizer {
 
   MotionState _classifyMotion(
     String vehicleId,
-    double smoothedSpeed,
-    (double, double) position,
+    double smoothedSpeed, // Physical Metric - Double Required
+    (double, double) position, // Physical Metric - Double Required
     List<Stop> stops,
     DateTime now,
   ) {
@@ -299,7 +305,8 @@ class OperationalStateNormalizer {
   /// Returns (stopId, stopName) if a stop is within [stopRadiusMeters],
   /// or null if no stop is nearby.
   (String, String)? _findNearestStop(double lat, double lng, List<Stop> stops) {
-    double minDist = double.infinity;
+    // Physical Metric - Double Required
+    double minDist = double.infinity; // Physical Metric - Double Required
     Stop? nearest;
 
     for (final stop in stops) {

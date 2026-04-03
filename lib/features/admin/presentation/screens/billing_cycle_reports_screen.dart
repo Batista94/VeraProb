@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../features/shared/providers/reporting_providers.dart';
-import '../../../../domain/sla_audit/billing_cycle_report.dart';
+import '../../../../application/shared/billing_cycle_view.dart';
 import '../../../../state/providers/contract_providers.dart';
 import '../../../../state/providers/auth_providers.dart';
 
@@ -26,7 +26,7 @@ class _BillingCycleReportsScreenState
   DateTime _endDate = DateTime.now().toUtc();
   String? _selectedContractId;
   bool _isLoading = false;
-  BillingCycleReport? _report;
+  BillingCycleView? _report;
 
   Future<void> _generateReport() async {
     final organizationId = ref.read(currentOrganizationIdProvider);
@@ -47,7 +47,7 @@ class _BillingCycleReportsScreenState
             periodEndUtc: _endDate,
             contractId: _selectedContractId,
           );
-      setState(() => _report = report);
+      setState(() => _report = BillingCycleView.fromDomain(report));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -255,7 +255,7 @@ class _BillingCycleReportsScreenState
                 subtitle: Text(
                   'Executadas: ${s.executedCount} / ${s.totalObligations}',
                 ),
-                trailing: Text(_formatCents(s.totalContractedRevenue.cents)),
+                trailing: Text(_formatCents(s.totalContractedRevenue)),
               );
             },
           ),
@@ -264,22 +264,22 @@ class _BillingCycleReportsScreenState
     );
   }
 
-  Widget _buildSummaryCards(BillingCycleReport report) {
+  Widget _buildSummaryCards(BillingCycleView report) {
     return Row(
       children: [
         _buildCard(
           'Faturamento',
-          _formatCents(report.totalContractedRevenue.cents),
+          _formatCents(report.totalContractedRevenue),
         ),
-        _buildCard('Protegido', _formatCents(report.protectedRevenue.cents)),
+        _buildCard('Protegido', _formatCents(report.protectedRevenue)),
         _buildCard(
           'Perda',
-          _formatCents(report.lostRevenue.cents),
+          _formatCents(report.lostRevenue),
           color: VeraProbColors.error,
         ),
         _buildCard(
           'Risco',
-          _formatCents(report.revenueAtRisk.cents),
+          _formatCents(report.revenueAtRisk),
           color: VeraProbColors.warning,
         ),
       ],
@@ -309,7 +309,7 @@ class _BillingCycleReportsScreenState
     );
   }
 
-  Widget _buildWarning(BillingCycleReport report) {
+  Widget _buildWarning(BillingCycleView report) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(

@@ -279,7 +279,7 @@ class ShiftProjectionService {
       endRadiusMeters: destZone.geofence!.radiusMeters,
       // Financial — provided by caller from contract rule snapshot
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: pattern.penalties.noShowPenaltyMultiplier,
+      noShowPenaltyBps: pattern.penalties.noShowPenaltyBps,
       delayToleranceMinutes: pattern.penalties.delayToleranceMinutes,
       delayPenaltyPerMinute: pattern.penalties.delayPenaltyPerMinute,
       downgradePenaltyFlat: pattern.penalties.downgradePenaltyFlat,

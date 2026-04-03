@@ -1,7 +1,7 @@
 /// Immutable command DTO for creating a new tenant organization.
 ///
-/// Carries all data from the 3-step wizard.
-/// Contains ZERO logic — pure data transfer.
+/// Carries all information from the 3-step wizard.
+/// Contains ZERO logic — pure information transfer.
 /// INV-4: Pure Dart — zero infrastructure dependencies.
 class CreateOrganizationCommand {
   final String legalName;

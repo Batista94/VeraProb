@@ -1,30 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:veraprob/features/shared/data/repositories/vehicle_repository.dart';
-import 'package:veraprob/features/shared/data/services/gtfs_realtime_service.dart';
-import 'package:veraprob/features/shared/domain/entities/vehicle_position.dart';
-
-class MockSupabaseClient extends Mock implements SupabaseClient {}
+import 'package:veraprob/infrastructure/shared/vehicle_repository.dart';
+import 'package:veraprob/infrastructure/shared/gtfs_realtime_service.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 class MockGtfsRealtimeService extends Mock implements GtfsRealtimeService {}
 
 void main() {
-  late MockSupabaseClient mockSupabase;
   late MockGtfsRealtimeService mockGtfsService;
   late VehicleRepository repository;
 
   setUp(() {
-    mockSupabase = MockSupabaseClient();
     mockGtfsService = MockGtfsRealtimeService();
-    repository = VehicleRepository(mockSupabase, mockGtfsService);
+    repository = VehicleRepository(mockGtfsService);
 
     registerFallbackValue(
       VehiclePosition(
         tripId: 'fallback',
         latitude: 0,
         longitude: 0,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.now().toUtc(),
         source: 'test',
       ),
     );
@@ -37,7 +32,7 @@ void main() {
           tripId: 'trip_001',
           latitude: -23.55,
           longitude: -46.63,
-          timestamp: DateTime.now(),
+          timestamp: DateTime.now().toUtc(),
           source: 'api_public',
           routeName: '809U',
         ),
@@ -57,7 +52,7 @@ void main() {
           tripId: 'trip_001',
           latitude: -23.55,
           longitude: -46.63,
-          timestamp: DateTime.now(),
+          timestamp: DateTime.now().toUtc(),
           source: 'api_public',
         ),
       ];
@@ -76,7 +71,7 @@ void main() {
         tripId: 'trip_send',
         latitude: -23.55,
         longitude: -46.63,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.now().toUtc(),
         source: 'driver_app_gps',
         speed: 15.0,
         heading: 90.0,
@@ -92,7 +87,7 @@ void main() {
         tripId: 'trip_nulls',
         latitude: -23.55,
         longitude: -46.63,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.now().toUtc(),
         source: 'driver_app_gps',
         // speed, heading, routeName are null
       );

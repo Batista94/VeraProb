@@ -11,7 +11,7 @@ import '../../../domain/sla_audit/sla_audit_ledger_repository.dart';
 /// Snapshots are derived by:
 /// 1. Filtering execution states whose `windowStartUtc` falls on the
 ///    given operational day (converted to BRT timezone)
-/// 2. Accumulating monetary values using [Money] (no double intermediaries)
+/// 2. Accumulating monetary values using [Money] (no floating-point intermediaries)
 /// 3. Persisting the resulting snapshot
 ///
 /// The generation is idempotent: if a snapshot already exists for the
@@ -95,7 +95,7 @@ class ContractualFinancialSnapshotGenerator {
           executedCount++;
           break;
         case ExecutionStatus.noShow:
-          lostRevenue = lostRevenue + (value * s.noShowPenaltyMultiplier);
+          lostRevenue = lostRevenue + value.multiplyByBps(s.noShowPenaltyBps);
           noShowCount++;
           break;
         case ExecutionStatus.evidenceGap:
@@ -183,7 +183,7 @@ class ContractualFinancialSnapshotGenerator {
           executedCount++;
           break;
         case ExecutionStatus.noShow:
-          lostRevenue = lostRevenue + (value * s.noShowPenaltyMultiplier);
+          lostRevenue = lostRevenue + value.multiplyByBps(s.noShowPenaltyBps);
           noShowCount++;
           break;
         case ExecutionStatus.evidenceGap:

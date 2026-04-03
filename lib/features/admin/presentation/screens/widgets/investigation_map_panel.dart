@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../../../core/theme/app_theme.dart';
-import '../../../../../domain/sla_audit/contractual_execution_state.dart';
-import '../../../../../domain/sla_audit/execution_status.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 class InvestigationMapPanel extends StatelessWidget {
   final ContractualExecutionState execution;

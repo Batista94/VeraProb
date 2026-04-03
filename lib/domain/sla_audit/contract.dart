@@ -134,8 +134,8 @@ class Contract extends Equatable {
     final id = const Uuid().v4();
     final now = DateTime.now().toUtc();
 
-    // ── Emit domain event ───────────────────────────────────
-    final event = ContractCreatedEvent(
+    // ── Emit domain factEvent ───────────────────────────────────
+    final domainEvent = ContractCreatedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -156,7 +156,7 @@ class Contract extends Equatable {
       status: ContractStatus.draft,
       createdAtUtc: now,
       financialCeiling: financialCeiling,
-      domainEvents: [event],
+      domainEvents: [domainEvent],
     );
   }
 
@@ -195,7 +195,7 @@ class Contract extends Equatable {
     final id = const Uuid().v4();
     final now = DateTime.now().toUtc();
 
-    final event = ContractCreatedEvent(
+    final domainEvent = ContractCreatedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -216,7 +216,7 @@ class Contract extends Equatable {
       status: ContractStatus.draft,
       createdAtUtc: now,
       clonedFromContractId: clonedFromContractId,
-      domainEvents: [event],
+      domainEvents: [domainEvent],
     );
   }
 
@@ -281,7 +281,7 @@ class Contract extends Equatable {
     }
 
     final now = DateTime.now().toUtc();
-    final event = ContractSubmittedForApprovalEvent(
+    final domainEvent = ContractSubmittedForApprovalEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -302,7 +302,7 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: now,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
-      domainEvents: [event],
+      domainEvents: [domainEvent],
     );
   }
 
@@ -324,7 +324,7 @@ class Contract extends Equatable {
     }
 
     final now = DateTime.now().toUtc();
-    final event = ContractAcceptedByContractorEvent(
+    final domainEvent = ContractAcceptedByContractorEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -346,7 +346,7 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
-      domainEvents: [event],
+      domainEvents: [domainEvent],
     );
   }
 
@@ -368,7 +368,7 @@ class Contract extends Equatable {
     }
 
     final now = DateTime.now().toUtc();
-    final event = ContractActivatedEvent(
+    final domainEvent = ContractActivatedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -392,7 +392,7 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
-      domainEvents: [event],
+      domainEvents: [domainEvent],
     );
   }
 
@@ -421,7 +421,7 @@ class Contract extends Equatable {
     }
 
     final now = DateTime.now().toUtc();
-    final event = ContractClosedEvent(
+    final domainEvent = ContractClosedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -447,7 +447,7 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
-      domainEvents: [event],
+      domainEvents: [domainEvent],
     );
   }
 

@@ -47,7 +47,7 @@ void main() {
 
   SLAPenalties makePenalties() {
     return SLAPenalties.create(
-      noShowPenaltyMultiplier: 1.5,
+      noShowPenaltyBps: 15000,
       delayToleranceMinutes: 10,
       delayPenaltyPerMinute: const Money(100),
       downgradePenaltyFlat: const Money(5000),
@@ -145,7 +145,7 @@ void main() {
               endLongitude: -46.64,
               endRadiusMeters: 200,
               contractualValue: const Money(15000),
-              noShowPenaltyMultiplier: 1.5,
+              noShowPenaltyBps: 15000,
             ),
           ],
         );
@@ -320,7 +320,7 @@ void main() {
       expect(set.delayToleranceMinutes, equals(10));
       expect(set.delayPenaltyPerMinute?.cents, equals(100));
       expect(set.downgradePenaltyFlat?.cents, equals(5000));
-      expect(set.noShowPenaltyMultiplier, equals(1.5));
+      expect(set.noShowPenaltyBps, equals(15000));
     });
 
     test(
@@ -502,7 +502,7 @@ void main() {
       () {
         // Backward compat: existing call sites without new fields still work
         final penalties = SLAPenalties.create(
-          noShowPenaltyMultiplier: 1.5,
+          noShowPenaltyBps: 15000,
           delayToleranceMinutes: 10,
           delayPenaltyPerMinute: const Money(100),
           downgradePenaltyFlat: const Money(5000),
@@ -524,7 +524,7 @@ void main() {
 
         // fromJson backward compat: old JSON without new fields falls back to defaults
         final oldJson = {
-          'noShowPenaltyMultiplier': 1.5,
+          'noShowPenaltyBps': 15000,
           'delayToleranceMinutes': 10,
           'delayPenaltyPerMinuteCents': 100,
           'downgradePenaltyFlatCents': 5000,
@@ -537,7 +537,7 @@ void main() {
 
         // Custom values are stored and restored correctly
         final custom = SLAPenalties.create(
-          noShowPenaltyMultiplier: 2.0,
+          noShowPenaltyBps: 20000,
           delayToleranceMinutes: 15,
           delayPenaltyPerMinute: const Money(200),
           downgradePenaltyFlat: const Money(10000),

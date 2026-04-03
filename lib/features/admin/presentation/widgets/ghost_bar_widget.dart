@@ -111,7 +111,9 @@ class _GhostColumn extends StatelessWidget {
                     width: totalWidth,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: VeraProbColors.textDisabled.withValues(alpha: 0.25),
+                      color: VeraProbColors.textDisabled.withValues(
+                        alpha: 0.25,
+                      ),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),

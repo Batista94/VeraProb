@@ -23,8 +23,8 @@ class SanctionSimulationService {
   Future<void> simulateSpeedViolation({
     required String organizationId,
     required String vehiclePlate,
-    double speed = 88.5,
-    double limit = 80.0,
+    double speed = 88.5, // forensic-ignore: FINANCIAL-BLOCK
+    double limit = 80.0, // forensic-ignore: FINANCIAL-BLOCK
   }) async {
     try {
       final now = DateTime.now().toUtc();

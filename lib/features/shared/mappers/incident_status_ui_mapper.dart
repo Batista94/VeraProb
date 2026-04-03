@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/enums/incident_lifecycle_status.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Maps [IncidentLifecycleStatus] domain values to Flutter UI primitives.
 /// Keeps the domain enum free of Flutter dependencies (DOMAIN SOVEREIGNTY invariant).

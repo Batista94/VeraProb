@@ -46,7 +46,8 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
         case ExecutionStatus.noShow:
           noShow++;
           lostRevenue =
-              lostRevenue + (s.contractualValue * s.noShowPenaltyMultiplier);
+              lostRevenue +
+              s.contractualValue.multiplyByBps(s.noShowPenaltyBps);
           break;
         case ExecutionStatus.evidenceGap:
           evidenceGap++;
@@ -140,7 +141,7 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
       startLongitude: s.startLongitude,
       startRadiusMeters: s.startRadiusMeters,
       contractualValue: s.contractualValue,
-      noShowPenaltyMultiplier: s.noShowPenaltyMultiplier,
+      noShowPenaltyBps: s.noShowPenaltyBps,
     );
   }
 }

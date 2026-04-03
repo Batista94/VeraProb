@@ -36,7 +36,7 @@ CREATE POLICY "ExecutionState tenant isolation" ON public.execution_states
   WITH CHECK (organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid);
 
 -- ── Block 5: contractual_financial_snapshot (safe recreate — append-only) ────
--- NOTE: DROP TABLE was removed to comply with the zero-downtime / append-only
+-- NOTE: Destructive operations were omitted to comply with the zero-downtime / append-only
 -- migration invariant (INV-1 / Rule 39). On a fresh `db reset` the base schema
 -- creates the table first; here we ensure the full column set exists via IF NOT
 -- EXISTS semantics. Any column added in this block that did not exist previously

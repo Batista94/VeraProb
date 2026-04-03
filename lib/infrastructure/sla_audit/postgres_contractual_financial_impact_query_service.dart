@@ -40,8 +40,8 @@ class ContractualFinancialImpactQueryServicePostgres
         protectedRevenue: const Money(0),
         revenueAtRisk: const Money(0),
         lostRevenue: const Money(0),
-        riskPercentage: 0.0,
-        lossPercentage: 0.0,
+        riskPercentageBps: 0,
+        lossPercentageBps: 0,
       );
     }
 
@@ -72,8 +72,8 @@ class ContractualFinancialImpactQueryServicePostgres
     final latest = activeRows.first;
 
     final lostRevenueCents = (latest['lost_revenue_cents'] as num).toInt();
-    final marginErosionPercent = (ceilingCents != null && ceilingCents > 0)
-        ? lostRevenueCents / ceilingCents * 100.0
+    final marginErosionBps = (ceilingCents != null && ceilingCents > 0)
+        ? (lostRevenueCents * 10000 ~/ ceilingCents)
         : null;
 
     return ContractualFinancialImpact(
@@ -87,9 +87,9 @@ class ContractualFinancialImpactQueryServicePostgres
       ),
       revenueAtRisk: Money((latest['revenue_at_risk_cents'] as num).toInt()),
       lostRevenue: Money(lostRevenueCents),
-      riskPercentage: (latest['risk_percentage'] as num).toDouble(),
-      lossPercentage: (latest['loss_percentage'] as num).toDouble(),
-      marginErosionPercent: marginErosionPercent,
+      riskPercentageBps: (latest['risk_percentage'] as num).toInt(),
+      lossPercentageBps: (latest['loss_percentage'] as num).toInt(),
+      marginErosionBps: marginErosionBps,
     );
   }
 }

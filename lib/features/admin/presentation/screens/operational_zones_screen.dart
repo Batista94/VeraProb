@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/application/admin/operational_zone_view.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 import 'package:veraprob/presentation/shared/widgets/veraprob_header.dart';
@@ -82,7 +82,7 @@ class OperationalZonesScreen extends ConsumerWidget {
 // ── Zone list ────────────────────────────────────────────────
 
 class _ZoneList extends ConsumerWidget {
-  final List<OperationalZone> zones;
+  final List<OperationalZoneView> zones;
   const _ZoneList({required this.zones});
 
   @override

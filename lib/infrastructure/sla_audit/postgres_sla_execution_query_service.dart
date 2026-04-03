@@ -20,7 +20,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
   }) async {
     var query = _client
         .from('execution_states')
-        .select('status, contractual_value_cents, no_show_penalty_multiplier')
+        .select('status, contractual_value_cents, no_show_penalty_bps')
         .eq('organization_id', organizationId);
 
     if (contractId != null) {
@@ -41,7 +41,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
     for (var row in rows) {
       final statusStr = row['status'] as String;
       final val = Money((row['contractual_value_cents'] as num).toInt());
-      final mult = (row['no_show_penalty_multiplier'] as num).toDouble();
+      final int penaltyBps = (row['no_show_penalty_bps'] as num).toInt();
 
       if (statusStr == ExecutionStatus.pending.name) {
         pending++;
@@ -51,7 +51,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         protectedRevenue = protectedRevenue + val;
       } else if (statusStr == ExecutionStatus.noShow.name) {
         noShow++;
-        lostRevenue = lostRevenue + (val * mult);
+        lostRevenue = lostRevenue + val.multiplyByBps(penaltyBps);
       } else if (statusStr == ExecutionStatus.evidenceGap.name) {
         evidenceGap++;
         lostRevenue = lostRevenue + val;
@@ -112,8 +112,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         contractualValue: Money(
           (row['contractual_value_cents'] as num).toInt(),
         ),
-        noShowPenaltyMultiplier: (row['no_show_penalty_multiplier'] as num)
-            .toDouble(),
+        noShowPenaltyBps: (row['no_show_penalty_bps'] as num).toInt(),
       );
     }).toList();
   }
@@ -148,8 +147,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
       startLongitude: (row['start_longitude'] as num).toDouble(),
       startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
       contractualValue: Money((row['contractual_value_cents'] as num).toInt()),
-      noShowPenaltyMultiplier: (row['no_show_penalty_multiplier'] as num)
-          .toDouble(),
+      noShowPenaltyBps: (row['no_show_penalty_bps'] as num).toInt(),
     );
   }
 
@@ -195,8 +193,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         contractualValue: Money(
           (row['contractual_value_cents'] as num).toInt(),
         ),
-        noShowPenaltyMultiplier: (row['no_show_penalty_multiplier'] as num)
-            .toDouble(),
+        noShowPenaltyBps: (row['no_show_penalty_bps'] as num).toInt(),
       );
     }).toList();
   }

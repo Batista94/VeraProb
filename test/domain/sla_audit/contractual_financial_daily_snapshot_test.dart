@@ -11,10 +11,10 @@ void main() {
         operationalDateUtc: DateTime.utc(2026, 3, 1, 10, 30),
         operationalTimezone: 'America/Sao_Paulo',
         closedAtUtc: DateTime.utc(2026, 3, 2, 3, 0),
-        totalContractedRevenue: Money.fromDouble(1000.0),
-        protectedRevenue: Money.fromDouble(500.0),
-        revenueAtRisk: Money.fromDouble(300.0),
-        lostRevenue: Money.fromDouble(200.0),
+        totalContractedRevenue: const Money(100000),
+        protectedRevenue: const Money(50000),
+        revenueAtRisk: const Money(30000),
+        lostRevenue: const Money(20000),
         totalObligations: 10,
         executedCount: 8,
         noShowCount: 1,
@@ -24,10 +24,10 @@ void main() {
 
       expect(snapshot.contractId, 'c-1');
       expect(snapshot.operationalTimezone, 'America/Sao_Paulo');
-      expect(snapshot.totalContractedRevenue, Money.fromDouble(1000.0));
-      expect(snapshot.protectedRevenue, Money.fromDouble(500.0));
-      expect(snapshot.revenueAtRisk, Money.fromDouble(300.0));
-      expect(snapshot.lostRevenue, Money.fromDouble(200.0));
+      expect(snapshot.totalContractedRevenue, const Money(100000));
+      expect(snapshot.protectedRevenue, const Money(50000));
+      expect(snapshot.revenueAtRisk, const Money(30000));
+      expect(snapshot.lostRevenue, const Money(20000));
     });
 
     test('normalizes operationalDateUtc to midnight UTC', () {
@@ -69,8 +69,8 @@ void main() {
         lastLedgerEntryId: '1',
       );
 
-      expect(snapshot.riskPercentage, 30.0);
-      expect(snapshot.lossPercentage, 20.0);
+      expect(snapshot.riskPercentageBps, 3000);
+      expect(snapshot.lossPercentageBps, 2000);
     });
 
     test('handles zero total revenue (no division by zero)', () {
@@ -91,8 +91,8 @@ void main() {
         lastLedgerEntryId: '1',
       );
 
-      expect(snapshot.riskPercentage, 0.0);
-      expect(snapshot.lossPercentage, 0.0);
+      expect(snapshot.riskPercentageBps, 0);
+      expect(snapshot.lossPercentageBps, 0);
     });
 
     test('is immutable (Equatable)', () {
@@ -133,7 +133,7 @@ void main() {
         evidenceGapCount: 1,
         lastLedgerEntryId: '1',
       );
-      expect(snapshot.riskPercentage, 30.0);
+      expect(snapshot.riskPercentageBps, 3000);
     });
   });
 }

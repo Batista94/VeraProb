@@ -18,7 +18,7 @@ void main() {
       final payload = PostgresChangePayload(
         schema: 'public',
         table: 'vehicle_positions',
-        commitTimestamp: DateTime.now(),
+        commitTimestamp: DateTime.now().toUtc(),
         eventType: PostgresChangeEvent.insert,
         oldRecord: {},
         newRecord: {},
@@ -36,7 +36,7 @@ void main() {
       final validPayload = PostgresChangePayload(
         schema: 'public',
         table: 'vehicle_positions',
-        commitTimestamp: DateTime.now(),
+        commitTimestamp: DateTime.now().toUtc(),
         eventType: PostgresChangeEvent.insert,
         oldRecord: {},
         newRecord: {
@@ -46,7 +46,7 @@ void main() {
           'longitude': -40.0,
           'speed': 50.0,
           'heading': 90.0,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTime.now().toUtc().toIso8601String(),
           'source': 'gps',
         },
         errors: [],
@@ -67,7 +67,7 @@ void main() {
       final invalidPayload = PostgresChangePayload(
         schema: 'public',
         table: 'vehicle_positions',
-        commitTimestamp: DateTime.now(),
+        commitTimestamp: DateTime.now().toUtc(),
         eventType: PostgresChangeEvent.insert,
         oldRecord: {},
         newRecord: {
@@ -85,7 +85,7 @@ void main() {
       int emitCount = 0;
       provider.positionStream.listen((_) => emitCount++);
 
-      final now = DateTime.now();
+      final now = DateTime.now().toUtc();
       final payload = PostgresChangePayload(
         schema: 'public',
         table: 'vehicle_positions',
@@ -119,15 +119,15 @@ void main() {
         emissions.add(snapshot);
       });
 
-      final staleTimestamp = DateTime.now().subtract(
+      final staleTimestamp = DateTime.now().toUtc().subtract(
         const Duration(minutes: 5),
       );
-      final freshTimestamp = DateTime.now();
+      final freshTimestamp = DateTime.now().toUtc();
 
       final firstPayload = PostgresChangePayload(
         schema: 'public',
         table: 'vehicle_positions',
-        commitTimestamp: DateTime.now(),
+        commitTimestamp: DateTime.now().toUtc(),
         eventType: PostgresChangeEvent.insert,
         oldRecord: {},
         newRecord: {
@@ -143,7 +143,7 @@ void main() {
       final stalePayload = PostgresChangePayload(
         schema: 'public',
         table: 'vehicle_positions',
-        commitTimestamp: DateTime.now(),
+        commitTimestamp: DateTime.now().toUtc(),
         eventType: PostgresChangeEvent.insert,
         oldRecord: {},
         newRecord: {
@@ -174,7 +174,7 @@ void main() {
       final secondFreshPayload = PostgresChangePayload(
         schema: 'public',
         table: 'vehicle_positions',
-        commitTimestamp: DateTime.now(),
+        commitTimestamp: DateTime.now().toUtc(),
         eventType: PostgresChangeEvent.insert,
         oldRecord: {},
         newRecord: {

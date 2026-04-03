@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/features/shared/domain/entities/vehicle_position.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 void main() {
   group('VehiclePosition Entity', () {
     test('should instantiate correctly', () {
-      final now = DateTime.now();
+      final now = DateTime.now().toUtc();
       final pos = VehiclePosition(
         tripId: '1234',
         latitude: -23.55,

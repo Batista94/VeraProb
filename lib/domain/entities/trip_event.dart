@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../enums/event_type.dart';
 import '../enums/trip_status.dart';
 
-/// An immutable audit record of an operational event.
+/// An immutable audit record of an operational factEvent.
 ///
 /// TripEvents form an append-only log that provides complete auditability
 /// of every state change in the system. They are never updated or deleted.
@@ -25,7 +25,7 @@ class TripEvent extends Equatable {
     required this.createdAt,
   });
 
-  /// Human-readable summary of this event
+  /// Human-readable summary of this factEvent
   String get summary {
     switch (eventType) {
       case EventType.statusChange:

@@ -1,13 +1,4 @@
-import 'package:veraprob/domain/entities/transit_route.dart';
-
-abstract class ITransitRouteRepository {
-  Future<List<TransitRoute>> getRoutes();
-  Future<TransitRoute> addRoute({
-    required String shortName,
-    required String longName,
-    String? color,
-    String? gtfsRouteId,
-  });
-  Future<void> updateRoute(TransitRoute route);
-  Future<void> deleteRoute(String routeId);
-}
+// Centralized to Application layer — this file is a migration shim.
+// Widget imports targeting this path continue to compile unchanged.
+export 'package:veraprob/application/shared/app_types.dart'
+    show ITransitRouteRepository;

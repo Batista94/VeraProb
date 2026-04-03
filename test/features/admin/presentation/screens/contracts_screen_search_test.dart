@@ -22,7 +22,7 @@ final _contracts = [
     planCount: 1,
     activePlanVersion: 1,
     totalSetsInProgress: 0,
-    slaHealthPercentage: 95.0,
+    slaHealthBps: 9500,
   ),
   ContractSummaryView(
     id: 'c-2',
@@ -35,7 +35,7 @@ final _contracts = [
     planCount: 0,
     activePlanVersion: 0,
     totalSetsInProgress: 0,
-    slaHealthPercentage: 0.0,
+    slaHealthBps: 0,
   ),
   ContractSummaryView(
     id: 'c-3',
@@ -48,7 +48,7 @@ final _contracts = [
     planCount: 0,
     activePlanVersion: 0,
     totalSetsInProgress: 0,
-    slaHealthPercentage: 0.0,
+    slaHealthBps: 0,
   ),
 ];
 

@@ -60,8 +60,8 @@ ContractualServiceInput _makeService([DateTime? start]) {
     endLatitude: -23.5600,
     endLongitude: -46.6400,
     endRadiusMeters: 100,
-    contractualValue: 150.0,
-    noShowPenaltyMultiplier: 1.5,
+    contractualValue: const Money(15000),
+    noShowPenaltyBps: 15000,
   );
 }
 
@@ -701,7 +701,7 @@ void main() {
             originZoneId: origin.id,
             destinationZoneId: dest.id,
             penalties: SLAPenalties.create(
-              noShowPenaltyMultiplier: 1.5,
+              noShowPenaltyBps: 15000,
               delayToleranceMinutes: 10,
               delayPenaltyPerMinute: const Money(100),
               downgradePenaltyFlat: const Money(5000),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/application/admin/operational_zone_view.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 import 'package:veraprob/features/admin/presentation/screens/widgets/_zone_form_dialog.dart';
 
@@ -13,8 +14,8 @@ import 'package:veraprob/features/admin/presentation/screens/widgets/_zone_form_
 ///
 /// Then applies a case-insensitive substring match on [query] (when non-empty).
 /// Preserves the input order — sorting is the caller's responsibility.
-List<OperationalZone> filterZones(
-  List<OperationalZone> zones,
+List<OperationalZoneView> filterZones(
+  List<OperationalZoneView> zones,
   String query,
   String currentContractor,
 ) {
@@ -38,7 +39,7 @@ List<OperationalZone> filterZones(
 // ── Widget ────────────────────────────────────────────────────
 
 /// A type-ahead (autocomplete) field for selecting or Just-in-Time creating an
-/// [OperationalZone].
+/// [OperationalZoneView].
 ///
 /// Displays existing zones as autocomplete suggestions, scoped by
 /// [contractorName] — zones belonging to a different contractor are hidden.
@@ -58,10 +59,10 @@ class ZoneTypeAheadField extends StatefulWidget {
   final IconData prefixIcon;
 
   /// Pre-sorted list from the parent. Contractor zones should appear first.
-  final List<OperationalZone> zones;
+  final List<OperationalZoneView> zones;
 
   /// The currently selected zone (can be null when nothing is selected yet).
-  final OperationalZone? selectedZone;
+  final OperationalZoneView? selectedZone;
 
   /// Contract's contractor name — used to filter visible zones and to
   /// auto-apply as [contractorLabel] on newly-created zones.
@@ -71,11 +72,11 @@ class ZoneTypeAheadField extends StatefulWidget {
   final Future<void> Function() onInvalidateZones;
 
   /// Called when the user selects an existing zone or after zone creation.
-  final ValueChanged<OperationalZone?> onChanged;
+  final ValueChanged<OperationalZoneView?> onChanged;
 
   /// Called after the operator configures a geofence via [showZoneFormDialog]
   /// with the updated zone object.
-  final ValueChanged<OperationalZone>? onGeofenceConfigured;
+  final ValueChanged<OperationalZoneView>? onGeofenceConfigured;
 
   const ZoneTypeAheadField({
     super.key,
@@ -143,10 +144,14 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
     final query = _textController.text.trim();
     final hasExactMatch =
         query.isNotEmpty &&
-        widget.zones.any((z) => z.name.toLowerCase() == query.toLowerCase());
+        widget.zones.any(
+          (z) => z.name.toLowerCase() == query.toLowerCase(),
+        );
     if (hasExactMatch) return const SizedBox.shrink();
 
-    final label = query.isEmpty ? '+ Criar nova zona' : '+ Criar zona "$query"';
+    final label = query.isEmpty
+        ? '+ Criar nova zona'
+        : '+ Criar zona "$query"';
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -165,17 +170,20 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
   }
 
   Widget _buildAutocomplete() {
-    return Autocomplete<OperationalZone>(
+    return Autocomplete<OperationalZoneView>(
       initialValue: TextEditingValue(text: widget.selectedZone?.name ?? ''),
       optionsBuilder: (textEditingValue) {
         // When the field text equals the selected zone name, show all available
         // zones instead of filtering — allows the user to change the selection
         // without first clearing the field manually.
         final selectedName = widget.selectedZone?.name ?? '';
-        final query = textEditingValue.text == selectedName
-            ? ''
-            : textEditingValue.text;
-        return filterZones(widget.zones, query, widget.contractorName);
+        final query =
+            textEditingValue.text == selectedName ? '' : textEditingValue.text;
+        return filterZones(
+          widget.zones,
+          query,
+          widget.contractorName,
+        );
       },
       displayStringForOption: (zone) => zone.name,
       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {

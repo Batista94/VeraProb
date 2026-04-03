@@ -44,7 +44,7 @@ class ShadowModeService {
     required String simulationName,
     required DateTime periodStartUtc,
     required DateTime periodEndUtc,
-    required double baselineDisputeRate,
+    required int baselineDisputeRateBps,
     required Money manualEnforcementCostPerIncident,
     required Money platformSubscriptionCost,
     required String generatedByUserId,
@@ -65,9 +65,9 @@ class ShadowModeService {
     );
     final totalFacts = flagCounts.values.fold(0, (a, b) => a + b);
     final okFacts = flagCounts[IngestionIntegrityFlag.ok] ?? 0;
-    final evidenceQualityRate = totalFacts > 0
-        ? (okFacts / totalFacts * 100)
-        : 100.0;
+    final evidenceQualityRateBps = totalFacts > 0
+        ? (okFacts * 10000 ~/ totalFacts)
+        : 10000;
 
     // 3. Compute simulation
     final incidentCount = report.noShowCount + report.evidenceGapCount;
@@ -79,20 +79,20 @@ class ShadowModeService {
       actualProtectedRevenue: report.protectedRevenue,
       actualLostRevenue: report.lostRevenue,
       actualAtRiskRevenue: report.revenueAtRisk,
-      actualComplianceRate: report.complianceRate,
-      evidenceQualityRate: evidenceQualityRate,
-      baselineDisputeRate: baselineDisputeRate,
+      actualComplianceRateBps: report.complianceRateBps,
+      evidenceQualityRateBps: evidenceQualityRateBps,
+      baselineDisputeRateBps: baselineDisputeRateBps,
       manualEnforcementCostPerIncident: manualEnforcementCostPerIncident,
       incidentCount: incidentCount,
       platformSubscriptionCost: platformSubscriptionCost,
       generatedAtUtc: DateTime.now().toUtc(),
       generatedByUserId: generatedByUserId,
       simulationParameters: {
-        'baseline_dispute_rate': baselineDisputeRate,
+        'baseline_dispute_rate_bps': baselineDisputeRateBps,
         'manual_cost_per_incident_cents':
             manualEnforcementCostPerIncident.cents,
         'platform_subscription_cost_cents': platformSubscriptionCost.cents,
-        'evidence_quality_rate': evidenceQualityRate,
+        'evidence_quality_rate_bps': evidenceQualityRateBps,
         'total_canonical_facts': totalFacts,
         'ok_canonical_facts': okFacts,
       },

@@ -4,14 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
-import 'package:veraprob/domain/enums/user_permissions.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
-import 'package:veraprob/domain/services/rbac_service.dart';
-import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/justification_providers.dart';
 import 'package:veraprob/application/sla_audit/justification/generate_justification_token_command.dart';
-import 'investigation_modal.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
+
 
 final _currencyFormat = NumberFormat.currency(
   locale: 'pt_BR',
@@ -76,7 +74,8 @@ class SlaExecutionDetailDrawer extends ConsumerWidget {
                     ),
                     _InfoField(
                       label: 'Multiplicador NoShow',
-                      value: '${item.noShowPenaltyMultiplier}x',
+                      value:
+                          '${(item.noShowPenaltyBps / 10000.0).toStringAsFixed(1)}x',
                     ),
                     if (item.status == ExecutionStatus.noShow)
                       _InfoField(
@@ -354,7 +353,9 @@ class _SolicitarDefesaButtonState
 
       final uri = Uri.base.replace(
         path: '/justify',
-        queryParameters: {'token': token.token},
+        queryParameters: {
+          'token': token.token,
+        },
       );
       final link = uri.toString();
 

@@ -99,7 +99,7 @@ class FakeLocalFactQueueRepository implements LocalFactQueueRepository {
   Future<void> clearAcknowledged({
     Duration olderThan = const Duration(hours: 48),
   }) async {
-    final cutoff = DateTime.now().subtract(olderThan);
+    final cutoff = DateTime.now().toUtc().subtract(olderThan);
     _facts.removeWhere(
       (f) =>
           f.syncStatus == SyncStatus.acknowledged &&

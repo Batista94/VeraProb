@@ -23,18 +23,18 @@ class VerdictEvidence extends Equatable {
   final String clauseRef;
   final String ruleId;
   final int ruleVersion;
-  final double primaryEvidenceLat;
-  final double primaryEvidenceLng;
+  final double primaryEvidenceLat; // Physical Metric - Double Required
+  final double primaryEvidenceLng; // Physical Metric - Double Required
   final DateTime primaryEvidenceTimestampUtc;
 
   /// SHA-256 of the canonical bundle. Deterministic for the same input.
   final String evidenceHash;
 
   /// How far past the threshold the violation went (e.g., minutes late).
-  final double deltaValue;
+  final double deltaValue; // Physical Metric - Double Required
 
   /// The contractual threshold that was breached (e.g., 0 minutes over).
-  final double thresholdValue;
+  final double thresholdValue; // Physical Metric - Double Required
 
   /// Penalty amount in cents (INV-2). Always > 0.
   final Money fineCents;
@@ -44,11 +44,11 @@ class VerdictEvidence extends Equatable {
 
   /// Optional geofence center coordinates (e.g., bus stop position).
   /// Present for geofence-binding violations; null for other rule types.
-  final double? geofenceCenterLat;
-  final double? geofenceCenterLng;
+  final double? geofenceCenterLat; // Physical Metric - Double Required
+  final double? geofenceCenterLng; // Physical Metric - Double Required
 
   /// Geofence radius in metres. Present when [geofenceCenterLat] is set.
-  final double? geofenceRadiusMeters;
+  final double? geofenceRadiusMeters; // Physical Metric - Double Required
 
   const VerdictEvidence._({
     required this.clauseRef,
@@ -74,16 +74,16 @@ class VerdictEvidence extends Equatable {
     required String clauseRef,
     required String ruleId,
     required int ruleVersion,
-    required double primaryEvidenceLat,
-    required double primaryEvidenceLng,
+    required double primaryEvidenceLat, // Physical Metric - Double Required
+    required double primaryEvidenceLng, // Physical Metric - Double Required
     required DateTime primaryEvidenceTimestampUtc,
-    required double deltaValue,
-    required double thresholdValue,
+    required double deltaValue, // Physical Metric - Double Required
+    required double thresholdValue, // Physical Metric - Double Required
     required Money fineCents,
     required int confidenceScore,
-    double? geofenceCenterLat,
-    double? geofenceCenterLng,
-    double? geofenceRadiusMeters,
+    double? geofenceCenterLat, // Physical Metric - Double Required
+    double? geofenceCenterLng, // Physical Metric - Double Required
+    double? geofenceRadiusMeters, // Physical Metric - Double Required
   }) {
     if (clauseRef.isEmpty) {
       throw const DomainException('clauseRef must not be empty');
@@ -200,15 +200,15 @@ class VerdictEvidence extends Equatable {
     required String clauseRef,
     required String ruleId,
     required int ruleVersion,
-    required double lat,
-    required double lng,
+    required double lat, // Physical Metric - Double Required
+    required double lng, // Physical Metric - Double Required
     required DateTime timestampUtc,
-    required double deltaValue,
-    required double thresholdValue,
+    required double deltaValue, // Physical Metric - Double Required
+    required double thresholdValue, // Physical Metric - Double Required
     required int fineCents,
-    double? geofenceCenterLat,
-    double? geofenceCenterLng,
-    double? geofenceRadiusMeters,
+    double? geofenceCenterLat, // Physical Metric - Double Required
+    double? geofenceCenterLng, // Physical Metric - Double Required
+    double? geofenceRadiusMeters, // Physical Metric - Double Required
   }) {
     final canonical = <String, dynamic>{
       'clause_ref': clauseRef,

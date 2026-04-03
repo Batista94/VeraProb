@@ -7,7 +7,7 @@ void main() {
 
   ContractualFinancialImpact makeImpact({
     String? contractId,
-    double? marginErosionPercent,
+    int? marginErosionBps,
   }) => ContractualFinancialImpact(
     contractId: contractId,
     generatedAtUtc: now,
@@ -15,26 +15,26 @@ void main() {
     protectedRevenue: const Money(700000),
     revenueAtRisk: const Money(200000),
     lostRevenue: const Money(100000),
-    riskPercentage: 20.0,
-    lossPercentage: 10.0,
-    marginErosionPercent: marginErosionPercent,
+    riskPercentageBps: 2000,
+    lossPercentageBps: 1000,
+    marginErosionBps: marginErosionBps,
   );
 
   group('ContractualFinancialImpact', () {
     test('props equality — same values are equal', () {
-      final i1 = makeImpact(contractId: 'c1', marginErosionPercent: 5.0);
-      final i2 = makeImpact(contractId: 'c1', marginErosionPercent: 5.0);
+      final i1 = makeImpact(contractId: 'c1', marginErosionBps: 500);
+      final i2 = makeImpact(contractId: 'c1', marginErosionBps: 500);
       expect(i1, equals(i2));
     });
 
-    test('marginErosionPercent null is handled', () {
+    test('marginErosionBps null is handled', () {
       final i = makeImpact();
-      expect(i.marginErosionPercent, isNull);
+      expect(i.marginErosionBps, isNull);
     });
 
-    test('marginErosionPercent non-null is stored', () {
-      final i = makeImpact(marginErosionPercent: 42.5);
-      expect(i.marginErosionPercent, 42.5);
+    test('marginErosionBps non-null is stored', () {
+      final i = makeImpact(marginErosionBps: 4250);
+      expect(i.marginErosionBps, 4250);
     });
 
     test('contractId null is handled', () {
@@ -50,8 +50,8 @@ void main() {
         protectedRevenue: const Money(700000),
         revenueAtRisk: const Money(200000),
         lostRevenue: const Money(100000),
-        riskPercentage: 20.0,
-        lossPercentage: 99.0, // different
+        riskPercentageBps: 2000,
+        lossPercentageBps: 9900, // different
       );
       expect(i1, isNot(equals(i2)));
     });

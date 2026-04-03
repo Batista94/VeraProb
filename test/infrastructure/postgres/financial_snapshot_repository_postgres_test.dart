@@ -62,8 +62,8 @@ void main() async {
         final loaded = contractSnapshots.first;
         expect(loaded.id, snapshot.id);
         expect(loaded.totalContractedRevenue.cents, 1000000);
-        expect(loaded.riskPercentage, 15.0); // 1.5k over 10k
-        expect(loaded.lossPercentage, 5.0); // 500 over 10k
+        expect(loaded.riskPercentageBps, 1500); // 1.5k over 10k
+        expect(loaded.lossPercentageBps, 500); // 500 over 10k
         expect(loaded.lastLedgerEntryId, isNull);
         expect(loaded.previousSnapshotId, isNull);
       });

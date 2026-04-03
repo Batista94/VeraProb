@@ -1,5 +1,7 @@
 import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/alert_financial_impact.dart';
+
+export '../../domain/sla_audit/alert_financial_impact.dart';
 import '../../domain/sla_audit/sla_penalties.dart';
 
 /// Application service that bridges [SLAPenalties] to [AlertFinancialImpact].
@@ -32,11 +34,11 @@ class AlertImpactCalculator {
 
   /// Computes financial impact for a no-show alert.
   ///
-  /// Uses `baseTripValue × noShowPenaltyMultiplier` from [SLAPenalties].
+  /// Uses `baseTripValue × noShowPenaltyBps` from [SLAPenalties].
   static AlertFinancialImpact forNoShow({required SLAPenalties penalties}) {
     return AlertFinancialImpact.noShow(
       baseTripValue: penalties.baseTripValue,
-      noShowMultiplier: penalties.noShowPenaltyMultiplier,
+      noShowPenaltyBps: penalties.noShowPenaltyBps,
     );
   }
 

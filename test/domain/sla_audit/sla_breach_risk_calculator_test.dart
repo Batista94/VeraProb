@@ -66,8 +66,8 @@ void main() {
             currentEtaUtc: eta,
           );
 
-          // (06:33 - 06:51) / 9min = -18min / 9min = -2.0
-          expect(report.riskPercentage, closeTo(-2.0, 0.01));
+          // (06:33 - 06:51) / 9min = -18min / 9min = -2.0 -> -20000 bps
+          expect(report.riskBps, equals(-20000));
           expect(report.riskLevel, SlaRiskLevel.safe);
         },
       );
@@ -83,7 +83,7 @@ void main() {
             currentEtaUtc: eta,
           );
 
-          expect(report.riskPercentage, closeTo(0.0, 0.001));
+          expect(report.riskBps, equals(0));
         },
       );
 
@@ -96,7 +96,7 @@ void main() {
           currentEtaUtc: eta,
         );
 
-        expect(report.riskPercentage, closeTo(0.5, 0.01));
+        expect(report.riskBps, equals(5000));
         expect(report.riskLevel, SlaRiskLevel.moderate);
       });
 
@@ -117,7 +117,7 @@ void main() {
           currentEtaUtc: eta,
         );
 
-        expect(report.riskPercentage, closeTo(0.85, 0.01));
+        expect(report.riskBps, equals(8500));
         expect(report.riskLevel, SlaRiskLevel.critical);
         expect(report.requiresPulse, isTrue);
       });
@@ -130,7 +130,7 @@ void main() {
           currentEtaUtc: eta,
         );
 
-        expect(report.riskPercentage, closeTo(1.0, 0.001));
+        expect(report.riskBps, equals(10000));
         expect(report.riskLevel, SlaRiskLevel.breached);
       });
 
@@ -144,7 +144,7 @@ void main() {
         );
 
         // (07:05 - 06:51) / 9min = 14min / 9min ≈ 1.556
-        expect(report.riskPercentage, greaterThan(1.0));
+        expect(report.riskBps, greaterThan(10000));
         expect(report.riskLevel, SlaRiskLevel.breached);
         expect(report.requiresPulse, isTrue);
       });
@@ -159,7 +159,7 @@ void main() {
             currentEtaUtc: eta,
           );
 
-          expect(report.riskPercentage, isNegative);
+          expect(report.riskBps, isNegative);
           expect(report.riskLevel, SlaRiskLevel.safe);
           expect(report.requiresPulse, isFalse);
         },
@@ -169,14 +169,14 @@ void main() {
     // ── SlaRiskLevel Classification ───────────────────────────────────────
 
     group('SlaRiskLevel classification', () {
-      SlaBreachRiskReport reportWithPct(double riskPct) {
-        // Build a report with a known riskPercentage by back-calculating the ETA.
+      SlaBreachRiskReport reportWithBps(int riskBps) {
+        // Build a report with a known riskBps by back-calculating the ETA.
         // buffer = 540s. riskWindowStart = 06:51.
-        // currentEta = riskWindowStart + riskPct * bufferSeconds
+        // currentEta = riskWindowStart + (riskBps / 10000) * bufferSeconds
         const bufferSeconds = 540;
         final riskWindowStart = DateTime.utc(2026, 4, 1, 6, 51);
         final eta = riskWindowStart.add(
-          Duration(milliseconds: (riskPct * bufferSeconds * 1000).round()),
+          Duration(milliseconds: (riskBps * bufferSeconds * 1000 / 10000).round()),
         );
         return calculator.evaluate(
           windowStartUtc: windowStart,
@@ -185,40 +185,40 @@ void main() {
         );
       }
 
-      test('safe when riskPercentage < 0.0', () {
-        expect(reportWithPct(-0.5).riskLevel, SlaRiskLevel.safe);
+      test('safe when riskBps < 0', () {
+        expect(reportWithBps(-5000).riskLevel, SlaRiskLevel.safe);
       });
 
-      test('low when riskPercentage is 0.0', () {
-        expect(reportWithPct(0.0).riskLevel, SlaRiskLevel.low);
+      test('low when riskBps is 0', () {
+        expect(reportWithBps(0).riskLevel, SlaRiskLevel.low);
       });
 
-      test('low when riskPercentage is 0.25', () {
-        expect(reportWithPct(0.25).riskLevel, SlaRiskLevel.low);
+      test('low when riskBps is 2500', () {
+        expect(reportWithBps(2500).riskLevel, SlaRiskLevel.low);
       });
 
-      test('moderate when riskPercentage is 0.50', () {
-        expect(reportWithPct(0.50).riskLevel, SlaRiskLevel.moderate);
+      test('moderate when riskBps is 5000', () {
+        expect(reportWithBps(5000).riskLevel, SlaRiskLevel.moderate);
       });
 
-      test('moderate when riskPercentage is 0.84', () {
-        expect(reportWithPct(0.84).riskLevel, SlaRiskLevel.moderate);
+      test('moderate when riskBps is 8400', () {
+        expect(reportWithBps(8400).riskLevel, SlaRiskLevel.moderate);
       });
 
-      test('critical when riskPercentage is 0.85', () {
-        expect(reportWithPct(0.85).riskLevel, SlaRiskLevel.critical);
+      test('critical when riskBps is 8500', () {
+        expect(reportWithBps(8500).riskLevel, SlaRiskLevel.critical);
       });
 
-      test('critical when riskPercentage is 0.99', () {
-        expect(reportWithPct(0.99).riskLevel, SlaRiskLevel.critical);
+      test('critical when riskBps is 9900', () {
+        expect(reportWithBps(9900).riskLevel, SlaRiskLevel.critical);
       });
 
-      test('breached when riskPercentage is 1.0', () {
-        expect(reportWithPct(1.0).riskLevel, SlaRiskLevel.breached);
+      test('breached when riskBps is 10000', () {
+        expect(reportWithBps(10000).riskLevel, SlaRiskLevel.breached);
       });
 
-      test('breached when riskPercentage is 2.0', () {
-        expect(reportWithPct(2.0).riskLevel, SlaRiskLevel.breached);
+      test('breached when riskBps is 20000', () {
+        expect(reportWithBps(20000).riskLevel, SlaRiskLevel.breached);
       });
     });
 

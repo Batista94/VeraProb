@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../../state/providers/auth_providers.dart';
 import '../../providers/admin_navigation_provider.dart';
 import '../../../../application/projections/providers/feed_health_projection_provider.dart';
 import '../../../../dev/performance_metrics.dart';
@@ -244,17 +245,17 @@ class _StressModeToggle extends ConsumerWidget {
   }
 }
 
-class _LogoutButton extends StatelessWidget {
+class _LogoutButton extends ConsumerWidget {
   const _LogoutButton();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return IconButton(
       icon: const Icon(Icons.logout_rounded),
       tooltip: 'Sair',
       color: VeraProbColors.textDisabled,
       onPressed: () async {
-        await Supabase.instance.client.auth.signOut();
+        await ref.read(authRepositoryProvider).signOut();
         if (context.mounted) {
           await Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const AdminLockScreen()),

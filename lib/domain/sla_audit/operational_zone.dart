@@ -27,8 +27,8 @@ enum ZoneScope { global, exclusive }
 /// (e.g. latitude set but longitude null) which would silently corrupt
 /// geofence evaluation.
 class GeofenceConfiguration extends Equatable {
-  final double latitude;
-  final double longitude;
+  final double latitude; // Physical Metric - Double Required
+  final double longitude; // Physical Metric - Double Required
   final int radiusMeters;
 
   const GeofenceConfiguration({
@@ -164,12 +164,14 @@ class OperationalZone extends Equatable {
   }
 
   static void _validateLatitude(double value) {
+    // Physical Metric - Double Required
     if (value < -90 || value > 90) {
       throw const DomainException('latitude must be between -90 and 90');
     }
   }
 
   static void _validateLongitude(double value) {
+    // Physical Metric - Double Required
     if (value < -180 || value > 180) {
       throw const DomainException('longitude must be between -180 and 180');
     }

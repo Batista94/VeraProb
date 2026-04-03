@@ -3,7 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/supabase_client.dart';
 import '../../core/utils/jwt_utils.dart';
+import '../../domain/auth/i_auth_repository.dart';
 import '../../domain/enums/user_role.dart';
+import '../../infrastructure/auth/supabase_auth_repository.dart';
 
 /// Stream of auth state changes.
 final authStateProvider = StreamProvider<AuthState>((ref) {
@@ -89,4 +91,13 @@ final currentOperatorNameProvider = Provider<String>((ref) {
 final currentOperatorEmailProvider = Provider<String>((ref) {
   final authState = ref.watch(authStateProvider).valueOrNull;
   return authState?.session?.user.email ?? '';
+});
+
+/// Riverpod provider for [IAuthRepository].
+///
+/// Widgets MUST use this provider for all auth operations (signIn, signOut,
+/// signUp, refreshSession). Eliminates direct `Supabase.instance.client.auth`
+/// calls from the presentation layer (SRP-UI-LEAK prevention).
+final authRepositoryProvider = Provider<IAuthRepository>((ref) {
+  return SupabaseAuthRepository();
 });

@@ -22,12 +22,12 @@ class VehicleOperationalState extends Equatable {
   final String tripId;
 
   // ── Stabilized position (post-smoothing) ──────────────
-  final double latitude;
-  final double longitude;
-  final double? heading;
+  final double latitude; // Physical Metric - Double Required
+  final double longitude; // Physical Metric - Double Required
+  final double? heading; // Physical Metric - Double Required
 
   /// Speed in km/h, averaged over the last 3 raw readings.
-  final double smoothedSpeed;
+  final double smoothedSpeed; // Physical Metric - Double Required
 
   // ── Operational classifications ────────────────────────
   final MotionState motionState;
@@ -48,12 +48,12 @@ class VehicleOperationalState extends Equatable {
 
   /// Perpendicular distance to the GTFS route shape (metres).
   /// Null when shapes are unavailable.
-  final double? distanceToRoute;
+  final double? distanceToRoute; // Physical Metric - Double Required
 
   /// Overall confidence in this state snapshot (0.0–1.0).
   /// Derived from [connectivityState] but can be further reduced
   /// by jump-filtered or degraded readings.
-  final double confidence;
+  final double confidence; // Physical Metric - Double Required
 
   /// Display fields carried forward from the raw position.
   final String? routeName;
@@ -90,10 +90,10 @@ class VehicleOperationalState extends Equatable {
   VehicleOperationalState copyWith({
     String? vehicleId,
     String? tripId,
-    double? latitude,
-    double? longitude,
-    double? heading,
-    double? smoothedSpeed,
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
+    double? heading, // Physical Metric - Double Required
+    double? smoothedSpeed, // Physical Metric - Double Required
     MotionState? motionState,
     ConnectivityState? connectivityState,
     RouteAdherence? routeAdherence,
@@ -101,8 +101,8 @@ class VehicleOperationalState extends Equatable {
     DateTime? stateChangedAt,
     String? nearestStopId,
     String? nearestStopName,
-    double? distanceToRoute,
-    double? confidence,
+    double? distanceToRoute, // Physical Metric - Double Required
+    double? confidence, // Physical Metric - Double Required
     String? routeName,
     String? vehiclePlate,
     String? source,

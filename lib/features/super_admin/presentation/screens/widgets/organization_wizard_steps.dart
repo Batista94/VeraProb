@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../../core/theme/app_theme.dart';
-import '../../../../../core/utils/cnpj_input_formatter.dart';
-import '../../../../../core/utils/cnpj_validator.dart';
-import '../../../../../domain/super_admin/plan_type.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/core/utils/cnpj_input_formatter.dart';
+import 'package:veraprob/core/utils/cnpj_validator.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+
 
 const kBrTimezones = [
   'America/Sao_Paulo',

@@ -107,8 +107,8 @@ void main() {
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
-      contractualValue: Money.fromDouble(150.0),
-      noShowPenaltyMultiplier: 1.5,
+      contractualValue: const Money(15000),
+      noShowPenaltyBps: 15000,
       windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
     );
@@ -183,8 +183,8 @@ void main() {
         startLatitude: geoLat,
         startLongitude: geoLng,
         startRadiusMeters: geoRadius,
-        contractualValue: Money.fromDouble(150.0),
-        noShowPenaltyMultiplier: 1.5,
+        contractualValue: const Money(15000),
+        noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 2, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 2, 1, 7, 0), // past
       );

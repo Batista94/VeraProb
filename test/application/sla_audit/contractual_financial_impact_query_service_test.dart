@@ -49,36 +49,36 @@ void main() {
       expect(impact.protectedRevenue, const Money(0));
       expect(impact.revenueAtRisk, const Money(0));
       expect(impact.lostRevenue, const Money(0));
-      expect(impact.riskPercentage, 0.0);
-      expect(impact.lossPercentage, 0.0);
+      expect(impact.riskPercentageBps, 0);
+      expect(impact.lossPercentageBps, 0);
     });
 
     test('returns latest snapshot as current impact', () async {
       await snapshotRepo.save(
         makeSnapshot(
           date: DateTime.utc(2026, 3, 1),
-          total: Money.fromDouble(1000.0),
-          protected_: Money.fromDouble(500.0),
-          atRisk: Money.fromDouble(300.0),
-          lost: Money.fromDouble(200.0),
+          total: const Money(100000),
+          protected_: const Money(50000),
+          atRisk: const Money(30000),
+          lost: const Money(20000),
         ),
       );
 
       await snapshotRepo.save(
         makeSnapshot(
           date: DateTime.utc(2026, 3, 2),
-          total: Money.fromDouble(2000.0),
-          protected_: Money.fromDouble(1500.0),
-          atRisk: Money.fromDouble(300.0),
-          lost: Money.fromDouble(200.0),
+          total: const Money(200000),
+          protected_: const Money(150000),
+          atRisk: const Money(30000),
+          lost: const Money(20000),
         ),
       );
 
       final impact = await queryService.getImpact(organizationId: 'org-1');
 
       // Should return the latest snapshot (March 2nd)
-      expect(impact.totalContractedRevenue, Money.fromDouble(2000.0));
-      expect(impact.protectedRevenue, Money.fromDouble(1500.0));
+      expect(impact.totalContractedRevenue, const Money(200000));
+      expect(impact.protectedRevenue, const Money(150000));
     });
 
     test('filters by contractId', () async {
@@ -86,8 +86,8 @@ void main() {
         makeSnapshot(
           contractId: 'c-1',
           date: DateTime.utc(2026, 3, 1),
-          total: Money.fromDouble(100.0),
-          protected_: Money.fromDouble(100.0),
+          total: const Money(10000),
+          protected_: const Money(10000),
           atRisk: const Money(0),
           lost: const Money(0),
         ),
@@ -97,8 +97,8 @@ void main() {
         makeSnapshot(
           contractId: 'c-2',
           date: DateTime.utc(2026, 3, 1),
-          total: Money.fromDouble(500.0),
-          protected_: Money.fromDouble(500.0),
+          total: const Money(50000),
+          protected_: const Money(50000),
           atRisk: const Money(0),
           lost: const Money(0),
         ),
@@ -108,13 +108,13 @@ void main() {
         organizationId: 'org-1',
         contractId: 'c-1',
       );
-      expect(impactC1.totalContractedRevenue, Money.fromDouble(100.0));
+      expect(impactC1.totalContractedRevenue, const Money(10000));
 
       final impactC2 = await queryService.getImpact(
         organizationId: 'org-1',
         contractId: 'c-2',
       );
-      expect(impactC2.totalContractedRevenue, Money.fromDouble(500.0));
+      expect(impactC2.totalContractedRevenue, const Money(50000));
     });
   });
 }

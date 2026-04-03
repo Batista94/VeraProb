@@ -1,3 +1,5 @@
+import '../../domain/shared/money.dart';
+
 /// Immutable DTO carrying raw primitive data for a single
 /// contractual service execution.
 ///
@@ -11,15 +13,23 @@
 class ContractualServiceInput {
   final DateTime scheduledStartTimeUtc;
   final DateTime scheduledEndTimeUtc;
+
+  /// GPS Latitude - Precision Required
   final double startLatitude;
+
+  /// GPS Longitude - Precision Required
   final double startLongitude;
   final int startRadiusMeters;
+
+  /// GPS Latitude - Precision Required
   final double endLatitude;
+
+  /// GPS Longitude - Precision Required
   final double endLongitude;
   final int endRadiusMeters;
   final String? plannedVehicleId;
-  final double contractualValue;
-  final double noShowPenaltyMultiplier;
+  final Money contractualValue;
+  final int noShowPenaltyBps;
 
   const ContractualServiceInput({
     required this.scheduledStartTimeUtc,
@@ -32,6 +42,6 @@ class ContractualServiceInput {
     required this.endRadiusMeters,
     this.plannedVehicleId,
     required this.contractualValue,
-    required this.noShowPenaltyMultiplier,
+    required this.noShowPenaltyBps,
   });
 }

@@ -5,7 +5,7 @@ import '../core/authority_types.dart';
 ///
 /// A Command must be a pure, immutable Data Transfer Object (DTO).
 /// It contains ZERO business logic, ZERO policy awareness, and ZERO validation.
-/// It exists solely to encapsulate the data required to perform an action.
+/// It exists solely to encapsulate the information required to perform an action.
 abstract class OperationalCommand extends Equatable {
   const OperationalCommand();
 

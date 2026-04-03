@@ -30,9 +30,9 @@ class ContractSummaryView extends Equatable {
   /// Number of SETs currently in [pending] status.
   final int totalSetsInProgress;
 
-  /// SLA health percentage: `(executed / total) * 100`.
-  /// Returns 0.0 if no SETs exist.
-  final double slaHealthPercentage;
+  /// SLA health in Basis Points: `(executed / total) * 10,000`.
+  /// Returns 0 if no SETs exist.
+  final int slaHealthBps;
 
   /// Maximum cumulative penalty cap for this contract (INV-2: cents).
   /// Required for Step 4 Relative Risk calculation.
@@ -50,7 +50,7 @@ class ContractSummaryView extends Equatable {
     required this.planCount,
     required this.activePlanVersion,
     required this.totalSetsInProgress,
-    required this.slaHealthPercentage,
+    required this.slaHealthBps,
     this.financialCeilingCents,
   });
 
@@ -67,7 +67,7 @@ class ContractSummaryView extends Equatable {
     planCount,
     activePlanVersion,
     totalSetsInProgress,
-    slaHealthPercentage,
+    slaHealthBps,
     financialCeilingCents,
   ];
 }

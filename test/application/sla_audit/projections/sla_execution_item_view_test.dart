@@ -8,7 +8,7 @@ void main() {
 
   SlaExecutionItemView makeView({
     ExecutionStatus status = ExecutionStatus.executed,
-    double multiplier = 1.5,
+    int bps = 15000,
     String? plannedVehicleId,
     String? boundVehicleId,
   }) => SlaExecutionItemView(
@@ -23,18 +23,18 @@ void main() {
     startLongitude: -46.6333,
     startRadiusMeters: 150,
     contractualValue: const Money(100000), // R$ 1000,00
-    noShowPenaltyMultiplier: multiplier,
+    noShowPenaltyBps: bps,
   );
 
   group('SlaExecutionItemView', () {
-    test('calculatedPenalty = contractualValue * multiplier', () {
-      final view = makeView(multiplier: 1.5);
+    test('calculatedPenalty = contractualValue * bps', () {
+      final view = makeView(bps: 15000);
       // 100000 cents * 1.5 = 150000 cents
       expect(view.calculatedPenalty, const Money(150000));
     });
 
-    test('calculatedPenalty with multiplier 2.0', () {
-      final view = makeView(multiplier: 2.0);
+    test('calculatedPenalty with bps 20000', () {
+      final view = makeView(bps: 20000);
       expect(view.calculatedPenalty, const Money(200000));
     });
 

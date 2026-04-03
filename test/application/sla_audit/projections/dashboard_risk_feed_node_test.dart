@@ -19,7 +19,7 @@ void main() {
         startLongitude: -46.6,
         startRadiusMeters: 100,
         contractualValue: const Money(50000),
-        noShowPenaltyMultiplier: 1.0,
+        noShowPenaltyBps: 10000,
       );
 
   OperationalAlert makeAlert(String severity) => OperationalAlert(

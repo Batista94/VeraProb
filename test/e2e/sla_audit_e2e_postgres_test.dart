@@ -159,8 +159,8 @@ void main() {
         endLatitude: -23.5600,
         endLongitude: -46.6400,
         endRadiusMeters: 100,
-        contractualValue: 100.0,
-        noShowPenaltyMultiplier: 1.5,
+        contractualValue: const Money(10000),
+        noShowPenaltyBps: 15000,
       );
 
       final command = DeclareContractualPlanCommand(
@@ -168,7 +168,8 @@ void main() {
         contractId: contractId,
         declaredByUserId: 'admin-e2e',
         planVersion: planVersion,
-        originalFileHash: 'e2e-hash-${DateTime.now().millisecondsSinceEpoch}',
+        originalFileHash:
+            'e2e-hash-${DateTime.now().toUtc().millisecondsSinceEpoch}',
         declaredAtUtc: testBaseTimeUtc.subtract(const Duration(days: 1)),
         services: [input],
       );
@@ -218,7 +219,7 @@ void main() {
         startLongitude: service.startLongitude,
         startRadiusMeters: service.startRadiusMeters,
         contractualValue: service.contractualValue,
-        noShowPenaltyMultiplier: service.noShowPenaltyMultiplier,
+        noShowPenaltyBps: service.noShowPenaltyBps,
         windowStartUtc: service.scheduledStartTimeUtc.subtract(
           const Duration(minutes: 15),
         ),
@@ -447,7 +448,7 @@ void main() {
         startLongitude: -46.6333,
         startRadiusMeters: 100,
         contractualValue: const Money(10000),
-        noShowPenaltyMultiplier: 1.5,
+        noShowPenaltyBps: 15000,
         windowStartUtc: testBaseTimeUtc,
         windowEndUtc: testBaseTimeUtc.add(const Duration(minutes: 60)),
       );

@@ -77,7 +77,7 @@ void main() {
     appMetadata: const {'super_admin': true},
     userMetadata: const {},
     aud: 'authenticated',
-    createdAt: DateTime.now().toIso8601String(),
+    createdAt: DateTime.now().toUtc().toIso8601String(),
   );
 
   setUp(() {
@@ -133,8 +133,8 @@ void main() {
           friendlyName: 'VeraProb SuperAdmin TOTP',
           factorType: FactorType.totp,
           status: FactorStatus.verified,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime.now().toUtc(),
+          updatedAt: DateTime.now().toUtc(),
         );
 
         when(() => mockMfa.getAuthenticatorAssuranceLevel()).thenReturn(

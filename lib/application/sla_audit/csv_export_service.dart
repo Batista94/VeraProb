@@ -133,7 +133,7 @@ class CsvExportService {
       package.executedCount,
       package.noShowCount,
       package.evidenceGapCount,
-      package.complianceRate.toStringAsFixed(2),
+      (package.complianceRateBps / 100.0).toStringAsFixed(2),
       package.reportLedgerBoundary,
     ]);
 

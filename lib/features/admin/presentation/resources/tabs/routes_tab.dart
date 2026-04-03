@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../../core/services/logger_service.dart';
-import '../../../../../domain/entities/transit_route.dart';
-import '../../../../../features/shared/providers.dart';
-import '../../../providers/routes_provider.dart';
-import '../../../../../domain/enums/user_role.dart';
-import '../../../../../state/providers/auth_providers.dart';
+import 'package:veraprob/core/services/logger_service.dart';
+import 'package:veraprob/features/shared/providers.dart';
+import 'package:veraprob/features/admin/providers/routes_provider.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 
 class RoutesTab extends ConsumerStatefulWidget {
   const RoutesTab({super.key});

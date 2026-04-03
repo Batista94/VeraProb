@@ -27,7 +27,7 @@ enum DayOfWeek {
 /// Value object representing a recurrence rule for a contractual service.
 ///
 /// **ADR — UTC Invariant Exception:**
-/// Unlike all other temporal data in the domain (which is stored in UTC),
+/// Unlike all other temporal information in the domain (which is stored in UTC),
 /// [ShiftPattern] stores local time ([arrivalTimeLocal], [departureTimeLocal])
 /// plus an IANA timezone identifier ([timezone]). This is a documented
 /// exception because recurrence rules cannot be expressed in absolute UTC:

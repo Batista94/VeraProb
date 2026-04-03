@@ -8,7 +8,7 @@ void main() {
   final windowEnd = DateTime.utc(2026, 3, 1, 10, 15);
 
   const riskScore = SpoofingRiskScore(
-    score: 0.85,
+    scoreBps: 8500,
     signals: [
       SpoofingSignal.zeroEntropyAccuracy,
       SpoofingSignal.staticPositionWhileMoving,
@@ -45,7 +45,7 @@ void main() {
 
       expect(entry.organizationId, 'org-1');
       expect(entry.deviceId, 'dev-abc');
-      expect(entry.riskScore.score, 0.85);
+      expect(entry.riskScore.scoreBps, 8500);
       expect(entry.factsAnalyzed, 20);
       expect(entry.assetId, isNull);
     });
@@ -114,34 +114,34 @@ void main() {
   group('SpoofingRiskScore', () {
     test('zero() produces score of 0.0 with no signals', () {
       final zero = SpoofingRiskScore.zero();
-      expect(zero.score, 0.0);
+      expect(zero.scoreBps, 0);
       expect(zero.signals, isEmpty);
       expect(zero.isSuspected(), isFalse);
     });
 
     test('isSuspected returns true when score >= threshold', () {
-      const score = SpoofingRiskScore(score: 0.7, signals: []);
+      const score = SpoofingRiskScore(scoreBps: 7000, signals: []);
       expect(score.isSuspected(), isTrue);
     });
 
     test('isSuspected returns false when score < threshold', () {
-      const score = SpoofingRiskScore(score: 0.69, signals: []);
+      const score = SpoofingRiskScore(scoreBps: 6900, signals: []);
       expect(score.isSuspected(), isFalse);
     });
 
     test('isSuspected respects custom threshold', () {
-      const score = SpoofingRiskScore(score: 0.5, signals: []);
-      expect(score.isSuspected(threshold: 0.4), isTrue);
-      expect(score.isSuspected(threshold: 0.6), isFalse);
+      const score = SpoofingRiskScore(scoreBps: 5000, signals: []);
+      expect(score.isSuspected(thresholdBps: 4000), isTrue);
+      expect(score.isSuspected(thresholdBps: 6000), isFalse);
     });
 
     test('toJson serializes score and signal names', () {
       const score = SpoofingRiskScore(
-        score: 0.9,
+        scoreBps: 9000,
         signals: [SpoofingSignal.routeReplayDetected],
       );
       final json = score.toJson();
-      expect(json['score'], 0.9);
+      expect(json['score_bps'], 9000);
       expect(json['signals'], ['routeReplayDetected']);
     });
   });

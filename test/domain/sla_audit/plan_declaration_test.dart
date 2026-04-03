@@ -19,7 +19,7 @@ void main() {
     double endLng = -46.6400,
     int endRadius = 100,
     Money contractualValue = const Money(15000),
-    double noShowPenaltyMultiplier = 1.5,
+    int noShowPenaltyBps = 15000,
   }) {
     final s = start ?? DateTime.utc(2026, 3, 1, 6, 0);
     final e = end ?? s.add(const Duration(hours: 1));
@@ -34,7 +34,7 @@ void main() {
       endLongitude: endLng,
       endRadiusMeters: endRadius,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
     );
   }
 

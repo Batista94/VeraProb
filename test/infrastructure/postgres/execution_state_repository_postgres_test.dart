@@ -45,8 +45,8 @@ void main() async {
           startLongitude: -46.6333,
           startRadiusMeters: 50,
           plannedVehicleId: 'veh-01',
-          contractualValue: Money.fromDouble(1500.0), // R$ 15,00
-          noShowPenaltyMultiplier: 1.5,
+          contractualValue: const Money(150000),
+          noShowPenaltyBps: 15000,
           windowStartUtc: DateTime.now().toUtc().subtract(
             const Duration(minutes: 10),
           ),
@@ -117,8 +117,8 @@ void main() async {
             startLatitude: -23.5505,
             startLongitude: -46.6333,
             startRadiusMeters: 50,
-            contractualValue: Money.fromDouble(1000.0),
-            noShowPenaltyMultiplier: 1.5,
+            contractualValue: const Money(100000),
+            noShowPenaltyBps: 15000,
             windowStartUtc: DateTime.now().toUtc().subtract(
               const Duration(minutes: 10),
             ),
@@ -135,8 +135,8 @@ void main() async {
             startLatitude: -23.5505,
             startLongitude: -46.6333,
             startRadiusMeters: 50,
-            contractualValue: Money.fromDouble(1000.0),
-            noShowPenaltyMultiplier: 1.5,
+            contractualValue: const Money(100000),
+            noShowPenaltyBps: 15000,
             windowStartUtc: DateTime.now().toUtc().subtract(
               const Duration(minutes: 10),
             ),

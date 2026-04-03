@@ -20,7 +20,7 @@ void main() {
         name: '',
         primaryEmail: '',
         contactName: '',
-        createdAtUtc: DateTime.now(),
+        createdAtUtc: DateTime.now().toUtc(),
       ),
     );
   });

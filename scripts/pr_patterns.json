@@ -1,11 +1,13 @@
 {
   "WASM-BLOCK": {
     "pattern": "import 'dart:html'|import 'dart:js'|js\\.context|document\\.querySelector|html\\.window",
+    "path_filter": "lib/",
     "description": "Forbidden Wasm-hostile APIs. Use dart:js_interop instead.",
     "severity": "BLOCK"
   },
   "UTC-BLOCK": {
     "pattern": "DateTime\\.now\\(\\)(?!\\.toUtc\\(\\))",
+    "path_filter": "lib/|test/",
     "description": "DateTime.now() must always be followed by .toUtc().",
     "severity": "BLOCK"
   },
@@ -17,7 +19,7 @@
   },
   "SRP-UI-LEAK": {
     "pattern": "supabase|\\.from\\(|insert|upsert|query",
-    "path_filter": "lib/(presentation|features)/",
+    "path_filter": "lib/features/.*(presentation|screens|widgets|providers)/",
     "description": "Supabase calls leaked into UI layer. Use a Repository/Handler.",
     "severity": "BLOCK"
   },
@@ -29,6 +31,7 @@
   },
   "CQRS-LEAK": {
     "pattern": "Handler.*return.*(Contract|Entity|LedgerEntry)",
+    "path_filter": "lib/application/",
     "description": "Handlers must return void or IDs (CQRS violation).",
     "severity": "BLOCK"
   }

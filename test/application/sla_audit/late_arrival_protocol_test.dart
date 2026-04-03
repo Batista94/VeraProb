@@ -82,7 +82,7 @@ void main() {
         startLongitude: geoLng,
         startRadiusMeters: 100,
         contractualValue: const Money(15000),
-        noShowPenaltyMultiplier: 1.5,
+        noShowPenaltyBps: 15000,
         windowStartUtc: windowStart,
         windowEndUtc: windowEnd,
       );
@@ -297,7 +297,7 @@ void main() {
           startLongitude: geoLng,
           startRadiusMeters: 100,
           contractualValue: const Money(15000),
-          noShowPenaltyMultiplier: 1.5,
+          noShowPenaltyBps: 15000,
           windowStartUtc: windowStart,
           windowEndUtc: windowEnd,
         );

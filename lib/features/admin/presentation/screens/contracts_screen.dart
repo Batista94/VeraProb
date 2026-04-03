@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:veraprob/application/sla_audit/clone_contract_command.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
@@ -286,7 +286,7 @@ class _ContractTable extends ConsumerWidget {
           ),
         ),
         DataCell(_StatusChip(status: c.status)),
-        DataCell(_SlaHealthBar(percentage: c.slaHealthPercentage)),
+        DataCell(_SlaHealthBar(bps: c.slaHealthBps)),
         DataCell(
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -329,7 +329,7 @@ class _ContractTable extends ConsumerWidget {
           Future<void> pickDate({required bool isFrom}) async {
             final picked = await showDatePicker(
               context: ctx,
-              initialDate: DateTime.now(),
+              initialDate: DateTime.now().toUtc(),
               firstDate: DateTime(2020),
               lastDate: DateTime(2035),
             );
@@ -570,12 +570,12 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _SlaHealthBar extends StatelessWidget {
-  final double percentage;
-  const _SlaHealthBar({required this.percentage});
+  final int bps;
+  const _SlaHealthBar({required this.bps});
 
   @override
   Widget build(BuildContext context) {
-    final pct = percentage.clamp(0.0, 100.0);
+    final pct = (bps / 100).toDouble().clamp(0.0, 100.0);
     final color = pct >= 90
         ? VeraProbColors.success
         : pct >= 70

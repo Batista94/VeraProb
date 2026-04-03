@@ -108,9 +108,9 @@ class _EvidenceCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final complianceColor = view.complianceRate >= 90
+    final complianceColor = view.complianceRateBps >= 9000
         ? VeraProbColors.success
-        : view.complianceRate >= 70
+        : view.complianceRateBps >= 7000
         ? VeraProbColors.warning
         : VeraProbColors.error;
 
@@ -160,7 +160,7 @@ class _EvidenceCard extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      '${view.complianceRate.toStringAsFixed(1)}% conformidade',
+                      '${(view.complianceRateBps / 100.0).toStringAsFixed(1)}% conformidade',
                       style: TextStyle(
                         color: complianceColor,
                         fontWeight: FontWeight.bold,

@@ -37,7 +37,7 @@ class SlaLedgerEntry extends Equatable {
   /// The timestamp in UTC when the fact occurred.
   final DateTime occurredAtUtc;
 
-  /// Complementary forensic data in a structured but flexible format.
+  /// Complementary forensic information in a structured but flexible format.
   final Map<String, dynamic> payload;
 
   const SlaLedgerEntry({

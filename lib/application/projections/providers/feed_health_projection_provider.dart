@@ -68,7 +68,7 @@ final feedHealthProjectionProvider = Provider<FeedHealthProjection>((ref) {
     );
   }
 
-  final delayMs = DateTime.now().difference(latestPing).inMilliseconds;
+  final delayMs = DateTime.now().toUtc().difference(latestPing).inMilliseconds;
   final boundedDelay = delayMs < 0 ? 0 : delayMs;
 
   FeedHealthStatus status = FeedHealthStatus.online;

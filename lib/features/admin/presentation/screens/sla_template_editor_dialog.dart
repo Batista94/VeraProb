@@ -3,22 +3,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/shared/money.dart';
-import '../../../../domain/sla_audit/sla_penalties.dart';
-import '../../../../domain/sla_audit/sla_template.dart';
-import '../../../../domain/sla_audit/smart_defaults.dart';
-import '../../../../domain/sla_audit/transport_vertical.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_template_view.dart';
+import 'package:veraprob/application/sla_audit/projections/penalties_form_data.dart';
+import 'package:veraprob/application/sla_audit/smart_defaults_service.dart';
 import '../../../../state/providers/auth_providers.dart';
 import '../../../../state/providers/sla_template_providers.dart';
 
 /// Shows the SLA template editor dialog (INV-24: overlay modal).
 ///
-/// Returns the saved [SlaTemplate] on success, or null on cancel.
-Future<SlaTemplate?> showSlaTemplateEditorDialog(
+/// Returns the saved [SlaTemplateView] on success, or null on cancel.
+Future<SlaTemplateView?> showSlaTemplateEditorDialog(
   BuildContext context, {
-  SlaTemplate? existing,
+  SlaTemplateView? existing,
 }) {
-  return showDialog<SlaTemplate>(
+  return showDialog<SlaTemplateView>(
     context: context,
     barrierDismissible: false,
     builder: (context) => SlaTemplateEditorDialog(existing: existing),
@@ -35,7 +34,7 @@ Future<SlaTemplate?> showSlaTemplateEditorDialog(
 /// Each step has its own [GlobalKey<FormState>] for per-step validation.
 /// INV-24: overlay modal (never pushed as a route).
 class SlaTemplateEditorDialog extends ConsumerStatefulWidget {
-  final SlaTemplate? existing;
+  final SlaTemplateView? existing;
 
   const SlaTemplateEditorDialog({super.key, this.existing});
 
@@ -72,38 +71,37 @@ class _SlaTemplateEditorDialogState
   void initState() {
     super.initState();
     final e = widget.existing;
-    final p = e?.penalties;
 
     _nameCtl = TextEditingController(text: e?.name ?? '');
     _descCtl = TextEditingController(text: e?.description ?? '');
     _selectedVertical = e?.vertical;
 
     _noShowMultCtl = TextEditingController(
-      text: p?.noShowPenaltyMultiplier.toString() ?? '1.5',
+      text: ((e?.noShowPenaltyBps ?? 15000) / 10000.0).toString(),
     );
     _delayTolCtl = TextEditingController(
-      text: p?.delayToleranceMinutes.toString() ?? '15',
+      text: e?.delayToleranceMinutes.toString() ?? '15',
     );
     _delayPerMinCtl = TextEditingController(
-      text: _centsToReais(p?.delayPenaltyPerMinute.cents ?? 50),
+      text: _centsToReais(e?.delayPenaltyPerMinuteCents ?? 50),
     );
     _downgradeCtl = TextEditingController(
-      text: _centsToReais(p?.downgradePenaltyFlat.cents ?? 5000),
+      text: _centsToReais(e?.downgradePenaltyFlatCents ?? 5000),
     );
     _noShowThreshCtl = TextEditingController(
-      text: p?.noShowThresholdMinutes.toString() ?? '60',
+      text: e?.noShowThresholdMinutes.toString() ?? '60',
     );
     _earlyArrivalCtl = TextEditingController(
-      text: p?.earlyArrivalToleranceMinutes.toString() ?? '5',
+      text: e?.earlyArrivalToleranceMinutes.toString() ?? '5',
     );
     _dwellCtl = TextEditingController(
-      text: p?.dwellTimeMinutes.toString() ?? '3',
+      text: e?.dwellTimeMinutes.toString() ?? '3',
     );
     _graceCtl = TextEditingController(
-      text: p?.gracePeriodMinutes.toString() ?? '0',
+      text: e?.gracePeriodMinutes.toString() ?? '0',
     );
     _baseTripCtl = TextEditingController(
-      text: _centsToReais(p?.baseTripValue.cents ?? 0),
+      text: _centsToReais(e?.baseTripValueCents ?? 0),
     );
   }
 
@@ -133,16 +131,16 @@ class _SlaTemplateEditorDialogState
   }
 
   void _applySmartDefaults(TransportVertical vertical) {
-    final defaults = SmartDefaults.defaultsFor(vertical);
-    _noShowMultCtl.text = defaults.noShowPenaltyMultiplier.toString();
+    final defaults = SmartDefaultsService.defaultsFor(vertical);
+    _noShowMultCtl.text = (defaults.noShowPenaltyBps / 10000.0).toString();
     _delayTolCtl.text = defaults.delayToleranceMinutes.toString();
-    _delayPerMinCtl.text = _centsToReais(defaults.delayPenaltyPerMinute.cents);
-    _downgradeCtl.text = _centsToReais(defaults.downgradePenaltyFlat.cents);
+    _delayPerMinCtl.text = _centsToReais(defaults.delayPenaltyPerMinuteCents);
+    _downgradeCtl.text = _centsToReais(defaults.downgradePenaltyFlatCents);
     _noShowThreshCtl.text = defaults.noShowThresholdMinutes.toString();
     _earlyArrivalCtl.text = defaults.earlyArrivalToleranceMinutes.toString();
     _dwellCtl.text = defaults.dwellTimeMinutes.toString();
     _graceCtl.text = defaults.gracePeriodMinutes.toString();
-    _baseTripCtl.text = _centsToReais(defaults.baseTripValue.cents);
+    _baseTripCtl.text = _centsToReais(defaults.baseTripValueCents);
   }
 
   // ── Navigation ──────────────────────────────────────────────────────────────
@@ -169,16 +167,19 @@ class _SlaTemplateEditorDialogState
       final orgId = ref.read(currentOrganizationIdProvider);
       if (orgId == null) return;
 
-      final penalties = SLAPenalties.create(
-        noShowPenaltyMultiplier: double.tryParse(_noShowMultCtl.text) ?? 1.5,
+      final penalties = PenaltiesFormData(
+        noShowPenaltyBps:
+            (double.tryParse(_noShowMultCtl.text.replaceAll(',', '.')) ??
+                    1.5 * 10000)
+                .round(),
         delayToleranceMinutes: int.tryParse(_delayTolCtl.text) ?? 15,
-        delayPenaltyPerMinute: Money(_reaisToCents(_delayPerMinCtl.text)),
-        downgradePenaltyFlat: Money(_reaisToCents(_downgradeCtl.text)),
+        delayPenaltyPerMinuteCents: _reaisToCents(_delayPerMinCtl.text),
+        downgradePenaltyFlatCents: _reaisToCents(_downgradeCtl.text),
         noShowThresholdMinutes: int.tryParse(_noShowThreshCtl.text) ?? 60,
         earlyArrivalToleranceMinutes: int.tryParse(_earlyArrivalCtl.text) ?? 5,
         dwellTimeMinutes: int.tryParse(_dwellCtl.text) ?? 3,
         gracePeriodMinutes: int.tryParse(_graceCtl.text) ?? 0,
-        baseTripValue: Money(_reaisToCents(_baseTripCtl.text)),
+        baseTripValueCents: _reaisToCents(_baseTripCtl.text),
       );
 
       final saved = await ref

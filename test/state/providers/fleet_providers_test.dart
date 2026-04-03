@@ -5,8 +5,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/situation_engine.dart';
 import 'package:veraprob/application/operational_control_service.dart';
 import 'package:veraprob/data/services/fleet_simulation_service.dart';
-import 'package:veraprob/domain/entities/operational_trip.dart';
-import 'package:veraprob/domain/enums/trip_status.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';

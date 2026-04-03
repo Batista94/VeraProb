@@ -55,13 +55,13 @@ void main() {
           userId: 'user-1',
           email: 'a@a.com',
           role: 'TENANT_ADMIN',
-          invitedAt: DateTime.now(),
+          invitedAt: DateTime.now().toUtc(),
         ),
         OrgMember(
           userId: 'user-2',
           email: 'b@b.com',
           role: 'OPERATOR',
-          invitedAt: DateTime.now(),
+          invitedAt: DateTime.now().toUtc(),
         ),
       ];
       when(() => queryService.getMembers()).thenAnswer((_) async => members);
@@ -92,13 +92,13 @@ void main() {
           userId: 'user-1',
           email: 'a@a.com',
           role: 'TENANT_ADMIN',
-          invitedAt: DateTime.now(),
+          invitedAt: DateTime.now().toUtc(),
         ),
         OrgMember(
           userId: 'user-2',
           email: 'b@b.com',
           role: 'TENANT_ADMIN',
-          invitedAt: DateTime.now(),
+          invitedAt: DateTime.now().toUtc(),
         ),
       ];
       when(() => queryService.getMembers()).thenAnswer((_) async => members);

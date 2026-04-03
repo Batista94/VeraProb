@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../../../../state/providers/auth_providers.dart';
 import '../../../../state/providers/super_admin_auth_providers.dart';
 import '../../../admin/presentation/lock_screen.dart';
 import '../screens/mfa_challenge_screen.dart';
@@ -25,7 +24,7 @@ class SuperAdminGuard extends ConsumerWidget {
     final isAal2 = ref.watch(isSuperAdminAal2Provider);
 
     if (!isSuperAdmin) {
-      final hasSession = Supabase.instance.client.auth.currentSession != null;
+      final hasSession = ref.read(authRepositoryProvider).isAuthenticated;
 
       if (!hasSession) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -41,7 +40,7 @@ class SuperAdminGuard extends ConsumerWidget {
 
       // Session active but no super_admin claim — unauthorized (D2).
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await Supabase.instance.client.auth.signOut();
+        await ref.read(authRepositoryProvider).signOut();
         if (context.mounted) {
           await Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const AdminLockScreen()),

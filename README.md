@@ -1,47 +1,70 @@
 # 🌊 VeraProb
+
 ### The Immutable Verifier for B2B Compliance & Financial Protection
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Stack: Flutter](https://img.shields.io/badge/Stack-Flutter%20|%20Supabase%20|%20PostgreSQL-02569B?logo=flutter)](https://flutter.dev)
-[![Architecture: Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20|%20Event--Driven-green)](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-
-**VeraProb** is a high-performance, event-driven platform designed to eliminate the friction between signed B2B contracts and real-world operational execution. It acts as an automated, impartial **"Digital Judge"** that:
-
-1. **Ingests** real-world telemetry (GPS, Check-ins, IoT).
-2. **Normalizes** noisy data into deterministic, unified facts.
-3. **Evaluates** facts against strict contractual rules in real-time.
-4. **Verdicts** financial impacts (penalties/approvals) into an **Immutable Ledger**.
-
+**VeraProb** is a high-performance platform designed to eliminate friction between B2B contracts and operational execution. It acts as an automated, impartial **"Digital Judge"** that transforms raw telemetry into **Verifiable Contractual Truth**.
 
 ---
 
-VeraProb transforms raw telemetry into **Verifiable Contractual Truth**, protecting participants from administrative fatigue and financial leakage.
+## 🏛️ Architecture & Data Pipeline
 
-- **🛡️ Financial Shield (INV-19):** Real-time monitoring of breaches with automatic penalty calculation and **Financial Ceiling** (Teto Financeiro) to protect operator margins.
-- **📜 Burden of Proof:** Generates cryptographic-like evidence of execution. Disputes are resolved by facts, not emails.
-- **⚡ Zero-Friction JIT Master Data:** Just-in-Time geofencing and contractor creation inline with operations.
-- **🔒 Multi-Tenant Sovereignty:** Complete data isolation powered by Supabase Row-Level Security (RLS).
-- **📈 Relative Risk KPIs:** Instant visibility into financial exposure vs. negotiated contract caps.
+The platform follows a strict **Event-Sourced** logic across four core stages to ensure a forensic audit trail:
 
-
----
-
-Built for forensics, reliability, and deterministic results:
-
-*   **Logic:** Pure Dart Domain (Sovereign Logic) — zero dependencies on infrastructure.
-*   **Engine:** Deterministic Evaluation Engine for contractual rule replay.
-*   **Persistence:** PostgreSQL/Supabase with strict RLS enforcement.
-*   **Frontend:** Premium Flutter Web interface with reactive state management (Riverpod).
-*   **Precision:** All financial operations handled in integer cents via `Money` Value Objects.
-*   **Invariants:** Adherence to the [25 Forensic Invariants](.claude/rules/invariants.md).
-
+1. **Ingestion:** Raw telemetry (GPS, IoT, Check-ins) is received via secure Edge Functions.
+2. **Normalization:** Noisy data is unified into **Canonical Facts** (Deterministic Snapshots).
+3. **Evaluation:** Facts are replayed against **SLA Rules** by the Forensic Evaluation Engine.
+4. **Verdict:** Financial impacts (penalties/approvals) are sealed into an **Immutable Ledger** (INV-7).
 
 ---
 
-## 🚀 Vertical Applications
+## 🚀 Getting Started (Local Development)
 
-While the core engine is industry-agnostic, VeraProb is optimized for B2B Logistics, Industrial Charter (Fretamento), and Facilities Management.
+VeraProb relies on the **Supabase CLI (Docker)** to replicate the production environment locally, ensuring RLS policies and Edge Functions work as expected.
 
+### 1. Prerequisites
 
----
-© 2026 VeraProb — *Generating Truth from Telemetry.*
+- **Flutter SDK** (>= 3.41.5)
+- **Docker Desktop** (Active)
+- **Supabase CLI** (`brew install supabase/tap/supabase`)
+
+### 2. Setup Infrastructure
+
+```bash
+# Start local containers (PostgreSQL, Auth, Storage, Edge Functions)
+supabase start
+
+# Apply local migrations and seed data
+supabase db reset
+```
+
+### 3. Setup Environment
+
+Copy .env.example to .env and fill in the local keys obtained from supabase status:
+
+```bash
+cp .env.example .env
+```
+
+### 4. Run Application
+
+```bash
+flutter run -d chrome --web-renderer wasm
+```
+
+### 🛡️ Project Structure (Clean Architecture)
+
+- **lib/domain/**: Sovereign logic, Entities, and Repository Interfaces (Zero Infrastructure Dependencies).
+- **lib/infrastructure/**: Supabase/Postgres implementations, External Adapters, and Data Mappers.
+- **lib/application/**: Business use cases, Commands, Handlers, and Projections.
+- **lib/state/**: Riverpod Providers and global state management.
+- **lib/presentation/**: Flutter UI (Atomic Widgets, Features, and Screens).
+- **lib/core/**: Shared utilities, Forensic Invariants, and Constants.
+
+### ⚖️ Forensic Compliance Standards
+
+VeraProb adheres to the 25 Forensic Invariants to guarantee legal admissibility:
+
+- **INV-9 (UTC Mastery):** All logic, persistence, and timestamps are strictly UTC-based.
+- **INV-19 (Financial Shield):** Real-time monitoring with dynamic budget caps to protect operator margins.
+- **INV-1 (Tenant Isolation):** Multi-tenant sovereignty enforced via PostgreSQL Row-Level Security (RLS).
+- **INV-2 (Precision):** All financial operations handled in integer cents via Money Value Objects.

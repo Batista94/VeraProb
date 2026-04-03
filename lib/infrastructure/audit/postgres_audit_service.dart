@@ -20,7 +20,9 @@ class PostgresAuditService implements AuditService {
     String? reason,
   }) async {
     final log = AuditLog(
-      id: DateTime.now().millisecondsSinceEpoch
+      id: DateTime.now()
+          .toUtc()
+          .millisecondsSinceEpoch
           .toString(), // Managed by DB or here
       organizationId: organizationId,
       operatorId: operatorId,

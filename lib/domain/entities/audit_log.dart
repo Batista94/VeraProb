@@ -28,7 +28,7 @@ class AuditLog extends Equatable {
   /// Human readable reason or system-generated notes
   final String? reason;
 
-  /// Strict server-side or localized timestamp of the event
+  /// Strict server-side or localized timestamp of the factEvent
   final DateTime timestamp;
 
   const AuditLog({

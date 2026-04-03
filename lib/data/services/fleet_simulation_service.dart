@@ -351,8 +351,8 @@ class FleetSimulationService {
 
   _SimulatedTrip _evolveState(_SimulatedTrip trip, int index) {
     final roll = _random.nextDouble();
-    final incidentProb = config?.incidentProbability ?? 0.05;
-    final signalLossProb = config?.signalLossProbability ?? 0.05;
+    final incidentProb = (config?.incidentProbability ?? 500) / 10000.0;
+    final signalLossProb = (config?.signalLossProbability ?? 500) / 10000.0;
 
     // Signal loss toggle
     if (roll < signalLossProb) {
@@ -507,7 +507,7 @@ class _SimulatedTrip {
             )
           : null,
       delaySeconds: delaySeconds,
-      completionPct: progress * 100,
+      completionBps: (progress * 10000).toInt(),
       sourceType: 'gtfs_realtime',
       driverName: driverName,
       vehiclePlate: vehiclePlate,

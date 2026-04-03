@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/sla_template.dart';
-import '../../../../domain/sla_audit/transport_vertical.dart';
+import '../../../../application/shared/app_types.dart';
+import '../../../../application/sla_audit/projections/sla_template_view.dart';
 import '../../../../state/providers/auth_providers.dart';
 import '../../../../state/providers/sla_template_providers.dart';
 import '../widgets/sla_template_card.dart';
@@ -164,15 +164,15 @@ class _SlaTemplateLibraryScreenState
     );
   }
 
-  List<SlaTemplate> _filteredPresets(List<SlaTemplate> presets) {
+  List<SlaTemplateView> _filteredPresets(List<SlaTemplateView> presets) {
     return _applyFilters(presets);
   }
 
-  List<SlaTemplate> _filteredTemplates(List<SlaTemplate> templates) {
+  List<SlaTemplateView> _filteredTemplates(List<SlaTemplateView> templates) {
     return _applyFilters(templates);
   }
 
-  List<SlaTemplate> _applyFilters(List<SlaTemplate> list) {
+  List<SlaTemplateView> _applyFilters(List<SlaTemplateView> list) {
     var result = list;
     if (_filterVertical != null) {
       result = result.where((t) => t.vertical == _filterVertical).toList();
@@ -180,13 +180,15 @@ class _SlaTemplateLibraryScreenState
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       result = result
-          .where((t) => t.name.toLowerCase().contains(query))
+          .where(
+            (t) => t.name.toLowerCase().contains(query),
+          )
           .toList();
     }
     return result;
   }
 
-  Widget _buildGrid(List<SlaTemplate> templates, {required bool isPreset}) {
+  Widget _buildGrid(List<SlaTemplateView> templates, {required bool isPreset}) {
     if (templates.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -230,7 +232,7 @@ class _SlaTemplateLibraryScreenState
 
   Future<void> _showEditor(
     BuildContext context, {
-    SlaTemplate? existing,
+    SlaTemplateView? existing,
   }) async {
     final saved = await showSlaTemplateEditorDialog(
       context,
@@ -241,15 +243,16 @@ class _SlaTemplateLibraryScreenState
     }
   }
 
-  Future<void> _cloneTemplate(SlaTemplate source) async {
+  Future<void> _cloneTemplate(SlaTemplateView source) async {
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       if (orgId == null) return;
 
-      final clone = await ref
+      final cloneDomain = await ref
           .read(cloneSlaTemplateHandlerProvider)
           .handle(sourceId: source.id, organizationId: orgId);
 
+      final clone = SlaTemplateView.fromDomain(cloneDomain);
       ref.invalidate(slaTemplatesProvider);
 
       if (mounted) {
@@ -272,7 +275,7 @@ class _SlaTemplateLibraryScreenState
     }
   }
 
-  Future<void> _confirmDelete(SlaTemplate template) async {
+  Future<void> _confirmDelete(SlaTemplateView template) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

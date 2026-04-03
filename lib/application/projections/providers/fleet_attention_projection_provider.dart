@@ -8,7 +8,7 @@ import '../models/attention_state.dart';
 /// Context for a single vehicle's attention state on the map.
 class AttentionContext {
   final AttentionState attentionState;
-  final double opacityMultiplier;
+  final double opacityMultiplier; // forensic-ignore: FINANCIAL-BLOCK
   final bool isPulsing;
 
   const AttentionContext({

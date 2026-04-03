@@ -5,8 +5,8 @@ import '../../application/super_admin/create_organization_handler.dart';
 import '../../application/super_admin/update_organization_quota_handler.dart';
 import '../../domain/super_admin/i_cnpj_lookup_service.dart';
 import '../../domain/super_admin/i_super_admin_repository.dart';
-import '../../domain/super_admin/system_audit_log_entry.dart';
-import '../../domain/super_admin/tenant_health_snapshot.dart';
+import '../../application/super_admin/system_audit_log_view.dart';
+import '../../application/super_admin/tenant_health_view.dart';
 import '../../infrastructure/super_admin/receita_ws_cnpj_service.dart';
 import '../../infrastructure/super_admin/supabase_super_admin_repository.dart';
 
@@ -19,11 +19,12 @@ final superAdminRepositoryProvider = Provider<ISuperAdminRepository>((ref) {
   return SupabaseSuperAdminRepository(Supabase.instance.client);
 });
 
-/// Provider that fetches all tenant health snapshots.
-final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthSnapshot>>(
+/// Provider that fetches all tenant health snapshots as view models.
+final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthView>>(
   (ref) async {
     final repo = ref.watch(superAdminRepositoryProvider);
-    return repo.getAllTenantHealth();
+    final snapshots = await repo.getAllTenantHealth();
+    return snapshots.map(TenantHealthView.fromDomain).toList();
   },
 );
 
@@ -45,18 +46,19 @@ final createOrganizationHandlerProvider = Provider<CreateOrganizationHandler>((
 /// Provider that fetches system audit log entries.
 /// Accepts optional filters via a record parameter.
 final systemAuditLogProvider =
-    FutureProvider.family<List<SystemAuditLogEntry>, AuditLogParams>((
+    FutureProvider.family<List<SystemAuditLogView>, AuditLogParams>((
       ref,
       params,
     ) async {
       final repo = ref.watch(superAdminRepositoryProvider);
-      return repo.getSystemAuditLog(
+      final entries = await repo.getSystemAuditLog(
         organizationId: params.organizationId,
         severity: params.severity,
         fromDate: params.fromDate,
         toDate: params.toDate,
         limit: params.limit,
       );
+      return entries.map(SystemAuditLogView.fromDomain).toList();
     });
 
 /// Parameter record for [systemAuditLogProvider].

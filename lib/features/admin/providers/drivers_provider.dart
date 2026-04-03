@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/providers.dart';
-import '../../shared/domain/entities/driver.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 // Provider to fetch the list of drivers
 final driversListProvider = FutureProvider<List<Driver>>((ref) async {
@@ -17,7 +17,9 @@ final filteredDriversProvider = Provider<AsyncValue<List<Driver>>>((ref) {
   final query = ref.watch(driversSearchQueryProvider).toLowerCase();
 
   return driversAsync.whenData((drivers) {
-    if (query.isEmpty) return drivers;
+    if (query.isEmpty) {
+      return drivers;
+    }
     return drivers.where((d) {
       return d.name.toLowerCase().contains(query) ||
           d.licenseNumber.contains(query);

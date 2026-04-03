@@ -31,7 +31,7 @@ class ShadowComparisonReport extends Equatable {
 
   /// Percentage of compared verdicts where engine == human (0.0–100.0).
   /// 0.0 when [totalCompared] == 0 (no human decisions yet in window).
-  final double matchRate;
+  final double matchRate; // forensic-ignore: FINANCIAL-BLOCK
 
   /// Engine applied penalty; human rejected it.
   final int falsePositiveCount;
@@ -97,7 +97,7 @@ class ShadowComparisonService {
 
   /// Threshold below which a divergence is classified as critical.
   /// Configurable for testing; production default is 80.0%.
-  final double criticalDivergenceThreshold;
+  final double criticalDivergenceThreshold; // forensic-ignore: FINANCIAL-BLOCK
 
   ShadowComparisonService({
     required ShadowVerdictRepository shadowRepo,

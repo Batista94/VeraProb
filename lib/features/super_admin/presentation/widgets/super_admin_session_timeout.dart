@@ -1,23 +1,25 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../state/providers/auth_providers.dart';
 import '../../../admin/presentation/lock_screen.dart';
 
 /// Wraps the SuperAdmin shell to monitor for user inactivity.
 /// Shows a warning dialog after 5 minutes of idle time.
 /// Forces logout after 7 minutes of idle time.
-class SuperAdminSessionTimeout extends StatefulWidget {
+class SuperAdminSessionTimeout extends ConsumerStatefulWidget {
   final Widget child;
 
   const SuperAdminSessionTimeout({super.key, required this.child});
 
   @override
-  State<SuperAdminSessionTimeout> createState() =>
+  ConsumerState<SuperAdminSessionTimeout> createState() =>
       _SuperAdminSessionTimeoutState();
 }
 
-class _SuperAdminSessionTimeoutState extends State<SuperAdminSessionTimeout> {
+class _SuperAdminSessionTimeoutState
+    extends ConsumerState<SuperAdminSessionTimeout> {
   Timer? _idleTimer;
   Timer? _logoutTimer;
   bool _isWarningOpen = false;
@@ -78,7 +80,7 @@ class _SuperAdminSessionTimeoutState extends State<SuperAdminSessionTimeout> {
     }
 
     try {
-      await Supabase.instance.client.auth.signOut();
+      await ref.read(authRepositoryProvider).signOut();
     } catch (_) {}
 
     if (mounted) {

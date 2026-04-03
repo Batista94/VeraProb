@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/signal_integrity_monitor.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Ingestion Health Widget — visual 'at-a-glance' view of telemetry gaps.
 ///

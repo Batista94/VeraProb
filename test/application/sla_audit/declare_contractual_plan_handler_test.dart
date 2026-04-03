@@ -74,8 +74,8 @@ void main() {
     double endLat = -23.5600,
     double endLng = -46.6400,
     int endRadius = 100,
-    double contractualValue = 150.0,
-    double noShowPenaltyMultiplier = 1.5,
+    Money contractualValue = const Money(15000),
+    int noShowPenaltyBps = 15000,
   }) {
     final s = start ?? DateTime.utc(2026, 3, 1, 6, 0);
     final e = end ?? s.add(const Duration(hours: 1));
@@ -89,7 +89,7 @@ void main() {
       endLongitude: endLng,
       endRadiusMeters: endRadius,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
     );
   }
 
@@ -260,7 +260,7 @@ void main() {
             originZoneId: 'zone-origin',
             destinationZoneId: 'zone-destination',
             penalties: SLAPenalties.create(
-              noShowPenaltyMultiplier: 1.0,
+              noShowPenaltyBps: 10000,
               delayToleranceMinutes: 15,
               delayPenaltyPerMinute: const Money(100),
               downgradePenaltyFlat: const Money(5000),

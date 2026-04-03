@@ -2,9 +2,9 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 // ignore: depend_on_referenced_packages
 import 'package:fake_async/fake_async.dart';
-import 'package:veraprob/features/shared/data/services/gtfs_realtime_service.dart';
-import 'package:veraprob/features/shared/data/repositories/vehicle_repository.dart';
-import 'package:veraprob/features/shared/domain/entities/vehicle_position.dart';
+import 'package:veraprob/infrastructure/shared/gtfs_realtime_service.dart';
+import 'package:veraprob/infrastructure/shared/vehicle_repository.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 void main() {
   group('GtfsRealtimeService', () {
@@ -23,7 +23,7 @@ void main() {
         tripId: 'test',
         latitude: -23.55,
         longitude: -46.63,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.now().toUtc(),
         source: 'api_public',
       );
 

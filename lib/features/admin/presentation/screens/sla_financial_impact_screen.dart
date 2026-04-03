@@ -44,8 +44,8 @@ class SlaFinancialImpactScreen extends ConsumerWidget {
                   protectedRevenue: impact.protectedRevenue.toDouble(),
                   revenueAtRisk: impact.revenueAtRisk.toDouble(),
                   lostRevenue: impact.lostRevenue.toDouble(),
-                  riskPercentage: impact.riskPercentage,
-                  lossPercentage: impact.lossPercentage,
+                  riskPercentageBps: impact.riskPercentageBps,
+                  lossPercentageBps: impact.lossPercentageBps,
                 ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, stack) => Center(
@@ -83,16 +83,16 @@ class _FinancialDashboard extends StatelessWidget {
   final double protectedRevenue;
   final double revenueAtRisk;
   final double lostRevenue;
-  final double riskPercentage;
-  final double lossPercentage;
+  final int riskPercentageBps;
+  final int lossPercentageBps;
 
   const _FinancialDashboard({
     required this.totalContractedRevenue,
     required this.protectedRevenue,
     required this.revenueAtRisk,
     required this.lostRevenue,
-    required this.riskPercentage,
-    required this.lossPercentage,
+    required this.riskPercentageBps,
+    required this.lossPercentageBps,
   });
 
   @override
@@ -124,14 +124,14 @@ class _FinancialDashboard extends StatelessWidget {
               value: _currencyFormat.format(revenueAtRisk),
               color: VeraProbColors.warning,
               icon: Icons.warning_amber_outlined,
-              percentage: riskPercentage,
+              percentageBps: riskPercentageBps,
             ),
             _KpiCard(
               title: 'Receita Perdida',
               value: _currencyFormat.format(lostRevenue),
               color: VeraProbColors.error,
               icon: Icons.trending_down_outlined,
-              percentage: lossPercentage,
+              percentageBps: lossPercentageBps,
             ),
           ],
         );
@@ -145,14 +145,14 @@ class _KpiCard extends StatelessWidget {
   final String value;
   final Color color;
   final IconData icon;
-  final double? percentage;
+  final int? percentageBps;
 
   const _KpiCard({
     required this.title,
     required this.value,
     required this.color,
     required this.icon,
-    this.percentage,
+    this.percentageBps,
   });
 
   @override
@@ -204,7 +204,7 @@ class _KpiCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (percentage != null)
+              if (percentageBps != null)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -216,7 +216,7 @@ class _KpiCard extends StatelessWidget {
                     border: Border.all(color: color.withValues(alpha: 0.3)),
                   ),
                   child: Text(
-                    '${percentage!.toStringAsFixed(1)}%',
+                    '${(percentageBps! / 100).toStringAsFixed(1)}%',
                     style: VeraProbTypography.badge.copyWith(
                       color: color,
                       fontSize: 13,

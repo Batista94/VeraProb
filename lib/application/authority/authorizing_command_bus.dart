@@ -1,5 +1,4 @@
 import '../../../application/operational_control_service.dart';
-import '../../domain/authority/commands/operational_command.dart';
 import '../../domain/authority/commands/trips/resolve_alert_command.dart';
 import '../../domain/authority/commands/trips/create_trip_event_command.dart';
 import '../../domain/authority/core/operational_action_mapper.dart';

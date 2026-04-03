@@ -70,9 +70,9 @@ class AlertFinancialImpact extends Equatable {
   /// No-show impact: `baseTripValue × noShowMultiplier`.
   factory AlertFinancialImpact.noShow({
     required Money baseTripValue,
-    required double noShowMultiplier,
+    required int noShowPenaltyBps,
   }) {
-    final penaltyCents = baseTripValue * noShowMultiplier;
+    final penaltyCents = baseTripValue.multiplyByBps(noShowPenaltyBps);
     return AlertFinancialImpact._(
       projectedPenaltyCents: penaltyCents,
       exposureAtRiskCents: penaltyCents,

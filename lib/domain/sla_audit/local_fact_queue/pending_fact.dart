@@ -96,7 +96,7 @@ class PendingFact extends Equatable {
     final payloadMap = _canonicalJsonMap(fact);
     final payloadJson = jsonEncode(payloadMap);
     final hash = sha256.convert(utf8.encode(payloadJson)).toString();
-    final now = (nowUtc ?? DateTime.now()).toUtc();
+    final now = (nowUtc ?? DateTime.now().toUtc()).toUtc();
 
     return PendingFact._(
       factId: fact.id,

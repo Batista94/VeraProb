@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:veraprob/domain/sla_audit/vehicle_category.dart';
-import 'package:veraprob/domain/sla_audit/week_cycle.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Immutable snapshot of one fully configured shift turn (Steps 1-3).
 ///
@@ -22,7 +21,7 @@ class ShiftDraftSnapshot {
   final int delayToleranceMinutes;
   final int earlyArrivalToleranceMinutes;
   final int dwellTimeMinutes;
-  final double noShowMultiplier;
+  final int noShowPenaltyBps;
   final int noShowThresholdMinutes;
   final int delayPenaltyCentsPerMinute;
   final int downgradePenaltyCents;
@@ -43,7 +42,7 @@ class ShiftDraftSnapshot {
     required this.delayToleranceMinutes,
     required this.earlyArrivalToleranceMinutes,
     required this.dwellTimeMinutes,
-    required this.noShowMultiplier,
+    required this.noShowPenaltyBps,
     required this.noShowThresholdMinutes,
     required this.delayPenaltyCentsPerMinute,
     required this.downgradePenaltyCents,

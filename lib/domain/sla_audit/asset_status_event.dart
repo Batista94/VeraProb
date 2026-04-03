@@ -6,7 +6,7 @@ import 'domain_exception.dart';
 
 /// Domain entity representing a single asset status transition.
 ///
-/// Status is event-sourced — the current status of an asset is determined
+/// Status is factEvent-sourced — the current status of an asset is determined
 /// by replaying these events in [occurredAtUtc] order (INV-12).
 ///
 /// **Invariants:**

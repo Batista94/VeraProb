@@ -7,7 +7,7 @@ import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
   SLAPenalties makePenalties() => SLAPenalties.create(
-    noShowPenaltyMultiplier: 1.5,
+    noShowPenaltyBps: 15000,
     delayToleranceMinutes: 15,
     delayPenaltyPerMinute: const Money(50),
     downgradePenaltyFlat: const Money(5000),

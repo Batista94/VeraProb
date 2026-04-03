@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../shared/providers.dart';
-import '../../../domain/entities/vehicle.dart';
+import 'package:veraprob/features/shared/providers.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 final vehiclesListProvider = FutureProvider<List<Vehicle>>((ref) {
   final repository = ref.watch(vehicleAssetRepositoryProvider);
@@ -14,7 +14,9 @@ final filteredVehiclesProvider = Provider<AsyncValue<List<Vehicle>>>((ref) {
   final query = ref.watch(vehiclesSearchQueryProvider).toLowerCase();
 
   return vehiclesAsync.whenData((vehicles) {
-    if (query.isEmpty) return vehicles;
+    if (query.isEmpty) {
+      return vehicles;
+    }
     return vehicles.where((v) {
       return v.plate.toLowerCase().contains(query) ||
           (v.model?.toLowerCase().contains(query) ?? false);

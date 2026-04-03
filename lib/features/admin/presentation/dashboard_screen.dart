@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widgets/charts_section.dart';
 import 'widgets/contractual_risk_radar.dart';
-import '../../../core/config/supabase_client.dart';
-import '../../../core/utils/data_seeder.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../state/providers/auth_providers.dart';
+import '../../../state/providers/admin_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -15,15 +14,12 @@ class DashboardScreen extends ConsumerWidget {
     final organizationId = ref.read(currentOrganizationIdProvider);
     if (organizationId == null) return;
     try {
-      final seeder = DataSeeder(
-        supabase,
-        organizationId: organizationId,
-      ); // forensic-ignore: SRP-UI-LEAK
-      await seeder.seedDrivers();
-      await seeder.seedRoutes();
-      await seeder.seedHistoricalData();
-      await seeder.seedActiveSanctions();
-      await seeder.seedPhase9();
+      final repository = ref.read(dataSeedingRepositoryProvider);
+      await repository.seedDrivers(organizationId);
+      await repository.seedRoutes(organizationId);
+      await repository.seedHistoricalData(organizationId);
+      await repository.seedActiveSanctions(organizationId);
+      await repository.seedPhase9(organizationId);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

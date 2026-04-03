@@ -7,7 +7,6 @@
 # absolute compliance with the Forensic Audit Manifesto.
 #
 # Path Scoping: FINANCIAL/DDD rules restricted to lib/domain & lib/application.
-# Escape Hatch: // forensic-ignore: RULE_NAME (on same or previous line).
 # Bypass: Automatically ignores *.g.dart and *.freezed.dart.
 # =============================================================================
 
@@ -58,13 +57,21 @@ CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null || git di
 if [[ -z "$CHANGED_FILES" ]]; then
   echo "No changes detected in Git Diff."
 else
+  # Detect Node.js
+  NODE_CMD="node"
+  if command -v node.exe >/dev/null 2>&1; then
+    NODE_CMD="node.exe"
+  fi
+
   # Use Node.js to parse the JSON and apply rules for efficiency/portability
-  node.exe -e "
+  # Pass CHANGED_FILES via stdin to avoid shell escaping issues with very long strings
+  # Use relative path for JSON to avoid WSL/Windows path mismatch
+  echo "$CHANGED_FILES" | $NODE_CMD -e "
 const fs = require('fs');
 const { execSync } = require('child_process');
 
-const patterns = JSON.parse(fs.readFileSync('$PATTERNS_JSON', 'utf8'));
-const files = \`$CHANGED_FILES\`.split('\n').filter(f => f.length > 0);
+const patterns = JSON.parse(fs.readFileSync('scripts/pr_patterns.json', 'utf8'));
+const files = fs.readFileSync(0, 'utf8').split('\n').filter(f => f.length > 0);
 
 let blocks = 0;
 let warns = 0;
@@ -87,22 +94,12 @@ files.forEach(file => {
        if (!matchesFile) return;
     }
 
-    const regex = new RegExp(config.pattern, 'g');
-    
+    const regex = new RegExp(config.pattern);
+
     lines.forEach((line, index) => {
       if (regex.test(line)) {
-        // Escape Hatch Check
-        const prevLine = index > 0 ? lines[index - 1] : '';
-        const hasIgnore = line.includes('// forensic-ignore: ' + ruleName) || 
-                          prevLine.includes('// forensic-ignore: ' + ruleName);
-
-        if (hasIgnore) {
-          console.log(\`  WARN: \${file}:\${index + 1} - \${ruleName} ignored via comment\`);
-          warns++;
-        } else {
-          console.log(\`  BLOCK: \${file}:\${index + 1} - \${ruleName}: \${config.description}\`);
-          blocks++;
-        }
+        console.log(\`  BLOCK: \${file}:\${index + 1} - \${ruleName}: \${config.description}\`);
+        blocks++;
       }
     });
   });
@@ -132,10 +129,16 @@ fi
 # (Since the Node script doesn't update bash variables easily, I'll just run it again or 
 # parse its output. Let's adjust the node script to output a parsable count).
 
-RESULTS=$(node.exe -e "
+# Detect Node.js again for Step 4
+NODE_CMD="node"
+if command -v node.exe >/dev/null 2>&1; then
+  NODE_CMD="node.exe"
+fi
+
+RESULTS=$(echo "$CHANGED_FILES" | $NODE_CMD -e "
 const fs = require('fs');
-const patterns = JSON.parse(fs.readFileSync('$PATTERNS_JSON', 'utf8'));
-const files = \`$CHANGED_FILES\`.split('\n').filter(f => f.length > 0);
+const patterns = JSON.parse(fs.readFileSync('scripts/pr_patterns.json', 'utf8'));
+const files = fs.readFileSync(0, 'utf8').split('\n').filter(f => f.length > 0);
 let blocks = 0; let warns = 0;
 files.forEach(file => {
   if (file.endsWith('.g.dart') || file.endsWith('.freezed.dart')) return;
@@ -148,9 +151,7 @@ files.forEach(file => {
     const regex = new RegExp(config.pattern);
     lines.forEach((line, index) => {
       if (regex.test(line)) {
-        const prevLine = index > 0 ? lines[index - 1] : '';
-        if (line.includes('// forensic-ignore: ' + ruleName) || prevLine.includes('// forensic-ignore: ' + ruleName)) warns++;
-        else blocks++;
+        blocks++;
       }
     });
   });
@@ -160,6 +161,7 @@ console.log(blocks + '|' + warns);
 
 TOTAL_BLOCKS=$(echo "$RESULTS" | cut -d'|' -f1)
 TOTAL_WARNS=$(echo "$RESULTS" | cut -d'|' -f2)
+
 
 VERDICT="[GO]"
 [[ $TOTAL_BLOCKS -gt 0 ]] && VERDICT="[NO-GO]"

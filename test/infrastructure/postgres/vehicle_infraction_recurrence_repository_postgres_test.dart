@@ -69,180 +69,165 @@ void main() async {
         return id;
       }
 
-      test(
-        '1. Returns empty list when no rows match the plate',
-        () async {
-          final result = await repository.findByPlateInMonth(
-            organizationId: PostgresTestConfig.testOrgId,
-            vehiclePlate: 'ZZZ-9999',
-            referenceUtc: DateTime.now().toUtc(),
-            excludeQueueEntryId: uuid.v4(),
-          );
+      test('1. Returns empty list when no rows match the plate', () async {
+        final result = await repository.findByPlateInMonth(
+          organizationId: PostgresTestConfig.testOrgId,
+          vehiclePlate: 'ZZZ-9999',
+          referenceUtc: DateTime.now().toUtc(),
+          excludeQueueEntryId: uuid.v4(),
+        );
 
-          expect(result, isEmpty);
-        },
-      );
+        expect(result, isEmpty);
+      });
 
-      test(
-        '2. Returns same-month rows for the plate',
-        () async {
-          final plate = 'TST-${uuid.v4().substring(0, 4).toUpperCase()}';
-          final now = DateTime.now().toUtc();
-          // Use fixed offsets from month-start to avoid crossing month boundaries
-          final monthStart = DateTime.utc(now.year, now.month, 1);
-          final id1 = await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: monthStart.add(const Duration(hours: 2)),
-          );
-          final id2 = await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: monthStart.add(const Duration(hours: 4)),
-          );
+      test('2. Returns same-month rows for the plate', () async {
+        final plate = 'TST-${uuid.v4().substring(0, 4).toUpperCase()}';
+        final now = DateTime.now().toUtc();
+        // Use fixed offsets from month-start to avoid crossing month boundaries
+        final monthStart = DateTime.utc(now.year, now.month, 1);
+        final id1 = await insertQueueRow(
+          vehiclePlate: plate,
+          createdAtUtc: monthStart.add(const Duration(hours: 2)),
+        );
+        final id2 = await insertQueueRow(
+          vehiclePlate: plate,
+          createdAtUtc: monthStart.add(const Duration(hours: 4)),
+        );
 
-          final result = await repository.findByPlateInMonth(
-            organizationId: PostgresTestConfig.testOrgId,
-            vehiclePlate: plate,
-            referenceUtc: now,
-            excludeQueueEntryId: uuid.v4(), // exclude nonexistent → include all
-          );
+        final result = await repository.findByPlateInMonth(
+          organizationId: PostgresTestConfig.testOrgId,
+          vehiclePlate: plate,
+          referenceUtc: now,
+          excludeQueueEntryId: uuid.v4(), // exclude nonexistent → include all
+        );
 
-          final ids = result.map((e) => e.id).toSet();
-          expect(ids, containsAll([id1, id2]));
-        },
-      );
+        final ids = result.map((e) => e.id).toSet();
+        expect(ids, containsAll([id1, id2]));
+      });
 
-      test(
-        '3. Excludes the current queue entry ID from results',
-        () async {
-          final plate = 'EXC-${uuid.v4().substring(0, 4).toUpperCase()}';
-          final now = DateTime.now().toUtc();
-          final monthStart = DateTime.utc(now.year, now.month, 1);
-          final priorId = await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: monthStart.add(const Duration(hours: 1)),
-          );
-          final currentId = await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: monthStart.add(const Duration(hours: 2)),
-          );
+      test('3. Excludes the current queue entry ID from results', () async {
+        final plate = 'EXC-${uuid.v4().substring(0, 4).toUpperCase()}';
+        final now = DateTime.now().toUtc();
+        final monthStart = DateTime.utc(now.year, now.month, 1);
+        final priorId = await insertQueueRow(
+          vehiclePlate: plate,
+          createdAtUtc: monthStart.add(const Duration(hours: 1)),
+        );
+        final currentId = await insertQueueRow(
+          vehiclePlate: plate,
+          createdAtUtc: monthStart.add(const Duration(hours: 2)),
+        );
 
-          final result = await repository.findByPlateInMonth(
-            organizationId: PostgresTestConfig.testOrgId,
-            vehiclePlate: plate,
-            referenceUtc: now,
-            excludeQueueEntryId: currentId,
-          );
+        final result = await repository.findByPlateInMonth(
+          organizationId: PostgresTestConfig.testOrgId,
+          vehiclePlate: plate,
+          referenceUtc: now,
+          excludeQueueEntryId: currentId,
+        );
 
-          final ids = result.map((e) => e.id).toSet();
-          expect(ids, contains(priorId));
-          expect(ids, isNot(contains(currentId)));
-        },
-      );
+        final ids = result.map((e) => e.id).toSet();
+        expect(ids, contains(priorId));
+        expect(ids, isNot(contains(currentId)));
+      });
 
-      test(
-        '4. Ignores rows from a different calendar month',
-        () async {
-          final plate = 'MON-${uuid.v4().substring(0, 4).toUpperCase()}';
-          final now = DateTime.now().toUtc();
+      test('4. Ignores rows from a different calendar month', () async {
+        final plate = 'MON-${uuid.v4().substring(0, 4).toUpperCase()}';
+        final now = DateTime.now().toUtc();
 
-          // Row in a different month (30 days ago — safe: always different month
-          // unless today is day 1; use month-start arithmetic to be deterministic)
-          final prevMonthStart = DateTime.utc(
-            now.month == 1 ? now.year - 1 : now.year,
-            now.month == 1 ? 12 : now.month - 1,
-            15,
-          );
-          await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: prevMonthStart,
-          );
-          final thisMonthId = await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: now.subtract(const Duration(hours: 2)),
-          );
+        // Row in a different month (30 days ago — safe: always different month
+        // unless today is day 1; use month-start arithmetic to be deterministic)
+        final prevMonthStart = DateTime.utc(
+          now.month == 1 ? now.year - 1 : now.year,
+          now.month == 1 ? 12 : now.month - 1,
+          15,
+        );
+        await insertQueueRow(vehiclePlate: plate, createdAtUtc: prevMonthStart);
+        final thisMonthId = await insertQueueRow(
+          vehiclePlate: plate,
+          createdAtUtc: now.subtract(const Duration(hours: 2)),
+        );
 
-          final result = await repository.findByPlateInMonth(
-            organizationId: PostgresTestConfig.testOrgId,
-            vehiclePlate: plate,
-            referenceUtc: now,
-            excludeQueueEntryId: uuid.v4(),
-          );
+        final result = await repository.findByPlateInMonth(
+          organizationId: PostgresTestConfig.testOrgId,
+          vehiclePlate: plate,
+          referenceUtc: now,
+          excludeQueueEntryId: uuid.v4(),
+        );
 
-          final ids = result.map((e) => e.id).toSet();
-          // Only the current-month row is returned
-          expect(ids, equals({thisMonthId}));
-        },
-      );
+        final ids = result.map((e) => e.id).toSet();
+        // Only the current-month row is returned
+        expect(ids, equals({thisMonthId}));
+      });
 
-      test(
-        '5. Tenant isolation: cross-org rows are invisible',
-        () async {
-          final plate = 'ISO-${uuid.v4().substring(0, 4).toUpperCase()}';
-          final now = DateTime.now().toUtc();
+      test('5. Tenant isolation: cross-org rows are invisible', () async {
+        final plate = 'ISO-${uuid.v4().substring(0, 4).toUpperCase()}';
+        final now = DateTime.now().toUtc();
 
-          // Insert one row under testOrgId and one under otherOrgId
-          final ownId = await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: now.subtract(const Duration(hours: 3)),
-          );
-          await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: now.subtract(const Duration(hours: 2)),
-            organizationId: otherOrgId,
-          );
+        // Insert one row under testOrgId and one under otherOrgId
+        final ownId = await insertQueueRow(
+          vehiclePlate: plate,
+          createdAtUtc: now.subtract(const Duration(hours: 3)),
+        );
+        await insertQueueRow(
+          vehiclePlate: plate,
+          createdAtUtc: now.subtract(const Duration(hours: 2)),
+          organizationId: otherOrgId,
+        );
 
-          final result = await repository.findByPlateInMonth(
-            organizationId: PostgresTestConfig.testOrgId,
-            vehiclePlate: plate,
-            referenceUtc: now,
-            excludeQueueEntryId: uuid.v4(),
-          );
+        final result = await repository.findByPlateInMonth(
+          organizationId: PostgresTestConfig.testOrgId,
+          vehiclePlate: plate,
+          referenceUtc: now,
+          excludeQueueEntryId: uuid.v4(),
+        );
 
-          final ids = result.map((e) => e.id).toSet();
-          expect(ids, equals({ownId}),
-              reason: 'Must not see rows from other organizations (INV-1)');
-        },
-      );
+        final ids = result.map((e) => e.id).toSet();
+        expect(
+          ids,
+          equals({ownId}),
+          reason: 'Must not see rows from other organizations (INV-1)',
+        );
+      });
 
-      test(
-        '6. Results are ordered by created_at ascending',
-        () async {
-          final plate = 'ORD-${uuid.v4().substring(0, 4).toUpperCase()}';
-          final now = DateTime.now().toUtc();
-          final monthStart = DateTime.utc(now.year, now.month, 1);
-          final id1 = await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: monthStart.add(const Duration(hours: 1)),
-          );
-          final id2 = await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: monthStart.add(const Duration(hours: 3)),
-          );
-          final id3 = await insertQueueRow(
-            vehiclePlate: plate,
-            createdAtUtc: monthStart.add(const Duration(hours: 5)),
-          );
+      test('6. Results are ordered by created_at ascending', () async {
+        final plate = 'ORD-${uuid.v4().substring(0, 4).toUpperCase()}';
+        final now = DateTime.now().toUtc();
+        final monthStart = DateTime.utc(now.year, now.month, 1);
+        final id1 = await insertQueueRow(
+          vehiclePlate: plate,
+          createdAtUtc: monthStart.add(const Duration(hours: 1)),
+        );
+        final id2 = await insertQueueRow(
+          vehiclePlate: plate,
+          createdAtUtc: monthStart.add(const Duration(hours: 3)),
+        );
+        final id3 = await insertQueueRow(
+          vehiclePlate: plate,
+          createdAtUtc: monthStart.add(const Duration(hours: 5)),
+        );
 
-          final result = await repository.findByPlateInMonth(
-            organizationId: PostgresTestConfig.testOrgId,
-            vehiclePlate: plate,
-            referenceUtc: now,
-            excludeQueueEntryId: uuid.v4(),
-          );
+        final result = await repository.findByPlateInMonth(
+          organizationId: PostgresTestConfig.testOrgId,
+          vehiclePlate: plate,
+          referenceUtc: now,
+          excludeQueueEntryId: uuid.v4(),
+        );
 
-          final ids = result.map((e) => e.id).toList();
-          expect(ids, equals([id1, id2, id3]),
-              reason: 'Results must be ordered oldest-first');
-        },
-      );
+        final ids = result.map((e) => e.id).toList();
+        expect(
+          ids,
+          equals([id1, id2, id3]),
+          reason: 'Results must be ordered oldest-first',
+        );
+      });
 
       test(
         '7. Returned entries carry correct vehiclePlate and UTC timestamps',
         () async {
           final plate = 'CHK-${uuid.v4().substring(0, 4).toUpperCase()}';
           final ts = DateTime.utc(
-            DateTime.now().year,
-            DateTime.now().month,
+            DateTime.now().toUtc().year,
+            DateTime.now().toUtc().month,
             10,
             14,
             30,
@@ -263,8 +248,11 @@ void main() async {
           expect(result, hasLength(1));
           final entry = result.first;
           expect(entry.vehiclePlate, equals(plate));
-          expect(entry.createdAtUtc.isUtc, isTrue,
-              reason: 'createdAtUtc must be UTC (INV-9)');
+          expect(
+            entry.createdAtUtc.isUtc,
+            isTrue,
+            reason: 'createdAtUtc must be UTC (INV-9)',
+          );
           expect(entry.verdictEvidence.clauseRef, equals('VEL-02'));
         },
       );

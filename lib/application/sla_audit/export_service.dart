@@ -1,12 +1,11 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import '../../domain/sla_audit/billing_cycle_report.dart';
-import '../../domain/shared/money.dart';
+import '../../application/shared/billing_cycle_view.dart';
 
 /// Service responsible for generating deterministic exports in CSV and PDF formats.
 class ExportService {
   /// Generates a deterministic CSV representation of the report.
-  String generateCsv(BillingCycleReport report) {
+  String generateCsv(BillingCycleView report) {
     final List<List<dynamic>> rows = [];
 
     // Header
@@ -28,16 +27,16 @@ class ExportService {
     for (final s in report.snapshots) {
       rows.add([
         s.operationalDateUtc.toIso8601String().split('T')[0],
-        s.totalContractedRevenue.cents,
-        s.protectedRevenue.cents,
-        s.revenueAtRisk.cents,
-        s.lostRevenue.cents,
+        s.totalContractedRevenue,
+        s.protectedRevenue,
+        s.revenueAtRisk,
+        s.lostRevenue,
         s.totalObligations,
         s.executedCount,
         s.noShowCount,
         s.evidenceGapCount,
-        s.riskPercentage.toStringAsFixed(2),
-        s.lossPercentage.toStringAsFixed(2),
+        (s.riskPercentageBps / 100).toStringAsFixed(2),
+        (s.lossPercentageBps / 100).toStringAsFixed(2),
       ]);
     }
 
@@ -45,18 +44,16 @@ class ExportService {
     rows.add([]);
     rows.add([
       'TOTAL',
-      report.totalContractedRevenue.cents,
-      report.protectedRevenue.cents,
-      report.revenueAtRisk.cents,
-      report.lostRevenue.cents,
+      report.totalContractedRevenue,
+      report.protectedRevenue,
+      report.revenueAtRisk,
+      report.lostRevenue,
       report.totalObligations,
       report.executedCount,
       report.noShowCount,
       report.evidenceGapCount,
-      report.complianceRate.toStringAsFixed(2),
-      (100 - report.complianceRate).toStringAsFixed(
-        2,
-      ), // placeholder for loss % if needed
+      (report.complianceRateBps / 100).toStringAsFixed(2),
+      (100 - report.complianceRateBps / 100).toStringAsFixed(2),
     ]);
 
     final buffer = StringBuffer();
@@ -77,7 +74,7 @@ class ExportService {
   }
 
   /// Generates a deterministic PDF representation of the report.
-  Future<List<int>> generatePdf(BillingCycleReport report) async {
+  Future<List<int>> generatePdf(BillingCycleView report) async {
     final pdf = pw.Document();
 
     pdf.addPage(
@@ -111,7 +108,7 @@ class ExportService {
                 _formatMoney(s.protectedRevenue),
                 _formatMoney(s.revenueAtRisk),
                 _formatMoney(s.lostRevenue),
-                '${(100 - s.lossPercentage).toStringAsFixed(1)}%',
+                '${(100 - s.lossPercentageBps / 100).toStringAsFixed(1)}%',
               ];
             }).toList(),
           ),
@@ -130,7 +127,7 @@ class ExportService {
               ['Perda Financeira', _formatMoney(report.lostRevenue)],
               [
                 'Taxa de Conformidade',
-                '${report.complianceRate.toStringAsFixed(1)}%',
+                '${(report.complianceRateBps / 100).toStringAsFixed(1)}%',
               ],
             ],
           ),
@@ -155,7 +152,7 @@ class ExportService {
     return pdf.save();
   }
 
-  String _formatMoney(Money money) {
-    return 'R\$ ${(money.cents / 100).toStringAsFixed(2)}';
+  String _formatMoney(int cents) {
+    return 'R\$ ${(cents / 100).toStringAsFixed(2)}';
   }
 }

@@ -228,7 +228,7 @@ class PostgresContractualExecutionStateRepository
       'start_radius_meters': state.startRadiusMeters,
       'planned_vehicle_id': state.plannedVehicleId,
       'contractual_value_cents': state.contractualValue.cents,
-      'no_show_penalty_multiplier': state.noShowPenaltyMultiplier,
+      'no_show_penalty_multiplier': state.noShowPenaltyBps,
       'window_start_utc': state.windowStartUtc.toIso8601String(),
       'window_end_utc': state.windowEndUtc.toIso8601String(),
       'status': state.status.name,
@@ -256,8 +256,7 @@ class PostgresContractualExecutionStateRepository
       startRadiusMeters: data['start_radius_meters'] as int,
       plannedVehicleId: data['planned_vehicle_id'] as String?,
       contractualValue: Money((data['contractual_value_cents'] as num).toInt()),
-      noShowPenaltyMultiplier: (data['no_show_penalty_multiplier'] as num)
-          .toDouble(),
+      noShowPenaltyBps: (data['no_show_penalty_multiplier'] as num).toInt(),
       windowStartUtc: DateTime.parse(data['window_start_utc'] as String),
       windowEndUtc: DateTime.parse(data['window_end_utc'] as String),
       status: _parseStatus(data['status'] as String),

@@ -4,15 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/super_admin/mfa_enrollment_result.dart';
-import '../../../../domain/super_admin/mfa_verification_result.dart';
-import '../../../../infrastructure/providers/mfa_providers.dart';
-import '../../../admin/presentation/lock_screen.dart';
-import '../super_admin_shell.dart';
-import 'mfa_challenge_screen.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/super_admin/mfa_result_view.dart';
+import 'package:veraprob/infrastructure/providers/mfa_providers.dart';
+import 'package:veraprob/features/admin/presentation/lock_screen.dart';
+import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
 
 /// TOTP enrollment screen for SuperAdmin (INV-6).
 ///
@@ -57,13 +55,8 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           _isLoading = false;
         });
       }
-    } on AuthApiException catch (e) {
-      // Graceful degradation for Local Dev: if MFA is disabled on server, allow SuperAdmin access.
-      final isNotEnabled =
-          e.code == 'mfa_totp_enroll_not_enabled' ||
-          e.message.contains('MFA enroll is disabled');
-
-      if (isNotEnabled && kDebugMode) {
+    } on MfaException catch (e) {
+      if (e.isNotEnabled && kDebugMode) {
         if (!mounted) return;
         await Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const SuperAdminShell()),

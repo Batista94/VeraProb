@@ -116,7 +116,7 @@ class _FpsZoneBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fps = dashboard.financialProtectionScore;
+    final fps = dashboard.financialProtectionScore / 100.0;
     final zone = dashboard.fpsZone;
 
     final (color, label) = switch (zone) {
@@ -199,21 +199,21 @@ class _KpiGrid extends StatelessWidget {
         ),
         _KpiCard(
           title: 'Taxa de Recuperação',
-          value: '${dashboard.penaltyRecoveryRate.toStringAsFixed(1)}%',
+          value: '${(dashboard.penaltyRecoveryRate / 100.0).toStringAsFixed(1)}%',
           subtitle: 'penalidades recuperadas',
           color: VeraProbColors.primary,
           icon: Icons.trending_up,
         ),
         _KpiCard(
           title: 'Dispute-to-Resolution',
-          value: '${dashboard.disputeToResolutionRatio.toStringAsFixed(1)}%',
+          value: '${(dashboard.disputeToResolutionRatio / 100.0).toStringAsFixed(1)}%',
           subtitle: 'compensações / no-shows',
           color: VeraProbColors.warning,
           icon: Icons.balance_outlined,
         ),
         _KpiCard(
           title: 'Conformidade SLA',
-          value: '${dashboard.complianceScore.toStringAsFixed(1)}%',
+          value: '${(dashboard.complianceScore / 100.0).toStringAsFixed(1)}%',
           subtitle:
               '${dashboard.executedCount} / ${dashboard.totalObligations} obrigações',
           color: VeraProbColors.primary,
@@ -391,7 +391,7 @@ class _Legend extends StatelessWidget {
 
 class _EvidenceAttributionCard extends StatelessWidget {
   final String attribution;
-  final double evidenceScore;
+  final int evidenceScore;
 
   const _EvidenceAttributionCard({
     required this.attribution,
@@ -400,7 +400,7 @@ class _EvidenceAttributionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLow = evidenceScore < 80;
+    final isLow = evidenceScore < 8000;
     final color = isLow ? VeraProbColors.warning : VeraProbColors.success;
 
     return Container(
@@ -423,7 +423,7 @@ class _EvidenceAttributionCard extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'QUALIDADE DE EVIDÊNCIA — ${evidenceScore.toStringAsFixed(1)}%',
+                'QUALIDADE DE EVIDÊNCIA — ${(evidenceScore / 100.0).toStringAsFixed(1)}%',
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.bold,
@@ -483,7 +483,7 @@ class _ShadowModeCard extends StatelessWidget {
           Text(simulation.simulationName, style: VeraProbTypography.bodySmall),
           const SizedBox(height: 4),
           Text(
-            'ROI: ${simulation.roiPercentage.toStringAsFixed(1)}%',
+            'ROI: ${(simulation.roiPercentageBps / 100).toStringAsFixed(1)}%',
             style: VeraProbTypography.sectionTitle.copyWith(
               color: VeraProbColors.primary,
               fontSize: 24,

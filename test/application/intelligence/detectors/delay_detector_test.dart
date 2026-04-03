@@ -17,21 +17,21 @@ void main() {
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
       final scheduledTrip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.scheduled,
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
       final completedTrip = OperationalTrip(
         id: '1',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.completed,
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       expect(detector.canDetect(activeTrip), isTrue);
@@ -46,7 +46,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 120, // 2 minutes
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final warning = detector.evaluate(trip, null, []);
@@ -60,7 +60,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 300, // 5 minutes
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final warning = detector.evaluate(trip, null, []);
@@ -77,7 +77,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 720, // 12 minutes
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final warning = detector.evaluate(trip, null, []);

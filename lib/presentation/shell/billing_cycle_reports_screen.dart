@@ -82,7 +82,8 @@ class _PackageCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dateRange =
         '${_fmtDate(package.periodStartUtc)} – ${_fmtDate(package.periodEndUtc)}';
-    final compliance = '${package.complianceRate.toStringAsFixed(1)}%';
+    final compliance =
+        '${(package.complianceRateBps / 100.0).toStringAsFixed(1)}%';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),

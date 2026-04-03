@@ -92,7 +92,7 @@ class TelemetryIngestionPipeline {
     AssetStatusRepository? assetStatusRepo,
     SpoofingDetector spoofingDetector = const SpoofingDetector(),
     SpoofingAuditRepository? spoofingRepo,
-    double maxImpliedSpeedKmh = 200.0,
+    double maxImpliedSpeedKmh = 200.0, // Physical Metric - Double Required
   }) : _engine = engine,
        _assetStatusRepo = assetStatusRepo,
        _spoofingDetector = spoofingDetector,

@@ -53,9 +53,9 @@ void main() {
       await snapshotRepo.save(
         makeSnapshot(
           date: DateTime.utc(2026, 3, 1),
-          total: Money.fromDouble(500.0),
-          protected_: Money.fromDouble(300.0),
-          atRisk: Money.fromDouble(200.0),
+          total: const Money(50000),
+          protected_: const Money(30000),
+          atRisk: const Money(20000),
           lost: const Money(0),
         ),
       );
@@ -65,16 +65,16 @@ void main() {
 
       final point = trend.first;
       expect(point.formattedDate, '01/03/2026');
-      expect(point.totalContractedRevenue, Money.fromDouble(500.0));
-      expect(point.baseRevenueUsedForCalculation, Money.fromDouble(500.0));
+      expect(point.totalContractedRevenue, const Money(50000));
+      expect(point.baseRevenueUsedForCalculation, const Money(50000));
     });
 
     test('multiple snapshots are sorted by date ascending', () async {
       await snapshotRepo.save(
         makeSnapshot(
           date: DateTime.utc(2026, 3, 2),
-          total: Money.fromDouble(200.0),
-          protected_: Money.fromDouble(200.0),
+          total: const Money(20000),
+          protected_: const Money(20000),
           atRisk: const Money(0),
           lost: const Money(0),
         ),
@@ -83,8 +83,8 @@ void main() {
       await snapshotRepo.save(
         makeSnapshot(
           date: DateTime.utc(2026, 3, 1),
-          total: Money.fromDouble(100.0),
-          protected_: Money.fromDouble(100.0),
+          total: const Money(10000),
+          protected_: const Money(10000),
           atRisk: const Money(0),
           lost: const Money(0),
         ),
@@ -101,8 +101,8 @@ void main() {
         makeSnapshot(
           contractId: 'c-1',
           date: DateTime.utc(2026, 3, 1),
-          total: Money.fromDouble(100.0),
-          protected_: Money.fromDouble(100.0),
+          total: const Money(10000),
+          protected_: const Money(10000),
           atRisk: const Money(0),
           lost: const Money(0),
         ),
@@ -112,8 +112,8 @@ void main() {
         makeSnapshot(
           contractId: 'c-2',
           date: DateTime.utc(2026, 3, 1),
-          total: Money.fromDouble(500.0),
-          protected_: Money.fromDouble(500.0),
+          total: const Money(50000),
+          protected_: const Money(50000),
           atRisk: const Money(0),
           lost: const Money(0),
         ),
@@ -124,7 +124,7 @@ void main() {
         contractId: 'c-1',
       );
       expect(trendC1, hasLength(1));
-      expect(trendC1.first.totalContractedRevenue, Money.fromDouble(100.0));
+      expect(trendC1.first.totalContractedRevenue, const Money(10000));
     });
   });
 }

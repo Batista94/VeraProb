@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/sla_audit/spoofing_audit_entry.dart';
 import '../../domain/sla_audit/spoofing_audit_repository.dart';
 import '../../domain/sla_audit/spoofing_risk_score.dart';
-import '../../domain/sla_audit/spoofing_signal.dart';
 
 /// Postgres implementation of [SpoofingAuditRepository] using Supabase.
 class PostgresSpoofingAuditRepository implements SpoofingAuditRepository {
@@ -21,7 +20,7 @@ class PostgresSpoofingAuditRepository implements SpoofingAuditRepository {
       'asset_id': entry.assetId,
       'window_start': entry.windowStart.toIso8601String(),
       'window_end': entry.windowEnd.toIso8601String(),
-      'risk_score': entry.riskScore.score,
+       'risk_score': entry.riskScore.scoreBps,
       'signals': entry.riskScore.signals.map((s) => s.name).toList(),
       'facts_analyzed': entry.factsAnalyzed,
       'fact_ids': entry.factIds,
@@ -86,12 +85,10 @@ class PostgresSpoofingAuditRepository implements SpoofingAuditRepository {
       assetId: row['asset_id'] as String?,
       windowStart: DateTime.parse(row['window_start'] as String),
       windowEnd: DateTime.parse(row['window_end'] as String),
-      riskScore: SpoofingRiskScore(
-        score: (row['risk_score'] as num).toDouble(),
-        signals: signalsList
-            .map((s) => SpoofingSignal.values.firstWhere((e) => e.name == s))
-            .toList(),
-      ),
+      riskScore: SpoofingRiskScore.fromJson({
+        'score_bps': row['risk_score'],
+        'signals': signalsList,
+      }),
       factsAnalyzed: row['facts_analyzed'] as int,
       factIds: (row['fact_ids'] as List<dynamic>)
           .map((id) => id as String)

@@ -4,10 +4,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../../application/sla_audit/projections/sanction_queue_item_view.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/enums/user_role.dart';
-import '../../../../domain/sla_audit/sanction_review_queue_entry.dart';
-import '../../../../domain/sla_audit/signal_integrity_monitor.dart';
-import '../../../../domain/sla_audit/sla_breach_risk_calculator.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import '../../../../state/providers/auditor_queue_providers.dart';
 import '../../../../state/providers/auth_providers.dart';
 import '../screens/widgets/investigation_modal.dart';
@@ -495,17 +492,19 @@ class _RecurrenceZone extends ConsumerWidget {
     if (plate == null || plate.isEmpty) return const SizedBox.shrink();
 
     final key = '${item.id}|$plate|${item.organizationId}';
-    return ref.watch(vehicleInfractionRecurrenceProvider(key)).when(
-      loading: () => const SizedBox(height: 48),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (report) {
-        if (report == null) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-          child: RecurrenceBadgeWidget(report: report),
+    return ref
+        .watch(vehicleInfractionRecurrenceProvider(key))
+        .when(
+          loading: () => const SizedBox(height: 48),
+          error: (_, _) => const SizedBox.shrink(),
+          data: (report) {
+            if (report == null) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+              child: RecurrenceBadgeWidget(report: report),
+            );
+          },
         );
-      },
-    );
   }
 }
 
@@ -570,7 +569,6 @@ class _ConfidenceBadge extends StatelessWidget {
     );
   }
 }
-
 
 class _ForensicSealRow extends StatelessWidget {
   final SanctionQueueItemView item;

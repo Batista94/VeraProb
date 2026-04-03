@@ -54,8 +54,8 @@ final financialImpactProvider = FutureProvider<ContractualFinancialImpact>((
       protectedRevenue: const Money(0),
       revenueAtRisk: const Money(0),
       lostRevenue: const Money(0),
-      riskPercentage: 0.0,
-      lossPercentage: 0.0,
+      riskPercentageBps: 0,
+      lossPercentageBps: 0,
     );
   }
 

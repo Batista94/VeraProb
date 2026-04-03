@@ -1,10 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import '../domain/entities/operational_trip.dart';
 import '../domain/entities/trip_event.dart';
 import '../domain/enums/event_type.dart';
-import '../domain/enums/trip_status.dart';
 import '../data/services/fleet_simulation_service.dart';
 import 'audit/audit_service.dart';
 import 'operational_control_service.dart';

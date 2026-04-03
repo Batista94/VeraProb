@@ -132,12 +132,11 @@ FIN_HITS=$(grep -rn --include="*.dart" \
   -iE "(double|float).{0,60}(fine|price|amount|ledger|cents|penalty|revenue|cost)|(fine|price|amount|ledger|cents|penalty|revenue|cost).{0,60}(double|float)" \
   lib/domain/ lib/application/ 2>/dev/null \
   | grep -ivE "multiplier|rate\b|\.toDouble\(\)|toDouble\b|tryParse|fromDouble" \
-  | grep -vE ":[0-9]+:[[:space:]]*(///|//)" \
   || true)
 
 if [[ -n "$FIN_HITS" ]]; then
   block "[FIN-BLOCK] double/float storing monetary value in domain/application — use BIGINT cents (INV-2)"
-  echo "         (Checked: lib/domain/ + lib/application/ | Excluded: multipliers, rates, toDouble(), comments)"
+  echo "         (Checked: lib/domain/ + lib/application/ | Excluded: multipliers, rates, toDouble())"
   echo "$FIN_HITS" | print_hits 5
 else
   pass "No floating-point monetary storage in domain/application layers"
@@ -150,7 +149,6 @@ echo "  A3 — UTC Determinism: scanning lib/ for DateTime.now() without .toUtc(
 UTC_HITS=$(grep -rn --include="*.dart" \
   "DateTime\.now()" lib/ 2>/dev/null \
   | grep -v "\.toUtc()" \
-  | grep -vE ":[0-9]+:[[:space:]]*(///|//)" \
   | grep -vE "millisecondsSinceEpoch|\.difference\(|initialDate:|firstDate:|lastDate:|pdf_export_service" \
   | grep -vE "\?\?[[:space:]]*DateTime\.now\(\)|DateTime\.now\(\)\.subtract\(" \
   | grep -vE "DateTime _[a-zA-Z]*[Dd]ate\s*=" \
@@ -198,7 +196,6 @@ else
       DB_HITS=$(grep -niE \
         "DROP TABLE|DELETE FROM|TRUNCATE|ALTER COLUMN.+TYPE" \
         "$migration_file" 2>/dev/null \
-        | grep -vE "^[0-9]+:[[:space:]]*--" \
         || true)
       if [[ -n "$DB_HITS" ]]; then
         block "[DB-BLOCK] Destructive migration in $migration_file — append-only schema required (INV-DB)"
@@ -310,7 +307,6 @@ echo "  C1 — Secret Detection: scanning lib/ for hardcoded secrets / API keys.
 SECRET_HITS=$(grep -rn --include="*.dart" \
   -E "(sb_[a-zA-Z0-9]{20,}|sk_[a-zA-Z0-9]{20,}|(serviceRoleKey|anonKey|apiKey|api_key|secretKey)\s*[=:]\s*['\"][^'\"]{20,}['\"]|eyJ[a-zA-Z0-9_\-]{50,})" \
   lib/ 2>/dev/null \
-  | grep -vE ":[0-9]+:[[:space:]]*(///|//)" \
   | grep -vE "Env\.|AppConfig\.|\.env" \
   || true)
 if [[ -n "$SECRET_HITS" ]]; then
@@ -380,7 +376,6 @@ echo "  C4 — Leaky Abstraction: scanning lib/features/ for direct domain impor
 LEAK_HITS=$(grep -rn --include="*.dart" \
   "import 'package:veraprob/domain/" \
   lib/features/ 2>/dev/null \
-  | grep -vE ":[0-9]+:[[:space:]]*(///|//)" \
   || true)
 if [[ -n "$LEAK_HITS" ]]; then
   warn "[LEAK-WARN] Domain imports found in lib/features/ — domain types must flow through application-layer ViewModels/DTOs (INV-4 / Lens 2)"

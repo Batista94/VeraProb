@@ -2,8 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/authority/operational_command_bus.dart';
 import 'package:veraprob/application/operational_control/operational_control_facade.dart';
-import 'package:veraprob/domain/authority/commands/operational_command.dart';
-import 'package:veraprob/domain/enums/event_type.dart';
 
 class MockCommandBus extends Mock implements OperationalCommandBus {}
 

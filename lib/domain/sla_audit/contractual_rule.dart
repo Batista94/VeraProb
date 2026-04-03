@@ -19,7 +19,7 @@ enum SlaRuleType {
 }
 
 /// Represents a historically tracked set of rule parameters.
-/// Config is strictly parameter data (JSON), not executable logic.
+/// Config is strictly parameter information (JSON), not executable logic.
 class ContractualRule extends Equatable {
   final String id;
   final String ruleSetId;

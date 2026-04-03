@@ -21,7 +21,7 @@ void main() {
       startLongitude: -46.6,
       startRadiusMeters: 100,
       contractualValue: const Money(50000),
-      noShowPenaltyMultiplier: 1.5,
+      noShowPenaltyBps: 15000,
       windowStartUtc: windowStart,
       windowEndUtc: windowEnd,
     );

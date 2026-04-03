@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../application/sla_audit/projections/heartbeat_monitor_view.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/heartbeat_classification.dart';
-import '../../../../state/providers/heartbeat_monitor_providers.dart';
+import 'package:veraprob/application/sla_audit/projections/heartbeat_monitor_view.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/state/providers/heartbeat_monitor_providers.dart';
 
 /// Read-only OCC widget displaying the fleet's heartbeat health summary.
 ///

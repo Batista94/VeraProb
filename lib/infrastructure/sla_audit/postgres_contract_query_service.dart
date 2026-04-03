@@ -95,8 +95,7 @@ class PostgresContractQueryService implements ContractQueryService {
         startLongitude: (s['start_longitude'] as num).toDouble(),
         startRadiusMeters: (s['start_radius_meters'] as num).toInt(),
         contractualValue: Money((s['contractual_value_cents'] as num).toInt()),
-        noShowPenaltyMultiplier: (s['no_show_penalty_multiplier'] as num)
-            .toDouble(),
+        noShowPenaltyBps: (s['no_show_penalty_bps'] as num).toInt(),
       );
     }).toList();
 
@@ -143,8 +142,7 @@ class PostgresContractQueryService implements ContractQueryService {
               contractualValue: Money(
                 (s['contractual_value_cents'] as num).toInt(),
               ),
-              noShowPenaltyMultiplier: (s['no_show_penalty_multiplier'] as num)
-                  .toDouble(),
+              noShowPenaltyBps: (s['no_show_penalty_bps'] as num).toInt(),
             ),
           )
           .toList();
@@ -206,9 +204,7 @@ class PostgresContractQueryService implements ContractQueryService {
       if (st == ExecutionStatus.executed.name) executedCount++;
     }
 
-    final slaHealthPercentage = totalSets == 0
-        ? 0.0
-        : (executedCount / totalSets) * 100.0;
+    final slaHealthBps = totalSets == 0 ? 0 : (executedCount * 10000 ~/ totalSets);
 
     return ContractSummaryView(
       id: row['id'] as String,
@@ -224,7 +220,7 @@ class PostgresContractQueryService implements ContractQueryService {
       planCount: planCount,
       activePlanVersion: activePlanVersion,
       totalSetsInProgress: pendingCount,
-      slaHealthPercentage: slaHealthPercentage,
+      slaHealthBps: slaHealthBps,
       financialCeilingCents: (row['financial_ceiling_cents'] as num?)?.toInt(),
     );
   }

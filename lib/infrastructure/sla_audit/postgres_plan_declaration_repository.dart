@@ -70,7 +70,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         'end_radius_meters': s.endRadiusMeters,
         'planned_vehicle_id': s.plannedVehicleId,
         'contractual_value_cents': s.contractualValue.cents,
-        'no_show_penalty_multiplier': s.noShowPenaltyMultiplier,
+        'no_show_penalty_multiplier': s.noShowPenaltyBps,
       };
     }).toList();
 
@@ -142,7 +142,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         'end_radius_meters': s.endRadiusMeters,
         'planned_vehicle_id': s.plannedVehicleId,
         'contractual_value_cents': s.contractualValue.cents,
-        'no_show_penalty_multiplier': s.noShowPenaltyMultiplier,
+        'no_show_penalty_multiplier': s.noShowPenaltyBps,
         'origin_zone_id': s.originZoneId,
         'destination_zone_id': s.destinationZoneId,
         'operational_date': s.operationalDate != null
@@ -180,8 +180,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         endRadiusMeters: s['end_radius_meters'] as int,
         plannedVehicleId: s['planned_vehicle_id'],
         contractualValue: Money((s['contractual_value_cents'] as num).toInt()),
-        noShowPenaltyMultiplier: (s['no_show_penalty_multiplier'] as num)
-            .toDouble(),
+        noShowPenaltyBps: (s['no_show_penalty_multiplier'] as num).toInt(),
         originZoneId: s['origin_zone_id'],
         destinationZoneId: s['destination_zone_id'],
         operationalDate: s['operational_date'] != null

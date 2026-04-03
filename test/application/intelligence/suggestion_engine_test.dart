@@ -21,7 +21,7 @@ void main() {
         status: TripStatus.enRoute,
         severityScore: 0,
         warnings: [],
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final suggestion = engine.generateSuggestion(trip: trip);
@@ -36,14 +36,14 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.interrupted,
         severityScore: 50,
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
         warnings: [
           OperationalWarning(
             id: 'w1',
             type: 'vehicle_stopped',
             message: 'Stopped',
             severityScore: 50,
-            detectedAt: DateTime.now(),
+            detectedAt: DateTime.now().toUtc(),
           ),
         ],
       );
@@ -62,14 +62,14 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         severityScore: 40,
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
         warnings: [
           OperationalWarning(
             id: 'w1',
             type: 'delay_critical',
             message: 'Critical Delay',
             severityScore: 40,
-            detectedAt: DateTime.now(),
+            detectedAt: DateTime.now().toUtc(),
           ),
         ],
       );
@@ -89,7 +89,7 @@ void main() {
         status: TripStatus.delayed,
         severityScore: 20,
         warnings: [], // No critical warning, just delayed status
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final suggestion = engine.generateSuggestion(trip: trip);

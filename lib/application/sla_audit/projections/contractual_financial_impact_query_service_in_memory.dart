@@ -34,8 +34,8 @@ class ContractualFinancialImpactQueryServiceInMemory
         protectedRevenue: const Money(0),
         revenueAtRisk: const Money(0),
         lostRevenue: const Money(0),
-        riskPercentage: 0.0,
-        lossPercentage: 0.0,
+        riskPercentageBps: 0,
+        lossPercentageBps: 0,
       );
     }
 
@@ -51,8 +51,8 @@ class ContractualFinancialImpactQueryServiceInMemory
       protectedRevenue: latest.protectedRevenue,
       revenueAtRisk: latest.revenueAtRisk,
       lostRevenue: latest.lostRevenue,
-      riskPercentage: latest.riskPercentage,
-      lossPercentage: latest.lossPercentage,
+      riskPercentageBps: latest.riskPercentageBps,
+      lossPercentageBps: latest.lossPercentageBps,
     );
   }
 }

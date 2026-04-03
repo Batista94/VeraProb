@@ -50,7 +50,7 @@ void main() {
     test('noShow factory uses baseTripValue × multiplier', () {
       final impact = AlertFinancialImpact.noShow(
         baseTripValue: const Money(10000), // R$100.00
-        noShowMultiplier: 2.0,
+        noShowPenaltyBps: 20000,
       );
 
       // R$100 × 2.0 = R$200.00 = 20000 cents
@@ -61,7 +61,7 @@ void main() {
     test('noShow with multiplier 1.0 returns baseTripValue', () {
       final impact = AlertFinancialImpact.noShow(
         baseTripValue: const Money(3000), // R$30.00
-        noShowMultiplier: 1.0,
+        noShowPenaltyBps: 10000,
       );
 
       expect(impact.projectedPenaltyCents, const Money(3000));

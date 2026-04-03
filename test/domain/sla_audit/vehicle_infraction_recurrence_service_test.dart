@@ -19,9 +19,10 @@ class _FakeRepository implements VehicleInfractionRecurrenceRepository {
     required String excludeQueueEntryId,
   }) async {
     return _data
-        .where((e) =>
-            e.organizationId == organizationId &&
-            e.id != excludeQueueEntryId)
+        .where(
+          (e) =>
+              e.organizationId == organizationId && e.id != excludeQueueEntryId,
+        )
         .toList();
   }
 }
@@ -29,33 +30,32 @@ class _FakeRepository implements VehicleInfractionRecurrenceRepository {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 VerdictEvidence _evidence(String clauseRef) => VerdictEvidence.create(
-      clauseRef: clauseRef,
-      ruleId: 'rule-1',
-      ruleVersion: 1,
-      primaryEvidenceLat: 0,
-      primaryEvidenceLng: 0,
-      primaryEvidenceTimestampUtc: DateTime.utc(2026, 4, 1, 8, 0),
-      deltaValue: 10.0,
-      thresholdValue: 5.0,
-      fineCents: const Money(50000),
-      confidenceScore: 90,
-    );
+  clauseRef: clauseRef,
+  ruleId: 'rule-1',
+  ruleVersion: 1,
+  primaryEvidenceLat: 0,
+  primaryEvidenceLng: 0,
+  primaryEvidenceTimestampUtc: DateTime.utc(2026, 4, 1, 8, 0),
+  deltaValue: 10.0,
+  thresholdValue: 5.0,
+  fineCents: const Money(50000),
+  confidenceScore: 90,
+);
 
 SanctionReviewQueueEntry _entry({
   required String id,
   required String clauseRef,
   DateTime? createdAt,
-}) =>
-    SanctionReviewQueueEntry(
-      id: id,
-      organizationId: 'org-1',
-      ledgerEntryId: 'ledger-$id',
-      setId: 'set-1',
-      contractId: 'contract-1',
-      verdictEvidence: _evidence(clauseRef),
-      status: SanctionReviewStatus.pending,
-      createdAtUtc: createdAt ?? DateTime.utc(2026, 4, 1, 9, 0),
-    );
+}) => SanctionReviewQueueEntry(
+  id: id,
+  organizationId: 'org-1',
+  ledgerEntryId: 'ledger-$id',
+  setId: 'set-1',
+  contractId: 'contract-1',
+  verdictEvidence: _evidence(clauseRef),
+  status: SanctionReviewStatus.pending,
+  createdAtUtc: createdAt ?? DateTime.utc(2026, 4, 1, 9, 0),
+);
 
 void main() {
   final refUtc = DateTime.utc(2026, 4, 15, 12, 0);

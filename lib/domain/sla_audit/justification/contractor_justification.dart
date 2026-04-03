@@ -4,7 +4,7 @@ import 'justification_category.dart';
 import 'justification_status.dart';
 
 /// Aggregate Root for a contractor's defense submission against a specific
-/// SLA breach event (identified by [setId] + [contractId]).
+/// SLA breach factEvent (identified by [setId] + [contractId]).
 ///
 /// Identity-based equality: two instances with the same [id] are equal
 /// regardless of review state — callers should compare [status] explicitly.

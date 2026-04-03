@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/application/admin/operational_zone_view.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/widgets/zone_type_ahead_field.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
@@ -11,12 +12,13 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_rep
 
 const _kOrgId = 'org-test';
 
-OperationalZone _makeZone(
+OperationalZoneView _makeZone(
   String name, {
   String? contractorLabel,
-  GeofenceConfiguration? geofence,
+  GeofenceView? geofence,
   ZoneType type = ZoneType.garagem,
-}) => OperationalZone.create(
+}) => OperationalZoneView(
+  id: 'test-id-${name.hashCode}',
   organizationId: _kOrgId,
   name: name,
   type: type,
@@ -24,7 +26,7 @@ OperationalZone _makeZone(
   geofence: geofence,
 );
 
-const _kGeo = GeofenceConfiguration(
+const _kGeo = GeofenceView(
   latitude: -23.5505,
   longitude: -46.6333,
   radiusMeters: 200,
@@ -33,11 +35,11 @@ const _kGeo = GeofenceConfiguration(
 // ── Test widget builder ───────────────────────────────────────
 
 Widget _buildTestWidget({
-  required List<OperationalZone> zones,
-  OperationalZone? selectedZone,
+  required List<OperationalZoneView> zones,
+  OperationalZoneView? selectedZone,
   String contractorName = '',
-  ValueChanged<OperationalZone?>? onChanged,
-  ValueChanged<OperationalZone>? onGeofenceConfigured,
+  ValueChanged<OperationalZoneView?>? onChanged,
+  ValueChanged<OperationalZoneView>? onGeofenceConfigured,
 }) {
   final repository = InMemoryOperationalZoneRepository();
   return ProviderScope(
@@ -254,7 +256,7 @@ void main() {
 
     testWidgets('selecionar zona existente chama onChanged', (tester) async {
       final zone = _makeZone('Portaria Norte', geofence: _kGeo);
-      OperationalZone? selected;
+      OperationalZoneView? selected;
 
       await tester.pumpWidget(
         _buildTestWidget(zones: [zone], onChanged: (z) => selected = z),
@@ -305,16 +307,16 @@ void main() {
     testWidgets(
       'exibe botão de limpar (X) quando zona está selecionada e limpa ao clicar',
       (tester) async {
-        final zone = _makeZone('Garagem', geofence: _kGeo);
-        OperationalZone? selected = zone;
+      final zone = _makeZone('Garagem', geofence: _kGeo);
+      OperationalZoneView? selected = zone;
 
-        await tester.pumpWidget(
-          _buildTestWidget(
-            zones: [zone],
-            selectedZone: selected,
-            onChanged: (z) => selected = z,
-          ),
-        );
+      await tester.pumpWidget(
+        _buildTestWidget(
+          zones: [zone],
+          selectedZone: selected,
+          onChanged: (z) => selected = z,
+        ),
+      );
 
         // Verifica se o ícone de limpar está presente
         expect(find.byIcon(Icons.clear), findsOneWidget);

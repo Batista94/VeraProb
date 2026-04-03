@@ -3,12 +3,12 @@ import 'package:equatable/equatable.dart';
 /// Severity classification for a telemetry gap.
 ///
 /// - [warning]: gap > 120s but ≤ 600s. Degraded signal quality.
-/// - [critical]: gap > 600s. Near-total data silence.
+/// - [critical]: gap > 600s. Near-total information silence.
 enum GapSeverity {
   /// Gap > 120s and ≤ 600s.
   warning,
 
-  /// Gap > 600s (10 min). Severe data loss — possible hardware failure.
+  /// Gap > 600s (10 min). Severe information loss — possible hardware failure.
   critical,
 }
 
@@ -51,7 +51,7 @@ class SignalIntegrityReport extends Equatable {
   /// Overall signal integrity score (0–100).
   ///
   /// 100 = all intervals ≤ 120s (perfect signal).
-  /// 0 = no data or entire stream is one silent gap.
+  /// 0 = no information or entire stream is one silent gap.
   ///
   /// Formula: `max(0, 100 - (totalSilentSeconds / totalSpanSeconds * 100))`
   final int integrityScore;

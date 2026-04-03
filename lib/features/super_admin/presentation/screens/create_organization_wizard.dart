@@ -4,14 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/cnpj_validator.dart';
-import '../../../../domain/super_admin/create_organization_command.dart';
-import '../../../../domain/super_admin/plan_type.dart';
-import '../../../../domain/sla_audit/domain_exception.dart';
-import '../../../../infrastructure/providers/super_admin_providers.dart';
-import '../../../../state/providers/super_admin_auth_providers.dart';
-import 'widgets/organization_wizard_steps.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/core/utils/cnpj_validator.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/shared/domain_failure.dart';
+import 'package:veraprob/application/super_admin/create_organization_form_data.dart';
+import 'package:veraprob/infrastructure/providers/super_admin_providers.dart';
+import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
+
 
 /// 3-step wizard for creating a new tenant organization.
 ///
@@ -208,7 +209,7 @@ class _CreateOrganizationWizardState
     try {
       final handler = ref.read(createOrganizationHandlerProvider);
 
-      final cmd = CreateOrganizationCommand(
+      final cmd = CreateOrganizationFormData(
         legalName: _legalNameCtrl.text.trim(),
         tradeName: _tradeNameCtrl.text.trim(),
         cnpj: _cnpjCtrl.text.trim(),
@@ -219,7 +220,7 @@ class _CreateOrganizationWizardState
         maxActiveContracts: int.parse(_maxContractsCtrl.text.trim()),
         initialAdminEmail: _adminEmailCtrl.text.trim().toLowerCase(),
         superAdminUserId: superAdminId,
-      );
+      ).toCommand();
 
       final result = await handler.handle(cmd);
 

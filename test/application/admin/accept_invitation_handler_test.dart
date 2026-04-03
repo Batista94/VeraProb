@@ -15,7 +15,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(UserRole.operator);
-    registerFallbackValue(DateTime.now());
+    registerFallbackValue(DateTime.now().toUtc());
   });
 
   setUp(() {

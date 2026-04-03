@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../state/providers/contractor_providers.dart';
 import '../../../../state/providers/auth_providers.dart';
-import '../../../../domain/sla_audit/contractor.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
 import '../../../../application/sla_audit/delete_contractor_command.dart';
 import '../widgets/contractor_form_dialog.dart';
 
@@ -20,7 +20,7 @@ class _ContractorManagementScreenState
     extends ConsumerState<ContractorManagementScreen> {
   String _searchQuery = '';
 
-  List<Contractor> _filterContractors(List<Contractor> list) {
+  List<ContractorView> _filterContractors(List<ContractorView> list) {
     if (_searchQuery.isEmpty) return list;
     final q = _searchQuery.toLowerCase();
     return list
@@ -194,7 +194,7 @@ class _ContractorManagementScreenState
     );
   }
 
-  void _showForm(BuildContext context, {Contractor? existing}) {
+  void _showForm(BuildContext context, {ContractorView? existing}) {
     showContractorFormDialog(context, existing: existing).then((saved) {
       if (saved != null) ref.invalidate(contractorListProvider);
     });
@@ -202,7 +202,7 @@ class _ContractorManagementScreenState
 
   Future<void> _confirmDelete(
     BuildContext context,
-    Contractor contractor,
+    ContractorView contractor,
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,

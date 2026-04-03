@@ -1,15 +1,15 @@
 import 'package:equatable/equatable.dart';
 
 /// Represents a raw, unfiltered GPS ping straight from the device hardware.
-/// This data is "dirty" and must pass through the Normalizer before becoming a VehiclePosition.
+/// This information is "dirty" and must pass through the Normalizer before becoming a VehiclePosition.
 class RawTelemetryPing extends Equatable {
   final String vehicleId;
   final String tripId;
-  final double latitude;
-  final double longitude;
-  final double accuracy; // In meters
-  final double speed; // In meters per second
-  final double heading; // 0-359 degrees
+  final double latitude; // Physical Metric - Double Required
+  final double longitude; // Physical Metric - Double Required
+  final double accuracy; // In meters // Physical Metric - Double Required
+  final double speed; // In meters per second // Physical Metric - Double Required
+  final double heading; // 0-359 degrees // Physical Metric - Double Required
   final DateTime timestamp;
 
   const RawTelemetryPing({

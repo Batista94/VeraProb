@@ -23,7 +23,7 @@ void main() {
         accuracy: 100.0, // Terribe GPS precision
         speed: 10.0,
         heading: 90.0,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.now().toUtc(),
       );
 
       final result = normalizer.processPing(badPing);
@@ -39,7 +39,7 @@ void main() {
         accuracy: 10.0, // Great precision
         speed: 10.0,
         heading: 90.0,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.now().toUtc(),
       );
 
       final result = normalizer.processPing(goodPing);
@@ -48,7 +48,7 @@ void main() {
     });
 
     test('Discards ping implying impossible speed jump (Haversine jump)', () {
-      final time = DateTime.now();
+      final time = DateTime.now().toUtc();
 
       final firstPing = RawTelemetryPing(
         vehicleId: 'v1',
@@ -81,7 +81,7 @@ void main() {
     });
 
     test('Accepts valid sequential pings', () {
-      final time = DateTime.now();
+      final time = DateTime.now().toUtc();
 
       final firstPing = RawTelemetryPing(
         vehicleId: 'v1',

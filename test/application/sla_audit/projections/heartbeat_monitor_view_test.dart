@@ -11,7 +11,7 @@ DeviceHeartbeatStatus _device(
     lastSeenAtUtc: DateTime.utc(2026, 1, 1),
     gapSeconds: classification == HeartbeatClassification.normal ? 30 : 120,
     classification: classification,
-    fleetActiveRatio: 0.9,
+    fleetActiveBps: 9000,
   );
 }
 
@@ -92,7 +92,7 @@ void main() {
         lastSeenAtUtc: t,
         gapSeconds: 10,
         classification: HeartbeatClassification.normal,
-        fleetActiveRatio: 1.0,
+        fleetActiveBps: 10000,
       );
 
       final a = HeartbeatMonitorView(

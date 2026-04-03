@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/transport_vertical.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Compact badge chip displaying the transport vertical with icon and color.
 class TransportVerticalChip extends StatelessWidget {

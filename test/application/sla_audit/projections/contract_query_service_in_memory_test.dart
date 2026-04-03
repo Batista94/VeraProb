@@ -48,10 +48,10 @@ void main() {
         organizationId: 'org1',
         name: 'c1',
         contractorName: 'contractor1',
-        validFromUtc: DateTime.now(),
-        validUntilUtc: DateTime.now().add(const Duration(days: 365)),
+        validFromUtc: DateTime.now().toUtc(),
+        validUntilUtc: DateTime.now().toUtc().add(const Duration(days: 365)),
         status: ContractStatus.active,
-        createdAtUtc: DateTime.now(),
+        createdAtUtc: DateTime.now().toUtc(),
         financialCeiling: const Money(1000000),
       );
 
@@ -97,10 +97,10 @@ void main() {
         organizationId: 'org1',
         name: 'c1',
         contractorName: 'contractor1',
-        validFromUtc: DateTime.now(),
-        validUntilUtc: DateTime.now().add(const Duration(days: 365)),
+        validFromUtc: DateTime.now().toUtc(),
+        validUntilUtc: DateTime.now().toUtc().add(const Duration(days: 365)),
         status: ContractStatus.active,
-        createdAtUtc: DateTime.now(),
+        createdAtUtc: DateTime.now().toUtc(),
       );
 
       when(
@@ -124,10 +124,10 @@ void main() {
         startLatitude: 0,
         startLongitude: 0,
         startRadiusMeters: 100,
-        contractualValue: const Money(100),
-        noShowPenaltyMultiplier: 1.0,
-        windowStartUtc: DateTime.now(),
-        windowEndUtc: DateTime.now().add(const Duration(hours: 1)),
+        contractualValue: const Money(10000),
+        noShowPenaltyBps: 10000,
+        windowStartUtc: DateTime.now().toUtc(),
+        windowEndUtc: DateTime.now().toUtc().add(const Duration(hours: 1)),
       );
 
       when(

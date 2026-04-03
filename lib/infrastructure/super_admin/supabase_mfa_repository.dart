@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/super_admin/i_mfa_repository.dart';
 import '../../domain/super_admin/mfa_challenge_result.dart';
 import '../../domain/super_admin/mfa_enrollment_result.dart';
+import '../../domain/super_admin/mfa_exception.dart';
 import '../../domain/super_admin/mfa_status.dart';
 import '../../domain/super_admin/mfa_verification_result.dart';
 
@@ -25,26 +26,36 @@ class SupabaseMfaRepository implements IMfaRepository {
 
   @override
   Future<MfaEnrollmentResult> enrollTotp() async {
-    final response = await _client.auth.mfa.enroll(
-      factorType: FactorType.totp,
-      issuer: 'VeraProb',
-      friendlyName: 'VeraProb SuperAdmin TOTP',
-    );
+    try {
+      final response = await _client.auth.mfa.enroll(
+        factorType: FactorType.totp,
+        issuer: 'VeraProb',
+        friendlyName: 'VeraProb SuperAdmin TOTP',
+      );
 
-    final recoveryCodes = _generateRecoveryCodes();
-    await _storeRecoveryCodeHashes(recoveryCodes);
+      final recoveryCodes = _generateRecoveryCodes();
+      await _storeRecoveryCodeHashes(recoveryCodes);
 
-    final totp = response.totp;
-    if (totp == null) {
-      throw StateError('TOTP data missing from enrollment response');
+      final totp = response.totp;
+      if (totp == null) {
+        throw StateError('TOTP data missing from enrollment response');
+      }
+
+      return MfaEnrollmentResult(
+        factorId: response.id,
+        totpUri: totp.uri,
+        secret: totp.secret,
+        recoveryCodes: recoveryCodes,
+      );
+    } on AuthException catch (e) {
+      final isNotEnabled =
+          e.code == 'mfa_totp_enroll_not_enabled' ||
+          e.message.contains('MFA enroll is disabled');
+
+      throw MfaException(e.message, code: e.code, isNotEnabled: isNotEnabled);
+    } catch (e) {
+      throw MfaException(e.toString());
     }
-
-    return MfaEnrollmentResult(
-      factorId: response.id,
-      totpUri: totp.uri,
-      secret: totp.secret,
-      recoveryCodes: recoveryCodes,
-    );
   }
 
   @override

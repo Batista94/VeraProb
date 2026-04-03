@@ -128,7 +128,7 @@ void main() {
       expect(draft.totalContractedRevenue, report.totalContractedRevenue);
       expect(draft.protectedRevenue, report.protectedRevenue);
       expect(draft.lostRevenue, report.lostRevenue);
-      expect(draft.complianceRate, report.complianceRate);
+      expect(draft.complianceRateBps, report.complianceRateBps);
     });
 
     test('throws if organizationId is empty', () {
@@ -265,7 +265,7 @@ void main() {
         executedCount: sealed.executedCount,
         noShowCount: sealed.noShowCount,
         evidenceGapCount: sealed.evidenceGapCount,
-        complianceRate: sealed.complianceRate,
+        complianceRateBps: sealed.complianceRateBps,
         packageHash: sealed.packageHash, // old hash
         hashAlgorithm: sealed.hashAlgorithm,
         schemaVersion: sealed.schemaVersion,

@@ -1,5 +1,8 @@
 import '../../domain/authority/commands/operational_command.dart';
 
+export '../../domain/authority/commands/operational_command.dart';
+export '../../domain/authority/commands/trips/update_trip_status_command.dart';
+
 /// Application Port: The entry point for all Intentions.
 ///
 /// The UI should NEVER call mutation services directly. Instead, it dispatches

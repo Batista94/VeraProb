@@ -1,9 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/save_sla_template_handler.dart';
+import 'package:veraprob/application/sla_audit/projections/penalties_form_data.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
 import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
-import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_template_repository.dart';
 
 void main() {
@@ -15,12 +14,17 @@ void main() {
     handler = SaveSlaTemplateHandler(repository: repository);
   });
 
-  SLAPenalties makePenalties() => SLAPenalties.create(
-    noShowPenaltyMultiplier: 1.5,
-    delayToleranceMinutes: 15,
-    delayPenaltyPerMinute: const Money(50),
-    downgradePenaltyFlat: const Money(5000),
-  );
+  PenaltiesFormData makePenalties() => PenaltiesFormData(
+        noShowPenaltyBps: 15000,
+        delayToleranceMinutes: 15,
+        delayPenaltyPerMinuteCents: 50,
+        downgradePenaltyFlatCents: 5000,
+        noShowThresholdMinutes: 60,
+        earlyArrivalToleranceMinutes: 5,
+        dwellTimeMinutes: 3,
+        gracePeriodMinutes: 0,
+        baseTripValueCents: 0,
+      );
 
   group('SaveSlaTemplateHandler', () {
     test('cria template e persiste no repositório', () async {

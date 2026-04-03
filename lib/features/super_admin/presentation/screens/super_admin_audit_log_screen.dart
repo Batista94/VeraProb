@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/super_admin/system_audit_log_entry.dart';
-import '../../../../infrastructure/providers/super_admin_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/infrastructure/providers/super_admin_providers.dart';
+
+
 
 const _kSeverities = ['debug', 'info', 'warning', 'error', 'critical'];
 
@@ -126,7 +128,7 @@ class _FilterBar extends StatelessWidget {
               final picked = await showDateRangePicker(
                 context: context,
                 firstDate: DateTime(2024),
-                lastDate: DateTime.now().add(const Duration(days: 1)),
+                lastDate: DateTime.now().toUtc().add(const Duration(days: 1)),
                 initialDateRange: dateRange,
               );
               if (picked != null) onDateRangeChanged(picked);
@@ -168,7 +170,7 @@ class _FilterBar extends StatelessWidget {
 }
 
 class _LogList extends StatelessWidget {
-  final List<SystemAuditLogEntry> logs;
+  final List<SystemAuditLogView> logs;
 
   const _LogList({required this.logs});
 

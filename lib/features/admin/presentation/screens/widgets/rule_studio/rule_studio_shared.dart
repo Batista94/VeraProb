@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Shared icon widget for rule type visualization used across Rule Studio.
 class RuleTypeIcon extends StatelessWidget {

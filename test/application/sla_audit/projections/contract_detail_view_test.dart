@@ -21,7 +21,7 @@ void main() {
     planCount: 1,
     activePlanVersion: 1,
     totalSetsInProgress: 0,
-    slaHealthPercentage: 100.0,
+    slaHealthBps: 10000,
   );
 
   SlaExecutionItemView makeExecution() => SlaExecutionItemView(
@@ -34,7 +34,7 @@ void main() {
     startLongitude: -46.6,
     startRadiusMeters: 100,
     contractualValue: const Money(50000),
-    noShowPenaltyMultiplier: 1.0,
+    noShowPenaltyBps: 10000,
   );
 
   SlaExecutionSummary makeSummaryFinancial() => SlaExecutionSummary(

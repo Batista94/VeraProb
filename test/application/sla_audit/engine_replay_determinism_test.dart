@@ -136,8 +136,8 @@ void main() {
               startLatitude: -23.5,
               startLongitude: -46.6,
               startRadiusMeters: 500,
-              contractualValue: const Money(1000),
-              noShowPenaltyMultiplier: 1.5,
+              contractualValue: const Money(100000),
+              noShowPenaltyBps: 15000,
               windowStartUtc: windowStart,
               windowEndUtc: windowEnd,
             );
@@ -197,8 +197,8 @@ void main() {
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 500,
-          contractualValue: const Money(1000),
-          noShowPenaltyMultiplier: 1.5,
+          contractualValue: const Money(100000),
+          noShowPenaltyBps: 15000,
           windowStartUtc: t0,
           windowEndUtc: DateTime.utc(2026, 3, 1, 11, 0),
         );

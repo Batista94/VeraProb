@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_theme.dart';
-import '../../../../../domain/sla_audit/justification/justification_status.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Compact status chip for [JustificationStatus].
 ///

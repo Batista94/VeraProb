@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/shared/money.dart';
-import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
-import 'package:veraprob/domain/sla_audit/sla_template.dart';
-import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
-import 'package:veraprob/domain/sla_audit/smart_defaults.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_template_view.dart';
+import 'package:veraprob/application/sla_audit/projections/penalties_form_data.dart';
+import 'package:veraprob/application/sla_audit/smart_defaults_service.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/sla_template_providers.dart';
 import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
@@ -62,18 +61,18 @@ class Step3SlaPenalties extends ConsumerWidget {
 
   final VoidCallback onContinue;
 
-  void _applyTemplate(SLAPenalties p) {
-    baseValueController.text = (p.baseTripValue.cents / 100.0)
+  void _applyTemplate(PenaltiesFormData p) {
+    baseValueController.text = (p.baseTripValueCents / 100.0)
         .toStringAsFixed(2)
         .replaceAll('.', ',');
-    noShowMultiplierController.text = p.noShowPenaltyMultiplier
+    noShowMultiplierController.text = (p.noShowPenaltyBps / 10000.0)
         .toStringAsFixed(1)
         .replaceAll('.', ',');
     delayToleranceController.text = p.delayToleranceMinutes.toString();
-    delayMinuteValueController.text = (p.delayPenaltyPerMinute.cents / 100.0)
+    delayMinuteValueController.text = (p.delayPenaltyPerMinuteCents / 100.0)
         .toStringAsFixed(2)
         .replaceAll('.', ',');
-    downgradeValueController.text = (p.downgradePenaltyFlat.cents / 100.0)
+    downgradeValueController.text = (p.downgradePenaltyFlatCents / 100.0)
         .toStringAsFixed(2)
         .replaceAll('.', ',');
     noShowThresholdController.text = p.noShowThresholdMinutes.toString();
@@ -137,18 +136,25 @@ class Step3SlaPenalties extends ConsumerWidget {
                   100)
               .round();
 
-      final penalties = SLAPenalties.create(
-        noShowPenaltyMultiplier: noShowMult,
+      final penalties = PenaltiesFormData(
+        noShowPenaltyBps: (noShowMult * 10000).round(),
         delayToleranceMinutes:
             int.tryParse(delayToleranceController.text) ?? 15,
-        delayPenaltyPerMinute: Money(delayPerMin),
-        downgradePenaltyFlat: Money(downgrade),
+        delayPenaltyPerMinuteCents: delayPerMin,
+        downgradePenaltyFlatCents: downgrade,
         noShowThresholdMinutes:
             int.tryParse(noShowThresholdController.text) ?? 60,
         earlyArrivalToleranceMinutes:
             int.tryParse(earlyArrivalToleranceController.text) ?? 5,
         dwellTimeMinutes: int.tryParse(dwellTimeController.text) ?? 3,
         gracePeriodMinutes: int.tryParse(gracePeriodController.text) ?? 0,
+        baseTripValueCents:
+            ((double.tryParse(
+                          baseValueController.text.replaceAll(',', '.'),
+                        ) ??
+                        0) *
+                    100)
+                .round(),
       );
 
       await ref
@@ -179,7 +185,7 @@ class Step3SlaPenalties extends ConsumerWidget {
 
   void _showTemplatePicker(
     BuildContext context,
-    AsyncValue<List<SlaTemplate>> allTemplatesAsync,
+    AsyncValue<List<SlaTemplateView>> allTemplatesAsync,
   ) {
     showModalBottomSheet(
       context: context,
@@ -301,7 +307,7 @@ class Step3SlaPenalties extends ConsumerWidget {
                   if (v == null || v == TransportVertical.custom) {
                     baseValueController.text = '';
                   } else {
-                    _applyTemplate(SmartDefaults.defaultsFor(v));
+                    _applyTemplate(SmartDefaultsService.defaultsFor(v));
                   }
                 },
               ),

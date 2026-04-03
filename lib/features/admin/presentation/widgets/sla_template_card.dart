@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/sla_template.dart';
-import '../../../../application/sla_audit/sla_template_presets.dart';
-import 'transport_vertical_chip.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_template_view.dart';
+import 'package:veraprob/application/sla_audit/sla_template_presets.dart';
+import 'package:veraprob/features/admin/presentation/widgets/transport_vertical_chip.dart';
+
 
 /// Card widget for displaying an SLA template in the gallery.
 ///
@@ -11,7 +12,7 @@ import 'transport_vertical_chip.dart';
 /// System presets display a "Sistema" badge and only offer a "Clone" action.
 /// Org-owned templates offer Edit, Clone, and Delete actions.
 class SlaTemplateCard extends StatelessWidget {
-  final SlaTemplate template;
+  final SlaTemplateView template;
   final VoidCallback? onClone;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
@@ -113,25 +114,30 @@ class SlaTemplateCard extends StatelessWidget {
 }
 
 class _PenaltySummary extends StatelessWidget {
-  final SlaTemplate template;
+  final SlaTemplateView template;
   const _PenaltySummary({required this.template});
 
   @override
   Widget build(BuildContext context) {
-    final p = template.penalties;
     return Wrap(
       spacing: 12,
       runSpacing: 4,
       children: [
-        _MiniStat(label: 'No-Show', value: '${p.noShowPenaltyMultiplier}x'),
-        _MiniStat(label: 'Tolerância', value: '${p.delayToleranceMinutes} min'),
+        _MiniStat(
+          label: 'No-Show',
+          value: '${(template.noShowPenaltyBps / 10000).toStringAsFixed(1)}x',
+        ),
+        _MiniStat(
+          label: 'Tolerância',
+          value: '${template.delayToleranceMinutes} min',
+        ),
         _MiniStat(
           label: 'Atraso/min',
-          value: _formatCents(p.delayPenaltyPerMinute.cents),
+          value: _formatCents(template.delayPenaltyPerMinuteCents),
         ),
         _MiniStat(
           label: 'Downgrade',
-          value: _formatCents(p.downgradePenaltyFlat.cents),
+          value: _formatCents(template.downgradePenaltyFlatCents),
         ),
       ],
     );

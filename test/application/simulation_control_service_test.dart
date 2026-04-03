@@ -108,7 +108,7 @@ void main() {
             id: '1',
             tripId: 't_1',
             eventType: EventType.statusChange,
-            createdAt: DateTime.now(),
+            createdAt: DateTime.now().toUtc(),
           ),
         );
 
@@ -167,7 +167,7 @@ void main() {
             id: '2',
             tripId: 't_2',
             eventType: EventType.statusChange,
-            createdAt: DateTime.now(),
+            createdAt: DateTime.now().toUtc(),
           ),
         );
 
@@ -211,7 +211,7 @@ void main() {
           id: 'i1',
           tripId: 't_i',
           eventType: EventType.statusChange,
-          createdAt: DateTime.now(),
+          createdAt: DateTime.now().toUtc(),
         ),
       );
 
@@ -246,7 +246,7 @@ void main() {
           id: 'r1',
           tripId: 't_r',
           eventType: EventType.statusChange,
-          createdAt: DateTime.now(),
+          createdAt: DateTime.now().toUtc(),
         ),
       );
 
@@ -281,7 +281,7 @@ void main() {
           id: 'e1',
           tripId: 't1',
           eventType: EventType.statusChange,
-          createdAt: DateTime.now(),
+          createdAt: DateTime.now().toUtc(),
         ),
       );
 

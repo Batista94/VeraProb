@@ -7,10 +7,9 @@
 ///   3. Declare second plan version → contract remains active
 ///   4. Close contract → terminal state
 ///   5. Attempt to declare plan on closed contract → DomainException
-///
-/// Ledger invariants are verified at each step.
-/// All assertions use InMemory infrastructure (no Supabase required).
 library;
+
+import 'package:veraprob/domain/shared/money.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -302,8 +301,8 @@ ContractualServiceInput _makeService(DateTime start) {
     endLatitude: -23.5600,
     endLongitude: -46.6400,
     endRadiusMeters: 100,
-    contractualValue: 150.0,
-    noShowPenaltyMultiplier: 1.5,
+    contractualValue: const Money(15000),
+    noShowPenaltyBps: 15000,
   );
 }
 

@@ -83,7 +83,7 @@ class SpoofingAuditEntry extends Equatable {
       'dev': deviceId,
       'winStart': windowStart.toIso8601String(),
       'winEnd': windowEnd.toIso8601String(),
-      'score': riskScore.score,
+      'score': riskScore.scoreBps,
       'signalCount': riskScore.signals.length,
       'factCount': factsAnalyzed,
       'factIds': factIds..sort(), // Order-independent hash

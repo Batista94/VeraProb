@@ -80,7 +80,7 @@ class ContractQueryServiceInMemory implements ContractQueryService {
                 startLongitude: s.startLongitude,
                 startRadiusMeters: s.startRadiusMeters,
                 contractualValue: s.contractualValue,
-                noShowPenaltyMultiplier: s.noShowPenaltyMultiplier,
+                noShowPenaltyBps: s.noShowPenaltyBps,
               ),
             )
             .toList()
@@ -130,14 +130,12 @@ class ContractQueryServiceInMemory implements ContractQueryService {
         .where((s) => s.status == ExecutionStatus.pending)
         .length;
 
-    // SLA health: executed / total * 100
+    // SLA health: executed / total * 10,000
     final totalSets = allStates.length;
     final executedCount = allStates
         .where((s) => s.status == ExecutionStatus.executed)
         .length;
-    final slaHealthPercentage = totalSets == 0
-        ? 0.0
-        : (executedCount / totalSets) * 100.0;
+    final slaHealthBps = totalSets == 0 ? 0 : (executedCount * 10000 ~/ totalSets);
 
     return ContractSummaryView(
       id: contract.id,
@@ -151,7 +149,7 @@ class ContractQueryServiceInMemory implements ContractQueryService {
       planCount: planCount,
       activePlanVersion: activePlanVersion,
       totalSetsInProgress: totalSetsInProgress,
-      slaHealthPercentage: slaHealthPercentage,
+      slaHealthBps: slaHealthBps,
       financialCeilingCents: contract.financialCeiling?.cents,
     );
   }

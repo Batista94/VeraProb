@@ -6,8 +6,8 @@ import 'package:veraprob/domain/entities/vehicle_position.dart';
 /// Responsible for receiving dirty RawTelemetryPings and filtering out noise,
 /// impossible jumps, and converting valid pings into VehiclePositions for the State.
 class TelemetryNormalizer {
-  final double maxAccuracyMeters; // forensic-ignore: FINANCIAL-BLOCK
-  final double maxImpliedSpeedKmh; // forensic-ignore: FINANCIAL-BLOCK
+  final double maxAccuracyMeters; // Physical Metric - Double Required
+  final double maxImpliedSpeedKmh; // Physical Metric - Double Required
 
   // State to remember the last valid ping per vehicle to calculate jumps
   final Map<String, RawTelemetryPing> _lastValidPings = {};
@@ -74,15 +74,14 @@ class TelemetryNormalizer {
   /// Calculates the great-circle distance between two points on the Earth surface using the Haversine formula.
   /// Returns distance in meters.
   double _calculateDistance(
-    // forensic-ignore: FINANCIAL-BLOCK
-    double lat1, // forensic-ignore: FINANCIAL-BLOCK
-    double lon1, // forensic-ignore: FINANCIAL-BLOCK
-    double lat2, // forensic-ignore: FINANCIAL-BLOCK
-    double lon2, // forensic-ignore: FINANCIAL-BLOCK
+    double lat1, // Physical Metric - Double Required
+    double lon1, // Physical Metric - Double Required
+    double lat2, // Physical Metric - Double Required
+    double lon2, // Physical Metric - Double Required
   ) {
-    const double p =
-        0.017453292519943295; // Math.PI / 180 // forensic-ignore: FINANCIAL-BLOCK
-    final double a = // forensic-ignore: FINANCIAL-BLOCK
+    const double p = // Physical Metric - Double Required
+        0.017453292519943295; // Math.PI / 180 // Physical Metric - Double Required
+    final double a = // Physical Metric - Double Required
         0.5 -
         cos((lat2 - lat1) * p) / 2 +
         cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;

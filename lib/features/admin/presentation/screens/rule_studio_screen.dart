@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../application/sla_audit/rule_version_history_entry.dart';
-import '../../../../application/sla_audit/update_contractual_rule_command.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/contractual_rule.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../state/providers/rule_studio_providers.dart';
-import '../../../../presentation/shared/widgets/veraprob_header.dart';
-import '../../../../presentation/shared/widgets/veraprob_chip.dart';
-import 'widgets/rule_studio/rule_studio_shared.dart';
-import 'widgets/rule_studio/rule_studio_impact_panel.dart';
-import 'widgets/rule_studio/rule_studio_history_panel.dart';
+import 'package:veraprob/application/sla_audit/rule_version_history_entry.dart';
+import 'package:veraprob/application/sla_audit/update_contractual_rule_command.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/rule_studio_providers.dart';
+import 'package:veraprob/presentation/shared/widgets/veraprob_header.dart';
+import 'package:veraprob/presentation/shared/widgets/veraprob_chip.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/rule_studio/rule_studio_shared.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/rule_studio/rule_studio_impact_panel.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/rule_studio/rule_studio_history_panel.dart';
 
 // ── Screen ───────────────────────────────────────────────────────────────────
 

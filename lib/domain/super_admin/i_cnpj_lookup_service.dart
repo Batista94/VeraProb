@@ -3,7 +3,7 @@ import 'cnpj_company_data.dart';
 /// Domain interface for CNPJ lookup / enrichment.
 ///
 /// Implementations call a public CNPJ registry API (e.g. ReceitaWS) and
-/// return structured company data for auto-filling the onboarding wizard.
+/// return structured company information for auto-filling the onboarding wizard.
 ///
 /// Returns `null` when the CNPJ is not found or the service is unavailable.
 /// Never throws — callers should treat null as "no enrichment available".

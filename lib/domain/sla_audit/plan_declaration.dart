@@ -126,7 +126,7 @@ class PlanDeclaration extends Equatable {
     }
 
     final id = const Uuid().v4();
-    final event = _buildEvent(
+    final domainEvent = _buildEvent(
       organizationId: organizationId,
       id: id,
       contractId: contractId,
@@ -147,7 +147,7 @@ class PlanDeclaration extends Equatable {
       ruleSnapshot: ruleSnapshot,
       services: List.unmodifiable(services),
       shiftPatterns: const [],
-      domainEvents: [event],
+      domainEvents: [domainEvent],
     );
   }
 
@@ -204,7 +204,7 @@ class PlanDeclaration extends Equatable {
     }
 
     final id = const Uuid().v4();
-    final event = _buildEvent(
+    final domainEvent = _buildEvent(
       organizationId: organizationId,
       id: id,
       contractId: contractId,
@@ -226,7 +226,7 @@ class PlanDeclaration extends Equatable {
       cycleAnchorDateUtc: cycleAnchorDateUtc,
       services: const [],
       shiftPatterns: List.unmodifiable(shiftPatterns),
-      domainEvents: [event],
+      domainEvents: [domainEvent],
     );
   }
 

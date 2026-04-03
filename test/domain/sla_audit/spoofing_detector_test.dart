@@ -48,7 +48,7 @@ void main() {
 
       final risk = detector.analyze(facts);
 
-      expect(risk.score, 0.0);
+      expect(risk.scoreBps, 0);
       expect(risk.isSuspected(), isFalse);
     });
 
@@ -69,7 +69,7 @@ void main() {
       final risk = detector.analyze(facts);
 
       expect(risk.signals, contains(SpoofingSignal.staticPositionWhileMoving));
-      expect(risk.score, 0.5);
+      expect(risk.scoreBps, 5000);
     });
 
     test('zero entropy accuracy triggers signal', () {
@@ -87,7 +87,7 @@ void main() {
       final risk = detector.analyze(facts);
 
       expect(risk.signals, contains(SpoofingSignal.zeroEntropyAccuracy));
-      expect(risk.score, 0.4);
+      expect(risk.scoreBps, 4000);
     });
 
     test('perfect linear trajectory (constant heading) triggers signal', () {
@@ -105,7 +105,7 @@ void main() {
       final risk = detector.analyze(facts);
 
       expect(risk.signals, contains(SpoofingSignal.perfectLinearTrajectory));
-      expect(risk.score, 0.3);
+      expect(risk.scoreBps, 3000);
     });
 
     test('multiple signals combine to exceed threshold', () {
@@ -125,14 +125,14 @@ void main() {
       final risk = detector.analyze(facts);
 
       expect(risk.isSuspected(), isTrue);
-      expect(risk.score, 1.0); // 0.5 + 0.4 + 0.3 = 1.2 -> clamped to 1.0
+      expect(risk.scoreBps, 10000); // 5000 + 4000 + 3000 = 12000 -> clamped to 10000
       expect(risk.signals, hasLength(3));
     });
 
     test('insufficient data returns zero risk', () {
       final facts = [makeFact(gpsTimestamp: DateTime.now().toUtc())];
       final risk = detector.analyze(facts);
-      expect(risk.score, 0.0);
+      expect(risk.scoreBps, 0);
     });
   });
 }

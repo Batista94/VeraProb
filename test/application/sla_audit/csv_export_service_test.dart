@@ -309,7 +309,7 @@ void main() {
           executedCount: 0,
           noShowCount: 0,
           evidenceGapCount: 0,
-          complianceRate: 100.0,
+          complianceRateBps: 10000,
           packageHash: null, // Missing hash!
           hashAlgorithm: 'SHA-256',
           schemaVersion: '7.1.0',

@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/config/supabase_client.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/admin_providers.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../domain/admin/invitation.dart';
-import '../../../../domain/enums/user_role.dart';
-import '../../../../application/admin/change_user_role_command.dart';
-import '../../../../application/admin/remove_member_command.dart';
-import '../../../../application/admin/invite_user_command.dart';
-import '../../../../application/admin/revoke_invitation_command.dart';
+
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/admin_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/admin/change_user_role_command.dart';
+import 'package:veraprob/application/admin/remove_member_command.dart';
+import 'package:veraprob/application/admin/invite_user_command.dart';
+import 'package:veraprob/application/admin/revoke_invitation_command.dart';
 
 /// Screen for managing organization members and their roles.
 /// Also shows pending invitations and allows sending new invites.
@@ -671,18 +670,14 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
 
       // Fire invitation email — silent failure (link in dialog is the fallback)
       try {
+        final email = _emailController.text;
         final inviteUrl = '${Uri.base.origin}/accept-invite?token=$token';
         final orgName =
             (await widget.parentRef.read(orgSettingsProvider.future))?.name ??
             '';
-        await supabase.functions.invoke(
-          'notify-invite',
-          body: {
-            'email': _emailController.text,
-            'inviteUrl': inviteUrl,
-            'orgName': orgName,
-          },
-        );
+        await ref
+            .read(adminNotificationRepositoryProvider)
+            .notifyInvite(email: email, inviteUrl: inviteUrl, orgName: orgName);
       } catch (_) {}
 
       setState(() {

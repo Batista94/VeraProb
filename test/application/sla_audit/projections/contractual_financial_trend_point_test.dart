@@ -17,8 +17,8 @@ void main() {
     protectedRevenue: const Money(600000),
     revenueAtRisk: const Money(300000),
     lostRevenue: const Money(100000),
-    riskPercentage: 30.0,
-    lossPercentage: 10.0,
+    riskPercentageBps: 3000,
+    lossPercentageBps: 1000,
   );
 
   group('ContractualFinancialTrendPoint', () {
@@ -43,8 +43,8 @@ void main() {
       expect(p.protectedRevenue, const Money(600000));
       expect(p.revenueAtRisk, const Money(300000));
       expect(p.lostRevenue, const Money(100000));
-      expect(p.riskPercentage, 30.0);
-      expect(p.lossPercentage, 10.0);
+      expect(p.riskPercentageBps, 3000);
+      expect(p.lossPercentageBps, 1000);
     });
   });
 }

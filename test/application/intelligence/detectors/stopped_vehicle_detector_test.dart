@@ -17,14 +17,14 @@ void main() {
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
       final completedTrip = OperationalTrip(
         id: '2',
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.cancelled,
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       expect(detector.canDetect(activeTrip), isTrue);
@@ -37,7 +37,7 @@ void main() {
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.interrupted, // Triggers stoppage currently
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final warning = detector.evaluate(trip, null, []);
@@ -52,7 +52,7 @@ void main() {
         routeId: 'r1',
         vehicleId: 'v1',
         status: TripStatus.enRoute,
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final warning = detector.evaluate(trip, null, []);

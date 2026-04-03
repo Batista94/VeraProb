@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../domain/shared/money.dart';
 import '../../../domain/sla_audit/execution_status.dart';
 
 /// Read model: individual SET obligation view for lists and drill-down.
@@ -16,11 +15,15 @@ class SlaExecutionItemView extends Equatable {
   final String? plannedVehicleId;
   final String? boundVehicleId;
   final DateTime? boundAtUtc;
+
+  /// GPS Latitude - Precision Required
   final double startLatitude;
+
+  /// GPS Longitude - Precision Required
   final double startLongitude;
   final int startRadiusMeters;
-  final Money contractualValue;
-  final double noShowPenaltyMultiplier;
+  final int contractualValue;
+  final int noShowPenaltyBps;
 
   const SlaExecutionItemView({
     required this.setId,
@@ -35,12 +38,13 @@ class SlaExecutionItemView extends Equatable {
     required this.startLongitude,
     required this.startRadiusMeters,
     required this.contractualValue,
-    required this.noShowPenaltyMultiplier,
+    required this.noShowPenaltyBps,
   });
 
   /// Computed penalty value for display purposes.
   /// Formula lives here (projection layer), not in the UI.
-  Money get calculatedPenalty => contractualValue * noShowPenaltyMultiplier;
+  /// BPS: (valor * bps) ~/ 10000 (INV-2)
+  int get calculatedPenalty => (contractualValue * noShowPenaltyBps) ~/ 10000;
 
   @override
   List<Object?> get props => [
@@ -56,6 +60,6 @@ class SlaExecutionItemView extends Equatable {
     startLongitude,
     startRadiusMeters,
     contractualValue,
-    noShowPenaltyMultiplier,
+    noShowPenaltyBps,
   ];
 }

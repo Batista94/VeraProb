@@ -143,7 +143,7 @@ class _StubZoneRepository implements OperationalZoneRepository {
 /// VehicleCategory.executive (cobre Cenários 3.4, 3.5).
 ShiftPattern _buildSmokePattern() {
   final penalties = SLAPenalties.create(
-    noShowPenaltyMultiplier: 2.0,
+    noShowPenaltyBps: 20000,
     delayToleranceMinutes: 10,
     delayPenaltyPerMinute: const Money(150), // R$ 1,50/min
     downgradePenaltyFlat: const Money(25000), // R$ 250,00
@@ -383,7 +383,7 @@ void main() {
 
     test('2.1 — [domínio] SLAPenalties.toJson() contém todos os 7 campos', () {
       final penalties = SLAPenalties.create(
-        noShowPenaltyMultiplier: 2.5,
+        noShowPenaltyBps: 25000,
         delayToleranceMinutes: 15,
         delayPenaltyPerMinute: const Money(200),
         downgradePenaltyFlat: const Money(30000),
@@ -393,7 +393,7 @@ void main() {
       );
       final json = penalties.toJson();
 
-      expect(json, contains('noShowPenaltyMultiplier'));
+      expect(json, contains('noShowPenaltyBps'));
       expect(json, contains('delayToleranceMinutes'));
       expect(json, contains('delayPenaltyPerMinuteCents'));
       expect(json, contains('downgradePenaltyFlatCents'));
@@ -443,7 +443,7 @@ void main() {
       '2.3 — [domínio] SLAPenalties round-trip (toJson → fromJson) preserva valores',
       () {
         final original = SLAPenalties.create(
-          noShowPenaltyMultiplier: 2.0,
+          noShowPenaltyBps: 20000,
           delayToleranceMinutes: 10,
           delayPenaltyPerMinute: const Money(150),
           downgradePenaltyFlat: const Money(25000),
@@ -457,7 +457,7 @@ void main() {
         expect(restored.noShowThresholdMinutes, 45);
         expect(restored.earlyArrivalToleranceMinutes, 3);
         expect(restored.dwellTimeMinutes, 5);
-        expect(restored.noShowPenaltyMultiplier, 2.0);
+        expect(restored.noShowPenaltyBps, 20000);
         expect(restored.delayToleranceMinutes, 10);
         expect(restored.delayPenaltyPerMinute.cents, 150);
         expect(restored.downgradePenaltyFlat.cents, 25000);
@@ -569,7 +569,7 @@ void main() {
           'end_longitude': -46.6333,
           'end_radius_meters': 100,
           'contractual_value_cents': 50000,
-          'no_show_penalty_multiplier': 2.0,
+          'no_show_penalty_bps': 20000,
         });
 
         final state = ContractualExecutionState.create(
@@ -581,7 +581,7 @@ void main() {
           startLongitude: -46.6333,
           startRadiusMeters: 100,
           contractualValue: const Money(50000),
-          noShowPenaltyMultiplier: 2.0,
+          noShowPenaltyBps: 20000,
           windowStartUtc: baseTimeUtc.subtract(const Duration(minutes: 15)),
           windowEndUtc: baseTimeUtc.add(const Duration(minutes: 15)),
         );
@@ -768,7 +768,7 @@ void main() {
           name: 'Smoke Template $runId',
           description: 'Template criado pelo smoke 5.11',
           penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1.5,
+            noShowPenaltyBps: 15000,
             delayToleranceMinutes: 5,
             delayPenaltyPerMinute: const Money(100),
             downgradePenaltyFlat: const Money(20000),

@@ -35,7 +35,7 @@ void main() {
     required String setId,
     String contractId = 'c-1',
     Money contractualValue = const Money(10000),
-    double noShowPenaltyMultiplier = 1.5,
+    int noShowPenaltyBps = 15000,
     required DateTime windowStart,
     required DateTime windowEnd,
   }) {
@@ -48,7 +48,7 @@ void main() {
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
       windowStartUtc: windowStart,
       windowEndUtc: windowEnd,
     );
@@ -72,7 +72,7 @@ void main() {
       // windowStartUtc 2026-03-01 09:00 UTC = 2026-03-01 06:00 BRT (same day)
       final exec = makeState(
         setId: 'exec-1',
-        contractualValue: Money.fromDouble(500.0),
+        contractualValue: const Money(50000),
         windowStart: DateTime.utc(2026, 3, 1, 9, 0),
         windowEnd: DateTime.utc(2026, 3, 1, 10, 0),
       );
@@ -88,7 +88,7 @@ void main() {
 
       final snapshots = await snapshotRepo.findAll(organizationId: 'org-1');
       expect(snapshots, hasLength(1));
-      expect(snapshots.first.protectedRevenue, Money.fromDouble(500.0));
+      expect(snapshots.first.protectedRevenue, const Money(50000));
     });
 
     test('generates correct snapshot for mixed statuses', () async {
@@ -96,7 +96,7 @@ void main() {
       await executionRepo.save(
         makeState(
           setId: 'pending-1',
-          contractualValue: Money.fromDouble(200.0),
+          contractualValue: const Money(20000),
           windowStart: DateTime.utc(2026, 3, 1, 9, 0),
           windowEnd: DateTime.utc(2026, 3, 1, 10, 0),
         ),
@@ -105,7 +105,7 @@ void main() {
       // Executed
       final exec = makeState(
         setId: 'exec-1',
-        contractualValue: Money.fromDouble(300.0),
+        contractualValue: const Money(30000),
         windowStart: DateTime.utc(2026, 3, 1, 11, 0),
         windowEnd: DateTime.utc(2026, 3, 1, 12, 0),
       );
@@ -120,8 +120,8 @@ void main() {
       // NoShow
       final noShow = makeState(
         setId: 'noshow-1',
-        contractualValue: Money.fromDouble(100.0),
-        noShowPenaltyMultiplier: 1.5,
+        contractualValue: const Money(10000),
+        noShowPenaltyBps: 15000,
         windowStart: DateTime.utc(2026, 3, 1, 13, 0),
         windowEnd: DateTime.utc(2026, 3, 1, 14, 0),
       );
@@ -134,17 +134,17 @@ void main() {
       expect(snapshots, hasLength(1));
 
       final s = snapshots.first;
-      expect(s.totalContractedRevenue, Money.fromDouble(600.0));
-      expect(s.protectedRevenue, Money.fromDouble(300.0));
-      expect(s.revenueAtRisk, Money.fromDouble(200.0));
-      expect(s.lostRevenue, Money.fromDouble(150.0)); // 100 * 1.5
+      expect(s.totalContractedRevenue, const Money(60000));
+      expect(s.protectedRevenue, const Money(30000));
+      expect(s.revenueAtRisk, const Money(20000));
+      expect(s.lostRevenue, const Money(15000)); // 100 * 1.5
     });
 
     test('is idempotent (does not create duplicate snapshots)', () async {
       await executionRepo.save(
         makeState(
           setId: 'a',
-          contractualValue: Money.fromDouble(100.0),
+          contractualValue: const Money(10000),
           windowStart: DateTime.utc(2026, 3, 1, 9, 0),
           windowEnd: DateTime.utc(2026, 3, 1, 10, 0),
         ),
@@ -162,7 +162,7 @@ void main() {
         makeState(
           setId: 'c1-1',
           contractId: 'c-1',
-          contractualValue: Money.fromDouble(100.0),
+          contractualValue: const Money(10000),
           windowStart: DateTime.utc(2026, 3, 1, 9, 0),
           windowEnd: DateTime.utc(2026, 3, 1, 10, 0),
         ),
@@ -171,7 +171,7 @@ void main() {
         makeState(
           setId: 'c2-1',
           contractId: 'c-2',
-          contractualValue: Money.fromDouble(500.0),
+          contractualValue: const Money(50000),
           windowStart: DateTime.utc(2026, 3, 1, 9, 0),
           windowEnd: DateTime.utc(2026, 3, 1, 10, 0),
         ),
@@ -188,7 +188,7 @@ void main() {
         contractId: 'c-1',
       );
       expect(snapshots, hasLength(1));
-      expect(snapshots.first.totalContractedRevenue, Money.fromDouble(100.0));
+      expect(snapshots.first.totalContractedRevenue, const Money(10000));
     });
   });
 }

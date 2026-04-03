@@ -28,8 +28,8 @@ class ContractorPortalView {
   final int noShowCount;
   final int evidenceGapCount;
 
-  /// complianceRate ∈ [0.0, 100.0]
-  final double complianceRate;
+  /// complianceRateBps ∈ [0, 10000]
+  final int complianceRateBps;
 
   // ── Financial summary ──────────────────────────────────────────────────────
   final Money totalContractedRevenue;
@@ -46,7 +46,7 @@ class ContractorPortalView {
     required this.executedCount,
     required this.noShowCount,
     required this.evidenceGapCount,
-    required this.complianceRate,
+    required this.complianceRateBps,
     required this.totalContractedRevenue,
     required this.lostRevenue,
   });
@@ -74,7 +74,7 @@ class ContractorPortalView {
       executedCount: package.executedCount,
       noShowCount: package.noShowCount,
       evidenceGapCount: package.evidenceGapCount,
-      complianceRate: package.complianceRate,
+      complianceRateBps: package.complianceRateBps,
       totalContractedRevenue: package.totalContractedRevenue,
       lostRevenue: package.lostRevenue,
     );

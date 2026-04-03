@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../../core/theme/app_theme.dart';
-import '../../../../../domain/sla_audit/operational_alert.dart';
-import '../../../../../state/providers/alert_providers.dart';
-import '../../screens/widgets/investigation_modal.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/alert_providers.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 
 /// OCC panel displaying contractual operational alerts for triage.
 ///

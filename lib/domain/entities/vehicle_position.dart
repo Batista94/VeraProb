@@ -4,10 +4,10 @@ import 'package:equatable/equatable.dart';
 class VehiclePosition extends Equatable {
   final String? id;
   final String tripId;
-  final double latitude;
-  final double longitude;
-  final double? speed;
-  final double? heading;
+  final double latitude; // Physical Metric - Double Required
+  final double longitude; // Physical Metric - Double Required
+  final double? speed; // Physical Metric - Double Required
+  final double? heading; // Physical Metric - Double Required
   final DateTime timestamp;
   final String source; // 'api_public' or 'driver_app_gps'
 

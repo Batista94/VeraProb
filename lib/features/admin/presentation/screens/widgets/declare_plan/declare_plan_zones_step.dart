@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/application/admin/operational_zone_view.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 
 import '../../../widgets/zone_type_ahead_field.dart';
 
 class DeclarePlanZonesStep extends ConsumerWidget {
   final String contractorName;
-  final OperationalZone? selectedOriginZone;
+  final OperationalZoneView? selectedOriginZone;
   final String? selectedOriginZoneId;
-  final OperationalZone? selectedDestinationZone;
+  final OperationalZoneView? selectedDestinationZone;
   final String? selectedDestinationZoneId;
-  final void Function(OperationalZone? zone) onOriginChanged;
-  final void Function(OperationalZone zone) onOriginConfigured;
-  final void Function(OperationalZone? zone) onDestinationChanged;
-  final void Function(OperationalZone zone) onDestinationConfigured;
+  final void Function(OperationalZoneView? zone) onOriginChanged;
+  final void Function(OperationalZoneView zone) onOriginConfigured;
+  final void Function(OperationalZoneView? zone) onDestinationChanged;
+  final void Function(OperationalZoneView zone) onDestinationConfigured;
   final VoidCallback onSwap;
 
   const DeclarePlanZonesStep({

@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
-import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
-import 'investigation_map_panel.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_map_panel.dart';
 
 final _timeFormat = DateFormat('HH:mm:ss');
 final _dateFormat = DateFormat('dd/MM/yyyy HH:mm:ss');

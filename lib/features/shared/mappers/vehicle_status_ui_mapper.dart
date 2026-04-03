@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/enums/vehicle_status.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Presentation-layer mapper for [VehicleStatus] UI properties.
 ///

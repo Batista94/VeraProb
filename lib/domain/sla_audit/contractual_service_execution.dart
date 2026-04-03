@@ -33,12 +33,15 @@ class ContractualServiceExecution extends Equatable {
   // ── Spatial — Start Geofence ──────────────────────────────
   /// Snapshotted coordinates. For projected SETs: captured from [OperationalZone]
   /// at projection time — zone updates do NOT affect historical SETs.
+  // GPS Coordinate - Precision Required
   final double startLatitude;
+  // GPS Coordinate - Precision Required
   final double startLongitude;
   final int startRadiusMeters;
 
-  // ── Spatial — End Geofence ────────────────────────────────
+  // GPS Coordinate - Precision Required
   final double endLatitude;
+  // GPS Coordinate - Precision Required
   final double endLongitude;
   final int endRadiusMeters;
 
@@ -50,8 +53,8 @@ class ContractualServiceExecution extends Equatable {
   final Money contractualValue;
 
   /// Multiplier applied to contractualValue when the obligation
-  /// results in a NoShow. Must be >= 1.0.
-  final double noShowPenaltyMultiplier;
+  /// results in a NoShow. In basis points (e.g., 15000 = 1.5x).
+  final int noShowPenaltyBps;
 
   // ── B2B Projection metadata (null for manually-declared SETs) ──────
   /// Audit trail: ID of the origin [OperationalZone] at projection time.
@@ -92,7 +95,7 @@ class ContractualServiceExecution extends Equatable {
     required this.endRadiusMeters,
     this.plannedVehicleId,
     required this.contractualValue,
-    required this.noShowPenaltyMultiplier,
+    required this.noShowPenaltyBps,
     this.originZoneId,
     this.destinationZoneId,
     this.operationalDate,
@@ -112,15 +115,15 @@ class ContractualServiceExecution extends Equatable {
     required String contractId,
     required DateTime scheduledStartTimeUtc,
     required DateTime scheduledEndTimeUtc,
-    required double startLatitude,
-    required double startLongitude,
+    required double startLatitude, // GPS Coordinate - Precision Required
+    required double startLongitude, // GPS Coordinate - Precision Required
     required int startRadiusMeters,
-    required double endLatitude,
-    required double endLongitude,
+    required double endLatitude, // GPS Coordinate - Precision Required
+    required double endLongitude, // GPS Coordinate - Precision Required
     required int endRadiusMeters,
     String? plannedVehicleId,
     required Money contractualValue,
-    required double noShowPenaltyMultiplier,
+    required int noShowPenaltyBps,
   }) {
     if (!scheduledEndTimeUtc.isAfter(scheduledStartTimeUtc)) {
       throw const DomainException(
@@ -136,8 +139,8 @@ class ContractualServiceExecution extends Equatable {
     if (contractualValue.cents <= 0) {
       throw const DomainException('contractualValue must be greater than 0');
     }
-    if (noShowPenaltyMultiplier < 1.0) {
-      throw const DomainException('noShowPenaltyMultiplier must be >= 1.0');
+    if (noShowPenaltyBps < 10000) {
+      throw const DomainException('noShowPenaltyBps must be >= 10000 (1.0x)');
     }
 
     return ContractualServiceExecution._(
@@ -152,7 +155,7 @@ class ContractualServiceExecution extends Equatable {
       endRadiusMeters: endRadiusMeters,
       plannedVehicleId: plannedVehicleId,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
     );
   }
 
@@ -173,17 +176,17 @@ class ContractualServiceExecution extends Equatable {
     required DateTime scheduledEndTimeUtc,
     // Origin zone — coordinates snapshotted from OperationalZone
     required String originZoneId,
-    required double startLatitude,
-    required double startLongitude,
+    required double startLatitude, // GPS Coordinate - Precision Required
+    required double startLongitude, // GPS Coordinate - Precision Required
     required int startRadiusMeters,
     // Destination zone — coordinates snapshotted from OperationalZone
     required String destinationZoneId,
-    required double endLatitude,
-    required double endLongitude,
+    required double endLatitude, // GPS Coordinate - Precision Required
+    required double endLongitude, // GPS Coordinate - Precision Required
     required int endRadiusMeters,
     required Money contractualValue,
     // SLAPenalties snapshot
-    required double noShowPenaltyMultiplier,
+    required int noShowPenaltyBps,
     required int delayToleranceMinutes,
     required Money delayPenaltyPerMinute,
     required Money downgradePenaltyFlat,
@@ -203,8 +206,8 @@ class ContractualServiceExecution extends Equatable {
     if (contractualValue.cents <= 0) {
       throw const DomainException('contractualValue must be greater than 0');
     }
-    if (noShowPenaltyMultiplier < 1.0) {
-      throw const DomainException('noShowPenaltyMultiplier must be >= 1.0');
+    if (noShowPenaltyBps < 10000) {
+      throw const DomainException('noShowPenaltyBps must be >= 10000 (1.0x)');
     }
 
     return ContractualServiceExecution._(
@@ -223,7 +226,7 @@ class ContractualServiceExecution extends Equatable {
       endRadiusMeters: endRadiusMeters,
       plannedVehicleId: plannedVehicleId,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
       originZoneId: originZoneId,
       destinationZoneId: destinationZoneId,
       operationalDate: operationalDate,
@@ -242,15 +245,15 @@ class ContractualServiceExecution extends Equatable {
     required String setId,
     required DateTime scheduledStartTimeUtc,
     required DateTime scheduledEndTimeUtc,
-    required double startLatitude,
-    required double startLongitude,
+    required double startLatitude, // GPS Coordinate - Precision Required
+    required double startLongitude, // GPS Coordinate - Precision Required
     required int startRadiusMeters,
     required double endLatitude,
     required double endLongitude,
     required int endRadiusMeters,
     String? plannedVehicleId,
     required Money contractualValue,
-    required double noShowPenaltyMultiplier,
+    required int noShowPenaltyBps,
     String? originZoneId,
     String? destinationZoneId,
     DateTime? operationalDate,
@@ -271,7 +274,7 @@ class ContractualServiceExecution extends Equatable {
       endRadiusMeters: endRadiusMeters,
       plannedVehicleId: plannedVehicleId,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
       originZoneId: originZoneId,
       destinationZoneId: destinationZoneId,
       operationalDate: operationalDate,
@@ -316,12 +319,14 @@ class ContractualServiceExecution extends Equatable {
   }
 
   static void _validateLatitude(double value, String fieldName) {
+    // GPS Coordinate - Precision Required
     if (value < -90 || value > 90) {
       throw DomainException('$fieldName must be between -90 and 90');
     }
   }
 
   static void _validateLongitude(double value, String fieldName) {
+    // GPS Coordinate - Precision Required
     if (value < -180 || value > 180) {
       throw DomainException('$fieldName must be between -180 and 180');
     }

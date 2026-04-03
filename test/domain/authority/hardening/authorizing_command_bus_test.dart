@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:veraprob/application/authority/authorizing_command_bus.dart';
-import 'package:veraprob/domain/authority/commands/operational_command.dart';
 import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
 import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
@@ -30,7 +29,7 @@ void main() {
     AuthorizationContext mockSession() => AuthorizationContext(
       actorId: const ActorId('test-actor'),
       roleId: const RoleId('test-role'),
-      capturedAt: DateTime.now(),
+      capturedAt: DateTime.now().toUtc(),
     );
 
     setUp(() {

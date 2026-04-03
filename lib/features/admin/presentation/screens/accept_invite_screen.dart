@@ -2,11 +2,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:web/web.dart' as web;
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../state/providers/admin_providers.dart';
+import '../../../../state/providers/auth_providers.dart';
 import '../../../../application/admin/accept_invitation_command.dart';
 import '../lock_screen.dart';
 
@@ -85,23 +85,21 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
     });
 
     try {
-      final supabase = Supabase.instance.client;
+      final authRepo = ref.read(authRepositoryProvider);
 
       // Sign in (existing user) or sign up (new user)
       String userId;
       try {
-        final res = await supabase.auth.signInWithPassword(
+        userId = await authRepo.signInWithPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-        userId = res.user!.id;
-      } on AuthException {
+      } catch (_) {
         // If sign-in fails, attempt sign-up (new user created by invitation)
-        final res = await supabase.auth.signUp(
+        userId = await authRepo.signUpWithPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-        userId = res.user!.id;
       }
 
       // Accept the invitation — provisions user_roles atomically
@@ -111,7 +109,7 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
 
       // Refresh the session so the JWT hook re-runs with the now-populated
       // user_roles row — this injects organization_id + role into the token.
-      await supabase.auth.refreshSession();
+      await authRepo.refreshSession();
 
       if (!mounted) return;
       // Force clean URL redirect via browser API to clear '?token=...'

@@ -2,27 +2,28 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/services/logger_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/jwt_utils.dart';
-import '../../../../infrastructure/super_admin/supabase_mfa_repository.dart';
+import '../../../../infrastructure/providers/mfa_providers.dart';
+import '../../../../state/providers/auth_providers.dart';
 import '../../super_admin/presentation/screens/mfa_challenge_screen.dart';
 import '../../super_admin/presentation/screens/mfa_enrollment_screen.dart';
 import '../../super_admin/presentation/super_admin_shell.dart';
 import 'admin_home.dart';
 
-class AdminLockScreen extends StatefulWidget {
+class AdminLockScreen extends ConsumerStatefulWidget {
   const AdminLockScreen({super.key});
 
   @override
-  State<AdminLockScreen> createState() => _AdminLockScreenState();
+  ConsumerState<AdminLockScreen> createState() => _AdminLockScreenState();
 }
 
-class _AdminLockScreenState extends State<AdminLockScreen> {
+class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final _supabase = Supabase.instance.client;
 
   bool _isLoading = false;
   String? _error;
@@ -31,11 +32,10 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
   void initState() {
     super.initState();
     // Auto-login if session already exists
-    _supabase.auth.onAuthStateChange.listen((data) {
+    ref.read(authRepositoryProvider).authStatusStream.listen((isAuthenticated) {
       if (!mounted) return;
-      final session = data.session;
-      if (session != null) {
-        _routeAfterAuth(session);
+      if (isAuthenticated) {
+        _routeAfterAuth();
       }
     });
   }
@@ -48,7 +48,10 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
   ///   - AAL2 verified → SuperAdminShell
   ///
   /// Regular tenant users → AdminHome (unchanged).
-  Future<void> _routeAfterAuth(Session session) async {
+  Future<void> _routeAfterAuth() async {
+    final session = ref.read(authStateProvider).valueOrNull?.session;
+    if (session == null) return;
+
     final claims = decodeJwtPayload(session.accessToken);
     final appMeta = claims['app_metadata'] as Map<String, dynamic>?;
     final raw = appMeta?['super_admin'];
@@ -84,7 +87,7 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
     }
 
     try {
-      final mfaRepo = SupabaseMfaRepository(_supabase);
+      final mfaRepo = ref.read(mfaRepositoryProvider);
       final mfaStatus = await mfaRepo.getMfaStatus();
 
       if (!mounted) return;
@@ -101,11 +104,6 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
       await Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (_) => destination));
-    } on AuthApiException catch (e) {
-      if (kDebugMode) {
-        debugPrint('[AUTH] MFA AuthApiException: ${e.message}');
-      }
-      rethrow;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[AUTH] MFA status check failed: $e');
@@ -133,21 +131,14 @@ class _AdminLockScreenState extends State<AdminLockScreen> {
     });
 
     try {
-      final response = await _supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      await ref
+          .read(authRepositoryProvider)
+          .signInWithPassword(email: email, password: password);
       LoggerService().security('Admin Access Granted via Supabase: $email');
-      // Navigation handled by onAuthStateChange listener, but also route directly
-      // in case the listener fires before the widget re-renders.
-      if (mounted && response.session != null) {
-        await _routeAfterAuth(response.session!);
-      }
-    } on AuthException catch (e) {
-      LoggerService().security('Admin Access Failed: ${e.message}');
-      setState(() => _error = 'Credenciais Incorretas');
+      // Navigation handled by authStatusStream listener in initState.
     } catch (e) {
-      setState(() => _error = 'Erro interno inesperado');
+      LoggerService().security('Admin Access Failed: $e');
+      setState(() => _error = 'Credenciais Incorretas');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

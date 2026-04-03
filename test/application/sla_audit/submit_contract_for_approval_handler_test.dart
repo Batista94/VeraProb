@@ -90,7 +90,7 @@ void main() {
         type: 'TEST',
         contractId: 'contract-1',
         planVersion: 0,
-        occurredAtUtc: DateTime.now(),
+        occurredAtUtc: DateTime.now().toUtc(),
         payload: {},
       ),
     );

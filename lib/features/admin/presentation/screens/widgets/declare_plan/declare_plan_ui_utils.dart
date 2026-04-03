@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/sla_template.dart';
-import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_template_view.dart';
+import 'package:veraprob/application/sla_audit/projections/penalties_form_data.dart';
 import 'package:veraprob/application/sla_audit/sla_template_presets.dart';
 import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 import 'package:veraprob/features/admin/presentation/widgets/transport_vertical_chip.dart';
@@ -86,7 +86,7 @@ class SectionHeader extends StatelessWidget {
 }
 
 class TemplateTile extends StatelessWidget {
-  final SlaTemplate template;
+  final SlaTemplateView template;
   final VoidCallback onTap;
 
   const TemplateTile({super.key, required this.template, required this.onTap});
@@ -124,9 +124,10 @@ class TemplateTile extends StatelessWidget {
     );
   }
 
-  String _penaltySummary(SLAPenalties p) {
-    final delay = (p.delayPenaltyPerMinute.cents / 100.0).toStringAsFixed(2);
-    return '${p.noShowPenaltyMultiplier}x no-show · '
+  String _penaltySummary(PenaltiesFormData p) {
+    final delay = (p.delayPenaltyPerMinuteCents / 100.0).toStringAsFixed(2);
+    final multiplier = (p.noShowPenaltyBps / 10000.0).toStringAsFixed(1);
+    return '${multiplier}x no-show · '
         '${p.delayToleranceMinutes}min tol · '
         'R\$ $delay/min atraso';
   }

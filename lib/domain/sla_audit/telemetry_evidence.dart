@@ -6,7 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import 'domain_exception.dart';
 
-/// Domain entity representing an individual telemetry data point captured
+/// Domain entity representing an individual telemetry information point captured
 /// during a contractual service execution.
 ///
 /// Evidence forms a cryptographic hash chain — each record commits to the
@@ -53,8 +53,8 @@ class TelemetryEvidence extends Equatable {
   final DateTime capturedAtUtc;
 
   // ── Geospatial payload ───────────────────────────────────────────────────
-  final double rawLatitude;
-  final double rawLongitude;
+  final double rawLatitude; // Physical Metric - Double Required
+  final double rawLongitude; // Physical Metric - Double Required
 
   /// Speed in centimetres per second (integer). Null if unavailable.
   /// INV-2: stored as integer, not float, to avoid floating-point imprecision.
@@ -91,8 +91,8 @@ class TelemetryEvidence extends Equatable {
     required String setId,
     required String vehicleId,
     required DateTime capturedAtUtc,
-    required double rawLatitude,
-    required double rawLongitude,
+    required double rawLatitude, // Physical Metric - Double Required
+    required double rawLongitude, // Physical Metric - Double Required
     int? rawSpeedCms,
     required String sourceType,
     required String previousEvidenceHash,
@@ -165,8 +165,8 @@ class TelemetryEvidence extends Equatable {
     required String setId,
     required String vehicleId,
     required DateTime capturedAtUtc,
-    required double rawLatitude,
-    required double rawLongitude,
+    required double rawLatitude, // Physical Metric - Double Required
+    required double rawLongitude, // Physical Metric - Double Required
     int? rawSpeedCms,
     required String sourceType,
     required String contentHash,
@@ -221,8 +221,8 @@ class TelemetryEvidence extends Equatable {
     required String setId,
     required String vehicleId,
     required DateTime capturedAtUtc,
-    required double rawLatitude,
-    required double rawLongitude,
+    required double rawLatitude, // Physical Metric - Double Required
+    required double rawLongitude, // Physical Metric - Double Required
     required int? rawSpeedCms,
     required String sourceType,
   }) {

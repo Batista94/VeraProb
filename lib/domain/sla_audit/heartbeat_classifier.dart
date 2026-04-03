@@ -14,21 +14,21 @@ import 'heartbeat_classification.dart';
 /// No Flutter or Supabase dependencies (INV-18).
 class HeartbeatClassifier {
   static const int _signalLostThresholdSeconds = 90;
-  static const double _tamperRatioThreshold = 0.8;
-  static const double _networkIssueRatioThreshold = 0.3;
+  static const int _tamperBpsThreshold = 8000;
+  static const int _networkIssueBpsThreshold = 3000;
 
   const HeartbeatClassifier();
 
   /// Classifies the device heartbeat given [gapSeconds] elapsed since last
-  /// ping and [fleetActiveRatio] (0.0–1.0) of the fleet still reporting.
-  HeartbeatClassification classify(int gapSeconds, double fleetActiveRatio) {
+  /// ping and [fleetActiveBps] (0–10,000) of the fleet still reporting.
+  HeartbeatClassification classify(int gapSeconds, int fleetActiveBps) {
     if (gapSeconds <= _signalLostThresholdSeconds) {
       return HeartbeatClassification.normal;
     }
-    if (fleetActiveRatio >= _tamperRatioThreshold) {
+    if (fleetActiveBps >= _tamperBpsThreshold) {
       return HeartbeatClassification.deviceTamper;
     }
-    if (fleetActiveRatio <= _networkIssueRatioThreshold) {
+    if (fleetActiveBps <= _networkIssueBpsThreshold) {
       return HeartbeatClassification.networkIssue;
     }
     return HeartbeatClassification.unknown;

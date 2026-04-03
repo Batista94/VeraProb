@@ -12,7 +12,7 @@ abstract final class SmartDefaults {
   static SLAPenalties defaultsFor(TransportVertical vertical) {
     return switch (vertical) {
       TransportVertical.fretamento => SLAPenalties.create(
-        noShowPenaltyMultiplier: 2.0,
+        noShowPenaltyBps: 20000,
         delayToleranceMinutes: 15,
         delayPenaltyPerMinute: const Money(100),
         downgradePenaltyFlat: const Money(15000),
@@ -23,7 +23,7 @@ abstract final class SmartDefaults {
         baseTripValue: const Money(50000),
       ),
       TransportVertical.cargaSeca => SLAPenalties.create(
-        noShowPenaltyMultiplier: 1.5,
+        noShowPenaltyBps: 15000,
         delayToleranceMinutes: 30,
         delayPenaltyPerMinute: const Money(50),
         downgradePenaltyFlat: const Money(5000),
@@ -34,7 +34,7 @@ abstract final class SmartDefaults {
         baseTripValue: const Money(80000),
       ),
       TransportVertical.cargaRefrigerada => SLAPenalties.create(
-        noShowPenaltyMultiplier: 2.5,
+        noShowPenaltyBps: 25000,
         delayToleranceMinutes: 10,
         delayPenaltyPerMinute: const Money(200),
         downgradePenaltyFlat: const Money(20000),
@@ -45,7 +45,7 @@ abstract final class SmartDefaults {
         baseTripValue: const Money(120000),
       ),
       TransportVertical.transferenciaFuncionarios => SLAPenalties.create(
-        noShowPenaltyMultiplier: 2.0,
+        noShowPenaltyBps: 20000,
         delayToleranceMinutes: 10,
         delayPenaltyPerMinute: const Money(150),
         downgradePenaltyFlat: const Money(10000),
@@ -56,7 +56,7 @@ abstract final class SmartDefaults {
         baseTripValue: const Money(40000),
       ),
       TransportVertical.escolar => SLAPenalties.create(
-        noShowPenaltyMultiplier: 3.0,
+        noShowPenaltyBps: 30000,
         delayToleranceMinutes: 5,
         delayPenaltyPerMinute: const Money(200),
         downgradePenaltyFlat: const Money(15000),
@@ -67,7 +67,7 @@ abstract final class SmartDefaults {
         baseTripValue: const Money(35000),
       ),
       TransportVertical.custom => SLAPenalties.create(
-        noShowPenaltyMultiplier: 1.5,
+        noShowPenaltyBps: 15000,
         delayToleranceMinutes: 15,
         delayPenaltyPerMinute: const Money(50),
         downgradePenaltyFlat: const Money(5000),

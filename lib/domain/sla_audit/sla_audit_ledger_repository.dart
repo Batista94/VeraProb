@@ -9,7 +9,7 @@ import 'sla_ledger_entry.dart';
 /// Implementations must guarantee append-only semantics and monotonic ordering.
 abstract class SlaAuditLedgerRepository {
   /// Appends a forensic entry to the ledger.
-  /// Returns the generated event UUID for causal linkage.
+  /// Returns the generated factEvent UUID for causal linkage.
   Future<String> append(SlaLedgerEntry entry);
 
   /// Retrieves the sequence ID of the most recent entry in the ledger.

@@ -6,13 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web/web.dart' as web;
 
-import '../../../../application/sla_audit/justification/submit_justification_command.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/justification/justification_category.dart';
-import '../../../../domain/sla_audit/justification/justification_submission_token.dart';
-import '../../../../infrastructure/sla_audit/justification/justification_evidence_storage_service.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../state/providers/justification_providers.dart';
+import 'package:veraprob/application/sla_audit/justification/submit_justification_command.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/infrastructure/sla_audit/justification/justification_evidence_storage_service.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/justification_providers.dart';
 
 /// Overlay dialog for submitting a contractor justification.
 ///
@@ -278,7 +277,7 @@ class _JustificationSubmissionFormState
       // Upload evidence files and collect hashes
       final hashes = <String>[];
       if (_files.isNotEmpty) {
-        final storage = JustificationEvidenceStorageService();
+        final storage = ref.read(justificationStorageServiceProvider);
         for (final f in _files) {
           if (widget.token != null) {
             // Driver path: get signed URL
@@ -439,7 +438,10 @@ class _EvidenceSection extends StatelessWidget {
             (e) => ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.insert_drive_file_outlined, size: 18),
+              leading: const Icon(
+                Icons.insert_drive_file_outlined,
+                size: 18,
+              ),
               title: Text(e.value.name, style: const TextStyle(fontSize: 13)),
               subtitle: Text(
                 '${e.value.hash.substring(0, 16)}...',

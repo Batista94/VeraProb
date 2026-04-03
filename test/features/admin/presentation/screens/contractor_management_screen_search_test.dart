@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
 import 'package:veraprob/features/admin/presentation/screens/contractor_management_screen.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
 
 final _now = DateTime.utc(2026, 1, 1);
 
 final _contractors = [
-  Contractor(
+  ContractorView(
     id: '1',
     organizationId: 'org-1',
     name: 'ACME Transportes',
@@ -18,7 +18,7 @@ final _contractors = [
     contactName: 'Carlos',
     createdAtUtc: _now,
   ),
-  Contractor(
+  ContractorView(
     id: '2',
     organizationId: 'org-1',
     name: 'Beta Logística',
@@ -27,7 +27,7 @@ final _contractors = [
     contactName: 'Ana',
     createdAtUtc: _now,
   ),
-  Contractor(
+  ContractorView(
     id: '3',
     organizationId: 'org-1',
     name: 'Gama Fretes',

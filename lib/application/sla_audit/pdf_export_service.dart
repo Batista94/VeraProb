@@ -23,7 +23,7 @@ class PdfExportService {
   /// Generates a PDF document as raw bytes.
   ///
   /// **IMPORTANT (INV-3):** [package.generatedAtUtc] is used for the timestamp
-  /// in the document — this service does NOT call [DateTime.now()].
+  /// in the document — this service does NOT call [DateTime.now().toUtc()].
   ///
   /// Throws [DomainException] if the package is not sealed (INV-18).
   Future<List<int>> generatePdf({
@@ -132,7 +132,7 @@ class PdfExportService {
                 ['Receita Perdida (Penalidades)', _fmtBrl(package.lostRevenue)],
                 [
                   'Taxa de Conformidade',
-                  '${package.complianceRate.toStringAsFixed(1)}%',
+                  '${(package.complianceRateBps / 100.0).toStringAsFixed(1)}%',
                 ],
                 ['Total de Obrigações', '${package.totalObligations}'],
                 ['Executadas', '${package.executedCount}'],

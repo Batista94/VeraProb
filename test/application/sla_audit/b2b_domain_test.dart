@@ -76,7 +76,7 @@ void main() {
           originZoneId: z1.id,
           destinationZoneId: z2.id,
           penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1.0,
+            noShowPenaltyBps: 10000,
             delayToleranceMinutes: 15,
             delayPenaltyPerMinute: const Money(100),
             downgradePenaltyFlat: const Money(5000),
@@ -152,7 +152,7 @@ void main() {
           originZoneId: 'z1',
           destinationZoneId: 'z2',
           penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1,
+            noShowPenaltyBps: 10000,
             delayToleranceMinutes: 15,
             delayPenaltyPerMinute: const Money(100),
             downgradePenaltyFlat: const Money(100),
@@ -186,7 +186,7 @@ void main() {
           originZoneId: z1.id,
           destinationZoneId: z1.id,
           penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1.0,
+            noShowPenaltyBps: 10000,
             delayToleranceMinutes: 15,
             delayPenaltyPerMinute: const Money(100),
             downgradePenaltyFlat: const Money(100),

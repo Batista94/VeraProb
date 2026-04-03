@@ -66,8 +66,8 @@ void main() {
     protectedRevenue: Money.fromDouble(500.0),
     revenueAtRisk: Money.fromDouble(300.0),
     lostRevenue: Money.fromDouble(200.0),
-    riskPercentage: 30.0,
-    lossPercentage: 20.0,
+    riskPercentageBps: 3000,
+    lossPercentageBps: 2000,
   );
 
   group('SlaFinancialImpactScreen', () {

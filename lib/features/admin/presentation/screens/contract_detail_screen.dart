@@ -7,8 +7,7 @@ import 'package:veraprob/application/sla_audit/projections/contract_detail_view.
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/submit_contract_for_approval_command.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
-import 'package:veraprob/domain/sla_audit/execution_status.dart';
-import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/presentation/shared/widgets/veraprob_header.dart';
@@ -270,7 +269,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               ),
               _MetaItem(
                 label: 'SLA health',
-                value: '${s.slaHealthPercentage.toStringAsFixed(1)}%',
+                value: '${(s.slaHealthBps / 100).toStringAsFixed(1)}%',
               ),
               if (s.activatedAtUtc != null)
                 _MetaItem(
@@ -436,7 +435,7 @@ class _ExecutionsTab extends StatelessWidget {
         ),
         DataCell(
           Text(
-            _currencyFormat.format(e.contractualValue.toDouble()),
+            _currencyFormat.format(e.contractualValue / 100.0),
             style: const TextStyle(fontSize: 12),
           ),
         ),
@@ -493,7 +492,7 @@ class _FinancialTab extends StatelessWidget {
 
 class _KpiCard extends StatelessWidget {
   final String label;
-  final Money value;
+  final int value;
   final Color color;
   final IconData icon;
 
@@ -530,7 +529,7 @@ class _KpiCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                _currencyFormat.format(value.toDouble()),
+                _currencyFormat.format(value / 100.0),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,

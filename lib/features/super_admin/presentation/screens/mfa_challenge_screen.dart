@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/infrastructure/providers/mfa_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/super_admin/mfa_verification_result.dart';
-import '../../../../infrastructure/providers/mfa_providers.dart';
-import '../../../admin/presentation/lock_screen.dart';
-import '../super_admin_shell.dart';
+import 'package:veraprob/features/admin/presentation/lock_screen.dart';
+import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
+
 
 /// TOTP challenge screen for SuperAdmin login (INV-6).
 ///
@@ -141,7 +142,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
   }
 
   void _signOutAndReturn() {
-    Supabase.instance.client.auth.signOut();
+    ref.read(authRepositoryProvider).signOut();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AdminLockScreen()),
       (_) => false,

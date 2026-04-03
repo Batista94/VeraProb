@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/week_cycle.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 
 import 'declare_plan_ui_utils.dart';
@@ -147,7 +147,7 @@ class ReviewStep extends ConsumerWidget {
                       icon: Icons.warning_amber_rounded,
                       label: 'No-Show',
                       value:
-                          '${d.noShowMultiplier.toStringAsFixed(1)}x valor base  ·  Teto: ${d.noShowThresholdMinutes} min',
+                          '${(d.noShowPenaltyBps / 10000).toStringAsFixed(1)}x valor base  ·  Teto: ${d.noShowThresholdMinutes} min',
                     ),
                     ReviewRow(
                       icon: Icons.money_off,
@@ -225,10 +225,8 @@ class _RiskSummary extends ConsumerWidget {
       final tripsPerMonth = d.selectedDays.length * multiplier;
 
       final revenue = (d.baseValueCents * tripsPerMonth).round();
-      final noShowExposure =
-          (d.baseValueCents * d.noShowMultiplier * tripsPerMonth).round();
-
-      final noShowPenalty = (d.baseValueCents * d.noShowMultiplier).round();
+      final noShowPenalty = (d.baseValueCents * d.noShowPenaltyBps) ~/ 10000;
+      final noShowExposure = (noShowPenalty * tripsPerMonth).round();
       final delayPenaltyCeiling =
           d.delayPenaltyCentsPerMinute * d.noShowThresholdMinutes;
       final maxTripPenalty = noShowPenalty > delayPenaltyCeiling

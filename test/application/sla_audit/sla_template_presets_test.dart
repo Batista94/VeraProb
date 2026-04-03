@@ -39,7 +39,7 @@ void main() {
 
     test('cada preset tem penalties com valores válidos', () {
       for (final p in SlaTemplatePresets.systemPresets()) {
-        expect(p.penalties.noShowPenaltyMultiplier, greaterThanOrEqualTo(1.0));
+        expect(p.penalties.noShowPenaltyBps, greaterThanOrEqualTo(10000));
         expect(p.penalties.delayPenaltyPerMinute.cents, greaterThan(0));
         expect(p.penalties.downgradePenaltyFlat.cents, greaterThan(0));
       }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/services/logger_service.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../shared/domain/entities/driver.dart';
-import '../../../shared/providers.dart';
+import 'package:veraprob/core/services/logger_service.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/features/shared/providers.dart';
+
 
 class DriverFormDrawer extends ConsumerStatefulWidget {
   final VoidCallback onClose;
@@ -68,7 +69,7 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
 
     try {
       final newDriver = Driver(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: DateTime.now().toUtc().millisecondsSinceEpoch.toString(),
         organizationId: '', // injected by repository from JWT on INSERT
         name: _nameController.text.trim(),
         licenseNumber: _cnhController.text.trim(),

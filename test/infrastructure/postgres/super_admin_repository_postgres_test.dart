@@ -45,7 +45,10 @@ CreateOrganizationCommand _testCmd(String cnpj) => CreateOrganizationCommand(
 String _uniqueCnpj() {
   // millis desde epoch (~13 dígitos em 2026). Completa com zeros à esquerda
   // e pega os últimos 14 — garante unicidade sem RangeError.
-  final ts = DateTime.now().millisecondsSinceEpoch.toString().padLeft(14, '0');
+  final ts = DateTime.now().toUtc().millisecondsSinceEpoch.toString().padLeft(
+    14,
+    '0',
+  );
   return ts.substring(ts.length - 14);
 }
 
@@ -80,7 +83,7 @@ Future<String> _ensureUser(
       'Authorization': 'Bearer $serviceRoleKey',
     },
   );
-  
+
   final decoded = jsonDecode(search.body);
   List users;
   if (decoded is List) {
@@ -422,7 +425,7 @@ void main() async {
             'id': _uuid.v4(),
             'organization_id': orgId,
             'plate':
-                'TST${DateTime.now().millisecondsSinceEpoch % 9000 + 1000}',
+                'TST${DateTime.now().toUtc().millisecondsSinceEpoch % 9000 + 1000}',
             'status': 'available',
           });
 
@@ -432,7 +435,7 @@ void main() async {
               'id': _uuid.v4(),
               'organization_id': orgId,
               'plate':
-                  'BLK${DateTime.now().millisecondsSinceEpoch % 9000 + 1000}',
+                  'BLK${DateTime.now().toUtc().millisecondsSinceEpoch % 9000 + 1000}',
               'status': 'available',
             }),
             throwsException,
@@ -494,91 +497,85 @@ void main() async {
       // not just the DB. Unit-level coverage is in
       // test/infrastructure/super_admin/supabase_super_admin_repository_test.dart
 
-      group(
-        'getAllTenantHealth',
-        () {
-          test('retorna lista de TenantHealthSnapshot', () async {
-            // Cria uma org de teste para garantir que a view tenha pelo menos uma linha
+      group('getAllTenantHealth', () {
+        test('retorna lista de TenantHealthSnapshot', () async {
+          // Cria uma org de teste para garantir que a view tenha pelo menos uma linha
+          final cnpj = _uniqueCnpj();
+          await repo.createOrganization(_testCmd(cnpj));
+
+          final snapshots = await superAdminRepo.getAllTenantHealth();
+
+          expect(snapshots, isA<List<TenantHealthSnapshot>>());
+          expect(snapshots, isNotEmpty);
+
+          for (final s in snapshots) {
+            expect(s.id, isNotEmpty);
+            expect(s.name, isNotEmpty);
+          }
+        });
+
+        test(
+          'org recém-criada aparece na view com active_contract_count = 0',
+          () async {
             final cnpj = _uniqueCnpj();
-            await repo.createOrganization(_testCmd(cnpj));
+            final orgId = await repo.createOrganization(_testCmd(cnpj));
 
             final snapshots = await superAdminRepo.getAllTenantHealth();
+            final match = snapshots.where((s) => s.id == orgId).toList();
 
-            expect(snapshots, isA<List<TenantHealthSnapshot>>());
-            expect(snapshots, isNotEmpty);
-
-            for (final s in snapshots) {
-              expect(s.id, isNotEmpty);
-              expect(s.name, isNotEmpty);
-            }
-          });
-
-          test(
-            'org recém-criada aparece na view com active_contract_count = 0',
-            () async {
-              final cnpj = _uniqueCnpj();
-              final orgId = await repo.createOrganization(_testCmd(cnpj));
-
-              final snapshots = await superAdminRepo.getAllTenantHealth();
-              final match = snapshots.where((s) => s.id == orgId).toList();
-
-              expect(
-                match,
-                isNotEmpty,
-                reason: 'Org recém-criada deve aparecer na health view',
-              );
-              expect(match.first.activeContractCount, equals(0));
-              expect(match.first.openCriticalAlertCount, equals(0));
-            },
-          );
-        },
-      );
+            expect(
+              match,
+              isNotEmpty,
+              reason: 'Org recém-criada deve aparecer na health view',
+            );
+            expect(match.first.activeContractCount, equals(0));
+            expect(match.first.openCriticalAlertCount, equals(0));
+          },
+        );
+      });
 
       // ── getSystemAuditLog ──────────────────────────────────────────────────
       // NOTE (Phase 9.6): Same Edge Function requirement as getAllTenantHealth.
 
-      group(
-        'getSystemAuditLog',
-        () {
-          test('retorna lista sem filtro', () async {
-            final logs = await superAdminRepo.getSystemAuditLog(limit: 10);
-            expect(logs, isA<List<SystemAuditLogEntry>>());
+      group('getSystemAuditLog', () {
+        test('retorna lista sem filtro', () async {
+          final logs = await superAdminRepo.getSystemAuditLog(limit: 10);
+          expect(logs, isA<List<SystemAuditLogEntry>>());
+        });
+
+        test('filtra por organization_id corretamente', () async {
+          final cnpj = _uniqueCnpj();
+          final orgId = await repo.createOrganization(_testCmd(cnpj));
+
+          // Insere entrada de log vinculada à org de teste
+          await serviceRoleClient.from('system_audit_log').insert({
+            'event_type': 'SUPER_ADMIN_TEST',
+            'severity': 'info',
+            'organization_id': orgId,
+            'source': 'test_suite',
           });
 
-          test('filtra por organization_id corretamente', () async {
-            final cnpj = _uniqueCnpj();
-            final orgId = await repo.createOrganization(_testCmd(cnpj));
+          final filtered = await superAdminRepo.getSystemAuditLog(
+            organizationId: orgId,
+            limit: 50,
+          );
 
-            // Insere entrada de log vinculada à org de teste
-            await serviceRoleClient.from('system_audit_log').insert({
-              'event_type': 'SUPER_ADMIN_TEST',
-              'severity': 'info',
-              'organization_id': orgId,
-              'source': 'test_suite',
-            });
+          expect(filtered, isNotEmpty);
+          expect(
+            filtered.every((e) => e.organizationId == orgId),
+            isTrue,
+            reason: 'Todos os logs filtrados devem pertencer à org',
+          );
+        });
 
-            final filtered = await superAdminRepo.getSystemAuditLog(
-              organizationId: orgId,
-              limit: 50,
-            );
-
-            expect(filtered, isNotEmpty);
-            expect(
-              filtered.every((e) => e.organizationId == orgId),
-              isTrue,
-              reason: 'Todos os logs filtrados devem pertencer à org',
-            );
-          });
-
-          test('filtra por severity corretamente', () async {
-            final logs = await superAdminRepo.getSystemAuditLog(
-              severity: 'error',
-              limit: 20,
-            );
-            expect(logs.every((e) => e.severity == 'error'), isTrue);
-          });
-        },
-      );
+        test('filtra por severity corretamente', () async {
+          final logs = await superAdminRepo.getSystemAuditLog(
+            severity: 'error',
+            limit: 20,
+          );
+          expect(logs.every((e) => e.severity == 'error'), isTrue);
+        });
+      });
     },
   );
 }

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/logger_service.dart';
-import '../../../domain/enums/user_role.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import '../../../state/providers/auth_providers.dart';
-import '../../shared/domain/entities/driver.dart';
 import '../../shared/providers.dart';
 import '../providers/drivers_provider.dart';
 import 'widgets/driver_form_drawer.dart';

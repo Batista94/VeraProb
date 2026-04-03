@@ -8,8 +8,8 @@ class ExecutionBoundEvent extends DomainEvent {
   final int planVersion;
   final String vehicleId;
   final DateTime bindingTimestampUtc;
-  final double bindingLatitude;
-  final double bindingLongitude;
+  final double bindingLatitude; // Physical Metric - Double Required
+  final double bindingLongitude; // Physical Metric - Double Required
 
   const ExecutionBoundEvent({
     required super.organizationId,
@@ -220,7 +220,7 @@ class SanctionDisputedEvent extends DomainEvent {
 
 // ── Justification Events (Phase 9.8.J) ──────────────────────────────────────
 
-/// Emitted when a contractor/driver submits a justification for a SLA event.
+/// Emitted when a contractor/driver submits a justification for a SLA factEvent.
 class JustificationSubmittedEvent extends DomainEvent {
   final String justificationId;
   final String setId;

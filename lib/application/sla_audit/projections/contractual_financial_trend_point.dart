@@ -14,8 +14,8 @@ class ContractualFinancialTrendPoint extends Equatable {
   final Money protectedRevenue;
   final Money revenueAtRisk;
   final Money lostRevenue;
-  final double riskPercentage;
-  final double lossPercentage;
+  final int riskPercentageBps;
+  final int lossPercentageBps;
 
   const ContractualFinancialTrendPoint({
     required this.dateUtc,
@@ -25,8 +25,8 @@ class ContractualFinancialTrendPoint extends Equatable {
     required this.protectedRevenue,
     required this.revenueAtRisk,
     required this.lostRevenue,
-    required this.riskPercentage,
-    required this.lossPercentage,
+    required this.riskPercentageBps,
+    required this.lossPercentageBps,
   });
 
   @override
@@ -38,7 +38,7 @@ class ContractualFinancialTrendPoint extends Equatable {
     protectedRevenue,
     revenueAtRisk,
     lostRevenue,
-    riskPercentage,
-    lossPercentage,
+    riskPercentageBps,
+    lossPercentageBps,
   ];
 }

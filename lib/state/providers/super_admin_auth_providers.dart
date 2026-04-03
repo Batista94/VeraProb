@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/config/supabase_client.dart';
 import '../../core/utils/jwt_utils.dart';
-import 'auth_providers.dart';
 import '../../domain/enums/user_role.dart';
+import '../../domain/super_admin/i_mfa_repository.dart';
+import '../../infrastructure/super_admin/supabase_mfa_repository.dart';
+import 'auth_providers.dart';
 
 /// Returns true if the current authenticated user is a SuperAdmin.
 ///
@@ -46,4 +49,14 @@ final isSuperAdminAal2Provider = Provider<bool>((ref) {
 final superAdminRoleProvider = Provider<UserRole?>((ref) {
   final isSuperAdmin = ref.watch(isSuperAdminProvider);
   return isSuperAdmin ? UserRole.superAdmin : null;
+});
+
+/// Riverpod provider for [IMfaRepository].
+///
+/// [IMfaRepository] and [SupabaseMfaRepository] already exist —
+/// this wires the missing Riverpod binding.
+/// Widgets that handle TOTP enrollment and challenge verification
+/// MUST consume this provider instead of instantiating the repository directly.
+final mfaRepositoryProvider = Provider<IMfaRepository>((ref) {
+  return SupabaseMfaRepository(supabase);
 });

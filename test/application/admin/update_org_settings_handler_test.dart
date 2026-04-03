@@ -21,7 +21,7 @@ void main() {
         timezone: '',
         currencyCode: '',
         isActive: true,
-        createdAt: DateTime.now(),
+        createdAt: DateTime.now().toUtc(),
       ),
     );
   });
@@ -32,7 +32,7 @@ void main() {
     timezone: 'UTC',
     currencyCode: 'BRL',
     isActive: true,
-    createdAt: DateTime.now(),
+    createdAt: DateTime.now().toUtc(),
   );
 
   setUp(() {

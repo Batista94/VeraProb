@@ -21,29 +21,29 @@ class SpoofingDetector {
     if (facts.length < 5) return SpoofingRiskScore.zero();
 
     final List<SpoofingSignal> detectedSignals = [];
-    double totalWeightedScore = 0.0;
+    int totalWeightedScoreBps = 0;
 
     // 1. Static Position while "Moving"
     if (_checkStaticPositionWithSpeed(facts)) {
       detectedSignals.add(SpoofingSignal.staticPositionWhileMoving);
-      totalWeightedScore += 0.5;
+      totalWeightedScoreBps += 5000; // 0.5 -> 50%
     }
 
     // 2. Zero Entropy in Accuracy (Phase 8.8 prioritized)
     if (_checkZeroEntropyAccuracy(facts)) {
       detectedSignals.add(SpoofingSignal.zeroEntropyAccuracy);
-      totalWeightedScore += 0.4;
+      totalWeightedScoreBps += 4000; // 0.4 -> 40%
     }
 
     // 3. Perfect Linear Trajectory (Heading Variance)
     if (_checkPerfectLinearTrajectory(facts)) {
       detectedSignals.add(SpoofingSignal.perfectLinearTrajectory);
-      totalWeightedScore += 0.3;
+      totalWeightedScoreBps += 3000; // 0.3 -> 30%
     }
 
     return SpoofingRiskScore(
-      // Max score is 1.0
-      score: totalWeightedScore.clamp(0.0, 1.0),
+      // Max score is 10,000 bps (100%)
+      scoreBps: totalWeightedScoreBps.clamp(0, 10000),
       signals: detectedSignals,
     );
   }
@@ -64,7 +64,7 @@ class SpoofingDetector {
     if (movingFacts.length < 5) return false;
 
     // Check distance between any two points in the window
-    double maxDistanceM = 0;
+    double maxDistanceM = 0; // Physical Metric - Double Required
     for (int i = 0; i < movingFacts.length; i++) {
       for (int j = i + 1; j < movingFacts.length; j++) {
         final d = GeoMath.haversineMeters(

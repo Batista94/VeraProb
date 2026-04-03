@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/infraction_recurrence_report.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Displays the monthly recurrence context for a vehicle infraction.
 ///
@@ -52,9 +52,7 @@ class RecurrenceBadgeWidget extends StatelessWidget {
               decoration: BoxDecoration(
                 color: badgeColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: badgeColor.withValues(alpha: 0.5),
-                ),
+                border: Border.all(color: badgeColor.withValues(alpha: 0.5)),
               ),
               child: Text(
                 '${_ordinal(report.infractionNumberThisMonth)} infração no mês',
@@ -134,9 +132,7 @@ class _InfractionDot extends StatelessWidget {
         decoration: BoxDecoration(
           color: color.withValues(alpha: isCurrent ? 1.0 : 0.7),
           shape: BoxShape.circle,
-          border: isCurrent
-              ? Border.all(color: color, width: 1.5)
-              : null,
+          border: isCurrent ? Border.all(color: color, width: 1.5) : null,
         ),
       ),
     );

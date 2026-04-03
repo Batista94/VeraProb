@@ -18,7 +18,8 @@ class KinematicGuard {
   static const int defaultMaxSpeedCms = 5556;
 
   /// Minimum distance in metres to consider a same-timestamp jump anomalous.
-  static const double sameTimestampJumpThresholdM = 5.0;
+  static const double sameTimestampJumpThresholdM =
+      5.0; // Physical Metric - Double Required
 
   final int maxSpeedCms;
 

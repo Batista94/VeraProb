@@ -32,8 +32,8 @@ void main() {
         organizationId: 'o',
         deviceId: 'd',
         assetId: 'a',
-        windowStart: DateTime.now(),
-        windowEnd: DateTime.now(),
+        windowStart: DateTime.now().toUtc(),
+        windowEnd: DateTime.now().toUtc(),
         riskScore: SpoofingRiskScore.zero(),
         factsAnalyzed: 0,
         factIds: [],
@@ -120,7 +120,7 @@ void main() {
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
       contractualValue: const Money(15000),
-      noShowPenaltyMultiplier: 1.5,
+      noShowPenaltyBps: 15000,
       windowStartUtc: windowStart ?? DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0),
     );
@@ -146,7 +146,7 @@ void main() {
           endLongitude: -46.6400,
           endRadiusMeters: 100,
           contractualValue: const Money(15000),
-          noShowPenaltyMultiplier: 1.5,
+          noShowPenaltyBps: 15000,
         ),
       ],
       ruleSnapshot: const RuleSnapshot([]),
@@ -523,7 +523,7 @@ void main() {
           // Algorithmic detection triggers
           when(
             () => mockDetector.analyze(any()),
-          ).thenReturn(const SpoofingRiskScore(score: 0.95, signals: []));
+          ).thenReturn(const SpoofingRiskScore(scoreBps: 9500, signals: []));
           when(() => mockSpoofingRepo.append(any())).thenAnswer((_) async {});
 
           final result = await pipelineWithMocks.process([

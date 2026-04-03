@@ -10,6 +10,7 @@ import '../../domain/enums/user_role.dart';
 import '../../domain/services/rbac_service.dart';
 import '../../domain/sla_audit/justification/justification_status.dart';
 import '../../infrastructure/sla_audit/sla_persistence_provider.dart';
+import '../../infrastructure/sla_audit/justification/justification_evidence_storage_service.dart';
 import 'local_fact_queue_providers.dart';
 
 // ── Handler providers (not cached) ───────────────────────────────────────────
@@ -32,6 +33,11 @@ final generateJustificationTokenHandlerProvider =
         justificationRepo: ref.watch(justificationRepositoryProvider),
         rbac: RbacService(),
       );
+    });
+
+final justificationStorageServiceProvider =
+    Provider<JustificationEvidenceStorageService>((ref) {
+      return JustificationEvidenceStorageService();
     });
 
 // ── Realtime stream of all justifications ────────────────────────────────────

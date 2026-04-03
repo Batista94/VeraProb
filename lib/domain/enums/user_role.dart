@@ -13,7 +13,7 @@ enum UserRole {
   auditor,
 
   /// External contractor read-only access. Scoped to a single contractor via
-  /// dual-key JWT isolation (INV-20). Cannot access any tenant-internal data.
+  /// dual-key JWT isolation (INV-20). Cannot access any tenant-internal information.
   /// JWT carries both org_id and contractor_id claims.
   contractorViewer,
 

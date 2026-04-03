@@ -6,25 +6,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/domain/sla_audit/operational_zone.dart';
-import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
-import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
-import 'package:veraprob/domain/sla_audit/vehicle_category.dart';
-import 'package:veraprob/domain/sla_audit/week_cycle.dart';
-import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
 
-import 'widgets/declare_plan/declare_plan_dialog_header.dart';
-import 'widgets/declare_plan/declare_plan_ui_utils.dart';
-import 'widgets/declare_plan/declare_plan_zones_step.dart';
-import 'widgets/declare_plan/shift_draft_snapshot.dart';
-import 'widgets/declare_plan/shift_pattern_step.dart';
-import 'widgets/declare_plan/_sla_penalties_step.dart';
-import 'widgets/declare_plan/review_step.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/declare_plan_dialog_header.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/declare_plan_ui_utils.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/declare_plan_zones_step.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/shift_draft_snapshot.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/shift_pattern_step.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/_sla_penalties_step.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/review_step.dart';
 
 /// Dialog form for declaring a new B2B Plan for an existing contract.
 ///
@@ -80,8 +74,8 @@ class _DeclareContractPlanFormState
   // ── Step 1: Zonas Operacionais ───────────────────────────────
   String? _selectedOriginZoneId;
   String? _selectedDestinationZoneId;
-  OperationalZone? _selectedOriginZone;
-  OperationalZone? _selectedDestinationZone;
+  OperationalZoneView? _selectedOriginZone;
+  OperationalZoneView? _selectedDestinationZone;
 
   // ── Step 2: Padrão de Turno ──────────────────────────────────
   final Set<int> _selectedDays = {1, 2, 3, 4, 5}; // Seg-Sex
@@ -168,12 +162,12 @@ class _DeclareContractPlanFormState
 
   // ── Snapshot helpers ─────────────────────────────────────────
 
-  String _zoneName(String? id, List<OperationalZone> zones) {
+  String _zoneName(String? id, List<OperationalZoneView> zones) {
     if (id == null) return '?';
     return zones.where((z) => z.id == id).firstOrNull?.name ?? id;
   }
 
-  ShiftDraftSnapshot _snapshotCurrentDraft(List<OperationalZone> zones) {
+  ShiftDraftSnapshot _snapshotCurrentDraft(List<OperationalZoneView> zones) {
     return ShiftDraftSnapshot(
       originZoneId: _selectedOriginZoneId!,
       destinationZoneId: _selectedDestinationZoneId!,
@@ -189,7 +183,8 @@ class _DeclareContractPlanFormState
       earlyArrivalToleranceMinutes:
           int.tryParse(_earlyArrivalToleranceController.text) ?? 5,
       dwellTimeMinutes: int.tryParse(_dwellTimeController.text) ?? 3,
-      noShowMultiplier: parseDouble(_noShowMultiplierController.text),
+      noShowPenaltyBps: (parseDouble(_noShowMultiplierController.text) * 10000)
+          .round(),
       noShowThresholdMinutes:
           int.tryParse(_noShowThresholdController.text) ?? 60,
       delayPenaltyCentsPerMinute: parseReaisToCents(
@@ -400,7 +395,7 @@ class _DeclareContractPlanFormState
 
   ShiftPattern _draftToPattern(ShiftDraftSnapshot d, int index) {
     final penalties = SLAPenalties.create(
-      noShowPenaltyMultiplier: d.noShowMultiplier,
+      noShowPenaltyBps: d.noShowPenaltyBps,
       delayToleranceMinutes: d.delayToleranceMinutes,
       delayPenaltyPerMinute: Money(d.delayPenaltyCentsPerMinute),
       downgradePenaltyFlat: Money(d.downgradePenaltyCents),

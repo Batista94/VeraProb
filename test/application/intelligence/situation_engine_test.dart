@@ -2,9 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/situation_engine.dart';
 import 'package:veraprob/application/operational_control_service.dart';
-import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/entities/trip_event.dart';
-import 'package:veraprob/domain/enums/trip_status.dart';
 
 class MockOperationalControlService extends Mock
     implements OperationalControlService {}
@@ -30,7 +28,7 @@ void main() {
         status:
             TripStatus.interrupted, // Severity 50 from StoppedVehicleDetector
         delaySeconds: 1500, // 25 min -> Severity 40 from DelayDetector
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final enrichedTrips = engine.analyze([trip], {}, mockControl);
@@ -51,7 +49,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.interrupted, // Severity 50
         delaySeconds: 5000,
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final enrichedTrips = engine.analyze([trip], {}, mockControl);
@@ -65,7 +63,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 0,
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final enrichedTrips = engine.analyze([trip], {}, mockControl);
@@ -82,7 +80,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 1200, // Critical delay
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final enrichedBad = engine.analyze([badTrip], {}, mockControl).first;
@@ -95,7 +93,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 0, // Delay removed
-        scheduledStart: DateTime.now(),
+        scheduledStart: DateTime.now().toUtc(),
       );
 
       final enrichedFixed = engine.analyze([fixedTrip], {}, mockControl).first;

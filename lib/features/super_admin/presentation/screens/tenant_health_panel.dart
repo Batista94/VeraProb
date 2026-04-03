@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/domain_exception.dart';
-import '../../../../domain/super_admin/plan_type.dart';
-import '../../../../domain/super_admin/tenant_health_snapshot.dart';
-import '../../../../domain/super_admin/update_organization_quota_command.dart';
-import '../../../../infrastructure/providers/super_admin_providers.dart';
-import '../../../../state/providers/super_admin_auth_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/shared/domain_failure.dart';
+import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
+import 'package:veraprob/infrastructure/providers/super_admin_providers.dart';
+import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
+
 
 /// Cross-tenant health dashboard for SuperAdmin.
 ///
@@ -48,7 +49,7 @@ class TenantHealthPanel extends ConsumerWidget {
 }
 
 class _TenantTable extends StatelessWidget {
-  final List<TenantHealthSnapshot> tenants;
+  final List<TenantHealthView> tenants;
   final WidgetRef ref;
 
   const _TenantTable({required this.tenants, required this.ref});
@@ -126,7 +127,7 @@ class _TenantTable extends StatelessWidget {
     );
   }
 
-  DataRow _buildRow(BuildContext context, TenantHealthSnapshot t) {
+  DataRow _buildRow(BuildContext context, TenantHealthView t) {
     return DataRow(
       cells: [
         DataCell(
@@ -225,11 +226,12 @@ class _TenantTable extends StatelessWidget {
 
   Color _quotaColor(int current, int max) {
     if (max == 0) return VeraProbColors.success;
-    final ratio = current / max;
-    if (ratio >= 1.0) return VeraProbColors.error;
-    if (ratio >= 0.8) return Colors.orange;
+    final ratioBps = (current * 10000) ~/ max;
+    if (ratioBps >= 10000) return VeraProbColors.error;
+    if (ratioBps >= 8000) return Colors.orange;
     return VeraProbColors.success;
   }
+
 
   String _formatDateTime(DateTime dt) {
     final local = dt.toLocal();
@@ -245,7 +247,7 @@ class _TenantTable extends StatelessWidget {
 ///
 /// INV-24: Uses showDialog (overlay modal) for nested edit flows.
 class _EditQuotaDialog extends ConsumerStatefulWidget {
-  final TenantHealthSnapshot snapshot;
+  final TenantHealthView snapshot;
 
   const _EditQuotaDialog({required this.snapshot});
 
@@ -326,14 +328,14 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
       _errorMessage = null;
     });
 
-    final cmd = UpdateOrganizationQuotaCommand(
+    final cmd = UpdateQuotaFormData(
       organizationId: widget.snapshot.id,
       newPlanType: _selectedPlan.dbValue,
       newMaxVehicles: maxVehicles,
       newMaxActiveContracts: maxContracts,
       superAdminUserId: superAdminId,
       reason: _reasonCtrl.text.trim().isEmpty ? null : _reasonCtrl.text.trim(),
-    );
+    ).toCommand();
 
     try {
       await ref.read(updateOrganizationQuotaHandlerProvider).handle(cmd);

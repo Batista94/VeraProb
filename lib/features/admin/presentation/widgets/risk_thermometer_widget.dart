@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/sla_breach_risk_calculator.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Risk Thermometer Widget — visual indicator of SLA breach proximity.
 ///
@@ -89,7 +89,7 @@ class _RiskThermometerState extends State<RiskThermometerWidget>
             height: widget.height,
             child: CustomPaint(
               painter: _ThermometerBarPainter(
-                fillLevel: widget.report.riskPercentage.clamp(0.0, 1.0),
+                fillLevel: (widget.report.riskBps / 10000).clamp(0.0, 1.0),
                 riskLevel: widget.report.riskLevel,
               ),
             ),
@@ -177,9 +177,7 @@ class _RiskLevelLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _levelColor();
     final label = _levelLabel();
-    final pct = (report.riskPercentage * 100)
-        .clamp(0.0, 999.0)
-        .toStringAsFixed(0);
+    final pct = (report.riskBps ~/ 100).clamp(0, 999);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,8 +195,8 @@ class _RiskLevelLabel extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           report.riskLevel == SlaRiskLevel.safe
-              ? 'Confortável'
-              : '$pct% do buffer',
+          ? 'Confortável'
+          : '$pct% do buffer',
           style: const TextStyle(
             fontSize: 9,
             color: VeraProbColors.textSecondary,

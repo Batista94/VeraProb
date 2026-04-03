@@ -1,7 +1,7 @@
-import '../../domain/sla_audit/sla_penalties.dart';
 import '../../domain/sla_audit/sla_template.dart';
 import '../../domain/sla_audit/sla_template_repository.dart';
 import '../../domain/sla_audit/transport_vertical.dart';
+import 'projections/penalties_form_data.dart';
 
 /// Application handler for creating or updating an [SlaTemplate].
 ///
@@ -23,10 +23,11 @@ class SaveSlaTemplateHandler {
     required String name,
     String? description,
     TransportVertical? vertical,
-    required SLAPenalties penalties,
+    required PenaltiesFormData penalties,
     String? existingId,
     DateTime? existingCreatedAt,
   }) async {
+    final domainPenalties = penalties.toDomain();
     final template = existingId != null
         ? SlaTemplate.reconstitute(
             id: existingId,
@@ -34,7 +35,7 @@ class SaveSlaTemplateHandler {
             name: name,
             description: description,
             vertical: vertical,
-            penalties: penalties,
+            penalties: domainPenalties,
             createdAt: existingCreatedAt ?? DateTime.now().toUtc(),
           )
         : SlaTemplate.create(
@@ -42,7 +43,7 @@ class SaveSlaTemplateHandler {
             name: name,
             description: description,
             vertical: vertical,
-            penalties: penalties,
+            penalties: domainPenalties,
           );
 
     await _repository.save(template);

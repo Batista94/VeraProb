@@ -44,7 +44,10 @@ class InMemoryAuditService implements AuditService {
     String? reason,
   }) async {
     final log = AuditLog(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // ephemeral mock id
+      id: DateTime.now()
+          .toUtc()
+          .millisecondsSinceEpoch
+          .toString(), // ephemeral mock id
       organizationId: organizationId,
       operatorId: operatorId,
       actionType: actionType,

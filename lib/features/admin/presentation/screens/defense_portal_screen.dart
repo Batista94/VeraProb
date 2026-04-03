@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/justification/justification_status.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import '../../../../state/providers/justification_providers.dart';
 import 'justification_detail_drawer.dart';
 import 'justification_submission_form.dart';

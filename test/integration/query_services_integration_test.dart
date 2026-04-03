@@ -55,8 +55,8 @@ void main() {
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 100,
-          contractualValue: Money.fromDouble(200.0),
-          noShowPenaltyMultiplier: 2.0, // Should be 400.0 if no-show
+          contractualValue: const Money(20000),
+          noShowPenaltyBps: 20000, // Should be 400.0 if no-show
           windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
           windowEndUtc: windowEnd,
         );
@@ -126,8 +126,8 @@ void main() {
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 100,
-          contractualValue: Money.fromDouble(100.0),
-          noShowPenaltyMultiplier: 1.5, // Penalty = 150.0
+          contractualValue: const Money(10000),
+          noShowPenaltyBps: 15000, // Penalty = 150.0
           windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
           windowEndUtc: windowEnd,
         );

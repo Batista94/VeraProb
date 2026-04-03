@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/supabase_client.dart';
-import '../../domain/sla_audit/contractor.dart';
+import '../../application/sla_audit/projections/contractor_view.dart';
 import '../../domain/sla_audit/contractor_repository.dart';
 import '../../infrastructure/sla_audit/postgres_contractor_repository.dart';
 import '../../application/sla_audit/save_contractor_handler.dart';
@@ -13,10 +13,14 @@ final contractorRepositoryProvider = Provider<ContractorRepository>((ref) {
 });
 
 /// Future provider for the list of contractors in the current organization.
-final contractorListProvider = FutureProvider<List<Contractor>>((ref) async {
+final contractorListProvider = FutureProvider<List<ContractorView>>((
+  ref,
+) async {
   final orgId = ref.watch(currentOrganizationIdProvider);
   if (orgId == null) return [];
-  return ref.watch(contractorRepositoryProvider).findByOrganization(orgId);
+  final contractors =
+      await ref.watch(contractorRepositoryProvider).findByOrganization(orgId);
+  return contractors.map(ContractorView.fromDomain).toList();
 });
 
 /// Provider for the save contractor handler.

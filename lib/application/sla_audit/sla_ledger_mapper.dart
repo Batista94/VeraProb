@@ -4,6 +4,8 @@ import '../../domain/sla_audit/domain_event.dart';
 import '../../domain/sla_audit/execution_events.dart';
 import '../../domain/sla_audit/sla_ledger_entry.dart';
 
+export '../../domain/sla_audit/sla_ledger_entry.dart';
+
 /// Application Service mapping DomainEvents to forensic SlaLedgerEntries.
 ///
 /// This mapping decouples the internal domain event structure from the

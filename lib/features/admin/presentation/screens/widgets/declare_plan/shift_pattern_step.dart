@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/vehicle_category.dart';
-import 'package:veraprob/domain/sla_audit/week_cycle.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
-import 'declare_plan_ui_utils.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/declare_plan_ui_utils.dart';
+
 
 /// Step 2 of the Declare Contract Plan wizard — Shift Pattern.
 ///

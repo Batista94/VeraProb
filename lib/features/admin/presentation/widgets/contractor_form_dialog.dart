@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/cnpj_input_formatter.dart';
-import '../../../../core/utils/cnpj_validator.dart';
-import '../../../../domain/sla_audit/contractor.dart';
-import '../../../../application/sla_audit/save_contractor_command.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../state/providers/contractor_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/core/utils/cnpj_input_formatter.dart';
+import 'package:veraprob/core/utils/cnpj_validator.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
+import 'package:veraprob/application/sla_audit/save_contractor_command.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/contractor_providers.dart';
 
-Future<Contractor?> showContractorFormDialog(
+
+Future<ContractorView?> showContractorFormDialog(
   BuildContext context, {
-  Contractor? existing,
+  ContractorView? existing,
   String? initialName,
 }) {
-  return showDialog<Contractor>(
+  return showDialog<ContractorView>(
     context: context,
     barrierDismissible: false,
     builder: (context) =>
@@ -23,7 +24,7 @@ Future<Contractor?> showContractorFormDialog(
 }
 
 class ContractorFormDialog extends ConsumerStatefulWidget {
-  final Contractor? existing;
+  final ContractorView? existing;
   final String? initialName;
 
   const ContractorFormDialog({super.key, this.existing, this.initialName});
