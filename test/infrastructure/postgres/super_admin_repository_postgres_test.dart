@@ -540,7 +540,7 @@ void main() async {
         },
         skip: !areFunctionsRunning
             ? 'Edge Functions não estão rodando. Execute: supabase functions serve super-admin-proxy'
-            : null,
+            : 'Requires MFA (AAL2) configuration — run with a pre-authenticated AAL2 session',
       );
 
       // ── getSystemAuditLog ──────────────────────────────────────────────────
@@ -589,7 +589,7 @@ void main() async {
         },
         skip: !areFunctionsRunning
             ? 'Edge Functions não estão rodando. Execute: supabase functions serve super-admin-proxy'
-            : null,
+            : 'Requires MFA (AAL2) configuration — run with a pre-authenticated AAL2 session',
       );
     },
   );

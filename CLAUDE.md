@@ -34,9 +34,13 @@ Intelligence is specialized. The Assistant MUST adopt the correct persona from `
 
 These are the current active priorities that override any legacy patterns:
 
-1. **BPS Migration:** All rates/multipliers are `int` (10000 = 100%). Formula: `(value * BPS) ~/ 10000`.
-2. **C4 Isolation:** No relative imports `../` from `features/` to `domain/`. Use `package:veraprob/` and Application DTOs.
-3. **Tag Deprecation:** Use `// Physical Metric - Double Required` instead of `forensic-ignore`.
+1. **Layer Isolation (C4):** UI (`features/`) must never import `domain/` or `infrastructure/`.
+2. **Financial Precision:**
+   - **Application Layer (DTOs):** Uses `int` (cents/bps).
+   - **Domain Layer:** Uses `Money` value object.
+   - **Rates:** All rates/multipliers are `int` (10000 = 100%). Formula: `(value * BPS) ~/ 10000`.
+3. **Deterministic Time:** All timestamps MUST use `DateTime.now().toUtc()` on a single line.
+4. **Tag Deprecation:** Use `// Physical Metric - Double Required` instead of `forensic-ignore`.
 
 ---
 
