@@ -1,4 +1,4 @@
-import '../../domain/sla_audit/shift_pattern.dart';
+import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
 import 'contractual_service_input.dart';
 
 /// Immutable command DTO for declaring a contractual operational plan.

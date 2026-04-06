@@ -2,7 +2,7 @@ import 'dart:collection';
 
 import 'package:uuid/uuid.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'domain_event.dart';
 import 'domain_exception.dart';
 import 'execution_events.dart';

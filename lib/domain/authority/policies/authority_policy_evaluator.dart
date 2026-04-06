@@ -1,5 +1,5 @@
-import '../core/authority_types.dart';
-import '../decision/authorization_decision.dart'; // O context estava dentro do arquivo de decision
+import 'package:veraprob/domain/authority/core/authority_types.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart'; // O context estava dentro do arquivo de decision
 
 /// Domain Port: Evaluates an Operational Action against a Context to yield a Decision.
 ///

@@ -1,7 +1,7 @@
 import 'dart:collection';
 
-import '../../domain/sla_audit/operational_zone.dart';
-import '../../domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 
 /// In-memory implementation of [OperationalZoneRepository].
 ///

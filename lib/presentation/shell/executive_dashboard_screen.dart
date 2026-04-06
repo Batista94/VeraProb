@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/projections/executive_dashboard_view.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/sla_audit/shadow_mode_simulation.dart';
-import '../../state/providers/executive_dashboard_providers.dart';
+import 'package:veraprob/application/sla_audit/projections/executive_dashboard_view.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/shadow_mode_simulation.dart';
+import 'package:veraprob/state/providers/executive_dashboard_providers.dart';
 
 /// Executive Dashboard — Financial Protection Score + CFO KPIs.
 ///

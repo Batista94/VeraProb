@@ -1,10 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../domain/sla_audit/contract.dart';
-import '../../domain/sla_audit/contract_repository.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
-import '../../domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contract.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'create_contract_command.dart';
 import 'sla_ledger_mapper.dart';
 

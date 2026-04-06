@@ -1,5 +1,5 @@
-import '../../domain/sla_audit/spoofing_audit_entry.dart';
-import '../../domain/sla_audit/spoofing_audit_repository.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_audit_entry.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_audit_repository.dart';
 
 /// In-memory implementation of [SpoofingAuditRepository] for tests.
 class InMemorySpoofingAuditRepository implements SpoofingAuditRepository {

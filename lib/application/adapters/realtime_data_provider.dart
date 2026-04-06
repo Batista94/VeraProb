@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../core/config/supabase_client.dart';
-import '../../domain/entities/vehicle_position.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'operational_data_provider.dart';
 
 /// Real-time adapter that connects to Supabase Realtime for live vehicle

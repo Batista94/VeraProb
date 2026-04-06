@@ -1,7 +1,7 @@
-import '../../domain/sla_audit/audit_package.dart';
-import '../../domain/sla_audit/audit_package_status.dart';
-import '../../domain/sla_audit/billing_cycle_report.dart';
-import '../../domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
+import 'package:veraprob/domain/sla_audit/audit_package_status.dart';
+import 'package:veraprob/domain/sla_audit/billing_cycle_report.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 /// Generates legally-defensible CSV exports from sealed [AuditPackage] records.
 ///

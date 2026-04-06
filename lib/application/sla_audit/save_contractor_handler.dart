@@ -1,9 +1,9 @@
 import 'package:uuid/uuid.dart';
-import '../../domain/enums/user_permissions.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/contractor.dart';
-import '../../domain/sla_audit/contractor_repository.dart';
-import '../../domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/enums/user_permissions.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'save_contractor_command.dart';
 
 /// Application handler for creating or updating a contractor.

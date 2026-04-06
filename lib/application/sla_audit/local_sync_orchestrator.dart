@@ -1,9 +1,9 @@
-import '../../domain/sla_audit/canonical_fact.dart';
-import '../../domain/sla_audit/local_fact_queue/chain_integrity_verifier.dart';
-import '../../domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
-import '../../domain/sla_audit/local_fact_queue/pending_fact.dart';
-import '../../domain/sla_audit/local_fact_queue/sync_handshake_service.dart';
-import '../../domain/sla_audit/local_fact_queue/sync_status.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/chain_integrity_verifier.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_handshake_service.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
 
 /// Summary of a single [LocalSyncOrchestrator.onConnectionRestored] run.
 class LocalSyncResult {

@@ -1,10 +1,10 @@
 import 'package:uuid/uuid.dart';
 
-import '../../../domain/enums/user_permissions.dart';
-import '../../../domain/services/rbac_service.dart';
-import '../../../domain/sla_audit/domain_exception.dart';
-import '../../../domain/sla_audit/justification/justification_repository.dart';
-import '../../../domain/sla_audit/justification/justification_submission_token.dart';
+import 'package:veraprob/domain/enums/user_permissions.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_repository.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_submission_token.dart';
 import 'generate_justification_token_command.dart';
 
 /// Application handler for [GenerateJustificationTokenCommand].

@@ -1,10 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../domain/super_admin/create_organization_command.dart';
-import '../../domain/super_admin/i_super_admin_repository.dart';
-import '../../domain/super_admin/system_audit_log_entry.dart';
-import '../../domain/super_admin/tenant_health_snapshot.dart';
-import '../../domain/super_admin/update_organization_quota_command.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/super_admin/create_organization_command.dart';
+import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
+import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
+import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
+import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
 
 /// PostgreSQL implementation of [ISuperAdminRepository].
 ///
@@ -31,7 +32,7 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
         'p_cnpj': cmd.cnpj.replaceAll(RegExp(r'\D'), ''),
         'p_timezone': cmd.timezone,
         'p_currency_code': cmd.currencyCode,
-        'p_plan_type': cmd.planType,
+        'p_plan_type': cmd.planType.name,
         'p_max_vehicles': cmd.maxVehicles,
         'p_max_active_contracts': cmd.maxActiveContracts,
         'p_super_admin_user_id': cmd.superAdminUserId,
@@ -65,18 +66,23 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
 
   @override
   Future<List<TenantHealthSnapshot>> getAllTenantHealth() async {
-    final response = await _authenticatedClient.functions.invoke(
-      'super-admin-proxy',
-      body: {'action': 'list_tenant_health'},
-    );
-
-    final rows =
-        (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
-    return rows
-        .map(
-          (row) => TenantHealthSnapshot.fromJson(row as Map<String, dynamic>),
-        )
-        .toList();
+    try {
+      final response = await _authenticatedClient.functions.invoke(
+        'super-admin-proxy',
+        body: {'action': 'list_tenant_health'},
+      );
+      final rows =
+          (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
+      return rows
+          .map(
+            (row) => TenantHealthSnapshot.fromJson(row as Map<String, dynamic>),
+          )
+          .toList();
+    } on Exception catch (e) {
+      throw DomainException(
+        'Edge Function super-admin-proxy unavailable: $e',
+      );
+    }
   }
 
   @override
@@ -102,16 +108,23 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
     if (fromDate != null) params['from_date'] = fromDate.toIso8601String();
     if (toDate != null) params['to_date'] = toDate.toIso8601String();
 
-    final response = await _authenticatedClient.functions.invoke(
-      'super-admin-proxy',
-      body: {'action': 'get_audit_log', 'params': params},
-    );
-
-    final rows =
-        (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
-    return rows
-        .map((row) => SystemAuditLogEntry.fromJson(row as Map<String, dynamic>))
-        .toList();
+    try {
+      final response = await _authenticatedClient.functions.invoke(
+        'super-admin-proxy',
+        body: {'action': 'get_audit_log', 'params': params},
+      );
+      final rows =
+          (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
+      return rows
+          .map(
+            (row) => SystemAuditLogEntry.fromJson(row as Map<String, dynamic>),
+          )
+          .toList();
+    } on Exception catch (e) {
+      throw DomainException(
+        'Edge Function super-admin-proxy unavailable: $e',
+      );
+    }
   }
 
   @override

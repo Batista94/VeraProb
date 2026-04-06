@@ -17,8 +17,8 @@ import 'screens/contractor_management_screen.dart';
 import 'screens/auditor_queue_screen.dart';
 import 'screens/defense_portal_screen.dart';
 import 'screens/sla_template_library_screen.dart';
-import '../../../state/providers/auditor_queue_providers.dart';
-import '../../../state/providers/justification_providers.dart';
+import 'package:veraprob/state/providers/auditor_queue_providers.dart';
+import 'package:veraprob/state/providers/justification_providers.dart';
 
 class AdminHome extends ConsumerWidget {
   const AdminHome({super.key});

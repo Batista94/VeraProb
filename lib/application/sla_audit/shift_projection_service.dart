@@ -4,16 +4,16 @@ import 'package:crypto/crypto.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 
-import '../../domain/sla_audit/contractual_service_execution.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/sla_audit/operational_alert.dart';
-import '../../domain/sla_audit/operational_alert_repository.dart';
-import '../../domain/sla_audit/operational_zone_repository.dart';
-import '../../domain/sla_audit/plan_declaration.dart';
-import '../../domain/sla_audit/plan_declaration_repository.dart';
-import '../../domain/sla_audit/shift_pattern.dart';
-import '../../domain/sla_audit/week_cycle.dart';
-import '../../domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
+import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
+import 'package:veraprob/domain/sla_audit/week_cycle.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 /// Application service responsible for projecting [ContractualServiceExecution]
 /// instances from [ShiftPattern] recurrence rules.

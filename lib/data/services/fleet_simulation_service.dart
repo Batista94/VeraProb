@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math';
-import '../../application/adapters/stress_scenario_config.dart';
-import '../../domain/entities/operational_trip.dart';
-import '../../domain/entities/trip_event.dart';
-import '../../domain/entities/vehicle_position.dart';
-import '../../domain/enums/event_type.dart';
-import '../../domain/enums/trip_status.dart';
+import 'package:veraprob/application/adapters/stress_scenario_config.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
 
 /// Simulates a realistic GTFS Realtime feed for São Paulo.
 ///

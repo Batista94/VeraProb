@@ -1,5 +1,5 @@
-import '../operational_command.dart';
-import '../../core/authority_types.dart';
+import 'package:veraprob/domain/authority/commands/operational_command.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
 
 /// Command to formally acknowledge an active alert without resolving it.
 /// Indicates that an operator is aware and investigating.

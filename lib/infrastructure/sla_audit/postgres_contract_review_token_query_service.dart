@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
 
 /// Read-only query service for contract review data.
 ///

@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'domain_exception.dart';
 
 /// Read model for a Shadow Mode ROI simulation.

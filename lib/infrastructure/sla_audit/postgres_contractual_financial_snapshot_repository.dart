@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/contractual_financial_daily_snapshot.dart';
-import '../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
 
 /// PostgreSQL implementation of [ContractualFinancialSnapshotRepository].
 ///

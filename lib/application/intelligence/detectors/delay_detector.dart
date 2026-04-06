@@ -1,8 +1,8 @@
-import '../../../domain/entities/operational_trip.dart';
-import '../../../domain/entities/operational_warning.dart';
-import '../../../domain/entities/trip_event.dart';
-import '../../../domain/enums/trip_status.dart';
-import '../../normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/operational_warning.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'situation_detector.dart';
 
 /// Detects if a trip is delayed beyond acceptable thresholds.

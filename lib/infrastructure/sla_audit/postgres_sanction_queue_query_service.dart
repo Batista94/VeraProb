@@ -1,8 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/projections/sanction_queue_item_view.dart';
-import '../../application/sla_audit/projections/sanction_queue_query_service.dart';
-import '../../core/config/supabase_client.dart';
+import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
+import 'package:veraprob/application/sla_audit/projections/sanction_queue_query_service.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
 
 /// Postgres implementation of [SanctionQueueQueryService].
 class PostgresSanctionQueueQueryService implements SanctionQueueQueryService {

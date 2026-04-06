@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../admin/presentation/lock_screen.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'screens/tenant_health_panel.dart';
 import 'screens/create_organization_wizard.dart';
 import 'screens/super_admin_audit_log_screen.dart';

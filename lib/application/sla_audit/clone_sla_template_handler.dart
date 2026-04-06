@@ -1,6 +1,6 @@
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/sla_audit/sla_template.dart';
-import '../../domain/sla_audit/sla_template_repository.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/sla_template.dart';
+import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
 import 'sla_template_presets.dart';
 
 /// Application handler for cloning an [SlaTemplate].

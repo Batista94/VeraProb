@@ -2,8 +2,8 @@ import 'dart:developer' as developer;
 
 import 'package:equatable/equatable.dart';
 
-import '../../domain/sla_audit/shadow_verdict.dart';
-import '../../domain/sla_audit/shadow_verdict_repository.dart';
+import 'package:veraprob/domain/sla_audit/shadow_verdict.dart';
+import 'package:veraprob/domain/sla_audit/shadow_verdict_repository.dart';
 
 /// Value object: divergence report for a time window.
 ///

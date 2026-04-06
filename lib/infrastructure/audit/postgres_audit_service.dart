@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-import '../../application/audit/audit_service.dart';
-import '../../domain/entities/audit_log.dart';
+import 'package:veraprob/application/audit/audit_service.dart';
+import 'package:veraprob/domain/entities/audit_log.dart';
 
 /// Postgres implementation of the [AuditService].
 /// Operates strictly as an append-only persistence adapter.

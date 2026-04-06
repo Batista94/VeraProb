@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../../domain/sla_audit/geocoding_repository.dart';
+import 'package:veraprob/domain/sla_audit/geocoding_repository.dart';
 
 class HttpGeocodingRepository implements GeocodingRepository {
   final http.Client _client;

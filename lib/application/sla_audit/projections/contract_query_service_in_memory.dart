@@ -1,8 +1,8 @@
-import '../../../domain/sla_audit/contract_repository.dart';
-import '../../../domain/sla_audit/contract_status.dart';
-import '../../../domain/sla_audit/contractual_execution_state_repository.dart';
-import '../../../domain/sla_audit/execution_status.dart';
-import '../../../domain/sla_audit/plan_declaration_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
 import 'contract_detail_view.dart';
 import 'contract_query_service.dart';
 import 'contract_status_view.dart';

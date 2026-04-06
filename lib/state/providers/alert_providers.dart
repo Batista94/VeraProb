@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/alert_service.dart';
-import '../../domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/application/sla_audit/alert_service.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'sla_providers.dart';
 
 import 'auth_providers.dart';

@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/admin/invitation.dart';
-import '../../domain/admin/invitation_repository.dart';
-import '../../domain/enums/user_role.dart';
+import 'package:veraprob/domain/admin/invitation.dart';
+import 'package:veraprob/domain/admin/invitation_repository.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// PostgreSQL read-side implementation of [InvitationRepository].
 /// Uses direct table queries — RLS scopes reads to the caller's org.

@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/sla_audit/evaluation_trace.dart';
-import '../../domain/sla_audit/evaluation_trace_repository.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace_repository.dart';
 
 class PostgresEvaluationTraceRepository implements EvaluationTraceRepository {
   final SupabaseClient _client;

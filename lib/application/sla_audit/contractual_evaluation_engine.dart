@@ -1,26 +1,26 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 
-import '../../core/utils/geo_math.dart';
-import '../../application/sla_audit/sla_ledger_mapper.dart';
-import '../normalization/models/vehicle_operational_state.dart';
-import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/contractual_execution_state.dart';
-import '../../domain/sla_audit/execution_events.dart';
-import '../../domain/sla_audit/execution_status.dart';
-import '../../domain/sla_audit/contractual_rule.dart';
-import '../../domain/sla_audit/contractual_execution_state_repository.dart';
-import '../../domain/sla_audit/plan_declaration.dart';
-import '../../domain/sla_audit/plan_declaration_repository.dart';
-import '../../domain/sla_audit/rule_snapshot.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
-import '../../domain/sla_audit/evaluation_trace.dart';
-import '../../domain/sla_audit/evaluation_trace_repository.dart';
-import '../../domain/sla_audit/engine_evaluation_result.dart';
-import '../../domain/sla_audit/operational_alert_repository.dart';
-import '../../domain/sla_audit/evidence_payload.dart';
-import '../../domain/sla_audit/verdict_evidence.dart';
-import '../../domain/sla_audit/late_arrival_window_policy.dart';
+import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/execution_events.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace_repository.dart';
+import 'package:veraprob/domain/sla_audit/engine_evaluation_result.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
+import 'package:veraprob/domain/sla_audit/evidence_payload.dart';
+import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
+import 'package:veraprob/domain/sla_audit/late_arrival_window_policy.dart';
 import 'alert_derivation_service.dart';
 
 /// Application Service: Reactive evaluation engine for contractual

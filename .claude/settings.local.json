@@ -20,7 +20,16 @@
       "Bash(docker network:*)",
       "Bash(psql:*)",
       "Bash(dart format:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(python:*)",
+      "Bash(sed -i 's|import '\\\\''package:veraprob/infrastructure/providers/mfa_providers.dart'\\\\''|import '\\\\''package:veraprob/state/providers/mfa_providers.dart'\\\\''|g' lib/features/super_admin/presentation/screens/mfa_challenge_screen.dart lib/features/admin/presentation/lock_screen.dart lib/features/super_admin/presentation/screens/mfa_enrollment_screen.dart)",
+      "Bash(sed -i 's|import '\\\\''package:veraprob/infrastructure/providers/super_admin_providers.dart'\\\\''|import '\\\\''package:veraprob/state/providers/super_admin_providers.dart'\\\\''|g' lib/features/super_admin/presentation/screens/create_organization_wizard.dart lib/features/super_admin/presentation/screens/super_admin_audit_log_screen.dart lib/features/super_admin/presentation/screens/tenant_health_panel.dart)",
+      "Bash(sed -i 's|import '\\\\''package:veraprob/infrastructure/audit/audit_log_projection_provider.dart'\\\\''|import '\\\\''package:veraprob/state/providers/audit_providers.dart'\\\\''|g' lib/features/admin/presentation/command_center/screens/operational_audit_screen.dart)",
+      "Bash(sed -i '/import '\\\\''package:veraprob\\\\/infrastructure\\\\/audit\\\\/audit_providers.dart'\\\\''/d' lib/features/admin/presentation/command_center/screens/operational_audit_screen.dart)",
+      "Bash(sed -i 's|import '\\\\''package:veraprob/infrastructure/authority/forensic_ledger_provider.dart'\\\\''|import '\\\\''package:veraprob/state/providers/forensic_ledger_providers.dart'\\\\''|g' lib/features/admin/presentation/command_center/widgets/forensic_console_strip.dart)",
+      "Bash(sed -i 's|import '\\\\''package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart'\\\\''|import '\\\\''package:veraprob/state/providers/sla_providers.dart'\\\\''|g' lib/features/admin/presentation/screens/driver_justification_page.dart)",
+      "Bash(sed -i 's|import '\\\\''package:veraprob/infrastructure/sla_audit/postgres_contract_review_token_query_service.dart'\\\\''|import '\\\\''package:veraprob/state/providers/contract_providers.dart'\\\\'' show ContractReviewSummary;|g' lib/features/admin/presentation/screens/review_contract_screen.dart)",
+      "Bash(xargs -I{} basename {})"
     ]
   },
   "model": "sonnet"

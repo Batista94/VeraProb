@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/rule_studio_command_service.dart';
-import '../../domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/application/sla_audit/rule_studio_command_service.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 
 /// Postgres implementation of [RuleStudioCommandService].
 ///

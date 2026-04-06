@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/projections/contractor_portal_view.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/sla_audit/audit_package_status.dart';
-import '../../state/providers/audit_package_providers.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_portal_view.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/audit_package_status.dart';
+import 'package:veraprob/state/providers/audit_package_providers.dart';
 
 /// Contractor Portal — authenticated, contractor-scoped evidence view.
 ///

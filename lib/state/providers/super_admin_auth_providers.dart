@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/config/supabase_client.dart';
-import '../../core/utils/jwt_utils.dart';
-import '../../domain/enums/user_role.dart';
-import '../../domain/super_admin/i_mfa_repository.dart';
-import '../../infrastructure/super_admin/supabase_mfa_repository.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/core/utils/jwt_utils.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
+import 'package:veraprob/infrastructure/super_admin/supabase_mfa_repository.dart';
 import 'auth_providers.dart';
 
 /// Returns true if the current authenticated user is a SuperAdmin.

@@ -1,10 +1,10 @@
 import 'package:uuid/uuid.dart';
 
-import '../../domain/enums/user_permissions.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/contract_repository.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/enums/user_permissions.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'contract_approval_command_service.dart';
 import 'sla_ledger_mapper.dart';
 import 'submit_contract_for_approval_command.dart';

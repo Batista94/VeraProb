@@ -1,9 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/sla_audit/operational_zone.dart';
-import '../../domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 
 /// Postgres implementation of [OperationalZoneRepository].
 ///

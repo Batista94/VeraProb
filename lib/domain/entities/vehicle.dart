@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../enums/vehicle_status.dart';
+import 'package:veraprob/domain/enums/vehicle_status.dart';
 
 /// A vehicle (bus) in the fleet.
 class Vehicle extends Equatable {

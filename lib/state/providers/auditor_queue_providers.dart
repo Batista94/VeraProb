@@ -1,16 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/approve_sanction_command.dart';
-import '../../application/sla_audit/approve_sanction_handler.dart';
-import '../../application/sla_audit/projections/sanction_queue_item_view.dart';
-import '../../application/sla_audit/reject_sanction_command.dart';
-import '../../application/sla_audit/reject_sanction_handler.dart';
-import '../../domain/enums/user_role.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/infraction_recurrence_report.dart';
-import '../../domain/sla_audit/vehicle_infraction_recurrence_service.dart';
-import '../../infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'package:veraprob/application/sla_audit/approve_sanction_command.dart';
+import 'package:veraprob/application/sla_audit/approve_sanction_handler.dart';
+import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
+import 'package:veraprob/application/sla_audit/reject_sanction_command.dart';
+import 'package:veraprob/application/sla_audit/reject_sanction_handler.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/infraction_recurrence_report.dart';
+import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'auth_providers.dart';
 import 'sla_providers.dart';
 

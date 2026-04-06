@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/contractor_providers.dart';
-import '../../../../state/providers/auth_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/contractor_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
-import '../../../../application/sla_audit/delete_contractor_command.dart';
-import '../widgets/contractor_form_dialog.dart';
+import 'package:veraprob/application/sla_audit/delete_contractor_command.dart';
+import 'package:veraprob/features/admin/presentation/widgets/contractor_form_dialog.dart';
 
 /// Screen for managing Contractors (CRUD).
 class ContractorManagementScreen extends ConsumerStatefulWidget {

@@ -1,7 +1,7 @@
 import 'dart:collection';
 
-import '../../domain/sla_audit/sla_template.dart';
-import '../../domain/sla_audit/sla_template_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_template.dart';
+import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
 
 /// In-memory implementation of [SlaTemplateRepository].
 ///

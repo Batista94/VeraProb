@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../presentation/shell/settings_screen.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/presentation/shell/settings_screen.dart';
 import 'org_settings_screen.dart';
 import 'user_management_screen.dart';
 

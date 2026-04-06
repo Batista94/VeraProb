@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../normalization/models/vehicle_operational_state.dart';
-import '../../normalization/models/connectivity_state.dart';
-import '../../normalization/models/route_adherence.dart';
-import '../../../domain/enums/trip_status.dart';
-import '../../../state/providers/fleet_providers.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/route_adherence.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'command_center_filter_provider.dart';
-import '../models/fleet_status_projection.dart';
+import 'package:veraprob/application/projections/models/fleet_status_projection.dart';
 
 /// Provides a synchronous, grouped pure projection of the fleet's operational status.
 final fleetStatusProjectionProvider = Provider<FleetStatusProjection>((ref) {

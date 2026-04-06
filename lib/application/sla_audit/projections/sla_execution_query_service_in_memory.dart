@@ -1,7 +1,7 @@
-import '../../../domain/shared/money.dart';
-import '../../../domain/sla_audit/contractual_execution_state.dart';
-import '../../../domain/sla_audit/contractual_execution_state_repository.dart';
-import '../../../domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'sla_execution_item_view.dart';
 import 'sla_execution_query_service.dart';
 import 'sla_execution_summary.dart';

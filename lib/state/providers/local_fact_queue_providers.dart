@@ -1,17 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/local_sync_orchestrator.dart';
-import '../../domain/sla_audit/local_fact_queue/chain_integrity_verifier.dart';
-import '../../domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
-import '../../domain/sla_audit/local_fact_queue/sync_handshake_service.dart';
-import '../../infrastructure/local_fact_db/drift_local_fact_queue_repository.dart';
-import '../../infrastructure/local_fact_db/in_memory_local_fact_queue_repository.dart';
-import '../../infrastructure/local_fact_db/local_fact_database.dart';
-import '../../infrastructure/local_fact_db/supabase_sync_handshake_service.dart';
-import '../../infrastructure/persistence/persistence_mode.dart';
-import '../../infrastructure/persistence/persistence_provider.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../notifiers/connectivity_notifier.dart';
+import 'package:veraprob/application/sla_audit/local_sync_orchestrator.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/chain_integrity_verifier.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_handshake_service.dart';
+import 'package:veraprob/infrastructure/local_fact_db/drift_local_fact_queue_repository.dart';
+import 'package:veraprob/infrastructure/local_fact_db/in_memory_local_fact_queue_repository.dart';
+import 'package:veraprob/infrastructure/local_fact_db/local_fact_database.dart';
+import 'package:veraprob/infrastructure/local_fact_db/supabase_sync_handshake_service.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/notifiers/connectivity_notifier.dart';
 
 // ── Database singleton ────────────────────────────────────────────────────────
 

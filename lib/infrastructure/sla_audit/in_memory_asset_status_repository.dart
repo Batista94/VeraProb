@@ -1,6 +1,6 @@
-import '../../domain/sla_audit/asset_status.dart';
-import '../../domain/sla_audit/asset_status_event.dart';
-import '../../domain/sla_audit/asset_status_repository.dart';
+import 'package:veraprob/domain/sla_audit/asset_status.dart';
+import 'package:veraprob/domain/sla_audit/asset_status_event.dart';
+import 'package:veraprob/domain/sla_audit/asset_status_repository.dart';
 
 class InMemoryAssetStatusRepository implements AssetStatusRepository {
   // Ordered list of events per (organizationId, assetId)

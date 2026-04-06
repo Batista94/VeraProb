@@ -1,8 +1,8 @@
-import '../../domain/sla_audit/canonical_fact_repository.dart';
-import '../../domain/sla_audit/ingestion_integrity_flag.dart';
-import '../../domain/sla_audit/shadow_mode_repository.dart';
-import '../../domain/sla_audit/shadow_mode_simulation.dart';
-import '../../domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact_repository.dart';
+import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
+import 'package:veraprob/domain/sla_audit/shadow_mode_repository.dart';
+import 'package:veraprob/domain/sla_audit/shadow_mode_simulation.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'reporting_service.dart';
 
 /// Orchestrates [ShadowModeSimulation] computation and persistence.

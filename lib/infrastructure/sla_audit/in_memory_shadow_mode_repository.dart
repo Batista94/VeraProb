@@ -1,5 +1,5 @@
-import '../../domain/sla_audit/shadow_mode_repository.dart';
-import '../../domain/sla_audit/shadow_mode_simulation.dart';
+import 'package:veraprob/domain/sla_audit/shadow_mode_repository.dart';
+import 'package:veraprob/domain/sla_audit/shadow_mode_simulation.dart';
 
 /// In-memory implementation of [ShadowModeRepository] for testing.
 class InMemoryShadowModeRepository implements ShadowModeRepository {

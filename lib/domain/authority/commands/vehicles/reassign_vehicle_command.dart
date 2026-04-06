@@ -1,5 +1,5 @@
-import '../operational_command.dart';
-import '../../core/authority_types.dart';
+import 'package:veraprob/domain/authority/commands/operational_command.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
 
 /// Command to dynamically swap the vehicle executing a trip mid-operation.
 class ReassignVehicleCommand extends OperationalCommand {

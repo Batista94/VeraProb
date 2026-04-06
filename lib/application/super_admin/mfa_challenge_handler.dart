@@ -1,8 +1,8 @@
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/super_admin/i_mfa_repository.dart';
-import '../../domain/super_admin/mfa_challenge_result.dart';
-import '../../domain/super_admin/mfa_verification_result.dart' as domain;
-import 'mfa_result_view.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
+import 'package:veraprob/domain/super_admin/mfa_challenge_result.dart';
+import 'package:veraprob/domain/super_admin/mfa_verification_result.dart' as domain;
+import 'package:veraprob/application/super_admin/mfa_result_view.dart';
 
 /// Handles MFA challenge creation and TOTP verification for SuperAdmin.
 ///

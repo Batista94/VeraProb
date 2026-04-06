@@ -1,4 +1,4 @@
-import '../../domain/sla_audit/operational_alert_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
 
 /// Application service enforcing alert lifecycle transitions.
 ///

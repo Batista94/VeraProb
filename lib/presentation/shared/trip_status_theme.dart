@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../domain/enums/trip_status.dart';
-import '../../application/normalization/models/trip_status_view.dart';
-import '../../domain/enums/event_type.dart';
-import '../../domain/entities/operational_suggestion.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/application/normalization/models/trip_status_view.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/domain/entities/operational_suggestion.dart';
 
 /// Presentation-layer UI mappings for [TripStatus].
 ///

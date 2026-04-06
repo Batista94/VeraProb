@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../../domain/super_admin/cnpj_company_data.dart';
-import '../../domain/super_admin/i_cnpj_lookup_service.dart';
+import 'package:veraprob/domain/super_admin/cnpj_company_data.dart';
+import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
 
 /// ReceitaWS implementation of [ICnpjLookupService].
 ///

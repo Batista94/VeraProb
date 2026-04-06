@@ -1,6 +1,6 @@
-import '../../domain/sla_audit/smart_defaults.dart';
-import '../../domain/sla_audit/sla_template.dart';
-import '../../domain/sla_audit/transport_vertical.dart';
+import 'package:veraprob/domain/sla_audit/smart_defaults.dart';
+import 'package:veraprob/domain/sla_audit/sla_template.dart';
+import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
 
 /// Static catalog of system-provided SLA template presets.
 ///

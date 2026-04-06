@@ -1,6 +1,6 @@
-import '../../domain/sla_audit/canonical_fact.dart';
-import '../../domain/sla_audit/canonical_fact_repository.dart';
-import '../../domain/sla_audit/ingestion_integrity_flag.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact_repository.dart';
+import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 
 class InMemoryCanonicalFactRepository implements CanonicalFactRepository {
   final List<CanonicalFact> _facts = [];

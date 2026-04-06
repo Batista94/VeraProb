@@ -1,8 +1,8 @@
-import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/alert_financial_impact.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/alert_financial_impact.dart';
 
 export '../../domain/sla_audit/alert_financial_impact.dart';
-import '../../domain/sla_audit/sla_penalties.dart';
+import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
 
 /// Application service that bridges [SLAPenalties] to [AlertFinancialImpact].
 ///

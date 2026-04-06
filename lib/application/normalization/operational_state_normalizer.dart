@@ -1,7 +1,7 @@
 import 'dart:collection';
-import '../../core/utils/geo_math.dart';
-import '../../domain/entities/vehicle_position.dart';
-import '../../domain/entities/stop.dart';
+import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
+import 'package:veraprob/domain/entities/stop.dart';
 import 'models/vehicle_operational_state.dart';
 import 'models/motion_state.dart';
 import 'models/connectivity_state.dart';

@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
 
-import '../core/authority_types.dart';
-import '../decision/authorization_decision.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'authority_policy_evaluator.dart';
 
 /// In-Memory Stub for Phase 3 conceptual validation.

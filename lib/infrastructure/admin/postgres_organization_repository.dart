@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/admin/organization.dart';
-import '../../domain/admin/organization_repository.dart';
+import 'package:veraprob/domain/admin/organization.dart';
+import 'package:veraprob/domain/admin/organization_repository.dart';
 
 /// PostgreSQL implementation of [OrganizationRepository] using Supabase.
 class PostgresOrganizationRepository implements OrganizationRepository {

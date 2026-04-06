@@ -1,17 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/justification/approve_justification_handler.dart';
-import '../../application/sla_audit/justification/generate_justification_token_handler.dart';
-import '../../application/sla_audit/justification/review_justification_command.dart';
-import '../../application/sla_audit/justification/reject_justification_handler.dart';
-import '../../application/sla_audit/justification/submit_justification_handler.dart';
-import '../../domain/enums/user_role.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/justification/justification_status.dart';
-import '../../infrastructure/sla_audit/sla_persistence_provider.dart';
-import '../../infrastructure/sla_audit/justification/justification_evidence_storage_service.dart';
+import 'package:veraprob/application/sla_audit/justification/approve_justification_handler.dart';
+import 'package:veraprob/application/sla_audit/justification/generate_justification_token_handler.dart';
+import 'package:veraprob/application/sla_audit/justification/review_justification_command.dart';
+import 'package:veraprob/application/sla_audit/justification/reject_justification_handler.dart';
+import 'package:veraprob/application/sla_audit/justification/submit_justification_handler.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
+import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/justification/justification_evidence_storage_service.dart';
 import 'local_fact_queue_providers.dart';
+
+// Re-export so features/ can resolve the type without importing infrastructure/.
+export 'package:veraprob/infrastructure/sla_audit/justification/justification_evidence_storage_service.dart'
+    show JustificationEvidenceStorageService;
 
 // ── Handler providers (not cached) ───────────────────────────────────────────
 

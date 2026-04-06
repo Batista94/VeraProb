@@ -1,6 +1,6 @@
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/super_admin/i_mfa_repository.dart';
-import '../../domain/super_admin/mfa_enrollment_result.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
+import 'package:veraprob/domain/super_admin/mfa_enrollment_result.dart';
 
 /// Handles TOTP enrollment for SuperAdmin accounts.
 ///

@@ -3,21 +3,21 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../domain/enums/user_permissions.dart';
-import '../../../domain/services/rbac_service.dart';
-import '../../../domain/sla_audit/domain_exception.dart';
-import '../../../domain/sla_audit/execution_events.dart';
-import '../../../domain/sla_audit/justification/contractor_justification.dart';
-import '../../../domain/sla_audit/justification/justification_category.dart';
-import '../../../domain/sla_audit/justification/justification_evidence.dart';
-import '../../../domain/sla_audit/justification/justification_repository.dart';
-import '../../../domain/sla_audit/justification/justification_status.dart';
-import '../../../domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
-import '../../../domain/sla_audit/local_fact_queue/pending_fact.dart';
-import '../../../domain/sla_audit/local_fact_queue/sync_status.dart';
-import '../../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/enums/user_permissions.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/execution_events.dart';
+import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_category.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_evidence.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_repository.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'submit_justification_command.dart';
-import '../sla_ledger_mapper.dart';
+import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 
 /// Application handler for [SubmitJustificationCommand].
 ///

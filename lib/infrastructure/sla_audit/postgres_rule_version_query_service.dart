@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/rule_version_history_entry.dart';
-import '../../domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/application/sla_audit/rule_version_history_entry.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 
 /// Query service for the Rule Studio's history panel.
 ///

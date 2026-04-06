@@ -1,7 +1,7 @@
 import 'dart:collection';
 
-import '../../domain/sla_audit/service_manifest.dart';
-import '../../domain/sla_audit/service_manifest_repository.dart';
+import 'package:veraprob/domain/sla_audit/service_manifest.dart';
+import 'package:veraprob/domain/sla_audit/service_manifest_repository.dart';
 
 /// In-memory implementation of [ServiceManifestRepository].
 ///

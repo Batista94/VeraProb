@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'contractual_evaluation_engine.dart';
 import 'contractual_financial_closing_service.dart';
 

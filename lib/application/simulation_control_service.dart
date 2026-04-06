@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import '../domain/entities/trip_event.dart';
-import '../domain/enums/event_type.dart';
-import '../data/services/fleet_simulation_service.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/data/services/fleet_simulation_service.dart';
 import 'audit/audit_service.dart';
 import 'operational_control_service.dart';
 import 'ports/contractual_event_port.dart';

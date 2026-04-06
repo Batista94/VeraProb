@@ -1,8 +1,8 @@
 import 'dart:collection';
 
-import '../../domain/sla_audit/contract.dart';
-import '../../domain/sla_audit/contract_repository.dart';
-import '../../domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/sla_audit/contract.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
 
 /// In-memory implementation of [ContractRepository].
 ///

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/sla_audit/evaluation_trace.dart';
-import '../../domain/sla_audit/sla_ledger_entry.dart';
-import '../../domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'auth_providers.dart';
 import 'sla_providers.dart';
 

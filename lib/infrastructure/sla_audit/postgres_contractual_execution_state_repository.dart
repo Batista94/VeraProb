@@ -1,10 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/contractual_execution_state.dart';
-import '../../domain/sla_audit/contractual_execution_state_repository.dart';
-import '../../domain/sla_audit/execution_status.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
 
 /// Postgres implementation of [ContractualExecutionStateRepository].
 ///

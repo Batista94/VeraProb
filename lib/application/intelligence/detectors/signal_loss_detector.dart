@@ -1,8 +1,8 @@
-import '../../../domain/entities/operational_trip.dart';
-import '../../../domain/entities/operational_warning.dart';
-import '../../../domain/entities/trip_event.dart';
-import '../../normalization/models/vehicle_operational_state.dart';
-import '../../normalization/models/connectivity_state.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/operational_warning.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 import 'situation_detector.dart';
 
 /// Detects if a vehicle has lost GPS transmission connectivity.
@@ -28,8 +28,7 @@ class SignalLossDetector extends SituationDetector {
     if (state == null) return null;
 
     if (state.connectivityState == ConnectivityState.signalLost) {
-      final secondsSincePing = DateTime.now()
-          .toUtc()
+      final secondsSincePing = DateTime.now().toUtc()
           .difference(state.lastRawPingAt)
           .inSeconds;
 

@@ -1,8 +1,8 @@
-import '../../domain/sla_audit/contract_events.dart';
-import '../../domain/sla_audit/contractual_plan_declared_event.dart';
-import '../../domain/sla_audit/domain_event.dart';
-import '../../domain/sla_audit/execution_events.dart';
-import '../../domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/domain/sla_audit/contract_events.dart';
+import 'package:veraprob/domain/sla_audit/contractual_plan_declared_event.dart';
+import 'package:veraprob/domain/sla_audit/domain_event.dart';
+import 'package:veraprob/domain/sla_audit/execution_events.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 
 export '../../domain/sla_audit/sla_ledger_entry.dart';
 

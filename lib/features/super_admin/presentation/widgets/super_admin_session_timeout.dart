@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../state/providers/auth_providers.dart';
-import '../../../admin/presentation/lock_screen.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 
 /// Wraps the SuperAdmin shell to monitor for user inactivity.
 /// Shows a warning dialog after 5 minutes of idle time.

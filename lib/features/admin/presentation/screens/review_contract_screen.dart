@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../application/sla_audit/accept_by_contractor_command.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../infrastructure/sla_audit/postgres_contract_review_token_query_service.dart';
-import '../../../../state/providers/contract_providers.dart';
+import 'package:veraprob/application/sla_audit/accept_by_contractor_command.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
 
 /// Public screen for contractors to review and accept a contract.
 ///

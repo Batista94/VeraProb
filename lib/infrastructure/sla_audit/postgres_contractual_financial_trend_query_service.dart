@@ -1,8 +1,8 @@
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/projections/contractual_financial_trend_point.dart';
-import '../../application/sla_audit/projections/contractual_financial_trend_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_point.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_query_service.dart';
 
 /// Postgres implementation for [ContractualFinancialTrendQueryService].
 /// Extracts time-series financial trend projection directly from `contractual_financial_snapshot`.

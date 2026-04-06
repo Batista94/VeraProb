@@ -1,8 +1,8 @@
-import '../../domain/entities/operational_suggestion.dart';
+import 'package:veraprob/domain/entities/operational_suggestion.dart';
 
 export '../../domain/entities/operational_suggestion.dart';
-import '../../domain/entities/operational_trip.dart';
-import '../../domain/enums/trip_status.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
 
 /// The Suggestion Engine provides actionable recommendations for operators.
 ///

@@ -1,4 +1,4 @@
-import '../../../domain/sla_audit/audit_package.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
 
 /// Read model: contractor-facing view of a single sealed billing cycle.
 ///

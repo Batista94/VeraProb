@@ -119,4 +119,18 @@ class PostgresTestConfig {
       return false; // Connection refused or timeout
     }
   }
+
+  /// Verifica se as Edge Functions estão rodando localmente.
+  /// Requer `supabase functions serve super-admin-proxy` ativo.
+  static Future<bool> isEdgeFunctionsRunning() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$supabaseUrl/functions/v1/super-admin-proxy'))
+          .timeout(const Duration(seconds: 2));
+      // 401/405 means the function is up but needs auth — that's fine
+      return response.statusCode != 503 && response.statusCode != 0;
+    } catch (_) {
+      return false;
+    }
+  }
 }

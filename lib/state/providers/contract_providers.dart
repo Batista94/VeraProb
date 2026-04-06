@@ -1,32 +1,36 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/accept_by_contractor_handler.dart';
-import '../../application/sla_audit/clone_contract_handler.dart';
-import '../../application/sla_audit/close_contract_handler.dart';
-import '../../application/sla_audit/contract_approval_command_service.dart';
-import '../../application/sla_audit/create_contract_handler.dart';
-import '../../application/sla_audit/submit_contract_for_approval_handler.dart';
-import '../../infrastructure/sla_audit/postgres_contract_approval_command_service.dart';
-import '../../infrastructure/sla_audit/postgres_contract_review_token_query_service.dart';
-import '../../application/sla_audit/declare_contractual_plan_handler.dart';
-import '../../application/sla_audit/projections/contract_detail_view.dart';
-import '../../application/sla_audit/projections/contract_query_service.dart';
-import '../../application/sla_audit/projections/contract_query_service_in_memory.dart';
-import '../../application/sla_audit/projections/contract_summary_view.dart';
-import '../../application/sla_audit/shift_projection_service.dart';
-import '../../application/sla_audit/projections/contract_status_view.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/contractual_rule_repository.dart';
-import '../../infrastructure/persistence/persistence_mode.dart';
-import '../../infrastructure/persistence/persistence_provider.dart';
-import '../../infrastructure/sla_audit/in_memory_contractual_rule_repository.dart';
-import '../../infrastructure/sla_audit/postgres_contract_query_service.dart';
-import '../../infrastructure/sla_audit/postgres_contractual_rule_repository.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/application/sla_audit/accept_by_contractor_handler.dart';
+import 'package:veraprob/application/sla_audit/clone_contract_handler.dart';
+import 'package:veraprob/application/sla_audit/close_contract_handler.dart';
+import 'package:veraprob/application/sla_audit/contract_approval_command_service.dart';
+import 'package:veraprob/application/sla_audit/create_contract_handler.dart';
+import 'package:veraprob/application/sla_audit/submit_contract_for_approval_handler.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contract_approval_command_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contract_review_token_query_service.dart';
+import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_query_service_in_memory.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
+import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_rule_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contract_query_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_rule_repository.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'admin_providers.dart';
 import 'auth_providers.dart';
 import 'operational_zone_providers.dart';
 import 'sla_providers.dart';
+
+// Re-export so features/ can use ContractReviewSummary without importing infra/.
+export 'package:veraprob/infrastructure/sla_audit/postgres_contract_review_token_query_service.dart'
+    show ContractReviewSummary;
 
 // ── Rule repository ──────────────────────────────────────────
 

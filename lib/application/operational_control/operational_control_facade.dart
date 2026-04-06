@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 
-import '../../domain/authority/commands/trips/resolve_alert_command.dart';
-import '../../domain/authority/commands/trips/create_trip_event_command.dart';
-import '../../domain/enums/event_type.dart';
+import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
+import 'package:veraprob/domain/authority/commands/trips/create_trip_event_command.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
 
 export '../../domain/enums/event_type.dart';
-import '../authority/operational_command_bus.dart';
+import 'package:veraprob/application/authority/operational_command_bus.dart';
 
 /// Application Facade for Operational Intent.
 ///

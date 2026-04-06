@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/audit_log_projection.dart';
+import 'package:veraprob/application/projections/models/audit_log_projection.dart';
 
 /// The pure state representing the active filters applied to the Audit Log View.
 class AuditFilterState {

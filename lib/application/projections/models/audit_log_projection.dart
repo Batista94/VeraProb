@@ -1,4 +1,4 @@
-import '../../../domain/enums/incident_lifecycle_status.dart';
+import 'package:veraprob/domain/enums/incident_lifecycle_status.dart';
 
 /// A rigidly formatted audit log entry for the projection layer.
 class AuditLogEntry {

@@ -1,10 +1,10 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-import '../../domain/sla_audit/audit_package.dart';
-import '../../domain/sla_audit/audit_package_status.dart';
-import '../../domain/sla_audit/billing_cycle_report.dart';
-import '../../domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
+import 'package:veraprob/domain/sla_audit/audit_package_status.dart';
+import 'package:veraprob/domain/sla_audit/billing_cycle_report.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 /// Generates legally-defensible PDF exports from sealed [AuditPackage] records.
 ///

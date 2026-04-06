@@ -1,5 +1,5 @@
-import '../operational_command.dart';
-import '../../core/authority_types.dart';
+import 'package:veraprob/domain/authority/commands/operational_command.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
 
 /// Command to explicitly authorize or deny a vehicle to deviate from the planned route.
 class OverrideRouteDeviationCommand extends OperationalCommand {

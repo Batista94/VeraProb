@@ -113,6 +113,9 @@ Future<SupabaseClient> _signIn(
 
 void main() async {
   final isRunning = await PostgresTestConfig.isSupabaseRunning();
+  final areFunctionsRunning = isRunning
+      ? await PostgresTestConfig.isEdgeFunctionsRunning()
+      : false;
 
   group(
     'SupabaseSuperAdminRepository — Integração Postgres',
@@ -494,89 +497,100 @@ void main() async {
       // ── getAllTenantHealth ──────────────────────────────────────────────────
       // NOTE (Phase 9.6): These tests require the `super-admin-proxy` Edge
       // Function to be deployed (`supabase functions serve super-admin-proxy`).
-      // They are skipped here because they depend on the Edge Function runtime,
-      // not just the DB. Unit-level coverage is in
+      // Unit-level coverage is in
       // test/infrastructure/super_admin/supabase_super_admin_repository_test.dart
 
-      group('getAllTenantHealth', () {
-        test('retorna lista de TenantHealthSnapshot', () async {
-          // Cria uma org de teste para garantir que a view tenha pelo menos uma linha
-          final cnpj = _uniqueCnpj();
-          await repo.createOrganization(_testCmd(cnpj));
-
-          final snapshots = await superAdminRepo.getAllTenantHealth();
-
-          expect(snapshots, isA<List<TenantHealthSnapshot>>());
-          expect(snapshots, isNotEmpty);
-
-          for (final s in snapshots) {
-            expect(s.id, isNotEmpty);
-            expect(s.name, isNotEmpty);
-          }
-        });
-
-        test(
-          'org recém-criada aparece na view com active_contract_count = 0',
-          () async {
+      group(
+        'getAllTenantHealth',
+        () {
+          test('retorna lista de TenantHealthSnapshot', () async {
+            // Cria uma org de teste para garantir que a view tenha pelo menos uma linha
             final cnpj = _uniqueCnpj();
-            final orgId = await repo.createOrganization(_testCmd(cnpj));
+            await repo.createOrganization(_testCmd(cnpj));
 
             final snapshots = await superAdminRepo.getAllTenantHealth();
-            final match = snapshots.where((s) => s.id == orgId).toList();
 
-            expect(
-              match,
-              isNotEmpty,
-              reason: 'Org recém-criada deve aparecer na health view',
-            );
-            expect(match.first.activeContractCount, equals(0));
-            expect(match.first.openCriticalAlertCount, equals(0));
-          },
-        );
-      });
+            expect(snapshots, isA<List<TenantHealthSnapshot>>());
+            expect(snapshots, isNotEmpty);
+
+            for (final s in snapshots) {
+              expect(s.id, isNotEmpty);
+              expect(s.name, isNotEmpty);
+            }
+          });
+
+          test(
+            'org recém-criada aparece na view com active_contract_count = 0',
+            () async {
+              final cnpj = _uniqueCnpj();
+              final orgId = await repo.createOrganization(_testCmd(cnpj));
+
+              final snapshots = await superAdminRepo.getAllTenantHealth();
+              final match = snapshots.where((s) => s.id == orgId).toList();
+
+              expect(
+                match,
+                isNotEmpty,
+                reason: 'Org recém-criada deve aparecer na health view',
+              );
+              expect(match.first.activeContractCount, equals(0));
+              expect(match.first.openCriticalAlertCount, equals(0));
+            },
+          );
+        },
+        skip: !areFunctionsRunning
+            ? 'Edge Functions não estão rodando. Execute: supabase functions serve super-admin-proxy'
+            : null,
+      );
 
       // ── getSystemAuditLog ──────────────────────────────────────────────────
       // NOTE (Phase 9.6): Same Edge Function requirement as getAllTenantHealth.
 
-      group('getSystemAuditLog', () {
-        test('retorna lista sem filtro', () async {
-          final logs = await superAdminRepo.getSystemAuditLog(limit: 10);
-          expect(logs, isA<List<SystemAuditLogEntry>>());
-        });
-
-        test('filtra por organization_id corretamente', () async {
-          final cnpj = _uniqueCnpj();
-          final orgId = await repo.createOrganization(_testCmd(cnpj));
-
-          // Insere entrada de log vinculada à org de teste
-          await serviceRoleClient.from('system_audit_log').insert({
-            'event_type': 'SUPER_ADMIN_TEST',
-            'severity': 'info',
-            'organization_id': orgId,
-            'source': 'test_suite',
+      group(
+        'getSystemAuditLog',
+        () {
+          test('retorna lista sem filtro', () async {
+            final logs = await superAdminRepo.getSystemAuditLog(limit: 10);
+            expect(logs, isA<List<SystemAuditLogEntry>>());
           });
 
-          final filtered = await superAdminRepo.getSystemAuditLog(
-            organizationId: orgId,
-            limit: 50,
-          );
+          test('filtra por organization_id corretamente', () async {
+            final cnpj = _uniqueCnpj();
+            final orgId = await repo.createOrganization(_testCmd(cnpj));
 
-          expect(filtered, isNotEmpty);
-          expect(
-            filtered.every((e) => e.organizationId == orgId),
-            isTrue,
-            reason: 'Todos os logs filtrados devem pertencer à org',
-          );
-        });
+            // Insere entrada de log vinculada à org de teste
+            await serviceRoleClient.from('system_audit_log').insert({
+              'event_type': 'SUPER_ADMIN_TEST',
+              'severity': 'info',
+              'organization_id': orgId,
+              'source': 'test_suite',
+            });
 
-        test('filtra por severity corretamente', () async {
-          final logs = await superAdminRepo.getSystemAuditLog(
-            severity: 'error',
-            limit: 20,
-          );
-          expect(logs.every((e) => e.severity == 'error'), isTrue);
-        });
-      });
+            final filtered = await superAdminRepo.getSystemAuditLog(
+              organizationId: orgId,
+              limit: 50,
+            );
+
+            expect(filtered, isNotEmpty);
+            expect(
+              filtered.every((e) => e.organizationId == orgId),
+              isTrue,
+              reason: 'Todos os logs filtrados devem pertencer à org',
+            );
+          });
+
+          test('filtra por severity corretamente', () async {
+            final logs = await superAdminRepo.getSystemAuditLog(
+              severity: 'error',
+              limit: 20,
+            );
+            expect(logs.every((e) => e.severity == 'error'), isTrue);
+          });
+        },
+        skip: !areFunctionsRunning
+            ? 'Edge Functions não estão rodando. Execute: supabase functions serve super-admin-proxy'
+            : null,
+      );
     },
   );
 }

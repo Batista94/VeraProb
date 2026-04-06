@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../application/sla_audit/projections/sanction_queue_item_view.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/auditor_queue_providers.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../state/providers/sla_providers.dart';
-import '../widgets/sanction_verdict_card.dart';
+import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/auditor_queue_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/sla_providers.dart';
+import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
 
 /// Tribunal de Auditoria — Human-in-the-Loop review of engine-recommended sanctions.
 ///

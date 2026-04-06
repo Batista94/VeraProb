@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
 
 /// Read model: individual SET obligation view for lists and drill-down.
 ///

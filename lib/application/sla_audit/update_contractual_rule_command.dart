@@ -1,5 +1,5 @@
-import '../../domain/enums/user_role.dart';
-import '../../domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 
 /// Immutable command DTO for updating a contractual rule configuration.
 ///

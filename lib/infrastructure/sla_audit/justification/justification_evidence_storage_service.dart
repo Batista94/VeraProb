@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../core/config/supabase_client.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
 
 /// Uploads raw evidence bytes to Supabase Storage and returns the storage path.
 ///

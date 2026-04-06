@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/sla_audit/service_manifest.dart';
-import '../../domain/sla_audit/service_manifest_repository.dart';
-import '../../infrastructure/persistence/persistence_mode.dart';
-import '../../infrastructure/persistence/persistence_provider.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../../infrastructure/sla_audit/in_memory_service_manifest_repository.dart';
-import '../../infrastructure/sla_audit/postgres_service_manifest_repository.dart';
+import 'package:veraprob/domain/sla_audit/service_manifest.dart';
+import 'package:veraprob/domain/sla_audit/service_manifest_repository.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_service_manifest_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_service_manifest_repository.dart';
 import 'auth_providers.dart';
 
 // ── Repository ───────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/authority/decision/authorization_decision.dart';
-import '../../domain/authority/repositories/forensic_decision_repository.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
+import 'package:veraprob/domain/authority/repositories/forensic_decision_repository.dart';
 
 /// Postgres implementation of the [ForensicDecisionRepository].
 /// Operates strictly as an immutable append-only storage for Forensic Decisions.

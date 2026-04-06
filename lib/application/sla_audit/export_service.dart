@@ -1,6 +1,6 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import '../../application/shared/billing_cycle_view.dart';
+import 'package:veraprob/application/shared/billing_cycle_view.dart';
 
 /// Service responsible for generating deterministic exports in CSV and PDF formats.
 class ExportService {

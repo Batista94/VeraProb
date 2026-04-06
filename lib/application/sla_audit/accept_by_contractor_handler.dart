@@ -1,6 +1,6 @@
-import '../../domain/sla_audit/contract_events.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_events.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'accept_by_contractor_command.dart';
 import 'contract_approval_command_service.dart';
 import 'sla_ledger_mapper.dart';

@@ -1,12 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/contractual_service_execution.dart';
-import '../../domain/sla_audit/plan_declaration.dart';
-import '../../domain/sla_audit/plan_declaration_repository.dart';
-import '../../domain/sla_audit/rule_snapshot.dart';
-import '../../domain/sla_audit/shift_pattern.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
 
 /// Postgres implementation of [PlanDeclarationRepository].
 ///

@@ -1,6 +1,6 @@
 import 'dart:async';
-import '../../data/services/fleet_simulation_service.dart';
-import '../../domain/entities/vehicle_position.dart';
+import 'package:veraprob/data/services/fleet_simulation_service.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'operational_data_provider.dart';
 
 /// Adapter that connects the [FleetSimulationService] to the operational data pipeline.

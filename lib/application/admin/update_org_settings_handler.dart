@@ -1,8 +1,8 @@
-import '../../domain/admin/organization_repository.dart';
-import '../../domain/enums/user_permissions.dart';
-import '../../domain/enums/user_role.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/admin/organization_repository.dart';
+import 'package:veraprob/domain/enums/user_permissions.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'update_org_settings_command.dart';
 
 /// Application handler for updating organization settings.

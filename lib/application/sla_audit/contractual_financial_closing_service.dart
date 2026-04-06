@@ -1,4 +1,4 @@
-import '../../core/time/brazil_time.dart';
+import 'package:veraprob/core/time/brazil_time.dart';
 import 'projections/contractual_financial_snapshot_generator.dart';
 
 /// Automated daily financial closing service.

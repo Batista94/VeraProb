@@ -1,10 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/sla_audit/service_manifest.dart';
-import '../../domain/sla_audit/service_manifest_repository.dart';
-import '../../domain/sla_audit/sla_penalties.dart';
-import '../../domain/sla_audit/transport_vertical.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/sla_audit/service_manifest.dart';
+import 'package:veraprob/domain/sla_audit/service_manifest_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
+import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
 
 /// Postgres implementation of [ServiceManifestRepository].
 ///

@@ -1,4 +1,4 @@
-import '../../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
 import 'contractual_financial_impact.dart';
 import 'contractual_financial_impact_query_service.dart';
 

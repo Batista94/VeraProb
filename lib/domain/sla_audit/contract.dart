@@ -7,7 +7,7 @@ import 'contract_events.dart';
 import 'contract_status.dart';
 import 'domain_event.dart';
 import 'domain_exception.dart';
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 /// Aggregate Root representing a formal contractual agreement between
 /// the operating organization and a contractor.

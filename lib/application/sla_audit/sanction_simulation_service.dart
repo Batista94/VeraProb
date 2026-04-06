@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
-import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
-import '../../domain/sla_audit/verdict_evidence.dart';
-import '../../domain/sla_audit/execution_events.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
+import 'package:veraprob/domain/sla_audit/execution_events.dart';
 import 'sla_ledger_mapper.dart';
 
-import '../../domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 
 /// Service used ONLY during development/Stress Mode to inject
 /// artificial sanctions into the review queue for testing Phase 9.

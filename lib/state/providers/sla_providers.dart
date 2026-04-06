@@ -1,28 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/sanction_simulation_service.dart';
-import '../../application/sla_audit/projections/sla_execution_item_view.dart';
-import '../../application/sla_audit/contractual_evaluation_engine.dart';
-import '../../application/sla_audit/contractual_evaluation_subscriber.dart';
-import '../../application/sla_audit/contractual_financial_closing_service.dart';
-import '../../application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
-import '../../application/sla_audit/projections/sla_execution_query_service.dart';
-import '../../application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
-import '../../application/sla_audit/projections/sla_execution_summary.dart';
-import '../../application/normalization/models/vehicle_operational_state.dart';
-import '../../domain/sla_audit/execution_status.dart';
-import '../../infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
-import '../../infrastructure/persistence/persistence_mode.dart';
-import '../../infrastructure/persistence/persistence_provider.dart';
-import '../../infrastructure/sla_audit/sla_persistence_provider.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../../infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
-import '../../domain/sla_audit/evaluation_trace_repository.dart';
-import '../../infrastructure/sla_audit/postgres_evaluation_trace_repository.dart';
-import '../../domain/sla_audit/operational_alert_repository.dart';
-import '../../infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
-import '../../infrastructure/sla_audit/postgres_operational_alert_repository.dart';
+import 'package:veraprob/application/sla_audit/sanction_simulation_service.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
+import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
+import 'package:veraprob/application/sla_audit/contractual_evaluation_subscriber.dart';
+import 'package:veraprob/application/sla_audit/contractual_financial_closing_service.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_evaluation_trace_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_operational_alert_repository.dart';
 import 'auth_providers.dart';
 import 'fleet_providers.dart';
 import 'sla_financial_providers.dart';
@@ -34,7 +34,8 @@ export '../../infrastructure/sla_audit/sla_persistence_provider.dart'
         planDeclarationRepositoryProvider,
         contractualExecutionStateRepositoryProvider,
         slaAuditLedgerRepositoryProvider,
-        contractRepositoryProvider;
+        contractRepositoryProvider,
+        justificationRepositoryProvider;
 
 // ── Repositories (Singletons) ───────────────────────────────
 // planDeclarationRepositoryProvider, contractualExecutionStateRepositoryProvider,

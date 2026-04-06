@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/sla_audit/contractual_rule.dart';
-import '../../domain/sla_audit/contractual_rule_repository.dart';
-import '../../domain/sla_audit/rule_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 
 class PostgresContractualRuleRepository implements ContractualRuleRepository {
   final SupabaseClient _client;

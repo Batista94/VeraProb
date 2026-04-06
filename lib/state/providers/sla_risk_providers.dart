@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/sla_audit/execution_status.dart';
-import '../../domain/sla_audit/sla_breach_risk_calculator.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/sla_breach_risk_calculator.dart';
 import 'auth_providers.dart';
 import 'sla_providers.dart';
 

@@ -1,12 +1,12 @@
-import '../../../application/operational_control_service.dart';
-import '../../../domain/entities/operational_warning.dart';
+import 'package:veraprob/application/operational_control_service.dart';
+import 'package:veraprob/domain/entities/operational_warning.dart';
 import 'detectors/delay_detector.dart';
 import 'detectors/off_route_detector.dart';
 import 'detectors/signal_loss_detector.dart';
 import 'detectors/situation_detector.dart';
 import 'detectors/stopped_vehicle_detector.dart';
 
-import '../normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 
 /// The core intelligence engine that analyzes active trips and detects issues.
 ///

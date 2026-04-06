@@ -1,4 +1,4 @@
-import '../../domain/authority/commands/operational_command.dart';
+import 'package:veraprob/domain/authority/commands/operational_command.dart';
 
 export '../../domain/authority/commands/operational_command.dart';
 export '../../domain/authority/commands/trips/update_trip_status_command.dart';

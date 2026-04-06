@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web/web.dart' as web;
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/admin_providers.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../application/admin/accept_invitation_command.dart';
-import '../lock_screen.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/admin_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/application/admin/accept_invitation_command.dart';
+import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 
 /// Public screen for accepting a pending invitation.
 ///

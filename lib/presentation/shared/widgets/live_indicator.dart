@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// A pulsing green dot indicating live connection.
 class LiveIndicator extends StatefulWidget {

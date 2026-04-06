@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../providers/local_fact_queue_providers.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/providers/local_fact_queue_providers.dart';
 
 /// Connection lifecycle states for the Edge Ledger sync.
 enum EdgeLedgerConnectionState { connected, disconnected, syncing }

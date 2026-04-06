@@ -2,9 +2,9 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
-import '../state/providers/fleet_providers.dart';
-import '../state/providers/sla_providers.dart';
-import '../state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/state/providers/sla_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// Core metrics repository for the Stress Mode (Dev Only).
 class PerformanceMetrics {

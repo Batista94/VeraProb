@@ -1,5 +1,5 @@
-import '../../domain/sla_audit/sanction_review_queue_entry.dart';
-import '../../domain/sla_audit/sanction_review_queue_repository.dart';
+import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
+import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
 
 /// In-memory implementation of [SanctionReviewQueueRepository].
 ///

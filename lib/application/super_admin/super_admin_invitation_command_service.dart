@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/admin/invitation_command_service.dart';
-import '../../domain/enums/user_role.dart';
+import 'package:veraprob/application/admin/invitation_command_service.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// SuperAdmin implementation of [InvitationCommandService].
 ///

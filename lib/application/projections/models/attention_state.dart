@@ -1,6 +1,6 @@
-import '../../normalization/models/trip_status_view.dart';
-import '../../normalization/models/connectivity_state.dart';
-import '../../normalization/models/route_adherence.dart';
+import 'package:veraprob/application/normalization/models/trip_status_view.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/route_adherence.dart';
 
 /// Operational attention level for a vehicle in the Command Center.
 ///

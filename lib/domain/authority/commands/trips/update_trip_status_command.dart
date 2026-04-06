@@ -1,6 +1,6 @@
-import '../operational_command.dart';
-import '../../core/authority_types.dart';
-import '../../../enums/trip_status.dart';
+import 'package:veraprob/domain/authority/commands/operational_command.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
 
 /// Command to manually override the status of a Trip.
 class UpdateTripStatusCommand extends OperationalCommand {

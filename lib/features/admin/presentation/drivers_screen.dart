@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/services/logger_service.dart';
+import 'package:veraprob/core/services/logger_service.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import '../../../state/providers/auth_providers.dart';
-import '../../shared/providers.dart';
-import '../providers/drivers_provider.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/features/shared/providers.dart';
+import 'package:veraprob/features/admin/providers/drivers_provider.dart';
 import 'widgets/driver_form_drawer.dart';
 
 class DriversScreen extends ConsumerStatefulWidget {

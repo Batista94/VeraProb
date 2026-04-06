@@ -1,4 +1,4 @@
-import '../../../domain/enums/user_role.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// Command to generate a time-limited tokenized link for driver self-service.
 ///

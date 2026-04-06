@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../domain/enums/user_role.dart';
-import '../../../state/providers/auth_providers.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// A widget that conditionally renders its child based on the current user's role.
 ///

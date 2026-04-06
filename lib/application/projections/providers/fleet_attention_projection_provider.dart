@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../normalization/models/trip_status_view.dart';
-import '../../../domain/enums/trip_status.dart';
-import '../../../state/providers/fleet_providers.dart';
-import '../models/attention_state.dart';
+import 'package:veraprob/application/normalization/models/trip_status_view.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/application/projections/models/attention_state.dart';
 
 /// Context for a single vehicle's attention state on the map.
 class AttentionContext {

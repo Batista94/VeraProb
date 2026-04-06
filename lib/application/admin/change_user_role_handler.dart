@@ -1,6 +1,6 @@
-import '../../domain/enums/user_permissions.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/enums/user_permissions.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'change_user_role_command.dart';
 import 'user_management_command_service.dart';
 

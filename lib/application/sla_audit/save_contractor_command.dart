@@ -1,4 +1,4 @@
-import '../../domain/enums/user_role.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 class SaveContractorCommand {
   final String organizationId;

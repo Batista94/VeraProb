@@ -1,9 +1,9 @@
-import '../../../domain/entities/operational_trip.dart';
-import '../../../domain/entities/operational_warning.dart';
-import '../../../domain/entities/trip_event.dart';
-import '../../../domain/enums/trip_status.dart';
-import '../../normalization/models/vehicle_operational_state.dart';
-import '../../normalization/models/motion_state.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/operational_warning.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'situation_detector.dart';
 
 /// Detects if a dispatched/enRoute vehicle is stopped for too long.
@@ -30,8 +30,7 @@ class StoppedVehicleDetector extends SituationDetector {
   ) {
     // 1. Check real operational state from the Normalization Layer
     if (state != null && state.motionState == MotionState.stopped) {
-      final minutesStopped = DateTime.now()
-          .toUtc()
+      final minutesStopped = DateTime.now().toUtc()
           .difference(state.stateChangedAt)
           .inMinutes;
       // Only warn if stopped for a significant time based on business logic

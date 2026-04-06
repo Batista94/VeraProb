@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widgets/charts_section.dart';
 import 'widgets/contractual_risk_radar.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../state/providers/auth_providers.dart';
-import '../../../state/providers/admin_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/admin_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});

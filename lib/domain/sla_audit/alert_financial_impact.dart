@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 /// Financial severity tier for alert prioritization.
 ///

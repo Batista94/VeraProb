@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../state/providers/justification_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/justification_providers.dart';
 import 'widgets/justification_status_badge.dart';
 
 /// Side drawer showing justification details with approve/reject actions.

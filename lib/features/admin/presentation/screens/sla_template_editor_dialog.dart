@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_template_view.dart';
 import 'package:veraprob/application/sla_audit/projections/penalties_form_data.dart';
 import 'package:veraprob/application/sla_audit/smart_defaults_service.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../state/providers/sla_template_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/sla_template_providers.dart';
 
 /// Shows the SLA template editor dialog (INV-24: overlay modal).
 ///

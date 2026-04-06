@@ -1,6 +1,6 @@
 import 'package:veraprob/domain/enums/event_type.dart';
-import '../operational_command.dart';
-import '../../core/authority_types.dart';
+import 'package:veraprob/domain/authority/commands/operational_command.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
 
 /// Command to register an operational occurrence on a specific Trip.
 class CreateTripEventCommand extends OperationalCommand {

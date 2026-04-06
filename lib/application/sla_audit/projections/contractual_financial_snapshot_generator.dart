@@ -1,10 +1,10 @@
-import '../../../core/time/brazil_time.dart';
-import '../../../domain/shared/money.dart';
-import '../../../domain/sla_audit/contractual_execution_state_repository.dart';
-import '../../../domain/sla_audit/contractual_financial_daily_snapshot.dart';
-import '../../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
-import '../../../domain/sla_audit/execution_status.dart';
-import '../../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/core/time/brazil_time.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 
 /// Generates immutable daily financial snapshots from execution states.
 ///

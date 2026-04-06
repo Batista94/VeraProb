@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../domain/enums/vehicle_status.dart';
-import '../../../state/providers/operational_zone_providers.dart';
-import '../../../state/providers/contractor_providers.dart';
-import '../../../state/providers/sla_template_providers.dart';
-import '../../../features/admin/providers/vehicles_provider.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/enums/vehicle_status.dart';
+import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/state/providers/contractor_providers.dart';
+import 'package:veraprob/state/providers/sla_template_providers.dart';
+import 'package:veraprob/features/admin/providers/vehicles_provider.dart';
 
 /// Slim top bar verifying 4 core master data prerequisites.
 /// Renders as a 48px strip anchored above the main content — no layout displacement.

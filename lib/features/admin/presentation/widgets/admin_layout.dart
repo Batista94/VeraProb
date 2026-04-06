@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../state/providers/auth_providers.dart';
-import '../../providers/admin_navigation_provider.dart';
-import '../../../../application/projections/providers/feed_health_projection_provider.dart';
-import '../../../../dev/performance_metrics.dart';
-import '../../../../state/providers/fleet_providers.dart';
-import '../../../../state/providers/contract_providers.dart';
-import '../../../../application/adapters/stress_scenario_config.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../lock_screen.dart';
-import '../../../../presentation/shell/widgets/onboarding_progress_banner.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
+import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
+import 'package:veraprob/dev/performance_metrics.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/application/adapters/stress_scenario_config.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/lock_screen.dart';
+import 'package:veraprob/presentation/shell/widgets/onboarding_progress_banner.dart';
 
 class AdminLayout extends ConsumerWidget {
   final List<Widget> children;

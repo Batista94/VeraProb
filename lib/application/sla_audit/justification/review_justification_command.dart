@@ -1,4 +1,4 @@
-import '../../../domain/enums/user_role.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// Base command for approve/reject justification flows.
 class ApproveJustificationCommand {

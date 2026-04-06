@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../domain/sla_audit/heartbeat_classification.dart';
+import 'package:veraprob/domain/sla_audit/heartbeat_classification.dart';
 
 /// Read model: fleet-level heartbeat health snapshot.
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/projections/dashboard_risk_feed_node.dart';
+import 'package:veraprob/application/sla_audit/projections/dashboard_risk_feed_node.dart';
 import 'alert_providers.dart';
 import 'auth_providers.dart';
 import 'sla_providers.dart';

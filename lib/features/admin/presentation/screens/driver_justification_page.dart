@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/justification_submission_form.dart';
 
 /// Public page for driver self-service justification submission.

@@ -1,8 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/auth/auth_failure_exception.dart';
-import '../../domain/auth/i_auth_repository.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/auth/auth_failure_exception.dart';
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 
 /// Supabase implementation of [IAuthRepository].
 ///

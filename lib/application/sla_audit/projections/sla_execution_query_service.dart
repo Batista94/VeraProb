@@ -1,4 +1,4 @@
-import '../../../domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'sla_execution_item_view.dart';
 import 'sla_execution_summary.dart';
 

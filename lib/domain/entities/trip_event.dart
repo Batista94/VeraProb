@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../enums/event_type.dart';
-import '../enums/trip_status.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
 
 /// An immutable audit record of an operational factEvent.
 ///

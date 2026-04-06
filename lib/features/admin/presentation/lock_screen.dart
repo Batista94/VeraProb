@@ -4,14 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/services/logger_service.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/jwt_utils.dart';
-import '../../../../infrastructure/providers/mfa_providers.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../super_admin/presentation/screens/mfa_challenge_screen.dart';
-import '../../super_admin/presentation/screens/mfa_enrollment_screen.dart';
-import '../../super_admin/presentation/super_admin_shell.dart';
+import 'package:veraprob/core/services/logger_service.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/core/utils/jwt_utils.dart';
+import 'package:veraprob/state/providers/mfa_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/mfa_enrollment_screen.dart';
+import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
 import 'admin_home.dart';
 
 class AdminLockScreen extends ConsumerStatefulWidget {

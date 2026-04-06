@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/contract_approval_command_service.dart';
-import '../../core/config/supabase_client.dart';
+import 'package:veraprob/application/sla_audit/contract_approval_command_service.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
 
 /// PostgreSQL implementation of [ContractApprovalCommandService] via Supabase RPCs.
 ///

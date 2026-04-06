@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Semantic variant for [InfoTooltip] that drives default icon and color.
 enum InfoTooltipVariant { help, warning, info, error, success }

@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/sla_audit/contractor.dart';
-import '../../domain/sla_audit/contractor_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
 
 class PostgresContractorRepository implements ContractorRepository {
   final SupabaseClient _client;

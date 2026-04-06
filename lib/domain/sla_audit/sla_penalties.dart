@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'domain_exception.dart';
 
 /// Value object representing the SLA margin offenders for a shift pattern.

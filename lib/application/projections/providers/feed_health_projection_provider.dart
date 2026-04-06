@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 
-import '../../../state/providers/fleet_providers.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
 
 enum FeedHealthStatus { online, degraded, offline }
 

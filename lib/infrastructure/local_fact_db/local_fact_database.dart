@@ -1,10 +1,10 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
-import '../../domain/sla_audit/local_fact_queue/pending_fact.dart'
+import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart'
     as domain
     show PendingFact;
-import '../../domain/sla_audit/local_fact_queue/sync_status.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
 
 part 'local_fact_database.g.dart';
 

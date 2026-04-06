@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/sla_audit/local_fact_queue/sync_status.dart';
-import '../../state/notifiers/connectivity_notifier.dart';
-import '../../state/providers/local_fact_queue_providers.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
+import 'package:veraprob/state/notifiers/connectivity_notifier.dart';
+import 'package:veraprob/state/providers/local_fact_queue_providers.dart';
 
 /// Toolbar chip showing the Edge Ledger sync state.
 ///

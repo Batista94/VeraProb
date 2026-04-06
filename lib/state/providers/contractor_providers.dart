@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/config/supabase_client.dart';
-import '../../application/sla_audit/projections/contractor_view.dart';
-import '../../domain/sla_audit/contractor_repository.dart';
-import '../../infrastructure/sla_audit/postgres_contractor_repository.dart';
-import '../../application/sla_audit/save_contractor_handler.dart';
-import '../../application/sla_audit/delete_contractor_handler.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
+import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contractor_repository.dart';
+import 'package:veraprob/application/sla_audit/save_contractor_handler.dart';
+import 'package:veraprob/application/sla_audit/delete_contractor_handler.dart';
 import 'auth_providers.dart';
 
 /// Provider for the contractor repository implementation.

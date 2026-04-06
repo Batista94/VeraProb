@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../state/providers/super_admin_auth_providers.dart';
-import '../../../admin/presentation/lock_screen.dart';
-import '../screens/mfa_challenge_screen.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
+import 'package:veraprob/features/admin/presentation/lock_screen.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
 
 /// Guards the SuperAdmin portal (INV-6 defense-in-depth).
 ///

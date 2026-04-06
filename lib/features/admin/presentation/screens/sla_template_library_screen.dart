@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../application/shared/app_types.dart';
-import '../../../../application/sla_audit/projections/sla_template_view.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../state/providers/sla_template_providers.dart';
-import '../widgets/sla_template_card.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_template_view.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/sla_template_providers.dart';
+import 'package:veraprob/features/admin/presentation/widgets/sla_template_card.dart';
 import 'sla_template_editor_dialog.dart';
 
 /// SLA Template Library screen with two sections:

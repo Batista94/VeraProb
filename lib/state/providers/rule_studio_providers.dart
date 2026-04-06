@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/rule_version_history_entry.dart';
-import '../../application/sla_audit/rule_studio_command_service.dart';
-import '../../application/sla_audit/update_contractual_rule_handler.dart';
-import '../../domain/sla_audit/contractual_rule.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../../infrastructure/sla_audit/postgres_rule_studio_command_service.dart';
-import '../../infrastructure/sla_audit/postgres_rule_version_query_service.dart';
+import 'package:veraprob/application/sla_audit/rule_version_history_entry.dart';
+import 'package:veraprob/application/sla_audit/rule_studio_command_service.dart';
+import 'package:veraprob/application/sla_audit/update_contractual_rule_handler.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_rule_studio_command_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_rule_version_query_service.dart';
 
 // ── Infrastructure ────────────────────────────────────────────────────────────
 

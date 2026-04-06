@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'domain_exception.dart';
 
 /// Value Object: forensic evidence bundle that justifies a penalty verdict.

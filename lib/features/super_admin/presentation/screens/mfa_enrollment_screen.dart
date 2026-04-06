@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/infrastructure/providers/mfa_providers.dart';
+import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';

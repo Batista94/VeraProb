@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_theme.dart';
-import '../../domain/sla_audit/audit_package.dart';
-import '../../state/providers/audit_package_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
+import 'package:veraprob/state/providers/audit_package_providers.dart';
 
 /// Screen listing sealed [AuditPackage] records for the current organization.
 ///

@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/config/supabase_client.dart';
-import '../../core/utils/jwt_utils.dart';
-import '../../domain/auth/i_auth_repository.dart';
-import '../../domain/enums/user_role.dart';
-import '../../infrastructure/auth/supabase_auth_repository.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/core/utils/jwt_utils.dart';
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/infrastructure/auth/supabase_auth_repository.dart';
 
 /// Stream of auth state changes.
 final authStateProvider = StreamProvider<AuthState>((ref) {

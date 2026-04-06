@@ -1,5 +1,5 @@
 import 'dart:async';
-import '../decision/authorization_decision.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'forensic_decision_repository.dart';
 
 /// In-Memory Stub for Phase 3 Forensic Append-Only DB.

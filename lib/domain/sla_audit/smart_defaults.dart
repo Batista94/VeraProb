@@ -1,4 +1,4 @@
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'sla_penalties.dart';
 import 'transport_vertical.dart';
 

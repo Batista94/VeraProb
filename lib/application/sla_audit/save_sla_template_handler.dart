@@ -1,6 +1,6 @@
-import '../../domain/sla_audit/sla_template.dart';
-import '../../domain/sla_audit/sla_template_repository.dart';
-import '../../domain/sla_audit/transport_vertical.dart';
+import 'package:veraprob/domain/sla_audit/sla_template.dart';
+import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
+import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
 import 'projections/penalties_form_data.dart';
 
 /// Application handler for creating or updating an [SlaTemplate].

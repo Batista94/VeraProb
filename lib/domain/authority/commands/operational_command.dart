@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../core/authority_types.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
 
 /// Base interface for all Intent Mails (Commands) targeting the Operational Core.
 ///

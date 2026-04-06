@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/infrastructure/providers/mfa_providers.dart';
+import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';

@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../application/admin/operational_zone_view.dart';
-import '../../domain/sla_audit/operational_zone_repository.dart';
-import '../../infrastructure/persistence/persistence_mode.dart';
-import '../../infrastructure/persistence/persistence_provider.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../../infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
-import '../../infrastructure/sla_audit/postgres_operational_zone_repository.dart';
-import '../../domain/sla_audit/geocoding_repository.dart';
-import '../../infrastructure/sla_audit/http_geocoding_repository.dart';
+import 'package:veraprob/application/admin/operational_zone_view.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_operational_zone_repository.dart';
+import 'package:veraprob/domain/sla_audit/geocoding_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/http_geocoding_repository.dart';
 import 'auth_providers.dart';
 
 // ── Repository ───────────────────────────────────────────────

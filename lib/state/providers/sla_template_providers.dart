@@ -1,15 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../application/sla_audit/projections/sla_template_view.dart';
-import '../../application/sla_audit/clone_sla_template_handler.dart';
-import '../../application/sla_audit/save_sla_template_handler.dart';
-import '../../application/sla_audit/sla_template_presets.dart';
-import '../../domain/sla_audit/sla_template.dart';
-import '../../domain/sla_audit/sla_template_repository.dart';
-import '../../infrastructure/persistence/persistence_mode.dart';
-import '../../infrastructure/persistence/persistence_provider.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../../infrastructure/sla_audit/in_memory_sla_template_repository.dart';
-import '../../infrastructure/sla_audit/postgres_sla_template_repository.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_template_view.dart';
+import 'package:veraprob/application/sla_audit/clone_sla_template_handler.dart';
+import 'package:veraprob/application/sla_audit/save_sla_template_handler.dart';
+import 'package:veraprob/application/sla_audit/sla_template_presets.dart';
+import 'package:veraprob/domain/sla_audit/sla_template.dart';
+import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_template_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_template_repository.dart';
 import 'auth_providers.dart';
 
 // ── Repository ───────────────────────────────────────────────

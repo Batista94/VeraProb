@@ -1,5 +1,5 @@
-import '../../domain/sla_audit/contractual_financial_daily_snapshot.dart';
-import '../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
 
 /// In-memory implementation of [ContractualFinancialSnapshotRepository].
 ///

@@ -4,8 +4,8 @@ import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
-import '../canonical_fact.dart';
-import '../ingestion_integrity_flag.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact.dart';
+import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 import 'sync_status.dart';
 
 /// An immutable snapshot of a [CanonicalFact] buffered in the local

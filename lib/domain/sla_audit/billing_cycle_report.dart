@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'contractual_financial_daily_snapshot.dart';
 
 /// Ephemeral read model representing a financial aggregation for a billing cycle.

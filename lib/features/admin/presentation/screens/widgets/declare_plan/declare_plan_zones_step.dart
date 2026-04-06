@@ -5,7 +5,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/admin/operational_zone_view.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 
-import '../../../widgets/zone_type_ahead_field.dart';
+import 'package:veraprob/features/admin/presentation/widgets/zone_type_ahead_field.dart';
 
 class DeclarePlanZonesStep extends ConsumerWidget {
   final String contractorName;

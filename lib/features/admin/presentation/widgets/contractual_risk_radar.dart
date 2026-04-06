@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../application/sla_audit/projections/dashboard_risk_feed_node.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/dashboard_risk_feed_provider.dart';
-import '../../../../state/providers/sla_financial_providers.dart';
-import '../screens/widgets/investigation_modal.dart';
+import 'package:veraprob/application/sla_audit/projections/dashboard_risk_feed_node.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/dashboard_risk_feed_provider.dart';
+import 'package:veraprob/state/providers/sla_financial_providers.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 
 final _timeFormat = DateFormat('HH:mm');
 

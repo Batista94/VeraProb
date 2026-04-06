@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/admin/i_active_vehicle_repository.dart';
+import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
 
 /// PostgreSQL implementation of [IActiveVehicleRepository] via Supabase.
 ///

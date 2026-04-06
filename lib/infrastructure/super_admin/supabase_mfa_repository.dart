@@ -5,12 +5,12 @@ import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../domain/super_admin/i_mfa_repository.dart';
-import '../../domain/super_admin/mfa_challenge_result.dart';
-import '../../domain/super_admin/mfa_enrollment_result.dart';
-import '../../domain/super_admin/mfa_exception.dart';
-import '../../domain/super_admin/mfa_status.dart';
-import '../../domain/super_admin/mfa_verification_result.dart';
+import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
+import 'package:veraprob/domain/super_admin/mfa_challenge_result.dart';
+import 'package:veraprob/domain/super_admin/mfa_enrollment_result.dart';
+import 'package:veraprob/domain/super_admin/mfa_exception.dart';
+import 'package:veraprob/domain/super_admin/mfa_status.dart';
+import 'package:veraprob/domain/super_admin/mfa_verification_result.dart';
 
 /// Supabase implementation of [IMfaRepository].
 ///

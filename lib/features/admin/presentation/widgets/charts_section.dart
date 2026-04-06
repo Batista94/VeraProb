@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_theme.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 class ChartsSection extends StatelessWidget {
   const ChartsSection({super.key});

@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/audit_package_service.dart';
-import '../../application/sla_audit/csv_export_service.dart';
-import '../../application/sla_audit/pdf_export_service.dart';
-import '../../application/sla_audit/reporting_service.dart';
-import '../../domain/sla_audit/audit_package.dart';
-import '../../infrastructure/sla_audit/in_memory_audit_package_repository.dart';
-import '../providers/auth_providers.dart';
+import 'package:veraprob/application/sla_audit/audit_package_service.dart';
+import 'package:veraprob/application/sla_audit/csv_export_service.dart';
+import 'package:veraprob/application/sla_audit/pdf_export_service.dart';
+import 'package:veraprob/application/sla_audit/reporting_service.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_audit_package_repository.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 import 'sla_financial_providers.dart';
 
 // ── Repositories ────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../state/providers/fleet_providers.dart';
-import '../models/resource_allocation_projection.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/application/projections/models/resource_allocation_projection.dart';
 
 // We need a dummy driver source here since we don't have a dedicated DriverProvider yet.
 // In a full implementation, this uses ref.watch(driverListProvider);

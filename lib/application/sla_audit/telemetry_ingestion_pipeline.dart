@@ -1,14 +1,14 @@
-import '../normalization/models/vehicle_operational_state.dart';
-import '../../domain/sla_audit/kinematic_guard.dart';
-import '../normalization/models/connectivity_state.dart';
-import '../normalization/models/motion_state.dart';
-import '../../domain/sla_audit/asset_status.dart';
-import '../../domain/sla_audit/asset_status_repository.dart';
-import '../../domain/sla_audit/canonical_fact.dart';
-import '../../domain/sla_audit/ingestion_integrity_flag.dart';
-import '../../domain/sla_audit/spoofing_audit_entry.dart';
-import '../../domain/sla_audit/spoofing_audit_repository.dart';
-import '../../domain/sla_audit/spoofing_detector.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/domain/sla_audit/kinematic_guard.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
+import 'package:veraprob/domain/sla_audit/asset_status.dart';
+import 'package:veraprob/domain/sla_audit/asset_status_repository.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact.dart';
+import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_audit_entry.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_audit_repository.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_detector.dart';
 import 'contractual_evaluation_engine.dart';
 
 /// Result of a [TelemetryIngestionPipeline.process] call.

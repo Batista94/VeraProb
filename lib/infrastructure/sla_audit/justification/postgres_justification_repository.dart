@@ -1,12 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../core/config/supabase_client.dart';
-import '../../../domain/sla_audit/justification/contractor_justification.dart';
-import '../../../domain/sla_audit/justification/justification_category.dart';
-import '../../../domain/sla_audit/justification/justification_evidence.dart';
-import '../../../domain/sla_audit/justification/justification_repository.dart';
-import '../../../domain/sla_audit/justification/justification_status.dart';
-import '../../../domain/sla_audit/justification/justification_submission_token.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_category.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_evidence.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_repository.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_submission_token.dart';
 
 /// Supabase / Postgres implementation of [JustificationRepository].
 ///

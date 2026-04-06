@@ -1,9 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/execution_status.dart';
-import '../../application/sla_audit/projections/sla_execution_item_view.dart';
-import '../../application/sla_audit/projections/sla_execution_query_service.dart';
-import '../../application/sla_audit/projections/sla_execution_summary.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
 
 /// Postgres implementation for [SlaExecutionQueryService].
 /// Extracts flat DTOs directly from the `execution_states` table.
@@ -20,7 +20,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
   }) async {
     var query = _client
         .from('execution_states')
-        .select('status, contractual_value_cents, no_show_penalty_bps')
+        .select('status, contractual_value_cents, no_show_penalty_multiplier')
         .eq('organization_id', organizationId);
 
     if (contractId != null) {
@@ -41,7 +41,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
     for (var row in rows) {
       final statusStr = row['status'] as String;
       final val = Money((row['contractual_value_cents'] as num).toInt());
-      final int penaltyBps = (row['no_show_penalty_bps'] as num).toInt();
+      final int penaltyBps = (row['no_show_penalty_multiplier'] as num).toInt();
 
       if (statusStr == ExecutionStatus.pending.name) {
         pending++;
@@ -110,7 +110,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         startLongitude: (row['start_longitude'] as num).toDouble(),
         startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
         contractualValue: (row['contractual_value_cents'] as num).toInt(),
-        noShowPenaltyBps: (row['no_show_penalty_bps'] as num).toInt(),
+        noShowPenaltyBps: (row['no_show_penalty_multiplier'] as num).toInt(),
       );
     }).toList();
   }
@@ -145,7 +145,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
       startLongitude: (row['start_longitude'] as num).toDouble(),
       startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
       contractualValue: (row['contractual_value_cents'] as num).toInt(),
-      noShowPenaltyBps: (row['no_show_penalty_bps'] as num).toInt(),
+      noShowPenaltyBps: (row['no_show_penalty_multiplier'] as num).toInt(),
     );
   }
 
@@ -189,7 +189,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         startLongitude: (row['start_longitude'] as num).toDouble(),
         startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
         contractualValue: (row['contractual_value_cents'] as num).toInt(),
-        noShowPenaltyBps: (row['no_show_penalty_bps'] as num).toInt(),
+        noShowPenaltyBps: (row['no_show_penalty_multiplier'] as num).toInt(),
       );
     }).toList();
   }

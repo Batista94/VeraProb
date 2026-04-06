@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../core/authority_types.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
 
 /// Semantic Result of a Policy Evaluation against an Action Context.
 enum DecisionResult { approved, denied }

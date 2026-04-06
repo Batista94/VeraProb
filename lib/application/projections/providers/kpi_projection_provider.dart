@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../state/providers/fleet_providers.dart';
-import '../../normalization/models/connectivity_state.dart';
-import '../models/command_center_kpis.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
+import 'package:veraprob/application/projections/models/command_center_kpis.dart';
 
 /// Provides high-level aggregated KPIs for the command center.
 /// Uses a pure function, recalculating only when necessary.

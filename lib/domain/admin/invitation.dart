@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../enums/user_role.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// Represents a pending or past invitation to join an organization.
 class Invitation extends Equatable {

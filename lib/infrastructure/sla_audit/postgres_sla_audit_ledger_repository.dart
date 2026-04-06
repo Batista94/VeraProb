@@ -1,8 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
-import '../../domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 
 /// Postgres implementation of [SlaAuditLedgerRepository].
 ///

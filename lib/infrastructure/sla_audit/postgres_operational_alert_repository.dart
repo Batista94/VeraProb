@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../domain/sla_audit/operational_alert.dart';
-import '../../domain/sla_audit/operational_alert_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
 
 /// Postgres implementation of [OperationalAlertRepository] via Supabase.
 class PostgresOperationalAlertRepository implements OperationalAlertRepository {

@@ -4,11 +4,11 @@ import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../features/shared/providers/reporting_providers.dart';
-import '../../../../application/shared/billing_cycle_view.dart';
-import '../../../../state/providers/contract_providers.dart';
-import '../../../../state/providers/auth_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/shared/providers/reporting_providers.dart';
+import 'package:veraprob/application/shared/billing_cycle_view.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 
 class BillingCycleReportsScreen extends ConsumerStatefulWidget {
   const BillingCycleReportsScreen({super.key});

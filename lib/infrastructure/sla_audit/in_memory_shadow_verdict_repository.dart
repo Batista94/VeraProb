@@ -1,5 +1,5 @@
-import '../../domain/sla_audit/shadow_verdict.dart';
-import '../../domain/sla_audit/shadow_verdict_repository.dart';
+import 'package:veraprob/domain/sla_audit/shadow_verdict.dart';
+import 'package:veraprob/domain/sla_audit/shadow_verdict_repository.dart';
 
 /// In-memory implementation of [ShadowVerdictRepository] for unit testing.
 ///

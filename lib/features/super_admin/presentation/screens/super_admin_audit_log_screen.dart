@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/infrastructure/providers/super_admin_providers.dart';
+import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 const _kSeverities = ['debug', 'info', 'warning', 'error', 'critical'];
 

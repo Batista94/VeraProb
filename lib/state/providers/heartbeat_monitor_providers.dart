@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/projections/heartbeat_monitor_view.dart';
-import '../../application/sla_audit/projections/heartbeat_query_service.dart';
-import '../../domain/sla_audit/heartbeat_classifier.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../../infrastructure/sla_audit/supabase_heartbeat_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/heartbeat_monitor_view.dart';
+import 'package:veraprob/application/sla_audit/projections/heartbeat_query_service.dart';
+import 'package:veraprob/domain/sla_audit/heartbeat_classifier.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/supabase_heartbeat_query_service.dart';
 
 /// Provides the [HeartbeatQueryService] backed by Supabase.
 final heartbeatQueryServiceProvider = Provider<HeartbeatQueryService>((ref) {

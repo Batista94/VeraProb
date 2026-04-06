@@ -1,9 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/projections/heartbeat_monitor_view.dart';
-import '../../application/sla_audit/projections/heartbeat_query_service.dart';
-import '../../domain/sla_audit/heartbeat_classification.dart';
-import '../../domain/sla_audit/heartbeat_classifier.dart';
+import 'package:veraprob/application/sla_audit/projections/heartbeat_monitor_view.dart';
+import 'package:veraprob/application/sla_audit/projections/heartbeat_query_service.dart';
+import 'package:veraprob/domain/sla_audit/heartbeat_classification.dart';
+import 'package:veraprob/domain/sla_audit/heartbeat_classifier.dart';
 
 /// Supabase implementation of [HeartbeatQueryService].
 ///

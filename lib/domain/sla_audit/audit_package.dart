@@ -4,7 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'attestation_header.dart';
 import 'audit_package_status.dart';
 import 'billing_cycle_report.dart';

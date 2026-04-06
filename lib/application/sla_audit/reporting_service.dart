@@ -1,5 +1,5 @@
-import '../../domain/sla_audit/billing_cycle_report.dart';
-import '../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/domain/sla_audit/billing_cycle_report.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
 
 /// Service responsible for aggregating financial snapshots into billing cycle reports.
 class ReportingService {

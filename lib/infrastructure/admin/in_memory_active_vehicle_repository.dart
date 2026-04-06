@@ -1,4 +1,4 @@
-import '../../domain/admin/i_active_vehicle_repository.dart';
+import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
 
 /// In-memory implementation of [IActiveVehicleRepository] for use in tests.
 ///

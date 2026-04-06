@@ -1,8 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../domain/sla_audit/spoofing_audit_entry.dart';
-import '../../domain/sla_audit/spoofing_audit_repository.dart';
-import '../../domain/sla_audit/spoofing_risk_score.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_audit_entry.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_audit_repository.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_risk_score.dart';
 
 /// Postgres implementation of [SpoofingAuditRepository] using Supabase.
 class PostgresSpoofingAuditRepository implements SpoofingAuditRepository {

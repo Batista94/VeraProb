@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:collection/collection.dart';
 
-import '../../../state/providers/fleet_providers.dart';
-import '../models/timeline_projection.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/application/projections/models/timeline_projection.dart';
 
 /// Provides a unified chronological timeline for a specific vehicle/trip.
 /// Requires `.family` to be scoped to a specific trip ID.

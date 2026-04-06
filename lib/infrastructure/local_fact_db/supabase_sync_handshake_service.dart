@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../domain/sla_audit/local_fact_queue/handshake_result.dart';
-import '../../domain/sla_audit/local_fact_queue/sync_handshake_service.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/handshake_result.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_handshake_service.dart';
 
 /// Supabase implementation of [SyncHandshakeService].
 ///

@@ -1,4 +1,4 @@
-import '../../domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'accept_invitation_command.dart';
 import 'invitation_command_service.dart';
 

@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../application/sla_audit/projections/contractual_financial_impact.dart';
-import '../../application/sla_audit/projections/contractual_financial_impact_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
 
 /// Postgres implementation for [ContractualFinancialImpactQueryService].
 /// Extracts financial impact projection directly from `contractual_financial_snapshot`.

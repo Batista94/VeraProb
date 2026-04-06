@@ -1,18 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_providers.dart';
 
-import '../../application/sla_audit/projections/contractual_financial_impact.dart';
-import '../../application/sla_audit/projections/contractual_financial_impact_query_service.dart';
-import '../../application/sla_audit/projections/contractual_financial_impact_query_service_in_memory.dart';
-import '../../application/sla_audit/projections/contractual_financial_trend_query_service.dart';
-import '../../application/sla_audit/projections/contractual_financial_trend_query_service_in_memory.dart';
-import '../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
-import '../../infrastructure/persistence/persistence_mode.dart';
-import '../../infrastructure/persistence/persistence_provider.dart';
-import '../../infrastructure/sla_audit/sla_persistence_provider.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../../infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
-import '../../infrastructure/sla_audit/postgres_contractual_financial_trend_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service_in_memory.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_query_service_in_memory.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_financial_trend_query_service.dart';
 
 // ── Snapshot Repository ─────────────────────────────────────
 

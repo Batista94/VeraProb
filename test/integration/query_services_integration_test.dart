@@ -13,7 +13,6 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_rep
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/shared/money.dart';
-
 void main() {
   group('Query Services Integration Consistency', () {
     test(
@@ -68,7 +67,7 @@ void main() {
         );
         expect(initialSummary.totalPending, 1);
         expect(initialSummary.totalExecuted, 0);
-        expect(initialSummary.protectedRevenue, const Money(0));
+        expect(initialSummary.protectedRevenue, 0);
 
         // 2. Execute via Engine
         final vehicle = VehicleOperationalState(
@@ -105,11 +104,8 @@ void main() {
         );
         expect(midSummary.totalPending, 0);
         expect(midSummary.totalExecuted, 1);
-        expect(
-          midSummary.protectedRevenue,
-          const Money(20000),
-        ); // Revenue bound!
-        expect(midSummary.lostRevenue, const Money(0));
+        expect(midSummary.protectedRevenue, 20000); // Revenue bound!
+        expect(midSummary.lostRevenue, 0);
 
         final executedList = await queryService.listByStatus(
           ExecutionStatus.executed,
@@ -146,11 +142,8 @@ void main() {
         expect(finalSummary.totalPending, 0);
         expect(finalSummary.totalExecuted, 1);
         expect(finalSummary.totalNoShow, 1);
-        expect(finalSummary.protectedRevenue, const Money(20000));
-        expect(
-          finalSummary.lostRevenue,
-          const Money(15000),
-        ); // 100 * 1.5 Penalty matched
+        expect(finalSummary.protectedRevenue, 20000);
+        expect(finalSummary.lostRevenue, 15000); // 100 * 1.5 Penalty matched
 
         final noshowList = await queryService.listByStatus(
           ExecutionStatus.noShow,

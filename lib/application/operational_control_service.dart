@@ -1,10 +1,10 @@
-import '../domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
 
 export '../domain/entities/operational_trip.dart';
 export '../domain/enums/trip_status.dart';
-import '../domain/entities/trip_event.dart';
-import '../domain/enums/event_type.dart';
-import '../domain/enums/trip_status.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
 
 /// Abstract service for operational control actions.
 ///

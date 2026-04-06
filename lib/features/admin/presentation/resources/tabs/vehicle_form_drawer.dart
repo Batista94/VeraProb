@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../../core/services/logger_service.dart';
-import '../../../../shared/providers.dart';
+import 'package:veraprob/core/services/logger_service.dart';
+import 'package:veraprob/features/shared/providers.dart';
 
 class VehicleFormDrawer extends ConsumerStatefulWidget {
   final VoidCallback onClose;

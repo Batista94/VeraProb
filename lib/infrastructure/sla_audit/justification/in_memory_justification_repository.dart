@@ -1,10 +1,10 @@
 import 'package:uuid/uuid.dart';
 
-import '../../../domain/sla_audit/justification/contractor_justification.dart';
-import '../../../domain/sla_audit/justification/justification_evidence.dart';
-import '../../../domain/sla_audit/justification/justification_repository.dart';
-import '../../../domain/sla_audit/justification/justification_status.dart';
-import '../../../domain/sla_audit/justification/justification_submission_token.dart';
+import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_evidence.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_repository.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_submission_token.dart';
 
 /// In-memory implementation of [JustificationRepository].
 ///

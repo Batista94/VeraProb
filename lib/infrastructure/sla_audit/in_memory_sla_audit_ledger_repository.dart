@@ -1,6 +1,6 @@
 import 'package:uuid/uuid.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
-import '../../domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 
 /// In-memory implementation of [SlaAuditLedgerRepository].
 ///

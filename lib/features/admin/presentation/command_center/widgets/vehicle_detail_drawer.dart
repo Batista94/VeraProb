@@ -13,9 +13,9 @@ import 'package:veraprob/application/authority/operational_command_bus.dart'
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/presentation/shared/widgets/status_badge.dart';
 import 'package:latlong2/latlong.dart';
-import '../../shared/widgets/geofence_evidence_map.dart';
+import 'package:veraprob/features/admin/presentation/shared/widgets/geofence_evidence_map.dart';
 import 'occurrence_modal.dart';
-import '../utils/ui_command_dispatcher.dart';
+import 'package:veraprob/features/admin/presentation/command_center/utils/ui_command_dispatcher.dart';
 import 'event_tile_widget.dart';
 
 /// Detailed vehicle/trip drawer shown when an operator selects a trip.

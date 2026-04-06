@@ -1,10 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/sla_audit/contract.dart';
-import '../../domain/sla_audit/contract_repository.dart';
-import '../../domain/sla_audit/contract_status.dart';
-import '../../domain/shared/money.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/sla_audit/contract.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 /// Postgres implementation of [ContractRepository].
 ///

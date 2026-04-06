@@ -1,9 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/sla_audit/sanction_review_queue_entry.dart';
-import '../../domain/sla_audit/sanction_review_queue_repository.dart';
-import '../../domain/sla_audit/verdict_evidence.dart';
+import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
+import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
+import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 
 /// Postgres implementation of [SanctionReviewQueueRepository].
 ///

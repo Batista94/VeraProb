@@ -1,4 +1,4 @@
-import '../../../domain/sla_audit/shadow_mode_simulation.dart';
+import 'package:veraprob/domain/sla_audit/shadow_mode_simulation.dart';
 
 /// Read model for the Executive Dashboard screen.
 ///

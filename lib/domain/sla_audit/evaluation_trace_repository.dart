@@ -1,4 +1,4 @@
-import '../../domain/sla_audit/evaluation_trace.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
 
 abstract class EvaluationTraceRepository {
   Future<void> save(EvaluationTrace trace);

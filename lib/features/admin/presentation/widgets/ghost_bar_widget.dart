@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Visual overlay replacing the text-only infraction summary columns (Zona 3).
 ///
