@@ -39,11 +39,10 @@ class SlaFinancialImpactScreen extends ConsumerWidget {
             Expanded(
               child: impactAsync.when(
                 data: (impact) => _FinancialDashboard(
-                  totalContractedRevenue: impact.totalContractedRevenue
-                      .toDouble(),
-                  protectedRevenue: impact.protectedRevenue.toDouble(),
-                  revenueAtRisk: impact.revenueAtRisk.toDouble(),
-                  lostRevenue: impact.lostRevenue.toDouble(),
+                  totalContractedRevenue: impact.totalContractedRevenue / 100.0,
+                  protectedRevenue: impact.protectedRevenue / 100.0,
+                  revenueAtRisk: impact.revenueAtRisk / 100.0,
+                  lostRevenue: impact.lostRevenue / 100.0,
                   riskPercentageBps: impact.riskPercentageBps,
                   lossPercentageBps: impact.lossPercentageBps,
                 ),

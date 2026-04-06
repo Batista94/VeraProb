@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:veraprob/application/admin/operational_zone_view.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/widgets/zone_type_ahead_field.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';

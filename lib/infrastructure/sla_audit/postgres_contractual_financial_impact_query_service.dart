@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/shared/money.dart';
 import '../../application/sla_audit/projections/contractual_financial_impact.dart';
 import '../../application/sla_audit/projections/contractual_financial_impact_query_service.dart';
 
@@ -36,10 +35,10 @@ class ContractualFinancialImpactQueryServicePostgres
       return ContractualFinancialImpact(
         contractId: contractId,
         generatedAtUtc: DateTime.now().toUtc(),
-        totalContractedRevenue: const Money(0),
-        protectedRevenue: const Money(0),
-        revenueAtRisk: const Money(0),
-        lostRevenue: const Money(0),
+        totalContractedRevenue: 0,
+        protectedRevenue: 0,
+        revenueAtRisk: 0,
+        lostRevenue: 0,
         riskPercentageBps: 0,
         lossPercentageBps: 0,
       );
@@ -79,14 +78,11 @@ class ContractualFinancialImpactQueryServicePostgres
     return ContractualFinancialImpact(
       contractId: contractId,
       generatedAtUtc: DateTime.parse(latest['closed_at_utc'] as String).toUtc(),
-      totalContractedRevenue: Money(
-        (latest['total_contracted_revenue_cents'] as num).toInt(),
-      ),
-      protectedRevenue: Money(
-        (latest['protected_revenue_cents'] as num).toInt(),
-      ),
-      revenueAtRisk: Money((latest['revenue_at_risk_cents'] as num).toInt()),
-      lostRevenue: Money(lostRevenueCents),
+      totalContractedRevenue:
+          (latest['total_contracted_revenue_cents'] as num).toInt(),
+      protectedRevenue: (latest['protected_revenue_cents'] as num).toInt(),
+      revenueAtRisk: (latest['revenue_at_risk_cents'] as num).toInt(),
+      lostRevenue: lostRevenueCents,
       riskPercentageBps: (latest['risk_percentage'] as num).toInt(),
       lossPercentageBps: (latest['loss_percentage'] as num).toInt(),
       marginErosionBps: marginErosionBps,

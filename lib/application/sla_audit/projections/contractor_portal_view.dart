@@ -1,4 +1,3 @@
-import '../../../domain/shared/money.dart';
 import '../../../domain/sla_audit/audit_package.dart';
 
 /// Read model: contractor-facing view of a single sealed billing cycle.
@@ -12,6 +11,8 @@ import '../../../domain/sla_audit/audit_package.dart';
 ///
 /// Built directly from a sealed [AuditPackage] to preserve the same
 /// deterministic content that backs the exported PDF/CSV (INV-16, INV-17).
+///
+/// All monetary values are stored as integer cents (INV-19).
 class ContractorPortalView {
   final String sealedPackageId;
   final String packageHash;
@@ -31,9 +32,9 @@ class ContractorPortalView {
   /// complianceRateBps ∈ [0, 10000]
   final int complianceRateBps;
 
-  // ── Financial summary ──────────────────────────────────────────────────────
-  final Money totalContractedRevenue;
-  final Money lostRevenue;
+  // ── Financial summary (cents) ──────────────────────────────────────────────
+  final int totalContractedRevenue;
+  final int lostRevenue;
 
   const ContractorPortalView({
     required this.sealedPackageId,
@@ -75,8 +76,8 @@ class ContractorPortalView {
       noShowCount: package.noShowCount,
       evidenceGapCount: package.evidenceGapCount,
       complianceRateBps: package.complianceRateBps,
-      totalContractedRevenue: package.totalContractedRevenue,
-      lostRevenue: package.lostRevenue,
+      totalContractedRevenue: package.totalContractedRevenue.cents,
+      lostRevenue: package.lostRevenue.cents,
     );
   }
 }

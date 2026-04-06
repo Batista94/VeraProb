@@ -221,7 +221,7 @@ void main() {
             throw Exception('stop here');
           });
 
-          final cmd = CreateOrganizationCommand(
+          const cmd = CreateOrganizationCommand(
             legalName: 'Transportes Silva Ltda.',
             tradeName: 'Silva Logística',
             cnpj: '11222333000181',

@@ -1,19 +1,19 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../domain/shared/money.dart';
-
 /// Read model: financial impact derived from contractual financial snapshots.
 ///
 /// Executive financial view — conservative projection where pending
 /// obligations are considered at-risk revenue.
 /// Immutable projection — no domain logic.
+///
+/// All monetary values are stored as integer cents (INV-19).
 class ContractualFinancialImpact extends Equatable {
   final String? contractId;
   final DateTime generatedAtUtc;
-  final Money totalContractedRevenue;
-  final Money protectedRevenue;
-  final Money revenueAtRisk;
-  final Money lostRevenue;
+  final int totalContractedRevenue;
+  final int protectedRevenue;
+  final int revenueAtRisk;
+  final int lostRevenue;
   final int riskPercentageBps;
   final int lossPercentageBps;
 

@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
-import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/features/admin/presentation/screens/sla_financial_impact_screen.dart';
 import 'package:veraprob/state/providers/sla_financial_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -62,10 +61,10 @@ void main() {
   final sampleImpact = ContractualFinancialImpact(
     contractId: null,
     generatedAtUtc: DateTime.utc(2026, 3, 1, 12, 0),
-    totalContractedRevenue: Money.fromDouble(1000.0),
-    protectedRevenue: Money.fromDouble(500.0),
-    revenueAtRisk: Money.fromDouble(300.0),
-    lostRevenue: Money.fromDouble(200.0),
+    totalContractedRevenue: 100000,
+    protectedRevenue: 50000,
+    revenueAtRisk: 30000,
+    lostRevenue: 20000,
     riskPercentageBps: 3000,
     lossPercentageBps: 2000,
   );

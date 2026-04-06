@@ -9,7 +9,6 @@ import 'package:veraprob/features/shared/providers.dart';
 import 'package:veraprob/infrastructure/shared/vehicle_repository.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/assets/i_driver_repository.dart';
-import 'package:veraprob/features/shared/data/repositories/trip_repository.dart';
 
 class MockSharedPreferences extends Mock implements SharedPreferences {}
 

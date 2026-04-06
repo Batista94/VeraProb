@@ -1,4 +1,3 @@
-import '../../../domain/shared/money.dart';
 import '../../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
 import 'contractual_financial_impact.dart';
 import 'contractual_financial_impact_query_service.dart';
@@ -30,10 +29,10 @@ class ContractualFinancialImpactQueryServiceInMemory
       return ContractualFinancialImpact(
         contractId: contractId,
         generatedAtUtc: DateTime.now().toUtc(),
-        totalContractedRevenue: const Money(0),
-        protectedRevenue: const Money(0),
-        revenueAtRisk: const Money(0),
-        lostRevenue: const Money(0),
+        totalContractedRevenue: 0,
+        protectedRevenue: 0,
+        revenueAtRisk: 0,
+        lostRevenue: 0,
         riskPercentageBps: 0,
         lossPercentageBps: 0,
       );
@@ -47,10 +46,10 @@ class ContractualFinancialImpactQueryServiceInMemory
     return ContractualFinancialImpact(
       contractId: contractId,
       generatedAtUtc: latest.closedAtUtc,
-      totalContractedRevenue: latest.totalContractedRevenue,
-      protectedRevenue: latest.protectedRevenue,
-      revenueAtRisk: latest.revenueAtRisk,
-      lostRevenue: latest.lostRevenue,
+      totalContractedRevenue: latest.totalContractedRevenue.cents,
+      protectedRevenue: latest.protectedRevenue.cents,
+      revenueAtRisk: latest.revenueAtRisk.cents,
+      lostRevenue: latest.lostRevenue.cents,
       riskPercentageBps: latest.riskPercentageBps,
       lossPercentageBps: latest.lossPercentageBps,
     );

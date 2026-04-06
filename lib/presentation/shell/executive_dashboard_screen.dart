@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/sla_audit/projections/executive_dashboard_view.dart';
 import '../../core/theme/app_theme.dart';
-import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/shadow_mode_simulation.dart';
 import '../../state/providers/executive_dashboard_providers.dart';
 
@@ -223,7 +222,7 @@ class _KpiGrid extends StatelessWidget {
           _KpiCard(
             title: 'Economia BRL',
             value: _fmtBrl(
-              dashboard.latestShadowMode!.revenueProtectedByPlatform,
+              dashboard.latestShadowMode!.revenueProtectedByPlatform.cents,
             ),
             subtitle: 'receita protegida pela plataforma',
             color: VeraProbColors.success,
@@ -233,7 +232,7 @@ class _KpiGrid extends StatelessWidget {
     );
   }
 
-  String _fmtBrl(Money m) => 'R\$ ${(m.cents / 100).toStringAsFixed(0)}';
+  String _fmtBrl(int cents) => 'R\$ ${(cents / 100).toStringAsFixed(0)}';
 }
 
 class _KpiCard extends StatelessWidget {
@@ -305,12 +304,12 @@ class _RevenueSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = dashboard.totalContractedRevenue.cents;
+    final total = dashboard.totalContractedRevenue;
     if (total == 0) return const SizedBox.shrink();
 
-    final protectedPct = dashboard.protectedRevenue.cents / total;
-    final atRiskPct = dashboard.revenueAtRisk.cents / total;
-    final lostPct = dashboard.lostRevenue.cents / total;
+    final protectedPct = dashboard.protectedRevenue / total;
+    final atRiskPct = dashboard.revenueAtRisk / total;
+    final lostPct = dashboard.lostRevenue / total;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

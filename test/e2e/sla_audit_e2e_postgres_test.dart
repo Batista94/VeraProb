@@ -552,12 +552,12 @@ void main() {
       );
 
       expect(
-        impact.protectedRevenue.cents,
+        impact.protectedRevenue,
         10000,
         reason: '100 BRL = 10000 cents',
       );
-      expect(impact.lostRevenue.cents, 0);
-      expect(impact.revenueAtRisk.cents, 0);
+      expect(impact.lostRevenue, 0);
+      expect(impact.revenueAtRisk, 0);
     });
   });
 }

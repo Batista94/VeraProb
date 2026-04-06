@@ -5,7 +5,6 @@ import 'package:veraprob/features/admin/presentation/timecard_reports_screen.dar
 import 'package:veraprob/features/shared/providers.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/assets/i_driver_repository.dart';
-import 'package:veraprob/features/shared/data/repositories/trip_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

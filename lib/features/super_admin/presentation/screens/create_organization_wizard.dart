@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/application/shared/domain_failure.dart';
 import 'package:veraprob/application/super_admin/create_organization_form_data.dart';
 import 'package:veraprob/infrastructure/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';

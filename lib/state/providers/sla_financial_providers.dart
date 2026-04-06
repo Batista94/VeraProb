@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/shared/money.dart';
 import 'auth_providers.dart';
 
 import '../../application/sla_audit/projections/contractual_financial_impact.dart';
@@ -50,10 +49,10 @@ final financialImpactProvider = FutureProvider<ContractualFinancialImpact>((
     return ContractualFinancialImpact(
       contractId: null,
       generatedAtUtc: DateTime.now().toUtc(),
-      totalContractedRevenue: const Money(0),
-      protectedRevenue: const Money(0),
-      revenueAtRisk: const Money(0),
-      lostRevenue: const Money(0),
+      totalContractedRevenue: 0,
+      protectedRevenue: 0,
+      revenueAtRisk: 0,
+      lostRevenue: 0,
       riskPercentageBps: 0,
       lossPercentageBps: 0,
     );

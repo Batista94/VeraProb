@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/application/admin/operational_zone_view.dart';
 
 void main() {
   group('OperationalZoneView', () {

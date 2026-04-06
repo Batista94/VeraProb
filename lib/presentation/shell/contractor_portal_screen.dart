@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/sla_audit/projections/contractor_portal_view.dart';
 import '../../core/theme/app_theme.dart';
-import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/audit_package_status.dart';
 import '../../state/providers/audit_package_providers.dart';
 
@@ -209,7 +208,7 @@ class _EvidenceCard extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // ── Financial summary ─────────────────────────────────────────
-              if (view.lostRevenue.cents > 0) ...[
+              if (view.lostRevenue > 0) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
@@ -298,7 +297,7 @@ class _EvidenceCard extends ConsumerWidget {
   }
 
   String _fmtDate(DateTime dt) => dt.toIso8601String().split('T')[0];
-  String _fmtBrl(Money m) => 'R\$ ${(m.cents / 100).toStringAsFixed(0)}';
+  String _fmtBrl(int cents) => 'R\$ ${(cents / 100).toStringAsFixed(0)}';
 }
 
 // ── Evidence Request Button ────────────────────────────────────────────────────

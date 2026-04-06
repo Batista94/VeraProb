@@ -20,11 +20,11 @@ class ExecutiveDashboardView {
   final DateTime periodEndUtc;
   final String organizationId;
 
-  // ── KPI 1: Receita Blindada ────────────────────────────────────────────────
-  final Money protectedRevenue;
-  final Money totalContractedRevenue;
-  final Money revenueAtRisk;
-  final Money lostRevenue;
+  // ── KPI 1: Receita Blindada (cents — INV-19) ──────────────────────────────
+  final int protectedRevenue;
+  final int totalContractedRevenue;
+  final int revenueAtRisk;
+  final int lostRevenue;
 
   // ── KPI 2: Taxa de Recuperação de Penalidades ──────────────────────────────
   /// (lostRevenue.applied / lostRevenue.potential) × 100.
@@ -177,10 +177,10 @@ class ExecutiveDashboardView {
       organizationId: organizationId,
       periodStartUtc: periodStartUtc,
       periodEndUtc: periodEndUtc,
-      protectedRevenue: protectedRevenue,
-      totalContractedRevenue: totalContractedRevenue,
-      revenueAtRisk: revenueAtRisk,
-      lostRevenue: lostRevenue,
+      protectedRevenue: protectedRevenue.cents,
+      totalContractedRevenue: totalContractedRevenue.cents,
+      revenueAtRisk: revenueAtRisk.cents,
+      lostRevenue: lostRevenue.cents,
       penaltyRecoveryRate: penaltyRecoveryRateBps,
       disputeToResolutionRatio: disputeRatioBps,
       financialProtectionScore: fpsBps,
@@ -203,10 +203,10 @@ class ExecutiveDashboardView {
         organizationId: organizationId,
         periodStartUtc: DateTime.utc(1970),
         periodEndUtc: DateTime.utc(1970),
-        protectedRevenue: const Money(0),
-        totalContractedRevenue: const Money(0),
-        revenueAtRisk: const Money(0),
-        lostRevenue: const Money(0),
+        protectedRevenue: 0,
+        totalContractedRevenue: 0,
+        revenueAtRisk: 0,
+        lostRevenue: 0,
         penaltyRecoveryRate: 0,
         disputeToResolutionRatio: 0,
         financialProtectionScore: 0,

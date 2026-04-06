@@ -1,19 +1,19 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../domain/shared/money.dart';
-
 /// Read model: financial snapshot for a specific UTC date.
 ///
 /// Part of the time-series financial trend projection.
 /// Immutable — no domain logic. Built from persisted daily snapshots.
+///
+/// All monetary values are stored as integer cents (INV-19).
 class ContractualFinancialTrendPoint extends Equatable {
   final DateTime dateUtc;
   final String formattedDate;
-  final Money baseRevenueUsedForCalculation;
-  final Money totalContractedRevenue;
-  final Money protectedRevenue;
-  final Money revenueAtRisk;
-  final Money lostRevenue;
+  final int baseRevenueUsedForCalculation;
+  final int totalContractedRevenue;
+  final int protectedRevenue;
+  final int revenueAtRisk;
+  final int lostRevenue;
   final int riskPercentageBps;
   final int lossPercentageBps;
 

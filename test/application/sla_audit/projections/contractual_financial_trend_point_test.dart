@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_point.dart';
-import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
   final d1 = DateTime.utc(2024, 6, 1);
@@ -12,11 +11,11 @@ void main() {
     dateUtc: date,
     formattedDate:
         '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
-    baseRevenueUsedForCalculation: const Money(500000),
-    totalContractedRevenue: const Money(1000000),
-    protectedRevenue: const Money(600000),
-    revenueAtRisk: const Money(300000),
-    lostRevenue: const Money(100000),
+    baseRevenueUsedForCalculation: 500000,
+    totalContractedRevenue: 1000000,
+    protectedRevenue: 600000,
+    revenueAtRisk: 300000,
+    lostRevenue: 100000,
     riskPercentageBps: 3000,
     lossPercentageBps: 1000,
   );
@@ -38,11 +37,11 @@ void main() {
       final p = makePoint(d1);
       expect(p.dateUtc, d1);
       expect(p.formattedDate, '01/06');
-      expect(p.baseRevenueUsedForCalculation, const Money(500000));
-      expect(p.totalContractedRevenue, const Money(1000000));
-      expect(p.protectedRevenue, const Money(600000));
-      expect(p.revenueAtRisk, const Money(300000));
-      expect(p.lostRevenue, const Money(100000));
+      expect(p.baseRevenueUsedForCalculation, 500000);
+      expect(p.totalContractedRevenue, 1000000);
+      expect(p.protectedRevenue, 600000);
+      expect(p.revenueAtRisk, 300000);
+      expect(p.lostRevenue, 100000);
       expect(p.riskPercentageBps, 3000);
       expect(p.lossPercentageBps, 1000);
     });
