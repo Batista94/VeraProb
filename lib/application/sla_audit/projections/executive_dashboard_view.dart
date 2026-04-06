@@ -1,4 +1,3 @@
-import '../../../domain/shared/money.dart';
 import '../../../domain/sla_audit/shadow_mode_simulation.dart';
 
 /// Read model for the Executive Dashboard screen.
@@ -111,14 +110,19 @@ class ExecutiveDashboardView {
   ///
   /// [previousMonthComplianceRate]: compliance rate 3 months ago (for trend score).
   ///   Pass null if insufficient history — trend will default to neutral (50.0).
+  /// Revenue protected by the shadow mode platform (cents). Null when no
+  /// simulation has been run for this period.
+  int? get latestShadowModeRevenueCents =>
+      latestShadowMode?.revenueProtectedByPlatform.cents;
+
   factory ExecutiveDashboardView.compute({
     required String organizationId,
     required DateTime periodStartUtc,
     required DateTime periodEndUtc,
-    required Money protectedRevenue,
-    required Money totalContractedRevenue,
-    required Money revenueAtRisk,
-    required Money lostRevenue,
+    required int protectedRevenue,
+    required int totalContractedRevenue,
+    required int revenueAtRisk,
+    required int lostRevenue,
     required int totalObligations,
     required int executedCount,
     required int noShowCount,
@@ -152,7 +156,9 @@ class ExecutiveDashboardView {
     final trendDelta = previousMonthComplianceBps != null
         ? (currentCompliance - previousMonthComplianceBps).toDouble() / 100.0
         : 0.0;
-    final trendScoreBps = (ExecutiveDashboardView._sigmoid(trendDelta) * 100).round().clamp(0, 10000);
+    final trendScoreBps = (ExecutiveDashboardView._sigmoid(trendDelta) * 100)
+        .round()
+        .clamp(0, 10000);
 
     // FPS composite
     final fpsBps =
@@ -177,10 +183,10 @@ class ExecutiveDashboardView {
       organizationId: organizationId,
       periodStartUtc: periodStartUtc,
       periodEndUtc: periodEndUtc,
-      protectedRevenue: protectedRevenue.cents,
-      totalContractedRevenue: totalContractedRevenue.cents,
-      revenueAtRisk: revenueAtRisk.cents,
-      lostRevenue: lostRevenue.cents,
+      protectedRevenue: protectedRevenue,
+      totalContractedRevenue: totalContractedRevenue,
+      revenueAtRisk: revenueAtRisk,
+      lostRevenue: lostRevenue,
       penaltyRecoveryRate: penaltyRecoveryRateBps,
       disputeToResolutionRatio: disputeRatioBps,
       financialProtectionScore: fpsBps,

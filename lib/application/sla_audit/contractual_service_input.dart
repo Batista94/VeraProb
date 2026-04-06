@@ -1,5 +1,3 @@
-import '../../domain/shared/money.dart';
-
 /// Immutable DTO carrying raw primitive data for a single
 /// contractual service execution.
 ///
@@ -28,7 +26,7 @@ class ContractualServiceInput {
   final double endLongitude;
   final int endRadiusMeters;
   final String? plannedVehicleId;
-  final Money contractualValue;
+  final int contractualValueCents;
   final int noShowPenaltyBps;
 
   const ContractualServiceInput({
@@ -41,7 +39,7 @@ class ContractualServiceInput {
     required this.endLongitude,
     required this.endRadiusMeters,
     this.plannedVehicleId,
-    required this.contractualValue,
+    required this.contractualValueCents,
     required this.noShowPenaltyBps,
   });
 }

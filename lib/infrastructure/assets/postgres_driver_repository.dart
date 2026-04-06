@@ -34,9 +34,9 @@ class PostgresDriverRepository implements IDriverRepository {
 
   @override
   Future<void> addDriver(Driver driver) async {
-    await _client.from('drivers').insert(
-      DriverMapper.toSupabase(driver, _orgId),
-    );
+    await _client
+        .from('drivers')
+        .insert(DriverMapper.toSupabase(driver, _orgId));
   }
 
   @override
@@ -51,5 +51,4 @@ class PostgresDriverRepository implements IDriverRepository {
         .update(DriverMapper.toSupabase(driver, _orgId))
         .eq('id', driver.id);
   }
-
 }

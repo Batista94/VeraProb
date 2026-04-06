@@ -438,10 +438,7 @@ class _EvidenceSection extends StatelessWidget {
             (e) => ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(
-                Icons.insert_drive_file_outlined,
-                size: 18,
-              ),
+              leading: const Icon(Icons.insert_drive_file_outlined, size: 18),
               title: Text(e.value.name, style: const TextStyle(fontSize: 13)),
               subtitle: Text(
                 '${e.value.hash.substring(0, 16)}...',

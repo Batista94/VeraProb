@@ -115,12 +115,9 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
   /// Shows "+ Criar contractor 'X'" below the field when no exact name match exists.
   Widget _buildCreateButton() {
     final query = _textController.text.trim();
-    final hasExactMatch =
-        widget.contractors.any(
-          (c) =>
-              c.name.toLowerCase() ==
-              query.toLowerCase(),
-        );
+    final hasExactMatch = widget.contractors.any(
+      (c) => c.name.toLowerCase() == query.toLowerCase(),
+    );
     if (hasExactMatch) return const SizedBox.shrink();
 
     final label = query.isEmpty

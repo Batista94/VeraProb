@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/application/operational_control_service.dart' show OperationalTrip, TripStatus;
-import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart' show SlaLedgerEntry;
+import 'package:veraprob/application/operational_control_service.dart'
+    show OperationalTrip, TripStatus;
+import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart'
+    show SlaLedgerEntry;
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
-import 'package:veraprob/application/intelligence/suggestion_engine.dart' show OperationalSuggestion, SuggestionAction, SuggestionEngine;
-import 'package:veraprob/application/authority/operational_command_bus.dart' show UpdateTripStatusCommand;
+import 'package:veraprob/application/intelligence/suggestion_engine.dart'
+    show OperationalSuggestion, SuggestionAction, SuggestionEngine;
+import 'package:veraprob/application/authority/operational_command_bus.dart'
+    show UpdateTripStatusCommand;
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/presentation/shared/widgets/status_badge.dart';
 import 'package:latlong2/latlong.dart';

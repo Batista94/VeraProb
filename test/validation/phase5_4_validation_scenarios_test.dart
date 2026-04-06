@@ -60,7 +60,7 @@ ContractualServiceInput _makeService([DateTime? start]) {
     endLatitude: -23.5600,
     endLongitude: -46.6400,
     endRadiusMeters: 100,
-    contractualValue: const Money(15000),
+    contractualValueCents: 15000,
     noShowPenaltyBps: 15000,
   );
 }

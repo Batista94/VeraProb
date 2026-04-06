@@ -6,7 +6,6 @@ import 'package:veraprob/core/utils/cnpj_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 
-
 const kBrTimezones = [
   'America/Sao_Paulo',
   'America/Manaus',

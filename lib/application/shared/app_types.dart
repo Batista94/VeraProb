@@ -58,4 +58,3 @@ export 'package:veraprob/application/super_admin/mfa_result_view.dart';
 
 typedef AuditLogEntry = SystemAuditLogView;
 typedef MfaResult = MfaVerificationView;
-

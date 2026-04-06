@@ -125,7 +125,10 @@ void main() {
       final risk = detector.analyze(facts);
 
       expect(risk.isSuspected(), isTrue);
-      expect(risk.scoreBps, 10000); // 5000 + 4000 + 3000 = 12000 -> clamped to 10000
+      expect(
+        risk.scoreBps,
+        10000,
+      ); // 5000 + 4000 + 3000 = 12000 -> clamped to 10000
       expect(risk.signals, hasLength(3));
     });
 

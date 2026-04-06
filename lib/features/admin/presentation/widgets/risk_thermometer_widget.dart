@@ -195,8 +195,8 @@ class _RiskLevelLabel extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           report.riskLevel == SlaRiskLevel.safe
-          ? 'Confortável'
-          : '$pct% do buffer',
+              ? 'Confortável'
+              : '$pct% do buffer',
           style: const TextStyle(
             fontSize: 9,
             color: VeraProbColors.textSecondary,

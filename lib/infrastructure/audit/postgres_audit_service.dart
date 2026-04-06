@@ -21,7 +21,8 @@ class PostgresAuditService implements AuditService {
     String? reason,
   }) async {
     final log = AuditLog(
-      id: const Uuid().v4(), // Managed by client to ensure ledger integrity before insertion
+      id: const Uuid()
+          .v4(), // Managed by client to ensure ledger integrity before insertion
       organizationId: organizationId,
       operatorId: operatorId,
       actionType: actionType,

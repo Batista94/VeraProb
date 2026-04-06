@@ -38,8 +38,8 @@ class SystemAuditLogView {
       payload: rawPayload is Map<String, Object?>
           ? rawPayload
           : rawPayload is Map
-              ? Map<String, Object?>.from(rawPayload)
-              : null,
+          ? Map<String, Object?>.from(rawPayload)
+          : null,
     );
   }
 }

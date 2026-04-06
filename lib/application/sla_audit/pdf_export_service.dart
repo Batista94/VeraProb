@@ -5,7 +5,6 @@ import '../../domain/sla_audit/audit_package.dart';
 import '../../domain/sla_audit/audit_package_status.dart';
 import '../../domain/sla_audit/billing_cycle_report.dart';
 import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/shared/money.dart';
 
 /// Generates legally-defensible PDF exports from sealed [AuditPackage] records.
 ///
@@ -122,14 +121,17 @@ class PdfExportService {
               data: [
                 [
                   'Faturamento Total Contratado',
-                  _fmtBrl(package.totalContractedRevenue),
+                  _fmtBrl(package.totalContractedRevenue.cents),
                 ],
                 [
                   'Receita Protegida (Blindada)',
-                  _fmtBrl(package.protectedRevenue),
+                  _fmtBrl(package.protectedRevenue.cents),
                 ],
-                ['Receita em Risco', _fmtBrl(package.revenueAtRisk)],
-                ['Receita Perdida (Penalidades)', _fmtBrl(package.lostRevenue)],
+                ['Receita em Risco', _fmtBrl(package.revenueAtRisk.cents)],
+                [
+                  'Receita Perdida (Penalidades)',
+                  _fmtBrl(package.lostRevenue.cents),
+                ],
                 [
                   'Taxa de Conformidade',
                   '${(package.complianceRateBps / 100.0).toStringAsFixed(1)}%',
@@ -196,10 +198,10 @@ class PdfExportService {
                     : 100.0;
                 return [
                   _fmtDate(s.operationalDateUtc),
-                  _fmtBrl(s.totalContractedRevenue),
-                  _fmtBrl(s.protectedRevenue),
-                  _fmtBrl(s.revenueAtRisk),
-                  _fmtBrl(s.lostRevenue),
+                  _fmtBrl(s.totalContractedRevenue.cents),
+                  _fmtBrl(s.protectedRevenue.cents),
+                  _fmtBrl(s.revenueAtRisk.cents),
+                  _fmtBrl(s.lostRevenue.cents),
                   '${s.totalObligations}',
                   '${s.executedCount}',
                   '${s.noShowCount}',
@@ -342,13 +344,17 @@ class PdfExportService {
       data: [
         [
           'Receita Protegida (Blindada)',
-          _fmtBrl(package.protectedRevenue),
+          _fmtBrl(package.protectedRevenue.cents),
           '$protectedPct%',
         ],
-        ['Receita em Risco', _fmtBrl(package.revenueAtRisk), '$atRiskPct%'],
+        [
+          'Receita em Risco',
+          _fmtBrl(package.revenueAtRisk.cents),
+          '$atRiskPct%',
+        ],
         [
           'Receita Perdida (Penalidades)',
-          _fmtBrl(package.lostRevenue),
+          _fmtBrl(package.lostRevenue.cents),
           '$lostPct%',
         ],
       ],
@@ -357,8 +363,8 @@ class PdfExportService {
 
   String _fmtDate(DateTime dt) => dt.toIso8601String().split('T')[0];
 
-  String _fmtBrl(Money money) {
-    final value = money.cents / 100;
+  String _fmtBrl(int cents) {
+    final value = cents / 100;
     return 'R\$ ${value.toStringAsFixed(2)}';
   }
 

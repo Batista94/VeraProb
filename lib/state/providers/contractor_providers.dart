@@ -18,8 +18,9 @@ final contractorListProvider = FutureProvider<List<ContractorView>>((
 ) async {
   final orgId = ref.watch(currentOrganizationIdProvider);
   if (orgId == null) return [];
-  final contractors =
-      await ref.watch(contractorRepositoryProvider).findByOrganization(orgId);
+  final contractors = await ref
+      .watch(contractorRepositoryProvider)
+      .findByOrganization(orgId);
   return contractors.map(ContractorView.fromDomain).toList();
 });
 

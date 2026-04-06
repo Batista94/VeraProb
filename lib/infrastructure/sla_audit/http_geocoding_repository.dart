@@ -6,7 +6,8 @@ import '../../domain/sla_audit/geocoding_repository.dart';
 class HttpGeocodingRepository implements GeocodingRepository {
   final http.Client _client;
 
-  HttpGeocodingRepository({http.Client? client}) : _client = client ?? http.Client();
+  HttpGeocodingRepository({http.Client? client})
+    : _client = client ?? http.Client();
 
   @override
   Future<List<PlaceSuggestion>> search(String query) async {

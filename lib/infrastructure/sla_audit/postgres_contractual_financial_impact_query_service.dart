@@ -78,8 +78,8 @@ class ContractualFinancialImpactQueryServicePostgres
     return ContractualFinancialImpact(
       contractId: contractId,
       generatedAtUtc: DateTime.parse(latest['closed_at_utc'] as String).toUtc(),
-      totalContractedRevenue:
-          (latest['total_contracted_revenue_cents'] as num).toInt(),
+      totalContractedRevenue: (latest['total_contracted_revenue_cents'] as num)
+          .toInt(),
       protectedRevenue: (latest['protected_revenue_cents'] as num).toInt(),
       revenueAtRisk: (latest['revenue_at_risk_cents'] as num).toInt(),
       lostRevenue: lostRevenueCents,

@@ -41,16 +41,16 @@ class SlaTemplateView {
   });
 
   PenaltiesFormData get penalties => PenaltiesFormData(
-        noShowPenaltyBps: noShowPenaltyBps,
-        delayToleranceMinutes: delayToleranceMinutes,
-        delayPenaltyPerMinuteCents: delayPenaltyPerMinuteCents,
-        downgradePenaltyFlatCents: downgradePenaltyFlatCents,
-        noShowThresholdMinutes: noShowThresholdMinutes,
-        earlyArrivalToleranceMinutes: earlyArrivalToleranceMinutes,
-        dwellTimeMinutes: dwellTimeMinutes,
-        gracePeriodMinutes: gracePeriodMinutes,
-        baseTripValueCents: baseTripValueCents,
-      );
+    noShowPenaltyBps: noShowPenaltyBps,
+    delayToleranceMinutes: delayToleranceMinutes,
+    delayPenaltyPerMinuteCents: delayPenaltyPerMinuteCents,
+    downgradePenaltyFlatCents: downgradePenaltyFlatCents,
+    noShowThresholdMinutes: noShowThresholdMinutes,
+    earlyArrivalToleranceMinutes: earlyArrivalToleranceMinutes,
+    dwellTimeMinutes: dwellTimeMinutes,
+    gracePeriodMinutes: gracePeriodMinutes,
+    baseTripValueCents: baseTripValueCents,
+  );
 
   factory SlaTemplateView.fromDomain(SlaTemplate template) {
     return SlaTemplateView(

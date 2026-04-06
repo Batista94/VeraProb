@@ -153,7 +153,10 @@ class OperationalTrip extends Equatable {
           ? DateTime.parse(json['actual_end'] as String)
           : null,
       delaySeconds: json['delay_seconds'] as int? ?? 0,
-      completionBps: json['completion_bps'] as int? ?? (json['completion_pct'] as num?)?.toInt() ?? 0,
+      completionBps:
+          json['completion_bps'] as int? ??
+          (json['completion_pct'] as num?)?.toInt() ??
+          0,
       sourceType: json['source_type'] as String? ?? 'manual',
       externalTripId: json['external_trip_id'] as String?,
       severityScore: json['severity_score'] as int? ?? 0,

@@ -135,7 +135,9 @@ class ContractQueryServiceInMemory implements ContractQueryService {
     final executedCount = allStates
         .where((s) => s.status == ExecutionStatus.executed)
         .length;
-    final slaHealthBps = totalSets == 0 ? 0 : (executedCount * 10000 ~/ totalSets);
+    final slaHealthBps = totalSets == 0
+        ? 0
+        : (executedCount * 10000 ~/ totalSets);
 
     return ContractSummaryView(
       id: contract.id,

@@ -20,13 +20,13 @@ final superAdminRepositoryProvider = Provider<ISuperAdminRepository>((ref) {
 });
 
 /// Provider that fetches all tenant health snapshots as view models.
-final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthView>>(
-  (ref) async {
-    final repo = ref.watch(superAdminRepositoryProvider);
-    final snapshots = await repo.getAllTenantHealth();
-    return snapshots.map(TenantHealthView.fromDomain).toList();
-  },
-);
+final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthView>>((
+  ref,
+) async {
+  final repo = ref.watch(superAdminRepositoryProvider);
+  final snapshots = await repo.getAllTenantHealth();
+  return snapshots.map(TenantHealthView.fromDomain).toList();
+});
 
 /// Provider that wires [UpdateOrganizationQuotaHandler] with its dependencies.
 final updateOrganizationQuotaHandlerProvider =

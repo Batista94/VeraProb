@@ -149,9 +149,7 @@ class Step3SlaPenalties extends ConsumerWidget {
         dwellTimeMinutes: int.tryParse(dwellTimeController.text) ?? 3,
         gracePeriodMinutes: int.tryParse(gracePeriodController.text) ?? 0,
         baseTripValueCents:
-            ((double.tryParse(
-                          baseValueController.text.replaceAll(',', '.'),
-                        ) ??
+            ((double.tryParse(baseValueController.text.replaceAll(',', '.')) ??
                         0) *
                     100)
                 .round(),

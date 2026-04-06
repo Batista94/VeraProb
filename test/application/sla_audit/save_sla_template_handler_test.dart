@@ -15,16 +15,16 @@ void main() {
   });
 
   PenaltiesFormData makePenalties() => PenaltiesFormData(
-        noShowPenaltyBps: 15000,
-        delayToleranceMinutes: 15,
-        delayPenaltyPerMinuteCents: 50,
-        downgradePenaltyFlatCents: 5000,
-        noShowThresholdMinutes: 60,
-        earlyArrivalToleranceMinutes: 5,
-        dwellTimeMinutes: 3,
-        gracePeriodMinutes: 0,
-        baseTripValueCents: 0,
-      );
+    noShowPenaltyBps: 15000,
+    delayToleranceMinutes: 15,
+    delayPenaltyPerMinuteCents: 50,
+    downgradePenaltyFlatCents: 5000,
+    noShowThresholdMinutes: 60,
+    earlyArrivalToleranceMinutes: 5,
+    dwellTimeMinutes: 3,
+    gracePeriodMinutes: 0,
+    baseTripValueCents: 0,
+  );
 
   group('SaveSlaTemplateHandler', () {
     test('cria template e persiste no repositório', () async {

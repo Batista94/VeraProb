@@ -12,7 +12,6 @@ import 'package:veraprob/infrastructure/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
 
-
 /// 3-step wizard for creating a new tenant organization.
 ///
 /// Step 1 — Dados Fiscais: legal/trade name, CNPJ, plan, timezone, currency.

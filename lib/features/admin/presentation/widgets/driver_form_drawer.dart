@@ -6,7 +6,6 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/shared/providers.dart';
 
-
 class DriverFormDrawer extends ConsumerStatefulWidget {
   final VoidCallback onClose;
   final ValueChanged<String> onDriverAdded;

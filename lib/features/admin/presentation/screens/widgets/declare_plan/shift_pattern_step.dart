@@ -5,7 +5,6 @@ import 'package:veraprob/application/shared/app_types.dart';
 
 import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/declare_plan_ui_utils.dart';
 
-
 /// Step 2 of the Declare Contract Plan wizard — Shift Pattern.
 ///
 /// Renders day selection, departure/arrival time pickers, timezone dropdown,

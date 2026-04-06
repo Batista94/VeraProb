@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 
 /// DTO for organization member information.
-/// 
+///
 /// Pilar INV-18: Domain sovereignty enforced via immutable DTO.
 @immutable
 class OrgMember {
@@ -22,7 +22,7 @@ class OrgMember {
 }
 
 /// Query service for organization member management.
-/// 
+///
 /// Decoupled from infrastructure implementations.
 abstract class UserManagementQueryService {
   Future<List<OrgMember>> getMembers();

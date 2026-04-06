@@ -267,10 +267,7 @@ class _BillingCycleReportsScreenState
   Widget _buildSummaryCards(BillingCycleView report) {
     return Row(
       children: [
-        _buildCard(
-          'Faturamento',
-          _formatCents(report.totalContractedRevenue),
-        ),
+        _buildCard('Faturamento', _formatCents(report.totalContractedRevenue)),
         _buildCard('Protegido', _formatCents(report.protectedRevenue)),
         _buildCard(
           'Perda',

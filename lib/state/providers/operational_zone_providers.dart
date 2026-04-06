@@ -32,10 +32,9 @@ final operationalZonesProvider = FutureProvider<List<OperationalZoneView>>((
   final orgId = ref.watch(currentOrganizationIdProvider);
   if (orgId == null) return <OperationalZoneView>[];
 
-  final zones =
-      await ref.watch(operationalZoneRepositoryProvider).findByOrganization(
-        orgId,
-      );
+  final zones = await ref
+      .watch(operationalZoneRepositoryProvider)
+      .findByOrganization(orgId);
   return zones.map(OperationalZoneView.fromDomain).toList();
 });
 

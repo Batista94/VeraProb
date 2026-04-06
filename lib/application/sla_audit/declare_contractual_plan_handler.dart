@@ -160,7 +160,7 @@ class DeclareContractualPlanHandler {
               endLongitude: input.endLongitude,
               endRadiusMeters: input.endRadiusMeters,
               plannedVehicleId: input.plannedVehicleId,
-              contractualValue: input.contractualValue,
+              contractualValue: Money(input.contractualValueCents),
               noShowPenaltyBps: input.noShowPenaltyBps,
             ),
           )

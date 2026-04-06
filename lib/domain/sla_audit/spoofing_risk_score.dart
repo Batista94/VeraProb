@@ -40,7 +40,8 @@ class SpoofingRiskScore extends Equatable {
 
     return SpoofingRiskScore(
       scoreBps: score,
-      signals: (json['signals'] as List<dynamic>?)
+      signals:
+          (json['signals'] as List<dynamic>?)
               ?.map((s) => SpoofingSignal.values.firstWhere((e) => e.name == s))
               .toList() ??
           [],

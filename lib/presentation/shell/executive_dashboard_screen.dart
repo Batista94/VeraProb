@@ -198,14 +198,16 @@ class _KpiGrid extends StatelessWidget {
         ),
         _KpiCard(
           title: 'Taxa de Recuperação',
-          value: '${(dashboard.penaltyRecoveryRate / 100.0).toStringAsFixed(1)}%',
+          value:
+              '${(dashboard.penaltyRecoveryRate / 100.0).toStringAsFixed(1)}%',
           subtitle: 'penalidades recuperadas',
           color: VeraProbColors.primary,
           icon: Icons.trending_up,
         ),
         _KpiCard(
           title: 'Dispute-to-Resolution',
-          value: '${(dashboard.disputeToResolutionRatio / 100.0).toStringAsFixed(1)}%',
+          value:
+              '${(dashboard.disputeToResolutionRatio / 100.0).toStringAsFixed(1)}%',
           subtitle: 'compensações / no-shows',
           color: VeraProbColors.warning,
           icon: Icons.balance_outlined,
@@ -221,9 +223,7 @@ class _KpiGrid extends StatelessWidget {
         if (dashboard.latestShadowMode != null)
           _KpiCard(
             title: 'Economia BRL',
-            value: _fmtBrl(
-              dashboard.latestShadowMode!.revenueProtectedByPlatform.cents,
-            ),
+            value: _fmtBrl(dashboard.latestShadowModeRevenueCents!),
             subtitle: 'receita protegida pela plataforma',
             color: VeraProbColors.success,
             icon: Icons.savings_outlined,

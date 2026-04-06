@@ -27,8 +27,10 @@ class OperationalStateNormalizer {
   final Duration degradedThreshold;
   final Duration signalLostThreshold;
   final double stopRadiusMeters; // Physical Metric - Double Required
-  final double movingSpeedThreshold; // km/h // Physical Metric - Double Required
-  final double slowTrafficThreshold; // km/h // Physical Metric - Double Required
+  final double
+  movingSpeedThreshold; // km/h // Physical Metric - Double Required
+  final double
+  slowTrafficThreshold; // km/h // Physical Metric - Double Required
   final Duration stoppedMinDuration;
   final Duration slowTrafficMinDuration;
   static const List<double> _smoothingWeights = [

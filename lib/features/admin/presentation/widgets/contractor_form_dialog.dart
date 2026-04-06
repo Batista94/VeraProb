@@ -9,7 +9,6 @@ import 'package:veraprob/application/sla_audit/save_contractor_command.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
 
-
 Future<ContractorView?> showContractorFormDialog(
   BuildContext context, {
   ContractorView? existing,

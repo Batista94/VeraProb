@@ -306,16 +306,16 @@ void main() {
     testWidgets(
       'exibe botão de limpar (X) quando zona está selecionada e limpa ao clicar',
       (tester) async {
-      final zone = _makeZone('Garagem', geofence: _kGeo);
-      OperationalZoneView? selected = zone;
+        final zone = _makeZone('Garagem', geofence: _kGeo);
+        OperationalZoneView? selected = zone;
 
-      await tester.pumpWidget(
-        _buildTestWidget(
-          zones: [zone],
-          selectedZone: selected,
-          onChanged: (z) => selected = z,
-        ),
-      );
+        await tester.pumpWidget(
+          _buildTestWidget(
+            zones: [zone],
+            selectedZone: selected,
+            onChanged: (z) => selected = z,
+          ),
+        );
 
         // Verifica se o ícone de limpar está presente
         expect(find.byIcon(Icons.clear), findsOneWidget);

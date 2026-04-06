@@ -9,8 +9,6 @@
 ///   5. Attempt to declare plan on closed contract → DomainException
 library;
 
-import 'package:veraprob/domain/shared/money.dart';
-
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:veraprob/application/sla_audit/close_contract_command.dart';
@@ -301,7 +299,7 @@ ContractualServiceInput _makeService(DateTime start) {
     endLatitude: -23.5600,
     endLongitude: -46.6400,
     endRadiusMeters: 100,
-    contractualValue: const Money(15000),
+    contractualValueCents: 15000,
     noShowPenaltyBps: 15000,
   );
 }

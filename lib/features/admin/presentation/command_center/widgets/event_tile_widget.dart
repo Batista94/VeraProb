@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart' show SlaLedgerEntry;
+import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart'
+    show SlaLedgerEntry;
 
 class EventTileWidget extends StatelessWidget {
   final SlaLedgerEntry entry;

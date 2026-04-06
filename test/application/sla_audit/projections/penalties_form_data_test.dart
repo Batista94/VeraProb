@@ -24,7 +24,10 @@ void main() {
       final form = PenaltiesFormData.defaults();
       final domain = form.toDomain();
       expect(domain.noShowPenaltyBps, form.noShowPenaltyBps);
-      expect(domain.delayPenaltyPerMinute.cents, form.delayPenaltyPerMinuteCents);
+      expect(
+        domain.delayPenaltyPerMinute.cents,
+        form.delayPenaltyPerMinuteCents,
+      );
       expect(domain.downgradePenaltyFlat.cents, form.downgradePenaltyFlatCents);
     });
 

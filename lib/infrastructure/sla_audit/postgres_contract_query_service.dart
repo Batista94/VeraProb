@@ -201,7 +201,9 @@ class PostgresContractQueryService implements ContractQueryService {
       if (st == ExecutionStatus.executed.name) executedCount++;
     }
 
-    final slaHealthBps = totalSets == 0 ? 0 : (executedCount * 10000 ~/ totalSets);
+    final slaHealthBps = totalSets == 0
+        ? 0
+        : (executedCount * 10000 ~/ totalSets);
 
     return ContractSummaryView(
       id: row['id'] as String,

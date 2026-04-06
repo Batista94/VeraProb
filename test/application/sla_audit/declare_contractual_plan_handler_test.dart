@@ -74,7 +74,7 @@ void main() {
     double endLat = -23.5600,
     double endLng = -46.6400,
     int endRadius = 100,
-    Money contractualValue = const Money(15000),
+    int contractualValueCents = 15000,
     int noShowPenaltyBps = 15000,
   }) {
     final s = start ?? DateTime.utc(2026, 3, 1, 6, 0);
@@ -88,7 +88,7 @@ void main() {
       endLatitude: endLat,
       endLongitude: endLng,
       endRadiusMeters: endRadius,
-      contractualValue: contractualValue,
+      contractualValueCents: contractualValueCents,
       noShowPenaltyBps: noShowPenaltyBps,
     );
   }

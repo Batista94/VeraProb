@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/application/operational_control/operational_control_facade.dart' show EventType, EventSeverity;
+import 'package:veraprob/application/operational_control/operational_control_facade.dart'
+    show EventType, EventSeverity;
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
 import 'package:veraprob/state/providers/authority_providers.dart';

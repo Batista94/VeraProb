@@ -143,14 +143,10 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
     final query = _textController.text.trim();
     final hasExactMatch =
         query.isNotEmpty &&
-        widget.zones.any(
-          (z) => z.name.toLowerCase() == query.toLowerCase(),
-        );
+        widget.zones.any((z) => z.name.toLowerCase() == query.toLowerCase());
     if (hasExactMatch) return const SizedBox.shrink();
 
-    final label = query.isEmpty
-        ? '+ Criar nova zona'
-        : '+ Criar zona "$query"';
+    final label = query.isEmpty ? '+ Criar nova zona' : '+ Criar zona "$query"';
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -176,13 +172,10 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
         // zones instead of filtering — allows the user to change the selection
         // without first clearing the field manually.
         final selectedName = widget.selectedZone?.name ?? '';
-        final query =
-            textEditingValue.text == selectedName ? '' : textEditingValue.text;
-        return filterZones(
-          widget.zones,
-          query,
-          widget.contractorName,
-        );
+        final query = textEditingValue.text == selectedName
+            ? ''
+            : textEditingValue.text;
+        return filterZones(widget.zones, query, widget.contractorName);
       },
       displayStringForOption: (zone) => zone.name,
       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {

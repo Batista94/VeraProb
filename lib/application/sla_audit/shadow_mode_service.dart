@@ -45,8 +45,8 @@ class ShadowModeService {
     required DateTime periodStartUtc,
     required DateTime periodEndUtc,
     required int baselineDisputeRateBps,
-    required Money manualEnforcementCostPerIncident,
-    required Money platformSubscriptionCost,
+    required int manualEnforcementCostPerIncident,
+    required int platformSubscriptionCost,
     required String generatedByUserId,
   }) async {
     // 1. Fetch the BillingCycleReport for actual financial data
@@ -82,16 +82,15 @@ class ShadowModeService {
       actualComplianceRateBps: report.complianceRateBps,
       evidenceQualityRateBps: evidenceQualityRateBps,
       baselineDisputeRateBps: baselineDisputeRateBps,
-      manualEnforcementCostPerIncident: manualEnforcementCostPerIncident,
+      manualEnforcementCostPerIncident: Money(manualEnforcementCostPerIncident),
       incidentCount: incidentCount,
-      platformSubscriptionCost: platformSubscriptionCost,
+      platformSubscriptionCost: Money(platformSubscriptionCost),
       generatedAtUtc: DateTime.now().toUtc(),
       generatedByUserId: generatedByUserId,
       simulationParameters: {
         'baseline_dispute_rate_bps': baselineDisputeRateBps,
-        'manual_cost_per_incident_cents':
-            manualEnforcementCostPerIncident.cents,
-        'platform_subscription_cost_cents': platformSubscriptionCost.cents,
+        'manual_cost_per_incident_cents': manualEnforcementCostPerIncident,
+        'platform_subscription_cost_cents': platformSubscriptionCost,
         'evidence_quality_rate_bps': evidenceQualityRateBps,
         'total_canonical_facts': totalFacts,
         'ok_canonical_facts': okFacts,

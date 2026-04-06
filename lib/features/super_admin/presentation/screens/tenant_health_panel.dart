@@ -8,7 +8,6 @@ import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
 import 'package:veraprob/infrastructure/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 
-
 /// Cross-tenant health dashboard for SuperAdmin.
 ///
 /// Displays one row per organization with key health indicators.
@@ -230,7 +229,6 @@ class _TenantTable extends StatelessWidget {
     if (ratioBps >= 8000) return Colors.orange;
     return VeraProbColors.success;
   }
-
 
   String _formatDateTime(DateTime dt) {
     final local = dt.toLocal();

@@ -17,7 +17,9 @@ class PostgresUserManagementQueryService implements UserManagementQueryService {
         userId: row['user_id'] as String,
         email: row['email'] as String,
         role: _mapDbToRole(row['role'] as String),
-        invitedAt: DateTime.parse(row['invited_at'] as String).toUtc(), // Pilar INV-9
+        invitedAt: DateTime.parse(
+          row['invited_at'] as String,
+        ).toUtc(), // Pilar INV-9
         lastSignIn: row['last_sign_in'] != null
             ? DateTime.parse(row['last_sign_in'] as String).toUtc()
             : null,

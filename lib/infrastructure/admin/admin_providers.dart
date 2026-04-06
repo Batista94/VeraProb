@@ -4,8 +4,12 @@ import 'package:veraprob/infrastructure/admin/postgres_user_management_query_ser
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 
 /// Provider for organization member query service.
-/// 
+///
 /// Decoupling: Infrastructure-layer provider returning application-layer interface.
-final userManagementQueryServiceProvider = Provider<UserManagementQueryService>((ref) {
-  return PostgresUserManagementQueryService(ref.watch(supabaseClientProvider));
-});
+final userManagementQueryServiceProvider = Provider<UserManagementQueryService>(
+  (ref) {
+    return PostgresUserManagementQueryService(
+      ref.watch(supabaseClientProvider),
+    );
+  },
+);

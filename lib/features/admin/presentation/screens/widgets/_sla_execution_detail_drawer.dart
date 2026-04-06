@@ -10,7 +10,6 @@ import 'package:veraprob/state/providers/justification_providers.dart';
 import 'package:veraprob/application/sla_audit/justification/generate_justification_token_command.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 
-
 final _currencyFormat = NumberFormat.currency(
   locale: 'pt_BR',
   symbol: r'R$',
@@ -353,9 +352,7 @@ class _SolicitarDefesaButtonState
 
       final uri = Uri.base.replace(
         path: '/justify',
-        queryParameters: {
-          'token': token.token,
-        },
+        queryParameters: {'token': token.token},
       );
       final link = uri.toString();
 

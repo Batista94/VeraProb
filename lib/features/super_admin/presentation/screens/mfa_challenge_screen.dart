@@ -11,7 +11,6 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
 
-
 /// TOTP challenge screen for SuperAdmin login (INV-6).
 ///
 /// Displays a 6-digit input, auto-submits, shows lockout countdown.

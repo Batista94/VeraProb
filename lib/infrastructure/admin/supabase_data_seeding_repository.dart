@@ -100,10 +100,12 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
             'organization_id': organizationId,
             'name': 'Contrato de Teste Histórico',
             'contractor_name': contractor?['name'] ?? 'Empresa Beta',
-            'valid_from_utc': DateTime.now().toUtc()
+            'valid_from_utc': DateTime.now()
+                .toUtc()
                 .subtract(const Duration(days: 30))
                 .toIso8601String(),
-            'valid_until_utc': DateTime.now().toUtc()
+            'valid_until_utc': DateTime.now()
+                .toUtc()
                 .add(const Duration(days: 30))
                 .toIso8601String(),
             'status': 'active',
@@ -352,7 +354,9 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
     }
   }
 
-  Future<void> _seedHeartbeatAndLateArrivalScenarios(String organizationId) async {
+  Future<void> _seedHeartbeatAndLateArrivalScenarios(
+    String organizationId,
+  ) async {
     final vehicle = await _supabase
         .from('vehicles')
         .select()
@@ -393,8 +397,11 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
           .subtract(const Duration(hours: 40))
           .toIso8601String(),
       'received_at_utc': now.toIso8601String(),
-      'lat': -23.52, 'lng': -46.62, 'speed_cms': 6000,
-      'source_adapter': 'SASCAR_V1', 'integrity_flag': 'OK',
+      'lat': -23.52,
+      'lng': -46.62,
+      'speed_cms': 6000,
+      'source_adapter': 'SASCAR_V1',
+      'integrity_flag': 'OK',
     });
 
     await _supabase.from('canonical_facts').insert({
@@ -406,8 +413,11 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
           .subtract(const Duration(hours: 50))
           .toIso8601String(),
       'received_at_utc': now.toIso8601String(),
-      'lat': -23.53, 'lng': -46.63, 'speed_cms': 7000,
-      'source_adapter': 'SASCAR_V1', 'integrity_flag': 'OK',
+      'lat': -23.53,
+      'lng': -46.63,
+      'speed_cms': 7000,
+      'source_adapter': 'SASCAR_V1',
+      'integrity_flag': 'OK',
     });
   }
 }

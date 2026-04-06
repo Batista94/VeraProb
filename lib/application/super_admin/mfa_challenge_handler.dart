@@ -45,7 +45,12 @@ class MfaChallengeHandler {
     );
     return switch (result) {
       domain.MfaVerificationSuccess() => const MfaVerificationSuccess(),
-      domain.MfaVerificationFailure(:final failedAttempts, :final isLockedOut, :final lockedUntil, :final message) =>
+      domain.MfaVerificationFailure(
+        :final failedAttempts,
+        :final isLockedOut,
+        :final lockedUntil,
+        :final message,
+      ) =>
         MfaVerificationFailure(
           failedAttempts: failedAttempts,
           isLockedOut: isLockedOut,

@@ -55,37 +55,35 @@ final slaTemplatesProvider = FutureProvider<List<SlaTemplateView>>((ref) async {
   final orgId = ref.watch(currentOrganizationIdProvider);
   if (orgId == null) return const [];
 
-  final templates =
-      await ref.watch(slaTemplateRepositoryProvider).findByOrganization(orgId);
+  final templates = await ref
+      .watch(slaTemplateRepositoryProvider)
+      .findByOrganization(orgId);
   return templates.map(SlaTemplateView.fromDomain).toList();
 });
 
 /// Merges system presets + org templates into a single list.
 /// Presets appear first, then org templates sorted by name.
-final allTemplatesProvider = FutureProvider<List<SlaTemplateView>>((
-  ref,
-) async {
+final allTemplatesProvider = FutureProvider<List<SlaTemplateView>>((ref) async {
   final presets = ref.watch(slaTemplatePresetsProvider);
   final orgTemplates = await ref.watch(slaTemplatesProvider.future);
   return [...presets, ...orgTemplates];
 });
 
 /// Finds a template by [id] — checks presets first, then org templates.
-final slaTemplateByIdProvider = FutureProvider.family<SlaTemplateView?, String>((
-  ref,
-  id,
-) async {
-  if (SlaTemplatePresets.isPreset(id)) {
-    final domain = SlaTemplatePresets.findById(id);
+final slaTemplateByIdProvider = FutureProvider.family<SlaTemplateView?, String>(
+  (ref, id) async {
+    if (SlaTemplatePresets.isPreset(id)) {
+      final domain = SlaTemplatePresets.findById(id);
+      return domain != null ? SlaTemplateView.fromDomain(domain) : null;
+    }
+    final orgId = ref.watch(currentOrganizationIdProvider);
+    if (orgId == null) return null;
+    final domain = await ref
+        .watch(slaTemplateRepositoryProvider)
+        .findById(id, organizationId: orgId);
     return domain != null ? SlaTemplateView.fromDomain(domain) : null;
-  }
-  final orgId = ref.watch(currentOrganizationIdProvider);
-  if (orgId == null) return null;
-  final domain = await ref
-      .watch(slaTemplateRepositoryProvider)
-      .findById(id, organizationId: orgId);
-  return domain != null ? SlaTemplateView.fromDomain(domain) : null;
-});
+  },
+);
 
 // ── Mutations ────────────────────────────────────────────────
 

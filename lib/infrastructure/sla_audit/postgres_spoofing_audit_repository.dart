@@ -20,7 +20,7 @@ class PostgresSpoofingAuditRepository implements SpoofingAuditRepository {
       'asset_id': entry.assetId,
       'window_start': entry.windowStart.toIso8601String(),
       'window_end': entry.windowEnd.toIso8601String(),
-       'risk_score': entry.riskScore.scoreBps,
+      'risk_score': entry.riskScore.scoreBps,
       'signals': entry.riskScore.signals.map((s) => s.name).toList(),
       'facts_analyzed': entry.factsAnalyzed,
       'fact_ids': entry.factIds,

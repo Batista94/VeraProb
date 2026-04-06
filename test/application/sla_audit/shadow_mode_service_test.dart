@@ -82,8 +82,8 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         baselineDisputeRateBps: 6000,
-        manualEnforcementCostPerIncident: const Money(5000),
-        platformSubscriptionCost: const Money(50000),
+        manualEnforcementCostPerIncident: 5000,
+        platformSubscriptionCost: 50000,
         generatedByUserId: 'user-admin-1',
       );
 
@@ -100,8 +100,8 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         baselineDisputeRateBps: 6000, // 60% would have been disputed (lost)
-        manualEnforcementCostPerIncident: const Money(0),
-        platformSubscriptionCost: const Money(100000),
+        manualEnforcementCostPerIncident: 0,
+        platformSubscriptionCost: 100000,
         generatedByUserId: 'user-admin-1',
       );
 
@@ -124,10 +124,8 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         baselineDisputeRateBps: 5000,
-        manualEnforcementCostPerIncident: const Money(
-          2000,
-        ), // R$ 20 per incident
-        platformSubscriptionCost: const Money(100000),
+        manualEnforcementCostPerIncident: 2000, // R$ 20 per incident
+        platformSubscriptionCost: 100000,
         generatedByUserId: 'user-admin-1',
       );
 
@@ -147,8 +145,8 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         baselineDisputeRateBps: 6000,
-        manualEnforcementCostPerIncident: const Money(0),
-        platformSubscriptionCost: const Money(6000), // R$ 60
+        manualEnforcementCostPerIncident: 0,
+        platformSubscriptionCost: 6000, // R$ 60
         generatedByUserId: 'user-admin-1',
       );
 
@@ -166,8 +164,8 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         baselineDisputeRateBps: 5500,
-        manualEnforcementCostPerIncident: const Money(1000),
-        platformSubscriptionCost: const Money(50000),
+        manualEnforcementCostPerIncident: 1000,
+        platformSubscriptionCost: 50000,
         generatedByUserId: 'user-admin-1',
       );
 
@@ -177,8 +175,8 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         baselineDisputeRateBps: 5500,
-        manualEnforcementCostPerIncident: const Money(1000),
-        platformSubscriptionCost: const Money(50000),
+        manualEnforcementCostPerIncident: 1000,
+        platformSubscriptionCost: 50000,
         generatedByUserId: 'user-admin-1',
       );
 
@@ -205,8 +203,8 @@ void main() {
             periodStartUtc: periodStart,
             periodEndUtc: periodEnd,
             baselineDisputeRateBps: 5000,
-            manualEnforcementCostPerIncident: const Money(0),
-            platformSubscriptionCost: const Money(100000),
+            manualEnforcementCostPerIncident: 0,
+            platformSubscriptionCost: 100000,
             generatedByUserId: 'user-admin-1',
           );
 
@@ -248,8 +246,8 @@ void main() {
             periodStartUtc: periodStart,
             periodEndUtc: periodEnd,
             baselineDisputeRateBps: 5000,
-            manualEnforcementCostPerIncident: const Money(0),
-            platformSubscriptionCost: const Money(100000),
+            manualEnforcementCostPerIncident: 0,
+            platformSubscriptionCost: 100000,
             generatedByUserId: 'user-admin-1',
           );
 
@@ -287,8 +285,8 @@ void main() {
             periodStartUtc: periodStart,
             periodEndUtc: periodEnd,
             baselineDisputeRateBps: 5000,
-            manualEnforcementCostPerIncident: const Money(0),
-            platformSubscriptionCost: const Money(100000),
+            manualEnforcementCostPerIncident: 0,
+            platformSubscriptionCost: 100000,
             generatedByUserId: 'user-admin-1',
           );
 
@@ -334,8 +332,8 @@ void main() {
             periodStartUtc: periodStart,
             periodEndUtc: periodEnd,
             baselineDisputeRateBps: 5000,
-            manualEnforcementCostPerIncident: const Money(0),
-            platformSubscriptionCost: const Money(100000),
+            manualEnforcementCostPerIncident: 0,
+            platformSubscriptionCost: 100000,
             generatedByUserId: 'user-admin-1',
           );
 
@@ -362,8 +360,8 @@ void main() {
           periodStartUtc: DateTime.utc(2026, 2, 1),
           periodEndUtc: DateTime.utc(2026, 2, 28),
           baselineDisputeRateBps: 5000,
-          manualEnforcementCostPerIncident: const Money(0),
-          platformSubscriptionCost: const Money(50000),
+          manualEnforcementCostPerIncident: 0,
+          platformSubscriptionCost: 50000,
           generatedByUserId: 'user-1',
         );
 
@@ -373,8 +371,8 @@ void main() {
           periodStartUtc: periodStart,
           periodEndUtc: periodEnd,
           baselineDisputeRateBps: 5000,
-          manualEnforcementCostPerIncident: const Money(0),
-          platformSubscriptionCost: const Money(50000),
+          manualEnforcementCostPerIncident: 0,
+          platformSubscriptionCost: 50000,
           generatedByUserId: 'user-1',
         );
 
@@ -392,8 +390,8 @@ void main() {
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
         baselineDisputeRateBps: 5000,
-        manualEnforcementCostPerIncident: const Money(0),
-        platformSubscriptionCost: const Money(50000),
+        manualEnforcementCostPerIncident: 0,
+        platformSubscriptionCost: 50000,
         generatedByUserId: 'user-1',
       );
 

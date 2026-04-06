@@ -100,8 +100,7 @@ class _FinancialKpiRow extends ConsumerWidget {
             Expanded(
               child: _KpiCard(
                 title: 'Receita em Risco (Atrasos)',
-                value:
-                    'R\$ ${(impact.revenueAtRisk / 100).toStringAsFixed(2)}',
+                value: 'R\$ ${(impact.revenueAtRisk / 100).toStringAsFixed(2)}',
                 color: VeraProbColors.warning,
                 icon: Icons.warning_amber_rounded,
               ),
@@ -110,8 +109,7 @@ class _FinancialKpiRow extends ConsumerWidget {
             Expanded(
               child: _KpiCard(
                 title: 'SLA Violado (Penalty)',
-                value:
-                    'R\$ ${(impact.lostRevenue / 100).toStringAsFixed(2)}',
+                value: 'R\$ ${(impact.lostRevenue / 100).toStringAsFixed(2)}',
                 color: VeraProbColors.error,
                 icon: Icons.gavel,
               ),

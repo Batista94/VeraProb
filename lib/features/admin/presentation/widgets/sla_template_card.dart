@@ -5,7 +5,6 @@ import 'package:veraprob/application/sla_audit/projections/sla_template_view.dar
 import 'package:veraprob/application/sla_audit/sla_template_presets.dart';
 import 'package:veraprob/features/admin/presentation/widgets/transport_vertical_chip.dart';
 
-
 /// Card widget for displaying an SLA template in the gallery.
 ///
 /// Shows name, vertical badge, and a compact penalty summary.

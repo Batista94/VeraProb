@@ -1,7 +1,7 @@
 import 'package:veraprob/application/shared/app_types.dart';
 
 /// Port for user management mutations (RBAC, member removal).
-/// 
+///
 /// Decoupled from infrastructure implementations (Supabase RPCs).
 abstract class UserManagementCommandService {
   Future<void> changeRole({

@@ -180,9 +180,7 @@ class _SlaTemplateLibraryScreenState
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       result = result
-          .where(
-            (t) => t.name.toLowerCase().contains(query),
-          )
+          .where((t) => t.name.toLowerCase().contains(query))
           .toList();
     }
     return result;

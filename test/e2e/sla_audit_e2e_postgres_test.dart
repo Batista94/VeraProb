@@ -159,7 +159,7 @@ void main() {
         endLatitude: -23.5600,
         endLongitude: -46.6400,
         endRadiusMeters: 100,
-        contractualValue: const Money(10000),
+        contractualValueCents: 10000,
         noShowPenaltyBps: 15000,
       );
 
@@ -551,11 +551,7 @@ void main() {
         contractId: contractId,
       );
 
-      expect(
-        impact.protectedRevenue,
-        10000,
-        reason: '100 BRL = 10000 cents',
-      );
+      expect(impact.protectedRevenue, 10000, reason: '100 BRL = 10000 cents');
       expect(impact.lostRevenue, 0);
       expect(impact.revenueAtRisk, 0);
     });

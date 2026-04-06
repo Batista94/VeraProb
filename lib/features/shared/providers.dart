@@ -45,32 +45,28 @@ final tripRepositoryProvider = Provider<ITripRepository>((ref) {
 });
 
 final vehiclePositionsStreamProvider =
-    StreamProvider<List<VehiclePositionView>>((
-  ref,
-) {
-  final repository = ref.read(vehicleRepositoryProvider);
-  final allPositions = repository.getVehiclePositions();
+    StreamProvider<List<VehiclePositionView>>((ref) {
+      final repository = ref.read(vehicleRepositoryProvider);
+      final allPositions = repository.getVehiclePositions();
 
-  // Watch filters
-  final queryAsync = ref.watch(
-    searchQueryStreamProvider,
-  );
-  final query = queryAsync.value?.toLowerCase() ?? '';
+      // Watch filters
+      final queryAsync = ref.watch(searchQueryStreamProvider);
+      final query = queryAsync.value?.toLowerCase() ?? '';
 
-  return allPositions.map((positions) {
-    var filtered = positions;
+      return allPositions.map((positions) {
+        var filtered = positions;
 
-    // Filter by Search Query
-    if (query.isNotEmpty) {
-      filtered = filtered.where((pos) {
-        final matchTripId = pos.tripId.toLowerCase().contains(query);
-        final matchRoute =
-            pos.routeName?.toLowerCase().contains(query) ?? false;
-        return matchTripId || matchRoute;
-      }).toList();
-    }
+        // Filter by Search Query
+        if (query.isNotEmpty) {
+          filtered = filtered.where((pos) {
+            final matchTripId = pos.tripId.toLowerCase().contains(query);
+            final matchRoute =
+                pos.routeName?.toLowerCase().contains(query) ?? false;
+            return matchTripId || matchRoute;
+          }).toList();
+        }
 
-    // Map to View Model
-    return filtered.map(VehiclePositionView.fromDomain).toList();
-  });
-});
+        // Map to View Model
+        return filtered.map(VehiclePositionView.fromDomain).toList();
+      });
+    });

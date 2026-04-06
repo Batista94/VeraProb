@@ -1,7 +1,7 @@
 import 'package:veraprob/application/shared/app_types.dart';
 
 /// Read model for [Invitation] used in presentation layer.
-/// 
+///
 /// Pilar INV-18: Domain sovereignty enforced via application DTO.
 class InvitationView {
   final String id;

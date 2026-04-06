@@ -176,7 +176,9 @@ void main() {
         const bufferSeconds = 540;
         final riskWindowStart = DateTime.utc(2026, 4, 1, 6, 51);
         final eta = riskWindowStart.add(
-          Duration(milliseconds: (riskBps * bufferSeconds * 1000 / 10000).round()),
+          Duration(
+            milliseconds: (riskBps * bufferSeconds * 1000 / 10000).round(),
+          ),
         );
         return calculator.evaluate(
           windowStartUtc: windowStart,
