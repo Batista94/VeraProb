@@ -1,18 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../../application/admin/invite_user_handler.dart';
-import '../../application/admin/invite_user_command.dart';
-import '../../core/utils/cnpj_validator.dart';
-import '../../domain/enums/user_permissions.dart';
-import '../../domain/super_admin/plan_limits.dart';
-import '../../domain/super_admin/plan_type.dart';
-import '../../domain/enums/user_role.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/super_admin/create_organization_command.dart';
-import '../../domain/super_admin/i_super_admin_repository.dart';
-import 'create_organization_result.dart';
-import 'super_admin_invitation_command_service.dart';
+import 'package:veraprob/application/admin/invite_user_handler.dart';
+import 'package:veraprob/application/admin/invite_user_command.dart';
+import 'package:veraprob/core/utils/cnpj_validator.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/domain/super_admin/plan_limits.dart';
+import 'package:veraprob/domain/super_admin/create_organization_command.dart';
+import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
+import 'package:veraprob/application/super_admin/create_organization_result.dart';
+import 'package:veraprob/application/super_admin/super_admin_invitation_command_service.dart';
 
 /// Application handler for [CreateOrganizationCommand].
 ///
@@ -53,7 +48,7 @@ class CreateOrganizationHandler {
     }
 
     // 5. Auto-fill quota limits from PlanLimits defaults when not explicitly provided
-    final planType = PlanType.fromDb(cmd.planType);
+    final planType = cmd.planType;
     final effectiveCmd =
         (cmd.maxVehicles == null || cmd.maxActiveContracts == null)
         ? CreateOrganizationCommand(

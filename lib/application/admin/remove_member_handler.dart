@@ -1,9 +1,7 @@
-import '../../domain/enums/user_permissions.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../../infrastructure/admin/postgres_user_management_query_service.dart';
-import 'remove_member_command.dart';
-import 'user_management_command_service.dart';
+import 'package:veraprob/application/admin/remove_member_command.dart';
+import 'package:veraprob/application/admin/user_management_command_service.dart';
+import 'package:veraprob/application/admin/user_management_query_service.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Application handler for removing a member from an organization.
 ///
@@ -11,12 +9,12 @@ import 'user_management_command_service.dart';
 /// Invariant: Cannot remove the last administrator (belt-and-suspenders with SQL).
 class RemoveMemberHandler {
   final UserManagementCommandService _commandService;
-  final PostgresUserManagementQueryService _queryService;
+  final UserManagementQueryService _queryService;
   final RbacService _rbac = RbacService();
 
   RemoveMemberHandler({
     required UserManagementCommandService commandService,
-    required PostgresUserManagementQueryService queryService,
+    required UserManagementQueryService queryService,
   }) : _commandService = commandService,
        _queryService = queryService;
 
@@ -40,8 +38,8 @@ class RemoveMemberHandler {
     }
 
     // 3. Last-admin guard (Dart level for immediate UX)
-    if (target.role == 'TENANT_ADMIN') {
-      final adminCount = members.where((m) => m.role == 'TENANT_ADMIN').length;
+    if (target.role == UserRole.admin) {
+      final adminCount = members.where((m) => m.role == UserRole.admin).length;
       if (adminCount <= 1) {
         throw const DomainException(
           'Não é possível remover o único administrador da organização.',

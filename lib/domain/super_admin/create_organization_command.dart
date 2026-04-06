@@ -1,3 +1,5 @@
+import 'package:veraprob/domain/super_admin/plan_type.dart';
+
 /// Immutable command DTO for creating a new tenant organization.
 ///
 /// Carries all information from the 3-step wizard.
@@ -9,7 +11,7 @@ class CreateOrganizationCommand {
   final String cnpj;
   final String timezone;
   final String currencyCode;
-  final String planType;
+  final PlanType planType; // Changed from String to PlanType
 
   /// Max vehicles quota. `null` means "derive from [planType] defaults at handler time".
   final int? maxVehicles;

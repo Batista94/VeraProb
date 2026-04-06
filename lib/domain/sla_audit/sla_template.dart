@@ -5,13 +5,13 @@ import 'domain_exception.dart';
 import 'sla_penalties.dart';
 import 'transport_vertical.dart';
 
-/// Application-layer entity representing a named preset of [SLAPenalties].
+/// Core Domain Entity representing a named preset of [SLAPenalties].
 ///
 /// SLA Templates allow operators to configure penalty parameters once and
 /// reuse them across multiple plan declarations — eliminating repetitive
 /// manual entry in the Wizard Step 3.
 ///
-/// **Classification:** Application/Infrastructure layer entity.
+/// **Classification:** Core Domain Entity.
 /// [SLAPenalties] remains a pure domain Value Object with no knowledge of
 /// templates. A template is purely a named JSONB preset.
 ///

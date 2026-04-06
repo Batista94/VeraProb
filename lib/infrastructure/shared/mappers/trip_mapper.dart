@@ -10,9 +10,9 @@ class TripMapper {
       id: data['id'] as String,
       routeId: routeCode as String,
       driverId: data['driver_id'] as String,
-      startTime: DateTime.parse(data['start_time'] as String),
+      startTime: DateTime.parse(data['start_time'] as String).toUtc(),
       endTime: data['end_time'] != null
-          ? DateTime.parse(data['end_time'] as String)
+          ? DateTime.parse(data['end_time'] as String).toUtc()
           : null,
       status: data['status'] as String,
     );

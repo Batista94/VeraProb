@@ -100,12 +100,10 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
             'organization_id': organizationId,
             'name': 'Contrato de Teste Histórico',
             'contractor_name': contractor?['name'] ?? 'Empresa Beta',
-            'valid_from_utc': DateTime.now()
-                .toUtc()
+            'valid_from_utc': DateTime.now().toUtc()
                 .subtract(const Duration(days: 30))
                 .toIso8601String(),
-            'valid_until_utc': DateTime.now()
-                .toUtc()
+            'valid_until_utc': DateTime.now().toUtc()
                 .add(const Duration(days: 30))
                 .toIso8601String(),
             'status': 'active',
@@ -123,7 +121,7 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
         .eq('source_type', 'history_seed');
 
     // 3. Create trips for yesterday
-    final yesterday = DateTime(2026, 03, 16);
+    final yesterday = DateTime.utc(2026, 03, 16);
     final routes = await _supabase
         .from('routes')
         .select('id')

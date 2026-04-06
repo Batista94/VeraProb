@@ -109,20 +109,20 @@ class UserManagementScreen extends ConsumerWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     if (!isSelf)
-                                      DropdownButton<String>(
+                                      DropdownButton<UserRole>(
                                         value: member.role,
                                         underline: const SizedBox(),
                                         items: const [
                                           DropdownMenuItem(
-                                            value: 'TENANT_ADMIN',
+                                            value: UserRole.admin,
                                             child: Text('Administrador'),
                                           ),
                                           DropdownMenuItem(
-                                            value: 'OPERATOR',
+                                            value: UserRole.operator,
                                             child: Text('Operador'),
                                           ),
                                           DropdownMenuItem(
-                                            value: 'AUDITOR',
+                                            value: UserRole.auditor,
                                             child: Text('Auditor'),
                                           ),
                                         ],
@@ -240,7 +240,7 @@ class UserManagementScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String userId,
-    String newRoleString,
+    UserRole newRole,
   ) async {
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
@@ -250,17 +250,6 @@ class UserManagementScreen extends ConsumerWidget {
         throw StateError(
           'Organization context unavailable for role: $callerRole',
         );
-      }
-
-      final UserRole newRole;
-      if (newRoleString == 'TENANT_ADMIN') {
-        newRole = UserRole.admin;
-      } else if (newRoleString == 'OPERATOR') {
-        newRole = UserRole.operator;
-      } else if (newRoleString == 'AUDITOR') {
-        newRole = UserRole.auditor;
-      } else {
-        throw ArgumentError('Unrecognized role string: $newRoleString');
       }
 
       await ref

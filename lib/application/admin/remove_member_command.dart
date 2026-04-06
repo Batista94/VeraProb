@@ -1,5 +1,8 @@
-import '../../domain/enums/user_role.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
+/// Command to remove a member from an organization.
+/// 
+/// RBAC-enabled: requires [UserPermission.canManageUsers].
 class RemoveMemberCommand {
   final String organizationId;
   final UserRole callerRole;

@@ -30,8 +30,7 @@ class StoppedVehicleDetector extends SituationDetector {
   ) {
     // 1. Check real operational state from the Normalization Layer
     if (state != null && state.motionState == MotionState.stopped) {
-      final minutesStopped = DateTime.now()
-          .toUtc()
+      final minutesStopped = DateTime.now().toUtc()
           .difference(state.stateChangedAt)
           .inMinutes;
       // Only warn if stopped for a significant time based on business logic

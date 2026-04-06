@@ -53,7 +53,7 @@ class AuditLog extends Equatable {
       oldValue: json['old_value'] as String?,
       newValue: json['new_value'] as String?,
       reason: json['reason'] as String?,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      timestamp: DateTime.parse(json['timestamp'] as String).toUtc(),
     );
   }
 

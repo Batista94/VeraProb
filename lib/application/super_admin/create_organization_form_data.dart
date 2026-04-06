@@ -1,16 +1,16 @@
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 
 /// Mutable form DTO for the Create Organization wizard.
 ///
-/// All fields are primitives — no domain types leak into features/.
-/// Call [toCommand] to produce the [CreateOrganizationCommand] for dispatch.
+/// Pilar INV-18: Use domain types (PlanType) instead of raw strings.
 class CreateOrganizationFormData {
   final String legalName;
   final String tradeName;
   final String cnpj;
   final String timezone;
   final String currencyCode;
-  final String planType;
+  final PlanType planType; // Changed from String to PlanType
   final int? maxVehicles;
   final int? maxActiveContracts;
   final String initialAdminEmail;
@@ -36,7 +36,7 @@ class CreateOrganizationFormData {
       cnpj: cnpj,
       timezone: timezone,
       currencyCode: currencyCode,
-      planType: planType,
+      planType: planType, // Pure enum
       maxVehicles: maxVehicles,
       maxActiveContracts: maxActiveContracts,
       initialAdminEmail: initialAdminEmail,

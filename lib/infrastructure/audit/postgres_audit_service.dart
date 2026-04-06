@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../../application/audit/audit_service.dart';
 import '../../domain/entities/audit_log.dart';
 
@@ -20,10 +21,7 @@ class PostgresAuditService implements AuditService {
     String? reason,
   }) async {
     final log = AuditLog(
-      id: DateTime.now()
-          .toUtc()
-          .millisecondsSinceEpoch
-          .toString(), // Managed by DB or here
+      id: const Uuid().v4(), // Managed by client to ensure ledger integrity before insertion
       organizationId: organizationId,
       operatorId: operatorId,
       actionType: actionType,

@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/audit/audit_service.dart';
+import 'package:veraprob/infrastructure/audit/audit_providers.dart';
+import 'package:veraprob/infrastructure/audit/in_memory_audit_service.dart';
 import 'package:veraprob/domain/authority/policies/in_memory_policy_evaluator.dart';
 import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
 import 'package:veraprob/infrastructure/audit/postgres_audit_service.dart';

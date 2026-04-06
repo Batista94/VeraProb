@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/entities/audit_log.dart';
-import '../../../domain/enums/incident_lifecycle_status.dart';
-import '../../audit/audit_service.dart';
-import '../../../state/providers/fleet_providers.dart';
-import '../../../domain/entities/operational_trip.dart';
-import 'audit_filter_provider.dart';
-import '../models/audit_log_projection.dart';
+import 'package:veraprob/domain/entities/audit_log.dart';
+import 'package:veraprob/domain/enums/incident_lifecycle_status.dart';
+import 'package:veraprob/application/audit/audit_service.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/application/projections/providers/audit_filter_provider.dart';
+import 'package:veraprob/application/projections/models/audit_log_projection.dart';
+import 'package:veraprob/infrastructure/audit/audit_providers.dart';
 
 /// Provides a formatted, read-only projection of the Audit Logs.
 /// Fetches the logs from the AuditService (acting as the persistent event store).

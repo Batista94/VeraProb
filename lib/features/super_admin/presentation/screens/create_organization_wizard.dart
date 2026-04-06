@@ -215,7 +215,7 @@ class _CreateOrganizationWizardState
         cnpj: _cnpjCtrl.text.trim(),
         timezone: _timezone,
         currencyCode: _currency,
-        planType: _selectedPlan.dbValue,
+        planType: _selectedPlan,
         maxVehicles: int.parse(_maxVehiclesCtrl.text.trim()),
         maxActiveContracts: int.parse(_maxContractsCtrl.text.trim()),
         initialAdminEmail: _adminEmailCtrl.text.trim().toLowerCase(),

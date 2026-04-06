@@ -14,13 +14,14 @@ import '../../domain/admin/invitation.dart';
 import '../../domain/admin/invitation_repository.dart';
 import '../../domain/admin/organization.dart';
 import '../../domain/admin/organization_repository.dart';
+import '../../application/admin/user_management_query_service.dart';
+import '../../infrastructure/admin/admin_providers.dart';
 import '../../infrastructure/admin/in_memory_active_vehicle_repository.dart';
 import '../../infrastructure/admin/postgres_active_vehicle_repository.dart';
 import '../../infrastructure/admin/postgres_invitation_command_service.dart';
 import '../../infrastructure/admin/postgres_invitation_query_service.dart';
 import '../../infrastructure/admin/postgres_organization_repository.dart';
 import '../../infrastructure/admin/postgres_user_management_command_service.dart';
-import '../../infrastructure/admin/postgres_user_management_query_service.dart';
 import '../../infrastructure/admin/supabase_admin_notification_repository.dart';
 import '../../infrastructure/admin/supabase_data_seeding_repository.dart';
 import '../../infrastructure/persistence/persistence_mode.dart';
@@ -43,10 +44,7 @@ final userManagementCommandServiceProvider =
   return PostgresUserManagementCommandService(ref.watch(supabaseClientProvider));
 });
 
-final userManagementQueryServiceProvider =
-    Provider<PostgresUserManagementQueryService>((ref) {
-  return PostgresUserManagementQueryService(ref.watch(supabaseClientProvider));
-});
+// Moved to infrastructure/admin/admin_providers.dart
 
 final organizationRepositoryProvider = Provider<OrganizationRepository>((ref) {
   return PostgresOrganizationRepository(ref.watch(supabaseClientProvider));

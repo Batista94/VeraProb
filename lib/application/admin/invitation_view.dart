@@ -1,13 +1,13 @@
-import 'package:veraprob/domain/admin/invitation.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Read model for [Invitation] used in presentation layer.
-///
-/// [role] is `String` — no domain enum leak into features/.
+/// 
+/// Pilar INV-18: Domain sovereignty enforced via application DTO.
 class InvitationView {
   final String id;
   final String organizationId;
   final String email;
-  final String role;
+  final UserRole role; // Changed from String to UserRole
   final String token;
   final String invitedBy;
   final DateTime createdAtUtc;
@@ -35,7 +35,7 @@ class InvitationView {
       id: invitation.id,
       organizationId: invitation.organizationId,
       email: invitation.email,
-      role: invitation.role.name,
+      role: invitation.role, // Pure domain enum
       token: invitation.token,
       invitedBy: invitation.invitedBy,
       createdAtUtc: invitation.createdAtUtc,
