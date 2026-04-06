@@ -28,7 +28,7 @@ CreateOrganizationCommand _validCmd({
   cnpj: cnpj,
   timezone: 'America/Sao_Paulo',
   currencyCode: 'BRL',
-  planType: 'starter',
+  planType: PlanType.starter,
   maxVehicles: 50,
   maxActiveContracts: 10,
   initialAdminEmail: email,
@@ -227,7 +227,7 @@ void main() {
             cnpj: '11222333000181',
             timezone: 'America/Sao_Paulo',
             currencyCode: 'BRL',
-            planType: PlanType.starter.dbValue,
+            planType: PlanType.starter,
             // maxVehicles and maxActiveContracts intentionally omitted (null)
             initialAdminEmail: 'admin@empresa.com.br',
             superAdminUserId: 'super-admin-uuid-123',

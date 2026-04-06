@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/admin/invitation_view.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 void main() {
   group('InvitationView', () {
@@ -8,7 +9,7 @@ void main() {
         id: 'inv-1',
         organizationId: 'org-1',
         email: 'driver@example.com',
-        role: 'admin',
+        role: UserRole.admin,
         token: 'uuid-token-abc',
         invitedBy: 'user-owner',
         createdAtUtc: DateTime.utc(2026, 3, 1),
@@ -16,21 +17,21 @@ void main() {
       );
       expect(view.id, 'inv-1');
       expect(view.email, 'driver@example.com');
-      expect(view.role, isA<String>());
+      expect(view.role, isA<UserRole>());
     });
 
-    test('role is String — no enum leak from domain', () {
+    test('role is UserRole enum', () {
       final view = InvitationView(
         id: 'inv-2',
         organizationId: 'org-1',
         email: 'op@example.com',
-        role: 'operator',
+        role: UserRole.operator,
         token: 'uuid-token-xyz',
         invitedBy: 'user-owner',
         createdAtUtc: DateTime.utc(2026, 3, 1),
         expiresAtUtc: DateTime.utc(2026, 3, 8),
       );
-      expect(view.role, isA<String>());
+      expect(view.role, isA<UserRole>());
     });
 
     test('isActive, isExpired, isAccepted computed from timestamps', () {
@@ -38,7 +39,7 @@ void main() {
         id: 'inv-3',
         organizationId: 'org-1',
         email: 'user@example.com',
-        role: 'viewer',
+        role: UserRole.auditor,
         token: 'uuid-token-def',
         invitedBy: 'user-owner',
         createdAtUtc: DateTime.utc(2026, 3, 1),

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/projections/dashboard_risk_feed_node.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
-import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 
@@ -18,7 +17,7 @@ void main() {
         startLatitude: -23.5,
         startLongitude: -46.6,
         startRadiusMeters: 100,
-        contractualValue: const Money(50000),
+        contractualValue: 50000,
         noShowPenaltyBps: 10000,
       );
 

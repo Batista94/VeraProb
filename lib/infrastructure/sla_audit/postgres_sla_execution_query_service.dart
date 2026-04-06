@@ -65,9 +65,9 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
       totalNoShow: noShow,
       totalEvidenceGap: evidenceGap,
       generatedAtUtc: DateTime.now().toUtc(),
-      protectedRevenue: protectedRevenue,
-      revenueAtRisk: revenueAtRisk,
-      lostRevenue: lostRevenue,
+      protectedRevenue: protectedRevenue.cents,
+      revenueAtRisk: revenueAtRisk.cents,
+      lostRevenue: lostRevenue.cents,
     );
   }
 
@@ -109,9 +109,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         startLatitude: (row['start_latitude'] as num).toDouble(),
         startLongitude: (row['start_longitude'] as num).toDouble(),
         startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
-        contractualValue: Money(
-          (row['contractual_value_cents'] as num).toInt(),
-        ),
+        contractualValue: (row['contractual_value_cents'] as num).toInt(),
         noShowPenaltyBps: (row['no_show_penalty_bps'] as num).toInt(),
       );
     }).toList();
@@ -146,7 +144,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
       startLatitude: (row['start_latitude'] as num).toDouble(),
       startLongitude: (row['start_longitude'] as num).toDouble(),
       startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
-      contractualValue: Money((row['contractual_value_cents'] as num).toInt()),
+      contractualValue: (row['contractual_value_cents'] as num).toInt(),
       noShowPenaltyBps: (row['no_show_penalty_bps'] as num).toInt(),
     );
   }
@@ -190,9 +188,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         startLatitude: (row['start_latitude'] as num).toDouble(),
         startLongitude: (row['start_longitude'] as num).toDouble(),
         startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
-        contractualValue: Money(
-          (row['contractual_value_cents'] as num).toInt(),
-        ),
+        contractualValue: (row['contractual_value_cents'] as num).toInt(),
         noShowPenaltyBps: (row['no_show_penalty_bps'] as num).toInt(),
       );
     }).toList();

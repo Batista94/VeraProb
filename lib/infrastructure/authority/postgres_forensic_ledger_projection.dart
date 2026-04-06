@@ -1,8 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../application/projections/models/forensic_ledger_entry.dart';
-import '../../domain/authority/core/authority_types.dart';
-import '../../domain/authority/decision/authorization_decision.dart';
-import '../../application/projections/providers/forensic_ledger_provider.dart';
+import 'package:veraprob/application/projections/forensic_ledger_view.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 
 /// Postgres implementation for the Forensic Ledger Projection.
 /// Parses immutable events from the [sla_audit_ledger] directly via Supabase.

@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
-import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 
 void main() {
@@ -22,7 +21,7 @@ void main() {
     startLatitude: -23.5505,
     startLongitude: -46.6333,
     startRadiusMeters: 150,
-    contractualValue: const Money(100000), // R$ 1000,00
+    contractualValue: 100000, // R$ 1000,00 in cents
     noShowPenaltyBps: bps,
   );
 
@@ -30,12 +29,12 @@ void main() {
     test('calculatedPenalty = contractualValue * bps', () {
       final view = makeView(bps: 15000);
       // 100000 cents * 1.5 = 150000 cents
-      expect(view.calculatedPenalty, const Money(150000));
+      expect(view.calculatedPenalty, 150000);
     });
 
     test('calculatedPenalty with bps 20000', () {
       final view = makeView(bps: 20000);
-      expect(view.calculatedPenalty, const Money(200000));
+      expect(view.calculatedPenalty, 200000);
     });
 
     test('props equality — same values are equal', () {

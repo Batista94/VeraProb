@@ -79,7 +79,7 @@ class ContractQueryServiceInMemory implements ContractQueryService {
                 startLatitude: s.startLatitude,
                 startLongitude: s.startLongitude,
                 startRadiusMeters: s.startRadiusMeters,
-                contractualValue: s.contractualValue,
+                contractualValue: s.contractualValue.cents,
                 noShowPenaltyBps: s.noShowPenaltyBps,
               ),
             )

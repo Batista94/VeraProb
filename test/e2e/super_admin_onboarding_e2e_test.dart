@@ -14,6 +14,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/application/super_admin/create_organization_handler.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
+import 'package:veraprob/domain/super_admin/plan_type.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_super_admin_repository.dart';
 
 import 'package:veraprob/core/utils/cnpj_validator.dart';
@@ -100,7 +101,7 @@ void main() async {
             cnpj: cnpj,
             timezone: 'America/Sao_Paulo',
             currencyCode: 'BRL',
-            planType: 'professional',
+            planType: PlanType.professional,
             maxVehicles: 100,
             maxActiveContracts: 20,
             initialAdminEmail: adminEmail,

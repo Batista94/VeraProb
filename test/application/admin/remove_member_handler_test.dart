@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/admin/remove_member_command.dart';
 import 'package:veraprob/application/admin/remove_member_handler.dart';
 import 'package:veraprob/application/admin/user_management_command_service.dart';
+import 'package:veraprob/application/admin/user_management_query_service.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/infrastructure/admin/postgres_user_management_query_service.dart';
 
@@ -54,13 +55,13 @@ void main() {
         OrgMember(
           userId: 'user-1',
           email: 'a@a.com',
-          role: 'TENANT_ADMIN',
+          role: UserRole.admin,
           invitedAt: DateTime.now().toUtc(),
         ),
         OrgMember(
           userId: 'user-2',
           email: 'b@b.com',
-          role: 'OPERATOR',
+          role: UserRole.operator,
           invitedAt: DateTime.now().toUtc(),
         ),
       ];
@@ -91,13 +92,13 @@ void main() {
         OrgMember(
           userId: 'user-1',
           email: 'a@a.com',
-          role: 'TENANT_ADMIN',
+          role: UserRole.admin,
           invitedAt: DateTime.now().toUtc(),
         ),
         OrgMember(
           userId: 'user-2',
           email: 'b@b.com',
-          role: 'TENANT_ADMIN',
+          role: UserRole.admin,
           invitedAt: DateTime.now().toUtc(),
         ),
       ];

@@ -1,4 +1,4 @@
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 
 /// DTO for organization member information.

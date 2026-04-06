@@ -17,6 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
+import 'package:veraprob/domain/super_admin/plan_type.dart';
 import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
 import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
 import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
@@ -34,7 +35,7 @@ CreateOrganizationCommand _testCmd(String cnpj) => CreateOrganizationCommand(
   cnpj: cnpj,
   timezone: 'America/Sao_Paulo',
   currencyCode: 'BRL',
-  planType: 'starter',
+  planType: PlanType.starter,
   maxVehicles: 10,
   maxActiveContracts: 5,
   initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
@@ -283,7 +284,7 @@ void main() async {
               cnpj: cnpj,
               timezone: 'America/Sao_Paulo',
               currencyCode: 'BRL',
-              planType: 'starter',
+              planType: PlanType.starter,
               maxVehicles: 10,
               maxActiveContracts: 5,
               initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
@@ -323,7 +324,7 @@ void main() async {
               cnpj: cnpj,
               timezone: 'America/Sao_Paulo',
               currencyCode: 'BRL',
-              planType: 'starter',
+              planType: PlanType.starter,
               maxVehicles: 10,
               maxActiveContracts: 5,
               initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
@@ -364,7 +365,7 @@ void main() async {
               cnpj: cnpj,
               timezone: 'America/Sao_Paulo',
               currencyCode: 'BRL',
-              planType: 'starter',
+              planType: PlanType.starter,
               maxVehicles: 5,
               maxActiveContracts: 2,
               initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
@@ -412,7 +413,7 @@ void main() async {
               cnpj: cnpj,
               timezone: 'America/Sao_Paulo',
               currencyCode: 'BRL',
-              planType: 'starter',
+              planType: PlanType.starter,
               maxVehicles: 1,
               maxActiveContracts: 5,
               initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
@@ -454,7 +455,7 @@ void main() async {
                 cnpj: cnpj,
                 timezone: 'America/Sao_Paulo',
                 currencyCode: 'BRL',
-                planType: 'starter',
+                planType: PlanType.starter,
                 maxVehicles: 10,
                 maxActiveContracts: 1,
                 initialAdminEmail: 'admin-${_uuid.v4()}@test.com',

@@ -405,7 +405,7 @@ class _FeedNodeItem extends StatelessWidget {
                               color: VeraProbColors.textSecondary,
                             ),
                             Text(
-                              'R\$ ${(node.execution.contractualValue.cents / 100).toStringAsFixed(2)}',
+                              'R\$ ${(node.execution.contractualValue / 100).toStringAsFixed(2)}',
                               style: VeraProbTypography.bodySmall,
                             ),
                             if (node.activeAlerts.isNotEmpty) ...[

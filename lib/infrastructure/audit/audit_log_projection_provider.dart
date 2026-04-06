@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/domain/entities/audit_log.dart';
 import 'package:veraprob/domain/enums/incident_lifecycle_status.dart';
-import 'package:veraprob/application/audit/audit_service.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/application/projections/providers/audit_filter_provider.dart';

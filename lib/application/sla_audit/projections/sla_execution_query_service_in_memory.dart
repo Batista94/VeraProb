@@ -67,9 +67,9 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
       totalNoShow: noShow,
       totalEvidenceGap: evidenceGap,
       generatedAtUtc: DateTime.now().toUtc(),
-      protectedRevenue: protectedRevenue,
-      revenueAtRisk: revenueAtRisk,
-      lostRevenue: lostRevenue,
+      protectedRevenue: protectedRevenue.cents,
+      revenueAtRisk: revenueAtRisk.cents,
+      lostRevenue: lostRevenue.cents,
     );
   }
 
@@ -140,7 +140,7 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
       startLatitude: s.startLatitude,
       startLongitude: s.startLongitude,
       startRadiusMeters: s.startRadiusMeters,
-      contractualValue: s.contractualValue,
+      contractualValue: s.contractualValue.cents,
       noShowPenaltyBps: s.noShowPenaltyBps,
     );
   }

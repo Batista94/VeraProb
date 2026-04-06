@@ -7,7 +7,6 @@ import '../../application/sla_audit/projections/contract_summary_view.dart';
 import '../../application/sla_audit/projections/sla_execution_item_view.dart';
 import '../../application/sla_audit/projections/sla_execution_query_service.dart';
 import '../../core/config/supabase_client.dart';
-import '../../domain/shared/money.dart';
 import '../../domain/sla_audit/execution_status.dart';
 
 /// Postgres implementation of [ContractQueryService].
@@ -94,7 +93,7 @@ class PostgresContractQueryService implements ContractQueryService {
         startLatitude: (s['start_latitude'] as num).toDouble(),
         startLongitude: (s['start_longitude'] as num).toDouble(),
         startRadiusMeters: (s['start_radius_meters'] as num).toInt(),
-        contractualValue: Money((s['contractual_value_cents'] as num).toInt()),
+        contractualValue: (s['contractual_value_cents'] as num).toInt(),
         noShowPenaltyBps: (s['no_show_penalty_bps'] as num).toInt(),
       );
     }).toList();
@@ -139,9 +138,7 @@ class PostgresContractQueryService implements ContractQueryService {
               startLatitude: (s['start_latitude'] as num).toDouble(),
               startLongitude: (s['start_longitude'] as num).toDouble(),
               startRadiusMeters: (s['start_radius_meters'] as num).toInt(),
-              contractualValue: Money(
-                (s['contractual_value_cents'] as num).toInt(),
-              ),
+              contractualValue: (s['contractual_value_cents'] as num).toInt(),
               noShowPenaltyBps: (s['no_show_penalty_bps'] as num).toInt(),
             ),
           )

@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
-import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_contract_query_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -103,7 +102,7 @@ void main() async {
             totalNoShow: 1,
             totalEvidenceGap: 0,
             generatedAtUtc: DateTime.now().toUtc(),
-            protectedRevenue: const Money(50000),
+            protectedRevenue: 50000,
           );
 
           when(
@@ -121,7 +120,7 @@ void main() async {
           expect(detail, isNotNull);
           expect(detail!.summary.id, contractId);
           expect(detail.financialSummary.totalExecuted, 10);
-          expect(detail.financialSummary.protectedRevenue.cents, 50000);
+          expect(detail.financialSummary.protectedRevenue, 50000);
         },
       );
 
