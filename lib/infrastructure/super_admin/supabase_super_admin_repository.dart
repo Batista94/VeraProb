@@ -79,9 +79,7 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
           )
           .toList();
     } on Exception catch (e) {
-      throw DomainException(
-        'Edge Function super-admin-proxy unavailable: $e',
-      );
+      throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
 
@@ -121,9 +119,7 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
           )
           .toList();
     } on Exception catch (e) {
-      throw DomainException(
-        'Edge Function super-admin-proxy unavailable: $e',
-      );
+      throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
 

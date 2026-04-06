@@ -139,7 +139,8 @@ class PostgresContractQueryService implements ContractQueryService {
               startLongitude: (s['start_longitude'] as num).toDouble(),
               startRadiusMeters: (s['start_radius_meters'] as num).toInt(),
               contractualValue: (s['contractual_value_cents'] as num).toInt(),
-              noShowPenaltyBps: (s['no_show_penalty_multiplier'] as num).toInt(),
+              noShowPenaltyBps: (s['no_show_penalty_multiplier'] as num)
+                  .toInt(),
             ),
           )
           .toList();

@@ -13,6 +13,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_rep
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/shared/money.dart';
+
 void main() {
   group('Query Services Integration Consistency', () {
     test(
