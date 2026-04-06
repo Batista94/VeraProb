@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
+import 'package:veraprob/domain/sla_audit/contractor.dart';
 
 void main() {
   group('ContractorView', () {
@@ -41,7 +42,11 @@ void main() {
   });
 }
 
-// Minimal stub to avoid domain import in test
-dynamic _buildDomainContractor() => throw UnimplementedError(
-  'Replace with real domain object after implementation',
+Contractor _buildDomainContractor() => Contractor(
+  id: 'domain-c-1',
+  organizationId: 'org-1',
+  name: 'Transportadora Dom',
+  primaryEmail: 'dom@trans.com',
+  contactName: 'Carlos Dom',
+  createdAtUtc: DateTime.utc(2026, 1, 1),
 );

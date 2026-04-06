@@ -45,10 +45,10 @@ void main() {
     test('empty repository returns zero Money values', () async {
       final impact = await queryService.getImpact(organizationId: 'org-1');
 
-      expect(impact.totalContractedRevenue, const Money(0));
-      expect(impact.protectedRevenue, const Money(0));
-      expect(impact.revenueAtRisk, const Money(0));
-      expect(impact.lostRevenue, const Money(0));
+      expect(impact.totalContractedRevenue, 0);
+      expect(impact.protectedRevenue, 0);
+      expect(impact.revenueAtRisk, 0);
+      expect(impact.lostRevenue, 0);
       expect(impact.riskPercentageBps, 0);
       expect(impact.lossPercentageBps, 0);
     });
@@ -77,8 +77,8 @@ void main() {
       final impact = await queryService.getImpact(organizationId: 'org-1');
 
       // Should return the latest snapshot (March 2nd)
-      expect(impact.totalContractedRevenue, const Money(200000));
-      expect(impact.protectedRevenue, const Money(150000));
+      expect(impact.totalContractedRevenue, 200000);
+      expect(impact.protectedRevenue, 150000);
     });
 
     test('filters by contractId', () async {
@@ -108,13 +108,13 @@ void main() {
         organizationId: 'org-1',
         contractId: 'c-1',
       );
-      expect(impactC1.totalContractedRevenue, const Money(10000));
+      expect(impactC1.totalContractedRevenue, 10000);
 
       final impactC2 = await queryService.getImpact(
         organizationId: 'org-1',
         contractId: 'c-2',
       );
-      expect(impactC2.totalContractedRevenue, const Money(50000));
+      expect(impactC2.totalContractedRevenue, 50000);
     });
   });
 }

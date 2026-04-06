@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/super_admin/mfa_challenge_handler.dart';
+import 'package:veraprob/application/super_admin/mfa_result_view.dart' as view;
 import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
 import 'package:veraprob/domain/super_admin/mfa_challenge_result.dart';
 import 'package:veraprob/domain/super_admin/mfa_status.dart';
@@ -90,7 +91,7 @@ void main() {
           code: '123456',
         );
 
-        expect(result, isA<MfaVerificationSuccess>());
+        expect(result, isA<view.MfaVerificationSuccess>());
       });
 
       test('returns failure with lockout details', () async {
@@ -116,8 +117,8 @@ void main() {
           code: '000000',
         );
 
-        expect(result, isA<MfaVerificationFailure>());
-        final failure = result as MfaVerificationFailure;
+        expect(result, isA<view.MfaVerificationFailure>());
+        final failure = result as view.MfaVerificationFailure;
         expect(failure.isLockedOut, isTrue);
         expect(failure.failedAttempts, 5);
       });

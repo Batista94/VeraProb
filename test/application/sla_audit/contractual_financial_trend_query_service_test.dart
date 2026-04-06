@@ -65,8 +65,8 @@ void main() {
 
       final point = trend.first;
       expect(point.formattedDate, '01/03/2026');
-      expect(point.totalContractedRevenue, const Money(50000));
-      expect(point.baseRevenueUsedForCalculation, const Money(50000));
+      expect(point.totalContractedRevenue, 50000);
+      expect(point.baseRevenueUsedForCalculation, 50000);
     });
 
     test('multiple snapshots are sorted by date ascending', () async {
@@ -124,7 +124,7 @@ void main() {
         contractId: 'c-1',
       );
       expect(trendC1, hasLength(1));
-      expect(trendC1.first.totalContractedRevenue, const Money(10000));
+      expect(trendC1.first.totalContractedRevenue, 10000);
     });
   });
 }

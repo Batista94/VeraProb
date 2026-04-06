@@ -219,7 +219,7 @@ jobs:
           echo "WASM artifact confirmed: $(du -h build/web/main.dart.wasm | cut -f1)"
 
       - name: Upload WASM build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-build-${{ github.sha }}
           path: build/web/

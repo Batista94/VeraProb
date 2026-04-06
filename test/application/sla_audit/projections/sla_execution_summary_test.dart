@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
-import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
   group('SlaExecutionSummary', () {
@@ -27,9 +26,9 @@ void main() {
       );
 
       expect(summary.contractId, isNull);
-      expect(summary.protectedRevenue, const Money(0));
-      expect(summary.revenueAtRisk, const Money(0));
-      expect(summary.lostRevenue, const Money(0));
+      expect(summary.protectedRevenue, 0);
+      expect(summary.revenueAtRisk, 0);
+      expect(summary.lostRevenue, 0);
     });
 
     test('props computes identical states as equal', () {

@@ -44,11 +44,11 @@ void main() {
     test('multiplyByBps handles basis points correctly', () {
       const money = Money(1000); // $10.00
 
-      // 150 BPS = 1.5x
-      expect(money.multiplyByBps(150), const Money(1500));
+      // 15000 BPS = 150% = 1.5x (10000 BPS = 100%)
+      expect(money.multiplyByBps(15000), const Money(1500));
 
-      // 33 BPS = 0.33x ($3.30)
-      expect(money.multiplyByBps(33), const Money(330));
+      // 3300 BPS = 33% = 0.33x ($3.30)
+      expect(money.multiplyByBps(3300), const Money(330));
     });
 
     test('equality is based on cents value', () {

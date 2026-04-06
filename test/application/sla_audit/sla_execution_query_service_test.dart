@@ -319,9 +319,9 @@ void main() {
         expect(summary.totalEvidenceGap, 1);
 
         // Verify revenues are isolated
-        expect(summary.protectedRevenue, const Money(20000));
-        expect(summary.lostRevenue, const Money(15000)); // 100 * 1.5
-        expect(summary.revenueAtRisk, const Money(8000));
+        expect(summary.protectedRevenue, 20000);
+        expect(summary.lostRevenue, 15000); // 100 * 1.5
+        expect(summary.revenueAtRisk, 8000);
       },
     );
   });
