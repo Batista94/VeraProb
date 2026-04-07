@@ -61,7 +61,9 @@
       "Bash(xargs cat:*)",
       "Bash(xxd \"C:/Projects/VeraProb/lib/state/providers/sla_providers.dart\")",
       "Bash(echo \"EXIT: $?\")",
-      "Bash(flutter --version)"
+      "Bash(flutter --version)",
+      "Bash(flutter pub:*)",
+      "Bash(echo \"exit:$?\")"
     ]
   },
   "model": "sonnet"

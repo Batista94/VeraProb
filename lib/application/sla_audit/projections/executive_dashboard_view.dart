@@ -153,9 +153,8 @@ class ExecutiveDashboardView {
 
     // Trend: sigmoid of compliance improvement over 3 months
     final currentCompliance = complianceScoreBps;
-    final double trendDelta =
-        previousMonthComplianceBps !=
-            null // Bridge Conversion - Double Required
+    final double trendDelta = // Bridge Conversion - Double Required
+    previousMonthComplianceBps != null
         ? (currentCompliance - previousMonthComplianceBps).toDouble() / 100.0
         : 0.0;
     final trendScoreBps = (ExecutiveDashboardView._sigmoid(trendDelta) * 100)
@@ -247,8 +246,7 @@ class ExecutiveDashboardView {
   static double _dartExp(double x) {
     // Physical Metric - Double Required
     if (x > 20) {
-      return double.maxFinite /
-          2; // sigmoid → 1 // Physical Metric - Double Required
+      return double.maxFinite / 2; // Physical Metric - Double Required
     }
     if (x < -20) {
       return 0.0000001; // sigmoid → 0

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'domain_exception.dart';
 import 'sla_penalties.dart';
 import 'transport_vertical.dart';
@@ -73,7 +74,8 @@ class ServiceManifest extends Equatable {
       slaTemplateId: slaTemplateId,
       vertical: vertical,
       penalties: penalties,
-      createdAtUtc: DateTime.now().toUtc(),
+      createdAtUtc:
+          StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc(),
     );
   }
 

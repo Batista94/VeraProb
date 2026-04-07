@@ -132,6 +132,7 @@ FIN_HITS=$(grep -rn --include="*.dart" \
   -iE "(double|float).{0,60}(fine|price|amount|ledger|cents|penalty|revenue|cost)|(fine|price|amount|ledger|cents|penalty|revenue|cost).{0,60}(double|float)" \
   lib/domain/ lib/application/ 2>/dev/null \
   | grep -ivE "multiplier|rate\b|\.toDouble\(\)|toDouble\b|tryParse|fromDouble" \
+  | grep -ivE "^[^:]*(coordinate|latitude|longitude|speed|heading|spatial)[^/]*\.dart:" \
   || true)
 
 if [[ -n "$FIN_HITS" ]]; then
@@ -144,10 +145,34 @@ fi
 
 # ── A3: UTC Determinism Check ────────────────────────────────────────────────
 echo ""
-echo "  A3 — UTC Determinism: scanning lib/ for DateTime.now() without .toUtc()..."
+echo "  A3 — UTC Determinism: BLOCKING raw DateTime.now() in lib/domain/ lib/application/ lib/infrastructure/..."
+
+# A3 STRICT: Block ALL raw DateTime.now() in core layers — must use IDateTimeProvider
+# Exclusions: date_time_provider.dart (it IS the provider), StaticDateTimeProvider fallback, 
+# UI date pickers, mock implementations, and logger timestamp
+STRICT_DT_HITS=$(grep -rn --include="*.dart" \
+  "DateTime\.now()" \
+  lib/domain/ lib/application/ lib/infrastructure/ 2>/dev/null \
+  | grep -vE "date_time_provider\.dart|// ignore:|IDateTimeProvider|_dateTimeProvider\.now\(\)|provider\.now\(\)|BrazilDateTimeProvider|FakeDateTimeProvider" \
+  | grep -vE "StaticDateTimeProvider\.instance" \
+  | grep -vE "millisecondsSinceEpoch|\.difference\(|initialDate:|firstDate:|lastDate:|pdf_export_service" \
+  | grep -vE "\?\?[[:space:]]*DateTime\.now\(\)|DateTime\.now\(\)\.subtract\(" \
+  | grep -vE "DateTime _[a-zA-Z]*[Dd]ate\s*=" \
+  | grep -vE "date_time_provider\.dart" \
+  || true)
+
+if [[ -n "$STRICT_DT_HITS" ]]; then
+  block "[UTC-BLOCK] Raw DateTime.now() detected in core layers — use IDateTimeProvider.now() instead (INV-3)"
+  echo "$STRICT_DT_HITS" | print_hits 5
+else
+  pass "No raw DateTime.now() in domain/application/infrastructure layers"
+fi
+
+echo ""
+echo "  A3-legacy — UTC Determinism: scanning lib/ test/ for DateTime.now() without .toUtc()..."
 
 UTC_HITS=$(grep -rn --include="*.dart" \
-  "DateTime\.now()" lib/ 2>/dev/null \
+  "DateTime\.now()" lib/ test/ 2>/dev/null \
   | grep -v "\.toUtc()" \
   | grep -vE "millisecondsSinceEpoch|\.difference\(|initialDate:|firstDate:|lastDate:|pdf_export_service" \
   | grep -vE "\?\?[[:space:]]*DateTime\.now\(\)|DateTime\.now\(\)\.subtract\(" \

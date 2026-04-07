@@ -9,8 +9,15 @@ import 'package:veraprob/infrastructure/shared/gtfs_realtime_service.dart';
 import 'package:veraprob/infrastructure/shared/trip_repository_impl.dart';
 import 'package:veraprob/infrastructure/shared/vehicle_repository.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 // ── Transport / GTFS ─────────────────────────────────────────────────────────
+
+// ── Time ──────────────────────────────────────────────────────────────────────
+// Deterministic time provider — injects IDateTimeProvider for testability.
+final dateTimeProviderProvider = Provider<IDateTimeProvider>(
+  (ref) => BrazilDateTimeProvider(),
+);
 
 final gtfsServiceProvider = Provider((ref) => GtfsRealtimeService());
 

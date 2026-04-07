@@ -1,3 +1,4 @@
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/entities/operational_warning.dart';
 import 'package:veraprob/domain/entities/trip_event.dart';
@@ -11,7 +12,9 @@ import 'situation_detector.dart';
 /// - If [ConnectivityState] from the Normalization Layer is [ConnectivityState.signalLost],
 ///   we flag it to alert the operator.
 class SignalLossDetector extends SituationDetector {
-  const SignalLossDetector()
+  final IDateTimeProvider _dateTimeProvider;
+
+  const SignalLossDetector(this._dateTimeProvider)
     : super(id: 'signal_loss', name: 'Detector de Perda de Sinal');
 
   @override
@@ -28,7 +31,8 @@ class SignalLossDetector extends SituationDetector {
     if (state == null) return null;
 
     if (state.connectivityState == ConnectivityState.signalLost) {
-      final secondsSincePing = DateTime.now().toUtc()
+      final secondsSincePing = _dateTimeProvider
+          .now()
           .difference(state.lastRawPingAt)
           .inSeconds;
 
@@ -37,7 +41,7 @@ class SignalLossDetector extends SituationDetector {
         type: 'signal_lost',
         message: 'Perda de Sinal GPS: >${secondsSincePing}s',
         severityScore: 40, // High severity
-        detectedAt: DateTime.now().toUtc(),
+        detectedAt: _dateTimeProvider.now(),
         metadata: {
           'last_ping_at': state.lastRawPingAt.toIso8601String(),
           'seconds_offline': secondsSincePing,

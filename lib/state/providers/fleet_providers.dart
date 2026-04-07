@@ -10,6 +10,7 @@ import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/state/providers/audit_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/application/normalization/operational_state_normalizer.dart';
 import 'package:veraprob/application/adapters/operational_data_provider.dart';
 import 'package:veraprob/application/adapters/realtime_data_provider.dart';
@@ -59,7 +60,7 @@ final operationalControlProvider = Provider<OperationalControlService>((ref) {
 
 // Sprint 3: The Intelligence Engine
 final situationEngineProvider = Provider<SituationEngine>((ref) {
-  return SituationEngine();
+  return SituationEngine(ref.watch(dateTimeProviderProvider));
 });
 
 // ── UI Refresh Counter ─────────────────────────────────

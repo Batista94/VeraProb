@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'contractual_plan_declared_event.dart';
 import 'contractual_service_execution.dart';
 import 'domain_event.dart';
@@ -280,7 +281,9 @@ class PlanDeclaration extends Equatable {
     if (originalFileHash.isEmpty) {
       throw const DomainException('originalFileHash must not be empty');
     }
-    if (declaredAtUtc.isAfter(DateTime.now().toUtc())) {
+    final nowForValidation =
+        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
+    if (declaredAtUtc.isAfter(nowForValidation)) {
       throw const DomainException('declaredAtUtc must not be in the future');
     }
   }
@@ -296,7 +299,8 @@ class PlanDeclaration extends Equatable {
   }) {
     return ContractualPlanDeclaredEvent(
       organizationId: organizationId,
-      occurredAtUtc: DateTime.now().toUtc(),
+      occurredAtUtc:
+          StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc(),
       planDeclarationId: id,
       contractId: contractId,
       declaredAtUtc: declaredAtUtc,

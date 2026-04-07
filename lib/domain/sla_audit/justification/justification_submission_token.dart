@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
+
 /// Single-use time-limited token that grants a driver unauthenticated access
 /// to the justification submission form for a specific SET / contract.
 ///
@@ -45,7 +47,9 @@ class JustificationSubmissionToken extends Equatable {
 
   /// Returns `true` if the token has not been used and has not expired.
   bool get isActive =>
-      usedAtUtc == null && DateTime.now().toUtc().isBefore(expiresAtUtc);
+      usedAtUtc == null &&
+      (StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc())
+          .isBefore(expiresAtUtc);
 
   @override
   List<Object?> get props => [

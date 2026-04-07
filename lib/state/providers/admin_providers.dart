@@ -25,6 +25,7 @@ import 'package:veraprob/infrastructure/admin/postgres_user_management_command_s
 import 'package:veraprob/infrastructure/admin/supabase_admin_notification_repository.dart';
 import 'package:veraprob/infrastructure/admin/supabase_data_seeding_repository.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'auth_providers.dart';
@@ -74,7 +75,10 @@ final adminNotificationRepositoryProvider =
     });
 
 final dataSeedingRepositoryProvider = Provider<DataSeedingRepository>((ref) {
-  return SupabaseDataSeedingRepository(ref.watch(supabaseClientProvider));
+  return SupabaseDataSeedingRepository(
+    ref.watch(supabaseClientProvider),
+    ref.watch(dateTimeProviderProvider),
+  );
 });
 
 // ── Application Handlers ─────────────────────────────────────────────────────

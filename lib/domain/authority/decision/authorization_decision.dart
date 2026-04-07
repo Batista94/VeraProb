@@ -11,6 +11,7 @@ enum DecisionResult { approved, denied }
 class AuthorizationContext extends Equatable {
   final ActorId actorId;
   final RoleId roleId;
+  final String? organizationId; // Business entity isolation (INV-1)
   final String? tenantId; // Future proofing for Multi-Tenant
   final List<String> scopes;
   final DateTime capturedAt;
@@ -18,18 +19,28 @@ class AuthorizationContext extends Equatable {
   const AuthorizationContext({
     required this.actorId,
     required this.roleId,
+    this.organizationId,
     this.tenantId,
     this.scopes = const [],
     required this.capturedAt,
   });
 
   @override
-  List<Object?> get props => [actorId, roleId, tenantId, scopes, capturedAt];
+  List<Object?> get props => [
+    actorId,
+    roleId,
+    organizationId,
+    tenantId,
+    scopes,
+    capturedAt,
+  ];
 
   Map<String, dynamic> toJson() {
     return {
       'actor_id': actorId.value,
       'role_id': roleId.value,
+      // ignore: use_null_aware_elements
+      if (organizationId != null) 'organization_id': organizationId,
       // ignore: use_null_aware_elements
       if (tenantId != null) 'tenant_id': tenantId,
       'scopes': scopes,

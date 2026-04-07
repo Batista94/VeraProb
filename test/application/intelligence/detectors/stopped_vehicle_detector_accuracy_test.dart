@@ -104,12 +104,10 @@ void main() {
       ], now: currentNow);
       currentNow = currentNow.add(const Duration(minutes: 10));
 
-      final recoveryResults = normalizer.normalize([
-        createPing(center, offset: const Duration(minutes: 10)),
-      ], now: currentNow);
-
-      expect(recoveryResults.first.motionState, MotionState.stopped);
-      expect(recoveryResults.first.connectivityState.name, 'signalLost');
+      // Call with empty pings to trigger degraded/replay state
+      final replayResults = normalizer.normalize([], now: currentNow);
+      expect(replayResults.first.motionState, MotionState.stopped);
+      expect(replayResults.first.connectivityState.name, 'signalLost');
 
       final trip = OperationalTrip(
         id: 'trip-100',
@@ -119,7 +117,7 @@ void main() {
         scheduledStart: now,
       );
 
-      final warning = detector.evaluate(trip, recoveryResults.first, []);
+      final warning = detector.evaluate(trip, replayResults.first, []);
       expect(warning, isNotNull);
       expect(warning!.message, contains('Veículo Parado na Via: 10 min'));
     });

@@ -80,20 +80,26 @@ void main() {
   });
 
   test('applies spatial smoothing to latest positions', () {
-    // We send 3 pings spaced 6 seconds apart (so no debounce)
-    normalizer.normalize([createPing(10.0, 10.0)], now: now);
+    // Use micro-offsets (meters-scale) to avoid jump rejection.
+    // 0.001 deg ≈ 111m, so 0.0001 ≈ 11m — well within 500m threshold.
+    normalizer.normalize([createPing(-23.5000, -46.6000)], now: now);
 
     now = now.add(const Duration(seconds: 6));
-    normalizer.normalize([createPing(10.0, 20.0)], now: now);
+    normalizer.normalize([createPing(-23.5001, -46.6001)], now: now);
 
     now = now.add(const Duration(seconds: 6));
-    final out = normalizer.normalize([createPing(10.0, 30.0)], now: now);
+    final out = normalizer.normalize([
+      createPing(-23.5002, -46.6002),
+    ], now: now);
 
-    // Weights: [0.15, 0.25, 0.60]
-    // lat = 10.0
-    // lng = (10*0.15) + (20*0.25) + (30*0.60) = 1.5 + 5.0 + 18.0 = 24.5
-    expect(out.first.latitude, 10.0);
-    expect(out.first.longitude, 24.5);
+    // Verify smoothing was applied — result should be a weighted average,
+    // not simply the last ping's coordinates.
+    final result = out.first;
+    expect(result.latitude, isNot(-23.5002));
+    expect(result.longitude, isNot(-46.6002));
+    // Weighted: [0.15, 0.25, 0.60] of the three positions
+    expect(result.latitude, closeTo(-23.50014, 1e-5));
+    expect(result.longitude, closeTo(-46.60014, 1e-5));
   });
 
   test('transitions to dwellingAtStop based on geofence', () {

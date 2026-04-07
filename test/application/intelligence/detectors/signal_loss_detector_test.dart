@@ -6,9 +6,10 @@ import 'package:veraprob/application/normalization/models/connectivity_state.dar
 import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/application/normalization/models/route_adherence.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
+import '../../../mocks/fake_date_time_provider.dart';
 
 void main() {
-  final now = DateTime.now().toUtc();
+  final now = DateTime.utc(2026, 4, 7, 20, 0, 0);
   final twoMinutesAgo = now.subtract(const Duration(minutes: 2));
 
   VehicleOperationalState makeState(
@@ -39,7 +40,11 @@ void main() {
       );
   group('SignalLossDetector', () {
     late SignalLossDetector detector;
-    setUp(() => detector = const SignalLossDetector());
+    late FakeDateTimeProvider fakeTimeProvider;
+    setUp(() {
+      fakeTimeProvider = FakeDateTimeProvider(now);
+      detector = SignalLossDetector(fakeTimeProvider);
+    });
 
     test('canDetect is true for active trips', () {
       expect(detector.canDetect(makeTrip()), isTrue);

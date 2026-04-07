@@ -1,4 +1,5 @@
 import 'package:veraprob/application/operational_control_service.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/entities/operational_warning.dart';
 import 'detectors/delay_detector.dart';
 import 'detectors/off_route_detector.dart';
@@ -14,11 +15,15 @@ import 'package:veraprob/application/normalization/models/vehicle_operational_st
 /// trips from the data layer and enhances them with [OperationalWarning]s and
 /// a total `severityScore`.
 class SituationEngine {
-  final List<SituationDetector> _detectors = [
+  final IDateTimeProvider _dateTimeProvider;
+
+  SituationEngine(this._dateTimeProvider);
+
+  List<SituationDetector> get _detectors => [
     const DelayDetector(),
     const StoppedVehicleDetector(),
     const OffRouteDetector(),
-    const SignalLossDetector(),
+    SignalLossDetector(_dateTimeProvider),
   ];
 
   /// Analyzes a list of trips and returns a new list enriched with intelligence.

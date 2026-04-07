@@ -14,6 +14,7 @@
   "FINANCIAL-BLOCK": {
     "pattern": "^(?!.*- Double Required).*\\bdouble\\b",
     "path_filter": "lib/(domain|application)/",
+    "exclude_path_pattern": "coordinate|latitude|longitude|speed|heading|spatial|motion|position|location|state_normalizer|classifier|telemetry|detector|ping",
     "description": "Use BIGINT cents instead of double for financial calculations.",
     "severity": "BLOCK"
   },

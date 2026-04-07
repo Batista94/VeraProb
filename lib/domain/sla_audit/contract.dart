@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'contract_events.dart';
 import 'contract_status.dart';
 import 'domain_event.dart';
@@ -132,7 +133,8 @@ class Contract extends Equatable {
 
     // ── Generate identity and timestamps ────────────────────
     final id = const Uuid().v4();
-    final now = DateTime.now().toUtc();
+    final now =
+        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
 
     // ── Emit domain factEvent ───────────────────────────────────
     final domainEvent = ContractCreatedEvent(
@@ -193,7 +195,8 @@ class Contract extends Equatable {
     }
 
     final id = const Uuid().v4();
-    final now = DateTime.now().toUtc();
+    final now =
+        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
 
     final domainEvent = ContractCreatedEvent(
       organizationId: organizationId,
@@ -280,7 +283,8 @@ class Contract extends Equatable {
       );
     }
 
-    final now = DateTime.now().toUtc();
+    final now =
+        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
     final domainEvent = ContractSubmittedForApprovalEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
@@ -323,7 +327,8 @@ class Contract extends Equatable {
       );
     }
 
-    final now = DateTime.now().toUtc();
+    final now =
+        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
     final domainEvent = ContractAcceptedByContractorEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
@@ -367,7 +372,8 @@ class Contract extends Equatable {
       );
     }
 
-    final now = DateTime.now().toUtc();
+    final now =
+        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
     final domainEvent = ContractActivatedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
@@ -420,7 +426,8 @@ class Contract extends Equatable {
       throw const DomainException('reason must not be empty');
     }
 
-    final now = DateTime.now().toUtc();
+    final now =
+        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
     final domainEvent = ContractClosedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,

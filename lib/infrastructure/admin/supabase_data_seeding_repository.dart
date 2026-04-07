@@ -1,12 +1,14 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/admin/data_seeding_repository.dart';
 
 class SupabaseDataSeedingRepository implements DataSeedingRepository {
   final SupabaseClient _supabase;
+  final IDateTimeProvider _dateTimeProvider;
 
-  SupabaseDataSeedingRepository(this._supabase);
+  SupabaseDataSeedingRepository(this._supabase, this._dateTimeProvider);
 
   @override
   Future<void> seedDrivers(String organizationId) async {
@@ -100,10 +102,12 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
             'organization_id': organizationId,
             'name': 'Contrato de Teste Histórico',
             'contractor_name': contractor?['name'] ?? 'Empresa Beta',
-            'valid_from_utc': DateTime.now().toUtc()
+            'valid_from_utc': _dateTimeProvider
+                .now()
                 .subtract(const Duration(days: 30))
                 .toIso8601String(),
-            'valid_until_utc': DateTime.now().toUtc()
+            'valid_until_utc': _dateTimeProvider
+                .now()
                 .add(const Duration(days: 30))
                 .toIso8601String(),
             'status': 'active',
@@ -181,7 +185,7 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
       'contract_id': contract['id'],
       'operational_date_utc': yesterday.toIso8601String().split('T').first,
       'operational_timezone': 'America/Sao_Paulo',
-      'closed_at_utc': DateTime.now().toUtc().toIso8601String(),
+      'closed_at_utc': _dateTimeProvider.now().toIso8601String(),
       'total_contracted_revenue_cents': 40000,
       'protected_revenue_cents': 20000,
       'revenue_at_risk_cents': 0,
@@ -226,7 +230,7 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
         .limit(1)
         .single();
 
-    final now = DateTime.now().toUtc();
+    final now = _dateTimeProvider.now();
     final rawId = const Uuid().v4();
 
     await _supabase.from('raw_telemetry_payloads').insert({
@@ -275,7 +279,7 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
 
     if (contract == null) return;
 
-    final now = DateTime.now().toUtc();
+    final now = _dateTimeProvider.now();
     final setId = 'sim-set-${now.millisecondsSinceEpoch}';
 
     await _supabase.from('sla_audit_ledger_v2').insert({
@@ -366,7 +370,7 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
 
     final vehicleId = vehicle['id'];
     final deviceId = "DEV-${vehicle['plate']}";
-    final now = DateTime.now().toUtc();
+    final now = _dateTimeProvider.now();
 
     await _supabase.from('canonical_facts').insert({
       'organization_id': organizationId,

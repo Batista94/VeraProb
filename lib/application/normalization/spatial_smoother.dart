@@ -19,9 +19,7 @@ class SpatialSmoother {
   /// Returns (latitude, longitude) as a weighted average of [buffer].
   ///
   /// Falls back to the single position when buffer has only 1 entry.
-  (double, double) applySmoothing(
-    Queue<VehiclePosition> buffer,
-  ) {
+  (double, double) applySmoothing(Queue<VehiclePosition> buffer) {
     // Physical Metric - Double Required
     if (buffer.length == 1) {
       return (buffer.first.latitude, buffer.first.longitude);

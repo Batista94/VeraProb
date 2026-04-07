@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:uuid/uuid.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 import 'package:veraprob/domain/shared/money.dart';
 import 'domain_event.dart';
@@ -149,7 +150,8 @@ class ContractualExecutionState {
       throw const DomainException('noShowPenaltyBps must be >= 10000 (1.0x)');
     }
 
-    final now = DateTime.now().toUtc();
+    final now =
+        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
 
     return ContractualExecutionState._(
       id: const Uuid().v4(),

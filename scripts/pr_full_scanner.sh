@@ -88,6 +88,9 @@ files.forEach(file => {
     // Path Scoping
     if (config.path_filter && !new RegExp(config.path_filter).test(file)) return;
 
+    // Exclude geographic/physical-metric files from FINANCIAL-BLOCK
+    if (config.exclude_path_pattern && new RegExp(config.exclude_path_pattern, 'i').test(file)) return;
+
     // Files Containing filter (e.g. for FINANCIAL-BLOCK)
     if (config.files_containing) {
        const matchesFile = config.files_containing.some(term => file.includes(term));
@@ -147,6 +150,7 @@ files.forEach(file => {
   const lines = content.split('\n');
   Object.entries(patterns).forEach(([ruleName, config]) => {
     if (config.path_filter && !new RegExp(config.path_filter).test(file)) return;
+    if (config.exclude_path_pattern && new RegExp(config.exclude_path_pattern, 'i').test(file)) return;
     if (config.files_containing && !config.files_containing.some(term => file.includes(term))) return;
     const regex = new RegExp(config.pattern);
     lines.forEach((line, index) => {

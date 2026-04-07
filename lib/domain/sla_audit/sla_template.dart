@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 import 'domain_exception.dart';
 import 'sla_penalties.dart';
@@ -67,7 +68,8 @@ class SlaTemplate extends Equatable {
       description: description,
       vertical: vertical,
       penalties: penalties,
-      createdAt: DateTime.now().toUtc(),
+      createdAt:
+          StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc(),
     );
   }
 

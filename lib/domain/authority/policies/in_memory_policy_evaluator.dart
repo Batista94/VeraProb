@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'authority_policy_evaluator.dart';
@@ -39,7 +40,8 @@ class InMemoryPolicyEvaluator implements AuthorityPolicyEvaluator {
       policyVersion: 'mock_v1_0.0',
       result: result,
       reason: reason,
-      occurredAt: DateTime.now().toUtc(),
+      occurredAt:
+          StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc(),
       contextSnapshot: context.toJson(),
     );
   }

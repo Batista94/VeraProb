@@ -9,8 +9,10 @@ import 'models/motion_state.dart';
 /// time-gated correctly.  The Normalizer coordinates TTL cleanup by
 /// calling [removeKey] from [_cleanStaleStates].
 class MotionClassifier {
-  final double movingSpeedThreshold; // km/h // Physical Metric - Double Required
-  final double slowTrafficThreshold; // km/h // Physical Metric - Double Required
+  final double
+  movingSpeedThreshold; // km/h // Physical Metric - Double Required
+  final double
+  slowTrafficThreshold; // km/h // Physical Metric - Double Required
   final Duration stoppedMinDuration;
   final Duration slowTrafficMinDuration;
   final double stopRadiusMeters; // Physical Metric - Double Required
@@ -88,7 +90,12 @@ class MotionClassifier {
     Stop? nearest;
 
     for (final stop in stops) {
-      final dist = GeoMath.haversineMeters(lat, lng, stop.latitude, stop.longitude);
+      final dist = GeoMath.haversineMeters(
+        lat,
+        lng,
+        stop.latitude,
+        stop.longitude,
+      );
       if (dist < minDist) {
         minDist = dist;
         nearest = stop;
