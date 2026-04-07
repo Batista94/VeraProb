@@ -17,7 +17,8 @@ void main() {
       rulePriority: 1,
       outcome: outcome,
       financialImpactCents: financialImpactCents,
-      evidence: evidence ?? const PenaltyAssessedEvidence(penaltyAmountCents: 5000),
+      evidence:
+          evidence ?? const PenaltyAssessedEvidence(penaltyAmountCents: 5000),
     );
   }
 

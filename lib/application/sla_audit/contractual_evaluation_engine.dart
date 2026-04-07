@@ -307,8 +307,7 @@ class ContractualEvaluationEngine {
               (state.contractualValue.cents * state.noShowPenaltyBps) ~/ 10000;
 
           // INV: Sanction severity never exceeds 100 BPS (1%) of contractual value
-          final maxNoShowCents =
-              (state.contractualValue.cents * 100) ~/ 10000;
+          final maxNoShowCents = (state.contractualValue.cents * 100) ~/ 10000;
           if (penaltyCents > maxNoShowCents) penaltyCents = maxNoShowCents;
 
           decisions.add(

@@ -39,7 +39,7 @@ These are the current active priorities that override any legacy patterns:
    - **Application Layer (DTOs):** Uses `int` (cents/bps).
    - **Domain Layer:** Uses `Money` value object.
    - **Rates:** All rates/multipliers are `int` (10000 = 100%). Formula: `(value * BPS) ~/ 10000`.
-3. **Deterministic Time:** All timestamps MUST use `DateTime.now().toUtc()` on a single line.
+3. **Deterministic Time:** All timestamps MUST use `DateTime.now().toUtc()` on a single line. NEVER use DateTime.now() without .toUtc(). Any occurrence is a CRITICAL FAILURE. Assistant MUST auto-fix this on sight in code, tests, or mocks. No exceptions.
 4. **Tag Deprecation:** Use `// Physical Metric - Double Required` instead of `forensic-ignore`.
 
 ---

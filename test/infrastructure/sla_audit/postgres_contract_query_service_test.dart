@@ -57,8 +57,7 @@ void main() async {
           'contractor_name': 'Test Contractor',
           'status': 'active',
           'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
-          'valid_until_utc': DateTime.now()
-              .toUtc()
+          'valid_until_utc': (DateTime.now().toUtc())
               .add(const Duration(days: 365))
               .toIso8601String(),
           'financial_ceiling_cents': 1000000,
@@ -88,8 +87,7 @@ void main() async {
             'contractor_name': 'Test Contractor',
             'status': 'active',
             'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
-            'valid_until_utc': DateTime.now()
-                .toUtc()
+            'valid_until_utc': (DateTime.now().toUtc())
                 .add(const Duration(days: 365))
                 .toIso8601String(),
           });

@@ -96,7 +96,15 @@ Future<String> _ensureUser(
     throw Exception('Unexpected Auth Admin API response: $decoded');
   }
 
-  return users.firstWhere((u) => u['email'] == email)['id'] as String;
+  for (final u in users) {
+    if (u['email'] == email) {
+      return u['id'] as String;
+    }
+  }
+
+  throw Exception(
+    'User $email not found and could not be created. POST response: ${res.statusCode} ${res.body}',
+  );
 }
 
 Future<SupabaseClient> _signIn(
@@ -132,6 +140,7 @@ void main() async {
       late SupabaseSuperAdminRepository superAdminRepo;
 
       setUpAll(() async {
+        if (!isRunning) return;
         // Inicializa Supabase.instance (SharedPreferences mock, auth) —
         // necessário para algumas operações internas do SDK.
         await PostgresTestConfig.createClient();
@@ -185,8 +194,13 @@ void main() async {
       });
 
       tearDownAll(() async {
-        await serviceRoleClient.dispose();
-        await superAdminClient.dispose();
+        if (!isRunning) return;
+        try {
+          await serviceRoleClient.dispose();
+        } catch (_) {}
+        try {
+          await superAdminClient.dispose();
+        } catch (_) {}
       });
 
       // ── createOrganization ─────────────────────────────────────────────────

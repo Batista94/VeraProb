@@ -96,26 +96,29 @@ void main() {
       expect(report.evidenceGapCount, 3);
     });
 
-    test('calculates complianceRateBps correctly — 8 of 10 = 8000 bps (80%)', () {
-      final s = makeSnapshot(
-        date: DateTime.utc(2026, 3, 1),
-        totalOb: 10,
-        exec: 8,
-        noShow: 1,
-        gap: 1,
-      );
+    test(
+      'calculates complianceRateBps correctly — 8 of 10 = 8000 bps (80%)',
+      () {
+        final s = makeSnapshot(
+          date: DateTime.utc(2026, 3, 1),
+          totalOb: 10,
+          exec: 8,
+          noShow: 1,
+          gap: 1,
+        );
 
-      final report = BillingCycleReport.create(
-        organizationId: 'org-1',
-        periodStartUtc: periodStart,
-        periodEndUtc: periodEnd,
-        snapshots: [s],
-        isComplete: true,
-        missingDates: [],
-      );
+        final report = BillingCycleReport.create(
+          organizationId: 'org-1',
+          periodStartUtc: periodStart,
+          periodEndUtc: periodEnd,
+          snapshots: [s],
+          isComplete: true,
+          missingDates: [],
+        );
 
-      expect(report.complianceRateBps, 8000);
-    });
+        expect(report.complianceRateBps, 8000);
+      },
+    );
 
     test('complianceRateBps is 10000 when zero obligations (no division)', () {
       final report = BillingCycleReport.create(

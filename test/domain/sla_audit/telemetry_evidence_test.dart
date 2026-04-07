@@ -108,32 +108,17 @@ void main() {
     });
 
     test('throws DomainException for latitude out of range', () {
-      expect(
-        () => createValid(lat: 91.0),
-        throwsA(isA<DomainException>()),
-      );
-      expect(
-        () => createValid(lat: -91.0),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => createValid(lat: 91.0), throwsA(isA<DomainException>()));
+      expect(() => createValid(lat: -91.0), throwsA(isA<DomainException>()));
     });
 
     test('throws DomainException for longitude out of range', () {
-      expect(
-        () => createValid(lon: 181.0),
-        throwsA(isA<DomainException>()),
-      );
-      expect(
-        () => createValid(lon: -181.0),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => createValid(lon: 181.0), throwsA(isA<DomainException>()));
+      expect(() => createValid(lon: -181.0), throwsA(isA<DomainException>()));
     });
 
     test('throws DomainException for negative speed', () {
-      expect(
-        () => createValid(speedCms: -1),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => createValid(speedCms: -1), throwsA(isA<DomainException>()));
     });
 
     test('accepts null speed (optional field)', () {
@@ -176,21 +161,24 @@ void main() {
       expect(e.verifyIntegrity(), isTrue);
     });
 
-    test('chain links correctly: next.previousEvidenceHash == prev.chainHash', () {
-      final first = createValid();
-      final second = TelemetryEvidence.create(
-        organizationId: 'org-1',
-        setId: 'set-1',
-        vehicleId: 'vehicle-1',
-        capturedAtUtc: baseTime.add(const Duration(minutes: 1)),
-        rawLatitude: -23.5510,
-        rawLongitude: -46.6340,
-        sourceType: 'GPS_PING',
-        previousEvidenceHash: first.chainHash,
-      );
-      expect(second.previousEvidenceHash, equals(first.chainHash));
-      expect(second.verifyIntegrity(), isTrue);
-    });
+    test(
+      'chain links correctly: next.previousEvidenceHash == prev.chainHash',
+      () {
+        final first = createValid();
+        final second = TelemetryEvidence.create(
+          organizationId: 'org-1',
+          setId: 'set-1',
+          vehicleId: 'vehicle-1',
+          capturedAtUtc: baseTime.add(const Duration(minutes: 1)),
+          rawLatitude: -23.5510,
+          rawLongitude: -46.6340,
+          sourceType: 'GPS_PING',
+          previousEvidenceHash: first.chainHash,
+        );
+        expect(second.previousEvidenceHash, equals(first.chainHash));
+        expect(second.verifyIntegrity(), isTrue);
+      },
+    );
 
     test('reconstitute + verifyIntegrity detects tampering', () {
       final original = createValid();
@@ -239,7 +227,9 @@ void main() {
 
     test('kGenesisHash is the sentinel for first records in a chain', () {
       expect(TelemetryEvidence.kGenesisHash, 'GENESIS');
-      final first = createValid(previousEvidenceHash: TelemetryEvidence.kGenesisHash);
+      final first = createValid(
+        previousEvidenceHash: TelemetryEvidence.kGenesisHash,
+      );
       expect(first.previousEvidenceHash, 'GENESIS');
     });
   });

@@ -71,8 +71,10 @@ class ContractualExecutionState {
 
   String? get boundVehicleId => _boundVehicleId;
   DateTime? get bindingTimestampUtc => _bindingTimestampUtc;
-  double? get bindingLatitude => _bindingLatitude; // Physical Metric - Double Required
-  double? get bindingLongitude => _bindingLongitude; // Physical Metric - Double Required
+  double? get bindingLatitude =>
+      _bindingLatitude; // Physical Metric - Double Required
+  double? get bindingLongitude =>
+      _bindingLongitude; // Physical Metric - Double Required
 
   // ── Lifecycle Timestamps ──────────────────────────────────
   final DateTime createdAtUtc;

@@ -42,18 +42,36 @@ void main() {
     });
 
     test('throws DomainException for empty tenantName', () {
-      expect(() => createValid(tenantName: ''), throwsA(isA<DomainException>()));
-      expect(() => createValid(tenantName: '   '), throwsA(isA<DomainException>()));
+      expect(
+        () => createValid(tenantName: ''),
+        throwsA(isA<DomainException>()),
+      );
+      expect(
+        () => createValid(tenantName: '   '),
+        throwsA(isA<DomainException>()),
+      );
     });
 
     test('throws DomainException for empty contractorName', () {
-      expect(() => createValid(contractorName: ''), throwsA(isA<DomainException>()));
-      expect(() => createValid(contractorName: '   '), throwsA(isA<DomainException>()));
+      expect(
+        () => createValid(contractorName: ''),
+        throwsA(isA<DomainException>()),
+      );
+      expect(
+        () => createValid(contractorName: '   '),
+        throwsA(isA<DomainException>()),
+      );
     });
 
     test('throws DomainException for empty reportGeneratedBy', () {
-      expect(() => createValid(generatedBy: ''), throwsA(isA<DomainException>()));
-      expect(() => createValid(generatedBy: '   '), throwsA(isA<DomainException>()));
+      expect(
+        () => createValid(generatedBy: ''),
+        throwsA(isA<DomainException>()),
+      );
+      expect(
+        () => createValid(generatedBy: '   '),
+        throwsA(isA<DomainException>()),
+      );
     });
 
     test('throws DomainException for non-UTC timestamp (INV-9)', () {
@@ -65,8 +83,14 @@ void main() {
     });
 
     test('throws DomainException for empty engineVersion', () {
-      expect(() => createValid(engineVersion: ''), throwsA(isA<DomainException>()));
-      expect(() => createValid(engineVersion: '   '), throwsA(isA<DomainException>()));
+      expect(
+        () => createValid(engineVersion: ''),
+        throwsA(isA<DomainException>()),
+      );
+      expect(
+        () => createValid(engineVersion: '   '),
+        throwsA(isA<DomainException>()),
+      );
     });
   });
 

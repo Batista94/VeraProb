@@ -163,13 +163,15 @@ class OperationalZone extends Equatable {
     }
   }
 
-  static void _validateLatitude(double value) { // Physical Metric - Double Required
+  static void _validateLatitude(double value) {
+    // Physical Metric - Double Required
     if (value < -90 || value > 90) {
       throw const DomainException('latitude must be between -90 and 90');
     }
   }
 
-  static void _validateLongitude(double value) { // Physical Metric - Double Required
+  static void _validateLongitude(double value) {
+    // Physical Metric - Double Required
     if (value < -180 || value > 180) {
       throw const DomainException('longitude must be between -180 and 180');
     }

@@ -11,7 +11,8 @@ class Money extends Equatable {
 
   /// Creates a Money instance from a decimal value (e.g., 10.50 -> 1050 cents).
   /// Uses rounding to avoid precision loss.
-  factory Money.fromDouble(double value) { // Bridge Conversion - Double Required
+  factory Money.fromDouble(double value) {
+    // Bridge Conversion - Double Required
     // Bridge Utility: Converts decimal to integer cents for storage.
     // Precise rounding applied at boundary to avoid IEEE-754 drift.
     return Money((value * 100).round());
@@ -27,7 +28,8 @@ class Money extends Equatable {
 
   /// Multiplies the monetary amount by a decimal multiplier.
   /// Uses rounding for the final cent value.
-  Money operator *(double multiplier) { // Bridge Conversion - Double Required
+  Money operator *(double multiplier) {
+    // Bridge Conversion - Double Required
     // Bridge Utility: Specialized financial math for simple scalar adjustments.
     return Money((cents * multiplier).round());
   }

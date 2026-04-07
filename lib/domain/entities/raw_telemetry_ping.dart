@@ -8,7 +8,8 @@ class RawTelemetryPing extends Equatable {
   final double latitude; // Physical Metric - Double Required
   final double longitude; // Physical Metric - Double Required
   final double accuracy; // In meters // Physical Metric - Double Required
-  final double speed; // In meters per second // Physical Metric - Double Required
+  final double
+  speed; // In meters per second // Physical Metric - Double Required
   final double heading; // 0-359 degrees // Physical Metric - Double Required
   final DateTime timestamp;
 

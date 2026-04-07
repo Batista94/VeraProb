@@ -72,10 +72,7 @@ void main() {
     });
 
     test('throws ArgumentError for empty string', () {
-      expect(
-        () => SlaRuleType.fromString(''),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => SlaRuleType.fromString(''), throwsA(isA<ArgumentError>()));
     });
 
     test('is case-sensitive', () {

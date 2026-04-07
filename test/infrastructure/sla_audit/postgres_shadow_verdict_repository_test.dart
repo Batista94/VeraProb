@@ -265,8 +265,7 @@ void main() async {
               .from('shadow_verdicts')
               .update({
                 'manual_verdict': 'rejected',
-                'manual_verdict_at_utc': DateTime.now()
-                    .toUtc()
+                'manual_verdict_at_utc': (DateTime.now().toUtc())
                     .toIso8601String(),
                 'manual_reviewed_by': uuid.v4(),
                 'divergence_type': 'false_positive',

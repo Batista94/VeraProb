@@ -314,13 +314,15 @@ class ContractualServiceExecution extends Equatable {
     return digest.toString();
   }
 
-  static void _validateLatitude(double value, String fieldName) { // Physical Metric - Double Required
+  static void _validateLatitude(double value, String fieldName) {
+    // Physical Metric - Double Required
     if (value < -90 || value > 90) {
       throw DomainException('$fieldName must be between -90 and 90');
     }
   }
 
-  static void _validateLongitude(double value, String fieldName) { // Physical Metric - Double Required
+  static void _validateLongitude(double value, String fieldName) {
+    // Physical Metric - Double Required
     if (value < -180 || value > 180) {
       throw DomainException('$fieldName must be between -180 and 180');
     }
