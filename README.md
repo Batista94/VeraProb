@@ -1,7 +1,6 @@
 # 🌊 VeraProb
 ### The Immutable Verifier for B2B Compliance & Financial Protection
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Stack: Flutter](https://img.shields.io/badge/Stack-Flutter%20|%20Supabase%20|%20PostgreSQL-02569B?logo=flutter)](https://flutter.dev)
 [![Architecture: Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20|%20Event--Driven-green)](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
 
