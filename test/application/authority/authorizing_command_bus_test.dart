@@ -16,6 +16,8 @@ class RogueCommand extends OperationalCommand {
   @override
   TargetRef get targetRef => const TargetRef('system', 'rogue');
   @override
+  String? get targetOrganizationId => null;
+  @override
   List<Object?> get props => [];
 }
 

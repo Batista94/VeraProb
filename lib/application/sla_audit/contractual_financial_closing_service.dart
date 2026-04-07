@@ -32,7 +32,7 @@ class ContractualFinancialClosingService {
   ///    - Update internal state
   /// 3. If first call ever, just record the current day (no snapshot)
   /// [organizationId] is required to scope the generated snapshot.
-  Future<void> onTick(String organizationId) async {
+  Future<void> onTick(String organizationId, {DateTime? closedAtUtc}) async {
     final nowBrt = BrazilTime.nowBrazil();
     final currentOperationalDate = BrazilTime.toOperationalDateUtc(nowBrt);
 
@@ -47,6 +47,7 @@ class ContractualFinancialClosingService {
       await _generator.generateDailySnapshot(
         organizationId,
         _lastClosedOperationalDateUtc!,
+        closedAtUtc: closedAtUtc,
       );
       _lastClosedOperationalDateUtc = currentOperationalDate;
     }

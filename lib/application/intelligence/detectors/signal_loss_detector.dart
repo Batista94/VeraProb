@@ -28,8 +28,7 @@ class SignalLossDetector extends SituationDetector {
     if (state == null) return null;
 
     if (state.connectivityState == ConnectivityState.signalLost) {
-      final secondsSincePing = DateTime.now()
-          .toUtc()
+      final secondsSincePing = DateTime.now().toUtc()
           .difference(state.lastRawPingAt)
           .inSeconds;
 

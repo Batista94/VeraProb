@@ -1,3 +1,4 @@
+import 'package:veraprob/domain/authority/commands/contracts/update_contract_command.dart';
 import 'authority_types.dart';
 import 'package:veraprob/domain/authority/commands/operational_command.dart';
 import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
@@ -39,6 +40,10 @@ class OperationalActionMapper {
 
     if (command is OverrideRouteDeviationCommand) {
       return OperationalActionType.overrideRouteDeviation;
+    }
+
+    if (command is UpdateContractCommand) {
+      return OperationalActionType.updateContract;
     }
 
     // Fallback or explicit Unknown. In production we might throw Exception

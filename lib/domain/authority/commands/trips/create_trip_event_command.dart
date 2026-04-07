@@ -9,16 +9,26 @@ class CreateTripEventCommand extends OperationalCommand {
   final Map<String, dynamic>? metadata;
   final String? notes;
 
+  @override
+  final String? targetOrganizationId;
+
   const CreateTripEventCommand({
     required this.tripId,
     required this.type,
     this.metadata,
     this.notes,
+    this.targetOrganizationId,
   });
 
   @override
   TargetRef get targetRef => TargetRef('trip', tripId);
 
   @override
-  List<Object?> get props => [tripId, type, metadata, notes];
+  List<Object?> get props => [
+    tripId,
+    type,
+    metadata,
+    notes,
+    targetOrganizationId,
+  ];
 }

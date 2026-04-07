@@ -1,20 +1,18 @@
 import 'package:veraprob/domain/entities/operational_trip.dart';
-
-export '../domain/entities/operational_trip.dart';
-export '../domain/enums/trip_status.dart';
 import 'package:veraprob/domain/entities/trip_event.dart';
 import 'package:veraprob/domain/enums/event_type.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
 
+export '../domain/entities/operational_trip.dart';
+export '../domain/entities/trip_event.dart';
+export '../domain/enums/event_type.dart';
+export '../domain/enums/trip_status.dart';
+
 /// Abstract service for operational control actions.
 ///
 /// This is the core abstraction that decouples the UI from the data source.
-/// Today: connected to [FleetSimulationService].
-/// Future: swap for [SupabaseControlService] without touching UI.
 abstract class OperationalControlService {
   /// Change the status of a trip and generate an audit event.
-  ///
-  /// Returns the generated [TripEvent] if successful.
   Future<TripEvent> updateTripStatus(
     String tripId,
     TripStatus newStatus, {
@@ -31,6 +29,9 @@ abstract class OperationalControlService {
 
   /// Mark an alert as resolved: sets trip back to [enRoute] with delay = 0.
   Future<TripEvent> resolveAlert(String tripId);
+
+  /// Update sensitive contract data (Admin Only).
+  Future<void> updateContract(String contractId, int newValueCents);
 
   /// Get all events for a specific trip, newest first.
   List<TripEvent> getEventsForTrip(String tripId);

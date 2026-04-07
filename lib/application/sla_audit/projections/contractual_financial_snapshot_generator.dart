@@ -37,6 +37,7 @@ class ContractualFinancialSnapshotGenerator {
     String organizationId,
     DateTime operationalDateUtc, {
     String? contractId,
+    DateTime? closedAtUtc,
   }) async {
     final normalizedDate = DateTime.utc(
       operationalDateUtc.year,
@@ -116,7 +117,7 @@ class ContractualFinancialSnapshotGenerator {
       contractId: contractId,
       operationalDateUtc: normalizedDate,
       operationalTimezone: BrazilTime.operationalTimezone,
-      closedAtUtc: DateTime.now().toUtc(),
+      closedAtUtc: closedAtUtc ?? DateTime.now().toUtc(),
       totalContractedRevenue: totalContractedRevenue,
       protectedRevenue: protectedRevenue,
       revenueAtRisk: revenueAtRisk,
@@ -142,6 +143,7 @@ class ContractualFinancialSnapshotGenerator {
     required String reprocessingReason,
     required String authorUserId,
     String? contractId,
+    DateTime? closedAtUtc,
   }) async {
     final normalizedDate = DateTime.utc(
       operationalDateUtc.year,
@@ -202,7 +204,7 @@ class ContractualFinancialSnapshotGenerator {
       contractId: contractId,
       operationalDateUtc: normalizedDate,
       operationalTimezone: BrazilTime.operationalTimezone,
-      closedAtUtc: DateTime.now().toUtc(),
+      closedAtUtc: closedAtUtc ?? DateTime.now().toUtc(),
       totalContractedRevenue: totalContractedRevenue,
       protectedRevenue: protectedRevenue,
       revenueAtRisk: revenueAtRisk,

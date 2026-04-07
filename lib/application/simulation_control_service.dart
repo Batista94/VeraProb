@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:veraprob/domain/entities/trip_event.dart';
-import 'package:veraprob/domain/enums/event_type.dart';
 import 'package:veraprob/data/services/fleet_simulation_service.dart';
 import 'audit/audit_service.dart';
 import 'operational_control_service.dart';
@@ -158,6 +156,29 @@ class SimulationControlService implements OperationalControlService {
       TripStatus.enRoute,
       reason: 'Alerta resolvido pelo operador',
     );
+  }
+
+  @override
+  Future<void> updateContract(String contractId, int newValueCents) async {
+    // Audit log only for now as this is a sensitive administrative action
+    unawaited(
+      _auditService
+          .logAction(
+            organizationId: _getOrganizationId(),
+            operatorId: _getOperatorId(),
+            actionType: 'UPDATE_CONTRACT',
+            entityId: contractId,
+            oldValue: 'unknown',
+            newValue: newValueCents.toString(),
+            reason: 'Atualização de contrato via barramento autorizado',
+          )
+          .catchError((e) {
+            debugPrint('Failed to log audit action: $e');
+          }),
+    );
+
+    // In a real implementation, we would call the contract repository here.
+    debugPrint('Contract $contractId updated to $newValueCents cents');
   }
 
   @override

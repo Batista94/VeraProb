@@ -1,135 +1,100 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/application/sla_audit/sanction_simulation_service.dart';
-import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_subscriber.dart';
 import 'package:veraprob/application/sla_audit/contractual_financial_closing_service.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
-import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/sla_audit/sanction_simulation_service.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace_repository.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
-import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
-import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
-import 'package:veraprob/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
-import 'package:veraprob/domain/sla_audit/evaluation_trace_repository.dart';
-import 'package:veraprob/infrastructure/sla_audit/postgres_evaluation_trace_repository.dart';
-import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_evaluation_trace_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_operational_alert_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'auth_providers.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'fleet_providers.dart';
-import 'sla_financial_providers.dart';
 
-// Re-export Transport module repository providers so existing consumers that
-// import this file continue to resolve them without modification.
-export '../../infrastructure/sla_audit/sla_persistence_provider.dart'
+// ── Re-exports from sla_persistence_provider ────────────────────────────────
+// Kept here so all provider consumers import one canonical file.
+export 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart'
     show
         planDeclarationRepositoryProvider,
         contractualExecutionStateRepositoryProvider,
         slaAuditLedgerRepositoryProvider,
+        contractualFinancialSnapshotRepositoryProvider,
         contractRepositoryProvider,
-        justificationRepositoryProvider;
+        sanctionReviewQueueRepositoryProvider,
+        justificationRepositoryProvider,
+        vehicleInfractionRecurrenceRepositoryProvider;
 
-// ── Repositories (Singletons) ───────────────────────────────
-// planDeclarationRepositoryProvider, contractualExecutionStateRepositoryProvider,
-// and slaAuditLedgerRepositoryProvider are defined in sla_persistence_provider.dart
-// and re-exported above. All other providers in this file use them via Riverpod.
+// ── Operational Alert Repository ─────────────────────────────────────────────
+
+final operationalAlertRepositoryProvider = Provider<OperationalAlertRepository>(
+  (ref) {
+    return switch (ref.watch(persistenceModeProvider)) {
+      PersistenceMode.inMemory => InMemoryOperationalAlertRepository(),
+      PersistenceMode.postgres => PostgresOperationalAlertRepository(
+        ref.watch(supabaseClientProvider),
+      ),
+    };
+  },
+);
+
+// ── Evaluation Trace Repository ──────────────────────────────────────────────
 
 final evaluationTraceRepositoryProvider = Provider<EvaluationTraceRepository>((
   ref,
 ) {
-  final mode = ref.watch(persistenceModeProvider);
-  if (mode == PersistenceMode.postgres) {
-    return PostgresEvaluationTraceRepository(Supabase.instance.client);
-  }
-  return InMemoryEvaluationTraceRepository();
+  return switch (ref.watch(persistenceModeProvider)) {
+    PersistenceMode.inMemory => InMemoryEvaluationTraceRepository(),
+    PersistenceMode.postgres => PostgresEvaluationTraceRepository(
+      ref.watch(supabaseClientProvider),
+    ),
+  };
 });
 
-final operationalAlertRepositoryProvider = Provider<OperationalAlertRepository>(
-  (ref) {
-    final mode = ref.watch(persistenceModeProvider);
-    if (mode == PersistenceMode.postgres) {
-      return PostgresOperationalAlertRepository(Supabase.instance.client);
-    }
-    return InMemoryOperationalAlertRepository();
-  },
-);
+// ── SLA Execution Query Service ──────────────────────────────────────────────
 
-// ── Engine ──────────────────────────────────────────────────
+final slaExecutionQueryServiceProvider = Provider<SlaExecutionQueryService>((
+  ref,
+) {
+  return switch (ref.watch(persistenceModeProvider)) {
+    PersistenceMode.inMemory => SlaExecutionQueryServiceInMemory(
+      repo: ref.watch(contractualExecutionStateRepositoryProvider),
+    ),
+    PersistenceMode.postgres => SlaExecutionQueryServicePostgres(
+      ref.watch(supabaseClientProvider),
+    ),
+  };
+});
 
-/// FASE 7: Registers the [ContractualEvaluationEngine] in the runtime.
-/// This is the sole component authorized to produce contractual decisions.
-final contractualEvaluationEngineProvider =
-    Provider<ContractualEvaluationEngine>((ref) {
-      return ContractualEvaluationEngine(
-        executionRepo: ref.watch(contractualExecutionStateRepositoryProvider),
-        planRepo: ref.watch(planDeclarationRepositoryProvider),
-        ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
-        traceRepo: ref.watch(evaluationTraceRepositoryProvider),
-        alertRepo: ref.watch(operationalAlertRepositoryProvider),
-      );
-    });
+// ── Contractual Financial Closing Service ────────────────────────────────────
 
-// ── Snapshot Generator & Financial Closing ──────────────────
-
-/// Generates daily financial snapshots from execution states.
-final contractualFinancialSnapshotGeneratorProvider =
-    Provider<ContractualFinancialSnapshotGenerator>((ref) {
-      return ContractualFinancialSnapshotGenerator(
-        executionRepo: ref.watch(contractualExecutionStateRepositoryProvider),
-        snapshotRepo: ref.watch(financialSnapshotRepositoryProvider),
-        ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
-      );
-    });
-
-/// Automated daily financial closing orchestrator.
 final contractualFinancialClosingServiceProvider =
     Provider<ContractualFinancialClosingService>((ref) {
       return ContractualFinancialClosingService(
-        generator: ref.watch(contractualFinancialSnapshotGeneratorProvider),
+        generator: ContractualFinancialSnapshotGenerator(
+          executionRepo: ref.watch(contractualExecutionStateRepositoryProvider),
+          snapshotRepo: ref.watch(
+            contractualFinancialSnapshotRepositoryProvider,
+          ),
+          ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
+        ),
       );
     });
 
-// ── Subscriber (Reactive Orchestration) ─────────────────────
-
-/// FASE 8: Connects the [ContractualEvaluationEngine] to live telemetry
-/// and periodic sweep timers.
-final contractualEvaluationSubscriberProvider =
-    Provider<ContractualEvaluationSubscriber?>((ref) {
-      final adapter = ref.watch(operationalDataProvider);
-      final normalizer = ref.watch(operationalStateNormalizerProvider);
-
-      final Stream<List<VehicleOperationalState>> vehicleStream = adapter
-          .positionStream
-          .map((positions) => normalizer.normalize(positions, knownStops: []));
-
-      final organizationId = ref.watch(currentOrganizationIdProvider);
-      if (organizationId == null) {
-        return null;
-      }
-
-      final sub = ContractualEvaluationSubscriber(
-        engine: ref.watch(contractualEvaluationEngineProvider),
-        vehicleStream: vehicleStream,
-        sweepInterval: const Duration(minutes: 1),
-        organizationId: organizationId,
-        closingService: ref.watch(contractualFinancialClosingServiceProvider),
-      );
-
-      // Automatic cleanup when provider is disposed (INV-3 / INV-0)
-      ref.onDispose(() => sub.stop());
-
-      return sub;
-    });
-
-// ── Simulation Service (Dev Only) ────────────────────────────
+// ── Sanction Simulation Service ──────────────────────────────────────────────
 
 final sanctionSimulationServiceProvider = Provider<SanctionSimulationService>((
   ref,
@@ -140,57 +105,68 @@ final sanctionSimulationServiceProvider = Provider<SanctionSimulationService>((
   );
 });
 
-// ── Query Service ───────────────────────────────────────────
+// ── Contractual Evaluation Subscriber ───────────────────────────────────────
 
-final slaExecutionQueryServiceProvider = Provider<SlaExecutionQueryService>((
-  ref,
-) {
-  final mode = ref.watch(persistenceModeProvider);
+/// Returns null when no organizationId is available (unauthenticated state).
+final contractualEvaluationSubscriberProvider =
+    Provider<ContractualEvaluationSubscriber?>((ref) {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return null;
 
-  if (mode == PersistenceMode.postgres) {
-    final client = ref.watch(supabaseClientProvider);
-    return SlaExecutionQueryServicePostgres(client);
-  }
+      final engine = ContractualEvaluationEngine(
+        executionRepo: ref.watch(contractualExecutionStateRepositoryProvider),
+        planRepo: ref.watch(planDeclarationRepositoryProvider),
+        ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
+        traceRepo: ref.watch(evaluationTraceRepositoryProvider),
+        alertRepo: ref.watch(operationalAlertRepositoryProvider),
+      );
 
-  // Safe to watch InMemory repo since the mode is inMemory
-  final repo = ref.watch(contractualExecutionStateRepositoryProvider);
-  return SlaExecutionQueryServiceInMemory(repo: repo);
-});
+      final vehicleStream = ref
+          .watch(normalizedStateProvider)
+          .when(
+            data: (states) => Stream.value(states),
+            loading: () => const Stream<List<VehicleOperationalState>>.empty(),
+            error: (e, s) =>
+                const Stream<List<VehicleOperationalState>>.empty(),
+          );
 
-// ── Projections (Read Models) ───────────────────────────────
+      return ContractualEvaluationSubscriber(
+        engine: engine,
+        vehicleStream: vehicleStream,
+        sweepInterval: const Duration(minutes: 5),
+        organizationId: organizationId,
+        closingService: ref.watch(contractualFinancialClosingServiceProvider),
+      );
+    });
 
+// ── UI Read Models ───────────────────────────────────────────────────────────
+
+/// Global SLA execution summary for the current session's organization.
 final slaSummaryProvider = FutureProvider<SlaExecutionSummary>((ref) async {
   final organizationId = ref.watch(currentOrganizationIdProvider);
-  if (organizationId == null) {
-    return SlaExecutionSummary.empty();
-  }
+  if (organizationId == null) return SlaExecutionSummary.empty();
 
   final service = ref.watch(slaExecutionQueryServiceProvider);
   return service.getSummary(organizationId: organizationId);
 });
 
+/// SLA exceptions (NoShow + EvidenceGap) for the current session's organization.
 final slaExceptionsProvider = FutureProvider<List<SlaExecutionItemView>>((
   ref,
 ) async {
-  final service = ref.watch(slaExecutionQueryServiceProvider);
-
   final organizationId = ref.watch(currentOrganizationIdProvider);
   if (organizationId == null) return [];
 
-  // We only want exceptions: noShow and evidenceGap
+  final service = ref.watch(slaExecutionQueryServiceProvider);
   final noShows = await service.listByStatus(
     ExecutionStatus.noShow,
     organizationId: organizationId,
   );
-  final gaps = await service.listByStatus(
+  final evidenceGaps = await service.listByStatus(
     ExecutionStatus.evidenceGap,
     organizationId: organizationId,
   );
 
-  final all = [...noShows, ...gaps];
-
-  // Sort by windowStartUtc as specified
-  all.sort((a, b) => a.windowStartUtc.compareTo(b.windowStartUtc));
-
-  return all;
+  return [...noShows, ...evidenceGaps]
+    ..sort((a, b) => a.windowStartUtc.compareTo(b.windowStartUtc));
 });

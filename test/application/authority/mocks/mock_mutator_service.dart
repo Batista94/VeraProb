@@ -1,6 +1,4 @@
 import 'package:veraprob/application/operational_control_service.dart';
-import 'package:veraprob/domain/entities/trip_event.dart';
-import 'package:veraprob/domain/enums/event_type.dart';
 
 /// A pure Spy Service that intercepts Mutator calls.
 ///
@@ -24,6 +22,12 @@ class MockMutatorService implements OperationalControlService {
       throw Exception('Mock Runtime Crash during Mutation');
     }
     return _dummyEvent(tripId);
+  }
+
+  @override
+  Future<void> updateContract(String contractId, int newValueCents) async {
+    callCount++;
+    if (shouldThrowError) throw Exception('Crash');
   }
 
   @override

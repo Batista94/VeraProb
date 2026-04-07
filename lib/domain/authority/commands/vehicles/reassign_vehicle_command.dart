@@ -8,11 +8,15 @@ class ReassignVehicleCommand extends OperationalCommand {
   final String newVehicleId;
   final String? reason;
 
+  @override
+  final String? targetOrganizationId;
+
   const ReassignVehicleCommand({
     required this.tripId,
     required this.oldVehicleId,
     required this.newVehicleId,
     this.reason,
+    this.targetOrganizationId,
   });
 
   @override
@@ -21,5 +25,11 @@ class ReassignVehicleCommand extends OperationalCommand {
   TargetRef get targetRef => TargetRef('trip', tripId);
 
   @override
-  List<Object?> get props => [tripId, oldVehicleId, newVehicleId, reason];
+  List<Object?> get props => [
+    tripId,
+    oldVehicleId,
+    newVehicleId,
+    reason,
+    targetOrganizationId,
+  ];
 }

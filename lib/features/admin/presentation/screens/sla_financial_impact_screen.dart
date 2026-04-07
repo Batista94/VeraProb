@@ -39,10 +39,10 @@ class SlaFinancialImpactScreen extends ConsumerWidget {
             Expanded(
               child: impactAsync.when(
                 data: (impact) => _FinancialDashboard(
-                  totalContractedRevenue: impact.totalContractedRevenue / 100.0,
-                  protectedRevenue: impact.protectedRevenue / 100.0,
-                  revenueAtRisk: impact.revenueAtRisk / 100.0,
-                  lostRevenue: impact.lostRevenue / 100.0,
+                  totalContractedRevenueCents: impact.totalContractedRevenue,
+                  protectedRevenueCents: impact.protectedRevenue,
+                  revenueAtRiskCents: impact.revenueAtRisk,
+                  lostRevenueCents: impact.lostRevenue,
                   riskPercentageBps: impact.riskPercentageBps,
                   lossPercentageBps: impact.lossPercentageBps,
                 ),
@@ -78,21 +78,28 @@ class SlaFinancialImpactScreen extends ConsumerWidget {
 }
 
 class _FinancialDashboard extends StatelessWidget {
-  final double totalContractedRevenue;
-  final double protectedRevenue;
-  final double revenueAtRisk;
-  final double lostRevenue;
+  // All monetary values are stored as int cents (INV-19).
+  // Bridge Conversion to double happens only at the display boundary.
+  final int totalContractedRevenueCents;
+  final int protectedRevenueCents;
+  final int revenueAtRiskCents;
+  final int lostRevenueCents;
   final int riskPercentageBps;
   final int lossPercentageBps;
 
   const _FinancialDashboard({
-    required this.totalContractedRevenue,
-    required this.protectedRevenue,
-    required this.revenueAtRisk,
-    required this.lostRevenue,
+    required this.totalContractedRevenueCents,
+    required this.protectedRevenueCents,
+    required this.revenueAtRiskCents,
+    required this.lostRevenueCents,
     required this.riskPercentageBps,
     required this.lossPercentageBps,
   });
+
+  /// Bridge Conversion - Double Required: cents to decimal for NumberFormat display.
+  String _formatCents(int cents) => _currencyFormat.format(
+    cents / 100.0,
+  ); // Bridge Conversion - Double Required
 
   @override
   Widget build(BuildContext context) {
@@ -108,26 +115,26 @@ class _FinancialDashboard extends StatelessWidget {
           children: [
             _KpiCard(
               title: 'Receita Total Contratada',
-              value: _currencyFormat.format(totalContractedRevenue),
+              value: _formatCents(totalContractedRevenueCents),
               color: VeraProbColors.info,
               icon: Icons.account_balance_outlined,
             ),
             _KpiCard(
               title: 'Receita Protegida',
-              value: _currencyFormat.format(protectedRevenue),
+              value: _formatCents(protectedRevenueCents),
               color: VeraProbColors.success,
               icon: Icons.shield_outlined,
             ),
             _KpiCard(
               title: 'Receita em Risco',
-              value: _currencyFormat.format(revenueAtRisk),
+              value: _formatCents(revenueAtRiskCents),
               color: VeraProbColors.warning,
               icon: Icons.warning_amber_outlined,
               percentageBps: riskPercentageBps,
             ),
             _KpiCard(
               title: 'Receita Perdida',
-              value: _currencyFormat.format(lostRevenue),
+              value: _formatCents(lostRevenueCents),
               color: VeraProbColors.error,
               icon: Icons.trending_down_outlined,
               percentageBps: lossPercentageBps,

@@ -8,15 +8,19 @@ class UpdateTripStatusCommand extends OperationalCommand {
   final TripStatus newStatus;
   final String? reason;
 
+  @override
+  final String? targetOrganizationId;
+
   const UpdateTripStatusCommand({
     required this.tripId,
     required this.newStatus,
     this.reason,
+    this.targetOrganizationId,
   });
 
   @override
   TargetRef get targetRef => TargetRef('trip', tripId);
 
   @override
-  List<Object?> get props => [tripId, newStatus, reason];
+  List<Object?> get props => [tripId, newStatus, reason, targetOrganizationId];
 }

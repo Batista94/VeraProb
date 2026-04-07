@@ -7,15 +7,24 @@ class OverrideRouteDeviationCommand extends OperationalCommand {
   final bool isAuthorized;
   final String? reason;
 
+  @override
+  final String? targetOrganizationId;
+
   const OverrideRouteDeviationCommand({
     required this.tripId,
     required this.isAuthorized,
     this.reason,
+    this.targetOrganizationId,
   });
 
   @override
   TargetRef get targetRef => TargetRef('trip', tripId);
 
   @override
-  List<Object?> get props => [tripId, isAuthorized, reason];
+  List<Object?> get props => [
+    tripId,
+    isAuthorized,
+    reason,
+    targetOrganizationId,
+  ];
 }

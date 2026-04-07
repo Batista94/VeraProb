@@ -14,4 +14,8 @@ abstract class OperationalCommand extends Equatable {
   /// This allows the Interceptor and Forensic Backbone to generically snapshot
   /// what entity is being mutated without needing reflection or hardcoded switch-cases.
   TargetRef get targetRef;
+
+  /// Explicitly identifies the owner organization of the target resource.
+  /// Used for immediate Cross-Tenant Veto in the Command Bus.
+  String? get targetOrganizationId;
 }

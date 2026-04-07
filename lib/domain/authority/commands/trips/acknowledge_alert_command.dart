@@ -6,11 +6,17 @@ import 'package:veraprob/domain/authority/core/authority_types.dart';
 class AcknowledgeAlertCommand extends OperationalCommand {
   final String tripId;
 
-  const AcknowledgeAlertCommand({required this.tripId});
+  @override
+  final String? targetOrganizationId;
+
+  const AcknowledgeAlertCommand({
+    required this.tripId,
+    this.targetOrganizationId,
+  });
 
   @override
   TargetRef get targetRef => TargetRef('trip', tripId);
 
   @override
-  List<Object?> get props => [tripId];
+  List<Object?> get props => [tripId, targetOrganizationId];
 }

@@ -153,7 +153,9 @@ class ExecutiveDashboardView {
 
     // Trend: sigmoid of compliance improvement over 3 months
     final currentCompliance = complianceScoreBps;
-    final trendDelta = previousMonthComplianceBps != null
+    final double trendDelta =
+        previousMonthComplianceBps !=
+            null // Bridge Conversion - Double Required
         ? (currentCompliance - previousMonthComplianceBps).toDouble() / 100.0
         : 0.0;
     final trendScoreBps = (ExecutiveDashboardView._sigmoid(trendDelta) * 100)
