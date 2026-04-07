@@ -100,14 +100,8 @@ class SupabaseDataSeedingRepository implements DataSeedingRepository {
             'organization_id': organizationId,
             'name': 'Contrato de Teste Histórico',
             'contractor_name': contractor?['name'] ?? 'Empresa Beta',
-            'valid_from_utc': DateTime.now()
-                .toUtc()
-                .subtract(const Duration(days: 30))
-                .toIso8601String(),
-            'valid_until_utc': DateTime.now()
-                .toUtc()
-                .add(const Duration(days: 30))
-                .toIso8601String(),
+            'valid_from_utc': DateTime.now().toUtc().subtract(const Duration(days: 30)).toIso8601String(),
+            'valid_until_utc': DateTime.now().toUtc().add(const Duration(days: 30)).toIso8601String(),
             'status': 'active',
             'financial_ceiling_cents': 500000,
           })

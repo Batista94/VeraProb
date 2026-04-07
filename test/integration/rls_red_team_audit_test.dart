@@ -1,3 +1,5 @@
+@Tags(['integration', 'postgres'])
+library;
 // Expanded RLS Sovereignty Red Team Audit — INV-1 & INV-20
 //
 // Validates strict multi-tenant isolation, partitioned ledger sovereignty,
@@ -36,10 +38,7 @@ void main() async {
       late SupabaseClient operatorClient;
 
       setUpAll(() async {
-        final timestamp = DateTime.now()
-            .toUtc()
-            .microsecondsSinceEpoch
-            .toString();
+        final timestamp = DateTime.now().toUtc().microsecondsSinceEpoch.toString();
         _orgAId = _uuid.v4();
         _orgBId = _uuid.v4();
         _userAEmail = 'admin_a_$timestamp@veraprob.test';
@@ -108,10 +107,7 @@ void main() async {
           'contractor_name': 'Beta Contractor PII Target',
           'status': 'active',
           'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
-          'valid_until_utc': DateTime.now()
-              .toUtc()
-              .add(const Duration(days: 365))
-              .toIso8601String(),
+          'valid_until_utc': DateTime.now().toUtc().add(const Duration(days: 365)).toIso8601String(),
         });
 
         // Ledger V2 (Partitioned)
@@ -412,11 +408,7 @@ Future<void> _ensureOrg(
   required String id,
   required String name,
 }) async {
-  final randomCnpj = DateTime.now()
-      .toUtc()
-      .microsecondsSinceEpoch
-      .toString()
-      .substring(0, 14);
+  final randomCnpj = DateTime.now().toUtc().microsecondsSinceEpoch.toString().substring(0, 14);
   await admin.from('organizations').upsert({
     'id': id,
     'name': name,

@@ -40,10 +40,8 @@ class ContractualExecutionState {
 
   // ── Geofence (denormalized from ContractualServiceExecution) ───
   /// Start geofence center latitude. Immutable after creation.
-  // GPS Coordinate - Precision Required
-  final double startLatitude;
-  // GPS Coordinate - Precision Required
-  final double startLongitude;
+  final double startLatitude; // Physical Metric - Double Required
+  final double startLongitude; // Physical Metric - Double Required
   final int startRadiusMeters;
 
   // ── Vehicle Planning ──────────────────────────────────────────
@@ -68,15 +66,13 @@ class ContractualExecutionState {
   // ── Binding Evidence (only when executed) ─────────────────
   String? _boundVehicleId;
   DateTime? _bindingTimestampUtc;
-  // GPS Coordinate - Precision Required
-  double? _bindingLatitude;
-  // GPS Coordinate - Precision Required
-  double? _bindingLongitude;
+  double? _bindingLatitude; // Physical Metric - Double Required
+  double? _bindingLongitude; // Physical Metric - Double Required
 
   String? get boundVehicleId => _boundVehicleId;
   DateTime? get bindingTimestampUtc => _bindingTimestampUtc;
-  double? get bindingLatitude => _bindingLatitude;
-  double? get bindingLongitude => _bindingLongitude;
+  double? get bindingLatitude => _bindingLatitude; // Physical Metric - Double Required
+  double? get bindingLongitude => _bindingLongitude; // Physical Metric - Double Required
 
   // ── Lifecycle Timestamps ──────────────────────────────────
   final DateTime createdAtUtc;
@@ -185,10 +181,8 @@ class ContractualExecutionState {
   /// Throws [DomainException] if the transition is invalid.
   void bindExecution({
     required String vehicleId,
-    // GPS Coordinate - Precision Required
-    required double latitude,
-    // GPS Coordinate - Precision Required
-    required double longitude,
+    required double latitude, // Physical Metric - Double Required
+    required double longitude, // Physical Metric - Double Required
     required DateTime timestampUtc,
   }) {
     if (_status != ExecutionStatus.pending &&
@@ -307,7 +301,7 @@ class ContractualExecutionState {
     required String contractId,
     required int planVersion,
     required double startLatitude, // Physical Metric - Double Required
-    required double startLongitude,
+    required double startLongitude, // Physical Metric - Double Required
     required int startRadiusMeters,
     String? plannedVehicleId,
     required Money contractualValue,
@@ -321,8 +315,8 @@ class ContractualExecutionState {
     DateTime? finalizedAtUtc,
     String? boundVehicleId,
     DateTime? bindingTimestampUtc,
-    double? bindingLatitude,
-    double? bindingLongitude,
+    double? bindingLatitude, // Physical Metric - Double Required
+    double? bindingLongitude, // Physical Metric - Double Required
   }) {
     final state = ContractualExecutionState._(
       id: id,

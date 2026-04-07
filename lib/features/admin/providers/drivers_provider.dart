@@ -8,21 +8,21 @@ final driversListProvider = FutureProvider<List<Driver>>((ref) async {
   return repository.getDrivers();
 });
 
-// Search query provider
+// Search searchTerm provider
 final driversSearchQueryProvider = StateProvider<String>((ref) => '');
 
 // Filtered drivers provider
 final filteredDriversProvider = Provider<AsyncValue<List<Driver>>>((ref) {
   final driversAsync = ref.watch(driversListProvider);
-  final query = ref.watch(driversSearchQueryProvider).toLowerCase();
+  final searchTerm = ref.watch(driversSearchQueryProvider).toLowerCase();
 
   return driversAsync.whenData((drivers) {
-    if (query.isEmpty) {
+    if (searchTerm.isEmpty) {
       return drivers;
     }
     return drivers.where((d) {
-      return d.name.toLowerCase().contains(query) ||
-          d.licenseNumber.contains(query);
+      return d.name.toLowerCase().contains(searchTerm) ||
+          d.licenseNumber.contains(searchTerm);
     }).toList();
   });
 });

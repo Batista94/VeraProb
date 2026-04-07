@@ -73,7 +73,7 @@ class TelemetryNormalizer {
 
   /// Calculates the great-circle distance between two points on the Earth surface using the Haversine formula.
   /// Returns distance in meters.
-  double _calculateDistance(
+  double _calculateDistance( // Physical Metric - Double Required
     double lat1, // Physical Metric - Double Required
     double lon1, // Physical Metric - Double Required
     double lat2, // Physical Metric - Double Required

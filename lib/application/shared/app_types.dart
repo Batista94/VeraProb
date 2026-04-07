@@ -23,7 +23,8 @@ export 'package:veraprob/domain/sla_audit/contractual_rule.dart'
     show SlaRuleType;
 export 'package:veraprob/domain/entities/driver.dart';
 export 'package:veraprob/domain/entities/trip.dart';
-export 'package:veraprob/domain/entities/bus_stop.dart';
+export 'package:veraprob/domain/entities/stop.dart';
+export 'package:veraprob/domain/stops/i_stop_repository.dart';
 export 'package:veraprob/domain/entities/vehicle_position.dart';
 export 'package:veraprob/domain/entities/transit_route.dart';
 export 'package:veraprob/domain/entities/vehicle.dart';

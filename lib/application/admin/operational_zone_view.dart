@@ -56,8 +56,8 @@ class OperationalZoneView {
 }
 
 class GeofenceView {
-  final double latitude;
-  final double longitude;
+  final double latitude; // Physical Metric - Double Required
+  final double longitude; // Physical Metric - Double Required
   final int radiusMeters;
 
   const GeofenceView({

@@ -29,7 +29,7 @@ class _FakeRepository implements VehicleInfractionRecurrenceRepository {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-VerdictEvidence _evidence(String clauseRef) => VerdictEvidence.create(
+VerdictEvidence evidence(String clauseRef) => VerdictEvidence.create(
   clauseRef: clauseRef,
   ruleId: 'rule-1',
   ruleVersion: 1,
@@ -42,7 +42,7 @@ VerdictEvidence _evidence(String clauseRef) => VerdictEvidence.create(
   confidenceScore: 90,
 );
 
-SanctionReviewQueueEntry _entry({
+SanctionReviewQueueEntry entry({
   required String id,
   required String clauseRef,
   DateTime? createdAt,
@@ -52,7 +52,7 @@ SanctionReviewQueueEntry _entry({
   ledgerEntryId: 'ledger-$id',
   setId: 'set-1',
   contractId: 'contract-1',
-  verdictEvidence: _evidence(clauseRef),
+  verdictEvidence: evidence(clauseRef),
   status: SanctionReviewStatus.pending,
   createdAtUtc: createdAt ?? DateTime.utc(2026, 4, 1, 9, 0),
 );
@@ -103,12 +103,12 @@ void main() {
     });
 
     test('count=N when N-1 priors exist', () async {
-      final prior1 = _entry(
+      final prior1 = entry(
         id: 'prior-1',
         clauseRef: 'VEL-001',
         createdAt: DateTime.utc(2026, 4, 2, 8, 0),
       );
-      final prior2 = _entry(
+      final prior2 = entry(
         id: 'prior-2',
         clauseRef: 'ATR-002',
         createdAt: DateTime.utc(2026, 4, 8, 10, 0),
@@ -127,7 +127,7 @@ void main() {
     });
 
     test('excludes current entry from priors', () async {
-      final current = _entry(id: 'curr-1', clauseRef: 'VEL-001');
+      final current = entry(id: 'curr-1', clauseRef: 'VEL-001');
       final svc = VehicleInfractionRecurrenceService(
         repository: _FakeRepository([current]),
       );
@@ -142,7 +142,7 @@ void main() {
     });
 
     test('prior dots carry correct clauseRef and UTC timestamp', () async {
-      final prior = _entry(
+      final prior = entry(
         id: 'prior-1',
         clauseRef: 'VEL-001',
         createdAt: DateTime.utc(2026, 4, 3, 7, 30),

@@ -33,16 +33,12 @@ class ContractualServiceExecution extends Equatable {
   // ── Spatial — Start Geofence ──────────────────────────────
   /// Snapshotted coordinates. For projected SETs: captured from [OperationalZone]
   /// at projection time — zone updates do NOT affect historical SETs.
-  // GPS Coordinate - Precision Required
-  final double startLatitude;
-  // GPS Coordinate - Precision Required
-  final double startLongitude;
+  final double startLatitude; // Physical Metric - Double Required
+  final double startLongitude; // Physical Metric - Double Required
   final int startRadiusMeters;
 
-  // GPS Coordinate - Precision Required
-  final double endLatitude;
-  // GPS Coordinate - Precision Required
-  final double endLongitude;
+  final double endLatitude; // Physical Metric - Double Required
+  final double endLongitude; // Physical Metric - Double Required
   final int endRadiusMeters;
 
   // ── Planning ──────────────────────────────────────────────
@@ -115,11 +111,11 @@ class ContractualServiceExecution extends Equatable {
     required String contractId,
     required DateTime scheduledStartTimeUtc,
     required DateTime scheduledEndTimeUtc,
-    required double startLatitude, // GPS Coordinate - Precision Required
-    required double startLongitude, // GPS Coordinate - Precision Required
+    required double startLatitude, // Physical Metric - Double Required
+    required double startLongitude, // Physical Metric - Double Required
     required int startRadiusMeters,
-    required double endLatitude, // GPS Coordinate - Precision Required
-    required double endLongitude, // GPS Coordinate - Precision Required
+    required double endLatitude, // Physical Metric - Double Required
+    required double endLongitude, // Physical Metric - Double Required
     required int endRadiusMeters,
     String? plannedVehicleId,
     required Money contractualValue,
@@ -176,13 +172,13 @@ class ContractualServiceExecution extends Equatable {
     required DateTime scheduledEndTimeUtc,
     // Origin zone — coordinates snapshotted from OperationalZone
     required String originZoneId,
-    required double startLatitude, // GPS Coordinate - Precision Required
-    required double startLongitude, // GPS Coordinate - Precision Required
+    required double startLatitude, // Physical Metric - Double Required
+    required double startLongitude, // Physical Metric - Double Required
     required int startRadiusMeters,
     // Destination zone — coordinates snapshotted from OperationalZone
     required String destinationZoneId,
-    required double endLatitude, // GPS Coordinate - Precision Required
-    required double endLongitude, // GPS Coordinate - Precision Required
+    required double endLatitude, // Physical Metric - Double Required
+    required double endLongitude, // Physical Metric - Double Required
     required int endRadiusMeters,
     required Money contractualValue,
     // SLAPenalties snapshot
@@ -245,11 +241,11 @@ class ContractualServiceExecution extends Equatable {
     required String setId,
     required DateTime scheduledStartTimeUtc,
     required DateTime scheduledEndTimeUtc,
-    required double startLatitude, // GPS Coordinate - Precision Required
-    required double startLongitude, // GPS Coordinate - Precision Required
+    required double startLatitude, // Physical Metric - Double Required
+    required double startLongitude, // Physical Metric - Double Required
     required int startRadiusMeters,
-    required double endLatitude,
-    required double endLongitude,
+    required double endLatitude, // Physical Metric - Double Required
+    required double endLongitude, // Physical Metric - Double Required
     required int endRadiusMeters,
     String? plannedVehicleId,
     required Money contractualValue,
@@ -318,15 +314,13 @@ class ContractualServiceExecution extends Equatable {
     return digest.toString();
   }
 
-  static void _validateLatitude(double value, String fieldName) {
-    // GPS Coordinate - Precision Required
+  static void _validateLatitude(double value, String fieldName) { // Physical Metric - Double Required
     if (value < -90 || value > 90) {
       throw DomainException('$fieldName must be between -90 and 90');
     }
   }
 
-  static void _validateLongitude(double value, String fieldName) {
-    // GPS Coordinate - Precision Required
+  static void _validateLongitude(double value, String fieldName) { // Physical Metric - Double Required
     if (value < -180 || value > 180) {
       throw DomainException('$fieldName must be between -180 and 180');
     }

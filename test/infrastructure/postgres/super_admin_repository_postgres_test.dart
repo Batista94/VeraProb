@@ -8,6 +8,7 @@
 ///
 /// Se o Supabase local não estiver rodando, os testes são automaticamente
 /// marcados como SKIP (não FAIL) — mesmo comportamento dos outros testes postgres.
+@Tags(['postgres', 'integration'])
 library;
 
 import 'dart:convert';
@@ -503,24 +504,29 @@ void main() async {
       group(
         'getAllTenantHealth',
         () {
-          test('retorna lista de TenantHealthSnapshot', () async {
-            // Cria uma org de teste para garantir que a view tenha pelo menos uma linha
-            final cnpj = _uniqueCnpj();
-            await repo.createOrganization(_testCmd(cnpj));
+          test(
+            'retorna lista de TenantHealthSnapshot',
+            skip: 'Requires MFA (AAL2) configuration',
+            () async {
+              // Cria uma org de teste para garantir que a view tenha pelo menos uma linha
+              final cnpj = _uniqueCnpj();
+              await repo.createOrganization(_testCmd(cnpj));
 
-            final snapshots = await superAdminRepo.getAllTenantHealth();
+              final snapshots = await superAdminRepo.getAllTenantHealth();
 
-            expect(snapshots, isA<List<TenantHealthSnapshot>>());
-            expect(snapshots, isNotEmpty);
+              expect(snapshots, isA<List<TenantHealthSnapshot>>());
+              expect(snapshots, isNotEmpty);
 
-            for (final s in snapshots) {
-              expect(s.id, isNotEmpty);
-              expect(s.name, isNotEmpty);
-            }
-          });
+              for (final s in snapshots) {
+                expect(s.id, isNotEmpty);
+                expect(s.name, isNotEmpty);
+              }
+            },
+          );
 
           test(
             'org recém-criada aparece na view com active_contract_count = 0',
+            skip: 'Requires MFA (AAL2) configuration',
             () async {
               final cnpj = _uniqueCnpj();
               final orgId = await repo.createOrganization(_testCmd(cnpj));
@@ -540,7 +546,7 @@ void main() async {
         },
         skip: !areFunctionsRunning
             ? 'Edge Functions não estão rodando. Execute: supabase functions serve super-admin-proxy'
-            : 'Requires MFA (AAL2) configuration — run with a pre-authenticated AAL2 session',
+            : null,
       );
 
       // ── getSystemAuditLog ──────────────────────────────────────────────────
@@ -549,43 +555,55 @@ void main() async {
       group(
         'getSystemAuditLog',
         () {
-          test('retorna lista sem filtro', () async {
-            final logs = await superAdminRepo.getSystemAuditLog(limit: 10);
-            expect(logs, isA<List<SystemAuditLogEntry>>());
-          });
+          test(
+            'retorna lista sem filtro',
+            skip: 'Requires MFA (AAL2) configuration',
+            () async {
+              final logs = await superAdminRepo.getSystemAuditLog(limit: 10);
+              expect(logs, isA<List<SystemAuditLogEntry>>());
+            },
+          );
 
-          test('filtra por organization_id corretamente', () async {
-            final cnpj = _uniqueCnpj();
-            final orgId = await repo.createOrganization(_testCmd(cnpj));
+          test(
+            'filtra por organization_id corretamente',
+            skip: 'Requires MFA (AAL2) configuration',
+            () async {
+              final cnpj = _uniqueCnpj();
+              final orgId = await repo.createOrganization(_testCmd(cnpj));
 
-            // Insere entrada de log vinculada à org de teste
-            await serviceRoleClient.from('system_audit_log').insert({
-              'event_type': 'SUPER_ADMIN_TEST',
-              'severity': 'info',
-              'organization_id': orgId,
-              'source': 'test_suite',
-            });
+              // Insere entrada de log vinculada à org de teste
+              await serviceRoleClient.from('system_audit_log').insert({
+                'event_type': 'SUPER_ADMIN_TEST',
+                'severity': 'info',
+                'organization_id': orgId,
+                'source': 'test_suite',
+              });
 
-            final filtered = await superAdminRepo.getSystemAuditLog(
-              organizationId: orgId,
-              limit: 50,
-            );
+              final filtered = await superAdminRepo.getSystemAuditLog(
+                organizationId: orgId,
+                limit: 50,
+              );
 
-            expect(filtered, isNotEmpty);
-            expect(
-              filtered.every((e) => e.organizationId == orgId),
-              isTrue,
-              reason: 'Todos os logs filtrados devem pertencer à org',
-            );
-          });
+              expect(filtered, isNotEmpty);
+              expect(
+                filtered.every((e) => e.organizationId == orgId),
+                isTrue,
+                reason: 'Todos os logs filtrados devem pertencer à org',
+              );
+            },
+          );
 
-          test('filtra por severity corretamente', () async {
-            final logs = await superAdminRepo.getSystemAuditLog(
-              severity: 'error',
-              limit: 20,
-            );
-            expect(logs.every((e) => e.severity == 'error'), isTrue);
-          });
+          test(
+            'filtra por severity corretamente',
+            skip: 'Requires MFA (AAL2) configuration',
+            () async {
+              final logs = await superAdminRepo.getSystemAuditLog(
+                severity: 'error',
+                limit: 20,
+              );
+              expect(logs.every((e) => e.severity == 'error'), isTrue);
+            },
+          );
         },
         skip: !areFunctionsRunning
             ? 'Edge Functions não estão rodando. Execute: supabase functions serve super-admin-proxy'

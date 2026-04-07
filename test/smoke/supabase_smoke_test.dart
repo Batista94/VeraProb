@@ -569,7 +569,7 @@ void main() {
           'end_longitude': -46.6333,
           'end_radius_meters': 100,
           'contractual_value_cents': 50000,
-          'no_show_penalty_bps': 20000,
+          'no_show_penalty_multiplier': 20000,
         });
 
         final state = ContractualExecutionState.create(
@@ -628,6 +628,7 @@ void main() {
           );
 
           final stateT1 = await executionRepo.findBySetId(smokeSetId!);
+          expect(stateT1, isNotNull, reason: 'stateT1 should be initialized');
           expect(
             stateT1!.status.name,
             'pending',
@@ -643,6 +644,7 @@ void main() {
           );
 
           final stateT2 = await executionRepo.findBySetId(smokeSetId!);
+          expect(stateT2, isNotNull, reason: 'stateT2 should be initialized');
           expect(
             stateT2!.status.name,
             'executed',
@@ -819,7 +821,7 @@ void main() {
           );
           expect(p['earlyArrivalToleranceMinutes'], 2);
           expect(p['dwellTimeMinutes'], 3);
-          expect(p['noShowPenaltyMultiplier'], 1.5);
+          expect(p['noShowPenaltyBps'], 15000);
           expect(p['delayToleranceMinutes'], 5);
           expect(p['delayPenaltyPerMinuteCents'], 100);
           expect(p['downgradePenaltyFlatCents'], 20000);

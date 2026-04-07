@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:veraprob/core/config/environment.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/services/logger_service.dart';
@@ -72,12 +73,13 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
     }
 
     // SuperAdmin path: check MFA status to determine destination.
-    // NOTE: In local development (kDebugMode), we bypass MFA enrollment/challenge
-    // because the local Supabase CLI might not have MFA enabled or configured.
-    // This MUST BE TESTED in Staging before Production (INV-6).
-    if (kDebugMode) {
+    // INV-6: MFA bypass requires explicit opt-in via --dart-define=SKIP_MFA_DEV=true.
+    // Never active in staging or production — EnvironmentConfig.skipMfaForSuperAdmin
+    // enforces isDev as a hard guard regardless of the flag value.
+    if (EnvironmentConfig.skipMfaForSuperAdmin) {
       LoggerService().security(
-        'MFA BYPASS active for SuperAdmin in DEV mode (Local Supabase compat).',
+        'MFA BYPASS active — SKIP_MFA_DEV=true (DEV only). '
+        'Never passes in staging/prod. INV-6.',
       );
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(

@@ -206,10 +206,7 @@ void main() async {
         'contractor_name': 'RLS Test Contractor A',
         'status': 'draft',
         'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
-        'valid_until_utc': DateTime.now()
-            .toUtc()
-            .add(const Duration(days: 90))
-            .toIso8601String(),
+        'valid_until_utc': DateTime.now().toUtc().add(const Duration(days: 90)).toIso8601String(),
       });
 
       final ledgerRowA = await adminClient
@@ -234,10 +231,7 @@ void main() async {
         'contractor_name': 'RLS Test Contractor B',
         'status': 'draft',
         'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
-        'valid_until_utc': DateTime.now()
-            .toUtc()
-            .add(const Duration(days: 90))
-            .toIso8601String(),
+        'valid_until_utc': DateTime.now().toUtc().add(const Duration(days: 90)).toIso8601String(),
       });
 
       final ledgerRowB = await adminClient
@@ -392,10 +386,7 @@ void main() async {
           'id': entryId,
           'organization_id': _orgBId,
           'device_id': 'rls-test-device',
-          'window_start': DateTime.now()
-              .toUtc()
-              .subtract(const Duration(hours: 1))
-              .toIso8601String(),
+          'window_start': DateTime.now().toUtc().subtract(const Duration(hours: 1)).toIso8601String(),
           'window_end': DateTime.now().toUtc().toIso8601String(),
           'risk_score': 0.5,
           'signals': [],
@@ -608,10 +599,7 @@ void main() async {
           'role': 'TENANT_ADMIN',
           'invited_by': _uuid.v4(),
           'email': inviteeEmail,
-          'expires_at_utc': DateTime.now()
-              .toUtc()
-              .add(const Duration(hours: 24))
-              .toIso8601String(),
+          'expires_at_utc': DateTime.now().toUtc().add(const Duration(hours: 24)).toIso8601String(),
         });
 
         // First acceptance should succeed; second must throw.

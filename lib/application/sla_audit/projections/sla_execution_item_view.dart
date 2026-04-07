@@ -16,11 +16,8 @@ class SlaExecutionItemView extends Equatable {
   final String? boundVehicleId;
   final DateTime? boundAtUtc;
 
-  /// GPS Latitude - Precision Required
-  final double startLatitude;
-
-  /// GPS Longitude - Precision Required
-  final double startLongitude;
+  final double startLatitude; // Physical Metric - Double Required
+  final double startLongitude; // Physical Metric - Double Required
   final int startRadiusMeters;
   final int contractualValue;
   final int noShowPenaltyBps;

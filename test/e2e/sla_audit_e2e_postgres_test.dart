@@ -536,7 +536,7 @@ void main() {
       expect(summary.totalExecuted, 1, reason: '1 executed set from telemetry');
       expect(summary.totalPending, 0);
       expect(summary.total, 1);
-      expect(summary.protectedRevenue, const Money(10000));
+      expect(summary.protectedRevenue, 10000);
 
       final executedList = await executionQueryService.listByStatus(
         ExecutionStatus.executed,

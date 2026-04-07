@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/infrastructure/sla_audit/dto/sla_ledger_entry_dto.dart';
 
 /// Postgres implementation of [SlaAuditLedgerRepository].
 ///
@@ -19,18 +20,11 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
 
   @override
   Future<String> append(SlaLedgerEntry entry) async {
+    final dto = SlaLedgerEntryDto.fromDomain(entry);
+
     final response = await _client
         .from('sla_audit_ledger_v2')
-        .insert({
-          'organization_id': entry.organizationId,
-          'type': entry.type,
-          'operator_id': entry.operatorId,
-          'set_id': entry.setId,
-          'contract_id': entry.contractId,
-          'plan_version': entry.planVersion,
-          'payload': entry.payload,
-          'occurred_at_utc': entry.occurredAtUtc.toIso8601String(),
-        })
+        .insert(dto.toJson())
         .select('id')
         .single();
 
@@ -67,17 +61,8 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
     final response = await query.order('occurred_at_utc', ascending: true);
 
     return (response as List).map((row) {
-      return SlaLedgerEntry(
-        eventId: row['id'] as String,
-        organizationId: row['organization_id'] as String,
-        type: row['type'] as String,
-        operatorId: row['operator_id'] as String? ?? 'SYSTEM',
-        setId: row['set_id'] as String?,
-        contractId: row['contract_id'] as String,
-        planVersion: row['plan_version'] as int,
-        occurredAtUtc: DateTime.parse(row['occurred_at_utc'] as String),
-        payload: row['payload'] as Map<String, dynamic>? ?? const {},
-      );
+      final dto = SlaLedgerEntryDto.fromJson(row as Map<String, dynamic>);
+      return dto.toDomain(row['id'] as String);
     }).toList();
   }
 }

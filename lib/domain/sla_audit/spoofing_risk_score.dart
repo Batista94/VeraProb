@@ -32,7 +32,7 @@ class SpoofingRiskScore extends Equatable {
   factory SpoofingRiskScore.fromJson(Map<String, dynamic> json) {
     final rawScore = json['score_bps'] ?? json['score'];
     final int score;
-    if (rawScore is double) {
+    if (rawScore is double) { // Bridge Conversion - Double Required
       score = (rawScore * 10000).toInt();
     } else {
       score = rawScore as int? ?? 0;

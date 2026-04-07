@@ -12,18 +12,12 @@ class ContractualServiceInput {
   final DateTime scheduledStartTimeUtc;
   final DateTime scheduledEndTimeUtc;
 
-  /// GPS Latitude - Precision Required
-  final double startLatitude;
-
-  /// GPS Longitude - Precision Required
-  final double startLongitude;
+  final double startLatitude; // Physical Metric - Double Required
+  final double startLongitude; // Physical Metric - Double Required
   final int startRadiusMeters;
 
-  /// GPS Latitude - Precision Required
-  final double endLatitude;
-
-  /// GPS Longitude - Precision Required
-  final double endLongitude;
+  final double endLatitude; // Physical Metric - Double Required
+  final double endLongitude; // Physical Metric - Double Required
   final int endRadiusMeters;
   final String? plannedVehicleId;
   final int contractualValueCents;

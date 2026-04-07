@@ -1,46 +1,79 @@
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 
 void main() {
-  group('CnpjValidator (INV-18/INV-21)', () {
-    test('isValid recognizes valid CNPJs', () {
-      // Valid CNPJs (mathematically correct)
-      expect(CnpjValidator.isValid('11.444.777/0001-61'), isTrue);
-      expect(CnpjValidator.isValid('11444777000161'), isTrue);
-      expect(CnpjValidator.isValid('00.000.000/0001-91'), isTrue);
+  group('CnpjValidator', () {
+    group('isValid', () {
+      test('valid known-good CNPJ returns true', () {
+        // 11.222.333/0001-81 — well-known valid CNPJ used in BR tests
+        expect(CnpjValidator.isValid('11222333000181'), isTrue);
+      });
+
+      test('valid formatted CNPJ returns true', () {
+        expect(CnpjValidator.isValid('11.222.333/0001-81'), isTrue);
+      });
+
+      test('wrong check digit returns false', () {
+        // Last digit changed from 1 to 2
+        expect(CnpjValidator.isValid('11222333000182'), isFalse);
+      });
+
+      test('wrong first check digit returns false', () {
+        // 12th digit changed
+        expect(CnpjValidator.isValid('11222333000191'), isFalse);
+      });
+
+      test('all-same digits fail (11.111.111/1111-11)', () {
+        expect(CnpjValidator.isValid('11111111111111'), isFalse);
+      });
+
+      test('all zeros fail', () {
+        expect(CnpjValidator.isValid('00000000000000'), isFalse);
+      });
+
+      test('empty string returns false', () {
+        expect(CnpjValidator.isValid(''), isFalse);
+      });
+
+      test('too short returns false', () {
+        expect(CnpjValidator.isValid('1122233300018'), isFalse);
+      });
+
+      test('too long returns false', () {
+        expect(CnpjValidator.isValid('112223330001810'), isFalse);
+      });
+
+      test('non-digit characters stripped before validation', () {
+        // Mask characters should be stripped
+        expect(CnpjValidator.isValid('11.222.333/0001-81'), isTrue);
+      });
+
+      test('second valid known-good CNPJ', () {
+        // Petrobras: 33.000.167/0001-01
+        expect(CnpjValidator.isValid('33000167000101'), isTrue);
+      });
     });
 
-    test('isValid rejects structurally invalid inputs', () {
-      expect(CnpjValidator.isValid('123'), isFalse); // Too short
-      expect(CnpjValidator.isValid('123456789012345'), isFalse); // Too long
-      expect(CnpjValidator.isValid(''), isFalse); // Empty
-    });
+    group('format', () {
+      test('formats bare digits with mask', () {
+        expect(CnpjValidator.format('11222333000181'), '11.222.333/0001-81');
+      });
 
-    test('isValid rejects all-same-digit sequences (fraud prevention)', () {
-      expect(CnpjValidator.isValid('00.000.000/0000-00'), isFalse);
-      expect(CnpjValidator.isValid('11.111.111/1111-11'), isFalse);
-    });
+      test('strips existing mask before reformatting', () {
+        expect(
+          CnpjValidator.format('11.222.333/0001-81'),
+          '11.222.333/0001-81',
+        );
+      });
 
-    test('isValid rejects invalid check digits', () {
-      // 13.435.034/0001-45 (last digit changed from 4 to 5)
-      expect(CnpjValidator.isValid('13.435.034/0001-45'), isFalse);
-    });
+      test('returns empty string for empty input', () {
+        expect(CnpjValidator.format(''), '');
+      });
 
-    test('format applies Brazilian mask correctly', () {
-      expect(CnpjValidator.format('13435034000144'), '13.435.034/0001-44');
-      expect(CnpjValidator.format('13.435.034/0001-44'), '13.435.034/0001-44');
-    });
-
-    test('format handles partial inputs gracefully', () {
-      expect(CnpjValidator.format('13'), '13');
-      expect(CnpjValidator.format('134'), '13.4');
-      expect(CnpjValidator.format('134350'), '13.435.0');
-      expect(CnpjValidator.format('134350340'), '13.435.034/0');
-      expect(CnpjValidator.format('1343503400014'), '13.435.034/0001-4');
-    });
-
-    test('format returns empty string for empty input', () {
-      expect(CnpjValidator.format(''), '');
+      test('partial input formats up to available digits', () {
+        expect(CnpjValidator.format('11222'), '11.222');
+      });
     });
   });
 }

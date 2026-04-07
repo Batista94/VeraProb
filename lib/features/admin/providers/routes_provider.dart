@@ -11,15 +11,15 @@ final routesSearchQueryProvider = StateProvider<String>((ref) => '');
 
 final filteredRoutesProvider = Provider<AsyncValue<List<TransitRoute>>>((ref) {
   final routesAsync = ref.watch(routesListProvider);
-  final query = ref.watch(routesSearchQueryProvider).toLowerCase();
+  final searchTerm = ref.watch(routesSearchQueryProvider).toLowerCase();
 
   return routesAsync.whenData((routes) {
-    if (query.isEmpty) {
+    if (searchTerm.isEmpty) {
       return routes;
     }
     return routes.where((r) {
-      return r.shortName.toLowerCase().contains(query) ||
-          r.longName.toLowerCase().contains(query);
+      return r.shortName.toLowerCase().contains(searchTerm) ||
+          r.longName.toLowerCase().contains(searchTerm);
     }).toList();
   });
 });

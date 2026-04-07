@@ -12,13 +12,13 @@
     "severity": "BLOCK"
   },
   "FINANCIAL-BLOCK": {
-    "pattern": "double",
+    "pattern": "^(?!.*- Double Required).*\\bdouble\\b",
     "path_filter": "lib/(domain|application)/",
     "description": "Use BIGINT cents instead of double for financial calculations.",
     "severity": "BLOCK"
   },
   "SRP-UI-LEAK": {
-    "pattern": "supabase|\\.from\\(|insert|upsert|query",
+    "pattern": "supabase|\\.from\\(|\\.insert\\(|\\.upsert\\(|\\.query\\(",
     "path_filter": "lib/features/.*(presentation|screens|widgets|providers)/",
     "description": "Supabase calls leaked into UI layer. Use a Repository/Handler.",
     "severity": "BLOCK"

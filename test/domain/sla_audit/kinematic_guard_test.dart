@@ -4,7 +4,7 @@ import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 import 'package:veraprob/domain/sla_audit/kinematic_guard.dart';
 import 'package:veraprob/domain/sla_audit/kinematic_validation_result.dart';
 
-CanonicalFact _makeFact({
+CanonicalFact makeFact({
   required double lat,
   required double lng,
   required DateTime gpsTimestamp,
@@ -32,12 +32,12 @@ void main() {
     test('normal speed (60 km/h) returns ok', () {
       // 60 km/h = 16.67 m/s. In 60s → ~1000m.
       // ~1000m ≈ 0.009° lat at equator
-      final prev = _makeFact(
+      final prev = makeFact(
         lat: 0.0,
         lng: 0.0,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 0, 0),
       );
-      final curr = _makeFact(
+      final curr = makeFact(
         lat: 0.009,
         lng: 0.0,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 1, 0),
@@ -49,12 +49,12 @@ void main() {
 
     test('GPS teleport (500 km in 30 seconds) returns violation', () {
       // SP to RJ in 30 seconds = impossible
-      final prev = _makeFact(
+      final prev = makeFact(
         lat: -23.5505,
         lng: -46.6333,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 0, 0),
       );
-      final curr = _makeFact(
+      final curr = makeFact(
         lat: -22.9068,
         lng: -43.1729,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 0, 30),
@@ -67,9 +67,9 @@ void main() {
 
     test('same timestamp, >5m apart returns sameTimestampPositionJump', () {
       final t = DateTime.utc(2026, 1, 1, 12, 0, 0);
-      final prev = _makeFact(lat: 0.0, lng: 0.0, gpsTimestamp: t);
+      final prev = makeFact(lat: 0.0, lng: 0.0, gpsTimestamp: t);
       // ~111m apart
-      final curr = _makeFact(lat: 0.001, lng: 0.0, gpsTimestamp: t);
+      final curr = makeFact(lat: 0.001, lng: 0.0, gpsTimestamp: t);
 
       final result = guard.validate(prev, curr);
       expect(result.isViolation, isTrue);
@@ -81,9 +81,9 @@ void main() {
 
     test('same timestamp, <5m apart returns ok', () {
       final t = DateTime.utc(2026, 1, 1, 12, 0, 0);
-      final prev = _makeFact(lat: 0.0, lng: 0.0, gpsTimestamp: t);
+      final prev = makeFact(lat: 0.0, lng: 0.0, gpsTimestamp: t);
       // ~1.1m apart
-      final curr = _makeFact(lat: 0.00001, lng: 0.0, gpsTimestamp: t);
+      final curr = makeFact(lat: 0.00001, lng: 0.0, gpsTimestamp: t);
 
       final result = guard.validate(prev, curr);
       expect(result.isViolation, isFalse);
@@ -92,12 +92,12 @@ void main() {
     test('exactly at 200 km/h threshold returns ok', () {
       // 200 km/h = 55.556 m/s. In 1s → 55.556m.
       // 55.556m ≈ 0.0005° lat
-      final prev = _makeFact(
+      final prev = makeFact(
         lat: 0.0,
         lng: 0.0,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 0, 0),
       );
-      final curr = _makeFact(
+      final curr = makeFact(
         lat: 0.0005,
         lng: 0.0,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 0, 1),
@@ -114,12 +114,12 @@ void main() {
     test('just under 200 km/h returns ok', () {
       // 199 km/h = 55.28 m/s. In 10s → 552.8m.
       // 552.8m ≈ 0.00497° lat
-      final prev = _makeFact(
+      final prev = makeFact(
         lat: 0.0,
         lng: 0.0,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 0, 0),
       );
-      final curr = _makeFact(
+      final curr = makeFact(
         lat: 0.00497,
         lng: 0.0,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 0, 10),
@@ -134,12 +134,12 @@ void main() {
 
       // 150 km/h = 41.67 m/s. In 10s → 416.7m.
       // 416.7m ≈ 0.00375° lat
-      final prev = _makeFact(
+      final prev = makeFact(
         lat: 0.0,
         lng: 0.0,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 0, 0),
       );
-      final curr = _makeFact(
+      final curr = makeFact(
         lat: 0.00375,
         lng: 0.0,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 0, 10),
@@ -151,12 +151,12 @@ void main() {
     });
 
     test('stationary vehicle returns ok', () {
-      final prev = _makeFact(
+      final prev = makeFact(
         lat: -23.5505,
         lng: -46.6333,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 0, 0),
       );
-      final curr = _makeFact(
+      final curr = makeFact(
         lat: -23.5505,
         lng: -46.6333,
         gpsTimestamp: DateTime.utc(2026, 1, 1, 12, 5, 0),

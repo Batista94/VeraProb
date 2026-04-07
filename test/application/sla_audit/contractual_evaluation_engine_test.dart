@@ -55,6 +55,7 @@ void main() {
     String? plannedVehicleId,
     DateTime? windowStart,
     DateTime? windowEnd,
+    Money contractualValue = const Money(15000),
   }) {
     return ContractualExecutionState.create(
       organizationId: 'org-1',
@@ -65,7 +66,7 @@ void main() {
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
       plannedVehicleId: plannedVehicleId,
-      contractualValue: const Money(15000),
+      contractualValue: contractualValue,
       noShowPenaltyBps: 15000,
       windowStartUtc: windowStart ?? DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0),
@@ -750,7 +751,11 @@ void main() {
             evaluationOrder: 1,
           ),
         ]);
-        final state = makeExecState(contractId: 'c-speed');
+        // contractualValue must cover the fine: cap = (20000000 * 100) ~/ 10000 = 200000
+        final state = makeExecState(
+          contractId: 'c-speed',
+          contractualValue: const Money(20000000),
+        );
         await repo.save(state);
 
         final vehicle = makeVehicleState().copyWith(
@@ -894,9 +899,12 @@ void main() {
         'SANCTION_RECOMMENDED payload has non-null verdict_evidence',
         () async {
           await seedPlanWithPenaltyRule('c-penalty-2', 1);
+          // contractualValue=100000 cents, noShowPenaltyBps=15000 -> uncapped=150000
+          // INV cap: (100000 * 100) ~/ 10000 = 1000 cents (100 BPS = 1%)
           final state = makeExecState(
             contractId: 'c-penalty-2',
             windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+            contractualValue: const Money(100000),
           );
           await repo.save(state);
 
@@ -913,7 +921,7 @@ void main() {
           final evidence = recommended.first.payload['verdict_evidence'];
           expect(evidence, isNotNull);
           expect((evidence['evidence_hash'] as String).length, 64);
-          expect(evidence['fine_cents'], 150000);
+          expect(evidence['fine_cents'], 1000);
           expect(evidence['confidence_score'], 100);
         },
       );

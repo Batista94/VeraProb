@@ -27,17 +27,15 @@ class OperationalStateNormalizer {
   final Duration degradedThreshold;
   final Duration signalLostThreshold;
   final double stopRadiusMeters; // Physical Metric - Double Required
-  final double
-  movingSpeedThreshold; // km/h // Physical Metric - Double Required
-  final double
-  slowTrafficThreshold; // km/h // Physical Metric - Double Required
+  final double movingSpeedThreshold; // km/h // Physical Metric - Double Required
+  final double slowTrafficThreshold; // km/h // Physical Metric - Double Required
   final Duration stoppedMinDuration;
   final Duration slowTrafficMinDuration;
-  static const List<double> _smoothingWeights = [
+  static const List<double> _smoothingWeights = [ // Physical Metric - Double Required
     0.15,
     0.25,
     0.60,
-  ]; // Physical Metric - Double Required
+  ];
 
   OperationalStateNormalizer({
     this.debounceDuration = const Duration(seconds: 5),
@@ -217,8 +215,7 @@ class OperationalStateNormalizer {
   // ── Private: Smoothing ────────────────────────────────
 
   /// Returns (latitude, longitude) as a weighted average of the buffer.
-  (double, double) _applySmoothing(Queue<VehiclePosition> buffer) {
-    // Physical Metric - Double Required
+  (double, double) _applySmoothing(Queue<VehiclePosition> buffer) { // Physical Metric - Double Required
     if (buffer.length == 1) {
       return (buffer.first.latitude, buffer.first.longitude);
     }
@@ -240,8 +237,7 @@ class OperationalStateNormalizer {
   }
 
   /// Returns smoothed speed in km/h as weighted average.
-  double _smoothSpeed(Queue<VehiclePosition> buffer) {
-    // Physical Metric - Double Required
+  double _smoothSpeed(Queue<VehiclePosition> buffer) { // Physical Metric - Double Required
     final positions = buffer.toList();
     final weights = _smoothingWeights.sublist(
       _smoothingWeights.length - positions.length,
@@ -306,8 +302,7 @@ class OperationalStateNormalizer {
 
   /// Returns (stopId, stopName) if a stop is within [stopRadiusMeters],
   /// or null if no stop is nearby.
-  (String, String)? _findNearestStop(double lat, double lng, List<Stop> stops) {
-    // Physical Metric - Double Required
+  (String, String)? _findNearestStop(double lat, double lng, List<Stop> stops) { // Physical Metric - Double Required
     double minDist = double.infinity; // Physical Metric - Double Required
     Stop? nearest;
 

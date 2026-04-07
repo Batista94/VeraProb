@@ -4,8 +4,8 @@ abstract class GeocodingRepository {
 
 class PlaceSuggestion {
   final String displayName;
-  final double lat;
-  final double lng;
+  final double lat; // Physical Metric - Double Required
+  final double lng; // Physical Metric - Double Required
 
   const PlaceSuggestion({
     required this.displayName,

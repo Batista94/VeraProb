@@ -91,6 +91,22 @@ class EnvironmentConfig {
     defaultValue: 'veraprob-core_v3',
   );
 
+  // ── Security Flags ──────────────────────────────────
+  static const _skipMfaDev = bool.fromEnvironment(
+    'SKIP_MFA_DEV',
+    defaultValue: false,
+  );
+
+  /// Bypasses MFA for SuperAdmin in local development only.
+  ///
+  /// Requires BOTH conditions to be true simultaneously:
+  ///   1. `ENV=dev` (staging and production are never affected — hard guard)
+  ///   2. `--dart-define=SKIP_MFA_DEV=true` (explicit opt-in, never a default)
+  ///
+  /// Usage: `flutter run --dart-define=SKIP_MFA_DEV=true`
+  /// CI/CD: never pass this flag — pipelines do not set `SKIP_MFA_DEV`.
+  static bool get skipMfaForSuperAdmin => isDev && _skipMfaDev;
+
   // ── Validation ───────────────────────────────────────
   /// Returns true if the minimum required credentials are present.
   /// Only fails silently in dev (in-memory test mode).
