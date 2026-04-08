@@ -140,11 +140,22 @@ jobs:
       - name: Create stub .env for asset resolution
         run: echo "# CI stub — credentials injected via dart-define" > .env
 
-      - name: Flutter Test with Coverage
+      - name: Capture Supabase Keys
         run: |
           # Extrai a chave de servico gerada localmente pelo Supabase (RLS Bypass para testes E2E)
           # Usa -f 2- para capturar tudo após o primeiro '=' (JWTs podem conter '=' de padding base64)
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          echo "SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
+
+      - name: JWT Sanity Check
+        run: |
+          # Tenta um comando simples no banco usando a chave capturada
+          curl -X GET "http://127.0.0.1:54321/rest/v1/" \
+          -H "apikey: $SERVICE_ROLE_KEY" \
+          -H "Authorization: Bearer $SERVICE_ROLE_KEY"
+
+      - name: Flutter Test with Coverage
+        run: |
           flutter test --no-pub --coverage \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"

@@ -7,47 +7,163 @@ import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
+import 'package:veraprob/features/admin/presentation/shared/widgets/telemetry_sync_map.dart';
+import 'package:veraprob/state/providers/sanction_focus_provider.dart';
+
+/// Responsive breakpoint: below this width, the map becomes a Drawer.
+const _kMapBreakpoint = 1200.0;
 
 /// Tribunal de Auditoria — Human-in-the-Loop review of engine-recommended sanctions.
+///
+/// **WS-5 (Telemetry Map-Sync):** Split-pane layout on wide screens (≥1200px)
+/// with a dedicated [TelemetrySyncMap] panel on the right. On narrow screens,
+/// the map is accessible via an end-drawer toggle (FAB).
 ///
 /// Displays pending [SanctionQueueItemView] cards backed by Supabase Realtime.
 /// Every card exposes SELAR VEREDITO / RECUSAR VEREDITO / SOLICITAR PROVA FORENSE.
 /// Satisfies INV-23: full VerdictEvidence provenance is shown per sanction.
-class AuditorQueueScreen extends ConsumerWidget {
+class AuditorQueueScreen extends ConsumerStatefulWidget {
   const AuditorQueueScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sanctionsAsync = ref.watch(pendingSanctionsStreamProvider);
+  ConsumerState<AuditorQueueScreen> createState() =>
+      _AuditorQueueScreenState();
+}
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Header(sanctionsAsync: sanctionsAsync),
-          const SizedBox(height: 24),
-          Expanded(
-            child: sanctionsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Text(
-                  'Erro ao carregar fila: $e',
-                  style: const TextStyle(color: VeraProbColors.error),
+class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  Widget build(BuildContext context) {
+    final sanctionsAsync = ref.watch(pendingSanctionsStreamProvider);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isWide = screenWidth >= _kMapBreakpoint;
+
+    // WS-5: Auto-open drawer when a sanction is focused on narrow screens
+    ref.listen<SanctionMapFocus?>(selectedSanctionFocusProvider, (prev, next) {
+      if (!isWide && next != null && !(_scaffoldKey.currentState?.isEndDrawerOpen ?? false)) {
+        _scaffoldKey.currentState?.openEndDrawer();
+      }
+    });
+
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: Colors.transparent,
+      // WS-5: End-drawer with forensic map for narrow screens
+      endDrawer: isWide
+          ? null
+          : Drawer(
+              width: screenWidth * 0.45,
+              backgroundColor: VeraProbColors.background,
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    // Drawer header
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: const BoxDecoration(
+                        color: VeraProbColors.surface,
+                        border: Border(
+                          bottom: BorderSide(color: VeraProbColors.border),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.map_outlined,
+                            size: 16,
+                            color: VeraProbColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Mapa Forense',
+                            style: VeraProbTypography.sectionTitle,
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () => Navigator.pop(context),
+                            color: VeraProbColors.textSecondary,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Map
+                    const Expanded(child: TelemetrySyncMap()),
+                  ],
                 ),
               ),
-              data: (items) => items.isEmpty
-                  ? const _EmptyState()
-                  : ListView.separated(
-                      itemCount: items.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) =>
-                          SanctionVerdictCard(item: items[i]),
-                    ),
             ),
-          ),
-        ],
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Header(
+              sanctionsAsync: sanctionsAsync,
+              showMapToggle: !isWide,
+              onMapToggle: () => _scaffoldKey.currentState?.openEndDrawer(),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: isWide
+                  ? _buildSplitPane(sanctionsAsync)
+                  : _buildCardList(sanctionsAsync),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  /// Wide layout: Card list (flex 6) + Forensic Map (flex 4).
+  Widget _buildSplitPane(
+    AsyncValue<List<SanctionQueueItemView>> sanctionsAsync,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Left: Sanction card list
+        Expanded(flex: 6, child: _buildCardList(sanctionsAsync)),
+        // Divider
+        Container(
+          width: 1,
+          color: VeraProbColors.border,
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+        ),
+        // Right: Forensic Evidence Map (WS-5)
+        const Expanded(
+          flex: 4,
+          child: ClipRRect(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            child: TelemetrySyncMap(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Card list (shared between split-pane and single-column layouts).
+  Widget _buildCardList(
+    AsyncValue<List<SanctionQueueItemView>> sanctionsAsync,
+  ) {
+    return sanctionsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
+        child: Text(
+          'Erro ao carregar fila: $e',
+          style: const TextStyle(color: VeraProbColors.error),
+        ),
+      ),
+      data: (items) => items.isEmpty
+          ? const _EmptyState()
+          : ListView.separated(
+              itemCount: items.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemBuilder: (_, i) => SanctionVerdictCard(item: items[i]),
+            ),
     );
   }
 }
@@ -134,7 +250,14 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
 
 class _Header extends StatelessWidget {
   final AsyncValue<List<SanctionQueueItemView>> sanctionsAsync;
-  const _Header({required this.sanctionsAsync});
+  final bool showMapToggle;
+  final VoidCallback? onMapToggle;
+
+  const _Header({
+    required this.sanctionsAsync,
+    this.showMapToggle = false,
+    this.onMapToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -163,6 +286,25 @@ class _Header extends StatelessWidget {
             ),
           ),
         const Spacer(),
+        // WS-5: Map toggle for narrow screens
+        if (showMapToggle)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: OutlinedButton.icon(
+              onPressed: onMapToggle,
+              icon: const Icon(Icons.map_outlined, size: 16),
+              label: const Text('Mapa Forense'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: VeraProbColors.primary,
+                side: BorderSide(
+                  color: VeraProbColors.primary.withValues(alpha: 0.5),
+                ),
+                textStyle: const TextStyle(fontSize: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              ),
+            ),
+          ),
         const _SimulateButton(),
       ],
     );

@@ -8,7 +8,7 @@ import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
-import 'package:veraprob/features/admin/presentation/shared/widgets/geofence_evidence_map.dart';
+import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 import 'ghost_bar_widget.dart';
 import 'ingestion_health_widget.dart';
 import 'recurrence_badge_widget.dart';
@@ -78,6 +78,12 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final isLoading = actionState is AsyncLoading;
     final isLocked = item.status != SanctionReviewStatus.pending;
 
+    // WS-5: Map-Sync selection state
+    final focusedId = ref.watch(
+      selectedSanctionFocusProvider.select((f) => f?.sanctionId),
+    );
+    final isFocused = focusedId == item.id;
+
     // Async contract name resolution — RLS enforces tenant isolation.
     final contractNameAsync = ref.watch(contractNameProvider(item.contractId));
     final contractName = contractNameAsync.valueOrNull;
@@ -88,25 +94,63 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final unit = _unitForClause(evidence.clauseRef);
     final confidenceColor = _confidenceColor(evidence.confidenceScore);
 
-    return Opacity(
-      opacity: isLocked ? 0.6 : 1.0,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: VeraProbColors.surface,
-            border: Border(
-              left: BorderSide(
-                color: isLocked
-                    ? VeraProbColors.textDisabled
-                    : VeraProbColors.error,
-                width: 3,
-              ),
-              top: const BorderSide(color: VeraProbColors.border),
-              right: const BorderSide(color: VeraProbColors.border),
-              bottom: const BorderSide(color: VeraProbColors.border),
+    // WS-5: Determine left border color based on focus/lock state
+    final Color leftBorderColor;
+    final double leftBorderWidth;
+    if (isFocused) {
+      leftBorderColor = VeraProbColors.primary;
+      leftBorderWidth = 4;
+    } else if (isLocked) {
+      leftBorderColor = VeraProbColors.textDisabled;
+      leftBorderWidth = 3;
+    } else {
+      leftBorderColor = VeraProbColors.error;
+      leftBorderWidth = 3;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        // WS-5: Toggle map focus — unidirectional (List → Provider → Map)
+        final current = ref.read(selectedSanctionFocusProvider);
+        if (current?.sanctionId == item.id) {
+          ref.read(selectedSanctionFocusProvider.notifier).state = null;
+        } else {
+          ref.read(selectedSanctionFocusProvider.notifier).state =
+              SanctionMapFocus(
+            sanctionId: item.id,
+            infractionPoint: LatLng(
+              evidence.primaryEvidenceLat,
+              evidence.primaryEvidenceLng,
             ),
+            geofenceCenter: evidence.geofenceCenterLat != null
+                ? LatLng(
+                    evidence.geofenceCenterLat!,
+                    evidence.geofenceCenterLng!,
+                  )
+                : null,
+            geofenceRadiusMeters: evidence.geofenceRadiusMeters ?? 50.0,
+          );
+        }
+      },
+      child: Opacity(
+      opacity: isLocked ? 0.6 : 1.0,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: isFocused
+              ? VeraProbColors.primary.withValues(alpha: 0.05)
+              : VeraProbColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border(
+            left: BorderSide(
+              color: leftBorderColor,
+              width: leftBorderWidth,
+            ),
+            top: const BorderSide(color: VeraProbColors.border),
+            right: const BorderSide(color: VeraProbColors.border),
+            bottom: const BorderSide(color: VeraProbColors.border),
           ),
+        ),
           child: Stack(
             children: [
               Column(
@@ -204,32 +248,72 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
 
                   const SizedBox(height: 12),
 
-                  // Mini-map with geofence overlay (INV-23 — visual evidence snapshot)
+                  // WS-5: Mini-map removed — replaced by dedicated TelemetrySyncMap panel.
+                  // Coordinates badge for quick reference (replaces visual footprint).
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Semantics(
                       label:
                           'Local da infração: ${evidence.primaryEvidenceLat.toStringAsFixed(4)}, ${evidence.primaryEvidenceLng.toStringAsFixed(4)}',
-                      excludeSemantics: true,
-                      child: GeofenceEvidenceMap(
-                        infractionPoint: LatLng(
-                          evidence.primaryEvidenceLat,
-                          evidence.primaryEvidenceLng,
-                        ),
-                        geofenceCenter: evidence.geofenceCenterLat != null
-                            ? LatLng(
-                                evidence.geofenceCenterLat!,
-                                evidence.geofenceCenterLng!,
-                              )
-                            : null,
-                        geofenceRadiusMeters:
-                            evidence.geofenceRadiusMeters ?? 50.0,
-                        height: 120,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: isFocused
+                                ? VeraProbColors.primary
+                                : VeraProbColors.textDisabled,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${evidence.primaryEvidenceLat.toStringAsFixed(4)}, '
+                            '${evidence.primaryEvidenceLng.toStringAsFixed(4)}',
+                            style: VeraProbTypography.caption.copyWith(
+                              fontFamily: 'monospace',
+                              fontSize: 10,
+                              color: isFocused
+                                  ? VeraProbColors.primary
+                                  : VeraProbColors.textDisabled,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (isFocused)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: VeraProbColors.primary
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.map_outlined,
+                                    size: 10,
+                                    color: VeraProbColors.primary,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'NO MAPA',
+                                    style:
+                                        VeraProbTypography.badge.copyWith(
+                                      color: VeraProbColors.primary,
+                                      fontSize: 8,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Divider(color: VeraProbColors.border, height: 1),
 
                   // ── Zona 3.5: Ingestion Health (WS-3) ──────────────────────
