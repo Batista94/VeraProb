@@ -162,8 +162,8 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         .from('execution_states')
         .select()
         .eq('organization_id', organizationId)
-        .gte('window_start_utc', startUtc.toIso8601String())
-        .lt('window_start_utc', endUtc.toIso8601String());
+        .gte('window_start_utc', startUtc.toUtc().toIso8601String())
+        .lt('window_start_utc', endUtc.toUtc().toIso8601String());
 
     if (contractId != null) {
       query = query.eq('contract_id', contractId);

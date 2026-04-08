@@ -85,6 +85,7 @@ void main() {
   // Temporal state
   final testBaseTimeUtc = DateTime.utc(2026, 3, 3, 10, 0); // Morning
   final operationalDateUtc = DateTime.utc(2026, 3, 3); // Normalized to 00:00Z
+  final fakeClock = FakeDateTimeProvider(testBaseTimeUtc);
 
   String? sharedSetId;
   String? originalSnapshotLedgerEntryId;
@@ -125,7 +126,7 @@ void main() {
       vehicleRepository: const InMemoryActiveVehicleRepository(
         countsByOrg: {'00000000-0000-0000-0000-000000000001': 1},
       ),
-      clock: FakeDateTimeProvider(testBaseTimeUtc),
+      clock: fakeClock,
     );
 
     evaluationEngine = ContractualEvaluationEngine(
@@ -133,22 +134,23 @@ void main() {
       planRepo: planRepo,
       ledgerRepo: ledgerRepo,
       traceRepo: InMemoryEvaluationTraceRepository(),
+      clock: fakeClock,
     );
 
     snapshotGenerator = ContractualFinancialSnapshotGenerator(
       executionRepo: executionRepo,
       snapshotRepo: snapshotRepo,
       ledgerRepo: ledgerRepo,
-      clock: UtcDateTimeProvider(),
+      clock: fakeClock,
     );
 
     executionQueryService = SlaExecutionQueryServicePostgres(
       client,
-      UtcDateTimeProvider(),
+      fakeClock,
     );
     impactQueryService = ContractualFinancialImpactQueryServicePostgres(
       client,
-      UtcDateTimeProvider(),
+      fakeClock,
     );
   });
 
@@ -180,7 +182,7 @@ void main() {
         declaredByUserId: 'admin-e2e',
         planVersion: planVersion,
         originalFileHash:
-            'e2e-hash-${DateTime.now().toUtc().millisecondsSinceEpoch}',
+            'e2e-hash-${fakeClock.now().millisecondsSinceEpoch}',
         declaredAtUtc: testBaseTimeUtc.subtract(const Duration(days: 1)),
         services: [input],
       );
@@ -355,8 +357,10 @@ void main() {
       expect(foundExecutionBound, isTrue);
 
       // Verify Repo abstraction works too
-      final lastId = await ledgerRepo.getLastEntryId();
-      expect(lastId, entries.last['id']);
+      final lastId = await ledgerRepo.getLastEntryId(
+        organizationId: '00000000-0000-0000-0000-000000000001',
+      );
+      expect(lastId, entries.last['id'], reason: 'Last entry ID must match query');
       originalSnapshotLedgerEntryId = lastId;
     });
 
@@ -379,6 +383,7 @@ void main() {
 
       final snap = snapshots.first;
       originalSnapshotId = snap.id;
+      expect(originalSnapshotId, isNotNull, reason: 'Stage 4 must capture snapshot ID');
 
       expect(snap.operationalDateUtc, operationalDateUtc);
       expect(
