@@ -144,10 +144,7 @@ void main() {
       clock: fakeClock,
     );
 
-    executionQueryService = SlaExecutionQueryServicePostgres(
-      client,
-      fakeClock,
-    );
+    executionQueryService = SlaExecutionQueryServicePostgres(client, fakeClock);
     impactQueryService = ContractualFinancialImpactQueryServicePostgres(
       client,
       fakeClock,
@@ -181,8 +178,7 @@ void main() {
         contractId: contractId,
         declaredByUserId: 'admin-e2e',
         planVersion: planVersion,
-        originalFileHash:
-            'e2e-hash-${fakeClock.now().millisecondsSinceEpoch}',
+        originalFileHash: 'e2e-hash-${fakeClock.now().millisecondsSinceEpoch}',
         declaredAtUtc: testBaseTimeUtc.subtract(const Duration(days: 1)),
         services: [input],
       );
@@ -360,7 +356,11 @@ void main() {
       final lastId = await ledgerRepo.getLastEntryId(
         organizationId: '00000000-0000-0000-0000-000000000001',
       );
-      expect(lastId, entries.last['id'], reason: 'Last entry ID must match query');
+      expect(
+        lastId,
+        entries.last['id'],
+        reason: 'Last entry ID must match query',
+      );
       originalSnapshotLedgerEntryId = lastId;
     });
 
@@ -383,7 +383,11 @@ void main() {
 
       final snap = snapshots.first;
       originalSnapshotId = snap.id;
-      expect(originalSnapshotId, isNotNull, reason: 'Stage 4 must capture snapshot ID');
+      expect(
+        originalSnapshotId,
+        isNotNull,
+        reason: 'Stage 4 must capture snapshot ID',
+      );
 
       expect(snap.operationalDateUtc, operationalDateUtc);
       expect(
