@@ -114,6 +114,47 @@ void main() {
       );
     });
 
+    group('append — forensic integrity', () {
+      test('null setId is valid for plan-level events', () async {
+        final entry = SlaLedgerEntry(
+          organizationId: 'org-1',
+          contractId: 'contract-1',
+          type: 'PLAN_DECLARED',
+          setId: null,
+          planVersion: 1,
+          occurredAtUtc: DateTime.utc(2026, 1, 1),
+        );
+        final eventId = await repo.append(entry);
+        expect(eventId, isNotEmpty);
+      });
+
+      test('same setId with different timestamps is accepted', () async {
+        final entry1 = makeEntry(
+          setId: 'trip-1',
+          occurredAtUtc: DateTime.utc(2026, 1, 1, 10, 0, 0),
+        );
+        final entry2 = makeEntry(
+          setId: 'trip-1',
+          occurredAtUtc: DateTime.utc(2026, 1, 1, 12, 0, 0),
+        );
+
+        final id1 = await repo.append(entry1);
+        final id2 = await repo.append(entry2);
+
+        expect(id1, isNotEmpty);
+        expect(id2, isNotEmpty);
+        expect(id1, isNot(equals(id2)));
+      });
+
+      test('entries list is unmodifiable externally', () async {
+        await repo.append(makeEntry());
+        final entries = repo.entries;
+
+        expect(entries, isA<List<SlaLedgerEntry>>());
+        expect(() => entries.add(makeEntry()), throwsUnsupportedError);
+      });
+    });
+
     group('getEntriesBySetId', () {
       test('returns empty list for unknown setId', () async {
         final results = await repo.getEntriesBySetId(
