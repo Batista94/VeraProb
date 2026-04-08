@@ -8,6 +8,7 @@ import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'declare_contractual_plan_command.dart';
 import 'shift_projection_service.dart';
 import 'sla_ledger_mapper.dart';
@@ -48,6 +49,8 @@ class DeclareContractualPlanHandler {
   /// Null = projection disabled (backwards compatible — used in tests without projection).
   final ShiftProjectionService? _projectionService;
 
+  final IDateTimeProvider _clock;
+
   DeclareContractualPlanHandler({
     required PlanDeclarationRepository repository,
     required SlaAuditLedgerRepository ledger,
@@ -55,6 +58,7 @@ class DeclareContractualPlanHandler {
     required ContractRepository contractRepository,
     required OperationalZoneRepository zoneRepository,
     required IActiveVehicleRepository vehicleRepository,
+    required IDateTimeProvider clock,
     ShiftProjectionService? projectionService,
   }) : _repository = repository,
        _ledger = ledger,
@@ -62,6 +66,7 @@ class DeclareContractualPlanHandler {
        _contractRepository = contractRepository,
        _zoneRepository = zoneRepository,
        _vehicleRepository = vehicleRepository,
+       _clock = clock,
        _projectionService = projectionService;
 
   /// Handles the command by creating the aggregate, persisting it,
@@ -131,6 +136,7 @@ class DeclareContractualPlanHandler {
       command.contractId,
     );
 
+    final nowUtc = _clock.now();
     PlanDeclaration plan;
 
     if (isShiftBased) {
@@ -144,6 +150,7 @@ class DeclareContractualPlanHandler {
         originalFileHash: command.originalFileHash,
         ruleSnapshot: ruleSnapshot,
         shiftPatterns: command.shiftPatterns,
+        nowUtc: nowUtc,
       );
     } else {
       // ── Manual mode (baseline) ───────────────────────────
@@ -175,6 +182,7 @@ class DeclareContractualPlanHandler {
         originalFileHash: command.originalFileHash,
         ruleSnapshot: ruleSnapshot,
         services: services,
+        nowUtc: nowUtc,
       );
     }
 
@@ -203,7 +211,7 @@ class DeclareContractualPlanHandler {
 
     // 5. If contract is still draft, activate it (first plan — draft→active)
     if (contract.isDraft) {
-      final activated = contract.activate();
+      final activated = contract.activate(nowUtc: nowUtc);
       await _contractRepository.save(activated);
       for (final event in activated.domainEvents) {
         final entry = SlaLedgerMapper.mapToEntry(event);

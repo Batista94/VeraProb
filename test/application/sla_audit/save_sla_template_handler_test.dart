@@ -4,14 +4,17 @@ import 'package:veraprob/application/sla_audit/projections/penalties_form_data.d
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_template_repository.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 void main() {
   late InMemorySlaTemplateRepository repository;
   late SaveSlaTemplateHandler handler;
+  late FakeDateTimeProvider clock;
 
   setUp(() {
     repository = InMemorySlaTemplateRepository();
-    handler = SaveSlaTemplateHandler(repository: repository);
+    clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0));
+    handler = SaveSlaTemplateHandler(repository: repository, clock: clock);
   });
 
   PenaltiesFormData makePenalties() => PenaltiesFormData(

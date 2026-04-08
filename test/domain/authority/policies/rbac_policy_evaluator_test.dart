@@ -25,6 +25,8 @@ void main() {
     );
   }
 
+  final testNowUtc = DateTime.utc(2026, 4, 8, 12, 0, 0);
+
   TargetRef makeTargetRef({
     String entityType = 'trip',
     String entityId = 'trip-uuid:org-001',
@@ -42,6 +44,7 @@ void main() {
         actionType: OperationalActionType.adminOnly,
         context: makeContext(roleId: 'operator'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.denied);
@@ -55,6 +58,7 @@ void main() {
         actionType: OperationalActionType.adminOnly,
         context: makeContext(roleId: 'auditor'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.denied);
@@ -67,6 +71,7 @@ void main() {
         actionType: OperationalActionType.adminOnly,
         context: makeContext(roleId: 'contractor_viewer'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.denied);
@@ -79,6 +84,7 @@ void main() {
         actionType: OperationalActionType.adminOnly,
         context: makeContext(roleId: 'admin'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -91,6 +97,7 @@ void main() {
         actionType: OperationalActionType.adminOnly,
         context: makeContext(roleId: 'super_admin'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -105,6 +112,7 @@ void main() {
         actionType: OperationalActionType.approveTrip,
         context: makeContext(roleId: 'operator', organizationId: 'org-001'),
         targetRef: makeTargetRef(entityId: 'trip-001:org-001'),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -117,6 +125,7 @@ void main() {
         actionType: OperationalActionType.approveTrip,
         context: makeContext(roleId: 'admin', organizationId: 'org-001'),
         targetRef: makeTargetRef(entityId: 'trip-001:org-001'),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -129,6 +138,7 @@ void main() {
         actionType: OperationalActionType.rejectTrip,
         context: makeContext(roleId: 'operator', organizationId: 'org-001'),
         targetRef: makeTargetRef(entityId: 'trip-001:org-001'),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -141,6 +151,7 @@ void main() {
         actionType: OperationalActionType.approveTrip,
         context: makeContext(roleId: 'operator', organizationId: 'org-001'),
         targetRef: makeTargetRef(entityId: 'trip-001:org-002'),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.denied);
@@ -154,6 +165,7 @@ void main() {
         actionType: OperationalActionType.approveTrip,
         context: makeContext(roleId: 'auditor', organizationId: 'org-001'),
         targetRef: makeTargetRef(entityId: 'trip-001:org-001'),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.denied);
@@ -169,6 +181,7 @@ void main() {
           organizationId: 'org-001',
         ),
         targetRef: makeTargetRef(entityId: 'trip-001:org-001'),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.denied);
@@ -181,6 +194,7 @@ void main() {
         actionType: OperationalActionType.approveTrip,
         context: makeContext(roleId: 'operator', organizationId: 'org-001'),
         targetRef: makeTargetRef(entityId: 'trip-001'), // No org suffix
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.denied);
@@ -195,6 +209,7 @@ void main() {
         actionType: OperationalActionType.approveTrip,
         context: makeContext(roleId: 'super_admin', organizationId: null),
         targetRef: makeTargetRef(entityId: 'trip-001:org-999'),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -207,6 +222,7 @@ void main() {
         actionType: OperationalActionType.rejectTrip,
         context: makeContext(roleId: 'super_admin', organizationId: null),
         targetRef: makeTargetRef(entityId: 'trip-001:org-999'),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -219,6 +235,7 @@ void main() {
         actionType: OperationalActionType.adminOnly,
         context: makeContext(roleId: 'super_admin', organizationId: null),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -240,6 +257,7 @@ void main() {
           actionType: action,
           context: makeContext(roleId: 'super_admin', organizationId: null),
           targetRef: makeTargetRef(),
+          nowUtc: testNowUtc,
         );
 
         expect(
@@ -257,6 +275,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: '', organizationId: 'org-001'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.denied);
@@ -269,6 +288,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'operator', organizationId: null),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.denied);
@@ -281,6 +301,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'operator', organizationId: ''),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.denied);
@@ -293,6 +314,7 @@ void main() {
         actionType: OperationalActionType.adminOnly,
         context: makeContext(roleId: 'unknown_role', organizationId: 'org-001'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       // Unknown role maps to contractorViewer which cannot do admin_only
@@ -305,6 +327,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'unknown_role', organizationId: 'org-001'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       // Unknown role maps to contractorViewer which can do standard actions
@@ -317,6 +340,7 @@ void main() {
         actionType: OperationalActionType.approveTrip,
         context: makeContext(roleId: 'unknown_role', organizationId: 'org-001'),
         targetRef: makeTargetRef(entityId: 'trip-001:org-001'),
+        nowUtc: testNowUtc,
       );
 
       // Unknown role maps to contractorViewer which cannot approve trips
@@ -331,6 +355,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.decisionId, isNotEmpty);
@@ -342,6 +367,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: context,
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.actorId, context.actorId);
@@ -354,6 +380,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: context,
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.roleId, context.roleId);
@@ -369,6 +396,7 @@ void main() {
         actionType: OperationalActionType.reassignVehicle,
         context: makeContext(),
         targetRef: targetRef,
+        nowUtc: testNowUtc,
       );
 
       expect(decision.targetRef, targetRef);
@@ -379,6 +407,7 @@ void main() {
         actionType: OperationalActionType.overrideRouteDeviation,
         context: makeContext(),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.actionType, OperationalActionType.overrideRouteDeviation);
@@ -389,6 +418,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.policyVersion, 'rbac_v1.0.0');
@@ -399,6 +429,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.occurredAt.isUtc, isTrue);
@@ -414,6 +445,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: context,
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.contextSnapshot, context.toJson());
@@ -427,6 +459,7 @@ void main() {
         actionType: OperationalActionType.adminOnly,
         context: makeContext(roleId: 'operator'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.reason, isNotNull);
@@ -438,6 +471,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'admin'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.reason, isNull);
@@ -448,6 +482,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'admin'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.isApproved, isTrue);
@@ -458,6 +493,7 @@ void main() {
         actionType: OperationalActionType.adminOnly,
         context: makeContext(roleId: 'operator'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.isApproved, isFalse);
@@ -470,6 +506,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'operator'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -481,6 +518,7 @@ void main() {
         actionType: OperationalActionType.acknowledgeAlert,
         context: makeContext(roleId: 'operator'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -492,6 +530,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'auditor'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);
@@ -503,6 +542,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'contractor_viewer'),
         targetRef: makeTargetRef(),
+        nowUtc: testNowUtc,
       );
 
       expect(decision.result, DecisionResult.approved);

@@ -1,3 +1,4 @@
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -19,14 +20,17 @@ class ApproveSanctionHandler {
   final SanctionReviewQueueRepository _queueRepo;
   final SlaAuditLedgerRepository _ledger;
   final RbacService _rbac;
+  final IDateTimeProvider _dateTimeProvider;
 
   ApproveSanctionHandler({
     required SanctionReviewQueueRepository queueRepo,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
+    IDateTimeProvider? dateTimeProvider,
   }) : _queueRepo = queueRepo,
        _ledger = ledger,
-       _rbac = rbac;
+       _rbac = rbac,
+       _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   /// Handles the command by transitioning the queue entry to [applied]
   /// and appending a `VERDICT_SEALED` entry to the immutable ledger.
@@ -59,7 +63,7 @@ class ApproveSanctionHandler {
       );
     }
 
-    final now = DateTime.now().toUtc();
+    final now = _dateTimeProvider.now();
 
     // 4. Build domain event carrying VerdictEvidence forward
     final event = SanctionAppliedEvent(

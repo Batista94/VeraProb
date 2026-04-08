@@ -11,7 +11,7 @@ import 'situation_detector.dart';
 /// - Delay > 10 min: Critical Delay (Score: 40)
 /// - Delay > 3 min: Risk of Delay (Score: 20)
 class DelayDetector extends SituationDetector {
-  const DelayDetector()
+  DelayDetector(super.dateTimeProvider)
     : super(id: 'delay_detector', name: 'Detector de Atraso');
 
   @override
@@ -34,7 +34,7 @@ class DelayDetector extends SituationDetector {
         type: 'delay_critical',
         message: 'Atraso Crítico: $delayMinutes min',
         severityScore: 40,
-        detectedAt: DateTime.now().toUtc(),
+        detectedAt: dateTimeProvider.now(),
         metadata: {'delay_minutes': delayMinutes},
       );
     }
@@ -45,7 +45,7 @@ class DelayDetector extends SituationDetector {
         type: 'delay_risk',
         message: 'Risco de Atraso: $delayMinutes min',
         severityScore: 20,
-        detectedAt: DateTime.now().toUtc(),
+        detectedAt: dateTimeProvider.now(),
         metadata: {'delay_minutes': delayMinutes},
       );
     }

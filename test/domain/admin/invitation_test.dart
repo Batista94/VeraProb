@@ -23,21 +23,21 @@ void main() {
   }
 
   group('Invitation', () {
-    group('isExpired', () {
+    group('isExpiredAt', () {
+      final now = DateTime.utc(2026, 4, 8, 12, 0, 0);
+
       test('returns false when expiry is in the future', () {
         final inv = makeInvitation(
-          expiresAtUtc: DateTime.now().toUtc().add(const Duration(days: 1)),
+          expiresAtUtc: now.add(const Duration(days: 1)),
         );
-        expect(inv.isExpired, isFalse);
+        expect(inv.isExpiredAt(now), isFalse);
       });
 
       test('returns true when expiry is in the past', () {
         final inv = makeInvitation(
-          expiresAtUtc: DateTime.now().toUtc().subtract(
-            const Duration(days: 1),
-          ),
+          expiresAtUtc: now.subtract(const Duration(days: 1)),
         );
-        expect(inv.isExpired, isTrue);
+        expect(inv.isExpiredAt(now), isTrue);
       });
     });
 
@@ -63,28 +63,28 @@ void main() {
       });
     });
 
-    group('isActive', () {
+    group('isActiveAt', () {
+      final now = DateTime.utc(2026, 4, 8, 12, 0, 0);
+
       test('returns true when not expired, not accepted, not revoked', () {
-        expect(makeInvitation().isActive, isTrue);
+        expect(makeInvitation().isActiveAt(now), isTrue);
       });
 
       test('returns false when expired', () {
         final inv = makeInvitation(
-          expiresAtUtc: DateTime.now().toUtc().subtract(
-            const Duration(hours: 1),
-          ),
+          expiresAtUtc: now.subtract(const Duration(hours: 1)),
         );
-        expect(inv.isActive, isFalse);
+        expect(inv.isActiveAt(now), isFalse);
       });
 
       test('returns false when accepted', () {
         final inv = makeInvitation(acceptedAtUtc: DateTime.utc(2026, 3, 1));
-        expect(inv.isActive, isFalse);
+        expect(inv.isActiveAt(now), isFalse);
       });
 
       test('returns false when revoked', () {
         final inv = makeInvitation(revokedAtUtc: DateTime.utc(2026, 3, 1));
-        expect(inv.isActive, isFalse);
+        expect(inv.isActiveAt(now), isFalse);
       });
     });
 

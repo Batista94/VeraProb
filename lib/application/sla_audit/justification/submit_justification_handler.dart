@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -33,16 +34,19 @@ class SubmitJustificationHandler {
   final SlaAuditLedgerRepository _ledger;
   final LocalFactQueueRepository _factQueue;
   final RbacService _rbac;
+  final IDateTimeProvider _clock;
 
   SubmitJustificationHandler({
     required JustificationRepository justificationRepo,
     required SlaAuditLedgerRepository ledger,
     required LocalFactQueueRepository factQueue,
     required RbacService rbac,
+    required IDateTimeProvider clock,
   }) : _justificationRepo = justificationRepo,
        _ledger = ledger,
        _factQueue = factQueue,
-       _rbac = rbac;
+       _rbac = rbac,
+       _clock = clock;
 
   Future<ContractorJustification> handle(
     SubmitJustificationCommand command,
@@ -74,7 +78,7 @@ class SubmitJustificationHandler {
       );
     }
 
-    final now = DateTime.now().toUtc();
+    final now = _clock.now();
     final id = const Uuid().v4();
     final actorUserId = command.callerUserId ?? 'TOKEN';
 

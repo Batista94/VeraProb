@@ -2,6 +2,7 @@ import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'clone_contract_command.dart';
 import 'sla_ledger_mapper.dart';
 
@@ -20,12 +21,15 @@ import 'sla_ledger_mapper.dart';
 class CloneContractHandler {
   final ContractRepository _contractRepository;
   final SlaAuditLedgerRepository _ledger;
+  final IDateTimeProvider _clock;
 
   CloneContractHandler({
     required ContractRepository contractRepository,
     required SlaAuditLedgerRepository ledger,
+    required IDateTimeProvider clock,
   }) : _contractRepository = contractRepository,
-       _ledger = ledger;
+       _ledger = ledger,
+       _clock = clock;
 
   /// Returns the newly created [Contract] draft.
   ///
@@ -56,6 +60,7 @@ class CloneContractHandler {
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
       clonedFromContractId: command.sourceContractId,
+      nowUtc: _clock.now(),
     );
 
     // 3. Persist

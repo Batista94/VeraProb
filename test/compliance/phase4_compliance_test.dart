@@ -23,6 +23,7 @@ void main() {
   const geoLat = -23.5505;
   const geoLng = -46.6333;
   const geoRadius = 100;
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
 
   late InMemoryContractualExecutionStateRepository repo;
   late InMemoryPlanDeclarationRepository planRepo;
@@ -88,6 +89,7 @@ void main() {
           ),
         ],
         ruleSnapshot: const RuleSnapshot([]),
+        nowUtc: nowUtc,
       ),
     );
   }

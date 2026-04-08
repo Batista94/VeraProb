@@ -8,6 +8,9 @@ import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'package:veraprob/domain/authority/policies/authority_policy_evaluator.dart';
 import 'package:veraprob/domain/authority/repositories/forensic_decision_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+
+class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 // REQUISITO (Auditável): Mocks estritamente via Mocktail
 class MockPolicyEvaluator extends Mock implements AuthorityPolicyEvaluator {}
@@ -38,11 +41,16 @@ void main() {
     late MockPolicyEvaluator evaluator;
     late MockForensicRepository repository;
     late MockControlService controlService;
+    late MockDateTimeProvider mockDateTime;
 
     setUp(() {
       evaluator = MockPolicyEvaluator();
       repository = MockForensicRepository();
       controlService = MockControlService();
+      mockDateTime = MockDateTimeProvider();
+
+      final testTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
+      when(() => mockDateTime.now()).thenReturn(testTime.toUtc());
 
       // Default: Registrar decisão forense sempre funciona
       when(() => repository.saveDecision(any())).thenAnswer((_) async {});
@@ -57,7 +65,7 @@ void main() {
           actorId: const ActorId('driver-007'),
           roleId: const RoleId('driver'),
           tenantId: 'Org-A',
-          capturedAt: DateTime.now().toUtc(),
+          capturedAt: mockDateTime.now().toUtc(),
         );
 
         // Stub: Usando matchers genéricos com nomes explícitos conforme exigido pelo Mocktail para parâmetros obrigatórios nomeados
@@ -66,6 +74,7 @@ void main() {
             actionType: any(named: 'actionType'),
             context: any(named: 'context'),
             targetRef: any(named: 'targetRef'),
+            nowUtc: any(named: 'nowUtc'),
           ),
         ).thenAnswer(
           (_) async => AuthorizationDecision(
@@ -77,7 +86,7 @@ void main() {
             policyVersion: 'v1',
             result: DecisionResult.denied,
             reason: 'Policy Veto: Drivers cannot update contracts',
-            occurredAt: DateTime.now().toUtc(),
+            occurredAt: driverContext.capturedAt,
             contextSnapshot: driverContext.toJson(),
           ),
         );
@@ -87,6 +96,7 @@ void main() {
           repository,
           () => driverContext,
           controlService,
+          mockDateTime,
         );
 
         const command = UpdateContractCommand(
@@ -124,7 +134,7 @@ void main() {
           actorId: const ActorId('admin-org-b'),
           roleId: const RoleId('admin'),
           tenantId: 'Organization-B',
-          capturedAt: DateTime.now().toUtc(),
+          capturedAt: mockDateTime.now().toUtc(),
         );
 
         final bus = AuthorizingCommandBus(
@@ -132,6 +142,7 @@ void main() {
           repository,
           () => orgBContext,
           controlService,
+          mockDateTime,
         );
 
         // Ataque: Tentar mudar o contrato da Org-A
@@ -159,6 +170,7 @@ void main() {
             actionType: any(named: 'actionType'),
             context: any(named: 'context'),
             targetRef: any(named: 'targetRef'),
+            nowUtc: any(named: 'nowUtc'),
           ),
         );
 
@@ -189,6 +201,7 @@ void main() {
             capturedAt: null as dynamic, // Provoca TypeError (não-nulo)
           ),
           controlService,
+          mockDateTime,
         );
 
         const command = UpdateContractCommand(
@@ -216,7 +229,7 @@ void main() {
           actorId: const ActorId('admin-a'),
           roleId: const RoleId('admin'),
           tenantId: 'Org-A',
-          capturedAt: DateTime.now().toUtc(),
+          capturedAt: mockDateTime.now().toUtc(),
         );
 
         when(
@@ -224,6 +237,7 @@ void main() {
             actionType: any(named: 'actionType'),
             context: any(named: 'context'),
             targetRef: any(named: 'targetRef'),
+            nowUtc: any(named: 'nowUtc'),
           ),
         ).thenAnswer(
           (_) async => AuthorizationDecision(
@@ -234,7 +248,7 @@ void main() {
             targetRef: const TargetRef('contract', 'c-1'),
             policyVersion: 'v1',
             result: DecisionResult.approved,
-            occurredAt: DateTime.now().toUtc(),
+            occurredAt: adminContext.capturedAt,
             contextSnapshot: adminContext.toJson(),
           ),
         );
@@ -248,6 +262,7 @@ void main() {
           repository,
           () => adminContext,
           controlService,
+          mockDateTime,
         );
 
         const command = UpdateContractCommand(

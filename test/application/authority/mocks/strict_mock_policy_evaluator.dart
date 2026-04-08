@@ -20,6 +20,7 @@ class StrictMockPolicyEvaluator implements AuthorityPolicyEvaluator {
     required OperationalActionType actionType,
     required AuthorizationContext context,
     required TargetRef targetRef,
+    required DateTime nowUtc,
   }) async {
     evaluationCount++;
 
@@ -37,7 +38,7 @@ class StrictMockPolicyEvaluator implements AuthorityPolicyEvaluator {
       policyVersion: 'test_mock_v1',
       result: result,
       reason: reason,
-      occurredAt: DateTime.now().toUtc(),
+      occurredAt: nowUtc,
       contextSnapshot: context.toJson(),
     );
   }

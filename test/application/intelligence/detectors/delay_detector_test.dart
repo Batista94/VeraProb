@@ -1,14 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/detectors/delay_detector.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
+
+class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 void main() {
   group('DelayDetector Rules', () {
     late DelayDetector detector;
+    late MockDateTimeProvider mockDateTime;
 
     setUp(() {
-      detector = const DelayDetector();
+      mockDateTime = MockDateTimeProvider();
+      when(() => mockDateTime.now()).thenReturn(DateTime.now().toUtc());
+      detector = DelayDetector(mockDateTime);
     });
 
     test('canDetect is true for active or scheduled trips', () {

@@ -12,6 +12,7 @@ import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 
 // ── Audit service (factory) ───────────────────────────────────────────────────
 
@@ -20,10 +21,10 @@ final auditServiceProvider = Provider<AuditService>((ref) {
 
   switch (mode) {
     case PersistenceMode.inMemory:
-      return InMemoryAuditService();
+      return InMemoryAuditService(ref.watch(dateTimeProviderProvider));
     case PersistenceMode.postgres:
       final client = ref.watch(supabaseClientProvider);
-      return PostgresAuditService(client);
+      return PostgresAuditService(client, ref.watch(dateTimeProviderProvider));
   }
 });
 

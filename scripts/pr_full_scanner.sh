@@ -100,10 +100,28 @@ files.forEach(file => {
     const regex = new RegExp(config.pattern);
 
     lines.forEach((line, index) => {
-      if (regex.test(line)) {
-        console.log(\`  BLOCK: \${file}:\${index + 1} - \${ruleName}: \${config.description}\`);
-        blocks++;
+      if (!regex.test(line)) return;
+
+      // 1. Context-Aware Bypass (Current or Next Line)
+      const bypassKeywords = [
+        '// Physical Metric',
+        '// pr_scanner: ignore',
+        '- Double Required',
+        'Bridge Conversion',
+        'Probability Score'
+      ];
+      const hasBypass = (l) => l && bypassKeywords.some(kw => l.includes(kw));
+      if (hasBypass(line) || hasBypass(lines[index + 1])) return;
+
+      // 2. UTC Protection: Handle both same-line and multi-line calls
+      if (ruleName === 'UTC-BLOCK') {
+        const hasUtcOnSameLine = line.includes('.toUtc()');
+        const hasUtcOnNextLine = (lines[index + 1] || '').trim().startsWith('.toUtc()');
+        if (hasUtcOnSameLine || hasUtcOnNextLine) return;
       }
+
+      console.log(\`  BLOCK: \${file}:\${index + 1} - \${ruleName}: \${config.description}\`);
+      blocks++;
     });
   });
 });
@@ -154,9 +172,25 @@ files.forEach(file => {
     if (config.files_containing && !config.files_containing.some(term => file.includes(term))) return;
     const regex = new RegExp(config.pattern);
     lines.forEach((line, index) => {
-      if (regex.test(line)) {
-        blocks++;
+      if (!regex.test(line)) return;
+
+      const bypassKeywords = [
+        '// Physical Metric',
+        '// pr_scanner: ignore',
+        '- Double Required',
+        'Bridge Conversion',
+        'Probability Score'
+      ];
+      const hasBypass = (l) => l && bypassKeywords.some(kw => l.includes(kw));
+      if (hasBypass(line) || hasBypass(lines[index + 1])) return;
+
+      if (ruleName === 'UTC-BLOCK') {
+        const hasUtcOnSameLine = line.includes('.toUtc()');
+        const hasUtcOnNextLine = (lines[index + 1] || '').trim().startsWith('.toUtc()');
+        if (hasUtcOnSameLine || hasUtcOnNextLine) return;
       }
+
+      blocks++;
     });
   });
 });

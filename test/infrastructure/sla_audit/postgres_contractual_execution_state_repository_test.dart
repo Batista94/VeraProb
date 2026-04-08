@@ -1,6 +1,7 @@
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -21,7 +22,10 @@ void main() async {
         if (isRunning) {
           client = await PostgresTestConfig.createClient();
           await PostgresTestConfig.ensureSentinelOrg(client: client);
-          repository = PostgresContractualExecutionStateRepository(client);
+          repository = PostgresContractualExecutionStateRepository(
+            client,
+            UtcDateTimeProvider(),
+          );
         }
       });
 
@@ -54,7 +58,7 @@ void main() async {
         );
 
         // Mutates to executed state to test bindings
-        final executionTime = DateTime.now().toUtc();
+        final executionTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
         state.bindExecution(
           vehicleId: 'veh-01',
           latitude: -23.5506,

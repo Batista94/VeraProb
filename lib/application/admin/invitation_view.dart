@@ -30,7 +30,7 @@ class InvitationView {
     this.isAccepted = false,
   });
 
-  factory InvitationView.fromDomain(Invitation invitation) {
+  factory InvitationView.fromDomain(Invitation invitation, DateTime nowUtc) {
     return InvitationView(
       id: invitation.id,
       organizationId: invitation.organizationId,
@@ -40,8 +40,8 @@ class InvitationView {
       invitedBy: invitation.invitedBy,
       createdAtUtc: invitation.createdAtUtc,
       expiresAtUtc: invitation.expiresAtUtc,
-      isActive: invitation.isActive,
-      isExpired: invitation.isExpired,
+      isActive: invitation.isActiveAt(nowUtc),
+      isExpired: invitation.isExpiredAt(nowUtc),
       isAccepted: invitation.isAccepted,
     );
   }

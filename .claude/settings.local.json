@@ -63,7 +63,9 @@
       "Bash(echo \"EXIT: $?\")",
       "Bash(flutter --version)",
       "Bash(flutter pub:*)",
-      "Bash(echo \"exit:$?\")"
+      "Bash(echo \"exit:$?\")",
+      "Bash(wc -l \"C:\\\\Projects\\\\VeraProb/test/domain/sla_audit\"/*.dart)",
+      "Bash(xargs -0 grep -P \"DateTime\\\\.now\\\\\\(\\\\\\)\\(?!\\\\.toUtc\\)\")"
     ]
   },
   "model": "sonnet"

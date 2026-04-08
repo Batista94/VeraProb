@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -8,7 +9,6 @@ import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
-import 'package:veraprob/core/time/brazil_time.dart';
 import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -30,6 +30,7 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repository.dart';
+import '../mocks/fake_date_time_provider.dart';
 
 // ── Database Integrity Helpers ───────────────────────────
 
@@ -102,11 +103,13 @@ void main() {
 
     // Initialize the real client
     client = SupabaseClient(supabaseUrl, supabaseKey);
-    BrazilTime.ensureInitialized();
 
     // Instantiate Data Access Layer
     planRepo = PostgresPlanDeclarationRepository(client);
-    executionRepo = PostgresContractualExecutionStateRepository(client);
+    executionRepo = PostgresContractualExecutionStateRepository(
+      client,
+      UtcDateTimeProvider(),
+    );
     ledgerRepo = PostgresSlaAuditLedgerRepository(client);
     snapshotRepo = PostgresContractualFinancialSnapshotRepository(
       client: client,
@@ -122,6 +125,7 @@ void main() {
       vehicleRepository: const InMemoryActiveVehicleRepository(
         countsByOrg: {'00000000-0000-0000-0000-000000000001': 1},
       ),
+      clock: FakeDateTimeProvider(testBaseTimeUtc),
     );
 
     evaluationEngine = ContractualEvaluationEngine(
@@ -135,10 +139,17 @@ void main() {
       executionRepo: executionRepo,
       snapshotRepo: snapshotRepo,
       ledgerRepo: ledgerRepo,
+      clock: UtcDateTimeProvider(),
     );
 
-    executionQueryService = SlaExecutionQueryServicePostgres(client);
-    impactQueryService = ContractualFinancialImpactQueryServicePostgres(client);
+    executionQueryService = SlaExecutionQueryServicePostgres(
+      client,
+      UtcDateTimeProvider(),
+    );
+    impactQueryService = ContractualFinancialImpactQueryServicePostgres(
+      client,
+      UtcDateTimeProvider(),
+    );
   });
 
   tearDownAll(() async {

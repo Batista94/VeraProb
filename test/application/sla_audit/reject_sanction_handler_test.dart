@@ -9,11 +9,13 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sanction_review_queue_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 void main() {
   late InMemorySanctionReviewQueueRepository queueRepo;
   late InMemorySlaAuditLedgerRepository ledger;
   late RejectSanctionHandler handler;
+  late FakeDateTimeProvider clock;
 
   final evidence = VerdictEvidence.create(
     clauseRef: 'no-show-rule-1',
@@ -44,10 +46,12 @@ void main() {
   setUp(() {
     queueRepo = InMemorySanctionReviewQueueRepository();
     ledger = InMemorySlaAuditLedgerRepository();
+    clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0));
     handler = RejectSanctionHandler(
       queueRepo: queueRepo,
       ledger: ledger,
       rbac: RbacService(),
+      clock: clock,
     );
   });
 

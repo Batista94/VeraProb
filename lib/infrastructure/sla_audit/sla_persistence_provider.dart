@@ -10,6 +10,8 @@ import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_repository.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 import 'in_memory_contract_repository.dart';
 import 'in_memory_contractual_execution_state_repository.dart';
 import 'in_memory_contractual_financial_snapshot_repository.dart';
@@ -47,8 +49,10 @@ final contractualExecutionStateRepositoryProvider =
       return switch (ref.watch(persistenceModeProvider)) {
         PersistenceMode.inMemory =>
           InMemoryContractualExecutionStateRepository(),
-        PersistenceMode.postgres =>
-          PostgresContractualExecutionStateRepository(),
+        PersistenceMode.postgres => PostgresContractualExecutionStateRepository(
+          ref.watch(supabaseClientProvider),
+          ref.watch(dateTimeProviderProvider),
+        ),
       };
     });
 

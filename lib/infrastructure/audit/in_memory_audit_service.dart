@@ -2,6 +2,7 @@ import 'package:veraprob/application/audit/audit_service.dart';
 import 'package:veraprob/core/services/logger_service.dart';
 import 'package:veraprob/domain/entities/audit_log.dart';
 import 'package:uuid/uuid.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// In-memory implementation of the AuditService for Sprint 6.
 /// This logs accurately to the ephemeral store and the Debug console,
@@ -9,6 +10,9 @@ import 'package:uuid/uuid.dart';
 class InMemoryAuditService implements AuditService {
   final List<AuditLog> _logs = [];
   final LoggerService _logger = LoggerService();
+  final IDateTimeProvider _dateTimeProvider;
+
+  InMemoryAuditService(this._dateTimeProvider);
 
   @override
   Future<void> logAction({
@@ -29,7 +33,7 @@ class InMemoryAuditService implements AuditService {
       oldValue: oldValue,
       newValue: newValue,
       reason: reason,
-      timestamp: DateTime.now().toUtc(), // INV-9: UTC Mandatory
+      timestamp: _dateTimeProvider.now(), // INV-9: UTC Mandatory
     );
 
     _logs.add(log);

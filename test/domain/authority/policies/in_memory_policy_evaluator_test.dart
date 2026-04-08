@@ -14,6 +14,8 @@ void main() {
     );
   }
 
+  final fixedTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
+
   setUp(() {
     evaluator = InMemoryPolicyEvaluator();
   });
@@ -24,6 +26,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'supervisor'),
         targetRef: const TargetRef('trip', 'trip-1'),
+        nowUtc: fixedTime,
       );
 
       expect(decision.isApproved, isTrue);
@@ -35,6 +38,7 @@ void main() {
         actionType: OperationalActionType.resolveAlert,
         context: makeContext(roleId: 'level1_operator'),
         targetRef: const TargetRef('trip', 'trip-1'),
+        nowUtc: fixedTime,
       );
 
       expect(decision.isApproved, isFalse);
@@ -47,6 +51,7 @@ void main() {
         actionType: OperationalActionType.acknowledgeAlert,
         context: makeContext(roleId: 'level1_operator'),
         targetRef: const TargetRef('trip', 'trip-1'),
+        nowUtc: fixedTime,
       );
 
       expect(decision.isApproved, isTrue);
@@ -58,6 +63,7 @@ void main() {
         actionType: OperationalActionType.acknowledgeAlert,
         context: context,
         targetRef: const TargetRef('trip', 'trip-2'),
+        nowUtc: fixedTime,
       );
 
       expect(decision.actorId, context.actorId);

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
@@ -13,12 +14,15 @@ import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 class SanctionSimulationService {
   final SlaAuditLedgerRepository _ledger;
   final ContractRepository _contracts;
+  final IDateTimeProvider _clock;
 
   SanctionSimulationService({
     required SlaAuditLedgerRepository ledger,
     required ContractRepository contracts,
+    required IDateTimeProvider clock,
   }) : _ledger = ledger,
-       _contracts = contracts;
+       _contracts = contracts,
+       _clock = clock;
 
   Future<void> simulateSpeedViolation({
     required String organizationId,
@@ -27,7 +31,7 @@ class SanctionSimulationService {
     double limit = 80.0, // Physical Metric - Double Required
   }) async {
     try {
-      final now = DateTime.now().toUtc();
+      final now = _clock.now();
       final setId = 'sim-set-${const Uuid().v4().substring(0, 8)}';
 
       // 0. Find a valid contract
@@ -43,10 +47,8 @@ class SanctionSimulationService {
         clauseRef: 'VEL-01',
         ruleId: 'rule-speed-v1',
         ruleVersion: 1,
-        primaryEvidenceLat:
-            -23.5505 + (DateTime.now().toUtc().millisecond / 100000),
-        primaryEvidenceLng:
-            -46.6333 + (DateTime.now().toUtc().millisecond / 100000),
+        primaryEvidenceLat: -23.5505 + (_clock.now().millisecond / 100000),
+        primaryEvidenceLng: -46.6333 + (_clock.now().millisecond / 100000),
         primaryEvidenceTimestampUtc: now,
         deltaValue: speed - limit,
         thresholdValue: limit,

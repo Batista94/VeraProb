@@ -11,6 +11,7 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/infraction_recurrence_report.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_service.dart';
 import 'auth_providers.dart';
+import 'shared_providers.dart';
 import 'sla_providers.dart';
 
 // ── Realtime stream of pending sanctions ─────────────────────────────────────
@@ -117,6 +118,7 @@ final sanctionActionStateProvider = StateNotifierProvider.autoDispose
           queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
           ledger: ref.watch(slaAuditLedgerRepositoryProvider),
           rbac: RbacService(),
+          clock: ref.watch(dateTimeProviderProvider),
         ),
       ),
     );

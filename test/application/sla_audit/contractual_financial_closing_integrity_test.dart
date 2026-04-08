@@ -9,6 +9,7 @@ import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 void main() {
   late InMemoryContractualExecutionStateRepository executionRepo;
@@ -16,6 +17,7 @@ void main() {
   late InMemorySlaAuditLedgerRepository ledgerRepo;
   late ContractualFinancialSnapshotGenerator generator;
   late ContractualFinancialClosingService closingService;
+  late FakeDateTimeProvider clock;
 
   const String orgId = 'org-fintech-audit';
   final DateTime operationalDay = DateTime.utc(2026, 3, 1);
@@ -23,6 +25,7 @@ void main() {
   setUp(() {
     tz.initializeTimeZones();
     BrazilTime.ensureInitialized();
+    clock = FakeDateTimeProvider(DateTime.utc(2026, 3, 2, 12, 0));
     executionRepo = InMemoryContractualExecutionStateRepository();
     snapshotRepo = InMemoryContractualFinancialSnapshotRepository();
     ledgerRepo = InMemorySlaAuditLedgerRepository();
@@ -30,6 +33,7 @@ void main() {
       executionRepo: executionRepo,
       snapshotRepo: snapshotRepo,
       ledgerRepo: ledgerRepo,
+      clock: clock,
     );
     closingService = ContractualFinancialClosingService(generator: generator);
   });

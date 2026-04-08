@@ -52,6 +52,7 @@ final createContractHandlerProvider = Provider<CreateContractHandler>((ref) {
   return CreateContractHandler(
     contractRepository: ref.watch(contractRepositoryProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    clock: ref.watch(dateTimeProviderProvider),
   );
 });
 
@@ -59,6 +60,7 @@ final cloneContractHandlerProvider = Provider<CloneContractHandler>((ref) {
   return CloneContractHandler(
     contractRepository: ref.watch(contractRepositoryProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    clock: ref.watch(dateTimeProviderProvider),
   );
 });
 
@@ -67,6 +69,7 @@ final closeContractHandlerProvider = Provider<CloseContractHandler>((ref) {
     contractRepository: ref.watch(contractRepositoryProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
     rbac: RbacService(),
+    clock: ref.watch(dateTimeProviderProvider),
   );
 });
 
@@ -86,6 +89,7 @@ final submitContractForApprovalHandlerProvider =
         approvalService: ref.watch(contractApprovalCommandServiceProvider),
         ledger: ref.watch(slaAuditLedgerRepositoryProvider),
         rbac: RbacService(),
+        clock: ref.watch(dateTimeProviderProvider),
       );
     });
 
@@ -95,6 +99,7 @@ final acceptByContractorHandlerProvider = Provider<AcceptByContractorHandler>((
   return AcceptByContractorHandler(
     approvalService: ref.watch(contractApprovalCommandServiceProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    clock: ref.watch(dateTimeProviderProvider),
   );
 });
 
@@ -124,6 +129,7 @@ final declareContractualPlanHandlerProvider =
         zoneRepository: ref.watch(operationalZoneRepositoryProvider),
         vehicleRepository: ref.watch(activeVehicleRepositoryProvider),
         projectionService: ref.watch(shiftProjectionServiceProvider),
+        clock: ref.watch(dateTimeProviderProvider),
       );
     });
 

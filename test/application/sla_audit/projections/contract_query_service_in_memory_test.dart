@@ -142,7 +142,10 @@ void main() {
           organizationId: any(named: 'organizationId'),
           contractId: any(named: 'contractId'),
         ),
-      ).thenAnswer((_) async => SlaExecutionSummary.empty());
+      ).thenAnswer(
+        (_) async =>
+            SlaExecutionSummary.empty(generatedAtUtc: DateTime.utc(2026, 1, 1)),
+      );
 
       final result = await service.getContractDetail(
         organizationId: 'org1',

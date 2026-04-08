@@ -4,6 +4,7 @@ import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'close_contract_command.dart';
 import 'sla_ledger_mapper.dart';
 
@@ -19,14 +20,17 @@ class CloseContractHandler {
   final ContractRepository _contractRepository;
   final SlaAuditLedgerRepository _ledger;
   final RbacService _rbac;
+  final IDateTimeProvider _clock;
 
   CloseContractHandler({
     required ContractRepository contractRepository,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
+    required IDateTimeProvider clock,
   }) : _contractRepository = contractRepository,
        _ledger = ledger,
-       _rbac = rbac;
+       _rbac = rbac,
+       _clock = clock;
 
   /// Handles the command by transitioning the contract to [closed],
   /// persisting the updated aggregate, and appending the event to the ledger.
@@ -60,6 +64,7 @@ class CloseContractHandler {
     final closed = existing.close(
       closedByUserId: command.closedByUserId,
       reason: command.reason,
+      nowUtc: _clock.now(),
     );
 
     // 4. Persist updated aggregate

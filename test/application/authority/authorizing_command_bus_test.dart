@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/authority/authorizing_command_bus.dart';
 import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
@@ -6,9 +7,12 @@ import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
 import 'package:veraprob/application/authority/operational_command_bus.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 import 'mocks/mock_mutator_service.dart';
 import 'mocks/strict_mock_policy_evaluator.dart';
+
+class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 /// Unmapped dummy command to test error bounding
 class RogueCommand extends OperationalCommand {
@@ -27,16 +31,21 @@ void main() {
   group('Architecture Guardians: AuthorizingCommandBus', () {
     late InMemoryForensicRepository ledger;
     late MockMutatorService mutator;
+    late MockDateTimeProvider mockDateTime;
+
+    final testFixTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
 
     AuthorizationContext mockSession() => AuthorizationContext(
       actorId: const ActorId('test-actor'),
       roleId: const RoleId('test-role'),
-      capturedAt: DateTime.now().toUtc(),
+      capturedAt: testFixTime,
     );
 
     setUp(() {
       ledger = InMemoryForensicRepository();
       mutator = MockMutatorService();
+      mockDateTime = MockDateTimeProvider();
+      when(() => mockDateTime.now()).thenReturn(testFixTime.toUtc());
     });
 
     test(
@@ -52,6 +61,7 @@ void main() {
           ledger,
           mockSession,
           mutator,
+          mockDateTime,
         );
         const command = ResolveAlertCommand(tripId: 't-123');
 
@@ -90,6 +100,7 @@ void main() {
           ledger,
           mockSession,
           mutator,
+          mockDateTime,
         );
         const command = ResolveAlertCommand(tripId: 't-999');
 
@@ -136,6 +147,7 @@ void main() {
           ledger,
           mockSession,
           mutator,
+          mockDateTime,
         );
         const command = RogueCommand();
 
@@ -172,6 +184,7 @@ void main() {
           ledger,
           mockSession,
           mutator,
+          mockDateTime,
         );
         const command = ResolveAlertCommand(tripId: 't-crash');
 

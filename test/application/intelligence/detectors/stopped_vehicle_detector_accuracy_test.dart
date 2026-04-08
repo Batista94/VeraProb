@@ -1,16 +1,21 @@
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/detectors/stopped_vehicle_detector.dart';
 import 'package:veraprob/application/normalization/operational_state_normalizer.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
 import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/domain/shared/coordinate.dart';
 
+class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
+
 void main() {
   group('StoppedVehicleDetector Accuracy (Fleet Telemetry Data Scientist)', () {
     late StoppedVehicleDetector detector;
+    late MockDateTimeProvider mockDateTime;
     late OperationalStateNormalizer normalizer;
     late DateTime now;
     late Random random;
@@ -20,7 +25,9 @@ void main() {
     const Coordinate center = Coordinate(baseLat, baseLng);
 
     setUp(() {
-      detector = const StoppedVehicleDetector();
+      mockDateTime = MockDateTimeProvider();
+      when(() => mockDateTime.now()).thenReturn(DateTime.now().toUtc());
+      detector = StoppedVehicleDetector(mockDateTime);
       normalizer = OperationalStateNormalizer(
         debounceDuration: Duration.zero,
         stoppedMinDuration: const Duration(seconds: 30),

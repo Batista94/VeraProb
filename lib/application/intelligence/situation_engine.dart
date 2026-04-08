@@ -20,9 +20,9 @@ class SituationEngine {
   SituationEngine(this._dateTimeProvider);
 
   List<SituationDetector> get _detectors => [
-    const DelayDetector(),
-    const StoppedVehicleDetector(),
-    const OffRouteDetector(),
+    DelayDetector(_dateTimeProvider),
+    StoppedVehicleDetector(_dateTimeProvider),
+    OffRouteDetector(_dateTimeProvider),
     SignalLossDetector(_dateTimeProvider),
   ];
 

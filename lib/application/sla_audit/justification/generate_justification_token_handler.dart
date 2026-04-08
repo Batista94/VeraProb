@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -18,12 +19,15 @@ import 'generate_justification_token_command.dart';
 class GenerateJustificationTokenHandler {
   final JustificationRepository _justificationRepo;
   final RbacService _rbac;
+  final IDateTimeProvider _dateTimeProvider;
 
   GenerateJustificationTokenHandler({
     required JustificationRepository justificationRepo,
     required RbacService rbac,
+    IDateTimeProvider? dateTimeProvider,
   }) : _justificationRepo = justificationRepo,
-       _rbac = rbac;
+       _rbac = rbac,
+       _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   Future<JustificationSubmissionToken> handle(
     GenerateJustificationTokenCommand command,
@@ -40,7 +44,7 @@ class GenerateJustificationTokenHandler {
       );
     }
 
-    final now = DateTime.now().toUtc();
+    final now = _dateTimeProvider.now();
     final token = JustificationSubmissionToken(
       id: const Uuid().v4(),
       organizationId: command.organizationId,

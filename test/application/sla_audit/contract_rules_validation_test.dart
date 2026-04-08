@@ -39,6 +39,8 @@ void main() {
       );
     });
 
+    final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
+
     Future<void> declarePlanWithRules(
       String orgId,
       String contractId,
@@ -78,6 +80,7 @@ void main() {
           ),
         ],
         ruleSnapshot: rules,
+        nowUtc: nowUtc,
       );
       await planRepo.save(declaration);
 

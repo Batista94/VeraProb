@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 
 import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 
 enum FeedHealthStatus { online, degraded, offline }
 
@@ -68,7 +69,11 @@ final feedHealthProjectionProvider = Provider<FeedHealthProjection>((ref) {
     );
   }
 
-  final delayMs = DateTime.now().toUtc().difference(latestPing).inMilliseconds;
+  final delayMs = ref
+      .read(dateTimeProviderProvider)
+      .now()
+      .difference(latestPing)
+      .inMilliseconds;
   final boundedDelay = delayMs < 0 ? 0 : delayMs;
 
   FeedHealthStatus status = FeedHealthStatus.online;

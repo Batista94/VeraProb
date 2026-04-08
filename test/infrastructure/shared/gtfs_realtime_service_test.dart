@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 // ignore: depend_on_referenced_packages
 import 'package:fake_async/fake_async.dart';
 import 'package:veraprob/infrastructure/shared/gtfs_realtime_service.dart';
+import '../../mocks/fake_date_time_provider.dart';
 import 'package:veraprob/infrastructure/shared/vehicle_repository.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 
@@ -11,7 +12,9 @@ void main() {
     late GtfsRealtimeService service;
 
     setUp(() {
-      service = GtfsRealtimeService();
+      service = GtfsRealtimeService(
+        FakeDateTimeProvider(DateTime(2026, 4, 8, 10, 0, 0)),
+      );
     });
 
     test('implements IVehiclePositionService', () {
@@ -40,7 +43,9 @@ void main() {
 
     test('getVehiclePositions emits mock positions after 5 seconds', () {
       fakeAsync((async) {
-        final service = GtfsRealtimeService();
+        final service = GtfsRealtimeService(
+          FakeDateTimeProvider(DateTime(2026, 4, 8, 10, 0, 0)),
+        );
         final stream = service.getVehiclePositions();
 
         List<VehiclePosition>? received;
@@ -70,7 +75,9 @@ void main() {
 
     test('mock positions have valid route names from destinations', () {
       fakeAsync((async) {
-        final service = GtfsRealtimeService();
+        final service = GtfsRealtimeService(
+          FakeDateTimeProvider(DateTime(2026, 4, 8, 10, 0, 0)),
+        );
         final stream = service.getVehiclePositions();
 
         List<VehiclePosition>? received;
@@ -100,7 +107,9 @@ void main() {
 
     test('positions are near São Paulo center coordinates', () {
       fakeAsync((async) {
-        final service = GtfsRealtimeService();
+        final service = GtfsRealtimeService(
+          FakeDateTimeProvider(DateTime(2026, 4, 8, 10, 0, 0)),
+        );
         final stream = service.getVehiclePositions();
 
         List<VehiclePosition>? received;

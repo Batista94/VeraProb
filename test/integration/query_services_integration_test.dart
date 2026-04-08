@@ -13,6 +13,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_rep
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/shared/money.dart';
+import '../mocks/fake_date_time_provider.dart';
 
 void main() {
   group('Query Services Integration Consistency', () {
@@ -21,7 +22,10 @@ void main() {
       () async {
         final execRepo = InMemoryContractualExecutionStateRepository();
         final ledgerRepo = InMemorySlaAuditLedgerRepository();
-        final queryService = SlaExecutionQueryServiceInMemory(repo: execRepo);
+        final queryService = SlaExecutionQueryServiceInMemory(
+          repo: execRepo,
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 1, 1)),
+        );
 
         final planRepo = InMemoryPlanDeclarationRepository();
         final engine = ContractualEvaluationEngine(

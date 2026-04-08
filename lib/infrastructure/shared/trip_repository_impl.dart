@@ -2,14 +2,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/shared/i_trip_repository.dart';
 import 'package:veraprob/domain/entities/trip.dart';
 import 'package:veraprob/infrastructure/shared/mappers/trip_mapper.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// Supabase implementation of [ITripRepository].
 ///
 /// Lives in infrastructure so that [lib/features/] stays free of Supabase deps.
 class TripRepositoryImpl implements ITripRepository {
   final SupabaseClient _supabase;
+  final IDateTimeProvider _dateTimeProvider;
 
-  TripRepositoryImpl(this._supabase);
+  TripRepositoryImpl(this._supabase, this._dateTimeProvider);
 
   String get _orgId {
     final orgId =
@@ -77,7 +79,7 @@ class TripRepositoryImpl implements ITripRepository {
     await _supabase
         .from('trips_audit')
         .update({
-          'end_time': DateTime.now().toUtc().toIso8601String(),
+          'end_time': _dateTimeProvider.now().toIso8601String(),
           'status': 'completed',
         })
         .eq('id', tripId);

@@ -20,7 +20,8 @@ Widget _buildScreen() {
   return ProviderScope(
     overrides: [
       slaSummaryProvider.overrideWith(
-        (ref) async => SlaExecutionSummary.empty(),
+        (ref) async =>
+            SlaExecutionSummary.empty(generatedAtUtc: DateTime.utc(2026, 1, 1)),
       ),
       slaExceptionsProvider.overrideWith((ref) async => []),
     ],

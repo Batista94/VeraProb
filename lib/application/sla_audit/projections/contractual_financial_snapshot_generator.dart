@@ -1,4 +1,5 @@
 import 'package:veraprob/core/time/brazil_time.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
@@ -20,14 +21,17 @@ class ContractualFinancialSnapshotGenerator {
   final ContractualExecutionStateRepository _executionRepo;
   final ContractualFinancialSnapshotRepository _snapshotRepo;
   final SlaAuditLedgerRepository _ledgerRepo;
+  final IDateTimeProvider _clock;
 
   ContractualFinancialSnapshotGenerator({
     required ContractualExecutionStateRepository executionRepo,
     required ContractualFinancialSnapshotRepository snapshotRepo,
     required SlaAuditLedgerRepository ledgerRepo,
+    required IDateTimeProvider clock,
   }) : _executionRepo = executionRepo,
        _snapshotRepo = snapshotRepo,
-       _ledgerRepo = ledgerRepo;
+       _ledgerRepo = ledgerRepo,
+       _clock = clock;
 
   /// Generates a daily financial snapshot for the given operational date.
   ///
@@ -117,7 +121,7 @@ class ContractualFinancialSnapshotGenerator {
       contractId: contractId,
       operationalDateUtc: normalizedDate,
       operationalTimezone: BrazilTime.operationalTimezone,
-      closedAtUtc: closedAtUtc ?? DateTime.now().toUtc(),
+      closedAtUtc: closedAtUtc ?? _clock.now(),
       totalContractedRevenue: totalContractedRevenue,
       protectedRevenue: protectedRevenue,
       revenueAtRisk: revenueAtRisk,
@@ -204,7 +208,7 @@ class ContractualFinancialSnapshotGenerator {
       contractId: contractId,
       operationalDateUtc: normalizedDate,
       operationalTimezone: BrazilTime.operationalTimezone,
-      closedAtUtc: closedAtUtc ?? DateTime.now().toUtc(),
+      closedAtUtc: closedAtUtc ?? _clock.now(),
       totalContractedRevenue: totalContractedRevenue,
       protectedRevenue: protectedRevenue,
       revenueAtRisk: revenueAtRisk,

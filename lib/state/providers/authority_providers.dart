@@ -14,6 +14,7 @@ import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 
 /// ---------------------------------------------------------
 /// FASE 4: MOCK AUTH SESSION
@@ -23,11 +24,12 @@ import 'package:veraprob/state/providers/fleet_providers.dart';
 final mockAuthorizationContextProvider = StateProvider<AuthorizationContext>((
   ref,
 ) {
+  final dateTimeProvider = ref.watch(dateTimeProviderProvider);
   // Starts with an approved role by default for initial map loads
   return AuthorizationContext(
     actorId: const ActorId('mock_operator_id_123'),
     roleId: const RoleId('supervisor'),
-    capturedAt: DateTime.now().toUtc(),
+    capturedAt: dateTimeProvider.now(),
   );
 });
 
@@ -67,6 +69,7 @@ final operationalCommandBusProvider = Provider<OperationalCommandBus>((ref) {
     repo,
     () => ref.read(mockAuthorizationContextProvider),
     controlService,
+    ref.watch(dateTimeProviderProvider),
   );
 });
 

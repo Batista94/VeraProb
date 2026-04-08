@@ -24,6 +24,7 @@ import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart'
 import 'auth_providers.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'fleet_providers.dart';
+import 'shared_providers.dart';
 
 // ── Re-exports from sla_persistence_provider ────────────────────────────────
 // Kept here so all provider consumers import one canonical file.
@@ -72,9 +73,11 @@ final slaExecutionQueryServiceProvider = Provider<SlaExecutionQueryService>((
   return switch (ref.watch(persistenceModeProvider)) {
     PersistenceMode.inMemory => SlaExecutionQueryServiceInMemory(
       repo: ref.watch(contractualExecutionStateRepositoryProvider),
+      clock: ref.watch(dateTimeProviderProvider),
     ),
     PersistenceMode.postgres => SlaExecutionQueryServicePostgres(
       ref.watch(supabaseClientProvider),
+      ref.watch(dateTimeProviderProvider),
     ),
   };
 });
@@ -90,6 +93,7 @@ final contractualFinancialClosingServiceProvider =
             contractualFinancialSnapshotRepositoryProvider,
           ),
           ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
+          clock: ref.watch(dateTimeProviderProvider),
         ),
       );
     });
@@ -102,6 +106,7 @@ final sanctionSimulationServiceProvider = Provider<SanctionSimulationService>((
   return SanctionSimulationService(
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
     contracts: ref.watch(contractRepositoryProvider),
+    clock: ref.watch(dateTimeProviderProvider),
   );
 });
 
@@ -119,6 +124,7 @@ final contractualEvaluationSubscriberProvider =
         ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
         traceRepo: ref.watch(evaluationTraceRepositoryProvider),
         alertRepo: ref.watch(operationalAlertRepositoryProvider),
+        clock: ref.watch(dateTimeProviderProvider),
       );
 
       final vehicleStream = ref
@@ -144,7 +150,11 @@ final contractualEvaluationSubscriberProvider =
 /// Global SLA execution summary for the current session's organization.
 final slaSummaryProvider = FutureProvider<SlaExecutionSummary>((ref) async {
   final organizationId = ref.watch(currentOrganizationIdProvider);
-  if (organizationId == null) return SlaExecutionSummary.empty();
+  if (organizationId == null) {
+    return SlaExecutionSummary.empty(
+      generatedAtUtc: ref.watch(dateTimeProviderProvider).now(),
+    );
+  }
 
   final service = ref.watch(slaExecutionQueryServiceProvider);
   return service.getSummary(organizationId: organizationId);

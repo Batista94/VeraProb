@@ -21,6 +21,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_rep
 import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
   setUpAll(() {
     tz_data.initializeTimeZones();
   });
@@ -110,6 +111,7 @@ void main() {
       originalFileHash: 'hash-test',
       ruleSnapshot: RuleSnapshot([rule]),
       shiftPatterns: [pattern],
+      nowUtc: nowUtc,
     );
     await planRepo.save(declaration);
   }
@@ -174,6 +176,7 @@ void main() {
           originalFileHash: 'h',
           ruleSnapshot: const RuleSnapshot([rule]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
         await planRepo.save(declaration);
 

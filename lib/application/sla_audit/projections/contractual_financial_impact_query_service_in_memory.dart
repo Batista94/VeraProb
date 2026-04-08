@@ -1,3 +1,4 @@
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
 import 'contractual_financial_impact.dart';
 import 'contractual_financial_impact_query_service.dart';
@@ -10,10 +11,13 @@ import 'contractual_financial_impact_query_service.dart';
 class ContractualFinancialImpactQueryServiceInMemory
     implements ContractualFinancialImpactQueryService {
   final ContractualFinancialSnapshotRepository _snapshotRepo;
+  final IDateTimeProvider _clock;
 
   ContractualFinancialImpactQueryServiceInMemory({
     required ContractualFinancialSnapshotRepository snapshotRepo,
-  }) : _snapshotRepo = snapshotRepo;
+    required IDateTimeProvider clock,
+  }) : _snapshotRepo = snapshotRepo,
+       _clock = clock;
 
   @override
   Future<ContractualFinancialImpact> getImpact({
@@ -28,7 +32,7 @@ class ContractualFinancialImpactQueryServiceInMemory
     if (snapshots.isEmpty) {
       return ContractualFinancialImpact(
         contractId: contractId,
-        generatedAtUtc: DateTime.now().toUtc(),
+        generatedAtUtc: _clock.now(),
         totalContractedRevenue: 0,
         protectedRevenue: 0,
         revenueAtRisk: 0,

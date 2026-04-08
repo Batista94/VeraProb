@@ -1,3 +1,4 @@
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -17,14 +18,17 @@ class RejectSanctionHandler {
   final SanctionReviewQueueRepository _queueRepo;
   final SlaAuditLedgerRepository _ledger;
   final RbacService _rbac;
+  final IDateTimeProvider _clock;
 
   RejectSanctionHandler({
     required SanctionReviewQueueRepository queueRepo,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
+    required IDateTimeProvider clock,
   }) : _queueRepo = queueRepo,
        _ledger = ledger,
-       _rbac = rbac;
+       _rbac = rbac,
+       _clock = clock;
 
   /// Handles the command by transitioning the queue entry to [rejected]
   /// and appending a `VERDICT_REFUSED` entry to the immutable ledger.
@@ -65,7 +69,7 @@ class RejectSanctionHandler {
       );
     }
 
-    final now = DateTime.now().toUtc();
+    final now = _clock.now();
 
     // 5. Build domain event carrying VerdictEvidence and reason forward
     final event = SanctionRejectedEvent(

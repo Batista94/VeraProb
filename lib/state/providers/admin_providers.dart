@@ -39,7 +39,10 @@ final invitationCommandServiceProvider = Provider<InvitationCommandService>((
 });
 
 final invitationQueryServiceProvider = Provider<InvitationRepository>((ref) {
-  return PostgresInvitationQueryService(ref.watch(supabaseClientProvider));
+  return PostgresInvitationQueryService(
+    ref.watch(supabaseClientProvider),
+    ref.watch(dateTimeProviderProvider),
+  );
 });
 
 final userManagementCommandServiceProvider =

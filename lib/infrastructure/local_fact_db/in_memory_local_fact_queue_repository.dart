@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// In-memory implementation of [LocalFactQueueRepository].
 ///
@@ -14,6 +15,9 @@ class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
   final List<PendingFact> _facts = [];
   final StreamController<int> _countController =
       StreamController<int>.broadcast();
+  final IDateTimeProvider _dateTimeProvider;
+
+  InMemoryLocalFactQueueRepository(this._dateTimeProvider);
 
   // ── LocalFactQueueRepository ─────────────────────────────────────────────
 
@@ -73,7 +77,7 @@ class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
   Future<void> clearAcknowledged({
     Duration olderThan = const Duration(hours: 48),
   }) async {
-    final cutoff = DateTime.now().toUtc().subtract(olderThan);
+    final cutoff = _dateTimeProvider.now().subtract(olderThan);
     final before = _facts.length;
     _facts.removeWhere(
       (f) =>

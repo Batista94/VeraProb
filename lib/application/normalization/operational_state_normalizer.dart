@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/core/utils/geo_math.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'package:veraprob/domain/entities/stop.dart';
@@ -44,6 +45,8 @@ class OperationalStateNormalizer {
   /// Timestamp of last emitted state per vehicle (debounce guard).
   final Map<String, DateTime> _lastEmittedAt = {};
 
+  final IDateTimeProvider _clock;
+
   OperationalStateNormalizer({
     this.debounceDuration = const Duration(seconds: 5),
     this.jumpThresholdMeters = 500.0,
@@ -54,20 +57,23 @@ class OperationalStateNormalizer {
     this.slowTrafficThreshold = 2.0,
     this.stoppedMinDuration = const Duration(seconds: 15),
     this.slowTrafficMinDuration = const Duration(seconds: 15),
-  });
+    MotionClassifier? motionClassifier,
+    IDateTimeProvider? clock,
+  }) : _motionClassifier = motionClassifier,
+       _clock = clock ?? BrazilDateTimeProvider();
 
   /// Process incoming [pings] and return a list of stabilized states.
   ///
   /// When [pings] is empty the normalizer replays degraded states for
   /// every tracked vehicle (useful when polling on a timer).
   /// [knownStops] enriches motion classification with geofence checks.
-  /// [now] defaults to `DateTime.now().toUtc()` when null.
+  /// [now] defaults to system UTC time (via IDateTimeProvider) when null.
   List<VehicleOperationalState> normalize(
     List<VehiclePosition> pings, {
     List<Stop> knownStops = const [],
     DateTime? now,
   }) {
-    final effectiveNow = now ?? DateTime.now().toUtc();
+    final effectiveNow = now ?? _clock.now();
 
     _ensureClassifier();
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/admin/change_user_role_command.dart';
 import 'package:veraprob/application/admin/remove_member_command.dart';
@@ -184,8 +185,9 @@ class UserManagementScreen extends ConsumerWidget {
                     loading: () => const SizedBox.shrink(),
                     error: (err, st) => const SizedBox.shrink(),
                     data: (invitations) {
+                      final nowUtc = ref.read(dateTimeProviderProvider).now();
                       final pending = invitations
-                          .where((i) => i.isActive)
+                          .where((i) => i.isActiveAt(nowUtc))
                           .toList();
                       if (pending.isEmpty) return const SizedBox.shrink();
                       return Column(

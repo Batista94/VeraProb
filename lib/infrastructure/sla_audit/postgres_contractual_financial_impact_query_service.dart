@@ -1,14 +1,19 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// Postgres implementation for [ContractualFinancialImpactQueryService].
 /// Extracts financial impact projection directly from `contractual_financial_snapshot`.
 class ContractualFinancialImpactQueryServicePostgres
     implements ContractualFinancialImpactQueryService {
   final SupabaseClient _client;
+  final IDateTimeProvider _dateTimeProvider;
 
-  ContractualFinancialImpactQueryServicePostgres(this._client);
+  ContractualFinancialImpactQueryServicePostgres(
+    this._client,
+    this._dateTimeProvider,
+  );
 
   @override
   Future<ContractualFinancialImpact> getImpact({
@@ -34,7 +39,7 @@ class ContractualFinancialImpactQueryServicePostgres
     if (rows.isEmpty) {
       return ContractualFinancialImpact(
         contractId: contractId,
-        generatedAtUtc: DateTime.now().toUtc(),
+        generatedAtUtc: _dateTimeProvider.now(),
         totalContractedRevenue: 0,
         protectedRevenue: 0,
         revenueAtRisk: 0,

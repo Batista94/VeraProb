@@ -14,7 +14,7 @@ import 'situation_detector.dart';
 ///   we flag it as a severe stoppage.
 /// - We still keep the fallback for interrupted trips from Phase 0.
 class StoppedVehicleDetector extends SituationDetector {
-  const StoppedVehicleDetector()
+  StoppedVehicleDetector(super.dateTimeProvider)
     : super(id: 'stopped_vehicle', name: 'Detector de Veículo Parado');
 
   @override
@@ -53,7 +53,7 @@ class StoppedVehicleDetector extends SituationDetector {
         type: 'vehicle_stopped',
         message: 'Veículo Interrompido',
         severityScore: 50,
-        detectedAt: state?.lastRawPingAt ?? DateTime.now().toUtc(),
+        detectedAt: state?.lastRawPingAt ?? dateTimeProvider.now(),
       );
     }
 

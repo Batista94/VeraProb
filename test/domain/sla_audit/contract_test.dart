@@ -5,6 +5,8 @@ import 'package:veraprob/domain/sla_audit/contract_events.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
+
   // ── Shared helpers ─────────────────────────────────────────
 
   Contract makeContract({
@@ -24,6 +26,7 @@ void main() {
       description: description,
       validFromUtc: from,
       validUntilUtc: until,
+      nowUtc: nowUtc,
     );
   }
 
@@ -177,7 +180,7 @@ void main() {
   group('activate()', () {
     test('draft → active transition returns new instance', () {
       final draft = makeContract();
-      final active = draft.activate();
+      final active = draft.activate(nowUtc: nowUtc);
 
       expect(active.status, ContractStatus.active);
       expect(active.isActive, isTrue);
@@ -187,14 +190,14 @@ void main() {
 
     test('original draft instance is not mutated', () {
       final draft = makeContract();
-      draft.activate();
+      draft.activate(nowUtc: nowUtc);
 
       expect(draft.status, ContractStatus.draft);
       expect(draft.activatedAtUtc, isNull);
     });
 
     test('emits ContractActivatedEvent', () {
-      final active = makeContract().activate();
+      final active = makeContract().activate(nowUtc: nowUtc);
 
       expect(active.domainEvents, hasLength(1));
       expect(active.domainEvents.first, isA<ContractActivatedEvent>());
@@ -204,18 +207,23 @@ void main() {
     });
 
     test('throws DomainException if already active', () {
-      final active = makeContract().activate();
+      final active = makeContract().activate(nowUtc: nowUtc);
 
-      expect(() => active.activate(), throwsA(isA<DomainException>()));
+      expect(
+        () => active.activate(nowUtc: nowUtc),
+        throwsA(isA<DomainException>()),
+      );
     });
 
     test('throws DomainException if closed', () {
-      final closed = makeContract().activate().close(
-        closedByUserId: 'user-1',
-        reason: 'Done',
-      );
+      final closed = makeContract()
+          .activate(nowUtc: nowUtc)
+          .close(closedByUserId: 'user-1', reason: 'Done', nowUtc: nowUtc);
 
-      expect(() => closed.activate(), throwsA(isA<DomainException>()));
+      expect(
+        () => closed.activate(nowUtc: nowUtc),
+        throwsA(isA<DomainException>()),
+      );
     });
   });
 
@@ -223,8 +231,12 @@ void main() {
 
   group('close()', () {
     test('active → closed transition', () {
-      final active = makeContract().activate();
-      final closed = active.close(closedByUserId: 'user-1', reason: 'Done');
+      final active = makeContract().activate(nowUtc: nowUtc);
+      final closed = active.close(
+        closedByUserId: 'user-1',
+        reason: 'Done',
+        nowUtc: nowUtc,
+      );
 
       expect(closed.status, ContractStatus.closed);
       expect(closed.isClosed, isTrue);
@@ -235,24 +247,27 @@ void main() {
 
     test('draft → closed transition is allowed', () {
       final draft = makeContract();
-      final closed = draft.close(closedByUserId: 'admin', reason: 'Cancelled');
+      final closed = draft.close(
+        closedByUserId: 'admin',
+        reason: 'Cancelled',
+        nowUtc: nowUtc,
+      );
 
       expect(closed.status, ContractStatus.closed);
     });
 
     test('original instance is not mutated', () {
-      final active = makeContract().activate();
-      active.close(closedByUserId: 'user-1', reason: 'Done');
+      final active = makeContract().activate(nowUtc: nowUtc);
+      active.close(closedByUserId: 'user-1', reason: 'Done', nowUtc: nowUtc);
 
       expect(active.status, ContractStatus.active);
       expect(active.closedAtUtc, isNull);
     });
 
     test('emits ContractClosedEvent', () {
-      final closed = makeContract().activate().close(
-        closedByUserId: 'user-1',
-        reason: 'Done',
-      );
+      final closed = makeContract()
+          .activate(nowUtc: nowUtc)
+          .close(closedByUserId: 'user-1', reason: 'Done', nowUtc: nowUtc);
 
       expect(closed.domainEvents, hasLength(1));
       expect(closed.domainEvents.first, isA<ContractClosedEvent>());
@@ -263,31 +278,38 @@ void main() {
     });
 
     test('throws DomainException if already closed', () {
-      final closed = makeContract().activate().close(
-        closedByUserId: 'user-1',
-        reason: 'Done',
-      );
+      final closed = makeContract()
+          .activate(nowUtc: nowUtc)
+          .close(closedByUserId: 'user-1', reason: 'Done', nowUtc: nowUtc);
 
       expect(
-        () => closed.close(closedByUserId: 'user-1', reason: 'Again'),
+        () => closed.close(
+          closedByUserId: 'user-1',
+          reason: 'Again',
+          nowUtc: nowUtc,
+        ),
         throwsA(isA<DomainException>()),
       );
     });
 
     test('throws DomainException for empty closedByUserId', () {
-      final active = makeContract().activate();
+      final active = makeContract().activate(nowUtc: nowUtc);
 
       expect(
-        () => active.close(closedByUserId: '', reason: 'Done'),
+        () => active.close(closedByUserId: '', reason: 'Done', nowUtc: nowUtc),
         throwsA(isA<DomainException>()),
       );
     });
 
     test('throws DomainException for blank reason', () {
-      final active = makeContract().activate();
+      final active = makeContract().activate(nowUtc: nowUtc);
 
       expect(
-        () => active.close(closedByUserId: 'user-1', reason: '   '),
+        () => active.close(
+          closedByUserId: 'user-1',
+          reason: '   ',
+          nowUtc: nowUtc,
+        ),
         throwsA(isA<DomainException>()),
       );
     });
@@ -302,15 +324,14 @@ void main() {
     });
 
     test('does not throw for active', () {
-      final active = makeContract().activate();
+      final active = makeContract().activate(nowUtc: nowUtc);
       expect(() => active.assertCanReceivePlan(), returnsNormally);
     });
 
     test('throws DomainException for closed', () {
-      final closed = makeContract().activate().close(
-        closedByUserId: 'user-1',
-        reason: 'Done',
-      );
+      final closed = makeContract()
+          .activate(nowUtc: nowUtc)
+          .close(closedByUserId: 'user-1', reason: 'Done', nowUtc: nowUtc);
 
       expect(
         () => closed.assertCanReceivePlan(),

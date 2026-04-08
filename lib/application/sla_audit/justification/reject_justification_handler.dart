@@ -1,3 +1,4 @@
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -16,14 +17,17 @@ class RejectJustificationHandler {
   final JustificationRepository _justificationRepo;
   final SlaAuditLedgerRepository _ledger;
   final RbacService _rbac;
+  final IDateTimeProvider _dateTimeProvider;
 
   RejectJustificationHandler({
     required JustificationRepository justificationRepo,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
+    IDateTimeProvider? dateTimeProvider,
   }) : _justificationRepo = justificationRepo,
        _ledger = ledger,
-       _rbac = rbac;
+       _rbac = rbac,
+       _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   Future<void> handle(RejectJustificationCommand command) async {
     // 1. RBAC
@@ -60,7 +64,7 @@ class RejectJustificationHandler {
       );
     }
 
-    final now = DateTime.now().toUtc();
+    final now = _dateTimeProvider.now();
 
     // 5. Build domain event (INV-22: actor_id + actor_email in payload)
     final event = JustificationRejectedEvent(

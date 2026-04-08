@@ -1,13 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/adapters/realtime_data_provider.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+
+class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 void main() {
   group('RealtimeDataProvider onPayloadReceived', () {
     late RealtimeDataProvider provider;
+    late MockDateTimeProvider mockDateTime;
 
     setUp(() {
-      provider = RealtimeDataProvider();
+      mockDateTime = MockDateTimeProvider();
+      when(() => mockDateTime.now()).thenReturn(DateTime.now().toUtc());
+      provider = RealtimeDataProvider(mockDateTime);
     });
 
     tearDown(() async {

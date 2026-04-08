@@ -8,6 +8,7 @@ import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 /// Fake repository that raises a Postgres P0001 on [save].
 class _QuotaExceededContractRepository implements ContractRepository {
@@ -43,6 +44,7 @@ void main() {
     handler = CreateContractHandler(
       contractRepository: repository,
       ledger: ledger,
+      clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
     );
   });
 
@@ -162,6 +164,7 @@ void main() {
       quotaHandler = CreateContractHandler(
         contractRepository: quotaRepo,
         ledger: quotaLedger,
+        clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
       );
     });
 

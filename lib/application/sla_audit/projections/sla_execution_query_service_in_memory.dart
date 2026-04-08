@@ -1,3 +1,4 @@
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
@@ -12,10 +13,13 @@ import 'sla_execution_summary.dart';
 /// aggregates to read models. Never exposes aggregates directly.
 class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
   final ContractualExecutionStateRepository _repo;
+  final IDateTimeProvider _clock;
 
   SlaExecutionQueryServiceInMemory({
     required ContractualExecutionStateRepository repo,
-  }) : _repo = repo;
+    required IDateTimeProvider clock,
+  }) : _repo = repo,
+       _clock = clock;
 
   @override
   Future<SlaExecutionSummary> getSummary({
@@ -66,7 +70,7 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
       totalExecuted: executed,
       totalNoShow: noShow,
       totalEvidenceGap: evidenceGap,
-      generatedAtUtc: DateTime.now().toUtc(),
+      generatedAtUtc: _clock.now(),
       protectedRevenue: protectedRevenue.cents,
       revenueAtRisk: revenueAtRisk.cents,
       lostRevenue: lostRevenue.cents,

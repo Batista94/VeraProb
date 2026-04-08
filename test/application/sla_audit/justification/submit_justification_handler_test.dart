@@ -7,6 +7,7 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/justification/in_memory_justification_repository.dart';
 import 'package:veraprob/infrastructure/local_fact_db/in_memory_local_fact_queue_repository.dart';
+import '../../../mocks/fake_date_time_provider.dart';
 
 void main() {
   late InMemoryJustificationRepository justificationRepo;
@@ -35,14 +36,17 @@ void main() {
   }
 
   setUp(() {
+    final now = DateTime(2026, 4, 8, 10, 0, 0);
+    final clockProvider = FakeDateTimeProvider(now);
     justificationRepo = InMemoryJustificationRepository();
     ledger = InMemorySlaAuditLedgerRepository();
-    factQueue = InMemoryLocalFactQueueRepository();
+    factQueue = InMemoryLocalFactQueueRepository(clockProvider);
     handler = SubmitJustificationHandler(
       justificationRepo: justificationRepo,
       ledger: ledger,
       factQueue: factQueue,
       rbac: RbacService(),
+      clock: clockProvider,
     );
   });
 

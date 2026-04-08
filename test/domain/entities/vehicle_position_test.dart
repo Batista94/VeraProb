@@ -3,10 +3,8 @@ import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 void main() {
   group('VehiclePosition', () {
-    final DateTime recentTs = DateTime.now().toUtc();
-    final DateTime oldTs = DateTime.now().toUtc().subtract(
-      const Duration(minutes: 5),
-    );
+    final DateTime recentTs = DateTime.utc(2026, 4, 8, 12, 0, 0);
+    final DateTime oldTs = recentTs.subtract(const Duration(minutes: 5));
 
     VehiclePosition buildPosition({
       String? id = 'pos-001',
@@ -34,20 +32,26 @@ void main() {
 
     test('isStale returns false for recent position', () {
       final pos = buildPosition(timestamp: recentTs);
-      expect(pos.isStale(), isFalse);
+      expect(pos.isStale(nowUtc: recentTs), isFalse);
     });
 
     test('isStale returns true for position older than threshold', () {
       final pos = buildPosition(timestamp: oldTs);
-      expect(pos.isStale(), isTrue);
+      expect(pos.isStale(nowUtc: recentTs), isTrue);
     });
 
     test('isStale respects custom threshold', () {
       final pos = buildPosition(timestamp: oldTs);
       // 5 minutes old, threshold 10 minutes → not stale
-      expect(pos.isStale(threshold: const Duration(minutes: 10)), isFalse);
+      expect(
+        pos.isStale(nowUtc: recentTs, threshold: const Duration(minutes: 10)),
+        isFalse,
+      );
       // 5 minutes old, threshold 2 minutes → stale
-      expect(pos.isStale(threshold: const Duration(minutes: 2)), isTrue);
+      expect(
+        pos.isStale(nowUtc: recentTs, threshold: const Duration(minutes: 2)),
+        isTrue,
+      );
     });
 
     test('fromJson parses all fields', () {

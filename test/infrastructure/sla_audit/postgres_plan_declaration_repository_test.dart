@@ -13,6 +13,7 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import '../postgres/postgres_test_config.dart';
 
 void main() async {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
   final isRunning = await PostgresTestConfig.isSupabaseRunning();
   tz_data.initializeTimeZones();
 
@@ -58,6 +59,7 @@ void main() async {
           originalFileHash: 'hash-manual',
           ruleSnapshot: const RuleSnapshot([]),
           services: [service],
+          nowUtc: nowUtc,
         );
 
         // 1. Save
@@ -102,6 +104,7 @@ void main() async {
           originalFileHash: 'hash-b2b',
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         await repository.save(plan);
@@ -145,6 +148,7 @@ void main() async {
           originalFileHash: 'hash-org',
           ruleSnapshot: const RuleSnapshot([]),
           services: [service],
+          nowUtc: nowUtc,
         );
 
         await PostgresTestConfig.ensureSentinelOrg(
@@ -207,6 +211,7 @@ void main() async {
           originalFileHash: 'hash-proj',
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         await repository.save(plan);
@@ -260,7 +265,7 @@ void main() async {
         final p1 = PlanDeclaration.create(
           organizationId: organizationId,
           contractId: contractId,
-          declaredAtUtc: DateTime.now().toUtc(),
+          declaredAtUtc: nowUtc,
           declaredByUserId: 'u1',
           planVersion: 5,
           originalFileHash: 'h1',
@@ -268,10 +273,8 @@ void main() async {
           services: [
             ContractualServiceExecution.create(
               contractId: contractId,
-              scheduledStartTimeUtc: DateTime.now().toUtc(),
-              scheduledEndTimeUtc: DateTime.now().toUtc().add(
-                const Duration(hours: 1),
-              ),
+              scheduledStartTimeUtc: nowUtc,
+              scheduledEndTimeUtc: nowUtc.add(const Duration(hours: 1)),
               startLatitude: 0,
               startLongitude: 0,
               startRadiusMeters: 1,
@@ -282,6 +285,7 @@ void main() async {
               noShowPenaltyBps: 10000,
             ),
           ],
+          nowUtc: nowUtc,
         );
 
         await repository.save(p1);
@@ -289,7 +293,7 @@ void main() async {
         final p2 = PlanDeclaration.create(
           organizationId: organizationId,
           contractId: contractId,
-          declaredAtUtc: DateTime.now().toUtc(),
+          declaredAtUtc: nowUtc,
           declaredByUserId: 'u1',
           planVersion: 5, // SAME VERSION
           originalFileHash: 'h2',
@@ -297,10 +301,8 @@ void main() async {
           services: [
             ContractualServiceExecution.create(
               contractId: contractId,
-              scheduledStartTimeUtc: DateTime.now().toUtc().add(
-                const Duration(days: 1),
-              ),
-              scheduledEndTimeUtc: DateTime.now().toUtc().add(
+              scheduledStartTimeUtc: nowUtc.add(const Duration(days: 1)),
+              scheduledEndTimeUtc: nowUtc.add(
                 const Duration(days: 1, hours: 1),
               ),
               startLatitude: 0,
@@ -313,6 +315,7 @@ void main() async {
               noShowPenaltyBps: 10000,
             ),
           ],
+          nowUtc: nowUtc,
         );
 
         expect(repository.save(p2), throwsA(anything));

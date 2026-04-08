@@ -1,13 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/authority/authorizing_command_bus.dart';
 import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
 import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 import 'mocks/mock_mutator_service.dart';
 import 'mocks/strict_mock_policy_evaluator.dart';
+
+class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -24,10 +28,14 @@ void main() {
         final ledger = InMemoryForensicRepository();
         final mutator = MockMutatorService();
 
+        final testFixTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
+        final mockDateTime = MockDateTimeProvider();
+        when(() => mockDateTime.now()).thenReturn(testFixTime.toUtc());
+
         AuthorizationContext mockSession() => AuthorizationContext(
           actorId: const ActorId('stress-actor'),
           roleId: const RoleId('stresser'),
-          capturedAt: DateTime.now().toUtc(),
+          capturedAt: testFixTime,
         );
 
         final bus = AuthorizingCommandBus(
@@ -35,6 +43,7 @@ void main() {
           ledger,
           mockSession,
           mutator,
+          mockDateTime,
         );
 
         // Act: Throw 100 simultaneous requests into the event loop

@@ -16,6 +16,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_rep
 import 'package:veraprob/core/utils/date_time_provider.dart';
 
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
   setUpAll(() {
     tz_data.initializeTimeZones();
   });
@@ -104,6 +105,7 @@ void main() {
       originalFileHash: 'abc123',
       ruleSnapshot: const RuleSnapshot([]),
       shiftPatterns: [pattern],
+      nowUtc: nowUtc,
     );
 
     final planRepo = InMemoryPlanDeclarationRepository();
@@ -150,6 +152,7 @@ void main() {
               noShowPenaltyBps: 15000,
             ),
           ],
+          nowUtc: nowUtc,
         );
 
         final service = ShiftProjectionService(
@@ -270,6 +273,7 @@ void main() {
           originalFileHash: 'abc456',
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         final service = ShiftProjectionService(
@@ -357,6 +361,7 @@ void main() {
           originalFileHash: 'gaphash',
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         final alertRepo = InMemoryOperationalAlertRepository();
@@ -430,6 +435,7 @@ void main() {
           originalFileHash: 'notfoundhash',
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         final service = ShiftProjectionService(
@@ -590,6 +596,7 @@ void main() {
         originalFileHash: 'overnight-hash',
         ruleSnapshot: const RuleSnapshot([]),
         shiftPatterns: [overnightPattern],
+        nowUtc: nowUtc,
       );
 
       final service = ShiftProjectionService(

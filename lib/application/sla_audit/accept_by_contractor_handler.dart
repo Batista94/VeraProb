@@ -1,3 +1,4 @@
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/contract_events.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
@@ -19,12 +20,15 @@ import 'sla_ledger_mapper.dart';
 class AcceptByContractorHandler {
   final ContractApprovalCommandService _approvalService;
   final SlaAuditLedgerRepository _ledger;
+  final IDateTimeProvider _clock;
 
   AcceptByContractorHandler({
     required ContractApprovalCommandService approvalService,
     required SlaAuditLedgerRepository ledger,
+    required IDateTimeProvider clock,
   }) : _approvalService = approvalService,
-       _ledger = ledger;
+       _ledger = ledger,
+       _clock = clock;
 
   /// Throws [DomainException] if:
   /// - [command.token] is empty or whitespace
@@ -41,7 +45,7 @@ class AcceptByContractorHandler {
     );
 
     // 3. Construct ledger event from RPC result (no second round-trip)
-    final now = DateTime.now().toUtc();
+    final now = _clock.now();
     final event = ContractAcceptedByContractorEvent(
       organizationId: result.organizationId,
       occurredAtUtc: now,

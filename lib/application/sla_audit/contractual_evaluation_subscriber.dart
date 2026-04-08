@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'contractual_evaluation_engine.dart';
 import 'contractual_financial_closing_service.dart';
 
@@ -27,6 +28,7 @@ class ContractualEvaluationSubscriber {
   final Duration _sweepInterval;
   final String organizationId;
   final ContractualFinancialClosingService? _closingService;
+  final IDateTimeProvider _dateTimeProvider;
 
   StreamSubscription<List<VehicleOperationalState>>? _subscription;
   Timer? _sweepTimer;
@@ -37,10 +39,12 @@ class ContractualEvaluationSubscriber {
     required Duration sweepInterval,
     required this.organizationId,
     ContractualFinancialClosingService? closingService,
+    IDateTimeProvider? dateTimeProvider,
   }) : _engine = engine,
        _vehicleStream = vehicleStream,
        _sweepInterval = sweepInterval,
-       _closingService = closingService;
+       _closingService = closingService,
+       _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   /// Whether the subscriber is actively listening.
   bool get isActive => _subscription != null;
@@ -100,7 +104,7 @@ class ContractualEvaluationSubscriber {
   void _onSweepTick() async {
     try {
       await _engine.sweepExpiredObligations(
-        nowUtc: DateTime.now().toUtc(),
+        nowUtc: _dateTimeProvider.now(),
         organizationId: organizationId,
       );
     } catch (e) {

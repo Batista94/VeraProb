@@ -12,6 +12,7 @@ import 'package:veraprob/domain/sla_audit/justification/justification_status.dar
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/justification/justification_evidence_storage_service.dart';
 import 'local_fact_queue_providers.dart';
+import 'shared_providers.dart';
 
 // Re-export so features/ can resolve the type without importing infrastructure/.
 export 'package:veraprob/infrastructure/sla_audit/justification/justification_evidence_storage_service.dart'
@@ -27,6 +28,7 @@ final submitJustificationHandlerProvider =
         ledger: ref.watch(slaAuditLedgerRepositoryProvider),
         factQueue: ref.watch(localFactQueueRepositoryProvider),
         rbac: RbacService(),
+        clock: ref.watch(dateTimeProviderProvider),
       );
     });
 

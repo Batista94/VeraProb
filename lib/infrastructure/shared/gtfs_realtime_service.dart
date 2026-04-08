@@ -2,12 +2,16 @@ import 'dart:async';
 import 'dart:math';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'vehicle_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 class GtfsRealtimeService implements IVehiclePositionService {
   // ignore: unused_field
   final String _apiUrl = 'https://api.olhovivo.sptrans.com.br/v2.1';
   // ignore: unused_field
   final String _token = 'YOUR_API_TOKEN';
+  final IDateTimeProvider _dateTimeProvider;
+
+  GtfsRealtimeService(this._dateTimeProvider);
 
   @override
   Stream<List<VehiclePosition>> getVehiclePositions() async* {
@@ -37,7 +41,7 @@ class GtfsRealtimeService implements IVehiclePositionService {
         longitude: -46.633308 + (random.nextDouble() * 0.01 - 0.005),
         speed: random.nextDouble() * 60,
         heading: random.nextDouble() * 360,
-        timestamp: DateTime.now().toUtc(),
+        timestamp: _dateTimeProvider.now(),
         source: 'api_public',
         routeName: dest,
       );

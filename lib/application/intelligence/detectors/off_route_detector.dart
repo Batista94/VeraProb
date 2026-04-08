@@ -12,7 +12,7 @@ import 'situation_detector.dart';
 ///   we flag it as a risk.
 /// - Minor deviations are tracked but don't generate severe warnings yet.
 class OffRouteDetector extends SituationDetector {
-  const OffRouteDetector()
+  OffRouteDetector(super.dateTimeProvider)
     : super(id: 'off_route', name: 'Detector de Desvio de Rota');
 
   @override
@@ -34,7 +34,7 @@ class OffRouteDetector extends SituationDetector {
         type: 'off_route',
         message: 'Desvio de Rota Detectado',
         severityScore: 30, // Moderate severity
-        detectedAt: DateTime.now().toUtc(),
+        detectedAt: dateTimeProvider.now(),
         metadata: {'distance_to_route': state.distanceToRoute},
       );
     }

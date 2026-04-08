@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/core/utils/geo_math.dart';
 import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -44,17 +45,21 @@ class ContractualEvaluationEngine {
   /// Cache for plan declarations to avoid hitting DB per ping.
   final Map<String, PlanDeclaration> _planCache = {};
 
+  final IDateTimeProvider _clock;
+
   ContractualEvaluationEngine({
     required ContractualExecutionStateRepository executionRepo,
     required PlanDeclarationRepository planRepo,
     required SlaAuditLedgerRepository ledgerRepo,
     required EvaluationTraceRepository traceRepo,
     OperationalAlertRepository? alertRepo,
+    IDateTimeProvider? clock,
   }) : _executionRepo = executionRepo,
        _planRepo = planRepo,
        _ledgerRepo = ledgerRepo,
        _traceRepo = traceRepo,
-       _alertRepo = alertRepo;
+       _alertRepo = alertRepo,
+       _clock = clock ?? BrazilDateTimeProvider();
 
   Future<RuleSnapshot> _getRuleSnapshot(
     String contractId,
@@ -278,7 +283,7 @@ class ContractualEvaluationEngine {
     DateTime? nowUtc,
     required String organizationId,
   }) async {
-    final now = nowUtc ?? DateTime.now().toUtc();
+    final now = nowUtc ?? _clock.now();
     final expiredStates = await _executionRepo.findExpiredPending(
       now,
       organizationId: organizationId,

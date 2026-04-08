@@ -125,7 +125,7 @@ final operationalDataProvider = Provider<IOperationalDataProvider>((ref) {
   if (stressConfig != null) {
     return SimulationDataProvider(ref.watch(fleetSimulationProvider));
   }
-  return RealtimeDataProvider();
+  return RealtimeDataProvider(ref.watch(dateTimeProviderProvider));
 });
 
 // ── Position Stream ────────────────────────────────────
@@ -144,7 +144,9 @@ final positionStreamProvider = StreamProvider<List<VehiclePosition>>((ref) {
 /// Singleton instance of the operational state normalizer.
 final operationalStateNormalizerProvider = Provider<OperationalStateNormalizer>(
   (ref) {
-    return OperationalStateNormalizer();
+    return OperationalStateNormalizer(
+      clock: ref.watch(dateTimeProviderProvider),
+    );
   },
 );
 

@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'contract_events.dart';
 import 'contract_status.dart';
 import 'domain_event.dart';
@@ -114,6 +113,7 @@ class Contract extends Equatable {
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
     Money? financialCeiling,
+    required DateTime nowUtc,
   }) {
     // ── Validate invariants ─────────────────────────────────
     if (organizationId.isEmpty) {
@@ -133,8 +133,7 @@ class Contract extends Equatable {
 
     // ── Generate identity and timestamps ────────────────────
     final id = const Uuid().v4();
-    final now =
-        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
+    final now = nowUtc;
 
     // ── Emit domain factEvent ───────────────────────────────────
     final domainEvent = ContractCreatedEvent(
@@ -178,6 +177,7 @@ class Contract extends Equatable {
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
     required String clonedFromContractId,
+    required DateTime nowUtc,
   }) {
     if (organizationId.isEmpty) {
       throw const DomainException('organizationId must not be empty');
@@ -195,8 +195,7 @@ class Contract extends Equatable {
     }
 
     final id = const Uuid().v4();
-    final now =
-        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
+    final now = nowUtc;
 
     final domainEvent = ContractCreatedEvent(
       organizationId: organizationId,
@@ -275,7 +274,10 @@ class Contract extends Equatable {
   /// in [domainEvents].
   ///
   /// Throws [DomainException] if the contract is not in [draft].
-  Contract submitForApproval({required String reviewToken}) {
+  Contract submitForApproval({
+    required String reviewToken,
+    required DateTime nowUtc,
+  }) {
     if (status != ContractStatus.draft) {
       throw DomainException(
         'Cannot submit contract in status "$status" for approval. '
@@ -283,8 +285,7 @@ class Contract extends Equatable {
       );
     }
 
-    final now =
-        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
+    final now = nowUtc;
     final domainEvent = ContractSubmittedForApprovalEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
@@ -319,7 +320,10 @@ class Contract extends Equatable {
   /// [ContractAcceptedByContractorEvent] in [domainEvents].
   ///
   /// Throws [DomainException] if status is not [awaitingContractorAcceptance].
-  Contract acceptByContractor({required String reviewToken}) {
+  Contract acceptByContractor({
+    required String reviewToken,
+    required DateTime nowUtc,
+  }) {
     if (status != ContractStatus.awaitingContractorAcceptance) {
       throw DomainException(
         'Cannot accept contract in status "$status". '
@@ -327,8 +331,7 @@ class Contract extends Equatable {
       );
     }
 
-    final now =
-        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
+    final now = nowUtc;
     final domainEvent = ContractAcceptedByContractorEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
@@ -363,7 +366,7 @@ class Contract extends Equatable {
   /// and a [ContractActivatedEvent] in [domainEvents].
   ///
   /// Throws [DomainException] if the contract is not in [draft].
-  Contract activate() {
+  Contract activate({required DateTime nowUtc}) {
     if (status != ContractStatus.draft) {
       throw DomainException(
         'Cannot activate contract in status "$status". '
@@ -372,8 +375,7 @@ class Contract extends Equatable {
       );
     }
 
-    final now =
-        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
+    final now = nowUtc;
     final domainEvent = ContractActivatedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
@@ -413,7 +415,11 @@ class Contract extends Equatable {
   ///
   /// Throws [DomainException] if the contract is already [closed],
   /// or if required fields are empty.
-  Contract close({required String closedByUserId, required String reason}) {
+  Contract close({
+    required String closedByUserId,
+    required String reason,
+    required DateTime nowUtc,
+  }) {
     if (status == ContractStatus.closed) {
       throw const DomainException(
         'Contract is already closed. Closed is a terminal state.',
@@ -426,8 +432,7 @@ class Contract extends Equatable {
       throw const DomainException('reason must not be empty');
     }
 
-    final now =
-        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
+    final now = nowUtc;
     final domainEvent = ContractClosedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,

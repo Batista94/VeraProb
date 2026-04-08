@@ -1,3 +1,4 @@
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/sla_template.dart';
 import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
 import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
@@ -8,9 +9,13 @@ import 'projections/penalties_form_data.dart';
 /// Delegates creation to the domain factory and persistence to the repository.
 class SaveSlaTemplateHandler {
   final SlaTemplateRepository _repository;
+  final IDateTimeProvider _clock;
 
-  SaveSlaTemplateHandler({required SlaTemplateRepository repository})
-    : _repository = repository;
+  SaveSlaTemplateHandler({
+    required SlaTemplateRepository repository,
+    required IDateTimeProvider clock,
+  }) : _repository = repository,
+       _clock = clock;
 
   /// Creates or updates an [SlaTemplate] and persists it.
   ///
@@ -36,7 +41,7 @@ class SaveSlaTemplateHandler {
             description: description,
             vertical: vertical,
             penalties: domainPenalties,
-            createdAt: existingCreatedAt ?? DateTime.now().toUtc(),
+            createdAt: existingCreatedAt ?? _clock.now(),
           )
         : SlaTemplate.create(
             organizationId: organizationId,

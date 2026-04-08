@@ -12,6 +12,7 @@ import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/notifiers/connectivity_notifier.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 
 // ── Database singleton ────────────────────────────────────────────────────────
 
@@ -33,9 +34,12 @@ final localFactQueueRepositoryProvider = Provider<LocalFactQueueRepository>((
   ref,
 ) {
   return switch (ref.watch(persistenceModeProvider)) {
-    PersistenceMode.inMemory => InMemoryLocalFactQueueRepository(),
+    PersistenceMode.inMemory => InMemoryLocalFactQueueRepository(
+      ref.watch(dateTimeProviderProvider),
+    ),
     PersistenceMode.postgres => DriftLocalFactQueueRepository(
       ref.watch(localFactDatabaseProvider),
+      ref.watch(dateTimeProviderProvider),
     ),
   };
 });

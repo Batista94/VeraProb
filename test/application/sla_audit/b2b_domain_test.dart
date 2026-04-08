@@ -26,6 +26,7 @@ void main() {
     late InMemoryOperationalZoneRepository zoneRepo;
 
     final baseDate = DateTime.utc(2026, 3, 3); // Tuesday
+    final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
     const testOrgId = 'org-b2b';
     const testContractId = 'c-b2b-01';
 
@@ -94,6 +95,7 @@ void main() {
           declaredAtUtc: baseDate,
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         // Gen 1
@@ -204,6 +206,7 @@ void main() {
           declaredAtUtc: baseDate,
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         // Monday 2026-03-02

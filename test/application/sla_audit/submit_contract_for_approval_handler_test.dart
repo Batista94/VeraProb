@@ -11,6 +11,7 @@ import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -76,12 +77,13 @@ SubmitContractForApprovalCommand makeCommand({
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
-
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
   late MockContractRepository contractRepository;
   late _FakeApprovalService approvalService;
   late MockSlaAuditLedgerRepository ledger;
   late SubmitContractForApprovalHandler handler;
+  late FakeDateTimeProvider clock;
 
   setUpAll(() {
     registerFallbackValue(
@@ -90,7 +92,7 @@ void main() {
         type: 'TEST',
         contractId: 'contract-1',
         planVersion: 0,
-        occurredAtUtc: DateTime.now().toUtc(),
+        occurredAtUtc: nowUtc,
         payload: {},
       ),
     );
@@ -100,11 +102,13 @@ void main() {
     contractRepository = MockContractRepository();
     approvalService = _FakeApprovalService();
     ledger = MockSlaAuditLedgerRepository();
+    clock = FakeDateTimeProvider(nowUtc);
     handler = SubmitContractForApprovalHandler(
       contractRepository: contractRepository,
       approvalService: approvalService,
       ledger: ledger,
       rbac: RbacService(),
+      clock: clock,
     );
 
     when(() => ledger.append(any())).thenAnswer((_) async => 'entry-id');

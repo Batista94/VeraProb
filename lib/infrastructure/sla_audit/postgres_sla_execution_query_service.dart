@@ -4,14 +4,16 @@ import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// Postgres implementation for [SlaExecutionQueryService].
 /// Extracts flat DTOs directly from the `execution_states` table.
 /// Purely read-only, strict separation from Domain.
 class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
   final SupabaseClient _client;
+  final IDateTimeProvider _dateTimeProvider;
 
-  SlaExecutionQueryServicePostgres(this._client);
+  SlaExecutionQueryServicePostgres(this._client, this._dateTimeProvider);
 
   @override
   Future<SlaExecutionSummary> getSummary({
@@ -64,7 +66,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
       totalExecuted: executed,
       totalNoShow: noShow,
       totalEvidenceGap: evidenceGap,
-      generatedAtUtc: DateTime.now().toUtc(),
+      generatedAtUtc: _dateTimeProvider.now(),
       protectedRevenue: protectedRevenue.cents,
       revenueAtRisk: revenueAtRisk.cents,
       lostRevenue: lostRevenue.cents,

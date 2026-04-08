@@ -19,7 +19,9 @@ final dateTimeProviderProvider = Provider<IDateTimeProvider>(
   (ref) => BrazilDateTimeProvider(),
 );
 
-final gtfsServiceProvider = Provider((ref) => GtfsRealtimeService());
+final gtfsServiceProvider = Provider(
+  (ref) => GtfsRealtimeService(ref.watch(dateTimeProviderProvider)),
+);
 
 final vehicleRepositoryProvider = Provider<IVehiclePositionService>((ref) {
   final gtfsService = ref.read(gtfsServiceProvider);
@@ -27,7 +29,10 @@ final vehicleRepositoryProvider = Provider<IVehiclePositionService>((ref) {
 });
 
 final tripRepositoryProvider = Provider<ITripRepository>((ref) {
-  return TripRepositoryImpl(ref.watch(supabaseClientProvider));
+  return TripRepositoryImpl(
+    ref.watch(supabaseClientProvider),
+    ref.watch(dateTimeProviderProvider),
+  );
 });
 
 // ── SharedPreferences stub ───────────────────────────────────────────────────

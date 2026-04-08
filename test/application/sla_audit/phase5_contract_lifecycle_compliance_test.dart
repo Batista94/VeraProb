@@ -31,6 +31,7 @@ import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 void main() {
   group('Phase 5 Compliance — Contract & Plan Lifecycle', () {
@@ -46,14 +47,18 @@ void main() {
       planRepo = InMemoryPlanDeclarationRepository();
       ledger = InMemorySlaAuditLedgerRepository();
 
+      final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
+
       createHandler = CreateContractHandler(
         contractRepository: contractRepo,
         ledger: ledger,
+        clock: clock,
       );
       closeHandler = CloseContractHandler(
         contractRepository: contractRepo,
         ledger: ledger,
         rbac: RbacService(),
+        clock: clock,
       );
       planHandler = DeclareContractualPlanHandler(
         repository: planRepo,
@@ -62,6 +67,7 @@ void main() {
         contractRepository: contractRepo,
         zoneRepository: _StubZoneRepository(),
         vehicleRepository: _StubVehicleRepository(),
+        clock: clock,
       );
     });
 

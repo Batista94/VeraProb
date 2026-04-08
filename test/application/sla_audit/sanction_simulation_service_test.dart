@@ -3,20 +3,25 @@ import 'package:veraprob/application/sla_audit/sanction_simulation_service.dart'
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
   late InMemoryContractRepository contractRepo;
   late InMemorySlaAuditLedgerRepository ledger;
   late SanctionSimulationService service;
+  late FakeDateTimeProvider clock;
 
   const orgId = 'org-test-1';
 
   setUp(() {
     contractRepo = InMemoryContractRepository();
     ledger = InMemorySlaAuditLedgerRepository();
+    clock = FakeDateTimeProvider(nowUtc);
     service = SanctionSimulationService(
       ledger: ledger,
       contracts: contractRepo,
+      clock: clock,
     );
   });
 
@@ -27,6 +32,7 @@ void main() {
       contractorName: 'Trans Teste Ltda',
       validFromUtc: DateTime.utc(2026, 1, 1),
       validUntilUtc: DateTime.utc(2026, 12, 31),
+      nowUtc: nowUtc,
     );
     await contractRepo.save(contract);
   }

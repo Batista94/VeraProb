@@ -61,3 +61,17 @@ class BrazilDateTimeProvider implements IDateTimeProvider {
     );
   }
 }
+
+/// Strict UTC implementation — Zero Time Leaks.
+/// Returns system clock in UTC, without any local time helpers.
+class UtcDateTimeProvider implements IDateTimeProvider {
+  @override
+  DateTime now() => DateTime.now().toUtc();
+
+  @override
+  DateTime nowBrazil() {
+    throw UnsupportedError(
+      'UtcDateTimeProvider does not support Brazil local time. USE BrazilDateTimeProvider for UI/display only.',
+    );
+  }
+}

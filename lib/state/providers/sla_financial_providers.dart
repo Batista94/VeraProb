@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_providers.dart';
+import 'shared_providers.dart';
 
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
@@ -29,13 +30,17 @@ final financialImpactQueryServiceProvider =
 
       if (mode == PersistenceMode.postgres) {
         final client = ref.watch(supabaseClientProvider);
-        return ContractualFinancialImpactQueryServicePostgres(client);
+        return ContractualFinancialImpactQueryServicePostgres(
+          client,
+          ref.watch(dateTimeProviderProvider),
+        );
       }
 
       // Safe to watch InMemory repo since the mode is inMemory
       final snapshotRepo = ref.watch(financialSnapshotRepositoryProvider);
       return ContractualFinancialImpactQueryServiceInMemory(
         snapshotRepo: snapshotRepo,
+        clock: ref.watch(dateTimeProviderProvider),
       );
     });
 

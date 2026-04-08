@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/contractor.dart';
@@ -11,11 +12,15 @@ import 'save_contractor_command.dart';
 /// RBAC: Requires [UserPermission.canManageContractors].
 class SaveContractorHandler {
   final ContractorRepository _repository;
+  final IDateTimeProvider _clock;
   final RbacService _rbac = RbacService();
   final _uuid = const Uuid();
 
-  SaveContractorHandler({required ContractorRepository repository})
-    : _repository = repository;
+  SaveContractorHandler({
+    required ContractorRepository repository,
+    required IDateTimeProvider clock,
+  }) : _repository = repository,
+       _clock = clock;
 
   Future<Contractor> handle(SaveContractorCommand command) async {
     // 1. RBAC check
@@ -50,7 +55,7 @@ class SaveContractorHandler {
         taxId: command.taxId,
         primaryEmail: command.primaryEmail,
         contactName: command.contactName,
-        createdAtUtc: DateTime.now().toUtc(),
+        createdAtUtc: _clock.now(),
       );
     }
 

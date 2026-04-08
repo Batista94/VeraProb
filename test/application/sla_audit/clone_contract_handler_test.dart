@@ -7,6 +7,7 @@ import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 void main() {
   late InMemoryContractRepository repository;
@@ -22,13 +23,16 @@ void main() {
   setUp(() {
     repository = InMemoryContractRepository();
     ledger = InMemorySlaAuditLedgerRepository();
+    final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
     createHandler = CreateContractHandler(
       contractRepository: repository,
       ledger: ledger,
+      clock: clock,
     );
     cloneHandler = CloneContractHandler(
       contractRepository: repository,
       ledger: ledger,
+      clock: clock,
     );
   });
 

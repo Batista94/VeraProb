@@ -77,9 +77,12 @@ Future<String> _ensureUser(
   if (res.statusCode == 201 || res.statusCode == 200) {
     return jsonDecode(res.body)['id'] as String;
   }
-  // Try to find if already exists
+
+  // 422 email_exists (or any other non-201): search by email filter directly
   final search = await http.get(
-    Uri.parse('$supabaseUrl/auth/v1/admin/users'),
+    Uri.parse(
+      '$supabaseUrl/auth/v1/admin/users?filter=${Uri.encodeComponent(email)}',
+    ),
     headers: {
       'apikey': serviceRoleKey,
       'Authorization': 'Bearer $serviceRoleKey',

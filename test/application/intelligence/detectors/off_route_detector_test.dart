@@ -1,11 +1,15 @@
+import 'package:mocktail/mocktail.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/intelligence/detectors/off_route_detector.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/application/normalization/models/route_adherence.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
+
+class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 void main() {
   final now = DateTime.now().toUtc();
@@ -37,7 +41,13 @@ void main() {
 
   group('OffRouteDetector', () {
     late OffRouteDetector detector;
-    setUp(() => detector = const OffRouteDetector());
+    late MockDateTimeProvider mockDateTime;
+
+    setUp(() {
+      mockDateTime = MockDateTimeProvider();
+      when(() => mockDateTime.now()).thenReturn(DateTime.now().toUtc());
+      detector = OffRouteDetector(mockDateTime);
+    });
 
     test('canDetect is true for active trips', () {
       expect(detector.canDetect(makeTrip(status: TripStatus.enRoute)), isTrue);

@@ -6,6 +6,7 @@ import 'package:veraprob/application/sla_audit/contract_approval_command_service
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,7 @@ void main() {
     handler = AcceptByContractorHandler(
       approvalService: approvalService,
       ledger: ledger,
+      clock: FakeDateTimeProvider(DateTime.utc(2026, 1, 1)),
     );
 
     when(() => ledger.append(any())).thenAnswer((_) async => 'entry-id');

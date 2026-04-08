@@ -5,6 +5,7 @@ import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart'
     as domain;
 import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
 import 'package:veraprob/infrastructure/local_fact_db/local_fact_database.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// Drift-backed implementation of [LocalFactQueueRepository].
 ///
@@ -15,8 +16,9 @@ import 'package:veraprob/infrastructure/local_fact_db/local_fact_database.dart';
 /// **INV-12:** `clearAcknowledged` deletes records older than 48 h.
 class DriftLocalFactQueueRepository implements LocalFactQueueRepository {
   final LocalFactDatabase _db;
+  final IDateTimeProvider _dateTimeProvider;
 
-  DriftLocalFactQueueRepository(this._db);
+  DriftLocalFactQueueRepository(this._db, this._dateTimeProvider);
 
   @override
   Future<void> enqueue(domain.PendingFact fact) async {
@@ -84,7 +86,7 @@ class DriftLocalFactQueueRepository implements LocalFactQueueRepository {
   Future<void> clearAcknowledged({
     Duration olderThan = const Duration(hours: 48),
   }) async {
-    final cutoff = DateTime.now().toUtc().subtract(olderThan);
+    final cutoff = _dateTimeProvider.now().subtract(olderThan);
     await (_db.delete(_db.pendingFacts)..where(
           (t) =>
               t.syncStatus.equals(SyncStatus.acknowledged.name) &

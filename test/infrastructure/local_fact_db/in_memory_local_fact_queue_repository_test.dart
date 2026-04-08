@@ -4,6 +4,7 @@ import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
 import 'package:veraprob/infrastructure/local_fact_db/in_memory_local_fact_queue_repository.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 CanonicalFact makeCanonicalFact({int seq = 1}) => CanonicalFact.create(
   organizationId: 'org-test',
@@ -26,7 +27,9 @@ void main() {
   late InMemoryLocalFactQueueRepository repo;
 
   setUp(() {
-    repo = InMemoryLocalFactQueueRepository();
+    repo = InMemoryLocalFactQueueRepository(
+      FakeDateTimeProvider(DateTime(2026, 4, 8, 10, 0, 0)),
+    );
   });
 
   // ── enqueue ──────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'operational_data_provider.dart';
 
 /// Real-time adapter that connects to Supabase Realtime for live vehicle
@@ -17,6 +18,10 @@ import 'operational_data_provider.dart';
 /// This guarantees the downstream `Stream<List<VehiclePosition>>` always
 /// represents the **current operational state** of the fleet.
 class RealtimeDataProvider implements IOperationalDataProvider {
+  final IDateTimeProvider _dateTimeProvider;
+
+  RealtimeDataProvider(this._dateTimeProvider);
+
   final _controller = StreamController<List<VehiclePosition>>.broadcast();
   RealtimeChannel? _channel;
   bool _isConnected = false;
@@ -102,7 +107,7 @@ class RealtimeDataProvider implements IOperationalDataProvider {
       _positionBuffer[position.tripId] = position;
 
       // 2. Evict stale entries (TTL)
-      final now = DateTime.now().toUtc();
+      final now = _dateTimeProvider.now();
       _positionBuffer.removeWhere(
         (_, pos) => now.difference(pos.timestamp) > _positionTtl,
       );

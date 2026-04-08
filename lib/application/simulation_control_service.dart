@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/data/services/fleet_simulation_service.dart';
 import 'audit/audit_service.dart';
 import 'operational_control_service.dart';
@@ -17,6 +18,7 @@ class SimulationControlService implements OperationalControlService {
   final ContractualEventPort _contractualEvents;
   final String Function() _getOperatorId;
   final String Function() _getOrganizationId;
+  final IDateTimeProvider _dateTimeProvider;
 
   SimulationControlService(
     this._simulation,
@@ -24,8 +26,10 @@ class SimulationControlService implements OperationalControlService {
     this._contractualEvents, {
     required String Function() getOperatorId,
     required String Function() getOrganizationId,
+    IDateTimeProvider? dateTimeProvider,
   }) : _getOperatorId = getOperatorId,
-       _getOrganizationId = getOrganizationId;
+       _getOrganizationId = getOrganizationId,
+       _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   @override
   Future<TripEvent> updateTripStatus(
@@ -62,12 +66,12 @@ class SimulationControlService implements OperationalControlService {
         // ignore: use_null_aware_elements
         if (reason != null) 'reason': reason,
         'source': 'operator_manual',
-        'timestamp': DateTime.now().toUtc().toIso8601String(),
+        'timestamp': _dateTimeProvider.now().toIso8601String(),
       },
     );
 
     // ── Dispatch forensic evidence to the SLA ledger via the module port ──
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = _dateTimeProvider.now();
     final trip = _simulation.getTripById(tripId);
 
     if (newStatus == TripStatus.interrupted) {
@@ -130,7 +134,7 @@ class SimulationControlService implements OperationalControlService {
         // ignore: use_null_aware_elements
         if (notes != null) 'notes': notes,
         'source': 'operator_manual',
-        'timestamp': DateTime.now().toUtc().toIso8601String(),
+        'timestamp': _dateTimeProvider.now().toIso8601String(),
       },
     );
 
@@ -143,7 +147,7 @@ class SimulationControlService implements OperationalControlService {
       occurrenceType: eventType.name,
       notes: notes,
       metadata: metadata ?? const {},
-      occurredAtUtc: DateTime.now().toUtc(),
+      occurredAtUtc: _dateTimeProvider.now(),
     );
 
     return event;

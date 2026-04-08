@@ -1,6 +1,7 @@
 import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/entities/operational_warning.dart';
 import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 
@@ -11,8 +12,13 @@ import 'package:veraprob/application/normalization/models/vehicle_operational_st
 abstract class SituationDetector {
   final String id;
   final String name;
+  final IDateTimeProvider dateTimeProvider;
 
-  const SituationDetector({required this.id, required this.name});
+  const SituationDetector(
+    this.dateTimeProvider, {
+    required this.id,
+    required this.name,
+  });
 
   /// Check if this detector applies to the current trip state.
   bool canDetect(OperationalTrip trip);

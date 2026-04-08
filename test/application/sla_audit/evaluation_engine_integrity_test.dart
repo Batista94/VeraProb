@@ -19,6 +19,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_rep
 import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
   setUpAll(() {
     tz_data.initializeTimeZones();
   });
@@ -92,11 +93,12 @@ void main() {
       organizationId: 'org-audit',
       contractId: 'c-audit',
       planVersion: 1,
-      declaredAtUtc: DateTime.now().toUtc(),
+      declaredAtUtc: nowUtc,
       declaredByUserId: 'auditor',
       originalFileHash: 'aud-hash',
       ruleSnapshot: const RuleSnapshot([]),
       shiftPatterns: [pattern],
+      nowUtc: nowUtc,
     );
     await planRepo.save(declaration);
   }
@@ -119,7 +121,7 @@ void main() {
 
   group('Forensic Integrity: ContractualEvaluationEngine', () {
     test('REQ-1: Mandatory UTC Enforcement (INV-9)', () async {
-      final now = DateTime.now().toUtc();
+      final now = nowUtc;
       expect(now.isUtc, isTrue, reason: 'Timestamp MUST be UTC');
 
       await seedPlanWithGrace(0);
@@ -249,9 +251,9 @@ void main() {
         windowStartUtc: windowEnd.subtract(const Duration(hours: 1)),
         windowEndUtc: windowEnd,
         status: ExecutionStatus.pending,
-        createdAtUtc: DateTime.now().toUtc(),
-        lastEvaluatedAtUtc: DateTime.now().toUtc(),
-        statusLastUpdatedAtUtc: DateTime.now().toUtc(),
+        createdAtUtc: nowUtc,
+        lastEvaluatedAtUtc: nowUtc,
+        statusLastUpdatedAtUtc: nowUtc,
       );
       await repo.save(state);
 

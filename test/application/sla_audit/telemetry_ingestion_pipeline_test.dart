@@ -24,6 +24,7 @@ import 'package:veraprob/domain/sla_audit/spoofing_audit_entry.dart';
 import 'package:veraprob/domain/sla_audit/spoofing_risk_score.dart';
 
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
   setUpAll(() {
     tz_data.initializeTimeZones();
     registerFallbackValue(SpoofingRiskScore.zero());
@@ -32,8 +33,8 @@ void main() {
         organizationId: 'o',
         deviceId: 'd',
         assetId: 'a',
-        windowStart: DateTime.now().toUtc(),
-        windowEnd: DateTime.now().toUtc(),
+        windowStart: nowUtc,
+        windowEnd: nowUtc,
         riskScore: SpoofingRiskScore.zero(),
         factsAnalyzed: 0,
         factIds: [],
@@ -150,6 +151,7 @@ void main() {
         ),
       ],
       ruleSnapshot: const RuleSnapshot([]),
+      nowUtc: nowUtc,
     );
     await planRepo.save(plan);
   }

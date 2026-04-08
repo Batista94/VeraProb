@@ -5,6 +5,7 @@ import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'create_contract_command.dart';
 import 'sla_ledger_mapper.dart';
 
@@ -21,12 +22,15 @@ import 'sla_ledger_mapper.dart';
 class CreateContractHandler {
   final ContractRepository _contractRepository;
   final SlaAuditLedgerRepository _ledger;
+  final IDateTimeProvider _clock;
 
   CreateContractHandler({
     required ContractRepository contractRepository,
     required SlaAuditLedgerRepository ledger,
+    required IDateTimeProvider clock,
   }) : _contractRepository = contractRepository,
-       _ledger = ledger;
+       _ledger = ledger,
+       _clock = clock;
 
   /// Handles the command by creating the aggregate, persisting it,
   /// and appending all domain events to the ledger.
@@ -44,6 +48,7 @@ class CreateContractHandler {
       financialCeiling: command.financialCeilingCents != null
           ? Money(command.financialCeilingCents!)
           : null,
+      nowUtc: _clock.now(),
     );
 
     // 2. Persist aggregate

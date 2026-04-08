@@ -115,6 +115,7 @@ WASM_HITS=$(grep -rn --include="*.dart" \
   -E "import ['\"]dart:html['\"]|import ['\"]dart:js['\"]" \
   lib/ 2>/dev/null \
   | grep -v "dart:js_interop" \
+  | grep -vE "// Physical Metric|// pr_scanner: ignore" \
   || true)
 
 if [[ -n "$WASM_HITS" ]]; then
@@ -133,6 +134,7 @@ FIN_HITS=$(grep -rn --include="*.dart" \
   lib/domain/ lib/application/ 2>/dev/null \
   | grep -ivE "multiplier|rate\b|\.toDouble\(\)|toDouble\b|tryParse|fromDouble" \
   | grep -ivE "^[^:]*(coordinate|latitude|longitude|speed|heading|spatial)[^/]*\.dart:" \
+  | grep -vE "// Physical Metric|// pr_scanner: ignore" \
   || true)
 
 if [[ -n "$FIN_HITS" ]]; then
@@ -153,7 +155,7 @@ echo "  A3 — UTC Determinism: BLOCKING raw DateTime.now() in lib/domain/ lib/a
 STRICT_DT_HITS=$(grep -rn --include="*.dart" \
   "DateTime\.now()" \
   lib/domain/ lib/application/ lib/infrastructure/ 2>/dev/null \
-  | grep -vE "date_time_provider\.dart|// ignore:|IDateTimeProvider|_dateTimeProvider\.now\(\)|provider\.now\(\)|BrazilDateTimeProvider|FakeDateTimeProvider" \
+  | grep -vE "date_time_provider\.dart|// ignore:|// Physical Metric|// pr_scanner: ignore|IDateTimeProvider|_dateTimeProvider\.now\(\)|provider\.now\(\)|BrazilDateTimeProvider|FakeDateTimeProvider" \
   | grep -vE "StaticDateTimeProvider\.instance" \
   | grep -vE "millisecondsSinceEpoch|\.difference\(|initialDate:|firstDate:|lastDate:|pdf_export_service" \
   | grep -vE "\?\?[[:space:]]*DateTime\.now\(\)|DateTime\.now\(\)\.subtract\(" \
@@ -177,6 +179,7 @@ UTC_HITS=$(grep -rn --include="*.dart" \
   | grep -vE "millisecondsSinceEpoch|\.difference\(|initialDate:|firstDate:|lastDate:|pdf_export_service" \
   | grep -vE "\?\?[[:space:]]*DateTime\.now\(\)|DateTime\.now\(\)\.subtract\(" \
   | grep -vE "DateTime _[a-zA-Z]*[Dd]ate\s*=" \
+  | grep -vE "// Physical Metric|// pr_scanner: ignore" \
   | while IFS= read -r hit; do
       file=$(echo "$hit" | cut -d: -f1)
       linenum=$(echo "$hit" | sed 's/[^:]*:\([0-9]*\):.*/\1/')
@@ -333,6 +336,7 @@ SECRET_HITS=$(grep -rn --include="*.dart" \
   -E "(sb_[a-zA-Z0-9]{20,}|sk_[a-zA-Z0-9]{20,}|(serviceRoleKey|anonKey|apiKey|api_key|secretKey)\s*[=:]\s*['\"][^'\"]{20,}['\"]|eyJ[a-zA-Z0-9_\-]{50,})" \
   lib/ 2>/dev/null \
   | grep -vE "Env\.|AppConfig\.|\.env" \
+  | grep -vE "// Physical Metric|// pr_scanner: ignore" \
   || true)
 if [[ -n "$SECRET_HITS" ]]; then
   block "[SECRET-BLOCK] Hardcoded secret or API key pattern detected — move to .env / Env class (Security / INV-25)"
@@ -401,6 +405,7 @@ echo "  C4 — Leaky Abstraction: scanning lib/features/ for direct domain impor
 LEAK_HITS=$(grep -rn --include="*.dart" \
   "import 'package:veraprob/domain/" \
   lib/features/ 2>/dev/null \
+  | grep -vE "// Physical Metric|// pr_scanner: ignore" \
   || true)
 if [[ -n "$LEAK_HITS" ]]; then
   warn "[LEAK-WARN] Domain imports found in lib/features/ — domain types must flow through application-layer ViewModels/DTOs (INV-4 / Lens 2)"

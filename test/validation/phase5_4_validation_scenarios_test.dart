@@ -47,6 +47,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_rep
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
+import '../mocks/fake_date_time_provider.dart';
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -96,14 +97,18 @@ void main() {
     planRepo = InMemoryPlanDeclarationRepository();
     ledger = InMemorySlaAuditLedgerRepository();
 
+    final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
+
     createHandler = CreateContractHandler(
       contractRepository: contractRepo,
       ledger: ledger,
+      clock: clock,
     );
     closeHandler = CloseContractHandler(
       contractRepository: contractRepo,
       ledger: ledger,
       rbac: RbacService(),
+      clock: clock,
     );
     planHandler = DeclareContractualPlanHandler(
       repository: planRepo,
@@ -112,6 +117,7 @@ void main() {
       contractRepository: contractRepo,
       zoneRepository: _StubZoneRepository(),
       vehicleRepository: _StubVehicleRepository(),
+      clock: clock,
     );
   });
 
@@ -398,6 +404,7 @@ void main() {
         final execStateRepo = InMemoryContractualExecutionStateRepository();
         final slaQueryService = SlaExecutionQueryServiceInMemory(
           repo: execStateRepo,
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 1, 1)),
         );
 
         final queryService = ContractQueryServiceInMemory(
@@ -666,9 +673,14 @@ void main() {
             dateTimeProvider: BrazilDateTimeProvider(),
           );
 
+          final clock = FakeDateTimeProvider(
+            DateTime.utc(2026, 4, 8, 12, 0, 0),
+          );
+
           final b2bCreateHandler = CreateContractHandler(
             contractRepository: b2bContractRepo,
             ledger: b2bLedger,
+            clock: clock,
           );
           final b2bPlanHandler = DeclareContractualPlanHandler(
             repository: b2bPlanRepo,
@@ -678,6 +690,7 @@ void main() {
             zoneRepository: zoneRepo,
             vehicleRepository: _StubVehicleRepository(),
             projectionService: projectionService,
+            clock: clock,
           );
 
           final contract = await b2bCreateHandler.handle(

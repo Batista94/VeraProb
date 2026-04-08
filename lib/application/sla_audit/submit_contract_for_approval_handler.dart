@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
@@ -27,6 +28,7 @@ class SubmitContractForApprovalHandler {
   final ContractApprovalCommandService _approvalService;
   final SlaAuditLedgerRepository _ledger;
   final RbacService _rbac;
+  final IDateTimeProvider _clock;
 
   static const _tokenTtl = Duration(days: 30);
 
@@ -35,10 +37,12 @@ class SubmitContractForApprovalHandler {
     required ContractApprovalCommandService approvalService,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
+    required IDateTimeProvider clock,
   }) : _contractRepository = contractRepository,
        _approvalService = approvalService,
        _ledger = ledger,
-       _rbac = rbac;
+       _rbac = rbac,
+       _clock = clock;
 
   /// Returns the raw [token] string on success.
   /// The UI is responsible for constructing the full review URL.
@@ -74,10 +78,13 @@ class SubmitContractForApprovalHandler {
     const uuid = Uuid();
     final tokenId = uuid.v4();
     final token = uuid.v4();
-    final expiresAtUtc = DateTime.now().toUtc().add(_tokenTtl);
+    final expiresAtUtc = _clock.now().add(_tokenTtl);
 
     // 4. Domain guard — [Contract.submitForApproval] validates status
-    final submitted = existing.submitForApproval(reviewToken: token);
+    final submitted = existing.submitForApproval(
+      reviewToken: token,
+      nowUtc: _clock.now(),
+    );
 
     // 5. Atomic RPC: transitions contract + inserts token row
     await _approvalService.submitForApproval(

@@ -5,6 +5,7 @@ import 'package:veraprob/application/sla_audit/save_contractor_handler.dart';
 import 'package:veraprob/domain/sla_audit/contractor.dart';
 import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 class MockContractorRepository extends Mock implements ContractorRepository {}
 
@@ -27,7 +28,10 @@ void main() {
 
   setUp(() {
     repository = MockContractorRepository();
-    handler = SaveContractorHandler(repository: repository);
+    handler = SaveContractorHandler(
+      repository: repository,
+      clock: FakeDateTimeProvider(DateTime.utc(2026, 1, 1)),
+    );
   });
 
   SaveContractorCommand makeCommand({

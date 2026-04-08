@@ -2,13 +2,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/audit/audit_service.dart';
 import 'package:veraprob/domain/entities/audit_log.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// Postgres implementation of the [AuditService].
 /// Operates strictly as an append-only persistence adapter.
 class PostgresAuditService implements AuditService {
   final SupabaseClient _client;
+  final IDateTimeProvider _dateTimeProvider;
 
-  PostgresAuditService(this._client);
+  PostgresAuditService(this._client, this._dateTimeProvider);
 
   @override
   Future<void> logAction({
@@ -30,7 +32,7 @@ class PostgresAuditService implements AuditService {
       oldValue: oldValue,
       newValue: newValue,
       reason: reason,
-      timestamp: DateTime.now().toUtc(),
+      timestamp: _dateTimeProvider.now(),
     );
 
     // Append-only persistence (fire and forget / await)

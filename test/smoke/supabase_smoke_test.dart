@@ -23,11 +23,11 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 // Domain
-import 'package:veraprob/core/time/brazil_time.dart';
 import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -64,6 +64,8 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_execution
 import 'package:veraprob/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_template_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+import '../mocks/fake_date_time_provider.dart';
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────
 
@@ -209,22 +211,27 @@ void main() {
   // without Supabase credentials.  BrazilTime.ensureInitialized() is
   // idempotent, so the second call inside the credentials block is a no-op.
   setUpAll(() {
-    BrazilTime.ensureInitialized();
+    tz_data.initializeTimeZones();
   });
 
   if (hasCredentials) {
     setUpAll(() async {
       client = SupabaseClient(supabaseUrl, supabaseKey);
-      BrazilTime.ensureInitialized();
 
       contractRepo = PostgresContractRepository(client);
       planRepo = PostgresPlanDeclarationRepository(client);
       ledgerRepo = PostgresSlaAuditLedgerRepository(client);
-      executionRepo = PostgresContractualExecutionStateRepository(client);
+      executionRepo = PostgresContractualExecutionStateRepository(
+        client,
+        UtcDateTimeProvider(),
+      );
+
+      final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
 
       createHandler = CreateContractHandler(
         contractRepository: contractRepo,
         ledger: ledgerRepo,
+        clock: clock,
       );
 
       declareHandler = DeclareContractualPlanHandler(
@@ -240,6 +247,7 @@ void main() {
         vehicleRepository: const InMemoryActiveVehicleRepository(
           countsByOrg: {orgId: 1},
         ),
+        clock: clock,
       );
 
       engine = ContractualEvaluationEngine(
@@ -306,7 +314,7 @@ void main() {
             declaredByUserId: 'smoke-admin',
             planVersion: planVersion,
             originalFileHash: hash,
-            declaredAtUtc: DateTime.now().toUtc(),
+            declaredAtUtc: DateTime.utc(2026, 4, 8, 0, 0, 0),
             shiftPatterns: [pattern],
             contractualValueCents: 50000, // R$ 500,00
           );
@@ -675,6 +683,7 @@ void main() {
         cloneHandler = CloneContractHandler(
           contractRepository: contractRepo,
           ledger: ledgerRepo,
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
         );
       });
 

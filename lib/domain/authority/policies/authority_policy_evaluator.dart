@@ -10,9 +10,11 @@ abstract class AuthorityPolicyEvaluator {
   ///
   /// The [targetRef] helps advanced policies check entity-level metadata
   /// (e.g., checking if the specific Trip is already resolved).
+  /// [nowUtc] is the authoritative evaluation timestamp (INV-9).
   Future<AuthorizationDecision> evaluate({
     required OperationalActionType actionType,
     required AuthorizationContext context,
     required TargetRef targetRef,
+    required DateTime nowUtc,
   });
 }
