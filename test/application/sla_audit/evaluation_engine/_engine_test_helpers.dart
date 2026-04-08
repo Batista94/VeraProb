@@ -59,7 +59,8 @@ void initializeTimezones() {
   InMemorySlaAuditLedgerRepository ledger,
   InMemoryEvaluationTraceRepository traceRepo,
   ContractualEvaluationEngine engine,
-}) createEngine() {
+})
+createEngine() {
   final repo = InMemoryContractualExecutionStateRepository();
   final planRepo = InMemoryPlanDeclarationRepository();
   final ledger = InMemorySlaAuditLedgerRepository();

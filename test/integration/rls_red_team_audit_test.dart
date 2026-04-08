@@ -439,7 +439,7 @@ Future<String> _ensureUser(
 
   if (listRes.statusCode != 200) {
     throw StateError(
-      '_ensureUser: failed to create (${ res.statusCode}: ${res.body}) '
+      '_ensureUser: failed to create (${res.statusCode}: ${res.body}) '
       'and failed to list users (${listRes.statusCode}: ${listRes.body})',
     );
   }
@@ -460,9 +460,7 @@ Future<String> _ensureUser(
 /// Used in [tearDownAll] to keep the test DB clean between runs.
 Future<void> _deleteUser(String userId) async {
   final res = await http.delete(
-    Uri.parse(
-      '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users/$userId',
-    ),
+    Uri.parse('${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users/$userId'),
     headers: {
       'apikey': PostgresTestConfig.serviceRoleKey,
       'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
@@ -472,8 +470,10 @@ Future<void> _deleteUser(String userId) async {
   if (res.statusCode != 200 && res.statusCode != 404) {
     // Non-fatal: log but don't throw to avoid masking test results.
     // ignore: avoid_print
-    print('[tearDownAll] Warning: failed to delete user $userId '
-        '(${res.statusCode}: ${res.body})');
+    print(
+      '[tearDownAll] Warning: failed to delete user $userId '
+      '(${res.statusCode}: ${res.body})',
+    );
   }
 }
 
