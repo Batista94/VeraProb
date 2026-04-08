@@ -13,6 +13,7 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 void main() {
   setUpAll(() {
@@ -114,6 +115,7 @@ void main() {
       planRepo: planRepo,
       zoneRepo: zoneRepo,
       alertRepo: alertRepo,
+      dateTimeProvider: BrazilDateTimeProvider(),
     );
 
     return (plan, origin, dest, service, planRepo);
@@ -154,6 +156,7 @@ void main() {
           planRepo: InMemoryPlanDeclarationRepository(),
           zoneRepo: InMemoryOperationalZoneRepository(),
           alertRepo: InMemoryOperationalAlertRepository(),
+          dateTimeProvider: BrazilDateTimeProvider(),
         );
 
         final sets = await service.projectDays(
@@ -273,6 +276,7 @@ void main() {
           planRepo: InMemoryPlanDeclarationRepository(),
           zoneRepo: zoneRepo,
           alertRepo: InMemoryOperationalAlertRepository(),
+          dateTimeProvider: BrazilDateTimeProvider(),
         );
 
         final sets = await service.projectDays(
@@ -361,6 +365,7 @@ void main() {
           planRepo: InMemoryPlanDeclarationRepository(),
           zoneRepo: zoneRepo,
           alertRepo: alertRepo,
+          dateTimeProvider: BrazilDateTimeProvider(),
         );
 
         // asOf = Wednesday 2026-03-11 — last Monday was 2026-03-09 (yesterday)
@@ -389,6 +394,7 @@ void main() {
         planRepo: InMemoryPlanDeclarationRepository(),
         zoneRepo: InMemoryOperationalZoneRepository(),
         alertRepo: alertRepo,
+        dateTimeProvider: BrazilDateTimeProvider(),
       );
 
       // Need zones in the repo for gap detection (only needs setId — no zone lookup)
@@ -431,6 +437,7 @@ void main() {
           zoneRepo:
               InMemoryOperationalZoneRepository(), // empty — zones not found
           alertRepo: InMemoryOperationalAlertRepository(),
+          dateTimeProvider: BrazilDateTimeProvider(),
         );
 
         final sets = await service.projectDays(
@@ -589,6 +596,7 @@ void main() {
         planRepo: InMemoryPlanDeclarationRepository(),
         zoneRepo: zoneRepo,
         alertRepo: InMemoryOperationalAlertRepository(),
+        dateTimeProvider: BrazilDateTimeProvider(),
       );
 
       // Monday 2026-03-09

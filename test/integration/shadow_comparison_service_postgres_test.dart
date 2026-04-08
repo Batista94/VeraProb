@@ -6,6 +6,7 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_shadow_verdict_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 import '../infrastructure/postgres/postgres_test_config.dart';
 
@@ -75,7 +76,10 @@ void main() async {
       await PostgresTestConfig.ensureSentinelOrg(client: client, id: orgId);
 
       repo = PostgresShadowVerdictRepository(client);
-      service = ShadowComparisonService(shadowRepo: repo);
+      service = ShadowComparisonService(
+        shadowRepo: repo,
+        dateTimeProvider: BrazilDateTimeProvider(),
+      );
     });
 
     // ── Input validation ───────────────────────────────────────────────────────
@@ -399,6 +403,7 @@ void main() async {
         final strictService = ShadowComparisonService(
           shadowRepo: repo,
           criticalDivergenceThreshold: 80.0,
+          dateTimeProvider: BrazilDateTimeProvider(),
         );
         for (var i = 1; i <= 3; i++) {
           await repo.save(
@@ -448,6 +453,7 @@ void main() async {
         final lenientService = ShadowComparisonService(
           shadowRepo: repo,
           criticalDivergenceThreshold: 50.0,
+          dateTimeProvider: BrazilDateTimeProvider(),
         );
         // 1 match, 1 FP → matchRate = 50% (exactly at 50% threshold)
         await repo.save(

@@ -27,6 +27,7 @@ import 'admin_providers.dart';
 import 'auth_providers.dart';
 import 'operational_zone_providers.dart';
 import 'sla_providers.dart';
+import 'shared_providers.dart';
 
 // Re-export so features/ can use ContractReviewSummary without importing infra/.
 export 'package:veraprob/infrastructure/sla_audit/postgres_contract_review_token_query_service.dart'
@@ -109,6 +110,7 @@ final shiftProjectionServiceProvider = Provider<ShiftProjectionService>((ref) {
     planRepo: ref.watch(planDeclarationRepositoryProvider),
     zoneRepo: ref.watch(operationalZoneRepositoryProvider),
     alertRepo: ref.watch(operationalAlertRepositoryProvider),
+    dateTimeProvider: ref.watch(dateTimeProviderProvider),
   );
 });
 

@@ -84,7 +84,10 @@ final dataSeedingRepositoryProvider = Provider<DataSeedingRepository>((ref) {
 // ── Application Handlers ─────────────────────────────────────────────────────
 
 final inviteUserHandlerProvider = Provider<InviteUserHandler>((ref) {
-  return InviteUserHandler(ref.watch(invitationCommandServiceProvider));
+  return InviteUserHandler(
+    ref.watch(invitationCommandServiceProvider),
+    ref.watch(dateTimeProviderProvider),
+  );
 });
 
 final revokeInvitationHandlerProvider = Provider<RevokeInvitationHandler>((

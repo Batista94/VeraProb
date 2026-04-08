@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/application/admin/invite_user_command.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/super_admin/plan_limits.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
@@ -18,9 +19,14 @@ import 'package:veraprob/application/super_admin/super_admin_invitation_command_
 class CreateOrganizationHandler {
   final ISuperAdminRepository _repository;
   final SupabaseClient _authenticatedClient;
+  final IDateTimeProvider _dateTimeProvider;
   final RbacService _rbac = RbacService();
 
-  CreateOrganizationHandler(this._repository, this._authenticatedClient);
+  CreateOrganizationHandler(
+    this._repository,
+    this._authenticatedClient,
+    this._dateTimeProvider,
+  );
 
   Future<CreateOrganizationResult> handle(CreateOrganizationCommand cmd) async {
     // 1. RBAC — before any I/O
@@ -88,7 +94,10 @@ class CreateOrganizationHandler {
       orgId: orgId,
       superAdminUserId: cmd.superAdminUserId,
     );
-    final inviteHandler = InviteUserHandler(invitationService);
+    final inviteHandler = InviteUserHandler(
+      invitationService,
+      _dateTimeProvider,
+    );
 
     final token = await inviteHandler.handle(
       InviteUserCommand(

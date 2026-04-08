@@ -5,6 +5,8 @@ import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_shadow_verdict_repository.dart';
 
+import '../../mocks/fake_date_time_provider.dart';
+
 void main() {
   // ── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -53,11 +55,16 @@ void main() {
   }
 
   late InMemoryShadowVerdictRepository repo;
+  late FakeDateTimeProvider dateTimeProvider;
   late ShadowComparisonService service;
 
   setUp(() {
     repo = InMemoryShadowVerdictRepository();
-    service = ShadowComparisonService(shadowRepo: repo);
+    dateTimeProvider = FakeDateTimeProvider(DateTime.utc(2026, 6, 15));
+    service = ShadowComparisonService(
+      shadowRepo: repo,
+      dateTimeProvider: dateTimeProvider,
+    );
   });
 
   // ── Input validation ───────────────────────────────────────────────────────
@@ -377,6 +384,7 @@ void main() {
       // Use custom threshold of 80.0%. 3 match, 1 FP → 75.0%
       final strictService = ShadowComparisonService(
         shadowRepo: repo,
+        dateTimeProvider: dateTimeProvider,
         criticalDivergenceThreshold: 80.0,
       );
       for (var i = 1; i <= 3; i++) {
@@ -426,6 +434,7 @@ void main() {
     test('threshold is configurable below default 80%', () async {
       final lenientService = ShadowComparisonService(
         shadowRepo: repo,
+        dateTimeProvider: dateTimeProvider,
         criticalDivergenceThreshold: 50.0,
       );
       // 1 match, 1 FP → matchRate = 50% (exactly at 50% threshold)

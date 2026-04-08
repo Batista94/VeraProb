@@ -17,6 +17,7 @@ import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/domain/super_admin/plan_type.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_super_admin_repository.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 
 import '../infrastructure/postgres/postgres_test_config.dart';
@@ -79,7 +80,11 @@ void main() async {
           PostgresTestConfig.serviceRoleKey,
         );
         repo = SupabaseSuperAdminRepository(serviceRoleClient);
-        handler = CreateOrganizationHandler(repo, serviceRoleClient);
+        handler = CreateOrganizationHandler(
+          repo,
+          serviceRoleClient,
+          BrazilDateTimeProvider(),
+        );
       });
 
       tearDownAll(() async {

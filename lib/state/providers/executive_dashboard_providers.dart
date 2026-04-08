@@ -10,6 +10,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_shadow_mode_reposito
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'audit_package_providers.dart';
 import 'sla_financial_providers.dart';
+import 'shared_providers.dart';
 
 // ── Canonical Fact Repository ────────────────────────────────────────────────
 
@@ -31,10 +32,12 @@ final shadowModeServiceProvider = Provider<ShadowModeService>((ref) {
   final shadowRepo = ref.watch(_shadowModeRepositoryProvider);
   final snapshotRepo = ref.watch(financialSnapshotRepositoryProvider);
   final canonicalFactRepo = ref.watch(canonicalFactRepositoryProvider);
+  final dateTimeProvider = ref.watch(dateTimeProviderProvider);
   return ShadowModeService(
     simulationRepo: shadowRepo,
     reportingService: ReportingService(snapshotRepo: snapshotRepo),
     canonicalFactRepo: canonicalFactRepo,
+    dateTimeProvider: dateTimeProvider,
   );
 });
 

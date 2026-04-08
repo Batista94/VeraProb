@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -14,11 +15,12 @@ import 'invite_user_command.dart';
 /// token so the UI can display the invitation link for copying.
 class InviteUserHandler {
   final InvitationCommandService _commandService;
+  final IDateTimeProvider _dateTimeProvider;
   final RbacService _rbac = RbacService();
 
   static const int _ttlDays = 7;
 
-  InviteUserHandler(this._commandService);
+  InviteUserHandler(this._commandService, this._dateTimeProvider);
 
   /// Handles the command by creating a new invitation.
   ///
@@ -43,7 +45,7 @@ class InviteUserHandler {
     const uuid = Uuid();
     final invitationId = uuid.v4();
     final token = uuid.v4();
-    final expiresAtUtc = DateTime.now().toUtc().add(
+    final expiresAtUtc = _dateTimeProvider.now().add(
       const Duration(days: _ttlDays),
     );
 

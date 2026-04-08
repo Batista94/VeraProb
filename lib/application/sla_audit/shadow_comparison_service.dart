@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:equatable/equatable.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/shadow_verdict.dart';
 import 'package:veraprob/domain/sla_audit/shadow_verdict_repository.dart';
 
@@ -94,6 +95,7 @@ class ShadowComparisonReport extends Equatable {
 /// verdict classification paths.
 class ShadowComparisonService {
   final ShadowVerdictRepository _shadowRepo;
+  final IDateTimeProvider _dateTimeProvider;
 
   /// Threshold below which a divergence is classified as critical.
   /// Configurable for testing; production default is 80.0%.
@@ -101,8 +103,10 @@ class ShadowComparisonService {
 
   ShadowComparisonService({
     required ShadowVerdictRepository shadowRepo,
+    required IDateTimeProvider dateTimeProvider,
     this.criticalDivergenceThreshold = 80.0,
-  }) : _shadowRepo = shadowRepo;
+  }) : _shadowRepo = shadowRepo,
+       _dateTimeProvider = dateTimeProvider;
 
   /// Syncs manual decisions from the sanction queue, then computes
   /// divergence metrics for the given UTC time window.
@@ -188,7 +192,7 @@ class ShadowComparisonService {
       pendingManualCount: pendingCount,
       divergentEntries: divergentEntries,
       criticalDivergenceDetected: isCritical,
-      generatedAtUtc: DateTime.now().toUtc(),
+      generatedAtUtc: _dateTimeProvider.now(),
     );
   }
 }

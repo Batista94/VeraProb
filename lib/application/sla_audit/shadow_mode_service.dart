@@ -1,3 +1,4 @@
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/canonical_fact_repository.dart';
 import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 import 'package:veraprob/domain/sla_audit/shadow_mode_repository.dart';
@@ -19,14 +20,17 @@ class ShadowModeService {
   final ShadowModeRepository _simulationRepo;
   final ReportingService _reportingService;
   final CanonicalFactRepository _canonicalFactRepo;
+  final IDateTimeProvider _dateTimeProvider;
 
   ShadowModeService({
     required ShadowModeRepository simulationRepo,
     required ReportingService reportingService,
     required CanonicalFactRepository canonicalFactRepo,
+    required IDateTimeProvider dateTimeProvider,
   }) : _simulationRepo = simulationRepo,
        _reportingService = reportingService,
-       _canonicalFactRepo = canonicalFactRepo;
+       _canonicalFactRepo = canonicalFactRepo,
+       _dateTimeProvider = dateTimeProvider;
 
   /// Computes and persists a Shadow Mode ROI simulation for the given period.
   ///
@@ -85,7 +89,7 @@ class ShadowModeService {
       manualEnforcementCostPerIncident: Money(manualEnforcementCostPerIncident),
       incidentCount: incidentCount,
       platformSubscriptionCost: Money(platformSubscriptionCost),
-      generatedAtUtc: DateTime.now().toUtc(),
+      generatedAtUtc: _dateTimeProvider.now(),
       generatedByUserId: generatedByUserId,
       simulationParameters: {
         'baseline_dispute_rate_bps': baselineDisputeRateBps,

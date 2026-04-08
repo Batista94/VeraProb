@@ -8,12 +8,15 @@ import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/domain/super_admin/plan_limits.dart';
 import 'package:veraprob/domain/super_admin/plan_type.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
 
 class MockSupabaseClient extends Mock implements SupabaseClient {}
+
+class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -38,12 +41,14 @@ CreateOrganizationCommand _validCmd({
 void main() {
   late MockSuperAdminRepository mockRepo;
   late MockSupabaseClient mockClient;
+  late MockDateTimeProvider mockDateTime;
   late CreateOrganizationHandler handler;
 
   setUp(() {
     mockRepo = MockSuperAdminRepository();
     mockClient = MockSupabaseClient();
-    handler = CreateOrganizationHandler(mockRepo, mockClient);
+    mockDateTime = MockDateTimeProvider();
+    handler = CreateOrganizationHandler(mockRepo, mockClient, mockDateTime);
   });
 
   setUpAll(() {

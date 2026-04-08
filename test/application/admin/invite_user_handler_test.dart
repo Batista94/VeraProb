@@ -6,11 +6,14 @@ import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
+import '../../mocks/fake_date_time_provider.dart';
+
 class MockInvitationCommandService extends Mock
     implements InvitationCommandService {}
 
 void main() {
   late MockInvitationCommandService commandService;
+  late FakeDateTimeProvider dateTimeProvider;
   late InviteUserHandler handler;
 
   setUpAll(() {
@@ -20,7 +23,8 @@ void main() {
 
   setUp(() {
     commandService = MockInvitationCommandService();
-    handler = InviteUserHandler(commandService);
+    dateTimeProvider = FakeDateTimeProvider(DateTime(2026, 4, 7, 21, 0, 0));
+    handler = InviteUserHandler(commandService, dateTimeProvider);
   });
 
   void stubInviteUser() {

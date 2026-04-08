@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
@@ -38,6 +39,7 @@ class ShiftProjectionService {
   final PlanDeclarationRepository _planRepo;
   final OperationalZoneRepository _zoneRepo;
   final OperationalAlertRepository _alertRepo;
+  final IDateTimeProvider _dateTimeProvider;
 
   /// Default projection window in days (B1 decision: 30 days).
   static const int defaultProjectionDays = 30;
@@ -46,9 +48,11 @@ class ShiftProjectionService {
     required PlanDeclarationRepository planRepo,
     required OperationalZoneRepository zoneRepo,
     required OperationalAlertRepository alertRepo,
+    required IDateTimeProvider dateTimeProvider,
   }) : _planRepo = planRepo,
        _zoneRepo = zoneRepo,
-       _alertRepo = alertRepo;
+       _alertRepo = alertRepo,
+       _dateTimeProvider = dateTimeProvider;
 
   // ── Public API ────────────────────────────────────────────
 
@@ -123,7 +127,7 @@ class ShiftProjectionService {
     final plans = await _planRepo.findByOrganization(organizationId);
     final shiftPlans = plans.where((p) => p.isShiftBased);
 
-    final now = DateTime.now().toUtc();
+    final now = _dateTimeProvider.now();
 
     for (final plan in shiftPlans) {
       // Project future days
@@ -177,7 +181,7 @@ class ShiftProjectionService {
             contractId: plan.contractId,
             alertType: 'PROJECTION_GAP',
             severity: 'CRITICAL',
-            triggeredAtUtc: DateTime.now().toUtc(),
+            triggeredAtUtc: _dateTimeProvider.now(),
             context: {
               'operationalDate': dateLabel,
               'planDeclarationId': plan.id,

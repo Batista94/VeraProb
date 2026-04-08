@@ -45,6 +45,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_alert_re
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
@@ -662,6 +663,7 @@ void main() {
             planRepo: b2bPlanRepo,
             zoneRepo: zoneRepo,
             alertRepo: alertRepo,
+            dateTimeProvider: BrazilDateTimeProvider(),
           );
 
           final b2bCreateHandler = CreateContractHandler(

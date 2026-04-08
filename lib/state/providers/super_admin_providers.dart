@@ -9,6 +9,7 @@ import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/infrastructure/super_admin/receita_ws_cnpj_service.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_super_admin_repository.dart';
+import 'shared_providers.dart';
 
 /// Read operations route through the `super-admin-proxy` Edge Function
 /// (INV-3, INV-14) — service_role key is a Deno secret, never in the bundle.
@@ -34,7 +35,11 @@ final createOrganizationHandlerProvider = Provider<CreateOrganizationHandler>((
   ref,
 ) {
   final repo = ref.watch(superAdminRepositoryProvider);
-  return CreateOrganizationHandler(repo, Supabase.instance.client);
+  return CreateOrganizationHandler(
+    repo,
+    Supabase.instance.client,
+    ref.watch(dateTimeProviderProvider),
+  );
 });
 
 final systemAuditLogProvider =
