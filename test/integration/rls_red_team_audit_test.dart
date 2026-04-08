@@ -37,6 +37,9 @@ void main() async {
       late SupabaseClient tenantBClient;
       late SupabaseClient operatorClient;
 
+      // Tracks auth user IDs created during setUpAll for cleanup in tearDownAll
+      final List<String> createdUserIds = [];
+
       setUpAll(() async {
         final timestamp = DateTime.now()
             .toUtc()
@@ -80,6 +83,9 @@ void main() async {
           email: _operatorEmail,
           password: _testPassword,
         );
+
+        // Track for teardown
+        createdUserIds.addAll([userAId, userBId, operatorId]);
 
         await _assignRole(
           adminClient,
@@ -170,6 +176,22 @@ void main() async {
         tenantAClient = await _signIn(_userAEmail, _testPassword);
         tenantBClient = await _signIn(_userBEmail, _testPassword);
         operatorClient = await _signIn(_operatorEmail, _testPassword);
+      });
+
+      tearDownAll(() async {
+        // ── Cleanup: Delete auth users created during this test session ──────
+        // This prevents `invalid_credentials` ghost users from accumulating
+        // across runs (even though emails are timestamped, keeping the DB clean
+        // is forensic hygiene).
+        for (final uid in createdUserIds) {
+          await _deleteUser(uid);
+        }
+        createdUserIds.clear();
+
+        // Dispose tenant clients
+        await tenantAClient.auth.signOut();
+        await tenantBClient.auth.signOut();
+        await operatorClient.auth.signOut();
       });
 
       // ── Sanity Check ────────────────────────────────────────────────────────
@@ -371,11 +393,19 @@ void main() async {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+/// Creates a user via the Supabase Auth Admin REST API.
+/// Uses the [serviceRoleKey] (not the anon key) — required for admin endpoints.
+/// Returns the new user's UUID.
 Future<String> _ensureUser(
   SupabaseClient admin, {
   required String email,
   required String password,
 }) async {
+  assert(
+    password.length >= 6,
+    'Supabase enforces a minimum password length of 6 characters.',
+  );
+
   final res = await http.post(
     Uri.parse('${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users'),
     headers: {
@@ -386,7 +416,7 @@ Future<String> _ensureUser(
     body: jsonEncode({
       'email': email,
       'password': password,
-      'email_confirm': true,
+      'email_confirm': true, // Skip email confirmation flow
     }),
   );
 
@@ -394,19 +424,57 @@ Future<String> _ensureUser(
     return (jsonDecode(res.body) as Map<String, dynamic>)['id'] as String;
   }
 
-  // Fallback to fetch existing
+  // Fallback: user already exists — fetch by listing all users and filtering.
+  // The local Supabase admin list endpoint returns { users: [...], aud: '...' }.
+  // We iterate pages until we find our email (usually only one page locally).
   final listRes = await http.get(
     Uri.parse(
-      '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users?email=$email',
+      '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users?page=1&per_page=1000',
     ),
     headers: {
       'apikey': PostgresTestConfig.serviceRoleKey,
       'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
     },
   );
+
+  if (listRes.statusCode != 200) {
+    throw StateError(
+      '_ensureUser: failed to create (${ res.statusCode}: ${res.body}) '
+      'and failed to list users (${listRes.statusCode}: ${listRes.body})',
+    );
+  }
+
   final users =
       (jsonDecode(listRes.body) as Map<String, dynamic>)['users'] as List;
-  return users.first['id'] as String;
+  final existing = users.cast<Map<String, dynamic>>().firstWhere(
+    (u) => u['email'] == email,
+    orElse: () => throw StateError(
+      '_ensureUser: user $email not found after creation failed '
+      '(creation error: ${res.statusCode} ${res.body})',
+    ),
+  );
+  return existing['id'] as String;
+}
+
+/// Deletes a Supabase Auth user by [userId] via the Admin REST API.
+/// Used in [tearDownAll] to keep the test DB clean between runs.
+Future<void> _deleteUser(String userId) async {
+  final res = await http.delete(
+    Uri.parse(
+      '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users/$userId',
+    ),
+    headers: {
+      'apikey': PostgresTestConfig.serviceRoleKey,
+      'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
+    },
+  );
+  // 200 = deleted, 404 = already gone — both are acceptable.
+  if (res.statusCode != 200 && res.statusCode != 404) {
+    // Non-fatal: log but don't throw to avoid masking test results.
+    // ignore: avoid_print
+    print('[tearDownAll] Warning: failed to delete user $userId '
+        '(${res.statusCode}: ${res.body})');
+  }
 }
 
 Future<void> _ensureOrg(

@@ -19,6 +19,8 @@ class ContractualFinancialImpactQueryServicePostgres
   Future<ContractualFinancialImpact> getImpact({
     required String organizationId,
     String? contractId,
+    DateTime? startUtc,
+    DateTime? endUtc,
   }) async {
     var query = _client.from('contractual_financial_snapshot').select();
 
@@ -28,6 +30,20 @@ class ContractualFinancialImpactQueryServicePostgres
       query = query.eq('contract_id', contractId);
     } else {
       query = query.isFilter('contract_id', null);
+    }
+
+    // Application layer provides the temporal window — infrastructure only maps it to Postgres.
+    if (startUtc != null) {
+      query = query.gte(
+        'operational_date_utc',
+        startUtc.toUtc().toIso8601String(),
+      );
+    }
+    if (endUtc != null) {
+      query = query.lte(
+        'operational_date_utc',
+        endUtc.toUtc().toIso8601String(),
+      );
     }
 
     // Fetch the latest snapshots. Limit to 31 to avoid loading the full snapshot history.

@@ -13,10 +13,13 @@ class PostgresTestConfig {
   static const String supabaseAnonKey =
       'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz';
 
-  /// Alias semântico usado pelos testes de SuperAdmin, que precisam de um
-  /// client com service_role explícito (D3: SupabaseClient separado, sem
-  /// Supabase.initialize() duplo).
-  static const String serviceRoleKey = supabaseAnonKey;
+  /// Service-role key — bypassa RLS e tem permissões de admin no Auth.
+  /// Gerado deterministicamente pelo `supabase start` local.
+  /// NUNCA usar em produção ou expor ao cliente.
+  ///
+  /// Obtido via: `supabase status` → "service_role key"
+  static const String serviceRoleKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hj04zWl196z2-SBc0';
 
   /// UUID sentinela para testes de integração. Identificador estável para
   /// evitar colisões entre runs sem precisar de fixture de organização real.

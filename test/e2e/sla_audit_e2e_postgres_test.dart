@@ -358,6 +358,11 @@ void main() {
       );
       expect(
         lastId,
+        isNotNull,
+        reason: 'Stage 3: Ledger must have entries for this org',
+      );
+      expect(
+        lastId,
         entries.last['id'],
         reason: 'Last entry ID must match query',
       );
@@ -382,12 +387,12 @@ void main() {
       expect(snapshots.length, 1, reason: 'Exactly 1 active snapshot created');
 
       final snap = snapshots.first;
-      originalSnapshotId = snap.id;
       expect(
-        originalSnapshotId,
+        snap.id,
         isNotNull,
-        reason: 'Stage 4 must capture snapshot ID',
+        reason: 'Stage 4: Snapshot must have a valid ID',
       );
+      originalSnapshotId = snap.id;
 
       expect(snap.operationalDateUtc, operationalDateUtc);
       expect(
@@ -547,6 +552,13 @@ void main() {
     );
 
     test('Stage 8 — E2E UI Dashboard Query Coverage', () async {
+      // Stage 4 must have provided the snapshot ID — fail explicitly if missing.
+      expect(
+        originalSnapshotId,
+        isNotNull,
+        reason: 'Stage 4 failed to provide snapshot ID',
+      );
+
       // 1. Verify SLA Execution Item projections
       final summary = await executionQueryService.getSummary(
         organizationId: '00000000-0000-0000-0000-000000000001',
@@ -566,12 +578,23 @@ void main() {
       expect(executedList.first.boundVehicleId, vehicleId);
 
       // 2. Verify Financial Impact projections
+      // Pass the operational date window so the query service filters correctly.
+      final windowStart = testBaseTimeUtc.subtract(const Duration(days: 31));
+      final windowEnd = testBaseTimeUtc.add(const Duration(days: 1));
+
       final impact = await impactQueryService.getImpact(
         organizationId: '00000000-0000-0000-0000-000000000001',
         contractId: contractId,
+        startUtc: windowStart,
+        endUtc: windowEnd,
       );
 
-      expect(impact.protectedRevenue, 10000, reason: '100 BRL = 10000 cents');
+      expect(
+        impact.protectedRevenue,
+        10000,
+        reason:
+            'Stage 8: Protected revenue must be 10000 cents (1 executed SET)',
+      );
       expect(impact.lostRevenue, 0);
       expect(impact.revenueAtRisk, 0);
     });

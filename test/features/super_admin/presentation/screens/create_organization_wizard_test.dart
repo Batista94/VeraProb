@@ -220,9 +220,15 @@ void main() {
     testWidgets(
       'Wizard Error: Repository failure displays forensic error snackbar',
       (tester) async {
+        // thenThrow fires synchronously — the async wrapper never completes,
+        // so Flutter's runner intercepts it before the wizard's try/catch.
+        // thenAnswer with an async throw produces a rejected Future that
+        // `await handler.handle(cmd)` correctly unwraps into the catch block.
         when(
           () => mockHandler.handle(any()),
-        ).thenThrow(const DomainException('Forensic Permission Denied'));
+        ).thenAnswer(
+          (_) async => throw const DomainException('Forensic Permission Denied'),
+        );
 
         await tester.pumpWidget(createWizard(mockRepo, mockLookup));
         await tester.pumpAndSettle();

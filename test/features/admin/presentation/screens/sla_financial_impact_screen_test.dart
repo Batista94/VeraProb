@@ -18,6 +18,8 @@ class FakeFinancialImpactQueryService
   Future<ContractualFinancialImpact> getImpact({
     required String organizationId,
     String? contractId,
+    DateTime? startUtc,
+    DateTime? endUtc,
   }) async {
     return _impact;
   }
@@ -29,6 +31,8 @@ class ErrorFinancialImpactQueryService
   Future<ContractualFinancialImpact> getImpact({
     required String organizationId,
     String? contractId,
+    DateTime? startUtc,
+    DateTime? endUtc,
   }) async {
     throw Exception('Falha de conexão');
   }

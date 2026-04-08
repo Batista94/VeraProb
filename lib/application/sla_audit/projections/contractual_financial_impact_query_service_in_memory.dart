@@ -23,13 +23,26 @@ class ContractualFinancialImpactQueryServiceInMemory
   Future<ContractualFinancialImpact> getImpact({
     required String organizationId,
     String? contractId,
+    DateTime? startUtc,
+    DateTime? endUtc,
   }) async {
     final snapshots = await _snapshotRepo.findAll(
       organizationId: organizationId,
       contractId: contractId,
     );
 
-    if (snapshots.isEmpty) {
+    // Filter by operational date window when provided
+    final filtered = snapshots.where((s) {
+      if (startUtc != null && s.operationalDateUtc.isBefore(startUtc.toUtc())) {
+        return false;
+      }
+      if (endUtc != null && s.operationalDateUtc.isAfter(endUtc.toUtc())) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    if (filtered.isEmpty) {
       return ContractualFinancialImpact(
         contractId: contractId,
         generatedAtUtc: _clock.now(),
@@ -43,7 +56,7 @@ class ContractualFinancialImpactQueryServiceInMemory
     }
 
     // Use the latest snapshot as the current impact
-    final sorted = List.of(snapshots)
+    final sorted = List.of(filtered)
       ..sort((a, b) => a.operationalDateUtc.compareTo(b.operationalDateUtc));
     final latest = sorted.last;
 
