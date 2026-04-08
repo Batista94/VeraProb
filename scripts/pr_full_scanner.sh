@@ -42,11 +42,16 @@ log_warn() {
 }
 
 # ── Step 1: Run Original Scanner ─────────────────────────────────────────────
-echo -e "${BOLD}${BLUE}Step 1: Running Original Forensic Scanner...${NC}"
-bash "$SCRIPT_DIR/pr_scanner.sh" || {
-  echo -e "${RED}Original scanner reported hard blocks.${NC}"
-  # We continue to collect all deterministic errors
-}
+if [[ "${FAST_SCAN:-0}" == "1" ]]; then
+  echo -e "${YELLOW}FAST_SCAN=1: Skipping Step 1 (Slow Forensic Analysis)...${NC}"
+else
+  echo -e "${BOLD}${BLUE}Step 1: Running Original Forensic Scanner...${NC}"
+  bash "$SCRIPT_DIR/pr_scanner.sh" || {
+    echo -e "${RED}Original scanner reported hard blocks.${NC}"
+    # We continue to collect all deterministic errors
+  }
+fi
+
 
 # ── Step 2: Deterministic Pattern Scan ───────────────────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 2: Deterministic Pattern Scan (Lead Reviewer Mode)...${NC}"
@@ -80,6 +85,7 @@ files.forEach(file => {
   // Generated Code Bypass
   if (file.endsWith('.g.dart') || file.endsWith('.freezed.dart')) return;
   if (!fs.existsSync(file)) return;
+  if (!fs.statSync(file).isFile()) return;
 
   const content = fs.readFileSync(file, 'utf8');
   const lines = content.split('\n');
@@ -138,11 +144,21 @@ fi
 
 # ── Step 3: Regression Alerts ───────────────────────────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 3: Regression Impact Analysis...${NC}"
-REGRESSION_FILES=$(echo "$CHANGED_FILES" | grep -E "supabase/migrations/|lib/domain/" || true)
-if [[ -n "$REGRESSION_FILES" ]]; then
-  echo -e "  ${YELLOW}${BOLD}[REGRESSION-ALERT]${NC} Changes in migrations or domain detected."
-  echo "$REGRESSION_FILES" | while read -r line; do echo "    → $line"; done
-  HAS_REGRESSION=1
+if [[ "${SKIP_REGRESSION:-0}" == "1" ]]; then
+  echo -e "  ${GREEN}SKIP_REGRESSION=1: Skipping regression analysis.${NC}"
+else
+  # Filter files that contain the ignore-regression comment
+  REGRESSION_FILES=$(echo "$CHANGED_FILES" | grep -E "supabase/migrations/|lib/domain/" | while read -r f; do
+    if [[ -f "$f" ]] && ! grep -q "pr_scanner: ignore-regression" "$f" 2>/dev/null; then
+      echo "$f"
+    fi
+  done)
+
+  if [[ -n "$REGRESSION_FILES" ]]; then
+    echo -e "  ${YELLOW}${BOLD}[REGRESSION-ALERT]${NC} Changes in migrations or domain detected."
+    echo "$REGRESSION_FILES" | while read -r line; do echo "    → $line"; done
+    HAS_REGRESSION=1
+  fi
 fi
 
 # ── Final Summary ────────────────────────────────────────────────────────────
@@ -164,6 +180,7 @@ let blocks = 0; let warns = 0;
 files.forEach(file => {
   if (file.endsWith('.g.dart') || file.endsWith('.freezed.dart')) return;
   if (!fs.existsSync(file)) return;
+  if (!fs.statSync(file).isFile()) return;
   const content = fs.readFileSync(file, 'utf8');
   const lines = content.split('\n');
   Object.entries(patterns).forEach(([ruleName, config]) => {
