@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -13,12 +15,32 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 ///   The last page contains the full chain-of-custody block with hash
 ///   verification instructions.
 ///
+/// **Font injection (INV-18 / WASM-safe):** Supply [fontRegular] and [fontBold]
+/// as TTF [ByteData] (loaded by the caller via [rootBundle]) to enable full
+/// Unicode coverage (e.g. em-dash U+2014, ≤ U+2264 in legal notice strings).
+/// When omitted, the built-in Helvetica font is used — legal content renders
+/// but Unicode glyphs outside Latin-1 produce console warnings.
+///
 /// Document structure:
 ///   Page 1 — Attestation cover (full legal block).
 ///   Page 2 — Executive summary (KPIs, revenue table).
 ///   Page 3..N — Daily snapshot breakdown (one table per contract).
 ///   Last page — Chain of Custody & hash verification instructions.
 class PdfExportService {
+  final pw.Font? _fontBase;
+  final pw.Font? _fontBold;
+
+  /// Constructs the service with optional Unicode-capable TTF fonts.
+  ///
+  /// [fontRegular] and [fontBold] must be raw TTF [ByteData], e.g.:
+  /// ```dart
+  /// final data = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+  /// PdfExportService(fontRegular: data);
+  /// ```
+  PdfExportService({ByteData? fontRegular, ByteData? fontBold})
+    : _fontBase = fontRegular != null ? pw.Font.ttf(fontRegular) : null,
+      _fontBold = fontBold != null ? pw.Font.ttf(fontBold) : null;
+
   /// Generates a PDF document as raw bytes.
   ///
   /// **IMPORTANT (INV-3):** [package.generatedAtUtc] is used for the timestamp
@@ -32,7 +54,10 @@ class PdfExportService {
     _assertSealed(package);
     _assertReportMatches(package, report);
 
-    final pdf = pw.Document();
+    final theme = _fontBase != null
+        ? pw.ThemeData.withFont(base: _fontBase, bold: _fontBold)
+        : pw.ThemeData();
+    final pdf = pw.Document(theme: theme);
     final h = package.attestationHeader;
     final contractScope = package.contractId ?? 'Todos os contratos';
 

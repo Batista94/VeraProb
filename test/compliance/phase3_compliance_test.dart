@@ -303,7 +303,7 @@ void main() {
           trace.engineVersion,
           equals(ContractualEvaluationEngine.currentEngineVersion),
         );
-        expect(trace.engineVersion, equals('veraprob-core_v3'));
+        expect(trace.engineVersion, equals('veraprob-core_v4'));
       }
     });
 
@@ -348,7 +348,7 @@ void main() {
         entityId: 'set-001',
         triggeringEventId: 'event-uuid',
         evaluatedAtUtc: DateTime.utc(2026, 3, 1, 7, 0),
-        engineVersion: 'veraprob-core_v3',
+        engineVersion: 'veraprob-core_v4',
         decisions: const [],
       );
       expect(trace.organizationId, equals('org-1'));

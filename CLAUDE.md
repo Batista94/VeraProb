@@ -60,7 +60,18 @@ These are the current active priorities that override any legacy patterns:
 
 ---
 
-## 🛠️ ACTIVE COMMANDS (SKILLS)
+## 🤖 AUTOMATION & SLASH COMMANDS
+
+The Assistant uses `.cursorrules` to auto-initialize. You can use these shorthand commands:
+
+- `/init` -> Re-sync all rules and agents context.
+- `/council` -> Invoke the Council of Personas for the current problem.
+- `/audit` -> Execute a forensic audit (Invariants + PR Scanner).
+- `/tdd` -> Start a Test-Driven Development loop.
+
+---
+
+## 🛠️ ACTIVE SKILLS
 
 Skills are located in `.claude/skills/`. Use them proactively:
 

@@ -15,14 +15,90 @@ sealed class EvidencePayload {
   factory EvidencePayload.fromJson(Map<String, dynamic> json) {
     final type = json['_type'] as String?;
     return switch (type) {
+      'delay_penalty' => DelayPenaltyEvidence.fromJson(json),
+      'maintenance_inhibition' => MaintenanceInhibitionEvidence.fromJson(json),
       'dwell_requirement' => DwellRequirementEvidence.fromJson(json),
       'speed_violation' => SpeedViolationEvidence.fromJson(json),
       'geofence_binding' => GeofenceBindingEvidence.fromJson(json),
       'penalty_assessed' => PenaltyAssessedEvidence.fromJson(json),
       'expiration_sweep' => ExpirationSweepEvidence.fromJson(json),
+      'interpolated_passage' => InterpolatedPassageEvidence.fromJson(json),
       _ => GenericEvidencePayload(json),
     };
   }
+}
+
+/// Evidence produced when the engine inhibits evaluation due to maintenance/offDuty.
+///
+/// INV-15: Defense-in-depth — engine confirms what pipeline already checked.
+/// INV-7: Written as append-only MAINTENANCE_INHIBITED ledger entry.
+/// vehicleStatusAtEvaluation uses AssetStatus.name (string) for human readability.
+final class MaintenanceInhibitionEvidence extends EvidencePayload {
+  final String vehicleStatusAtEvaluation;
+  final String inhibitionReason;
+
+  const MaintenanceInhibitionEvidence({
+    required this.vehicleStatusAtEvaluation,
+    required this.inhibitionReason,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'maintenance_inhibition',
+    'vehicle_status_at_evaluation': vehicleStatusAtEvaluation,
+    'inhibition_reason': inhibitionReason,
+  };
+
+  factory MaintenanceInhibitionEvidence.fromJson(Map<String, dynamic> json) =>
+      MaintenanceInhibitionEvidence(
+        vehicleStatusAtEvaluation:
+            json['vehicle_status_at_evaluation'] as String,
+        inhibitionReason: json['inhibition_reason'] as String,
+      );
+}
+
+/// Evidence for a delay penalty with tolerance and capping logic.
+///
+/// INV-19: All monetary values as int (cents).
+/// Formula: grossPenaltyCents = billableMinutes × penaltyPerMinuteCents
+/// finalPenaltyCents = max(0, min(grossPenaltyCents, maxPenaltyCapCents))
+final class DelayPenaltyEvidence extends EvidencePayload {
+  final int delayMinutes;
+  final int toleranceMinutes;
+  final int billableMinutes;
+  final int grossPenaltyCents;
+  final int finalPenaltyCents;
+  final bool capApplied;
+
+  const DelayPenaltyEvidence({
+    required this.delayMinutes,
+    required this.toleranceMinutes,
+    required this.billableMinutes,
+    required this.grossPenaltyCents,
+    required this.finalPenaltyCents,
+    required this.capApplied,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'delay_penalty',
+    'delay_minutes': delayMinutes,
+    'tolerance_minutes': toleranceMinutes,
+    'billable_minutes': billableMinutes,
+    'gross_penalty_cents': grossPenaltyCents,
+    'final_penalty_cents': finalPenaltyCents,
+    'cap_applied': capApplied,
+  };
+
+  factory DelayPenaltyEvidence.fromJson(Map<String, dynamic> json) =>
+      DelayPenaltyEvidence(
+        delayMinutes: json['delay_minutes'] as int,
+        toleranceMinutes: json['tolerance_minutes'] as int,
+        billableMinutes: json['billable_minutes'] as int,
+        grossPenaltyCents: json['gross_penalty_cents'] as int,
+        finalPenaltyCents: json['final_penalty_cents'] as int,
+        capApplied: json['cap_applied'] as bool,
+      );
 }
 
 /// Evidence that a dwell-time rule parameter was read from rule config.
@@ -148,6 +224,47 @@ final class ExpirationSweepEvidence extends EvidencePayload {
         scheduledWindowEndUtc: json['scheduled_window_end_utc'] as String,
         evaluatedAtUtc: json['evaluated_at_utc'] as String,
         expiredBySeconds: json['expired_by_seconds'] as int,
+      );
+}
+
+/// Evidence that a vehicle's path between two pings intersected a geofence,
+/// even though neither endpoint was individually inside the radius.
+final class InterpolatedPassageEvidence extends EvidencePayload {
+  final double fromLat, fromLng, toLat, toLng;
+  final double geofenceCenterLat, geofenceCenterLng, geofenceRadiusMeters;
+
+  const InterpolatedPassageEvidence({
+    required this.fromLat,
+    required this.fromLng,
+    required this.toLat,
+    required this.toLng,
+    required this.geofenceCenterLat,
+    required this.geofenceCenterLng,
+    required this.geofenceRadiusMeters,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'interpolated_passage',
+    'from_lat': fromLat,
+    'from_lng': fromLng,
+    'to_lat': toLat,
+    'to_lng': toLng,
+    'geofence_center_lat': geofenceCenterLat,
+    'geofence_center_lng': geofenceCenterLng,
+    'geofence_radius_meters': geofenceRadiusMeters,
+  };
+
+  factory InterpolatedPassageEvidence.fromJson(Map<String, dynamic> json) =>
+      InterpolatedPassageEvidence(
+        fromLat: (json['from_lat'] as num).toDouble(),
+        fromLng: (json['from_lng'] as num).toDouble(),
+        toLat: (json['to_lat'] as num).toDouble(),
+        toLng: (json['to_lng'] as num).toDouble(),
+        geofenceCenterLat: (json['geofence_center_lat'] as num).toDouble(),
+        geofenceCenterLng: (json['geofence_center_lng'] as num).toDouble(),
+        geofenceRadiusMeters: (json['geofence_radius_meters'] as num)
+            .toDouble(),
       );
 }
 

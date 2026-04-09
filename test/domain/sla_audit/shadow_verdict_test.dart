@@ -29,7 +29,7 @@ void main() {
         contractId: 'contract-001',
         engineVerdict: engineVerdict,
         engineVerdictAtUtc: baseTime,
-        engineVersion: 'veraprob-core_v3',
+        engineVersion: 'veraprob-core_v4',
         verdictEvidence: makeEvidence(),
         createdAtUtc: baseTime,
       );

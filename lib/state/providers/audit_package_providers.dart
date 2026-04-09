@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/audit_package_service.dart';
@@ -31,9 +32,14 @@ final csvExportServiceProvider = Provider<CsvExportService>(
   (ref) => CsvExportService(),
 );
 
-final pdfExportServiceProvider = Provider<PdfExportService>(
-  (ref) => PdfExportService(),
-);
+/// Constructs [PdfExportService] with Roboto TTF fonts injected for Unicode
+/// support (em-dash, ≤). Fonts are loaded once via [rootBundle] and cached by
+/// Riverpod — subsequent calls hit the same instance (keepAlive semantics).
+final pdfExportServiceProvider = FutureProvider<PdfExportService>((ref) async {
+  final regular = await rootBundle.load('assets/fonts/Lato-Regular.ttf');
+  final bold = await rootBundle.load('assets/fonts/Lato-Bold.ttf');
+  return PdfExportService(fontRegular: regular, fontBold: bold);
+});
 
 // ── Read Models ──────────────────────────────────────────────────────────────
 
@@ -101,6 +107,6 @@ final pdfExportProvider = FutureProvider.family<List<int>, String>((
     contractId: package.contractId,
   );
 
-  final pdfService = ref.watch(pdfExportServiceProvider);
+  final pdfService = await ref.watch(pdfExportServiceProvider.future);
   return pdfService.generatePdf(package: package, report: report);
 });

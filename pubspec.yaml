@@ -60,6 +60,8 @@ flutter:
   # 8.4 Observabilidade
   assets:
     - .env
+    - assets/fonts/Lato-Regular.ttf
+    - assets/fonts/Lato-Bold.ttf
 
 sentry:
   upload_debug_symbols: true

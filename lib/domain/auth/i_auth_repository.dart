@@ -1,4 +1,5 @@
-import 'auth_failure_exception.dart';
+import 'package:veraprob/domain/auth/auth_failure_exception.dart';
+import 'package:veraprob/domain/auth/auth_user.dart';
 
 /// Port for authentication operations.
 ///
@@ -18,7 +19,8 @@ abstract class IAuthRepository {
   /// Signs in with email and password.
   ///
   /// Returns the [userId] on success.
-  /// Throws [AuthFailureException] if the provider returns no user.
+  /// Throws [AuthFailureException] if the provider returns no user
+  /// or if authentication fails (credentials, network, etc.).
   Future<String> signInWithPassword({
     required String email,
     required String password,
@@ -27,13 +29,17 @@ abstract class IAuthRepository {
   /// Signs up a new user with email and password.
   ///
   /// Returns the [userId] on success.
-  /// Throws [AuthFailureException] if the provider returns no user.
+  /// Throws [AuthFailureException] if the provider returns no user
+  /// or if registration fails (weak password, email conflict, etc.).
   Future<String> signUpWithPassword({
     required String email,
     required String password,
   });
 
-  /// Signs out the current user from all sessions.
+  /// Signs out the current user from all sessions (global sign-out).
+  ///
+  /// Uses [GlobalSignOutScope] to invalidate tokens on all devices,
+  /// preventing session replay attacks.
   Future<void> signOut();
 
   /// Refreshes the JWT session.
@@ -41,5 +47,18 @@ abstract class IAuthRepository {
   /// Re-triggers the `custom_access_token_hook` so that
   /// `organization_id` and `role` claims are re-injected into the token.
   /// Called after invitation acceptance to hydrate the new JWT claims.
+  ///
+  /// Throws [AuthFailureException] if the refresh fails (expired token,
+  /// network error, etc.).
   Future<void> refreshSession();
+
+  /// Returns the current authenticated user as a domain [AuthUser].
+  ///
+  /// Extracts [tenantId] EXCLUSIVELY from `app_metadata['org_id']`
+  /// (injected by `custom_access_token_hook`), ensuring [INV-1] compliance.
+  ///
+  /// Returns `null` if there is no active session.
+  /// Throws [AuthFailureException] if the user lacks `org_id` in
+  /// `app_metadata` (tenant isolation violation).
+  Future<AuthUser?> getCurrentUser();
 }

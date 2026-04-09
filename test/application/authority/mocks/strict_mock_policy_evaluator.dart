@@ -24,9 +24,15 @@ class StrictMockPolicyEvaluator implements AuthorityPolicyEvaluator {
   }) async {
     evaluationCount++;
 
-    final result = setupRules[actionType] ?? DecisionResult.denied;
+    final result = setupRules[actionType];
+    if (result == null) {
+      throw StateError(
+        'StrictMockPolicyEvaluator: No rule configured for $actionType. '
+        'Every test must explicitly declare the expected DecisionResult for each action type.',
+      );
+    }
     final reason = result == DecisionResult.denied
-        ? 'Denied by Strict Mock Policy (No rule for $actionType)'
+        ? 'Denied by Strict Mock Policy ($actionType)'
         : null;
 
     return AuthorizationDecision(

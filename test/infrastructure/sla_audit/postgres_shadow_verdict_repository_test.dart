@@ -45,7 +45,7 @@ void main() async {
         contractId: contractId,
         engineVerdict: engineVerdict,
         engineVerdictAtUtc: verdictTime,
-        engineVersion: 'veraprob-core_v3',
+        engineVersion: 'veraprob-core_v4',
         verdictEvidence: makeEvidence(),
         createdAtUtc: DateTime.now().toUtc(),
       );

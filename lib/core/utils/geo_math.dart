@@ -40,4 +40,41 @@ class GeoMath {
     final distM = haversineMeters(lat1, lon1, lat2, lon2);
     return (distM / elapsedSeconds * 100).round();
   }
+
+  /// Tests whether a line segment intersects or touches a circle.
+  ///
+  /// Uses a flat-earth approximation valid for distances < 5 km
+  /// (geofences are typically 100–500 m).
+  static bool lineIntersectsCircle(
+    double lat1,
+    double lng1, // segment start
+    double lat2,
+    double lng2, // segment end
+    double centerLat,
+    double centerLng,
+    double radiusMeters,
+  ) {
+    const mPerDegLat = 111319.0;
+    final mPerDegLng = 111319.0 * cos(centerLat * pi / 180.0);
+
+    // Local metric coords relative to geofence center
+    final x1 = (lng1 - centerLng) * mPerDegLng;
+    final y1 = (lat1 - centerLat) * mPerDegLat;
+    final x2 = (lng2 - centerLng) * mPerDegLng;
+    final y2 = (lat2 - centerLat) * mPerDegLat;
+
+    final dx = x2 - x1;
+    final dy = y2 - y1;
+    final lenSq = dx * dx + dy * dy;
+
+    if (lenSq == 0.0) return (x1 * x1 + y1 * y1) <= radiusMeters * radiusMeters;
+
+    // Project origin onto segment, clamp to [0,1]
+    final t = ((-x1) * dx + (-y1) * dy) / lenSq;
+    final tC = t.clamp(0.0, 1.0);
+    final cx = x1 + tC * dx;
+    final cy = y1 + tC * dy;
+
+    return (cx * cx + cy * cy) <= radiusMeters * radiusMeters;
+  }
 }

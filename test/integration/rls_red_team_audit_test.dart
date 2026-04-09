@@ -10,7 +10,6 @@ library;
 
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../infrastructure/postgres/postgres_test_config.dart';
@@ -32,10 +31,10 @@ void main() async {
     'RLS Sovereignty Audit (Red Team Expansion)',
     skip: !isRunning ? 'Supabase local instance not detected' : null,
     () {
-      late SupabaseClient adminClient;
-      late SupabaseClient tenantAClient;
-      late SupabaseClient tenantBClient;
-      late SupabaseClient operatorClient;
+      SupabaseClient? adminClient;
+      SupabaseClient? tenantAClient;
+      SupabaseClient? tenantBClient;
+      SupabaseClient? operatorClient;
 
       // Tracks auth user IDs created during setUpAll for cleanup in tearDownAll
       final List<String> createdUserIds = [];
@@ -58,28 +57,28 @@ void main() async {
 
         // ── Step 1: Provision Multi-Tenant Infrastructure ───────────────────
         await _ensureOrg(
-          adminClient,
+          adminClient!,
           id: _orgAId,
           name: 'RedTeam — Target Alpha',
         );
         await _ensureOrg(
-          adminClient,
+          adminClient!,
           id: _orgBId,
           name: 'RedTeam — Target Beta',
         );
 
         final userAId = await _ensureUser(
-          adminClient,
+          adminClient!,
           email: _userAEmail,
           password: _testPassword,
         );
         final userBId = await _ensureUser(
-          adminClient,
+          adminClient!,
           email: _userBEmail,
           password: _testPassword,
         );
         final operatorId = await _ensureUser(
-          adminClient,
+          adminClient!,
           email: _operatorEmail,
           password: _testPassword,
         );
@@ -88,19 +87,19 @@ void main() async {
         createdUserIds.addAll([userAId, userBId, operatorId]);
 
         await _assignRole(
-          adminClient,
+          adminClient!,
           userId: userAId,
           orgId: _orgAId,
           role: 'TENANT_ADMIN',
         );
         await _assignRole(
-          adminClient,
+          adminClient!,
           userId: userBId,
           orgId: _orgBId,
           role: 'TENANT_ADMIN',
         );
         await _assignRole(
-          adminClient,
+          adminClient!,
           userId: operatorId,
           orgId: _orgAId,
           role: 'OPERATOR',
@@ -109,7 +108,7 @@ void main() async {
         // ── Step 2: Seed Sensitive Forensic Data (Target Beta) ──────────────
         // We seed data in Org B that Org A should NEVER be able to see.
         final contractBId = _uuid.v4();
-        await adminClient.from('contracts').upsert({
+        await adminClient!.from('contracts').upsert({
           'id': contractBId,
           'organization_id': _orgBId,
           'name': 'Sovereignty Breach Target',
@@ -123,7 +122,7 @@ void main() async {
         });
 
         // Ledger V2 (Partitioned)
-        await adminClient.from('sla_audit_ledger_v2').insert({
+        await adminClient!.from('sla_audit_ledger_v2').insert({
           'organization_id': _orgBId,
           'type': 'SENSITIVE_PAYMENT_CLOSE',
           'contract_id': contractBId,
@@ -134,12 +133,12 @@ void main() async {
         });
 
         // Evaluation Traces
-        await adminClient.from('contractual_evaluation_traces').insert({
+        await adminClient!.from('contractual_evaluation_traces').insert({
           'organization_id': _orgBId,
           'entity_id': 'SET-SECRET-001',
           'triggering_event_id': _uuid.v4(),
           'evaluated_at_utc': DateTime.now().toUtc().toIso8601String(),
-          'engine_version': 'veraprob-core_v3',
+          'engine_version': 'veraprob-core_v4',
           'decisions_jsonb': [
             {
               'outcome': 'SANCTION_RECOMMENDED',
@@ -149,7 +148,7 @@ void main() async {
         });
 
         // Operational Alerts
-        await adminClient.from('operational_alerts').insert({
+        await adminClient!.from('operational_alerts').insert({
           'organization_id': _orgBId,
           'entity_id': 'SET-SECRET-001',
           'contract_id': contractBId,
@@ -163,7 +162,7 @@ void main() async {
         });
 
         // Seed a contractor for LGPD PII testing (Target Alpha)
-        await adminClient.from('contractors').upsert({
+        await adminClient!.from('contractors').upsert({
           'id': '00000000-1111-0000-0000-0000000000C1',
           'organization_id': _orgAId,
           'name': 'PII Test Contractor',
@@ -184,21 +183,21 @@ void main() async {
         // across runs (even though emails are timestamped, keeping the DB clean
         // is forensic hygiene).
         for (final uid in createdUserIds) {
-          await _deleteUser(uid);
+          await _deleteUser(uid, adminClient);
         }
         createdUserIds.clear();
 
         // Dispose tenant clients
-        await tenantAClient.auth.signOut();
-        await tenantBClient.auth.signOut();
-        await operatorClient.auth.signOut();
+        await tenantAClient?.auth.signOut();
+        await tenantBClient?.auth.signOut();
+        await operatorClient?.auth.signOut();
       });
 
       // ── Sanity Check ────────────────────────────────────────────────────────
       test(
         'SANITY — Availability: Tenant B can see their own ledger',
         () async {
-          final res = await tenantBClient
+          final res = await tenantBClient!
               .from('sla_audit_ledger_v2')
               .select('id');
           expect(
@@ -211,7 +210,7 @@ void main() async {
       );
 
       test('DEBUG — JWT Claims: Inspect claims for Tenant A', () async {
-        final session = tenantAClient.auth.currentSession;
+        final session = tenantAClient!.auth.currentSession;
         final jwt = session!.accessToken;
         final parts = jwt.split('.');
         String base64Str = parts[1];
@@ -238,7 +237,7 @@ void main() async {
       test(
         'AUDIT 1 — Partitioned Ledger Sovereignty: Org A cannot read Org B ledger_v2',
         () async {
-          final res = await tenantAClient
+          final res = await tenantAClient!
               .from('sla_audit_ledger_v2')
               .select()
               .eq('organization_id', _orgBId);
@@ -258,7 +257,7 @@ void main() async {
       test(
         'AUDIT 2 — Trace Explainability Isolation: Org A cannot read Org B evaluation traces',
         () async {
-          final res = await tenantAClient
+          final res = await tenantAClient!
               .from('contractual_evaluation_traces')
               .select()
               .eq('organization_id', _orgBId);
@@ -275,7 +274,7 @@ void main() async {
       test(
         'AUDIT 3 — Alert Sovereignty: Org A cannot read Org B operational alerts',
         () async {
-          final res = await tenantAClient
+          final res = await tenantAClient!
               .from('operational_alerts')
               .select()
               .eq('organization_id', _orgBId);
@@ -296,7 +295,7 @@ void main() async {
         'AUDIT 4 — LGPD PII Masking: OPERATOR role sees masked CNPJ and Email',
         () async {
           const contractorId = '00000000-1111-0000-0000-0000000000C1';
-          final res = await operatorClient
+          final res = await operatorClient!
               .from('contractors_view')
               .select('tax_id, primary_email')
               .eq('id', contractorId)
@@ -318,7 +317,7 @@ void main() async {
       test(
         'AUDIT 5 — LGPD PII Access: TENANT_ADMIN sees full PII details',
         () async {
-          final res = await tenantAClient
+          final res = await tenantAClient!
               .from('contractors_view')
               .select('tax_id, primary_email')
               .limit(1)
@@ -345,7 +344,7 @@ void main() async {
         () async {
           // Payload attempts to bypass RLS by specifying Org B ID while holding Org A JWT
           await expectLater(
-            () async => tenantAClient.from('sla_audit_ledger_v2').insert({
+            () async => tenantAClient!.from('sla_audit_ledger_v2').insert({
               'organization_id': _orgBId,
               'type': 'MALICIOUS_INJECTION',
               'contract_id': _uuid.v4(),
@@ -367,7 +366,7 @@ void main() async {
         () async {
           // Trigger-based immutability check
           final ledgerId = _uuid.v4();
-          await adminClient.from('sla_audit_ledger_v2').insert({
+          await adminClient!.from('sla_audit_ledger_v2').insert({
             'id': ledgerId,
             'organization_id': _orgAId,
             'type': 'IMMUTABILITY_PROBE',
@@ -377,7 +376,7 @@ void main() async {
           });
 
           await expectLater(
-            () async => adminClient
+            () async => adminClient!
                 .from('sla_audit_ledger_v2')
                 .delete()
                 .eq('id', ledgerId),
@@ -401,79 +400,33 @@ Future<String> _ensureUser(
   required String email,
   required String password,
 }) async {
-  assert(
-    password.length >= 6,
-    'Supabase enforces a minimum password length of 6 characters.',
-  );
-
-  final res = await http.post(
-    Uri.parse('${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users'),
-    headers: {
-      'apikey': PostgresTestConfig.serviceRoleKey,
-      'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode({
-      'email': email,
-      'password': password,
-      'email_confirm': true, // Skip email confirmation flow
-    }),
-  );
-
-  if (res.statusCode == 200 || res.statusCode == 201) {
-    return (jsonDecode(res.body) as Map<String, dynamic>)['id'] as String;
-  }
-
-  // Fallback: user already exists — fetch by listing all users and filtering.
-  // The local Supabase admin list endpoint returns { users: [...], aud: '...' }.
-  // We iterate pages until we find our email (usually only one page locally).
-  final listRes = await http.get(
-    Uri.parse(
-      '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users?page=1&per_page=1000',
-    ),
-    headers: {
-      'apikey': PostgresTestConfig.serviceRoleKey,
-      'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
-    },
-  );
-
-  if (listRes.statusCode != 200) {
-    throw StateError(
-      '_ensureUser: failed to create (${res.statusCode}: ${res.body}) '
-      'and failed to list users (${listRes.statusCode}: ${listRes.body})',
+  try {
+    final res = await admin.auth.admin.createUser(
+      AdminUserAttributes(email: email, password: password, emailConfirm: true),
     );
+    if (res.user != null) return res.user!.id;
+  } catch (e) {
+    // Expected if user already exists
   }
 
-  final users =
-      (jsonDecode(listRes.body) as Map<String, dynamic>)['users'] as List;
-  final existing = users.cast<Map<String, dynamic>>().firstWhere(
-    (u) => u['email'] == email,
-    orElse: () => throw StateError(
-      '_ensureUser: user $email not found after creation failed '
-      '(creation error: ${res.statusCode} ${res.body})',
-    ),
+  // Fallback: fetch existing user
+  final users = await admin.auth.admin.listUsers();
+  final existing = users.firstWhere(
+    (u) => u.email == email,
+    orElse: () =>
+        throw StateError('_ensureUser: failed to create or find $email'),
   );
-  return existing['id'] as String;
+  return existing.id;
 }
 
-/// Deletes a Supabase Auth user by [userId] via the Admin REST API.
-/// Used in [tearDownAll] to keep the test DB clean between runs.
-Future<void> _deleteUser(String userId) async {
-  final res = await http.delete(
-    Uri.parse('${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users/$userId'),
-    headers: {
-      'apikey': PostgresTestConfig.serviceRoleKey,
-      'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
-    },
-  );
-  // 200 = deleted, 404 = already gone — both are acceptable.
-  if (res.statusCode != 200 && res.statusCode != 404) {
-    // Non-fatal: log but don't throw to avoid masking test results.
+/// Deletes a Supabase Auth user by [userId] via the Admin API.
+Future<void> _deleteUser(String userId, SupabaseClient? admin) async {
+  if (admin == null) return;
+  try {
+    await admin.auth.admin.deleteUser(userId);
+  } catch (e) {
     // ignore: avoid_print
-    print(
-      '[tearDownAll] Warning: failed to delete user $userId '
-      '(${res.statusCode}: ${res.body})',
-    );
+    print('[tearDownAll] Warning: failed to delete user $userId: $e');
   }
 }
 
@@ -512,6 +465,21 @@ Future<SupabaseClient> _signIn(String email, String password) async {
     PostgresTestConfig.supabaseUrl,
     PostgresTestConfig.supabaseAnonKey,
   );
-  await client.auth.signInWithPassword(email: email, password: password);
-  return client;
+
+  AuthApiException? lastError;
+  for (int i = 0; i < 5; i++) {
+    try {
+      await client.auth.signInWithPassword(email: email, password: password);
+      return client;
+    } on AuthApiException catch (e) {
+      lastError = e;
+      if (e.code == 'invalid_credentials') {
+        // Wait and retry - potential race in local Supabase propagation
+        await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
+        continue;
+      }
+      rethrow;
+    }
+  }
+  throw lastError!;
 }

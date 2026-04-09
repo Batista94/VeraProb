@@ -12,7 +12,8 @@
       "Bash(dir *)",
       "Bash(findstr *)",
       "Read(c:\\Users\\wes_b\\.antigravity\\extensions\\qwenlm.qwen-code-vscode-ide-companion-0.14.2-win32-x64\\dist\\qwen-cli\\bundled\\qc-helper\\docs/configuration/**)",
-      "Read(C:\\Users\\wes_b\\.qwen/**)"
+      "Read(C:\\Users\\wes_b\\.qwen/**)",
+      "Read(C:\\Projects\\VeraProb/**)"
     ]
   },
   "$version": 3

@@ -249,11 +249,17 @@ class OperationalStateNormalizer {
       now,
     );
 
+    // stateChangedAt ONLY advances when motionState or connectivityState
+    // actually changes — replays of identical states preserve the original
+    // transition timestamp (immutability invariant for forensic audit trail).
+    final hasStateChanged =
+        previous.motionState != motion || previous.connectivityState != conn;
+
     return previous.copyWith(
       connectivityState: conn,
       motionState: motion,
       confidence: conn.confidence,
-      stateChangedAt: now,
+      stateChangedAt: hasStateChanged ? now : previous.stateChangedAt,
     );
   }
 

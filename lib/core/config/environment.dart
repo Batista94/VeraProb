@@ -88,7 +88,7 @@ class EnvironmentConfig {
   /// CI/CD must pass this value explicitly. The default guards local dev only.
   static const engineVersion = String.fromEnvironment(
     'ENGINE_VERSION',
-    defaultValue: 'veraprob-core_v3',
+    defaultValue: 'veraprob-core_v4',
   );
 
   // ── Security Flags ──────────────────────────────────

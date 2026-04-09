@@ -65,7 +65,12 @@
       "Bash(flutter pub:*)",
       "Bash(echo \"exit:$?\")",
       "Bash(wc -l \"C:\\\\Projects\\\\VeraProb/test/domain/sla_audit\"/*.dart)",
-      "Bash(xargs -0 grep -P \"DateTime\\\\.now\\\\\\(\\\\\\)\\(?!\\\\.toUtc\\)\")"
+      "Bash(xargs -0 grep -P \"DateTime\\\\.now\\\\\\(\\\\\\)\\(?!\\\\.toUtc\\)\")",
+      "Bash(curl -sL \"https://fonts.gstatic.com/s/notosans/v36/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyeuvA.ttf\" -o /c/Projects/VeraProb/assets/fonts/NotoSans-Regular.ttf)",
+      "Bash(cp \"/c/flutter/flutter/bin/cache/artifacts/material_fonts/roboto-regular.ttf\" \"/c/Projects/VeraProb/assets/fonts/Roboto-Regular.ttf\")",
+      "Bash(cp \"/c/flutter/flutter/bin/cache/artifacts/material_fonts/roboto-bold.ttf\" \"/c/Projects/VeraProb/assets/fonts/Roboto-Bold.ttf\")",
+      "Bash(cp \"/c/Users/wes_b/AppData/Local/Pub/Cache/hosted/pub.dev/google_fonts-6.3.3/example/google_fonts/Lato-Regular.ttf\" \"/c/Projects/VeraProb/assets/fonts/Lato-Regular.ttf\")",
+      "Bash(cp \"/c/Users/wes_b/AppData/Local/Pub/Cache/hosted/pub.dev/google_fonts-6.3.3/example/google_fonts/Lato-Bold.ttf\" \"/c/Projects/VeraProb/assets/fonts/Lato-Bold.ttf\")"
     ]
   },
   "model": "sonnet"

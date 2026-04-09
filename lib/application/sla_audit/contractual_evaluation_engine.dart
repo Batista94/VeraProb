@@ -22,6 +22,8 @@ import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
 import 'package:veraprob/domain/sla_audit/evidence_payload.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/sla_audit/late_arrival_window_policy.dart';
+import 'package:veraprob/domain/sla_audit/asset_status.dart';
+import 'package:veraprob/domain/sla_audit/asset_status_repository.dart';
 import 'alert_derivation_service.dart';
 
 /// Application Service: Reactive evaluation engine for contractual
@@ -35,12 +37,18 @@ class ContractualEvaluationEngine {
   final SlaAuditLedgerRepository _ledgerRepo;
   final EvaluationTraceRepository _traceRepo;
   final OperationalAlertRepository? _alertRepo;
+  final AssetStatusRepository? _assetStatusRepo;
 
-  static const String currentEngineVersion = 'veraprob-core_v3';
+  static const String currentEngineVersion = 'veraprob-core_v4';
 
   /// Tracks when a vehicle first entered a SET's geofence.
   /// Key: setId, Value: first entry timestamp.
   final Map<String, DateTime> _firstEntryTimestamps = {};
+
+  /// Tracks the last known position of each vehicle per SET.
+  /// Used for interpolated passage detection between outside→outside pings.
+  /// Key: setId, Value: (lat, lng).
+  final Map<String, ({double lat, double lng})> _lastPositions = {};
 
   /// Cache for plan declarations to avoid hitting DB per ping.
   final Map<String, PlanDeclaration> _planCache = {};
@@ -53,12 +61,14 @@ class ContractualEvaluationEngine {
     required SlaAuditLedgerRepository ledgerRepo,
     required EvaluationTraceRepository traceRepo,
     OperationalAlertRepository? alertRepo,
+    AssetStatusRepository? assetStatusRepo,
     IDateTimeProvider? clock,
   }) : _executionRepo = executionRepo,
        _planRepo = planRepo,
        _ledgerRepo = ledgerRepo,
        _traceRepo = traceRepo,
        _alertRepo = alertRepo,
+       _assetStatusRepo = assetStatusRepo,
        _clock = clock ?? BrazilDateTimeProvider();
 
   Future<RuleSnapshot> _getRuleSnapshot(
@@ -135,6 +145,35 @@ class ContractualEvaluationEngine {
           windowEndUtc: state.windowEndUtc,
           receivedAtUtc: receivedAtUtc,
         )) {
+          continue;
+        }
+      }
+
+      // GPS Quality Filter: skip low-confidence / high-uncertainty pings.
+      if (_isLowQualityPing(vehicleState, state)) continue;
+
+      // INV-15: Inhibit evaluation if asset is in maintenance or offDuty.
+      // Defense-in-depth — pipeline already checks, engine confirms.
+      if (_assetStatusRepo != null) {
+        final assetStatus = await _assetStatusRepo.getCurrentStatus(
+          assetId: vehicleState.vehicleId,
+          organizationId: organizationId,
+        );
+        if (assetStatus == AssetStatus.maintenance ||
+            assetStatus == AssetStatus.offDuty) {
+          final inhibitionEntry = SlaLedgerEntry(
+            organizationId: state.organizationId,
+            type: 'MAINTENANCE_INHIBITED',
+            setId: state.setId,
+            contractId: state.contractId,
+            planVersion: state.planVersion,
+            occurredAtUtc: now,
+            payload: MaintenanceInhibitionEvidence(
+              vehicleStatusAtEvaluation: assetStatus.name,
+              inhibitionReason: 'MAINTENANCE_INHIBITION',
+            ).toJson(),
+          );
+          await _ledgerRepo.append(inhibitionEntry);
           continue;
         }
       }
@@ -216,6 +255,44 @@ class ContractualEvaluationEngine {
               ),
             );
           }
+        } else if (rule.ruleType == SlaRuleType.maxToleranceDelay) {
+          final toleranceMinutes =
+              rule.config['delay_tolerance_minutes'] as int? ?? 0;
+          final penaltyPerMinuteCents =
+              rule.config['penalty_per_minute_cents'] as int? ?? 0;
+          final maxCapCents = rule.config['max_penalty_cap_cents'] as int?;
+
+          final delayMinutes = now.difference(state.windowStartUtc).inMinutes;
+          if (delayMinutes <= 0) continue;
+
+          final billableMinutes = (delayMinutes - toleranceMinutes).clamp(
+            0,
+            delayMinutes,
+          );
+          if (billableMinutes == 0) continue;
+
+          final grossCents = billableMinutes * penaltyPerMinuteCents;
+          final finalCents = maxCapCents != null
+              ? grossCents.clamp(0, maxCapCents)
+              : grossCents;
+
+          decisions.add(
+            EvaluationDecision(
+              ruleId: rule.ruleId,
+              ruleType: rule.ruleType.value,
+              ruleVersion: rule.ruleVersion,
+              rulePriority: rule.evaluationOrder,
+              outcome: 'DELAY_PENALTY_ASSESSED',
+              evidence: DelayPenaltyEvidence(
+                delayMinutes: delayMinutes,
+                toleranceMinutes: toleranceMinutes,
+                billableMinutes: billableMinutes,
+                grossPenaltyCents: grossCents,
+                finalPenaltyCents: finalCents,
+                capApplied: maxCapCents != null && grossCents > maxCapCents,
+              ),
+            ),
+          );
         }
       }
 
@@ -226,7 +303,12 @@ class ContractualEvaluationEngine {
         state.startLongitude,
       );
 
-      final insideGeofence = distance <= state.startRadiusMeters;
+      final tracking = _firstEntryTimestamps.containsKey(state.setId);
+      final insideGeofence = _isInsideWithHysteresis(
+        distance,
+        state.startRadiusMeters,
+        tracking,
+      );
 
       if (insideGeofence) {
         final firstEntry = _firstEntryTimestamps.putIfAbsent(
@@ -273,7 +355,17 @@ class ContractualEvaluationEngine {
         if (firstEntry != null && now.isAfter(firstEntry)) {
           _firstEntryTimestamps.remove(state.setId);
         }
+
+        // Check for interpolated passage (vehicle passed through geofence
+        // between two outside pings)
+        _checkInterpolatedPassage(vehicleState, state, now, decisions);
       }
+
+      // Always update last known position (after all checks)
+      _lastPositions[state.setId] = (
+        lat: vehicleState.latitude,
+        lng: vehicleState.longitude,
+      );
     }
   }
 
@@ -469,5 +561,70 @@ class ContractualEvaluationEngine {
         .map((p) => p.penalties.gracePeriodMinutes)
         .toSet();
     return values.length == 1 ? values.first : 0;
+  }
+
+  // ── GPS Quality Filter ──────────────────────────────────
+
+  bool _isLowQualityPing(
+    VehicleOperationalState v,
+    ContractualExecutionState s,
+  ) {
+    if (v.confidence < 0.7) return true;
+    final acc = v.accuracyMeters;
+    if (acc != null && acc > s.startRadiusMeters / 2.0) return true;
+    return false;
+  }
+
+  // ── Hysteresis ──────────────────────────────────────────
+
+  bool _isInsideWithHysteresis(
+    double distance,
+    int radiusMeters,
+    bool tracking,
+  ) {
+    if (!tracking) return distance <= radiusMeters; // Enter: strict
+    return distance <= radiusMeters * 1.2; // Exit: hysteresis band
+  }
+
+  // ── Interpolated Passage ────────────────────────────────
+
+  void _checkInterpolatedPassage(
+    VehicleOperationalState v,
+    ContractualExecutionState state,
+    DateTime now,
+    List<EvaluationDecision> decisions,
+  ) {
+    final last = _lastPositions[state.setId];
+    if (last == null) return; // No prior position — nothing to interpolate
+
+    final crosses = GeoMath.lineIntersectsCircle(
+      last.lat,
+      last.lng,
+      v.latitude,
+      v.longitude,
+      state.startLatitude,
+      state.startLongitude,
+      state.startRadiusMeters.toDouble(),
+    );
+    if (!crosses) return;
+
+    decisions.add(
+      EvaluationDecision(
+        ruleId: 'engine-core',
+        ruleType: 'INTERPOLATED_PASSAGE',
+        ruleVersion: 1,
+        rulePriority: 998,
+        outcome: 'INTERPOLATED_PASSAGE',
+        evidence: InterpolatedPassageEvidence(
+          fromLat: last.lat,
+          fromLng: last.lng,
+          toLat: v.latitude,
+          toLng: v.longitude,
+          geofenceCenterLat: state.startLatitude,
+          geofenceCenterLng: state.startLongitude,
+          geofenceRadiusMeters: state.startRadiusMeters.toDouble(),
+        ),
+      ),
+    );
   }
 }

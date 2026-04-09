@@ -55,6 +55,10 @@ class VehicleOperationalState extends Equatable {
   /// by jump-filtered or degraded readings.
   final double confidence; // Physical Metric - Double Required
 
+  /// Horizontal GPS accuracy in metres reported by the device.
+  /// Null = unknown (quality filter treats as trusted).
+  final double? accuracyMeters; // Physical Metric - Double Required
+
   /// Display fields carried forward from the raw position.
   final String? routeName;
   final String? vehiclePlate;
@@ -76,6 +80,7 @@ class VehicleOperationalState extends Equatable {
     this.nearestStopName,
     this.distanceToRoute,
     required this.confidence,
+    this.accuracyMeters,
     this.routeName,
     this.vehiclePlate,
     required this.source,
@@ -103,6 +108,7 @@ class VehicleOperationalState extends Equatable {
     String? nearestStopName,
     double? distanceToRoute, // Physical Metric - Double Required
     double? confidence, // Physical Metric - Double Required
+    double? accuracyMeters, // Physical Metric - Double Required
     String? routeName,
     String? vehiclePlate,
     String? source,
@@ -123,6 +129,7 @@ class VehicleOperationalState extends Equatable {
       nearestStopName: nearestStopName ?? this.nearestStopName,
       distanceToRoute: distanceToRoute ?? this.distanceToRoute,
       confidence: confidence ?? this.confidence,
+      accuracyMeters: accuracyMeters ?? this.accuracyMeters,
       routeName: routeName ?? this.routeName,
       vehiclePlate: vehiclePlate ?? this.vehiclePlate,
       source: source ?? this.source,
@@ -145,5 +152,6 @@ class VehicleOperationalState extends Equatable {
     nearestStopId,
     distanceToRoute,
     confidence,
+    accuracyMeters,
   ];
 }
