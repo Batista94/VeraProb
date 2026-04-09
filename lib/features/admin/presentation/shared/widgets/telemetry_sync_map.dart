@@ -11,7 +11,7 @@ import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 /// Interpolates between two [LatLng] values for smooth camera flight.
 class LatLngTween extends Tween<LatLng> {
   LatLngTween({required LatLng begin, required LatLng end})
-      : super(begin: begin, end: end);
+    : super(begin: begin, end: end);
 
   @override
   LatLng lerp(double t) {
@@ -148,10 +148,10 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
                       point: _currentFocus!.geofenceCenter!,
                       radius: _currentFocus!.geofenceRadiusMeters,
                       useRadiusInMeter: true,
-                      color:
-                          VeraProbColors.scheduled.withValues(alpha: 0.12),
-                      borderColor:
-                          VeraProbColors.scheduled.withValues(alpha: 0.6),
+                      color: VeraProbColors.scheduled.withValues(alpha: 0.12),
+                      borderColor: VeraProbColors.scheduled.withValues(
+                        alpha: 0.6,
+                      ),
                       borderStrokeWidth: 1.5,
                     ),
                   ],
@@ -196,8 +196,10 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
               bottom: 12,
               left: 12,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: VeraProbColors.surface.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(6),
@@ -278,8 +280,7 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
                   border: Border.all(color: Colors.white, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color:
-                          VeraProbColors.critical.withValues(alpha: 0.5),
+                      color: VeraProbColors.critical.withValues(alpha: 0.5),
                       blurRadius: 8,
                     ),
                   ],

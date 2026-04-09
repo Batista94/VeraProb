@@ -11,7 +11,7 @@ class PostgresTestConfig {
   // Service role key — bypassa RLS para os testes de integração.
   // NUNCA usar em produção ou expor ao cliente.
   static const String supabaseAnonKey =
-      'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
   /// Service-role key — bypassa RLS e tem permissões de admin no Auth.
   /// Gerado deterministicamente pelo `supabase start` local.
@@ -19,7 +19,7 @@ class PostgresTestConfig {
   ///
   /// Obtido via: `supabase status` → "service_role key"
   static const String serviceRoleKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hj04zWl196z2-SBc0';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
 
   /// UUID sentinela para testes de integração. Identificador estável para
   /// evitar colisões entre runs sem precisar de fixture de organização real.
@@ -29,8 +29,12 @@ class PostgresTestConfig {
 
   /// Garante que uma organização existe no banco para evitar violações de FK.
   /// Se [id] for nulo, usa [testOrgId].
+  ///
+  /// Sempre usa a [serviceRoleKey] internamente para o upsert, garantindo que
+  /// a operação de seed bypasse o RLS — independentemente do [client] passado
+  /// pelo chamador (que pode ser um client anon usado para queries de dados).
   static Future<void> ensureSentinelOrg({
-    SupabaseClient? client,
+    SupabaseClient? client, // kept for backward-compat, ignored for the upsert
     String? id,
     String? name,
   }) async {
@@ -40,15 +44,15 @@ class PostgresTestConfig {
       return;
     }
 
-    final effectiveClient =
-        client ?? SupabaseClient(supabaseUrl, supabaseAnonKey);
+    // Always seed with the service-role key to bypass RLS.
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
 
     // CNPJ must be unique and usually 14 digits. We'll use a deterministic
     // derivation from the UUID to avoid collisions between different test orgs.
     final stripped = effectiveId.replaceAll('-', '');
     final numericCnpj = stripped.substring(stripped.length - 14);
 
-    await effectiveClient.from('organizations').upsert({
+    await seedClient.from('organizations').upsert({
       'id': effectiveId,
       'name': name ?? 'Sentinel Integration Test Org',
       'cnpj': numericCnpj,
@@ -56,14 +60,16 @@ class PostgresTestConfig {
     }, onConflict: 'id');
 
     _seededOrgs.add(effectiveId);
+    await seedClient.dispose();
   }
 
   static Future<SupabaseClient> createClient() async {
-    // Mocking SharedPreferences to avoid MissingPluginException in unit tests
-    // when Supabase.initialize is called.
+    // Integration tests run against the local Supabase stack with service_role
+    // so that RLS does not interfere with seeding and querying test data.
+    // The anon key is unsuitable here — it gets blocked by all RLS policies.
     SharedPreferences.setMockInitialValues({});
 
-    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+    await Supabase.initialize(url: supabaseUrl, anonKey: serviceRoleKey);
     return Supabase.instance.client;
   }
 

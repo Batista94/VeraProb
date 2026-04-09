@@ -115,8 +115,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         if (current?.sanctionId == item.id) {
           ref.read(selectedSanctionFocusProvider.notifier).state = null;
         } else {
-          ref.read(selectedSanctionFocusProvider.notifier).state =
-              SanctionMapFocus(
+          ref
+              .read(selectedSanctionFocusProvider.notifier)
+              .state = SanctionMapFocus(
             sanctionId: item.id,
             infractionPoint: LatLng(
               evidence.primaryEvidenceLat,
@@ -133,26 +134,29 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         }
       },
       child: Opacity(
-      opacity: isLocked ? 0.6 : 1.0,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: isFocused
-              ? VeraProbColors.primary.withValues(alpha: 0.05)
-              : VeraProbColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border(
-            left: BorderSide(
-              color: leftBorderColor,
-              width: leftBorderWidth,
-            ),
-            top: const BorderSide(color: VeraProbColors.border),
-            right: const BorderSide(color: VeraProbColors.border),
-            bottom: const BorderSide(color: VeraProbColors.border),
+        opacity: isLocked ? 0.6 : 1.0,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: isFocused
+                ? VeraProbColors.primary.withValues(alpha: 0.05)
+                : VeraProbColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: VeraProbColors.border),
           ),
-        ),
+          clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
+              // WS-5: Left accent line indicator (fixed Border + BorderRadius conflict in Flutter)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: leftBorderWidth,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: leftBorderColor),
+                ),
+              ),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,8 +288,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: VeraProbColors.primary
-                                    .withValues(alpha: 0.12),
+                                color: VeraProbColors.primary.withValues(
+                                  alpha: 0.12,
+                                ),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Row(
@@ -299,8 +304,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                                   const SizedBox(width: 3),
                                   Text(
                                     'NO MAPA',
-                                    style:
-                                        VeraProbTypography.badge.copyWith(
+                                    style: VeraProbTypography.badge.copyWith(
                                       color: VeraProbColors.primary,
                                       fontSize: 8,
                                     ),

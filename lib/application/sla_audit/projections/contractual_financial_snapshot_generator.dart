@@ -132,6 +132,7 @@ class ContractualFinancialSnapshotGenerator {
       evidenceGapCount: evidenceGapCount,
       lastLedgerEntryId: await _ledgerRepo.getLastEntryId(
         organizationId: organizationId,
+        contractId: contractId,
       ),
     );
 
@@ -219,6 +220,7 @@ class ContractualFinancialSnapshotGenerator {
       evidenceGapCount: evidenceGapCount,
       lastLedgerEntryId: await _ledgerRepo.getLastEntryId(
         organizationId: organizationId,
+        contractId: contractId,
       ),
       previousSnapshotId: previousSnapshotId,
       reprocessingReason: reprocessingReason,

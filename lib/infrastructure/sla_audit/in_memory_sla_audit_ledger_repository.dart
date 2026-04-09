@@ -28,10 +28,16 @@ class InMemorySlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   }
 
   @override
-  Future<String?> getLastEntryId({String? organizationId}) async {
-    final scope = organizationId != null
+  Future<String?> getLastEntryId({
+    String? organizationId,
+    String? contractId,
+  }) async {
+    var scope = organizationId != null
         ? _entries.where((e) => e.organizationId == organizationId).toList()
-        : _entries;
+        : List<SlaLedgerEntry>.from(_entries);
+    if (contractId != null) {
+      scope = scope.where((e) => e.contractId == contractId).toList();
+    }
     if (scope.isEmpty) return null;
     return scope.last.eventId;
   }

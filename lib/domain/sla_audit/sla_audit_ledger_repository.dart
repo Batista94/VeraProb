@@ -17,7 +17,12 @@ abstract class SlaAuditLedgerRepository {
   ///
   /// [organizationId] provides explicit tenant scoping as defense-in-depth
   /// alongside RLS. Callers with an available org ID MUST pass it (INV-6).
-  Future<String?> getLastEntryId({String? organizationId});
+  ///
+  /// [contractId] further narrows the scope to a single contract when provided.
+  /// Prefer passing [contractId] in any context where the query is already
+  /// contract-scoped (e.g. E2E tests, snapshot generation for a specific contract)
+  /// to avoid non-determinism when multiple test runs share the same org ID.
+  Future<String?> getLastEntryId({String? organizationId, String? contractId});
 
   /// Retrieves all forensic entries related to a specific contractual or operational set (e.g. trip).
   /// Ordered chronologically.

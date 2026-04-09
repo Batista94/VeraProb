@@ -73,4 +73,5 @@ Skills are located in `.claude/skills/`. Use them proactively:
 ## 📍 LIVE STATUS: Phase 10.5 (The Forensic Truth)
 
 **Current Objective:** Hardening Architecture & Layer Isolation (C4 Cleanup).
+**Recent Milestone:** Phase 10.4 WS-5 (Telemetry Map-Sync) COMPLETED ✅.
 **Next Up:** Lote 5 (C4 Correction) & Infrastructure DB Sync.

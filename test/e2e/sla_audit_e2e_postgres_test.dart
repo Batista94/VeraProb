@@ -355,6 +355,7 @@ void main() {
       // Verify Repo abstraction works too
       final lastId = await ledgerRepo.getLastEntryId(
         organizationId: '00000000-0000-0000-0000-000000000001',
+        contractId: contractId,
       );
       expect(
         lastId,

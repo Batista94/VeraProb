@@ -26,8 +26,7 @@ class AuditorQueueScreen extends ConsumerStatefulWidget {
   const AuditorQueueScreen({super.key});
 
   @override
-  ConsumerState<AuditorQueueScreen> createState() =>
-      _AuditorQueueScreenState();
+  ConsumerState<AuditorQueueScreen> createState() => _AuditorQueueScreenState();
 }
 
 class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
@@ -41,7 +40,9 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
 
     // WS-5: Auto-open drawer when a sanction is focused on narrow screens
     ref.listen<SanctionMapFocus?>(selectedSanctionFocusProvider, (prev, next) {
-      if (!isWide && next != null && !(_scaffoldKey.currentState?.isEndDrawerOpen ?? false)) {
+      if (!isWide &&
+          next != null &&
+          !(_scaffoldKey.currentState?.isEndDrawerOpen ?? false)) {
         _scaffoldKey.currentState?.openEndDrawer();
       }
     });
@@ -300,8 +301,10 @@ class _Header extends StatelessWidget {
                   color: VeraProbColors.primary.withValues(alpha: 0.5),
                 ),
                 textStyle: const TextStyle(fontSize: 12),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
               ),
             ),
           ),

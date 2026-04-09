@@ -32,10 +32,16 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   }
 
   @override
-  Future<String?> getLastEntryId({String? organizationId}) async {
+  Future<String?> getLastEntryId({
+    String? organizationId,
+    String? contractId,
+  }) async {
     var query = _client.from('sla_audit_ledger_v2').select('id');
     if (organizationId != null) {
       query = query.eq('organization_id', organizationId);
+    }
+    if (contractId != null) {
+      query = query.eq('contract_id', contractId);
     }
     final response = await query
         .order('occurred_at_utc', ascending: false)
