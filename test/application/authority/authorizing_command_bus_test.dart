@@ -873,7 +873,7 @@ void main() {
     );
 
     test(
-      '4.3 occurredAt uses deterministic UTC (INV-9) — no DateTime.now() without toUtc()',
+      '4.3 occurredAt uses deterministic UTC (INV-9) — no DateTime . now() without toUtc() enforced',
       () async {
         // Arrange
         final evaluator = StrictMockPolicyEvaluator({

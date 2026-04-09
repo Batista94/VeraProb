@@ -48,7 +48,8 @@ class ContractualEvaluationEngine {
   /// Tracks the last known position of each vehicle per SET.
   /// Used for interpolated passage detection between outside→outside pings.
   /// Key: setId, Value: (lat, lng).
-  final Map<String, ({double lat, double lng})> _lastPositions = {};
+  final Map<String, ({double lat, double lng})> _lastPositions =
+      {}; // Physical Metric - Double Required
 
   /// Cache for plan declarations to avoid hitting DB per ping.
   final Map<String, PlanDeclaration> _planCache = {};
@@ -578,7 +579,7 @@ class ContractualEvaluationEngine {
   // ── Hysteresis ──────────────────────────────────────────
 
   bool _isInsideWithHysteresis(
-    double distance,
+    double distance, // Physical Metric - Double Required
     int radiusMeters,
     bool tracking,
   ) {

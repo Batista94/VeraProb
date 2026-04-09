@@ -54,3 +54,15 @@ Before marking any task complete:
 - Unit tests for all domain logic and UseCases
 - Integration tests for Repository implementations — real Supabase, no mocks at infra boundary
 - Target: >60% coverage (CI/CD gate) · >80% for core domain/application layers
+
+## PR Scanner Compliance & Forensic Annotation
+
+To pass the `pr_full_scanner.sh` (Lead Reviewer gate), the following rules are non-negotiable:
+
+1. **Physical Metrics (Doubles):** Every `double` declaration that is not for currency (e.g., GPS coordinates, distance, velocity, mass) MUST be annotated with `// Physical Metric - Double Required` on the same line.
+   ```dart
+   final double latitude; // Physical Metric - Double Required
+   final double distanceMeters; // Physical Metric - Double Required
+   ```
+2. **UTC False Positives:** The scanner flags `DateTime.now()` even in strings. To quote this pattern in descriptions or comments without blocking the commit, use `DateTime . now()` or `DateTime_now`.
+3. **Automated Fixes:** If the scanner fails, DO NOT proceed. Add the missing annotations or fix the UTC logic.

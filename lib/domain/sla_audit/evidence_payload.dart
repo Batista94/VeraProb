@@ -230,8 +230,12 @@ final class ExpirationSweepEvidence extends EvidencePayload {
 /// Evidence that a vehicle's path between two pings intersected a geofence,
 /// even though neither endpoint was individually inside the radius.
 final class InterpolatedPassageEvidence extends EvidencePayload {
-  final double fromLat, fromLng, toLat, toLng;
-  final double geofenceCenterLat, geofenceCenterLng, geofenceRadiusMeters;
+  final double fromLat; // Physical Metric - Double Required
+  final double fromLng; // Physical Metric - Double Required
+  final double toLat, toLng; // Physical Metric - Double Required
+  final double geofenceCenterLat; // Physical Metric - Double Required
+  final double geofenceCenterLng; // Physical Metric - Double Required
+  final double geofenceRadiusMeters; // Physical Metric - Double Required
 
   const InterpolatedPassageEvidence({
     required this.fromLat,
