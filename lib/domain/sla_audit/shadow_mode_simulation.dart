@@ -128,8 +128,8 @@ class ShadowModeSimulation extends Equatable {
     }
 
     // Simulation: revenue that would have leaked without enforcement
-    final simulatedLost = Money(
-      (actualLostRevenue.cents * (10000 - baselineDisputeRateBps) ~/ 10000),
+    final simulatedLost = actualLostRevenue.multiplyByBps(
+      10000 - baselineDisputeRateBps,
     );
 
     // Manual enforcement labor cost savings

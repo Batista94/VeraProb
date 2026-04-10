@@ -45,70 +45,77 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // BPS Truncation Rules (Dízimas / Repeating Decimals)
+  // BPS Rounding Rules (Half Away From Zero)
   //
-  // multiplyByBps uses integer truncation (`~/ 10000`), not rounding.
-  // This is the canonical formula: (cents * bps) ~/ 10000.
-  // Business intent: fractional cents are always dropped (floor), never rounded
-  // up, so penalty multipliers never overshoot the contracted value.
+  // multiplyByBps uses symmetric rounding (half away from zero):
+  //   formula: (cents * bps + 5000) ~/ 10000  — with BigInt to prevent overflow
+  //
+  // This guarantees atomic, sealed ledger entries: each cent value is the
+  // mathematically rounded result, not a floored approximation.
   //
   // Rule: 10 000 BPS = 100% (1×). All rates are integers.
   // ---------------------------------------------------------------------------
-  group('Money – BPS Truncation Rules (Dízimas)', () {
+  group('Money – BPS Rounding Rules (Half Away From Zero)', () {
     // --- 1/3 = 3333.33... BPS ---
-    test('3 333 BPS on R\$1,00 truncates to 33 cents, not 34', () {
+    test('3 333 BPS on R\$1,00 rounds down to 33 cents (0.33 < 0.5)', () {
       const money = Money(100); // R$1,00
-      // Exact: 100 * 3333 / 10000 = 33.33 → truncated to 33
+      // Exact: 100 * 3333 / 10000 = 33.33 → rounds down to 33
+      // (333300 + 5000) ~/ 10000 = 338300 ~/ 10000 = 33
       expect(
         money.multiplyByBps(3333).cents,
         33,
-        reason: 'Floor division: 33.33 becomes 33, not 34',
+        reason: 'Round-down: 33.33 → 33 (fractional part 0.33 < 0.5)',
       );
     });
 
     // --- 2/3 = 6666.66... BPS ---
-    test('6 667 BPS on R\$1,00 truncates to 66 cents — not 67 like rounding', () {
+    test('6 667 BPS on R\$1,00 rounds up to 67 cents (0.67 ≥ 0.5)', () {
       const money = Money(100); // R$1,00
-      // Exact: 100 * 6667 / 10000 = 66.67 → truncated to 66
-      // operator * with 0.6667 would round to 67 — the two methods diverge here.
+      // Exact: 100 * 6667 / 10000 = 66.67 → rounds up to 67
+      // (666700 + 5000) ~/ 10000 = 671700 ~/ 10000 = 67
       expect(
         money.multiplyByBps(6667).cents,
-        66,
-        reason: 'Truncation: 66.67 → 66. operator* would round to 67',
+        67,
+        reason: 'Round-up: 66.67 → 67 (fractional part 0.67 ≥ 0.5)',
       );
     });
 
     test(
-      '1 BPS on R\$1,00 truncates to 0 cents (sub-cent penalty disappears)',
+      '1 BPS on R\$1,00 rounds to 0 cents (sub-cent penalty disappears)',
       () {
         const money = Money(100); // R$1,00
-        // 100 * 1 / 10000 = 0.01 → truncated to 0
+        // 100 * 1 / 10000 = 0.01 → rounds down to 0 (0.01 < 0.5)
+        // (100 + 5000) ~/ 10000 = 5100 ~/ 10000 = 0
         expect(
           money.multiplyByBps(1).cents,
           0,
-          reason: 'Sub-cent result must floor to 0, not round to 1',
+          reason: 'Sub-cent result rounds down to 0: 0.01 < 0.5',
         );
       },
     );
 
-    test('9 999 BPS (99.99%) on R\$0,10 truncates to 9 cents, not 10', () {
-      const money = Money(10); // R$0,10
-      // 10 * 9999 / 10000 = 9.999 → truncated to 9
-      // rounding would give 10 — truncation gives 9
-      expect(
-        money.multiplyByBps(9999).cents,
-        9,
-        reason: '9.999 truncates to 9 (floor), not 10 (round)',
-      );
-    });
+    test(
+      '9 999 BPS (99.99%) on R\$0,10 rounds up to 10 cents (0.999 ≥ 0.5)',
+      () {
+        const money = Money(10); // R$0,10
+        // 10 * 9999 / 10000 = 9.999 → rounds up to 10
+        // (99990 + 5000) ~/ 10000 = 104990 ~/ 10000 = 10
+        expect(
+          money.multiplyByBps(9999).cents,
+          10,
+          reason: '9.999 rounds up to 10 (fractional part 0.999 ≥ 0.5)',
+        );
+      },
+    );
 
-    test('3 333 BPS on R\$1,50 truncates to 49 cents', () {
+    test('3 333 BPS on R\$1,50 rounds up to 50 cents (0.995 ≥ 0.5)', () {
       const money = Money(150); // R$1,50
-      // 150 * 3333 / 10000 = 49.995 → truncated to 49
+      // 150 * 3333 / 10000 = 49.995 → rounds up to 50
+      // (499950 + 5000) ~/ 10000 = 504950 ~/ 10000 = 50
       expect(
         money.multiplyByBps(3333).cents,
-        49,
-        reason: '49.995 truncates to 49 (floor)',
+        50,
+        reason: '49.995 rounds up to 50 (fractional part 0.995 ≥ 0.5)',
       );
     });
 
@@ -123,21 +130,21 @@ void main() {
       expect(money.multiplyByBps(0), const Money(0));
     });
 
-    // --- Behavioral contract: multiplyByBps vs operator* diverge on dízimas ---
+    // --- Behavioral contract: multiplyByBps and operator* converge on dízimas ---
     test(
-      'multiplyByBps and operator* diverge on 2/3 — documents the contract',
+      'multiplyByBps and operator* converge on 2/3 under symmetric rounding',
       () {
         const money = Money(100);
         final viaOperator = money * 0.6667; // (100 * 0.6667).round() = 67
-        final viaBps = money.multiplyByBps(6667); //  100 * 6667 ~/ 10000 = 66
+        final viaBps = money.multiplyByBps(6667); // (666700+5000)~/10000 = 67
 
         expect(viaOperator.cents, 67, reason: 'operator* rounds: 66.67 → 67');
-        expect(viaBps.cents, 66, reason: 'multiplyByBps truncates: 66.67 → 66');
+        expect(viaBps.cents, 67, reason: 'multiplyByBps rounds: 66.67 → 67');
         expect(
           viaOperator,
-          isNot(equals(viaBps)),
+          equals(viaBps),
           reason:
-              'The two methods are NOT interchangeable on repeating decimals',
+              'Both methods apply half-away-from-zero rounding — they converge',
         );
       },
     );

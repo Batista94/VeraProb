@@ -131,7 +131,7 @@ class SlaBreachRiskCalculator {
       );
     }
 
-    final bufferSeconds = (totalSeconds * bufferFractionBps) ~/ 10000;
+    final bufferSeconds = _roundBps(totalSeconds, bufferFractionBps);
     final riskWindowStart = windowEndUtc.subtract(
       Duration(seconds: bufferSeconds),
     );
@@ -159,5 +159,22 @@ class SlaBreachRiskCalculator {
         '$fieldName must be UTC (INV-9), received isUtc=false',
       );
     }
+  }
+
+  /// Symmetric Rounding (Half Away From Zero) for BPS calculations on temporal values.
+  ///
+  /// Invariant to sign: positive values round away from zero (+0.5 → +1),
+  /// negative values also round away from zero (−0.5 → −1).
+  /// This ensures drift corrections, retroactive adjustments, and chargebacks
+  /// maintain mathematical consistency — never silently shrinking magnitude.
+  ///
+  /// Uses BigInt for the intermediate multiplication to prevent 63-bit overflow.
+  /// Formula: `(value * bps ± 5000) ~/ 10000` where sign of 5000 matches value.
+  static int _roundBps(int value, int bps) {
+    final product = BigInt.from(value) * BigInt.from(bps);
+    final half = product >= BigInt.zero
+        ? BigInt.from(5000)
+        : BigInt.from(-5000);
+    return ((product + half) ~/ BigInt.from(10000)).toInt();
   }
 }

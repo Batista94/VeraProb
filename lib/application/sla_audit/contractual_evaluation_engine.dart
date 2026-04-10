@@ -213,7 +213,7 @@ class ContractualEvaluationEngine {
           if (maxSpeed != null && currentSpeed > maxSpeed) {
             int fineCents = rule.config['fine_cents'] as int? ?? 150000;
             // INV: Severidade nunca ultrapassa 100 BPS (1%) do valor do contrato
-            final maxCents = (state.contractualValue.cents * 100) ~/ 10000;
+            final maxCents = state.contractualValue.multiplyByBps(100).cents;
             if (fineCents > maxCents) fineCents = maxCents;
 
             final verdictEvidence = VerdictEvidence.create(
@@ -401,11 +401,14 @@ class ContractualEvaluationEngine {
 
       for (final rule in sortedRules) {
         if (rule.ruleType == SlaRuleType.noShowPenalty) {
-          penaltyCents =
-              (state.contractualValue.cents * state.noShowPenaltyBps) ~/ 10000;
+          penaltyCents = state.contractualValue
+              .multiplyByBps(state.noShowPenaltyBps)
+              .cents;
 
           // INV: Sanction severity never exceeds 100 BPS (1%) of contractual value
-          final maxNoShowCents = (state.contractualValue.cents * 100) ~/ 10000;
+          final maxNoShowCents = state.contractualValue
+              .multiplyByBps(100)
+              .cents;
           if (penaltyCents > maxNoShowCents) penaltyCents = maxNoShowCents;
 
           decisions.add(

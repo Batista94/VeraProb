@@ -363,5 +363,38 @@ void main() {
         );
       });
     });
+
+    // ── Symmetric Rounding Proof (Half Away From Zero) ──────────────────
+    group('Symmetric Rounding in buffer calculation', () {
+      test('positive drift rounds away from zero', () {
+        // 10 seconds × 1500 BPS = 15000 + 5000 = 20000 ~/ 10000 = 2 seconds
+        // Without rounding: 15000 ~/ 10000 = 1 second (truncated)
+        final report = calculator.evaluate(
+          windowStartUtc: DateTime.utc(2026, 4, 1, 0, 0, 0),
+          windowEndUtc: DateTime.utc(2026, 4, 1, 0, 0, 10),
+          currentEtaUtc: DateTime.utc(2026, 4, 1, 0, 0, 9),
+        );
+
+        expect(report.buffer.inSeconds, equals(2));
+      });
+
+      test('half-BPS boundary rounds up for positive values', () {
+        // 3 seconds × 1500 BPS = 4500 + 5000 = 9500 ~/ 10000 = 0 (below half)
+        // 4 seconds × 1500 BPS = 6000 + 5000 = 11000 ~/ 10000 = 1 (above half)
+        final belowHalf = calculator.evaluate(
+          windowStartUtc: DateTime.utc(2026, 4, 1, 0, 0, 0),
+          windowEndUtc: DateTime.utc(2026, 4, 1, 0, 0, 3),
+          currentEtaUtc: DateTime.utc(2026, 4, 1, 0, 0, 2),
+        );
+        final aboveHalf = calculator.evaluate(
+          windowStartUtc: DateTime.utc(2026, 4, 1, 0, 0, 0),
+          windowEndUtc: DateTime.utc(2026, 4, 1, 0, 0, 4),
+          currentEtaUtc: DateTime.utc(2026, 4, 1, 0, 0, 3),
+        );
+
+        expect(belowHalf.buffer.inSeconds, equals(0));
+        expect(aboveHalf.buffer.inSeconds, equals(1));
+      });
+    });
   });
 }

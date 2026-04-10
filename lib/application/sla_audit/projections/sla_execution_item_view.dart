@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 /// Read model: individual SET obligation view for lists and drill-down.
 ///
@@ -40,8 +41,10 @@ class SlaExecutionItemView extends Equatable {
 
   /// Computed penalty value for display purposes.
   /// Formula lives here (projection layer), not in the UI.
-  /// BPS: (valor * bps) ~/ 10000 (INV-2)
-  int get calculatedPenalty => (contractualValue * noShowPenaltyBps) ~/ 10000;
+  /// Calculates the no-show penalty using Symmetric Rounding (INV-19).
+  /// Formula: `(contractualValue * noShowPenaltyBps + 5000) ~/ 10000`.
+  int get calculatedPenalty =>
+      Money(contractualValue).multiplyByBps(noShowPenaltyBps).cents;
 
   @override
   List<Object?> get props => [

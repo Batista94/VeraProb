@@ -71,7 +71,8 @@ class Contract extends Equatable {
   /// Multiplier applied to penalties (INV-19: BPS precision).
   ///
   /// Example: 1.75x -> 17500 BPS.
-  /// Formula: `penalty = base_penalty * penaltyMultiplierBps ~/ 10000`.
+  /// Formula: `penalty = (base_penalty * penaltyMultiplierBps + 5000) ~/ 10000`
+  /// (Symmetric Rounding — prevents cumulative drift from truncation).
   final int penaltyMultiplierBps;
 
   // ── Coordinates ───────────────────────────────────────────

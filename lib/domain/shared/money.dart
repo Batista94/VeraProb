@@ -35,9 +35,18 @@ class Money extends Equatable {
   }
 
   /// Multiplies by a basis-points integer (e.g., 10000 = 1.0×, 15000 = 1.5×, 8750 = 87.5%).
-  /// Preferred over [operator *] for penalty multipliers — avoids float ambiguity.
+  ///
+  /// Uses **Symmetric Rounding** via BigInt to:
+  /// 1. Prevent 63-bit integer overflow on intermediate multiplication (INV-19).
+  /// 2. Round to nearest cent instead of truncating — protects cumulative accuracy.
+  ///
+  /// Formula: `(cents * bps + 5000) ~/ 10000`
+  /// After division by 10000, result always fits in int64 for any practical value.
   Money multiplyByBps(int bps) {
-    return Money((cents * bps) ~/ 10000);
+    final result =
+        (BigInt.from(cents) * BigInt.from(bps) + BigInt.from(5000)) ~/
+        BigInt.from(10000);
+    return Money(result.toInt());
   }
 
   @override

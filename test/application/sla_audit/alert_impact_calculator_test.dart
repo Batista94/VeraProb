@@ -49,21 +49,24 @@ void main() {
         expect(impact.projectedPenaltyCents.cents % 1, 0);
       });
 
-      test('forNoShow uses BPS integer arithmetic, no floating-point drift', () {
-        final penalties = _makePenalties(
-          baseTripValue: const Money(12345), // cents ímpares
-          noShowBps: 17500, // 1.75×
-        );
+      test(
+        'forNoShow uses BPS integer arithmetic, no floating-point drift',
+        () {
+          final penalties = _makePenalties(
+            baseTripValue: const Money(12345), // cents ímpares
+            noShowBps: 17500, // 1.75×
+          );
 
-        final impact = AlertImpactCalculator.forNoShow(penalties: penalties);
+          final impact = AlertImpactCalculator.forNoShow(penalties: penalties);
 
-        // Validação manual: (12345 * 17500) ~/ 10000 = 216037500 ~/ 10000 = 21603
-        const expectedManual = (12345 * 17500) ~/ 10000;
-        expect(impact.projectedPenaltyCents.cents, expectedManual);
-        expect(impact.projectedPenaltyCents.cents, 21603);
-        // Garante que o resultado é inteiro exato
-        expect(impact.projectedPenaltyCents.cents % 1, 0);
-      });
+          // (12345 * 17500 + 5000) ~/ 10000 = 216042500 ~/ 10000 = 21604
+          const expectedManual = (12345 * 17500 + 5000) ~/ 10000;
+          expect(impact.projectedPenaltyCents.cents, expectedManual);
+          expect(impact.projectedPenaltyCents.cents, 21604);
+          // Garante que o resultado é inteiro exato
+          expect(impact.projectedPenaltyCents.cents % 1, 0);
+        },
+      );
 
       test('kinematicAnomaly exposure is Money with integer cents', () {
         final impact = AlertImpactCalculator.forKinematicAnomaly(
@@ -109,17 +112,17 @@ void main() {
     });
 
     // ─────────────────────────────────────────────────────────────────────
-    // Grupo 3: Arredondamento BPS — Truncamento Inteiro (~/)
-    // Valida que a operação (baseValue * bps) ~/ 10000 trunca para baixo,
-    // sem arredondamento para cima.
+    // Grupo 3: Arredondamento BPS — Simétrico (Half Away From Zero)
+    // Valida que a operação utiliza o arredondamento simétrico (cents * bps + 5000) ~/ 10000,
+    // garantindo convergência com o Money Value Object.
     // ─────────────────────────────────────────────────────────────────────
-    group('BPS truncation (~/ operator)', () {
-      test('BPS division truncates toward zero, never rounds up', () {
-        // 10001 cents × 15000 bps = 150015000; 150015000 ~/ 10000 = 15001
+    group('BPS rounding (half away from zero)', () {
+      test('BPS division rounds to nearest cent (half away from zero)', () {
+        // 10001 cents × 15000 bps = 150015000; (150015000 + 5000) ~/ 10000 = 15002
         // Com double seria 15001.5 → risco de round para 15002
         const baseValue = 10001;
         const bps = 15000;
-        const expectedTruncated = (baseValue * bps) ~/ 10000;
+        const expectedRounded = (baseValue * bps + 5000) ~/ 10000;
 
         final penalties = _makePenalties(
           baseTripValue: const Money(baseValue),
@@ -127,52 +130,50 @@ void main() {
         );
         final impact = AlertImpactCalculator.forNoShow(penalties: penalties);
 
-        expect(impact.projectedPenaltyCents.cents, expectedTruncated);
-        expect(impact.projectedPenaltyCents.cents, 15001);
-        // Se usasse double .round(), daria 15002 — garantir que NÃO é isso
-        expect(impact.projectedPenaltyCents.cents, isNot(15002));
+        expect(impact.projectedPenaltyCents.cents, expectedRounded);
+        expect(impact.projectedPenaltyCents.cents, 15002);
+        // Garantir que NÃO é o resultado truncado (15001)
+        expect(impact.projectedPenaltyCents.cents, isNot(15001));
       });
 
-      test('BPS truncation discards fractional cents — proves ~/ is intentional, '
-          'never .round()', () {
-        // INV-19: This test is a guardrail against future "well-intentioned" devs
-        // who might replace ~/ with / and .round(), introducing double drift.
-        //
-        // Scenario: 99999 cents × 10001 bps = 1000089999
-        //   ~/ 10000 = 100008  (truncation — current behavior)
-        //   /  10000 = 100008.9999 → .round() → 100009 (drift!)
-        //
-        // The 0.9999¢ difference is deliberate: truncation is architecturally
-        // mandated to avoid IEEE-754 ambiguity and ensure deterministic results
-        // across all platforms (WASM, native, server).
+      test(
+        'BPS rounding matches .round() convergence — proves alignment with Money VO',
+        () {
+          // INV-19: This test ensures that the calculator uses symmetric rounding
+          // matching the Money.dart implementation.
+          //
+          // Scenario: 99999 cents × 10001 bps = 1000089999
+          //   Truncated: 100008
+          //   Rounded:   (1000089999 + 5000) ~/ 10000 = 100009
+          //   Double:    100008.9999.round() = 100009
 
-        const baseValue = 99999;
-        const bps = 10001; // minimum valid BPS + 1 (just above identity)
-        const truncated = (baseValue * bps) ~/ 10000; // 100008
-        final rounded = (baseValue * bps / 10000).round(); // 100009
+          const baseValue = 99999;
+          const bps = 10001;
+          const symmetricRounded = (baseValue * bps + 5000) ~/ 10000; // 100009
+          final doubleRounded = (baseValue * bps / 10000).round(); // 100009
+          const pureTruncated = (baseValue * bps) ~/ 10000; // 100008
 
-        // Sanity check: prove the two approaches diverge
-        expect(truncated, isNot(rounded));
-        expect(truncated, 100008);
-        expect(rounded, 100009);
+          // Sanity: Symmetric rounding and .round() converge; pure truncation diverges
+          expect(symmetricRounded, equals(doubleRounded));
+          expect(symmetricRounded, isNot(pureTruncated));
 
-        final penalties = _makePenalties(
-          baseTripValue: const Money(baseValue),
-          noShowBps: bps,
-        );
-        final impact = AlertImpactCalculator.forNoShow(penalties: penalties);
+          final penalties = _makePenalties(
+            baseTripValue: const Money(baseValue),
+            noShowBps: bps,
+          );
+          final impact = AlertImpactCalculator.forNoShow(penalties: penalties);
 
-        // The calculator MUST use truncation, not rounding
-        expect(impact.projectedPenaltyCents.cents, truncated);
-        expect(impact.projectedPenaltyCents.cents, isNot(rounded));
-      });
+          // The calculator MUST use symmetric rounding
+          expect(impact.projectedPenaltyCents.cents, symmetricRounded);
+          expect(impact.projectedPenaltyCents.cents, isNot(pureTruncated));
+        },
+      );
 
-      test('BPS with odd cents produces deterministic truncated result', () {
-        // 99999 cents × 11250 bps = 1124988750; ~/ 10000 = 112498
-        // 11250 bps = 1.125× (acima do mínimo 10000)
+      test('BPS with odd cents produces deterministic rounded result', () {
+        // 99999 cents × 11250 bps = 1124988750; (1124988750 + 5000) ~/ 10000 = 112499
         const baseValue = 99999;
         const bps = 11250;
-        const expectedTruncated = (baseValue * bps) ~/ 10000;
+        const expectedRounded = (baseValue * bps + 5000) ~/ 10000;
 
         final penalties = _makePenalties(
           baseTripValue: const Money(baseValue),
@@ -180,8 +181,8 @@ void main() {
         );
         final impact = AlertImpactCalculator.forNoShow(penalties: penalties);
 
-        expect(impact.projectedPenaltyCents.cents, expectedTruncated);
-        expect(impact.projectedPenaltyCents.cents, 112498);
+        expect(impact.projectedPenaltyCents.cents, expectedRounded);
+        expect(impact.projectedPenaltyCents.cents, 112499);
       });
 
       test('BPS 10000 is identity multiplier (1.0×)', () {

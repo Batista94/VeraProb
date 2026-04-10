@@ -225,7 +225,9 @@ class _RiskSummary extends ConsumerWidget {
       final tripsPerMonth = d.selectedDays.length * multiplier;
 
       final revenue = (d.baseValueCents * tripsPerMonth).round();
-      final noShowPenalty = (d.baseValueCents * d.noShowPenaltyBps) ~/ 10000;
+      final noShowPenalty = Money(
+        d.baseValueCents,
+      ).multiplyByBps(d.noShowPenaltyBps).cents;
       final noShowExposure = (noShowPenalty * tripsPerMonth).round();
       final delayPenaltyCeiling =
           d.delayPenaltyCentsPerMinute * d.noShowThresholdMinutes;
