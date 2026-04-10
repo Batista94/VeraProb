@@ -182,7 +182,10 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
           field: 'status',
         );
       }
-      return _mapRow(row, IntegrityException.shield(ExecutionStatus.values, statusStr, 'status'));
+      return _mapRow(
+        row,
+        IntegrityException.shield(ExecutionStatus.values, statusStr, 'status'),
+      );
     }).toList();
   }
 

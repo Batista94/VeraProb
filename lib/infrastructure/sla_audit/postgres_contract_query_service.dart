@@ -83,7 +83,11 @@ class PostgresContractQueryService implements ContractQueryService {
       return SlaExecutionItemView(
         setId: s['set_id'] as String,
         contractId: s['contract_id'] as String,
-        status: IntegrityException.shield(ExecutionStatus.values, statusStr, 'status'),
+        status: IntegrityException.shield(
+          ExecutionStatus.values,
+          statusStr,
+          'status',
+        ),
         windowStartUtc: DateTime.parse(s['window_start_utc'] as String).toUtc(),
         windowEndUtc: DateTime.parse(s['window_end_utc'] as String).toUtc(),
         plannedVehicleId: s['planned_vehicle_id'] as String?,

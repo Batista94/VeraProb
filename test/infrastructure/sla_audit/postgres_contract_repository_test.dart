@@ -135,14 +135,20 @@ void main() async {
 
     test('T05._parseUtc: string naive (sem Z) → DateTime UTC (INV-9)', () {
       // ignore: invalid_use_of_visible_for_testing_member
-      final result = repo.internalParseUtc('2024-06-15T12:30:00', 'valid_from_utc');
+      final result = repo.internalParseUtc(
+        '2024-06-15T12:30:00',
+        'valid_from_utc',
+      );
       expect(result.isUtc, isTrue);
       expect(result.hour, 12);
     });
 
     test('T05._parseUtc: string com Z já presente → DateTime UTC', () {
       // ignore: invalid_use_of_visible_for_testing_member
-      final result = repo.internalParseUtc('2024-06-15T12:30:00Z', 'valid_from_utc');
+      final result = repo.internalParseUtc(
+        '2024-06-15T12:30:00Z',
+        'valid_from_utc',
+      );
       expect(result.isUtc, isTrue);
       expect(result.hour, 12);
     });
@@ -236,7 +242,7 @@ void main() async {
         'T03 (INV-19): BPS Precision roundtrip + rounding logic (1.75555 -> 17556)',
         () async {
           final id = uuid.v4();
-          
+
           // Test with precise 1.75x
           final contract1 = _buildContract(
             id: id,
@@ -244,7 +250,10 @@ void main() async {
             penaltyMultiplierBps: 17500,
           );
           await repository.save(contract1);
-          final found1 = await repository.findById(id, organizationId: PostgresTestConfig.testOrgId);
+          final found1 = await repository.findById(
+            id,
+            organizationId: PostgresTestConfig.testOrgId,
+          );
           expect(found1!.penaltyMultiplierBps, 17500);
 
           // Test rounding boundary: 1.75555 should be stored as 1.75555
@@ -258,13 +267,22 @@ void main() async {
             'contractor_name': 'Rounding LTDA',
             'status': 'draft',
             'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
-            'valid_until_utc': DateTime.now().toUtc().add(const Duration(days: 1)).toIso8601String(),
+            'valid_until_utc': DateTime.now()
+                .toUtc()
+                .add(const Duration(days: 1))
+                .toIso8601String(),
             'created_at_utc': DateTime.now().toUtc().toIso8601String(),
             'penalty_multiplier': 1.75555,
           });
 
-          final found2 = await repository.findById(id2, organizationId: PostgresTestConfig.testOrgId);
-          expect(found2!.penaltyMultiplierBps, 17556); // (1.75555 * 10000) = 17555.5 -> round() -> 17556
+          final found2 = await repository.findById(
+            id2,
+            organizationId: PostgresTestConfig.testOrgId,
+          );
+          expect(
+            found2!.penaltyMultiplierBps,
+            17556,
+          ); // (1.75555 * 10000) = 17555.5 -> round() -> 17556
         },
       );
 
@@ -273,8 +291,9 @@ void main() async {
         'T05: WASM Limit Audit — handles financial values up to 2^53 - 1 cents correctly',
         () async {
           final id = uuid.v4();
-          const massiveCents = 9007199254740991; // 2^53 - 1 (Max safe integer in JS/WASM)
-          
+          const massiveCents =
+              9007199254740991; // 2^53 - 1 (Max safe integer in JS/WASM)
+
           final contract = _buildContract(
             id: id,
             organizationId: PostgresTestConfig.testOrgId,
@@ -300,7 +319,11 @@ void main() async {
           final mockClient = MockClient((request) async {
             capturedUrl = request.url.toString();
             // Return empty list response for supabase select
-            return http.Response('[]', 200, headers: {'content-type': 'application/json'});
+            return http.Response(
+              '[]',
+              200,
+              headers: {'content-type': 'application/json'},
+            );
           });
 
           final interceptedClient = SupabaseClient(
@@ -310,7 +333,7 @@ void main() async {
           );
 
           final forensicRepo = PostgresContractRepository(interceptedClient);
-          
+
           await forensicRepo.findByOrganization('forensic-org-99');
 
           expect(capturedUrl, contains('organization_id=eq.forensic-org-99'));
@@ -327,5 +350,6 @@ extension on PostgresContractRepository {
   // ignore: invalid_use_of_visible_for_testing_member
   void internalAssertFields(Map<String, dynamic> row) => assertFields(row);
   // ignore: invalid_use_of_visible_for_testing_member
-  DateTime internalParseUtc(dynamic raw, String fieldName) => parseUtc(raw, fieldName);
+  DateTime internalParseUtc(dynamic raw, String fieldName) =>
+      parseUtc(raw, fieldName);
 }

@@ -173,26 +173,32 @@ void main() {
         expect(base.multiplyByBps(20000), const Money(20000));
       });
 
-      test('penalty calculated via noShowPenaltyBps field matches BPS formula', () {
-        final penalties = SLAPenalties.create(
-          noShowPenaltyBps: 15000,
-          delayToleranceMinutes: 0,
-          delayPenaltyPerMinute: delayPenalty,
-          downgradePenaltyFlat: downgradePenalty,
-          baseTripValue: base,
-        );
-        final applied = penalties.baseTripValue.multiplyByBps(
-          penalties.noShowPenaltyBps,
-        );
-        expect(applied, const Money(15000));
-      });
+      test(
+        'penalty calculated via noShowPenaltyBps field matches BPS formula',
+        () {
+          final penalties = SLAPenalties.create(
+            noShowPenaltyBps: 15000,
+            delayToleranceMinutes: 0,
+            delayPenaltyPerMinute: delayPenalty,
+            downgradePenaltyFlat: downgradePenalty,
+            baseTripValue: base,
+          );
+          final applied = penalties.baseTripValue.multiplyByBps(
+            penalties.noShowPenaltyBps,
+          );
+          expect(applied, const Money(15000));
+        },
+      );
     });
 
     group('BPS rounding — no IEEE-754 drift', () {
-      test('19 999 BPS on Money(10 000) yields exact 19 999 via integer division', () {
-        // (10000 * 19999) ~/ 10000 = 199990000 ~/ 10000 = 19999 — no float rounding
-        expect(const Money(10000).multiplyByBps(19999), const Money(19999));
-      });
+      test(
+        '19 999 BPS on Money(10 000) yields exact 19 999 via integer division',
+        () {
+          // (10000 * 19999) ~/ 10000 = 199990000 ~/ 10000 = 19999 — no float rounding
+          expect(const Money(10000).multiplyByBps(19999), const Money(19999));
+        },
+      );
 
       test('fromJson legacy multiplier 1.9999 round-trips to 19 999 BPS', () {
         final json = {
@@ -225,10 +231,13 @@ void main() {
       // Multiplying _wasm53BitMax * 10000 overflows int64 — tests below document
       // the *safe* operational ceiling per BPS tier.
 
-      test('Money stores 2^53-1 without precision loss (no arithmetic applied)', () {
-        const stored = Money(_wasm53BitMax);
-        expect(stored.cents, _wasm53BitMax);
-      });
+      test(
+        'Money stores 2^53-1 without precision loss (no arithmetic applied)',
+        () {
+          const stored = Money(_wasm53BitMax);
+          expect(stored.cents, _wasm53BitMax);
+        },
+      );
 
       test('SLAPenalties.create accepts baseTripValue at 2^53-1', () {
         final p = SLAPenalties.create(
