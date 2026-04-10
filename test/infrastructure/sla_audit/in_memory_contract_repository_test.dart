@@ -25,6 +25,7 @@ void main() {
       validUntilUtc: DateTime.utc(2026, 12, 31),
       status: status,
       createdAtUtc: DateTime.utc(2026, 1, 1),
+      penaltyMultiplierBps: 10000,
     );
   }
 
@@ -124,6 +125,7 @@ void main() {
           validUntilUtc: DateTime.utc(2026, 12, 31),
           status: ContractStatus.draft,
           createdAtUtc: DateTime.utc(2026, 1, 1),
+          penaltyMultiplierBps: 10000,
         );
         final newer = Contract.reconstitute(
           id: 'c-new',
@@ -134,6 +136,7 @@ void main() {
           validUntilUtc: DateTime.utc(2026, 12, 31),
           status: ContractStatus.draft,
           createdAtUtc: DateTime.utc(2026, 6, 1),
+          penaltyMultiplierBps: 10000,
         );
 
         await repo.save(older);

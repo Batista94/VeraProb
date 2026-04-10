@@ -16,6 +16,7 @@ void main() {
     String? description,
     DateTime? validFrom,
     DateTime? validUntil,
+    int penaltyMultiplierBps = 10000,
   }) {
     final from = validFrom ?? DateTime.utc(2026, 1, 1);
     final until = validUntil ?? DateTime.utc(2026, 12, 31);
@@ -26,6 +27,7 @@ void main() {
       description: description,
       validFromUtc: from,
       validUntilUtc: until,
+      penaltyMultiplierBps: penaltyMultiplierBps,
       nowUtc: nowUtc,
     );
   }
@@ -139,6 +141,7 @@ void main() {
         validUntilUtc: DateTime.utc(2026, 12, 31),
         status: ContractStatus.active,
         createdAtUtc: DateTime.utc(2026, 1, 1),
+        penaltyMultiplierBps: 10000,
         activatedAtUtc: DateTime.utc(2026, 2, 1),
       );
 
@@ -163,6 +166,7 @@ void main() {
         closedAtUtc: closed,
         closedByUserId: 'user-9',
         closeReason: 'Contract ended.',
+        penaltyMultiplierBps: 10000,
       );
 
       expect(contract.id, 'c-123');
@@ -353,6 +357,7 @@ void main() {
         validUntilUtc: DateTime.utc(2026, 12, 31),
         status: ContractStatus.draft,
         createdAtUtc: DateTime.utc(2026, 1, 1),
+        penaltyMultiplierBps: 10000,
       );
       final c2 = Contract.reconstitute(
         id: 'same-id',
@@ -363,6 +368,7 @@ void main() {
         validUntilUtc: DateTime.utc(2026, 12, 31),
         status: ContractStatus.draft,
         createdAtUtc: DateTime.utc(2026, 1, 1),
+        penaltyMultiplierBps: 10000,
       );
 
       expect(c1, equals(c2));

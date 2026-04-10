@@ -8,6 +8,7 @@ import 'package:veraprob/application/sla_audit/projections/sla_execution_item_vi
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
 import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Postgres implementation of [ContractQueryService].
 ///
@@ -82,7 +83,7 @@ class PostgresContractQueryService implements ContractQueryService {
       return SlaExecutionItemView(
         setId: s['set_id'] as String,
         contractId: s['contract_id'] as String,
-        status: ExecutionStatus.values.byName(statusStr),
+        status: IntegrityException.shield(ExecutionStatus.values, statusStr, 'status'),
         windowStartUtc: DateTime.parse(s['window_start_utc'] as String).toUtc(),
         windowEndUtc: DateTime.parse(s['window_end_utc'] as String).toUtc(),
         plannedVehicleId: s['planned_vehicle_id'] as String?,
@@ -210,7 +211,11 @@ class PostgresContractQueryService implements ContractQueryService {
       id: row['id'] as String,
       name: row['name'] as String,
       contractorName: row['contractor_name'] as String,
-      status: ContractStatusView.values.byName(row['status'] as String),
+      status: IntegrityException.shield(
+        ContractStatusView.values,
+        row['status'] as String,
+        'status',
+      ),
       validFromUtc: DateTime.parse(row['valid_from_utc'] as String).toUtc(),
       validUntilUtc: DateTime.parse(row['valid_until_utc'] as String).toUtc(),
       createdAtUtc: DateTime.parse(row['created_at_utc'] as String).toUtc(),

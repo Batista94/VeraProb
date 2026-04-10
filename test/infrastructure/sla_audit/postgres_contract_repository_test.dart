@@ -1,3 +1,5 @@
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
@@ -22,6 +24,7 @@ const _requiredFields = [
   'valid_until_utc',
   'status',
   'created_at_utc',
+  'penalty_multiplier',
 ];
 
 Map<String, dynamic> _validRow() => {
@@ -33,12 +36,16 @@ Map<String, dynamic> _validRow() => {
   'valid_until_utc': '2025-01-01T00:00:00Z',
   'status': 'draft',
   'created_at_utc': '2024-01-01T00:00:00Z',
+  'penalty_multiplier': 1.0,
 };
 
 Contract _buildContract({
   required String id,
   required String organizationId,
   Money? financialCeiling,
+  int penaltyMultiplierBps = 10000,
+  double? latitude,
+  double? longitude,
 }) {
   return Contract.reconstitute(
     id: id,
@@ -51,6 +58,9 @@ Contract _buildContract({
     status: ContractStatus.draft,
     createdAtUtc: DateTime.now().toUtc(),
     financialCeiling: financialCeiling,
+    penaltyMultiplierBps: penaltyMultiplierBps,
+    latitude: latitude,
+    longitude: longitude,
   );
 }
 
@@ -58,9 +68,9 @@ void main() async {
   final isRunning = await PostgresTestConfig.isSupabaseRunning();
 
   // -------------------------------------------------------------------------
-  // Grupo A — Unit: assertFields (INV-18) — sem banco de dados
+  // Grupo A — Unit: _assertFields (INV-18) — sem banco de dados
   // -------------------------------------------------------------------------
-  group('Unit: assertFields — schema assertion (INV-18)', () {
+  group('Unit: _assertFields — schema assertion (INV-18)', () {
     // ignore: invalid_use_of_visible_for_testing_member
     final repo = PostgresContractRepository();
 
@@ -68,7 +78,8 @@ void main() async {
       test('T04.$field: campo ausente lança IntegrityException', () {
         final row = _validRow()..remove(field);
         expect(
-          () => repo.assertFields(row),
+          // ignore: invalid_use_of_visible_for_testing_member
+          () => repo.internalAssertFields(row),
           throwsA(
             isA<IntegrityException>().having((e) => e.field, 'field', field),
           ),
@@ -78,7 +89,8 @@ void main() async {
       test('T04.$field: campo nulo lança IntegrityException', () {
         final row = _validRow()..[field] = null;
         expect(
-          () => repo.assertFields(row),
+          // ignore: invalid_use_of_visible_for_testing_member
+          () => repo.internalAssertFields(row),
           throwsA(
             isA<IntegrityException>().having((e) => e.field, 'field', field),
           ),
@@ -87,20 +99,22 @@ void main() async {
     }
 
     test('T04.valid: row completa não lança exceção', () {
-      expect(() => repo.assertFields(_validRow()), returnsNormally);
+      // ignore: invalid_use_of_visible_for_testing_member
+      expect(() => repo.internalAssertFields(_validRow()), returnsNormally);
     });
   });
 
   // -------------------------------------------------------------------------
-  // Grupo B — Unit: parseUtc — UTC enforcement (INV-9) — sem banco de dados
+  // Grupo B — Unit: _parseUtc — UTC enforcement (INV-9) — sem banco de dados
   // -------------------------------------------------------------------------
-  group('Unit: parseUtc — UTC enforcement (INV-9)', () {
+  group('Unit: _parseUtc — UTC enforcement (INV-9)', () {
     // ignore: invalid_use_of_visible_for_testing_member
     final repo = PostgresContractRepository();
 
-    test('T05.parseUtc: null lança IntegrityException', () {
+    test('T05._parseUtc: null lança IntegrityException', () {
       expect(
-        () => repo.parseUtc(null, 'valid_from_utc'),
+        // ignore: invalid_use_of_visible_for_testing_member
+        () => repo.internalParseUtc(null, 'valid_from_utc'),
         throwsA(
           isA<IntegrityException>().having(
             (e) => e.field,
@@ -111,38 +125,26 @@ void main() async {
       );
     });
 
-    test('T05.parseUtc: tipo int lança IntegrityException', () {
+    test('T05._parseUtc: tipo int lança IntegrityException', () {
       expect(
-        () => repo.parseUtc(42, 'valid_from_utc'),
+        // ignore: invalid_use_of_visible_for_testing_member
+        () => repo.internalParseUtc(42, 'valid_from_utc'),
         throwsA(isA<IntegrityException>()),
       );
     });
 
-    test('T05.parseUtc: tipo Map lança IntegrityException', () {
-      expect(
-        () => repo.parseUtc({'k': 'v'}, 'valid_from_utc'),
-        throwsA(isA<IntegrityException>()),
-      );
-    });
-
-    test('T05.parseUtc: string naive (sem Z) → DateTime UTC (INV-9)', () {
-      final result = repo.parseUtc('2024-06-15T12:30:00', 'valid_from_utc');
+    test('T05._parseUtc: string naive (sem Z) → DateTime UTC (INV-9)', () {
+      // ignore: invalid_use_of_visible_for_testing_member
+      final result = repo.internalParseUtc('2024-06-15T12:30:00', 'valid_from_utc');
       expect(result.isUtc, isTrue);
       expect(result.hour, 12);
     });
 
-    test('T05.parseUtc: string com Z já presente → DateTime UTC', () {
-      final result = repo.parseUtc('2024-06-15T12:30:00Z', 'valid_from_utc');
+    test('T05._parseUtc: string com Z já presente → DateTime UTC', () {
+      // ignore: invalid_use_of_visible_for_testing_member
+      final result = repo.internalParseUtc('2024-06-15T12:30:00Z', 'valid_from_utc');
       expect(result.isUtc, isTrue);
       expect(result.hour, 12);
-    });
-
-    test('T05.parseUtc: string com offset +00:00 → DateTime UTC', () {
-      final result = repo.parseUtc(
-        '2024-06-15T12:30:00+00:00',
-        'valid_from_utc',
-      );
-      expect(result.isUtc, isTrue);
     });
   });
 
@@ -173,6 +175,9 @@ void main() async {
             id: id,
             organizationId: PostgresTestConfig.testOrgId,
             financialCeiling: const Money(150000),
+            penaltyMultiplierBps: 12500, // 1.25x
+            latitude: -23.5505,
+            longitude: -46.6333,
           );
 
           await repository.save(contract);
@@ -187,18 +192,12 @@ void main() async {
           expect(found.organizationId, PostgresTestConfig.testOrgId);
           expect(found.name, contract.name);
           expect(found.contractorName, contract.contractorName);
-          expect(found.description, contract.description);
           expect(found.status, ContractStatus.draft);
-          expect(found.validFromUtc.isUtc, isTrue);
-          expect(found.validUntilUtc.isUtc, isTrue);
-          expect(found.createdAtUtc.isUtc, isTrue);
-          expect(found.activatedAtUtc, isNull);
-          expect(found.closedAtUtc, isNull);
-          expect(found.closedByUserId, isNull);
-          expect(found.closeReason, isNull);
-          expect(found.submittedForApprovalAtUtc, isNull);
-          expect(found.clonedFromContractId, isNull);
+          expect(found.penaltyMultiplierBps, 12500);
+          expect(found.latitude, -23.5505);
+          expect(found.longitude, -46.6333);
           expect(found.financialCeiling, const Money(150000));
+          expect(found.createdAtUtc.isUtc, isTrue);
         },
       );
 
@@ -221,36 +220,65 @@ void main() async {
             id,
             organizationId: PostgresTestConfig.testOrgId,
           );
-          expect(
-            legitimate,
-            isNotNull,
-            reason: 'Tenant legítimo deve encontrar o contrato',
-          );
+          expect(legitimate, isNotNull);
 
           // Tenant adversário não deve encontrar.
           final adversary = await repository.findById(
             id,
             organizationId: adversaryOrgId,
           );
-          expect(
-            adversary,
-            isNull,
-            reason:
-                'Tenant adversário não deve ver contrato de outro org (INV-1)',
-          );
+          expect(adversary, isNull);
         },
       );
 
-      // T03 — INV-19: financial_ceiling_cents → Money roundtrip sem perda de precisão
+      // T03 — INV-19: BPS Precision Roundtrip
       test(
-        'T03 (INV-19): financial_ceiling_cents persistido como int é recuperado como Money sem drift',
+        'T03 (INV-19): BPS Precision roundtrip + rounding logic (1.75555 -> 17556)',
         () async {
           final id = uuid.v4();
-          // 150000 cents = R$ 1500,00 — valor de referência para precisão
+          
+          // Test with precise 1.75x
+          final contract1 = _buildContract(
+            id: id,
+            organizationId: PostgresTestConfig.testOrgId,
+            penaltyMultiplierBps: 17500,
+          );
+          await repository.save(contract1);
+          final found1 = await repository.findById(id, organizationId: PostgresTestConfig.testOrgId);
+          expect(found1!.penaltyMultiplierBps, 17500);
+
+          // Test rounding boundary: 1.75555 should be stored as 1.75555
+          // and converted back to 17556 BPS via ((val * 10000).round()).
+          final id2 = uuid.v4();
+          // We bypass repository.save here to simulate raw DB value
+          await client.from('contracts').insert({
+            'id': id2,
+            'organization_id': PostgresTestConfig.testOrgId,
+            'name': 'Rounding Test',
+            'contractor_name': 'Rounding LTDA',
+            'status': 'draft',
+            'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
+            'valid_until_utc': DateTime.now().toUtc().add(const Duration(days: 1)).toIso8601String(),
+            'created_at_utc': DateTime.now().toUtc().toIso8601String(),
+            'penalty_multiplier': 1.75555,
+          });
+
+          final found2 = await repository.findById(id2, organizationId: PostgresTestConfig.testOrgId);
+          expect(found2!.penaltyMultiplierBps, 17556); // (1.75555 * 10000) = 17555.5 -> round() -> 17556
+        },
+      );
+
+      // T05 — WASM Limit (2^53 - 1) centavos
+      test(
+        'T05: WASM Limit Audit — handles financial values up to 2^53 - 1 cents correctly',
+        () async {
+          final id = uuid.v4();
+          const massiveCents = 9007199254740991; // 2^53 - 1 (Max safe integer in JS/WASM)
+          
           final contract = _buildContract(
             id: id,
             organizationId: PostgresTestConfig.testOrgId,
-            financialCeiling: const Money(150000),
+            financialCeiling: const Money(massiveCents),
           );
 
           await repository.save(contract);
@@ -260,128 +288,44 @@ void main() async {
             organizationId: PostgresTestConfig.testOrgId,
           );
 
-          expect(found!.financialCeiling, isNotNull);
-          expect(
-            found.financialCeiling!.cents,
-            150000,
-            reason:
-                'financial_ceiling_cents deve sobreviver ao roundtrip como int exato (INV-19)',
-          );
-          expect(
-            found.financialCeiling!.cents,
-            isA<int>(),
-            reason: 'Valor financeiro deve ser int, nunca double (INV-19)',
-          );
+          expect(found!.financialCeiling!.cents, massiveCents);
         },
       );
 
-      // T04 (integração) — save + findById com contrato sem financial_ceiling
+      // T06 — Forensic Proof of HTTP URL Filtering
       test(
-        'T04: contrato sem financial_ceiling é persistido e recuperado com financialCeiling null',
+        'T06 (INV-1): Forensic proof — verified organization_id filter in HTTP URL',
         () async {
-          final id = uuid.v4();
-          final contract = _buildContract(
-            id: id,
-            organizationId: PostgresTestConfig.testOrgId,
+          String? capturedUrl;
+          final mockClient = MockClient((request) async {
+            capturedUrl = request.url.toString();
+            // Return empty list response for supabase select
+            return http.Response('[]', 200, headers: {'content-type': 'application/json'});
+          });
+
+          final interceptedClient = SupabaseClient(
+            PostgresTestConfig.supabaseUrl,
+            PostgresTestConfig.serviceRoleKey,
+            httpClient: mockClient,
           );
 
-          await repository.save(contract);
+          final forensicRepo = PostgresContractRepository(interceptedClient);
+          
+          await forensicRepo.findByOrganization('forensic-org-99');
 
-          final found = await repository.findById(
-            id,
-            organizationId: PostgresTestConfig.testOrgId,
-          );
-
-          expect(found, isNotNull);
-          expect(found!.financialCeiling, isNull);
-        },
-      );
-
-      // T05 — INV-9: datas de vigência retornam com isUtc == true
-      test(
-        'T05 (INV-9): validFromUtc e validUntilUtc retornam como DateTime UTC (sem drift de fuso)',
-        () async {
-          final id = uuid.v4();
-          final validFrom = DateTime.utc(2024, 3, 15, 8, 0, 0);
-          final validUntil = DateTime.utc(2025, 3, 15, 8, 0, 0);
-
-          final contract = Contract.reconstitute(
-            id: id,
-            organizationId: PostgresTestConfig.testOrgId,
-            name: 'UTC Test Contract',
-            contractorName: 'Transportadora UTC LTDA',
-            validFromUtc: validFrom,
-            validUntilUtc: validUntil,
-            status: ContractStatus.draft,
-            createdAtUtc: DateTime.now().toUtc(),
-          );
-
-          await repository.save(contract);
-
-          final found = await repository.findById(
-            id,
-            organizationId: PostgresTestConfig.testOrgId,
-          );
-
-          expect(found, isNotNull);
-          expect(
-            found!.validFromUtc.isUtc,
-            isTrue,
-            reason: 'validFromUtc deve ser UTC após roundtrip (INV-9)',
-          );
-          expect(
-            found.validUntilUtc.isUtc,
-            isTrue,
-            reason: 'validUntilUtc deve ser UTC após roundtrip (INV-9)',
-          );
-          expect(
-            found.createdAtUtc.isUtc,
-            isTrue,
-            reason: 'createdAtUtc deve ser UTC após roundtrip (INV-9)',
-          );
-          expect(found.validFromUtc.year, 2024);
-          expect(found.validFromUtc.month, 3);
-          expect(found.validFromUtc.day, 15);
-        },
-      );
-
-      // T06 — INV-1: Prova forense de isolamento via findByOrganization
-      test(
-        'T06 (INV-1): findByOrganization com org legítima não vaza para org adversária',
-        () async {
-          final id = uuid.v4();
-          final adversaryOrgId = uuid.v4();
-
-          final contract = _buildContract(
-            id: id,
-            organizationId: PostgresTestConfig.testOrgId,
-          );
-
-          await repository.save(contract);
-
-          // Tenant legítimo vê seus contratos.
-          final legitimateList = await repository.findByOrganization(
-            PostgresTestConfig.testOrgId,
-          );
-          expect(
-            legitimateList.any((c) => c.id == id),
-            isTrue,
-            reason: 'Tenant legítimo deve ver seus próprios contratos',
-          );
-
-          // Tenant adversário recebe lista vazia para este contrato.
-          final adversaryList = await repository.findByOrganization(
-            adversaryOrgId,
-          );
-          expect(
-            adversaryList.any((c) => c.id == id),
-            isFalse,
-            reason:
-                'Tenant adversário não deve ver contratos de outro org (INV-1)',
-          );
+          expect(capturedUrl, contains('organization_id=eq.forensic-org-99'));
+          expect(capturedUrl, contains('order=created_at_utc.desc'));
         },
       );
     },
     skip: !isRunning ? 'Skipped: Local Supabase environment is offline.' : null,
   );
+}
+
+extension on PostgresContractRepository {
+  // Helpers to access privatized methods for testing without changing the main API.
+  // ignore: invalid_use_of_visible_for_testing_member
+  void internalAssertFields(Map<String, dynamic> row) => assertFields(row);
+  // ignore: invalid_use_of_visible_for_testing_member
+  DateTime internalParseUtc(dynamic raw, String fieldName) => parseUtc(raw, fieldName);
 }

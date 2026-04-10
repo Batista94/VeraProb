@@ -61,6 +61,7 @@ Contract _makeContract({ContractStatus status = ContractStatus.draft}) {
     validUntilUtc: DateTime.utc(2026, 12, 31),
     status: status,
     createdAtUtc: DateTime.utc(2026, 1, 1),
+    penaltyMultiplierBps: 10000,
   );
 }
 

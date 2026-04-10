@@ -68,6 +68,18 @@ class Contract extends Equatable {
   /// Null = no cap defined.
   final Money? financialCeiling;
 
+  /// Multiplier applied to penalties (INV-19: BPS precision).
+  ///
+  /// Example: 1.75x -> 17500 BPS.
+  /// Formula: `penalty = base_penalty * penaltyMultiplierBps ~/ 10000`.
+  final int penaltyMultiplierBps;
+
+  // ── Coordinates ───────────────────────────────────────────
+  /// Optional geographic coordinates for this contract's primary location.
+  /// **INV:** Always use `double` for physical metrics.
+  final double? latitude; // Physical Metric - Double Required
+  final double? longitude; // Physical Metric - Double Required
+
   // ── Internal events ───────────────────────────────────────
   final List<DomainEvent> _domainEvents;
 
@@ -90,6 +102,9 @@ class Contract extends Equatable {
     this.submittedForApprovalAtUtc,
     this.clonedFromContractId,
     this.financialCeiling,
+    required this.penaltyMultiplierBps,
+    this.latitude,
+    this.longitude,
     required List<DomainEvent> domainEvents,
   }) : _domainEvents = domainEvents;
 
@@ -113,6 +128,9 @@ class Contract extends Equatable {
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
     Money? financialCeiling,
+    int penaltyMultiplierBps = 10000,
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
     required DateTime nowUtc,
   }) {
     // ── Validate invariants ─────────────────────────────────
@@ -157,6 +175,9 @@ class Contract extends Equatable {
       status: ContractStatus.draft,
       createdAtUtc: now,
       financialCeiling: financialCeiling,
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
       domainEvents: [domainEvent],
     );
   }
@@ -177,6 +198,9 @@ class Contract extends Equatable {
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
     required String clonedFromContractId,
+    int penaltyMultiplierBps = 10000,
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
     required DateTime nowUtc,
   }) {
     if (organizationId.isEmpty) {
@@ -218,6 +242,9 @@ class Contract extends Equatable {
       status: ContractStatus.draft,
       createdAtUtc: now,
       clonedFromContractId: clonedFromContractId,
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
       domainEvents: [domainEvent],
     );
   }
@@ -243,6 +270,9 @@ class Contract extends Equatable {
     DateTime? submittedForApprovalAtUtc,
     String? clonedFromContractId,
     Money? financialCeiling,
+    required int penaltyMultiplierBps,
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
   }) {
     return Contract._(
       id: id,
@@ -261,6 +291,9 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
       domainEvents: const [], // RECONSTITUTION: no events emitted
     );
   }
@@ -307,6 +340,9 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: now,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
       domainEvents: [domainEvent],
     );
   }
@@ -354,6 +390,9 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
       domainEvents: [domainEvent],
     );
   }
@@ -400,6 +439,9 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
       domainEvents: [domainEvent],
     );
   }
@@ -459,6 +501,9 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
       domainEvents: [domainEvent],
     );
   }
@@ -518,5 +563,8 @@ class Contract extends Equatable {
     submittedForApprovalAtUtc,
     clonedFromContractId,
     financialCeiling,
+    penaltyMultiplierBps,
+    latitude,
+    longitude,
   ];
 }

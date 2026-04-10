@@ -53,6 +53,7 @@ void main() {
         status: ContractStatus.active,
         createdAtUtc: DateTime.now().toUtc(),
         financialCeiling: const Money(1000000),
+        penaltyMultiplierBps: 10000,
       );
 
       when(
@@ -101,6 +102,7 @@ void main() {
         validUntilUtc: DateTime.now().toUtc().add(const Duration(days: 365)),
         status: ContractStatus.active,
         createdAtUtc: DateTime.now().toUtc(),
+        penaltyMultiplierBps: 10000,
       );
 
       when(

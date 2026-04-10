@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/infrastructure/sla_audit/dto/sla_ledger_entry_dto.dart';
 
@@ -61,12 +62,12 @@ void main() {
         expect(mappedPayload['reason'], 'No-show');
       });
 
-      test('empty organizationId throws FormatException', () {
+      test('empty organizationId throws IntegrityException', () {
         final entry = makeEntry(organizationId: '');
         expect(
           () => SlaLedgerEntryDto.fromDomain(entry),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('organizationId cannot be empty'),
@@ -75,13 +76,13 @@ void main() {
         );
       });
 
-      test('type exceeding 255 characters throws FormatException', () {
+      test('type exceeding 255 characters throws IntegrityException', () {
         final longType = 'A' * 256;
         final entry = makeEntry(type: longType);
         expect(
           () => SlaLedgerEntryDto.fromDomain(entry),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('type string limit exceeded'),
@@ -97,13 +98,13 @@ void main() {
         expect(dto.toJson()['type'], exactType);
       });
 
-      test('operatorId exceeding 255 characters throws FormatException', () {
+      test('operatorId exceeding 255 characters throws IntegrityException', () {
         final longOperatorId = 'A' * 256;
         final entry = makeEntry(operatorId: longOperatorId);
         expect(
           () => SlaLedgerEntryDto.fromDomain(entry),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('operatorId string limit exceeded'),
@@ -112,12 +113,12 @@ void main() {
         );
       });
 
-      test('negative planVersion throws FormatException', () {
+      test('negative planVersion throws IntegrityException', () {
         final entry = makeEntry(planVersion: -1);
         expect(
           () => SlaLedgerEntryDto.fromDomain(entry),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('planVersion cannot be negative'),
@@ -132,12 +133,12 @@ void main() {
         expect(dto.toJson()['plan_version'], 0);
       });
 
-      test('payload with double cents throws FormatException', () {
+      test('payload with double cents throws IntegrityException', () {
         final entry = makeEntry(payload: {'sanction_value_cents': 5000.50});
         expect(
           () => SlaLedgerEntryDto.fromDomain(entry),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('must be an int, found double'),
@@ -146,7 +147,7 @@ void main() {
         );
       });
 
-      test('payload with nested double cents throws FormatException', () {
+      test('payload with nested double cents throws IntegrityException', () {
         final entry = makeEntry(
           payload: {
             'financial': {'centavos': 123.45},
@@ -155,7 +156,7 @@ void main() {
         expect(
           () => SlaLedgerEntryDto.fromDomain(entry),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('must be an int, found double'),
@@ -203,7 +204,7 @@ void main() {
         expect(dto.toJson(), json);
       });
 
-      test('missing organization_id throws FormatException', () {
+      test('missing organization_id throws IntegrityException', () {
         final json = {
           'type': 'PLAN_DECLARED',
           'contract_id': 'contract-1',
@@ -214,7 +215,7 @@ void main() {
         expect(
           () => SlaLedgerEntryDto.fromJson(json),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('Missing organization_id'),
@@ -223,7 +224,7 @@ void main() {
         );
       });
 
-      test('null organization_id throws FormatException', () {
+      test('null organization_id throws IntegrityException', () {
         final json = {
           'organization_id': null,
           'type': 'PLAN_DECLARED',
@@ -235,7 +236,7 @@ void main() {
         expect(
           () => SlaLedgerEntryDto.fromJson(json),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('Missing organization_id'),
@@ -244,7 +245,7 @@ void main() {
         );
       });
 
-      test('missing type throws FormatException', () {
+      test('missing type throws IntegrityException', () {
         final json = {
           'organization_id': 'org-1',
           'contract_id': 'contract-1',
@@ -255,7 +256,7 @@ void main() {
         expect(
           () => SlaLedgerEntryDto.fromJson(json),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('Missing type'),
@@ -264,7 +265,7 @@ void main() {
         );
       });
 
-      test('null type throws FormatException', () {
+      test('null type throws IntegrityException', () {
         final json = {
           'organization_id': 'org-1',
           'type': null,
@@ -276,7 +277,7 @@ void main() {
         expect(
           () => SlaLedgerEntryDto.fromJson(json),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('Missing type'),
@@ -285,7 +286,7 @@ void main() {
         );
       });
 
-      test('missing occurred_at_utc throws FormatException', () {
+      test('missing occurred_at_utc throws IntegrityException', () {
         final json = {
           'organization_id': 'org-1',
           'type': 'PLAN_DECLARED',
@@ -296,7 +297,7 @@ void main() {
         expect(
           () => SlaLedgerEntryDto.fromJson(json),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('Missing occurred_at_utc'),
@@ -305,7 +306,7 @@ void main() {
         );
       });
 
-      test('null occurred_at_utc throws FormatException', () {
+      test('null occurred_at_utc throws IntegrityException', () {
         final json = {
           'organization_id': 'org-1',
           'type': 'PLAN_DECLARED',
@@ -317,7 +318,7 @@ void main() {
         expect(
           () => SlaLedgerEntryDto.fromJson(json),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('Missing occurred_at_utc'),
@@ -355,7 +356,7 @@ void main() {
         expect(entry.payload, isEmpty);
       });
 
-      test('payload with double cents throws FormatException', () {
+      test('payload with double cents throws IntegrityException', () {
         final json = {
           'organization_id': 'org-1',
           'type': 'PLAN_DECLARED',
@@ -368,7 +369,7 @@ void main() {
         expect(
           () => SlaLedgerEntryDto.fromJson(json),
           throwsA(
-            isA<FormatException>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('must be an int, found double'),

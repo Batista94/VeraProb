@@ -33,6 +33,7 @@ class PostgresContractRepository implements ContractRepository {
     'valid_until_utc',
     'status',
     'created_at_utc',
+    'penalty_multiplier',
   ];
 
   /// Validates that all required columns are present in a DB row before mapping.
@@ -68,9 +69,7 @@ class PostgresContractRepository implements ContractRepository {
         field: fieldName,
       );
     }
-    final normalized = (raw.endsWith('Z') || raw.contains('+'))
-        ? raw
-        : '${raw}Z';
+    final normalized = (raw.endsWith('Z') || raw.contains('+')) ? raw : '${raw}Z';
     return DateTime.parse(normalized);
   }
 
@@ -92,8 +91,10 @@ class PostgresContractRepository implements ContractRepository {
       'close_reason': contract.closeReason,
       'cloned_from_contract_id': contract.clonedFromContractId,
       'financial_ceiling_cents': contract.financialCeiling?.cents,
-      'submitted_for_approval_at_utc': contract.submittedForApprovalAtUtc
-          ?.toIso8601String(),
+      'submitted_for_approval_at_utc': contract.submittedForApprovalAtUtc?.toIso8601String(),
+      'penalty_multiplier': contract.penaltyMultiplierBps / 10000.0, // Physical Metric - Double Required
+      'latitude': contract.latitude, // Physical Metric - Double Required
+      'longitude': contract.longitude, // Physical Metric - Double Required
     });
   }
 
@@ -151,26 +152,24 @@ class PostgresContractRepository implements ContractRepository {
       description: row['description'] as String?,
       validFromUtc: parseUtc(row['valid_from_utc'], 'valid_from_utc'),
       validUntilUtc: parseUtc(row['valid_until_utc'], 'valid_until_utc'),
-      status: ContractStatus.values.byName(row['status'] as String),
+      status: IntegrityException.shield(ContractStatus.values, row['status'] as String, 'status'),
       createdAtUtc: parseUtc(row['created_at_utc'], 'created_at_utc'),
       activatedAtUtc: row['activated_at_utc'] != null
           ? parseUtc(row['activated_at_utc'], 'activated_at_utc')
           : null,
-      closedAtUtc: row['closed_at_utc'] != null
-          ? parseUtc(row['closed_at_utc'], 'closed_at_utc')
-          : null,
+      closedAtUtc: row['closed_at_utc'] != null ? parseUtc(row['closed_at_utc'], 'closed_at_utc') : null,
       closedByUserId: row['closed_by_user_id'] as String?,
       closeReason: row['close_reason'] as String?,
       submittedForApprovalAtUtc: row['submitted_for_approval_at_utc'] != null
-          ? parseUtc(
-              row['submitted_for_approval_at_utc'],
-              'submitted_for_approval_at_utc',
-            )
+          ? parseUtc(row['submitted_for_approval_at_utc'], 'submitted_for_approval_at_utc')
           : null,
       clonedFromContractId: row['cloned_from_contract_id'] as String?,
       financialCeiling: row['financial_ceiling_cents'] != null
           ? Money((row['financial_ceiling_cents'] as num).toInt())
           : null,
+      penaltyMultiplierBps: ((row['penalty_multiplier'] as num) * 10000).round(),
+      latitude: row['latitude'] != null ? (row['latitude'] as num).toDouble() : null, // Physical Metric - Double Required
+      longitude: row['longitude'] != null ? (row['longitude'] as num).toDouble() : null, // Physical Metric - Double Required
     );
   }
 }

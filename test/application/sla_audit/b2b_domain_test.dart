@@ -281,6 +281,7 @@ class MockContractRepo implements ContractRepository {
         validUntilUtc: DateTime.utc(2027),
         status: ContractStatus.active,
         createdAtUtc: DateTime.utc(2026),
+        penaltyMultiplierBps: 10000,
       );
     }
     return null;

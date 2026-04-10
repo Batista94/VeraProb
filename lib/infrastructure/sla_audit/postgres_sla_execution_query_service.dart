@@ -143,7 +143,10 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
       );
     }
 
-    return _mapRow(row, ExecutionStatus.values.byName(statusStr));
+    return _mapRow(
+      row,
+      IntegrityException.shield(ExecutionStatus.values, statusStr, 'status'),
+    );
   }
 
   @override
@@ -179,7 +182,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
           field: 'status',
         );
       }
-      return _mapRow(row, ExecutionStatus.values.byName(statusStr));
+      return _mapRow(row, IntegrityException.shield(ExecutionStatus.values, statusStr, 'status'));
     }).toList();
   }
 

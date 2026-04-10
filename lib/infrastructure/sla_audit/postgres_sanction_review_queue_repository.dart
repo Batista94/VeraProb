@@ -4,6 +4,7 @@ import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Postgres implementation of [SanctionReviewQueueRepository].
 ///
@@ -95,7 +96,11 @@ class PostgresSanctionReviewQueueRepository
       verdictEvidence: VerdictEvidence.fromJson(
         row['verdict_evidence'] as Map<String, dynamic>,
       ),
-      status: SanctionReviewStatus.values.byName(row['status'] as String),
+      status: IntegrityException.shield(
+        SanctionReviewStatus.values,
+        row['status'] as String,
+        'status',
+      ),
       createdAtUtc: DateTime.parse(row['created_at'] as String),
       reviewedAtUtc: row['reviewed_at'] != null
           ? DateTime.parse(row['reviewed_at'] as String)
