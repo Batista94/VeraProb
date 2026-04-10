@@ -8,7 +8,7 @@
 
 ## I. Infrastructure & Security (Tenant Isolation)
 
-1.  **[INV-1] Tenant Isolation**: Every database query and application flow MUST filter by `organization_id`.
+1.  **[INV-1] Identity Sovereignty**: Every database query and application flow MUST filter by `organization_id`. The application layer MUST validate that the `organization_id` in the request body/payload matches the JWT claim before processing (Fail-Fast).
 2.  **[INV-2] Dual-Key Access**: Contractor/Viewer access MUST require both `org_id` and `contract_id` verification.
 3.  **[INV-3] Environment Isolation**: Zero secrets in code. Use `EnvironmentConfig` for runtime injection of keys.
 4.  **[INV-4] Wasm-Ready**: Zero use of `dart:html` or `dart:js`. Use `dart:js_interop` and `package:web`.
@@ -45,6 +45,11 @@
 23. **[INV-23] OCC Read-Only**: The Operations Center (Cockpit) monitors and acknowledges state but never mutates internal engine state directly.
 24. **[INV-24] Form Draft Protection**: Nested creation flows MUST use overlay modals to prevent data loss in the parent form.
 25. **[INV-25] Activation Gate**: Plan declarations require at least one valid `OperationalZone` defined for the organization.
+
+## VI. Security Sovereignty (Anti-Inference)
+
+26. **[INV-26] Error Parity**: Security-sensitive endpoints MUST return identical status codes (404 Not Found) and error messages for both 'Resource Not Found' and 'Resource Owned by Another Org' to prevent data inference (Oracle Attacks).
+27. **[INV-27] Origin Ownership**: Operations involving source-to-destination logic (e.g., Cloning, Transfers) MUST verify ownership of the source resource before execution, treating unauthorized source IDs as non-existent (404).
 
 ---
 

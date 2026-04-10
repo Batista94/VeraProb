@@ -101,12 +101,12 @@ dart run build_runner build --delete-conflicting-outputs
 
 ## Development Conventions
 
-### Forensic Invariants (25 Non-Negotiables)
+### Forensic Invariants (27 Non-Negotiables)
 
-All code MUST respect the 25 invariants defined in `.claude/rules/invariants.md`. Key highlights:
+All code MUST respect the 27 invariants defined in `.claude/rules/forensic-standards.md`. Key highlights:
 
 - **INV-9 (UTC Everywhere):** ALL timestamps MUST use `DateTime.now().toUtc()` — never bare `DateTime.now()`. This is a **CRITICAL FAILURE** if violated.
-- **INV-1 (Tenant Isolation):** Every query MUST filter by `organization_id`.
+- **INV-1 (Identity Sovereignty):** Every query MUST filter by `organization_id`. Request payloads must match JWT claims (Fail-Fast).
 - **INV-7 (Immutable Ledger):** No `UPDATE`/`DELETE` on ledger entries.
 - **INV-18 (Domain Sovereignty):** Core domain is pure Dart — no Supabase/infra imports.
 - **INV-19 (Penny Precision):** All currency as `BIGINT` cents via `Money` value object.
@@ -196,11 +196,7 @@ The project uses a **Council of Personas** system defined in `.claude/`:
 | File | Purpose |
 |---|---|
 | `CLAUDE.md` | Master orchestrator — read before any task |
-| `.claude/rules/invariants.md` | 25 non-negotiable forensic rules |
-| `.claude/rules/protocol.md` | Execution & interaction protocol (TDD, task lifecycle) |
-| `.claude/rules/performance.md` | Model selection guidance |
-| `.claude/rules/dart-flutter.md` | Dart/Flutter technical standards |
-| `.claude/rules/security.md` | Security standards |
+| `.claude/rules/forensic-standards.md` | 27 non-negotiable forensic rules |
 | `analysis_options.yaml` | Dart analyzer configuration |
 | `pubspec.yaml` | Project dependencies and configuration |
 | `.cursorrules` | Editor-level rules and auto-initialization |

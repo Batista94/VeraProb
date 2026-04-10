@@ -4,11 +4,11 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
 
 ---
 
-## ⚖️ THE 25 FORENSIC INVARIANTS (INV-1 to INV-25)
+## ⚖️ THE 27 FORENSIC INVARIANTS (INV-1 to INV-27)
 
 | ID | Category | Rule |
 |----|----------|------|
-| INV-1 | Data Isolation | Every table/view MUST have `organization_id` (UUID). |
+| INV-1 | Identity Sovereignty | Every database query and application flow MUST filter by `organization_id`. The application layer MUST validate that the `organization_id` matches the JWT claim before processing (Fail-Fast). |
 | INV-2 | RLS Hardening | Policies must use `auth.jwt() ->> 'organization_id'`. NO `auth.uid()`. |
 | INV-3 | Ledger Integrity | Financial/Verdict tables are APPEND-ONLY. NO `UPDATE` or `DELETE`. |
 | INV-4 | Money Type | Use `BIGINT` (cents) for DB; `int` for DTOs; `Money` VO for Domain. |
@@ -33,6 +33,8 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
 | INV-23 | Free-Tier First | All 3rd-party services must have a free tier for pre-revenue stage. |
 | INV-24 | Security Guard | Mandatory `Security Audit Signature` for every agentic instruction. |
 | INV-25 | Tech Stack | Supabase | MapTiler | Sentry | PostHog | Resend. SOC 2 compliant. |
+| INV-26 | Error Parity | Security-sensitive endpoints MUST return identical status codes (404) for 'Not Found' and 'Other Org' to prevent data inference (Oracle Attacks). |
+| INV-27 | Origin Ownership | Operations involving source-to-destination logic (Cloning/Transfers) MUST verify source ownership, treating unauthorized IDs as non-existent (404). |
 
 ---
 

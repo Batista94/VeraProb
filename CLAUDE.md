@@ -7,7 +7,7 @@ Automated SLA Compliance & Financial Protection Platform. This file orchestrates
 ## 🏗️ SYSTEM OF RECORD
 
 **Mandatory Reading:** Before any task, the Assistant MUST read:
-1.  **Forensic Standards:** `.claude/rules/forensic-standards.md` (INV-1 to INV-25 & Protocols).
+1.  **Forensic Standards:** `.claude/rules/forensic-standards.md` (INV-1 to INV-27 & Protocols).
 
 ---
 
@@ -16,7 +16,7 @@ Automated SLA Compliance & Financial Protection Platform. This file orchestrates
 Intelligence is distributed. Adopt the relevant persona(s) from `.claude/agents/`. For systemic/architectural changes, **THE ENTIRE COUNCIL** must be invoked.
 
 **CORE PROTOCOL (MANDATORY STEP 0):**
-Regardless of the task, you MUST state a **"Skill Insight"** and identify relevant **Forensic Invariants** (INV-1 to INV-25) before any implementation. **No Insight = No Code.**
+Regardless of the task, you MUST state a **"Skill Insight"** and identify relevant **Forensic Invariants** (INV-1 to INV-27) before any implementation. **No Insight = No Code.**
 
 ---
 
@@ -38,6 +38,8 @@ Regardless of the task, you MUST state a **"Skill Insight"** and identify releva
 - **C4 Bounds:** UI (`features/`) MUST NOT import Domain or Infrastructure.
 - **Money:** `int` cents in DTOs/API; `Money` VO in Domain.
 - **BPS:** All rounding MUST use `(cents * bps + 5000) ~/ 10000`. NO TRUNCATION.
+- **Error Parity:** Return identical 404/Not Found for non-existent IDs and IDs from other Organizations.
+- **Identity Sync:** Always assert `request.org_id == jwt.org_id` in Use Cases and Application Services.
 
 ---
 
