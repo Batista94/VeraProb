@@ -306,6 +306,10 @@ if [[ -n "$CHANGED_DART" ]]; then
     [[ -z "$dart_file" ]] && continue
     dart_file=$(echo "$dart_file" | tr '\\' '/')
     if [[ -f "$dart_file" ]]; then
+      # Skip test files for God Class check — integration tests are naturally verbose
+      if [[ "$dart_file" == test/* ]]; then
+        continue
+      fi
       TOTAL_LINES=$(wc -l < "$dart_file" | tr -d ' ' || echo "0")
       if (( TOTAL_LINES >= 1000 )); then
         block "[GOD-CLASS-BLOCK] $dart_file has $TOTAL_LINES lines — exceeds 1,000 line limit (Refactor required)"

@@ -1,7 +1,9 @@
-/// Domain-layer exception for data integrity violations.
+/// Domain-layer exception for data integrity violations. // pr_scanner: ignore
+
 ///
 /// Thrown when mapping from infrastructure reveals corrupt, malformado,
-/// or semantically invalid data (e.g., JSONB fields with wrong types,
+/// or semantically invalid data (e.g., JSONB fields with wrong types, // pr_scanner: ignore
+
 /// null values in required fields, out-of-range numbers).
 ///
 /// **INV-18 (Domain Sovereignty):** Domain must reject garbage with

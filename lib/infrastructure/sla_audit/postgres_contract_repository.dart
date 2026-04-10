@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
 
 /// Postgres implementation of [ContractRepository].
@@ -13,10 +15,64 @@ import 'package:veraprob/domain/shared/money.dart';
 /// 1. Query predicates always include `organization_id`
 /// 2. RLS policy on `contracts` table rejects cross-tenant access
 class PostgresContractRepository implements ContractRepository {
-  final SupabaseClient _client;
+  final SupabaseClient? _injectedClient;
+
+  // Lazy accessor — unit tests that only call assertFields/parseUtc
+  // do not trigger Supabase.instance before initialization.
+  SupabaseClient get _client => _injectedClient ?? supabase;
 
   PostgresContractRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+    : _injectedClient = client;
+
+  static const _requiredFields = [
+    'id',
+    'organization_id',
+    'name',
+    'contractor_name',
+    'valid_from_utc',
+    'valid_until_utc',
+    'status',
+    'created_at_utc',
+  ];
+
+  /// Validates that all required columns are present in a DB row before mapping.
+  /// Throws [IntegrityException] on any absent or null field. (INV-18)
+  @visibleForTesting
+  void assertFields(Map<String, dynamic> row) {
+    for (final field in _requiredFields) {
+      if (!row.containsKey(field) || row[field] == null) {
+        throw IntegrityException(
+          'Required field "$field" absent or null in contracts',
+          field: field,
+        );
+      }
+    }
+  }
+
+  /// Parses a raw DB timestamp value to a UTC [DateTime]. (INV-9)
+  ///
+  /// Postgres may return naive timestamps without a 'Z' suffix; this helper
+  /// normalizes them before parsing to prevent local-time drift.
+  /// Throws [IntegrityException] if [raw] is null or not a [String].
+  @visibleForTesting
+  DateTime parseUtc(dynamic raw, String fieldName) {
+    if (raw == null) {
+      throw IntegrityException(
+        'Timestamp "$fieldName" is null',
+        field: fieldName,
+      );
+    }
+    if (raw is! String) {
+      throw IntegrityException(
+        'Timestamp "$fieldName" has unexpected type ${raw.runtimeType}, expected String',
+        field: fieldName,
+      );
+    }
+    final normalized = (raw.endsWith('Z') || raw.contains('+'))
+        ? raw
+        : '${raw}Z';
+    return DateTime.parse(normalized);
+  }
 
   @override
   Future<void> save(Contract contract) async {
@@ -54,6 +110,7 @@ class PostgresContractRepository implements ContractRepository {
         .maybeSingle();
 
     if (data == null) return null;
+    assertFields(data);
     return _mapToEntity(data);
   }
 
@@ -76,7 +133,11 @@ class PostgresContractRepository implements ContractRepository {
       ascending: false,
     );
 
-    return rows.map((r) => _mapToEntity(r)).toList();
+    return rows.map((r) {
+      final row = r as Map<String, dynamic>;
+      assertFields(row);
+      return _mapToEntity(row);
+    }).toList();
   }
 
   // ── Private mapper ─────────────────────────────────────────
@@ -88,22 +149,23 @@ class PostgresContractRepository implements ContractRepository {
       name: row['name'] as String,
       contractorName: row['contractor_name'] as String,
       description: row['description'] as String?,
-      validFromUtc: DateTime.parse(row['valid_from_utc'] as String).toUtc(),
-      validUntilUtc: DateTime.parse(row['valid_until_utc'] as String).toUtc(),
+      validFromUtc: parseUtc(row['valid_from_utc'], 'valid_from_utc'),
+      validUntilUtc: parseUtc(row['valid_until_utc'], 'valid_until_utc'),
       status: ContractStatus.values.byName(row['status'] as String),
-      createdAtUtc: DateTime.parse(row['created_at_utc'] as String).toUtc(),
+      createdAtUtc: parseUtc(row['created_at_utc'], 'created_at_utc'),
       activatedAtUtc: row['activated_at_utc'] != null
-          ? DateTime.parse(row['activated_at_utc'] as String).toUtc()
+          ? parseUtc(row['activated_at_utc'], 'activated_at_utc')
           : null,
       closedAtUtc: row['closed_at_utc'] != null
-          ? DateTime.parse(row['closed_at_utc'] as String).toUtc()
+          ? parseUtc(row['closed_at_utc'], 'closed_at_utc')
           : null,
       closedByUserId: row['closed_by_user_id'] as String?,
       closeReason: row['close_reason'] as String?,
       submittedForApprovalAtUtc: row['submitted_for_approval_at_utc'] != null
-          ? DateTime.parse(
-              row['submitted_for_approval_at_utc'] as String,
-            ).toUtc()
+          ? parseUtc(
+              row['submitted_for_approval_at_utc'],
+              'submitted_for_approval_at_utc',
+            )
           : null,
       clonedFromContractId: row['cloned_from_contract_id'] as String?,
       financialCeiling: row['financial_ceiling_cents'] != null

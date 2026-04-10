@@ -51,8 +51,8 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         cents = (row['contractual_value_cents'] as num).toInt();
         // INV-18: no ?? default — null multiplier must throw, not silently
         // produce a 1x penalty that masks missing contract data.
-        penaltyBps =
-            ((row['no_show_penalty_multiplier'] as num) * 10000).round();
+        penaltyBps = ((row['no_show_penalty_multiplier'] as num) * 10000)
+            .round();
       } on TypeError catch (e) {
         throw IntegrityException(
           'Corrupt execution_states row: malformed numeric or string field — '
@@ -234,8 +234,8 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
         contractualValue: (row['contractual_value_cents'] as num).toInt(),
         // INV-18: no ?? default — null multiplier must throw, not silently
         // produce a 1x (100%) penalty that masks missing contract data.
-        noShowPenaltyBps:
-            ((row['no_show_penalty_multiplier'] as num) * 10000).round(),
+        noShowPenaltyBps: ((row['no_show_penalty_multiplier'] as num) * 10000)
+            .round(),
       );
     } on TypeError catch (e) {
       throw IntegrityException(
