@@ -129,6 +129,34 @@ class PostgresTestConfig {
     }
   }
 
+  /// Cleans up service executions for given org IDs (reverse FK order).
+  static Future<void> cleanupServiceExecutions(
+    SupabaseClient client, {
+    List<String>? orgIds,
+  }) async {
+    final ids = orgIds ?? [testOrgId];
+    for (final orgId in ids) {
+      await client
+          .from('contractual_service_executions')
+          .delete()
+          .eq('organization_id', orgId);
+    }
+  }
+
+  /// Cleans up plan declarations for given org IDs.
+  static Future<void> cleanupPlanDeclarations(
+    SupabaseClient client, {
+    List<String>? orgIds,
+  }) async {
+    final ids = orgIds ?? [testOrgId];
+    for (final orgId in ids) {
+      await client
+          .from('plan_declarations')
+          .delete()
+          .eq('organization_id', orgId);
+    }
+  }
+
   /// Verifica se as Edge Functions estão rodando localmente.
   /// Requer `supabase functions serve super-admin-proxy` ativo.
   static Future<bool> isEdgeFunctionsRunning() async {
