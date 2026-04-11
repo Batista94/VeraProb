@@ -237,9 +237,9 @@ void main() {
       final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
 
       final mockAuth = _SmokeMockAuth();
-      when(
-        () => mockAuth.getUserBySessionId(any<String>()),
-      ).thenAnswer((_) async => const domain.AuthUser(id: 'user-1', tenantId: orgId));
+      when(() => mockAuth.getUserBySessionId(any<String>())).thenAnswer(
+        (_) async => const domain.AuthUser(id: 'user-1', tenantId: orgId),
+      );
       final tenantValidator = TenantValidationService(authRepository: mockAuth);
 
       createHandler = CreateContractHandler(

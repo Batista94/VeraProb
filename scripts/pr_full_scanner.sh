@@ -46,10 +46,15 @@ if [[ "${FAST_SCAN:-0}" == "1" ]]; then
   echo -e "${YELLOW}FAST_SCAN=1: Skipping Step 1 (Slow Forensic Analysis)...${NC}"
 else
   echo -e "${BOLD}${BLUE}Step 1: Running Original Forensic Scanner...${NC}"
-  bash "$SCRIPT_DIR/pr_scanner.sh" || {
-    echo -e "${RED}Original scanner reported hard blocks.${NC}"
-    # We continue to collect all deterministic errors
-  }
+  # Run and capture output to extract counts
+  S1_RESULTS=$(bash "$SCRIPT_DIR/pr_scanner.sh" 2>&1 || true)
+  echo "$S1_RESULTS" | grep -v "COUNTS:" || true
+  
+  S1_BLOCKS=$(echo "$S1_RESULTS" | grep "COUNTS:" | cut -d: -f2 | cut -d'|' -f1 || echo "0")
+  S1_WARNS=$(echo "$S1_RESULTS" | grep "COUNTS:" | cut -d: -f2 | cut -d'|' -f2 || echo "0")
+  
+  TOTAL_BLOCKS=$((TOTAL_BLOCKS + S1_BLOCKS))
+  TOTAL_WARNS=$((TOTAL_WARNS + S1_WARNS))
 fi
 
 
@@ -61,6 +66,7 @@ CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null || git di
 
 if [[ -z "$CHANGED_FILES" ]]; then
   echo "No changes detected in Git Diff."
+  SCAN_RESULTS="COUNTS:0|0"
 else
   # Detect Node.js
   NODE_CMD="node"
@@ -68,12 +74,15 @@ else
     NODE_CMD="node.exe"
   fi
 
-  # Use Node.js to parse the JSON and apply rules for efficiency/portability
-  # Pass CHANGED_FILES via stdin to avoid shell escaping issues with very long strings
-  # Use relative path for JSON to avoid WSL/Windows path mismatch
-  echo "$CHANGED_FILES" | $NODE_CMD -e "
+  # Use Node.js to parse the JSON and apply rules
+  SCAN_RESULTS=$(echo "$CHANGED_FILES" | $NODE_CMD -e "
 const fs = require('fs');
 const { execSync } = require('child_process');
+
+if (!fs.existsSync('scripts/pr_patterns.json')) {
+  console.error('Error: scripts/pr_patterns.json not found.');
+  process.exit(1);
+}
 
 const patterns = JSON.parse(fs.readFileSync('scripts/pr_patterns.json', 'utf8'));
 const files = fs.readFileSync(0, 'utf8').split('\n').filter(f => f.length > 0);
@@ -82,7 +91,6 @@ let blocks = 0;
 let warns = 0;
 
 files.forEach(file => {
-  // Generated Code Bypass
   if (file.endsWith('.g.dart') || file.endsWith('.freezed.dart')) return;
   if (!fs.existsSync(file)) return;
   if (!fs.statSync(file).isFile()) return;
@@ -91,43 +99,31 @@ files.forEach(file => {
   const lines = content.split('\n');
 
   Object.entries(patterns).forEach(([ruleName, config]) => {
-    // Path Scoping
     if (config.path_filter && !new RegExp(config.path_filter).test(file)) return;
-
-    // Exclude geographic/physical-metric files from FINANCIAL-BLOCK
     if (config.exclude_path_pattern && new RegExp(config.exclude_path_pattern, 'i').test(file)) return;
-
-    // Files Containing filter (e.g. for FINANCIAL-BLOCK)
-    // Exclude specific files (exact match or partial)
     if (config.exclude_files && config.exclude_files.some(exclude => file.includes(exclude))) return;
-
-    // Files Containing filter (e.g. for FINANCIAL-BLOCK)
-    if (config.files_containing) {
-       const matchesFile = config.files_containing.some(term => file.includes(term));
-       if (!matchesFile) return;
-    }
+    if (config.files_containing && !config.files_containing.some(term => file.includes(term))) return;
 
     const regex = new RegExp(config.pattern);
 
-    // ── Absence Check (INV-1: Handler must call TenantValidationService) ──
+    // ── Absence Check (INV-1 / INV-26-REPO) ──
     if (config.type === 'absence_check') {
-      // Step 1: Does this file declare a Handler class?
       if (!regex.test(content)) return;
-
-      // Step 2: Strip ALL comments to prevent fake compliance via commented code.
-      // This removes:
-      //   - Single-line comments: // ...
-      //   - Multi-line comments: /* ... */
-      //   - Doc comments: /// ...
       const strippedContent = content
-        .replace(/\/\*[\s\S]*?\*\//g, '')   // multi-line /* ... */
-        .replace(/\/\/\/.*$/gm, '')           // doc comments ///
-        .replace(/\/\/.*$/gm, '');            // single-line //
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/\/.*$/gm, '')
+        .replace(/\/\/.*$/gm, '');
 
-      // Step 3: Check if the required security pattern exists in active code
+      if (config.requires_supabase_content) {
+        const hasSupabaseCall = config.requires_supabase_content.some(
+          supaPattern => new RegExp(supaPattern).test(strippedContent)
+        );
+        if (!hasSupabaseCall) return; 
+      }
+
       const mustAlsoContain = new RegExp(config.must_also_contain);
       if (!mustAlsoContain.test(strippedContent)) {
-        console.log(\`  BLOCK: \${file} - \${ruleName}: \${config.description}\`);
+        process.stdout.write(\`  BLOCK: \${file} - \${ruleName}: \${config.description}\\n\`);
         blocks++;
       }
       return;
@@ -135,40 +131,32 @@ files.forEach(file => {
 
     lines.forEach((line, index) => {
       if (!regex.test(line)) return;
-
-      // 1. Context-Aware Bypass (Current or Next Line)
-      const bypassKeywords = [
-        '// Physical Metric',
-        '// pr_scanner: ignore',
-        '- Double Required',
-        'Bridge Conversion',
-        'Probability Score'
-      ];
+      const bypassKeywords = ['// Physical Metric', '// pr_scanner: ignore', '- Double Required', 'Bridge Conversion', 'Probability Score'];
       const hasBypass = (l) => l && bypassKeywords.some(kw => l.includes(kw));
       if (hasBypass(line) || hasBypass(lines[index + 1])) return;
-
-      // 2. UTC Protection: Handle both same-line and multi-line calls
       if (ruleName === 'UTC-BLOCK') {
         const hasUtcOnSameLine = line.includes('.toUtc()');
         const hasUtcOnNextLine = (lines[index + 1] || '').trim().startsWith('.toUtc()');
         if (hasUtcOnSameLine || hasUtcOnNextLine) return;
       }
-
-      console.log(\`  BLOCK: \${file}:\${index + 1} - \${ruleName}: \${config.description}\`);
+      process.stdout.write(\`  BLOCK: \${file}:\${index + 1} - \${ruleName}: \${config.description}\\n\`);
       blocks++;
     });
   });
 });
 
-process.exit(blocks > 0 ? 1 : 0);
-" || {
-    # Node will exit 1 if blocks found, but it already printed them.
-    # We'll parse the output in shell to increment counts if needed, 
-    # but for now let's just use it to report.
-    # Actually, let's capture the counts.
-    true
-  }
+console.log('COUNTS:' + blocks + '|' + warns);
+")
+  # Filter the real output to display blocks, then extract counts
+  echo "$SCAN_RESULTS" | grep -v "COUNTS:" || true
 fi
+
+S2_BLOCKS=$(echo "$SCAN_RESULTS" | grep "COUNTS:" | cut -d: -f2 | cut -d'|' -f1 || echo "0")
+S2_WARNS=$(echo "$SCAN_RESULTS" | grep "COUNTS:" | cut -d: -f2 | cut -d'|' -f2 || echo "0")
+
+TOTAL_BLOCKS=$((TOTAL_BLOCKS + S2_BLOCKS))
+TOTAL_WARNS=$((TOTAL_WARNS + S2_WARNS))
+
 
 # ── Step 3: Regression Alerts ───────────────────────────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 3: Regression Impact Analysis...${NC}"
@@ -190,77 +178,8 @@ else
 fi
 
 # ── Final Summary ────────────────────────────────────────────────────────────
-# Re-summarize for final verdict box
-# (Since the Node script doesn't update bash variables easily, I'll just run it again or 
-# parse its output. Let's adjust the node script to output a parsable count).
+# Results already parsed in Step 2.
 
-# Detect Node.js again for Step 4
-NODE_CMD="node"
-if command -v node.exe >/dev/null 2>&1; then
-  NODE_CMD="node.exe"
-fi
-
-RESULTS=$(echo "$CHANGED_FILES" | $NODE_CMD -e "
-const fs = require('fs');
-const patterns = JSON.parse(fs.readFileSync('scripts/pr_patterns.json', 'utf8'));
-const files = fs.readFileSync(0, 'utf8').split('\n').filter(f => f.length > 0);
-let blocks = 0; let warns = 0;
-files.forEach(file => {
-  if (file.endsWith('.g.dart') || file.endsWith('.freezed.dart')) return;
-  if (!fs.existsSync(file)) return;
-  if (!fs.statSync(file).isFile()) return;
-  const content = fs.readFileSync(file, 'utf8');
-  const lines = content.split('\n');
-  Object.entries(patterns).forEach(([ruleName, config]) => {
-    if (config.path_filter && !new RegExp(config.path_filter).test(file)) return;
-    if (config.exclude_path_pattern && new RegExp(config.exclude_path_pattern, 'i').test(file)) return;
-    if (config.exclude_files && config.exclude_files.some(exclude => file.includes(exclude))) return;
-    if (config.files_containing && !config.files_containing.some(term => file.includes(term))) return;
-    const regex = new RegExp(config.pattern);
-
-    // ── Absence Check (INV-1) ──
-    if (config.type === 'absence_check') {
-      if (!regex.test(content)) return;
-      const strippedContent = content
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/\/\/\/.*$/gm, '')
-        .replace(/\/\/.*$/gm, '');
-      const mustAlsoContain = new RegExp(config.must_also_contain);
-      if (!mustAlsoContain.test(strippedContent)) {
-        console.log(\`  BLOCK: \${file} - \${ruleName}: \${config.description}\`);
-        blocks++;
-      }
-      return;
-    }
-
-    lines.forEach((line, index) => {
-      if (!regex.test(line)) return;
-
-      const bypassKeywords = [
-        '// Physical Metric',
-        '// pr_scanner: ignore',
-        '- Double Required',
-        'Bridge Conversion',
-        'Probability Score'
-      ];
-      const hasBypass = (l) => l && bypassKeywords.some(kw => l.includes(kw));
-      if (hasBypass(line) || hasBypass(lines[index + 1])) return;
-
-      if (ruleName === 'UTC-BLOCK') {
-        const hasUtcOnSameLine = line.includes('.toUtc()');
-        const hasUtcOnNextLine = (lines[index + 1] || '').trim().startsWith('.toUtc()');
-        if (hasUtcOnSameLine || hasUtcOnNextLine) return;
-      }
-
-      blocks++;
-    });
-  });
-});
-console.log(blocks + '|' + warns);
-")
-
-TOTAL_BLOCKS=$(echo "$RESULTS" | cut -d'|' -f1)
-TOTAL_WARNS=$(echo "$RESULTS" | cut -d'|' -f2)
 
 
 VERDICT="[GO]"

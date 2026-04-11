@@ -42,6 +42,7 @@ Regardless of the task, you MUST state a **"Skill Insight"** and identify releva
 - **Error Parity:** Return identical 404/Not Found for non-existent IDs and IDs from other Organizations.
 - **INV-26 Enforcement:** ALL Postgres repositories MUST use `PostgresErrorInterceptor` mixin or extend `BasePostgresRepository`. No Supabase call may reach the Application layer without try/catch error translation. This is verified by the PR Scanner (INV-26-REPO rule).
 - **Identity Sync:** Always assert `request.org_id == jwt.org_id` in Use Cases and Application Services.
+- **Shell Logic:** Avoid logic duplication in shell scripts. If a scan is needed for both output and summary, use a temporary file or a parsable output to sync counts.
 
 ---
 

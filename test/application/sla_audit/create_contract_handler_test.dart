@@ -61,9 +61,9 @@ void main() {
     );
 
     // Default: session is valid and matches org-1
-    when(
-      () => mockAuthRepo.getUserBySessionId(any<String>()),
-    ).thenAnswer((_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'));
+    when(() => mockAuthRepo.getUserBySessionId(any<String>())).thenAnswer(
+      (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'),
+    );
   });
 
   CreateContractCommand makeCommand({

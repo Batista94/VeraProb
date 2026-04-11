@@ -67,10 +67,16 @@ void main() {
         }
         // Check more specific patterns first
         if (sessionId.contains('ledger')) {
-          return const domain.AuthUser(id: 'user-1', tenantId: 'org-ledger-check');
+          return const domain.AuthUser(
+            id: 'user-1',
+            tenantId: 'org-ledger-check',
+          );
         }
         if (sessionId.contains('phase5')) {
-          return const domain.AuthUser(id: 'user-1', tenantId: 'org-compliance-1');
+          return const domain.AuthUser(
+            id: 'user-1',
+            tenantId: 'org-compliance-1',
+          );
         }
         return const domain.AuthUser(id: 'user-1', tenantId: 'org-1');
       });

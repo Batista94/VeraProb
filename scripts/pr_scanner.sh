@@ -556,6 +556,7 @@ if [[ $BLOCK_COUNT -gt 0 ]]; then
   echo -e "  ${RED}   The Lead Reviewer MUST issue [NO-GO] immediately.${NC}"
   echo -e "  ${RED}   Fix all [BLOCK] violations and re-run this script.${NC}"
   echo ""
+  echo "COUNTS:$BLOCK_COUNT|$WARN_COUNT"
   exit 1
 else
   echo -e "  ${GREEN}${BOLD}✅ VERDICT: SCRIPT CLEAN — Proceed to LLM Neural Analysis (Step 1).${NC}"
@@ -563,5 +564,6 @@ else
     echo -e "  ${YELLOW}   $WARN_COUNT warning(s) flagged for LLM attention in neural review.${NC}"
   fi
   echo ""
+  echo "COUNTS:$BLOCK_COUNT|$WARN_COUNT"
   exit 0
 fi

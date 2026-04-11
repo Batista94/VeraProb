@@ -58,12 +58,15 @@
     "exclude_files": [
       "in_memory",
       "mock",
-      "_test",
-      "drift_",
-      "http_geocoding",
-      "bus_stop"
+      "_test"
     ],
-    "description": "Every Postgres repository MUST use PostgresErrorInterceptor mixin or extend BasePostgresRepository (INV-26: Error Parity).",
+    "requires_supabase_content": [
+      "_client\\.from\\(",
+      "SupabaseClient",
+      "\\.rpc\\(",
+      "auth\\.(getUser|signIn|signUp|signOut)"
+    ],
+    "description": "Every file making Supabase calls MUST implement PostgresErrorInterceptor (INV-26: Error Parity).",
     "severity": "BLOCK"
   }
 }

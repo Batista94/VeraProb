@@ -99,93 +99,220 @@ SELECT vault.create_secret(
 );
 ```
 
-The key is accessed at runtime via:
-
-```sql
-vault.decrypted_secret('ledger_hmac_key')
-```
-
-**Key rotation procedure:**
-
-1. Create new secret: `vault.create_secret('<new-key>', 'ledger_hmac_key_v2', ...)`
-2. Update trigger function to reference new key
-3. Run re-seal batch job: iterate all existing rows, recompute HMAC with new key
-4. Log rotation event to `hmac_verification_log`
-5. After verification sweep confirms all rows match, delete old key from vault
+The secret key resides **ONLY** in Edge Function environment variables — never in the database vault.
 
 ---
 
-## 5. Proposed Implementation
+## 5. Architecture: "Blind Database" (Zero-Knowledge HMAC)
 
-### 5.1 Option A: PostgreSQL Trigger (Recommended)
+### 5.1 Design Principle: The Database Must Not Know the Key
 
-**Mechanism:** A `BEFORE INSERT` trigger on each sealed table computes the HMAC atomically at insert time.
+In the original design (Option A), the database computed HMAC via a trigger that called `vault.decrypted_secret()`. This creates a **single point of failure**: any DBA, superuser, or compromised service account with access to the vault can read the key, tamper with data, and recompute valid HMACs.
 
-**Advantages:**
-- Zero app-layer changes — the seal is enforced at the database layer
-- Atomic with the INSERT — no window where a row exists without a signature
-- Works regardless of insert path (Edge Function, app, direct SQL, batch import)
-- Respects INV-3: secret stays in vault, accessed only via `decrypted_secret()`
+**Corrected architecture:**
 
-**Disadvantages:**
-- Requires `pgcrypto` extension (already available in Supabase)
-- Adds ~1-2ms latency per insert (negligible for ledger write volume)
-- Trigger function is database-side code (must be reviewed for security)
-
-**Verification strategy:**
-
-A periodic `pg_cron` job runs a verification query against the last N entries:
-
-```sql
--- Run every hour via pg_cron
-SELECT verify_ledger_hmac() -- custom function, see §6
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Edge Function (Deno) — The ONLY place the HMAC key exists       │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  1. Mount canonical JSON (alphabetically sorted fields)   │  │
+│  │  2. Read HMAC key from Deno.env.get('LEDGER_HMAC_KEY')   │  │
+│  │  3. Compute HMAC = crypto.subtle.sign('HMAC-SHA256')      │  │
+│  │  4. INSERT INTO ledger_v2 (..., hmac_signature: computed) │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  Key lifecycle: NEVER sent to DB, NEVER stored in vault         │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │ INSERT (with hmac_signature already set)
+                       ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  PostgreSQL — "Blind Database" (zero knowledge of HMAC key)     │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  BEFORE INSERT trigger: VERIFY signature (not compute)    │  │
+│  │  IF hmac_signature != recompute(payload, dummy_key)       │  │
+│  │    THEN RAISE EXCEPTION 'HMAC verification failed'         │  │
+│  │  — But the trigger CANNOT recompute because it lacks key  │  │
+│  │  — So verification is: signature IS NOT NULL and IS valid  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-The verification function:
-1. Queries the last 10,000 entries (configurable)
-2. Recomputes HMAC for each row using the current vault key
-3. Compares against stored `hmac_signature`
-4. Logs any mismatch to `hmac_verification_log`
-5. Returns count of mismatches
+**The paradox:** If the DB doesn't have the key, how does it verify?
 
-### 5.2 Option B: Edge Function Worker (Fallback)
+**Answer:** It doesn't verify at insert time. The trigger ensures `hmac_signature IS NOT NULL` and the verification worker (Edge Function, hourly) performs the actual HMAC recomputation and comparison. The database is "blind" — it accepts the signature as-is and relies on the periodic worker to detect tampering.
 
-**Mechanism:** A Deno Edge Function runs on a schedule (triggered by pg_cron webhook or external cron) and performs HMAC verification independently of the database.
+### 5.2 Edge Function: HMAC Signing
 
-**Query pattern:**
+**Deno implementation:**
 
-```sql
-SELECT id, organization_id, timestamp, action_type, entity_id, payload, hmac_signature
-FROM sla_audit_ledger_v2
-WHERE hmac_signature IS NULL
-   OR hmac_signature != expected_hmac(compute_from_fields(...))
-ORDER BY timestamp DESC
-LIMIT 10000;
+```typescript
+// supabase/functions/shared/hmac_signer.ts
+import { encode as hexEncode } from "https://deno.land/std@0.224.0/encoding/hex.ts";
+
+const HMAC_KEY = Deno.env.get("LEDGER_HMAC_KEY");
+if (!HMAC_KEY) throw new Error("LEDGER_HMAC_KEY not configured");
+
+/**
+ * Computes HMAC-SHA256 of a canonical JSON payload.
+ * Keys MUST be alphabetically sorted (INV-15: Deterministic).
+ */
+export async function signLedgerEntry(payload: Record<string, unknown>): Promise<string> {
+  // 1. Canonical JSON: sorted keys, no whitespace
+  const canonicalJson = JSON.stringify(sortKeys(payload));
+
+  // 2. HMAC-SHA256 via Web Crypto API
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(HMAC_KEY),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(canonicalJson),
+  );
+
+  // 3. Return lowercase hex (64 chars)
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** Recursively sort object keys alphabetically */
+function sortKeys(obj: unknown): unknown {
+  if (obj === null || typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) return obj.map(sortKeys);
+  const sorted: Record<string, unknown> = {};
+  for (const key of Object.keys(obj as Record<string, unknown>).sort()) {
+    sorted[key] = sortKeys((obj as Record<string, unknown>)[key]);
+  }
+  return sorted;
+}
 ```
 
-**Advantages:**
-- Verification logic lives in Dart/Deno — easier to unit test
-- Can integrate with Sentry/PostHog for alerting
-- Independent of database trigger infrastructure
+**Usage in Edge Function:**
 
-**Disadvantages:**
-- Requires app-layer coordination
-- Does not seal rows at insert time — there is a window where unsigned rows exist
-- More operational complexity (deploy, monitor, alert on the worker itself)
+```typescript
+// supabase/functions/ingest-ledger/index.ts
+import { signLedgerEntry } from "../shared/hmac_signer.ts";
 
-**Recommended use:** As a **secondary** verification layer, not the primary sealing mechanism. Run the Edge Function worker daily as an independent audit against the trigger-sealed rows.
+const ledgerPayload = {
+  organization_id: orgId,
+  contract_id: contractId,
+  event_type: "SANCTION_RECOMMENDED",
+  timestamp: new Date().toISOString(),
+  fine_cents: 150000,
+  // ... other critical fields
+};
 
-### 5.3 Decision
+const hmacSignature = await signLedgerEntry(ledgerPayload);
 
-| Aspect | Option A (Trigger) | Option B (Edge Function) |
-|--------|-------------------|-------------------------|
-| Sealing guarantee | Atomic with INSERT | Async, eventual |
-| Tamper detection | pg_cron verification | Worker sweep |
-| Operational overhead | Low (DB-only) | Medium (deploy + monitor) |
-| Testability | SQL-level unit tests | Dart unit tests |
-| Defense-in-depth | Primary seal | Secondary independent audit |
+const { error } = await serviceClient
+  .from("sla_audit_ledger_v2")
+  .insert({ ...ledgerPayload, hmac_signature: hmacSignature });
+```
 
-**Decision:** Implement **Option A as primary**, **Option B as secondary** defense-in-depth.
+### 5.3 Database Trigger: Verification (Not Generation)
+
+The trigger ensures `hmac_signature` is present and non-empty. It **does not** compute or know the HMAC key:
+
+```sql
+CREATE OR REPLACE FUNCTION verify_ledger_hmac_on_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- INV-26: Reject any INSERT that lacks an HMAC signature.
+  -- The database cannot verify the signature itself (blind DB architecture),
+  -- but it can enforce that every row MUST have one.
+  IF NEW.hmac_signature IS NULL OR length(NEW.hmac_signature) != 64 THEN
+    RAISE EXCEPTION 'hmac_signature is required and must be a 64-char hex string';
+  END IF;
+
+  -- Additional format check: must be lowercase hex
+  IF NEW.hmac_signature !~ '^[a-f0-9]{64}$' THEN
+    RAISE EXCEPTION 'hmac_signature must be lowercase hexadecimal';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_verify_ledger_hmac
+  BEFORE INSERT ON public.sla_audit_ledger_v2
+  FOR EACH ROW
+  EXECUTE FUNCTION verify_ledger_hmac_on_insert();
+```
+
+### 5.4 Verification Worker: Periodic HMAC Recomputation
+
+An Edge Function runs hourly (triggered by pg_cron webhook) to independently verify all rows:
+
+```typescript
+// supabase/functions/hmac-verifier/index.ts
+import { signLedgerEntry } from "../shared/hmac_signer.ts";
+
+const CRITICAL_FIELDS = [
+  'organization_id', 'contract_id', 'event_type',
+  'timestamp', 'fine_cents', 'verdict'
+];
+
+async function verifyLedger() {
+  const { data: rows } = await serviceClient
+    .from('sla_audit_ledger_v2')
+    .select(CRITICAL_FIELDS.join(',') + ', id, hmac_signature')
+    .order('timestamp', { ascending: false })
+    .limit(10000);
+
+  const mismatches: string[] = [];
+
+  for (const row of rows) {
+    const payload: Record<string, unknown> = {};
+    for (const field of CRITICAL_FIELDS) {
+      payload[field] = row[field];
+    }
+
+    const expectedHmac = await signLedgerEntry(payload);
+    if (row.hmac_signature !== expectedHmac) {
+      mismatches.push(row.id);
+      // Log to hmac_verification_log
+      await serviceClient.from('hmac_verification_log').insert({
+        ledger_entry_id: row.id,
+        expected_hmac: expectedHmac,
+        actual_hmac: row.hmac_signature,
+        verified_at_utc: new Date().toISOString(),
+        status: 'MISMATCH',
+      });
+    }
+  }
+
+  if (mismatches.length > 0) {
+    // Alert to Sentry
+    if (typeof Sentry !== 'undefined') {
+      Sentry.captureMessage(`HMAC verification failure: ${mismatches.length} rows tampered`, {
+        level: 'critical',
+        tags: { security_event: 'HMAC_MISMATCH', severity: 'CRITICAL' },
+      });
+    }
+  }
+
+  return { verified: rows.length, mismatches: mismatches.length };
+}
+```
+
+### 5.5 Decision Matrix
+
+| Aspect | Old Design (DB Trigger Computes) | New Design (Edge Function Signs) |
+|--------|---------------------------------|----------------------------------|
+| Key location | Supabase Vault (DB can read) | Edge Function env var ONLY |
+| DBA tamper risk | DBA reads key → forges HMAC | DBA has zero access to key |
+| Insert latency | +1-2ms (trigger computes) | 0ms (pre-computed by Edge Function) |
+| Direct SQL bypass | Trigger computes valid HMAC anyway | Trigger rejects rows without HMAC |
+| Verification | pg_cron recomputes in DB | Edge Function independently verifies |
+| Key rotation | Update vault + re-seal via SQL | Rotate env var + redeploy Edge Function |
+
+**Decision:** Implement **Edge Function signing as primary**, **DB trigger validation as gate**, **Edge Function worker as periodic verifier**. Three layers of defense, each independent.
 
 ---
 

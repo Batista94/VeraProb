@@ -120,7 +120,8 @@ void main() {
       setUp(() {
         when(() => mockRbac.can(any(), any())).thenReturn(true);
         when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
-          (_) async => const domain.AuthUser(id: 'u1', email: 'e1', tenantId: 'o1'),
+          (_) async =>
+              const domain.AuthUser(id: 'u1', email: 'e1', tenantId: 'o1'),
         );
       });
 

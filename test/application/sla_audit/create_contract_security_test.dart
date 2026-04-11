@@ -157,9 +157,9 @@ void main() {
       // the repository is ever touched.
       const sessionId = 'session-spoofed';
 
-      when(
-        () => mockAuthRepo.getUserBySessionId(sessionId),
-      ).thenAnswer((_) async => const AuthUser(id: 'user-x', tenantId: 'org-wrong'));
+      when(() => mockAuthRepo.getUserBySessionId(sessionId)).thenAnswer(
+        (_) async => const AuthUser(id: 'user-x', tenantId: 'org-wrong'),
+      );
 
       final command = _makeCommand(
         organizationId: 'org-target',

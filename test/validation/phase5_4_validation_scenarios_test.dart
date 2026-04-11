@@ -128,9 +128,9 @@ void main() {
     );
 
     final closeMockAuth = _Phase5MockAuth();
-    when(
-      () => closeMockAuth.getUserBySessionId(any<String>()),
-    ).thenAnswer((_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'));
+    when(() => closeMockAuth.getUserBySessionId(any<String>())).thenAnswer(
+      (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'),
+    );
     final closeTvs = TenantValidationService(authRepository: closeMockAuth);
 
     closeHandler = CloseContractHandler(
@@ -142,9 +142,9 @@ void main() {
     );
 
     final planMockAuth = _Phase5MockAuth();
-    when(
-      () => planMockAuth.getUserBySessionId(any<String>()),
-    ).thenAnswer((_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'));
+    when(() => planMockAuth.getUserBySessionId(any<String>())).thenAnswer(
+      (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'),
+    );
     final planTvs = TenantValidationService(authRepository: planMockAuth);
 
     planHandler = DeclareContractualPlanHandler(
@@ -250,7 +250,8 @@ void main() {
 
         final p51bMockAuth = _Phase5MockAuth();
         when(() => p51bMockAuth.getUserBySessionId(any<String>())).thenAnswer(
-          (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-1b'),
+          (_) async =>
+              const domain.AuthUser(id: 'user-1', tenantId: 'org-5-1b'),
         );
         final p51bTvs = TenantValidationService(authRepository: p51bMockAuth);
 
@@ -382,7 +383,8 @@ void main() {
 
           final p52bMockAuth = _Phase5MockAuth();
           when(() => p52bMockAuth.getUserBySessionId(any<String>())).thenAnswer(
-            (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-2b'),
+            (_) async =>
+                const domain.AuthUser(id: 'user-1', tenantId: 'org-5-2b'),
           );
           final p52bTvs = TenantValidationService(authRepository: p52bMockAuth);
 
@@ -473,7 +475,8 @@ void main() {
 
           final p52cMockAuth = _Phase5MockAuth();
           when(() => p52cMockAuth.getUserBySessionId(any<String>())).thenAnswer(
-            (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-2c'),
+            (_) async =>
+                const domain.AuthUser(id: 'user-1', tenantId: 'org-5-2c'),
           );
           final p52cTvs = TenantValidationService(authRepository: p52cMockAuth);
 
@@ -792,7 +795,8 @@ void main() {
 
         final p54bMockAuth = _Phase5MockAuth();
         when(() => p54bMockAuth.getUserBySessionId(any<String>())).thenAnswer(
-          (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-4b'),
+          (_) async =>
+              const domain.AuthUser(id: 'user-1', tenantId: 'org-5-4b'),
         );
         final p54bTvs = TenantValidationService(authRepository: p54bMockAuth);
 
@@ -868,7 +872,8 @@ void main() {
 
         final p54cMockAuth = _Phase5MockAuth();
         when(() => p54cMockAuth.getUserBySessionId(any<String>())).thenAnswer(
-          (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-4c'),
+          (_) async =>
+              const domain.AuthUser(id: 'user-1', tenantId: 'org-5-4c'),
         );
         final p54cTvs = TenantValidationService(authRepository: p54cMockAuth);
 
@@ -978,7 +983,8 @@ void main() {
 
           final b2bMockAuth = _Phase5MockAuth();
           when(() => b2bMockAuth.getUserBySessionId(any<String>())).thenAnswer(
-            (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-1-b2b'),
+            (_) async =>
+                const domain.AuthUser(id: 'user-1', tenantId: 'org-5-1-b2b'),
           );
           final b2bTvs = TenantValidationService(authRepository: b2bMockAuth);
 

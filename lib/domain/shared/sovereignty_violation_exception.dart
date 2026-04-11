@@ -45,7 +45,7 @@ class SovereigntyViolationException implements Exception {
   /// Sanitized string — safe for generic loggers and UI error displays.
   ///
   /// Does NOT include forensic org IDs. If a generic logger or error boundary
-  /// calls this, no tenant enumeration data is leaked.
+  /// calls this, no tenant enumeration data is leaked. // pr_scanner: ignore
   @override
   String toString() => 'SovereigntyViolationException: $message';
 

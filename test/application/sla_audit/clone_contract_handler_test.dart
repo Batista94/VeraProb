@@ -61,9 +61,9 @@ void main() {
     repository = InMemoryContractRepository();
     ledger = InMemorySlaAuditLedgerRepository();
     final mockAuth = _MockAuthRepo();
-    when(
-      () => mockAuth.getUserBySessionId(any<String>()),
-    ).thenAnswer((_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'));
+    when(() => mockAuth.getUserBySessionId(any<String>())).thenAnswer(
+      (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'),
+    );
     final tvs = TenantValidationService(authRepository: mockAuth);
     cloneHandler = CloneContractHandler(
       tenantValidator: tvs,
