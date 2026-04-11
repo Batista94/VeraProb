@@ -240,19 +240,32 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
                         ? (trips.first.vehiclePlate ?? 'ABC-1234')
                         : 'ABC-1234';
 
-                    await simulationService.simulateSpeedViolation(
-                      organizationId: organizationId,
-                      vehiclePlate: plate,
-                    );
-
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Injetando VEL-01 para $plate na Fila Auditora...',
-                          ),
-                        ),
+                    try {
+                      await simulationService.simulateSpeedViolation(
+                        organizationId: organizationId,
+                        vehiclePlate: plate,
                       );
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Injetando VEL-01 para $plate na Fila Auditora...',
+                            ),
+                          ),
+                        );
+                      }
+                    } catch (_) {
+                      // INV-26: No internal details leaked
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Falha na simulação. Verifique contratos ativos.',
+                            ),
+                          ),
+                        );
+                      }
                     }
                   },
                   child: const Text('TRIGGER VEL-01 (SPEED)'),

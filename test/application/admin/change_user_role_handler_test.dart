@@ -3,13 +3,18 @@ import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/admin/change_user_role_command.dart';
 import 'package:veraprob/application/admin/change_user_role_handler.dart';
 import 'package:veraprob/application/admin/user_management_command_service.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 
 class MockUserManagementCommandService extends Mock
     implements UserManagementCommandService {}
 
+class MockTenantValidationService extends Mock
+    implements TenantValidationService {}
+
 void main() {
   late MockUserManagementCommandService commandService;
+  late MockTenantValidationService tenantValidator;
   late ChangeUserRoleHandler handler;
 
   setUpAll(() {
@@ -18,7 +23,19 @@ void main() {
 
   setUp(() {
     commandService = MockUserManagementCommandService();
-    handler = ChangeUserRoleHandler(commandService);
+    tenantValidator = MockTenantValidationService();
+    handler = ChangeUserRoleHandler(
+      tenantValidator: tenantValidator,
+      commandService: commandService,
+    );
+
+    // Default: tenant validation passes
+    when(
+      () => tenantValidator.assertTenantMatches(
+        payloadOrgId: any(named: 'payloadOrgId'),
+        sessionId: any(named: 'sessionId'),
+      ),
+    ).thenAnswer((_) async => {});
   });
 
   ChangeUserRoleCommand makeCommand({UserRole role = UserRole.admin}) {
@@ -27,6 +44,7 @@ void main() {
       callerRole: role,
       targetUserId: 'user-2',
       newRole: UserRole.operator,
+      sessionId: 'session-1',
     );
   }
 

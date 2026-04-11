@@ -11,6 +11,9 @@ class GenerateJustificationTokenCommand {
   final String callerUserId;
   final int expiresInHours;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const GenerateJustificationTokenCommand({
     required this.organizationId,
     required this.contractId,
@@ -18,5 +21,6 @@ class GenerateJustificationTokenCommand {
     required this.callerRole,
     required this.callerUserId,
     required this.expiresInHours,
+    required this.sessionId,
   });
 }

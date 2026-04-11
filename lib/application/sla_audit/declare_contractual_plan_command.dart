@@ -21,6 +21,9 @@ class DeclareContractualPlanCommand {
   final String originalFileHash;
   final DateTime declaredAtUtc;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   /// Manual mode: explicit service execution inputs.
   /// Empty for shift-based plans.
   final List<ContractualServiceInput> services;
@@ -40,6 +43,7 @@ class DeclareContractualPlanCommand {
     required this.planVersion,
     required this.originalFileHash,
     required this.declaredAtUtc,
+    required this.sessionId,
     this.services = const [],
     this.shiftPatterns = const [],
     this.contractualValueCents = 0,

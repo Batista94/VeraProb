@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
@@ -20,6 +24,8 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_rep
 import '../../mocks/fake_date_time_provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
+class MockAuthRepository extends Mock implements IAuthRepository {}
+
 const _orgId = 'org-1';
 
 void main() {
@@ -28,6 +34,8 @@ void main() {
   late InMemorySlaAuditLedgerRepository ledger;
   late InMemoryOperationalZoneRepository zoneRepository;
   late DeclareContractualPlanHandler handler;
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
 
   /// Creates a handler with a pre-populated zone (INV-18 happy path).
   /// [activeVehicleCount] controls the vehicle gate for shift-based tests.
@@ -37,6 +45,7 @@ void main() {
     InMemoryOperationalZoneRepository? zones,
   }) {
     return DeclareContractualPlanHandler(
+      tenantValidator: tenantValidator,
       repository: repository,
       ledger: ledger,
       ruleRepository: MockContractualRuleRepository(),
@@ -54,6 +63,8 @@ void main() {
     repository = InMemoryPlanDeclarationRepository();
     ledger = InMemorySlaAuditLedgerRepository();
     zoneRepository = InMemoryOperationalZoneRepository();
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
 
     // Pre-populate one zone so the INV-18 gate passes in all baseline tests.
     await zoneRepository.save(
@@ -65,6 +76,13 @@ void main() {
     );
 
     handler = makeHandler();
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: _orgId,
+      ),
+    );
   });
 
   ContractualServiceInput makeInput({
@@ -111,6 +129,7 @@ void main() {
       originalFileHash: hash,
       declaredAtUtc: declaredAt ?? DateTime.utc(2026, 2, 25),
       services: services ?? [makeInput()],
+      sessionId: 'session-1',
     );
   }
 
@@ -278,6 +297,7 @@ void main() {
             declaredAtUtc: DateTime.utc(2026, 2, 25),
             shiftPatterns: [pattern],
             contractualValueCents: 10000,
+            sessionId: 'session-1',
           );
 
           await expectLater(

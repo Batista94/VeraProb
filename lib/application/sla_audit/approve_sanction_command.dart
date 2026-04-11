@@ -11,11 +11,15 @@ class ApproveSanctionCommand {
   final UserRole callerRole;
   final String organizationId;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const ApproveSanctionCommand({
     required this.queueEntryId,
     required this.approvedByUserId,
     required this.actorEmail,
     required this.callerRole,
     required this.organizationId,
+    required this.sessionId,
   });
 }

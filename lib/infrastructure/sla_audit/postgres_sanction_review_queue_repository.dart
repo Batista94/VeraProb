@@ -5,6 +5,7 @@ import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Postgres implementation of [SanctionReviewQueueRepository].
 ///
@@ -14,6 +15,7 @@ import 'package:veraprob/domain/shared/integrity_exception.dart';
 /// 3. **Status-only mutation**: DB trigger blocks updates to immutable fields (INV-1).
 /// 4. **No delete**: No delete method exists on this class.
 class PostgresSanctionReviewQueueRepository
+    with PostgresErrorInterceptor
     implements SanctionReviewQueueRepository {
   final SupabaseClient _client;
 
@@ -22,22 +24,26 @@ class PostgresSanctionReviewQueueRepository
 
   @override
   Future<void> enqueue(SanctionReviewQueueEntry entry) async {
-    await _client
-        .from('sanction_review_queue')
-        .upsert(
-          {
-            'id': entry.id,
-            'organization_id': entry.organizationId,
-            'ledger_entry_id': entry.ledgerEntryId,
-            'set_id': entry.setId,
-            'contract_id': entry.contractId,
-            'verdict_evidence': entry.verdictEvidence.toJson(),
-            'status': entry.status.name,
-            'created_at': entry.createdAtUtc.toIso8601String(),
-          },
-          onConflict: 'ledger_entry_id', // INV-24: idempotent
-          ignoreDuplicates: true,
-        );
+    try {
+      await _client
+          .from('sanction_review_queue')
+          .upsert(
+            {
+              'id': entry.id,
+              'organization_id': entry.organizationId,
+              'ledger_entry_id': entry.ledgerEntryId,
+              'set_id': entry.setId,
+              'contract_id': entry.contractId,
+              'verdict_evidence': entry.verdictEvidence.toJson(),
+              'status': entry.status.name,
+              'created_at': entry.createdAtUtc.toIso8601String(),
+            },
+            onConflict: 'ledger_entry_id', // INV-24: idempotent
+            ignoreDuplicates: true,
+          );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'sanction_review');
+    }
   }
 
   @override
@@ -45,45 +51,57 @@ class PostgresSanctionReviewQueueRepository
     String id, {
     required String organizationId,
   }) async {
-    final response = await _client
-        .from('sanction_review_queue')
-        .select()
-        .eq('id', id)
-        .eq('organization_id', organizationId)
-        .maybeSingle();
+    try {
+      final response = await _client
+          .from('sanction_review_queue')
+          .select()
+          .eq('id', id)
+          .eq('organization_id', organizationId)
+          .maybeSingle();
 
-    if (response == null) return null;
-    return _fromRow(response);
+      if (response == null) return null;
+      return _fromRow(response);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'sanction_review');
+    }
   }
 
   @override
   Future<List<SanctionReviewQueueEntry>> findPending({
     required String organizationId,
   }) async {
-    final response = await _client
-        .from('sanction_review_queue')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('status', 'pending')
-        .order('created_at', ascending: true);
+    try {
+      final response = await _client
+          .from('sanction_review_queue')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('status', 'pending')
+          .order('created_at', ascending: true);
 
-    return (response as List)
-        .map((row) => _fromRow(row as Map<String, dynamic>))
-        .toList();
+      return (response as List)
+          .map((row) => _fromRow(row as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'sanction_review');
+    }
   }
 
   @override
   Future<void> updateStatus(SanctionReviewQueueEntry entry) async {
-    await _client
-        .from('sanction_review_queue')
-        .update({
-          'status': entry.status.name,
-          'reviewed_at': entry.reviewedAtUtc?.toIso8601String(),
-          'reviewed_by': entry.reviewedByUserId,
-          'rejection_reason': entry.rejectionReason,
-        })
-        .eq('id', entry.id)
-        .eq('organization_id', entry.organizationId);
+    try {
+      await _client
+          .from('sanction_review_queue')
+          .update({
+            'status': entry.status.name,
+            'reviewed_at': entry.reviewedAtUtc?.toIso8601String(),
+            'reviewed_by': entry.reviewedByUserId,
+            'rejection_reason': entry.rejectionReason,
+          })
+          .eq('id', entry.id)
+          .eq('organization_id', entry.organizationId);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'sanction_review');
+    }
   }
 
   static SanctionReviewQueueEntry _fromRow(Map<String, dynamic> row) {

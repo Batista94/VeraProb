@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -15,24 +16,35 @@ import 'package:veraprob/domain/super_admin/update_organization_quota_command.da
 /// INV-4: Pure orchestration — no direct DB access.
 /// INV-7: Billing event is appended server-side inside the RPC.
 class UpdateOrganizationQuotaHandler {
+  final TenantValidationService _tenantValidator;
   final ISuperAdminRepository _repository;
   final RbacService _rbac = RbacService();
 
-  UpdateOrganizationQuotaHandler(this._repository);
+  UpdateOrganizationQuotaHandler({
+    required TenantValidationService tenantValidator,
+    required ISuperAdminRepository repository,
+  }) : _tenantValidator = tenantValidator,
+       _repository = repository;
 
   Future<void> handle(UpdateOrganizationQuotaCommand cmd) async {
-    // 1. RBAC — before any I/O
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: cmd.organizationId,
+      sessionId: cmd.sessionId,
+    );
+
+    // ── Step 2: RBAC — before any I/O ────────────────────────────────────
     if (!_rbac.can(UserRole.superAdmin, UserPermission.canManageTenants)) {
       throw const DomainException('Unauthorized: canManageTenants required.');
     }
 
-    // 2. Validate plan type
+    // ── Step 3: Validate plan type ───────────────────────────────────────
     final validPlan = PlanType.values.any((p) => p.dbValue == cmd.newPlanType);
     if (!validPlan) {
       throw DomainException('Tipo de plano inválido: ${cmd.newPlanType}.');
     }
 
-    // 3. Validate limits — non-null must be >= 1; null = unlimited (enterprise)
+    // ── Step 4: Validate limits — non-null must be >= 1; null = unlimited (enterprise)
     if (cmd.newMaxVehicles != null && cmd.newMaxVehicles! < 1) {
       throw const DomainException('Limite de veículos deve ser pelo menos 1.');
     }
@@ -42,7 +54,7 @@ class UpdateOrganizationQuotaHandler {
       );
     }
 
-    // 4. Delegate to repository
+    // ── Step 5: Delegate to repository ───────────────────────────────────
     try {
       await _repository.updateOrganizationQuota(cmd);
     } on PostgrestException catch (e) {

@@ -29,6 +29,7 @@ class UpdateQuotaFormData {
       newMaxActiveContracts: newMaxActiveContracts,
       superAdminUserId: superAdminUserId,
       reason: reason,
+      sessionId: '', // super-admin context — no regular session
     );
   }
 }

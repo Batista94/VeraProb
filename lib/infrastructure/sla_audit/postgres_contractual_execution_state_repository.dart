@@ -1,10 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Postgres implementation of [ContractualExecutionStateRepository].
 ///
@@ -16,6 +18,7 @@ import 'package:veraprob/core/utils/date_time_provider.dart';
 /// **Audit Trail**: Every relevant transition (status changes, finalized data)
 /// is recorded in `execution_state_transitions`.
 class PostgresContractualExecutionStateRepository
+    with PostgresErrorInterceptor
     implements ContractualExecutionStateRepository {
   final SupabaseClient _client;
   final IDateTimeProvider _dateTimeProvider;
@@ -28,76 +31,103 @@ class PostgresContractualExecutionStateRepository
   @override
   Future<void> save(ContractualExecutionState state) async {
     // 1. Ensure Causal Linkage (SET must exist AND belong to same tenant)
-    final setExists = await _client
-        .from('contractual_service_executions')
-        .select('set_id')
-        .eq('set_id', state.setId)
-        .eq('organization_id', state.organizationId)
-        .maybeSingle();
+    try {
+      final setExists = await _client
+          .from('contractual_service_executions')
+          .select('set_id')
+          .eq('set_id', state.setId)
+          .eq('organization_id', state.organizationId)
+          .maybeSingle();
 
-    if (setExists == null) {
-      throw Exception(
-        'Cannot create execution state: SET ${state.setId} does not exist in plan declarations.',
+      if (setExists == null) {
+        throw ResourceNotFoundException(
+          resourceType: 'execution_state',
+          resourceId: state.setId,
+        );
+      }
+    } on ResourceNotFoundException {
+      rethrow;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'execution_state',
+        resourceId: state.setId,
       );
     }
 
     // 2. Resolve existing state if any
-    final existingData = await _client
-        .from('execution_states')
-        .select()
-        .eq('id', state.id)
-        .maybeSingle();
+    try {
+      final existingData = await _client
+          .from('execution_states')
+          .select()
+          .eq('id', state.id)
+          .maybeSingle();
 
-    if (existingData == null) {
-      // 3a. New Aggregate: Insert Current State and Initial Transition
-      await _client.from('execution_states').insert(_mapToDb(state));
-      await _recordTransition(state, null, 'Initial Creation');
-    } else {
-      // 3b. Existing Aggregate: Update and record transition if needed
-      final previousStatus = _parseStatus(existingData['status']);
-      final hasStatusChanged = previousStatus != state.status;
-
-      // We also consider finalized timestamps or evaluation dates as relevant for audit
-      final hasDataChanged =
-          hasStatusChanged ||
-          existingData['bound_vehicle_id'] != state.boundVehicleId ||
-          existingData['finalized_at_utc'] !=
-              state.finalizedAtUtc?.toIso8601String();
-
-      if (hasDataChanged) {
-        await _client
-            .from('execution_states')
-            .update(_mapToDb(state))
-            .eq('id', state.id);
-
-        await _recordTransition(
-          state,
-          previousStatus,
-          hasStatusChanged ? 'Status Change' : 'Data Update',
-        );
+      if (existingData == null) {
+        // 3a. New Aggregate: Insert Current State and Initial Transition
+        await _client.from('execution_states').insert(_mapToDb(state));
+        await _recordTransition(state, null, 'Initial Creation');
       } else {
-        // Just update evaluation timestamp (non-auditable operational data)
-        await _client
-            .from('execution_states')
-            .update({
-              'last_evaluated_at_utc': state.lastEvaluatedAtUtc
-                  .toIso8601String(),
-            })
-            .eq('id', state.id);
+        // 3b. Existing Aggregate: Update and record transition if needed
+        final previousStatus = _parseStatus(existingData['status']);
+        final hasStatusChanged = previousStatus != state.status;
+
+        // We also consider finalized timestamps or evaluation dates as relevant for audit
+        final hasDataChanged =
+            hasStatusChanged ||
+            existingData['bound_vehicle_id'] != state.boundVehicleId ||
+            existingData['finalized_at_utc'] !=
+                state.finalizedAtUtc?.toIso8601String();
+
+        if (hasDataChanged) {
+          await _client
+              .from('execution_states')
+              .update(_mapToDb(state))
+              .eq('id', state.id);
+
+          await _recordTransition(
+            state,
+            previousStatus,
+            hasStatusChanged ? 'Status Change' : 'Data Update',
+          );
+        } else {
+          // Just update evaluation timestamp (non-auditable operational data)
+          await _client
+              .from('execution_states')
+              .update({
+                'last_evaluated_at_utc': state.lastEvaluatedAtUtc
+                    .toIso8601String(),
+              })
+              .eq('id', state.id);
+        }
       }
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'execution_state',
+        resourceId: state.id,
+      );
     }
   }
 
   @override
   Future<ContractualExecutionState?> findBySetId(String setId) async {
-    final data = await _client
-        .from('execution_states')
-        .select()
-        .eq('set_id', setId)
-        .maybeSingle();
+    try {
+      final data = await _client
+          .from('execution_states')
+          .select()
+          .eq('set_id', setId)
+          .maybeSingle();
 
-    if (data == null) return null;
-    return _mapToEntity(data);
+      if (data == null) return null;
+      return _mapToEntity(data);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'execution_state',
+        resourceId: setId,
+      );
+    }
   }
 
   @override
@@ -106,17 +136,25 @@ class PostgresContractualExecutionStateRepository
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final now = nowUtc.toIso8601String();
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('contract_id', contractId)
-        .eq('status', ExecutionStatus.pending.name)
-        .lte('window_start_utc', now)
-        .gte('window_end_utc', now);
+    try {
+      final now = nowUtc.toIso8601String();
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('contract_id', contractId)
+          .eq('status', ExecutionStatus.pending.name)
+          .lte('window_start_utc', now)
+          .gte('window_end_utc', now);
 
-    return data.map((d) => _mapToEntity(d)).toList();
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'execution_state',
+        resourceId: contractId,
+      );
+    }
   }
 
   @override
@@ -124,16 +162,20 @@ class PostgresContractualExecutionStateRepository
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final now = nowUtc.toIso8601String();
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('status', ExecutionStatus.pending.name)
-        .lte('window_start_utc', now)
-        .gte('window_end_utc', now);
+    try {
+      final now = nowUtc.toIso8601String();
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('status', ExecutionStatus.pending.name)
+          .lte('window_start_utc', now)
+          .gte('window_end_utc', now);
 
-    return data.map((d) => _mapToEntity(d)).toList();
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'execution_state');
+    }
   }
 
   @override
@@ -141,20 +183,24 @@ class PostgresContractualExecutionStateRepository
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final now = nowUtc.toIso8601String();
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId)
-        .filter(
-          'status',
-          'in',
-          '(${ExecutionStatus.pending.name},${ExecutionStatus.noShow.name},${ExecutionStatus.evidenceGap.name})',
-        )
-        .lte('window_start_utc', now)
-        .gte('window_end_utc', now);
+    try {
+      final now = nowUtc.toIso8601String();
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId)
+          .filter(
+            'status',
+            'in',
+            '(${ExecutionStatus.pending.name},${ExecutionStatus.noShow.name},${ExecutionStatus.evidenceGap.name})',
+          )
+          .lte('window_start_utc', now)
+          .gte('window_end_utc', now);
 
-    return data.map((d) => _mapToEntity(d)).toList();
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'execution_state');
+    }
   }
 
   @override
@@ -162,26 +208,34 @@ class PostgresContractualExecutionStateRepository
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final now = nowUtc.toIso8601String();
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('status', ExecutionStatus.pending.name)
-        .lt('window_end_utc', now);
+    try {
+      final now = nowUtc.toIso8601String();
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('status', ExecutionStatus.pending.name)
+          .lt('window_end_utc', now);
 
-    return data.map((d) => _mapToEntity(d)).toList();
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'execution_state');
+    }
   }
 
   @override
   Future<List<ContractualExecutionState>> findAll({
     required String organizationId,
   }) async {
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId);
-    return data.map((d) => _mapToEntity(d)).toList();
+    try {
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId);
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'execution_state');
+    }
   }
 
   @override
@@ -189,12 +243,20 @@ class PostgresContractualExecutionStateRepository
     String contractId, {
     required String organizationId,
   }) async {
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('contract_id', contractId);
-    return data.map((d) => _mapToEntity(d)).toList();
+    try {
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('contract_id', contractId);
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'execution_state',
+        resourceId: contractId,
+      );
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────

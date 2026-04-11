@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -14,13 +15,20 @@ import 'invite_user_command.dart';
 /// satisfy Invariant 7 (Deterministic Replay). Returns the one-time
 /// token so the UI can display the invitation link for copying.
 class InviteUserHandler {
+  final TenantValidationService _tenantValidator;
   final InvitationCommandService _commandService;
   final IDateTimeProvider _dateTimeProvider;
   final RbacService _rbac = RbacService();
 
   static const int _ttlDays = 7;
 
-  InviteUserHandler(this._commandService, this._dateTimeProvider);
+  InviteUserHandler({
+    required TenantValidationService tenantValidator,
+    required InvitationCommandService commandService,
+    required IDateTimeProvider dateTimeProvider,
+  }) : _tenantValidator = tenantValidator,
+       _commandService = commandService,
+       _dateTimeProvider = dateTimeProvider;
 
   /// Handles the command by creating a new invitation.
   ///
@@ -30,7 +38,13 @@ class InviteUserHandler {
   /// - [callerRole] does not have [UserPermission.canInviteUsers]
   /// - [email] is blank or missing '@'
   Future<String> handle(InviteUserCommand command) async {
-    // 1. RBAC check — before any I/O
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC check — before any I/O
     if (!_rbac.can(command.callerRole, UserPermission.canInviteUsers)) {
       throw const DomainException('Unauthorized: canInviteUsers required.');
     }

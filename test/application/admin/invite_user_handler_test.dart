@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/admin/invitation_command_service.dart';
 import 'package:veraprob/application/admin/invite_user_command.dart';
 import 'package:veraprob/application/admin/invite_user_handler.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
@@ -11,9 +12,13 @@ import '../../mocks/fake_date_time_provider.dart';
 class MockInvitationCommandService extends Mock
     implements InvitationCommandService {}
 
+class MockTenantValidationService extends Mock
+    implements TenantValidationService {}
+
 void main() {
   late MockInvitationCommandService commandService;
   late FakeDateTimeProvider dateTimeProvider;
+  late MockTenantValidationService tenantValidator;
   late InviteUserHandler handler;
 
   setUpAll(() {
@@ -24,7 +29,20 @@ void main() {
   setUp(() {
     commandService = MockInvitationCommandService();
     dateTimeProvider = FakeDateTimeProvider(DateTime(2026, 4, 7, 21, 0, 0));
-    handler = InviteUserHandler(commandService, dateTimeProvider);
+    tenantValidator = MockTenantValidationService();
+    handler = InviteUserHandler(
+      tenantValidator: tenantValidator,
+      commandService: commandService,
+      dateTimeProvider: dateTimeProvider,
+    );
+
+    // Default: tenant validation passes
+    when(
+      () => tenantValidator.assertTenantMatches(
+        payloadOrgId: any(named: 'payloadOrgId'),
+        sessionId: any(named: 'sessionId'),
+      ),
+    ).thenAnswer((_) async => {});
   });
 
   void stubInviteUser() {
@@ -50,11 +68,12 @@ void main() {
       invitedByUserId: 'admin-user-1',
       email: email,
       roleToAssign: roleToAssign,
+      sessionId: 'session-1',
     );
   }
 
   group('InviteUserHandler', () {
-    test('Rejeita operator — não tem canInviteUsers', () async {
+    test('Rejeita operator — nao tem canInviteUsers', () async {
       await expectLater(
         () => handler.handle(makeCommand(callerRole: UserRole.operator)),
         throwsA(isA<DomainException>()),
@@ -70,7 +89,7 @@ void main() {
       );
     });
 
-    test('Rejeita auditor — não tem canInviteUsers', () async {
+    test('Rejeita auditor — nao tem canInviteUsers', () async {
       await expectLater(
         () => handler.handle(makeCommand(callerRole: UserRole.auditor)),
         throwsA(isA<DomainException>()),
@@ -91,7 +110,7 @@ void main() {
       );
     });
 
-    test('Admin convida com sucesso — retorna token não-vazio', () async {
+    test('Admin convida com sucesso — retorna token nao-vazio', () async {
       stubInviteUser();
 
       final token = await handler.handle(makeCommand());
@@ -108,7 +127,7 @@ void main() {
       ).called(1);
     });
 
-    test('Tokens gerados em duas invocações são distintos', () async {
+    test('Tokens gerados em duas invocacoes sao distintos', () async {
       stubInviteUser();
 
       final token1 = await handler.handle(makeCommand());
@@ -117,7 +136,7 @@ void main() {
       expect(token1, isNot(equals(token2)));
     });
 
-    test('Email é normalizado para lowercase', () async {
+    test('Email e normalizado para lowercase', () async {
       stubInviteUser();
 
       await handler.handle(makeCommand(email: '  NOVO@EMPRESA.COM  '));

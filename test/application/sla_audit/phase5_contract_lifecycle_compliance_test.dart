@@ -10,7 +10,9 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/close_contract_command.dart';
 import 'package:veraprob/application/sla_audit/close_contract_handler.dart';
 import 'package:veraprob/application/sla_audit/create_contract_command.dart';
@@ -18,10 +20,13 @@ import 'package:veraprob/application/sla_audit/create_contract_handler.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
 import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -32,6 +37,10 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import '../../mocks/fake_date_time_provider.dart';
+
+// ── Mocks ────────────────────────────────────────────────────────────────────
+
+class _MockAuthRepo extends Mock implements IAuthRepository {}
 
 void main() {
   group('Phase 5 Compliance — Contract & Plan Lifecycle', () {
@@ -48,19 +57,40 @@ void main() {
       ledger = InMemorySlaAuditLedgerRepository();
 
       final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
+      final mockAuth = _MockAuthRepo();
+      when(() => mockAuth.getUserBySessionId(any<String>())).thenAnswer((
+        invocation,
+      ) async {
+        final sessionId = invocation.positionalArguments[0] as String;
+        if (sessionId.contains('org-a') || sessionId.contains('org-A')) {
+          return const domain.AuthUser(id: 'user-a', tenantId: 'org-A');
+        }
+        // Check more specific patterns first
+        if (sessionId.contains('ledger')) {
+          return const domain.AuthUser(id: 'user-1', tenantId: 'org-ledger-check');
+        }
+        if (sessionId.contains('phase5')) {
+          return const domain.AuthUser(id: 'user-1', tenantId: 'org-compliance-1');
+        }
+        return const domain.AuthUser(id: 'user-1', tenantId: 'org-1');
+      });
+      final tvs = TenantValidationService(authRepository: mockAuth);
 
       createHandler = CreateContractHandler(
+        tenantValidator: tvs,
         contractRepository: contractRepo,
         ledger: ledger,
         clock: clock,
       );
       closeHandler = CloseContractHandler(
+        tenantValidator: tvs,
         contractRepository: contractRepo,
         ledger: ledger,
         rbac: RbacService(),
         clock: clock,
       );
       planHandler = DeclareContractualPlanHandler(
+        tenantValidator: tvs,
         repository: planRepo,
         ledger: ledger,
         ruleRepository: _MockRuleRepository(),
@@ -86,6 +116,7 @@ void main() {
             description: 'Cobertura sul da cidade',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-phase5',
           ),
         );
 
@@ -108,6 +139,7 @@ void main() {
             originalFileHash: 'hash-v1',
             declaredAtUtc: DateTime.utc(2026, 1, 15),
             services: [_makeService(DateTime.utc(2026, 2, 1, 6, 0))],
+            sessionId: 'session-phase5',
           ),
         );
 
@@ -148,6 +180,7 @@ void main() {
               _makeService(DateTime.utc(2026, 4, 1, 6, 0)),
               _makeService(DateTime.utc(2026, 4, 1, 8, 0)),
             ],
+            sessionId: 'session-phase5',
           ),
         );
 
@@ -180,6 +213,7 @@ void main() {
             closedByUserId: userId,
             reason: 'Contract period ended.',
             callerRole: UserRole.admin,
+            sessionId: 'session-phase5',
           ),
         );
 
@@ -215,6 +249,7 @@ void main() {
               originalFileHash: 'hash-v3',
               declaredAtUtc: DateTime.utc(2026, 12, 1),
               services: [_makeService(DateTime.utc(2027, 1, 1, 6, 0))],
+              sessionId: 'session-phase5',
             ),
           ),
           throwsA(isA<DomainException>()),
@@ -239,6 +274,7 @@ void main() {
           contractorName: 'Empresa L',
           validFromUtc: DateTime.utc(2026, 1, 1),
           validUntilUtc: DateTime.utc(2026, 12, 31),
+          sessionId: 'session-phase5-ledger',
         ),
       );
 
@@ -252,6 +288,19 @@ void main() {
     test(
       'multi-tenant isolation — two orgs with same contract id cannot interfere',
       () async {
+        // Stub auth for org-A
+        final mockAuthA = _MockAuthRepo();
+        when(() => mockAuthA.getUserBySessionId(any<String>())).thenAnswer(
+          (_) async => const domain.AuthUser(id: 'user-a', tenantId: 'org-A'),
+        );
+        final tvsA = TenantValidationService(authRepository: mockAuthA);
+        createHandler = CreateContractHandler(
+          tenantValidator: tvsA,
+          contractRepository: contractRepo,
+          ledger: ledger,
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+        );
+
         // Org A creates a contract
         final contractA = await createHandler.handle(
           CreateContractCommand(
@@ -260,6 +309,7 @@ void main() {
             contractorName: 'Empresa A',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-org-a',
           ),
         );
 
@@ -283,9 +333,10 @@ void main() {
               closedByUserId: 'user-b',
               reason: 'Attempted cross-tenant close',
               callerRole: UserRole.admin,
+              sessionId: 'session-org-b',
             ),
           ),
-          throwsA(isA<DomainException>()),
+          throwsA(isA<SovereigntyViolationException>()),
           reason: 'CloseContractHandler must enforce tenant isolation',
         );
       },

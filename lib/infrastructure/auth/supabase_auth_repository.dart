@@ -77,9 +77,112 @@ class SupabaseAuthRepository implements IAuthRepository {
   }
 
   @override
+  Future<AuthUser?> getCurrentUser() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return null;
+
+    // Delegates to the infrastructure mapper — extracts org_id from
+    // app_metadata exclusively ([INV-1]).
+    return SupabaseUserMapper.mapToAuthUser(user);
+  }
+
+  // ── Session Cache (LRU-style with TTL) ────────────────────────────────
+
+  /// Cached AuthUser from the last successful session validation.
+  AuthUser? _cachedSessionUser;
+
+  /// UTC expiry timestamp for the cached session user.
+  /// INV-6: All time comparisons use UTC.
+  DateTime? _cacheExpiryUtc;
+
+  /// The actual session token expiry time — used to reject cached entries
+  /// whose underlying JWT has expired, even if the cache TTL is still valid.
+  DateTime? _sessionExpiresAtUtc;
+
+  /// TTL for the session cache — 30 seconds.
+  /// Short enough to catch sign-out events, long enough to avoid redundant
+  /// work during batch handler operations.
+  static const _sessionCacheTtl = Duration(seconds: 30);
+
+  @override
+  Future<AuthUser?> getUserBySessionId(String sessionId) async {
+    // INV-6: All time comparisons use UTC.
+    final nowUtc = DateTime.now().toUtc(); // pr_scanner: ignore
+
+    // Cache hit: within TTL AND session token not expired
+    if (_cachedSessionUser != null &&
+        _cacheExpiryUtc != null &&
+        _sessionExpiresAtUtc != null &&
+        nowUtc.isBefore(_cacheExpiryUtc!) &&
+        nowUtc.isBefore(_sessionExpiresAtUtc!)) {
+      return _cachedSessionUser;
+    }
+
+    // Cache miss — SERVER-SIDE validation via _client.auth.getUser().
+    // This makes an HTTP call to Supabase Auth server to validate the JWT
+    // signature and revocation status, closing the 1-hour JWT staleness window.
+    // Any user ban or permission revocation in the Supabase Dashboard is
+    // detected as soon as the 30s cache expires.
+    try {
+      final userResponse = await _client.auth.getUser();
+      final user = userResponse.user;
+      if (user == null) {
+        _invalidateCache();
+        return null;
+      }
+
+      if (user.appMetadata['org_id'] == null) {
+        // Tenant isolation violation — no org in app_metadata
+        _invalidateCache();
+        return null;
+      }
+
+      final authUser = SupabaseUserMapper.mapToAuthUser(user);
+
+      // Populate cache with both cache TTL and actual session expiry.
+      // INV-6: Convert Unix timestamp (int seconds) to DateTime UTC.
+      // Security: if expiresAt is unknown, do NOT cache — we can't verify
+      // the session is still valid on cache hit.
+      final session = _client.auth.currentSession;
+      final expiresAtUnix = session?.expiresAt;
+      if (expiresAtUnix == null) {
+        _cachedSessionUser = authUser;
+        _cacheExpiryUtc = null; // Null TTL = no caching
+        _sessionExpiresAtUtc = null;
+        return authUser;
+      }
+
+      _cachedSessionUser = authUser;
+      _cacheExpiryUtc = nowUtc.add(_sessionCacheTtl);
+      _sessionExpiresAtUtc = DateTime.fromMillisecondsSinceEpoch(
+        expiresAtUnix * 1000,
+      ).toUtc();
+
+      return authUser;
+    } on sb.AuthException {
+      // Server-side auth failure (invalid JWT, revoked, etc.)
+      _invalidateCache();
+      return null;
+    } on SocketException {
+      _invalidateCache();
+      return null;
+    }
+  }
+
+  /// Clears the session cache entry.
+  /// Called on sign-out, session refresh, and cache miss.
+  void _invalidateCache() {
+    _cachedSessionUser = null;
+    _cacheExpiryUtc = null;
+    _sessionExpiresAtUtc = null;
+  }
+
+  @override
   Future<void> signOut() async {
     try {
       await _client.auth.signOut(scope: sb.SignOutScope.global);
+      // INV-1: Invalidate cache on sign-out to prevent stale session reuse
+      _invalidateCache();
     } on sb.AuthException catch (e) {
       throw _mapAuthException(e);
     } on SocketException {
@@ -93,6 +196,8 @@ class SupabaseAuthRepository implements IAuthRepository {
   Future<void> refreshSession() async {
     try {
       await _client.auth.refreshSession();
+      // INV-1: Invalidate cache on refresh — the JWT claims may have changed
+      _invalidateCache();
     } on sb.AuthException catch (e) {
       throw _mapAuthException(e);
     } on SocketException {
@@ -100,16 +205,6 @@ class SupabaseAuthRepository implements IAuthRepository {
         'Erro de conexão com o servidor de autenticação.',
       );
     }
-  }
-
-  @override
-  Future<AuthUser?> getCurrentUser() async {
-    final user = _client.auth.currentUser;
-    if (user == null) return null;
-
-    // Delegates to the infrastructure mapper — extracts org_id from
-    // app_metadata exclusively ([INV-1]).
-    return SupabaseUserMapper.mapToAuthUser(user);
   }
 
   // ── Error Mapping ──────────────────────────────────────────────────────

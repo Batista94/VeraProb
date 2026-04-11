@@ -5,12 +5,15 @@ import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
 import 'package:veraprob/domain/sla_audit/sla_template.dart';
 import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
 import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Postgres implementation of [SlaTemplateRepository].
 ///
 /// RLS guarantees tenant isolation: all queries are scoped to the
 /// authenticated user's organization via JWT `organization_id`.
-class PostgresSlaTemplateRepository implements SlaTemplateRepository {
+class PostgresSlaTemplateRepository
+    with PostgresErrorInterceptor
+    implements SlaTemplateRepository {
   final SupabaseClient _client;
 
   PostgresSlaTemplateRepository([SupabaseClient? client])
@@ -18,26 +21,34 @@ class PostgresSlaTemplateRepository implements SlaTemplateRepository {
 
   @override
   Future<void> save(SlaTemplate template) async {
-    await _client.from('sla_templates').upsert({
-      'id': template.id,
-      'organization_id': template.organizationId,
-      'name': template.name,
-      'description': template.description,
-      'vertical': template.vertical?.toJson(),
-      'penalties_payload': template.penalties.toJson(),
-      'created_at': template.createdAt.toIso8601String(),
-    });
+    try {
+      await _client.from('sla_templates').upsert({
+        'id': template.id,
+        'organization_id': template.organizationId,
+        'name': template.name,
+        'description': template.description,
+        'vertical': template.vertical?.toJson(),
+        'penalties_payload': template.penalties.toJson(),
+        'created_at': template.createdAt.toIso8601String(),
+      });
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'sla_template');
+    }
   }
 
   @override
   Future<List<SlaTemplate>> findByOrganization(String organizationId) async {
-    final List<Map<String, dynamic>> rows = await _client
-        .from('sla_templates')
-        .select()
-        .eq('organization_id', organizationId)
-        .order('name', ascending: true);
+    try {
+      final List<Map<String, dynamic>> rows = await _client
+          .from('sla_templates')
+          .select()
+          .eq('organization_id', organizationId)
+          .order('name', ascending: true);
 
-    return rows.map(_mapToEntity).toList();
+      return rows.map(_mapToEntity).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'sla_template');
+    }
   }
 
   @override
@@ -45,24 +56,32 @@ class PostgresSlaTemplateRepository implements SlaTemplateRepository {
     String id, {
     required String organizationId,
   }) async {
-    final List<Map<String, dynamic>> rows = await _client
-        .from('sla_templates')
-        .select()
-        .eq('id', id)
-        .eq('organization_id', organizationId)
-        .limit(1);
+    try {
+      final List<Map<String, dynamic>> rows = await _client
+          .from('sla_templates')
+          .select()
+          .eq('id', id)
+          .eq('organization_id', organizationId)
+          .limit(1);
 
-    if (rows.isEmpty) return null;
-    return _mapToEntity(rows.first);
+      if (rows.isEmpty) return null;
+      return _mapToEntity(rows.first);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'sla_template');
+    }
   }
 
   @override
   Future<void> delete(String id, {required String organizationId}) async {
-    await _client
-        .from('sla_templates')
-        .delete()
-        .eq('id', id)
-        .eq('organization_id', organizationId);
+    try {
+      await _client
+          .from('sla_templates')
+          .delete()
+          .eq('id', id)
+          .eq('organization_id', organizationId);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'sla_template');
+    }
   }
 
   SlaTemplate _mapToEntity(Map<String, dynamic> row) {

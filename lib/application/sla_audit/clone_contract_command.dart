@@ -10,6 +10,9 @@ class CloneContractCommand {
   /// Organization of the actor performing the clone. From JWT only.
   final String organizationId;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   /// ID of the contract to clone. Must belong to [organizationId].
   final String sourceContractId;
 
@@ -21,6 +24,7 @@ class CloneContractCommand {
 
   const CloneContractCommand({
     required this.organizationId,
+    required this.sessionId,
     required this.sourceContractId,
     required this.name,
     required this.contractorName,

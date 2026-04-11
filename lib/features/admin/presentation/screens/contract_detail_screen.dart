@@ -95,9 +95,16 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       final orgId = ref.read(currentOrganizationIdProvider);
       final userId = ref.read(currentOperatorIdProvider);
       final role = ref.read(currentUserRoleProvider);
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
       if (orgId == null || userId == null) {
-        throw Exception('Sessão inválida. Faça login novamente.');
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sessão inválida. Faça login novamente.'),
+          ),
+        );
+        return;
       }
 
       final token = await ref
@@ -108,6 +115,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               contractId: s.id,
               callerUserId: userId,
               callerRole: role,
+              sessionId: sessionId,
             ),
           );
 

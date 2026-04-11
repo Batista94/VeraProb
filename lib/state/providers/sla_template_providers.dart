@@ -11,6 +11,7 @@ import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_template_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_template_repository.dart';
 import 'auth_providers.dart';
+import 'contract_providers.dart';
 import 'shared_providers.dart';
 
 // ── Repository ───────────────────────────────────────────────
@@ -28,6 +29,7 @@ final slaTemplateRepositoryProvider = Provider<SlaTemplateRepository>((ref) {
 
 final saveSlaTemplateHandlerProvider = Provider<SaveSlaTemplateHandler>((ref) {
   return SaveSlaTemplateHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(slaTemplateRepositoryProvider),
     clock: ref.watch(dateTimeProviderProvider),
   );
@@ -37,6 +39,7 @@ final cloneSlaTemplateHandlerProvider = Provider<CloneSlaTemplateHandler>((
   ref,
 ) {
   return CloneSlaTemplateHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(slaTemplateRepositoryProvider),
   );
 });

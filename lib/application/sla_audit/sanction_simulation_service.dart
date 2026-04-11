@@ -5,9 +5,9 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/sla_audit/execution_events.dart';
-import 'sla_ledger_mapper.dart';
-
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'sla_ledger_mapper.dart';
 
 /// Service used ONLY during development/Stress Mode to inject
 /// artificial sanctions into the review queue for testing Phase 9.
@@ -37,7 +37,7 @@ class SanctionSimulationService {
       // 0. Find a valid contract
       final contracts = await _contracts.findByOrganization(organizationId);
       if (contracts.isEmpty) {
-        throw Exception(
+        throw const DomainException(
           'Nenhum contrato encontrado para esta organização. Crie um contrato primeiro.',
         );
       }

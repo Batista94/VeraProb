@@ -265,8 +265,12 @@ class _JustificationSubmissionFormState
       final role = ref.read(currentUserRoleProvider);
       final session = ref.read(authStateProvider).valueOrNull?.session;
       final email = session?.user.email ?? '';
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
-      if (orgId == null) throw Exception('Organização não encontrada.');
+      if (orgId == null) {
+        if (mounted) setState(() => _error = 'Organização não encontrada.');
+        return;
+      }
 
       final contractId =
           widget.token?.contractId ?? _contractIdCtrl.text.trim();
@@ -285,7 +289,9 @@ class _JustificationSubmissionFormState
               fileName: f.name,
             );
             // POST bytes directly using fetch (WASM-safe)
-            await _uploadViaSignedUrl(result.url, f.bytes);
+            final uploadOk = await _uploadViaSignedUrl(result.url, f.bytes);
+            if (!uploadOk) return; // Error already set in state
+            // Operator path: direct authenticated upload
           } else {
             // Operator path: direct authenticated upload
             await storage.uploadAuthenticated(
@@ -314,6 +320,7 @@ class _JustificationSubmissionFormState
               callerEmail: widget.token != null ? null : email,
               submittedByTokenId: tokenId,
               evidenceHashes: hashes,
+              sessionId: sessionId,
             ),
           );
 
@@ -330,14 +337,22 @@ class _JustificationSubmissionFormState
     }
   }
 
-  Future<void> _uploadViaSignedUrl(String url, Uint8List bytes) async {
+  /// Returns true if upload succeeded, false otherwise (error set in state).
+  Future<bool> _uploadViaSignedUrl(String url, Uint8List bytes) async {
     // Use Fetch API (package:web) for WASM-safe binary upload
     final response = await web.window
         .fetch(url.toJS, web.RequestInit(method: 'PUT', body: bytes.toJS))
         .toDart;
     if (!response.ok) {
-      throw Exception('Upload falhou: ${response.status}');
+      if (mounted) {
+        setState(
+          () => _error =
+              'Falha no upload do arquivo (${response.status}). Tente novamente.',
+        );
+      }
+      return false;
     }
+    return true;
   }
 
   String _categoryLabel(JustificationCategory c) {

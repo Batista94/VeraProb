@@ -1,8 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/approve_justification_command.dart';
 import 'package:veraprob/application/sla_audit/justification/approve_justification_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_category.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
@@ -10,10 +15,14 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/justification/in_memory_justification_repository.dart';
 
+class MockAuthRepository extends Mock implements IAuthRepository {}
+
 void main() {
   late InMemoryJustificationRepository justificationRepo;
   late InMemorySlaAuditLedgerRepository ledger;
   late ApproveJustificationHandler handler;
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
 
   final now = DateTime.utc(2026, 5, 2, 10, 0);
 
@@ -48,16 +57,27 @@ void main() {
       callerRole: role,
       callerUserId: 'user-admin-1',
       callerEmail: 'admin@tenant.com',
+      sessionId: 'session-1',
     );
   }
 
   setUp(() {
     justificationRepo = InMemoryJustificationRepository();
     ledger = InMemorySlaAuditLedgerRepository();
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     handler = ApproveJustificationHandler(
+      tenantValidator: tenantValidator,
       justificationRepo: justificationRepo,
       ledger: ledger,
       rbac: RbacService(),
+    );
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: 'org-abc',
+      ),
     );
   });
 
@@ -85,13 +105,13 @@ void main() {
   });
 
   group('Tenant isolation', () {
-    test('throws DomainException for wrong org', () async {
+    test('throws SovereigntyViolationException for wrong org', () async {
       await justificationRepo.create(
         makePendingJustification(orgId: 'org-abc'),
       );
       await expectLater(
         handler.handle(makeCommand(orgId: 'org-evil')),
-        throwsA(isA<DomainException>()),
+        throwsA(isA<SovereigntyViolationException>()),
       );
     });
   });

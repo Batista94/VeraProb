@@ -7,7 +7,8 @@ Automated SLA Compliance & Financial Protection Platform. This file orchestrates
 ## 🏗️ SYSTEM OF RECORD
 
 **Mandatory Reading:** Before any task, the Assistant MUST read:
-1.  **Forensic Standards:** `.claude/rules/forensic-standards.md` (INV-1 to INV-27 & Protocols).
+
+1. **Forensic Standards:** `.claude/rules/forensic-standards.md` (INV-1 to INV-27 & Protocols).
 
 ---
 
@@ -39,6 +40,7 @@ Regardless of the task, you MUST state a **"Skill Insight"** and identify releva
 - **Money:** `int` cents in DTOs/API; `Money` VO in Domain.
 - **BPS:** All rounding MUST use `(cents * bps + 5000) ~/ 10000`. NO TRUNCATION.
 - **Error Parity:** Return identical 404/Not Found for non-existent IDs and IDs from other Organizations.
+- **INV-26 Enforcement:** ALL Postgres repositories MUST use `PostgresErrorInterceptor` mixin or extend `BasePostgresRepository`. No Supabase call may reach the Application layer without try/catch error translation. This is verified by the PR Scanner (INV-26-REPO rule).
 - **Identity Sync:** Always assert `request.org_id == jwt.org_id` in Use Cases and Application Services.
 
 ---

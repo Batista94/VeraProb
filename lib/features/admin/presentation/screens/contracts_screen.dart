@@ -449,8 +449,11 @@ class _ContractTable extends ConsumerWidget {
                               'Sessão expirada. Faça login novamente.',
                             );
                           }
+                          final sessionId =
+                              ref.read(currentSessionIdProvider) ?? '';
                           final cmd = CloneContractCommand(
                             organizationId: orgId,
+                            sessionId: sessionId,
                             sourceContractId: c.id,
                             name: nameController.text.trim(),
                             contractorName: c.contractorName,

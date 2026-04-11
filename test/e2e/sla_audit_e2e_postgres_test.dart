@@ -1,8 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
@@ -117,7 +121,17 @@ void main() {
     );
 
     // Instantiate Application Layer
+    final mockAuth = _MockAuthRepository();
+    when(() => mockAuth.getUserBySessionId(any<String>())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'admin-e2e',
+        tenantId: '00000000-0000-0000-0000-000000000001',
+      ),
+    );
+    final tenantValidator = TenantValidationService(authRepository: mockAuth);
+
     declarationHandler = DeclareContractualPlanHandler(
+      tenantValidator: tenantValidator,
       repository: planRepo,
       ledger: ledgerRepo,
       ruleRepository: MockContractualRuleRepository(),
@@ -181,6 +195,7 @@ void main() {
         originalFileHash: 'e2e-hash-${fakeClock.now().millisecondsSinceEpoch}',
         declaredAtUtc: testBaseTimeUtc.subtract(const Duration(days: 1)),
         services: [input],
+        sessionId: 'session-e2e-1',
       );
 
       // 2. Execute
@@ -614,6 +629,8 @@ class MockContractualRuleRepository implements ContractualRuleRepository {
   @override
   Future<void> saveRule(ContractualRule rule) async {}
 }
+
+class _MockAuthRepository extends Mock implements IAuthRepository {}
 
 /// Returns an active [Contract] for any non-empty contractId.
 /// Using [ContractStatus.active] avoids the draft→active auto-activation path

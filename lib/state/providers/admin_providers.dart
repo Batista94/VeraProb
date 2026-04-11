@@ -25,6 +25,7 @@ import 'package:veraprob/infrastructure/admin/postgres_user_management_command_s
 import 'package:veraprob/infrastructure/admin/supabase_admin_notification_repository.dart';
 import 'package:veraprob/infrastructure/admin/supabase_data_seeding_repository.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
@@ -88,15 +89,19 @@ final dataSeedingRepositoryProvider = Provider<DataSeedingRepository>((ref) {
 
 final inviteUserHandlerProvider = Provider<InviteUserHandler>((ref) {
   return InviteUserHandler(
-    ref.watch(invitationCommandServiceProvider),
-    ref.watch(dateTimeProviderProvider),
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    commandService: ref.watch(invitationCommandServiceProvider),
+    dateTimeProvider: ref.watch(dateTimeProviderProvider),
   );
 });
 
 final revokeInvitationHandlerProvider = Provider<RevokeInvitationHandler>((
   ref,
 ) {
-  return RevokeInvitationHandler(ref.watch(invitationCommandServiceProvider));
+  return RevokeInvitationHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    commandService: ref.watch(invitationCommandServiceProvider),
+  );
 });
 
 final acceptInvitationHandlerProvider = Provider<AcceptInvitationHandler>((
@@ -106,11 +111,15 @@ final acceptInvitationHandlerProvider = Provider<AcceptInvitationHandler>((
 });
 
 final changeUserRoleHandlerProvider = Provider<ChangeUserRoleHandler>((ref) {
-  return ChangeUserRoleHandler(ref.watch(userManagementCommandServiceProvider));
+  return ChangeUserRoleHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    commandService: ref.watch(userManagementCommandServiceProvider),
+  );
 });
 
 final removeMemberHandlerProvider = Provider<RemoveMemberHandler>((ref) {
   return RemoveMemberHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     commandService: ref.watch(userManagementCommandServiceProvider),
     queryService: ref.watch(userManagementQueryServiceProvider),
   );
@@ -120,6 +129,7 @@ final updateOrgSettingsHandlerProvider = Provider<UpdateOrgSettingsHandler>((
   ref,
 ) {
   return UpdateOrgSettingsHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(organizationRepositoryProvider),
   );
 });

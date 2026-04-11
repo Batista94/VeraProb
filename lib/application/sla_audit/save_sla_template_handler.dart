@@ -1,3 +1,4 @@
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/sla_template.dart';
 import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
@@ -8,13 +9,16 @@ import 'projections/penalties_form_data.dart';
 ///
 /// Delegates creation to the domain factory and persistence to the repository.
 class SaveSlaTemplateHandler {
+  final TenantValidationService _tenantValidator;
   final SlaTemplateRepository _repository;
   final IDateTimeProvider _clock;
 
   SaveSlaTemplateHandler({
+    required TenantValidationService tenantValidator,
     required SlaTemplateRepository repository,
     required IDateTimeProvider clock,
-  }) : _repository = repository,
+  }) : _tenantValidator = tenantValidator,
+       _repository = repository,
        _clock = clock;
 
   /// Creates or updates an [SlaTemplate] and persists it.
@@ -25,6 +29,7 @@ class SaveSlaTemplateHandler {
   /// Returns the saved template.
   Future<SlaTemplate> handle({
     required String organizationId,
+    required String sessionId,
     required String name,
     String? description,
     TransportVertical? vertical,
@@ -32,6 +37,12 @@ class SaveSlaTemplateHandler {
     String? existingId,
     DateTime? existingCreatedAt,
   }) async {
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: organizationId,
+      sessionId: sessionId,
+    );
+
     final domainPenalties = penalties.toDomain();
     final template = existingId != null
         ? SlaTemplate.reconstitute(

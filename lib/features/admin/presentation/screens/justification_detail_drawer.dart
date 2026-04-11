@@ -238,6 +238,7 @@ class _JustificationDetailDrawerState
     final role = ref.read(currentUserRoleProvider);
     final session = ref.read(authStateProvider).valueOrNull?.session;
     final email = session?.user.email ?? '';
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
     if (orgId == null || userId == null) return;
 
@@ -250,6 +251,7 @@ class _JustificationDetailDrawerState
           callerRole: role,
           callerUserId: userId,
           callerEmail: email,
+          sessionId: sessionId,
         );
 
     if (!mounted) return;
@@ -280,6 +282,7 @@ class _JustificationDetailDrawerState
     final role = ref.read(currentUserRoleProvider);
     final session = ref.read(authStateProvider).valueOrNull?.session;
     final email = session?.user.email ?? '';
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
     if (orgId == null || userId == null) return;
 
@@ -293,6 +296,7 @@ class _JustificationDetailDrawerState
           callerUserId: userId,
           callerEmail: email,
           rejectionNotes: notes,
+          sessionId: sessionId,
         );
 
     if (!mounted) return;

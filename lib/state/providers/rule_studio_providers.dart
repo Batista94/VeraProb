@@ -8,6 +8,7 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_rule_studio_command_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_rule_version_query_service.dart';
+import 'contract_providers.dart';
 
 // ── Infrastructure ────────────────────────────────────────────────────────────
 
@@ -27,6 +28,7 @@ final ruleVersionQueryServiceProvider =
 final updateContractualRuleHandlerProvider =
     Provider<UpdateContractualRuleHandler>((ref) {
       return UpdateContractualRuleHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
         commandService: ref.watch(ruleStudioCommandServiceProvider),
         rbac: RbacService(),
       );

@@ -1,14 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/generate_justification_token_command.dart';
 import 'package:veraprob/application/sla_audit/justification/generate_justification_token_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/justification/in_memory_justification_repository.dart';
 
+class MockAuthRepository extends Mock implements IAuthRepository {}
+
 void main() {
   late InMemoryJustificationRepository justificationRepo;
   late GenerateJustificationTokenHandler handler;
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
 
   GenerateJustificationTokenCommand makeCommand({
     UserRole role = UserRole.operator,
@@ -21,14 +29,25 @@ void main() {
       callerRole: role,
       callerUserId: 'user-op-1',
       expiresInHours: expiresInHours,
+      sessionId: 'session-1',
     );
   }
 
   setUp(() {
     justificationRepo = InMemoryJustificationRepository();
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     handler = GenerateJustificationTokenHandler(
+      tenantValidator: tenantValidator,
       justificationRepo: justificationRepo,
       rbac: RbacService(),
+    );
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: 'org-abc',
+      ),
     );
   });
 

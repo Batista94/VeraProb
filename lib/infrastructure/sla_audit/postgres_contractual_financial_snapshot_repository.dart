@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// PostgreSQL implementation of [ContractualFinancialSnapshotRepository].
 ///
@@ -12,6 +13,7 @@ import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_reposit
 /// chain in memory after fetching records, guaranteeing that only the most
 /// recent snapshot of a chain represents the official closed status.
 class PostgresContractualFinancialSnapshotRepository
+    with PostgresErrorInterceptor
     implements ContractualFinancialSnapshotRepository {
   final SupabaseClient _client;
 
@@ -20,28 +22,35 @@ class PostgresContractualFinancialSnapshotRepository
 
   @override
   Future<void> save(ContractualFinancialDailySnapshot snapshot) async {
-    await _client.from('contractual_financial_snapshot').insert({
-      'id': snapshot.id,
-      'organization_id': snapshot.organizationId,
-      'contract_id': snapshot.contractId,
-      'operational_date_utc': snapshot.operationalDateUtc.toIso8601String(),
-      'operational_timezone': snapshot.operationalTimezone,
-      'closed_at_utc': snapshot.closedAtUtc.toIso8601String(),
-      'total_contracted_revenue_cents': snapshot.totalContractedRevenue.cents,
-      'protected_revenue_cents': snapshot.protectedRevenue.cents,
-      'revenue_at_risk_cents': snapshot.revenueAtRisk.cents,
-      'lost_revenue_cents': snapshot.lostRevenue.cents,
-      'risk_percentage': snapshot.riskPercentageBps,
-      'loss_percentage': snapshot.lossPercentageBps,
-      'total_obligations': snapshot.totalObligations,
-      'executed_count': snapshot.executedCount,
-      'no_show_count': snapshot.noShowCount,
-      'evidence_gap_count': snapshot.evidenceGapCount,
-      'last_ledger_entry_uuid': snapshot.lastLedgerEntryId,
-      'previous_snapshot_id': snapshot.previousSnapshotId,
-      'reprocessing_reason': snapshot.reprocessingReason,
-      'author_user_id': snapshot.authorUserId,
-    });
+    try {
+      await _client.from('contractual_financial_snapshot').insert({
+        'id': snapshot.id,
+        'organization_id': snapshot.organizationId,
+        'contract_id': snapshot.contractId,
+        'operational_date_utc': snapshot.operationalDateUtc.toIso8601String(),
+        'operational_timezone': snapshot.operationalTimezone,
+        'closed_at_utc': snapshot.closedAtUtc.toIso8601String(),
+        'total_contracted_revenue_cents': snapshot.totalContractedRevenue.cents,
+        'protected_revenue_cents': snapshot.protectedRevenue.cents,
+        'revenue_at_risk_cents': snapshot.revenueAtRisk.cents,
+        'lost_revenue_cents': snapshot.lostRevenue.cents,
+        'risk_percentage': snapshot.riskPercentageBps,
+        'loss_percentage': snapshot.lossPercentageBps,
+        'total_obligations': snapshot.totalObligations,
+        'executed_count': snapshot.executedCount,
+        'no_show_count': snapshot.noShowCount,
+        'evidence_gap_count': snapshot.evidenceGapCount,
+        'last_ledger_entry_uuid': snapshot.lastLedgerEntryId,
+        'previous_snapshot_id': snapshot.previousSnapshotId,
+        'reprocessing_reason': snapshot.reprocessingReason,
+        'author_user_id': snapshot.authorUserId,
+      });
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'financial_snapshot',
+      );
+    }
   }
 
   @override
@@ -49,25 +58,32 @@ class PostgresContractualFinancialSnapshotRepository
     required String organizationId,
     String? contractId,
   }) async {
-    var query = _client
-        .from('contractual_financial_snapshot')
-        .select()
-        .eq('organization_id', organizationId);
+    try {
+      var query = _client
+          .from('contractual_financial_snapshot')
+          .select()
+          .eq('organization_id', organizationId);
 
-    if (contractId != null) {
-      query = query.eq('contract_id', contractId);
+      if (contractId != null) {
+        query = query.eq('contract_id', contractId);
+      }
+
+      final response = await query;
+      final snapshots = (response as List).map((row) => _mapRow(row)).toList();
+
+      // Infer active snapshots by chaining (those that are not superseded)
+      final supersededIds = snapshots
+          .where((s) => s.previousSnapshotId != null)
+          .map((s) => s.previousSnapshotId!)
+          .toSet();
+
+      return snapshots.where((s) => !supersededIds.contains(s.id)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'financial_snapshot',
+      );
     }
-
-    final response = await query;
-    final snapshots = (response as List).map((row) => _mapRow(row)).toList();
-
-    // Infer active snapshots by chaining (those that are not superseded)
-    final supersededIds = snapshots
-        .where((s) => s.previousSnapshotId != null)
-        .map((s) => s.previousSnapshotId!)
-        .toSet();
-
-    return snapshots.where((s) => !supersededIds.contains(s.id)).toList();
   }
 
   @override
@@ -77,27 +93,34 @@ class PostgresContractualFinancialSnapshotRepository
     required DateTime endUtc,
     String? contractId,
   }) async {
-    var query = _client
-        .from('contractual_financial_snapshot')
-        .select()
-        .eq('organization_id', organizationId)
-        .gte('operational_date_utc', startUtc.toIso8601String())
-        .lte('operational_date_utc', endUtc.toIso8601String());
+    try {
+      var query = _client
+          .from('contractual_financial_snapshot')
+          .select()
+          .eq('organization_id', organizationId)
+          .gte('operational_date_utc', startUtc.toIso8601String())
+          .lte('operational_date_utc', endUtc.toIso8601String());
 
-    if (contractId != null) {
-      query = query.eq('contract_id', contractId);
+      if (contractId != null) {
+        query = query.eq('contract_id', contractId);
+      }
+
+      final response = await query;
+      final snapshots = (response as List).map((row) => _mapRow(row)).toList();
+
+      // Redundant but safe: ensure we only return active snapshots even in date ranges
+      final supersededIds = snapshots
+          .where((s) => s.previousSnapshotId != null)
+          .map((s) => s.previousSnapshotId!)
+          .toSet();
+
+      return snapshots.where((s) => !supersededIds.contains(s.id)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'financial_snapshot',
+      );
     }
-
-    final response = await query;
-    final snapshots = (response as List).map((row) => _mapRow(row)).toList();
-
-    // Redundant but safe: ensure we only return active snapshots even in date ranges
-    final supersededIds = snapshots
-        .where((s) => s.previousSnapshotId != null)
-        .map((s) => s.previousSnapshotId!)
-        .toSet();
-
-    return snapshots.where((s) => !supersededIds.contains(s.id)).toList();
   }
 
   @override
@@ -106,18 +129,25 @@ class PostgresContractualFinancialSnapshotRepository
     DateTime operationalDateUtc, {
     String? contractId,
   }) async {
-    final normalizedDate = DateTime.utc(
-      operationalDateUtc.year,
-      operationalDateUtc.month,
-      operationalDateUtc.day,
-    );
+    try {
+      final normalizedDate = DateTime.utc(
+        operationalDateUtc.year,
+        operationalDateUtc.month,
+        operationalDateUtc.day,
+      );
 
-    // An automated snapshot should not be generated if an ACTIVE snapshot exists for this date.
-    final allActive = await findAll(
-      organizationId: organizationId,
-      contractId: contractId,
-    );
-    return allActive.any((s) => s.operationalDateUtc == normalizedDate);
+      // An automated snapshot should not be generated if an ACTIVE snapshot exists for this date.
+      final allActive = await findAll(
+        organizationId: organizationId,
+        contractId: contractId,
+      );
+      return allActive.any((s) => s.operationalDateUtc == normalizedDate);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'financial_snapshot',
+      );
+    }
   }
 
   ContractualFinancialDailySnapshot _mapRow(Map<String, dynamic> row) {

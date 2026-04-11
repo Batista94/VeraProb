@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/sla_audit/create_contract_command.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
@@ -136,6 +137,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
     try {
       final handler = ref.read(createContractHandlerProvider);
+      final sessionId = ref.read(currentSessionIdProvider);
       final rawCeiling = _financialCeilingController.text.trim();
 
       final cleanValue = rawCeiling.replaceAll('.', '').replaceAll(',', '');
@@ -154,10 +156,15 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
           validFromUtc: _validFrom!,
           validUntilUtc: _validUntil!,
           financialCeilingCents: financialCeilingCents,
+          sessionId: sessionId ?? '',
         ),
       );
 
       if (mounted) Navigator.of(context).pop(contract.id);
+    } on SovereigntyViolationException {
+      // INV-26: Generic message — no forensic details leaked to the UI.
+      // The actual tenant mismatch is logged to Sentry internally.
+      setState(() => _errorMessage = 'Contrato não encontrado.');
     } on DomainException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (e) {

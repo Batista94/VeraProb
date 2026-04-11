@@ -11,6 +11,7 @@ import 'package:veraprob/domain/super_admin/mfa_enrollment_result.dart';
 import 'package:veraprob/domain/super_admin/mfa_exception.dart';
 import 'package:veraprob/domain/super_admin/mfa_status.dart';
 import 'package:veraprob/domain/super_admin/mfa_verification_result.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Supabase implementation of [IMfaRepository].
 ///
@@ -19,7 +20,9 @@ import 'package:veraprob/domain/super_admin/mfa_verification_result.dart';
 /// by SECURITY DEFINER RPCs in PostgreSQL.
 ///
 /// INV-6: SuperAdmin access requires MFA + super_admin=true JWT claim.
-class SupabaseMfaRepository implements IMfaRepository {
+class SupabaseMfaRepository
+    with PostgresErrorInterceptor
+    implements IMfaRepository {
   final SupabaseClient _client;
 
   SupabaseMfaRepository(this._client);
@@ -198,7 +201,11 @@ class SupabaseMfaRepository implements IMfaRepository {
     }).toList();
 
     for (final row in rows) {
-      await _client.from('super_admin_recovery_codes').insert(row);
+      try {
+        await _client.from('super_admin_recovery_codes').insert(row);
+      } on PostgrestException catch (e) {
+        throw mapPostgrestToDomainException(e, resourceType: 'mfa');
+      }
     }
   }
 }

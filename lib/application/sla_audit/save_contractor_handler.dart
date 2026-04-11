@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -11,19 +12,28 @@ import 'save_contractor_command.dart';
 ///
 /// RBAC: Requires [UserPermission.canManageContractors].
 class SaveContractorHandler {
+  final TenantValidationService _tenantValidator;
   final ContractorRepository _repository;
   final IDateTimeProvider _clock;
   final RbacService _rbac = RbacService();
   final _uuid = const Uuid();
 
   SaveContractorHandler({
+    required TenantValidationService tenantValidator,
     required ContractorRepository repository,
     required IDateTimeProvider clock,
-  }) : _repository = repository,
+  }) : _tenantValidator = tenantValidator,
+       _repository = repository,
        _clock = clock;
 
   Future<Contractor> handle(SaveContractorCommand command) async {
-    // 1. RBAC check
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageContractors)) {
       throw DomainException(
         'Unauthorized: Caller identifies as ${command.callerRole} but needs canManageContractors permission',

@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/reject_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/reject_sanction_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
@@ -11,11 +15,15 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_sanction_review_queu
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import '../../mocks/fake_date_time_provider.dart';
 
+class MockAuthRepository extends Mock implements IAuthRepository {}
+
 void main() {
   late InMemorySanctionReviewQueueRepository queueRepo;
   late InMemorySlaAuditLedgerRepository ledger;
   late RejectSanctionHandler handler;
   late FakeDateTimeProvider clock;
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
 
   final evidence = VerdictEvidence.create(
     clauseRef: 'no-show-rule-1',
@@ -47,11 +55,21 @@ void main() {
     queueRepo = InMemorySanctionReviewQueueRepository();
     ledger = InMemorySlaAuditLedgerRepository();
     clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0));
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     handler = RejectSanctionHandler(
+      tenantValidator: tenantValidator,
       queueRepo: queueRepo,
       ledger: ledger,
       rbac: RbacService(),
       clock: clock,
+    );
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: 'org-1',
+      ),
     );
   });
 
@@ -68,6 +86,7 @@ void main() {
             rejectionReason: 'GPS data was inconclusive.',
             callerRole: UserRole.operator,
             organizationId: 'org-1',
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -88,6 +107,7 @@ void main() {
             rejectionReason: 'too short', // 9 chars
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -106,6 +126,7 @@ void main() {
             rejectionReason: '          ', // 10 spaces, trims to empty
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -124,6 +145,7 @@ void main() {
             rejectionReason: '  1234567890  ', // 10 non-whitespace chars
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
+            sessionId: 'session-1',
           ),
         ),
         completes,
@@ -155,6 +177,7 @@ void main() {
             rejectionReason: 'GPS data was inconclusive for this route.',
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -174,6 +197,7 @@ void main() {
           rejectionReason: 'GPS data was inconclusive for this route.',
           callerRole: UserRole.auditor,
           organizationId: 'org-1',
+          sessionId: 'session-1',
         ),
       );
 
@@ -199,6 +223,7 @@ void main() {
           rejectionReason: 'GPS data was inconclusive for this route.',
           callerRole: UserRole.auditor,
           organizationId: 'org-1',
+          sessionId: 'session-1',
         ),
       );
 

@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/contract_approval_command_service.dart';
 import 'package:veraprob/application/sla_audit/submit_contract_for_approval_command.dart';
 import 'package:veraprob/application/sla_audit/submit_contract_for_approval_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
@@ -14,6 +17,8 @@ import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import '../../mocks/fake_date_time_provider.dart';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
+
+class MockAuthRepository extends Mock implements IAuthRepository {}
 
 class MockContractRepository extends Mock implements ContractRepository {}
 
@@ -74,12 +79,15 @@ SubmitContractForApprovalCommand makeCommand({
     contractId: contractId,
     callerUserId: 'user-admin-1',
     callerRole: callerRole,
+    sessionId: 'session-1',
   );
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 void main() {
   final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
   late MockContractRepository contractRepository;
   late _FakeApprovalService approvalService;
   late MockSlaAuditLedgerRepository ledger;
@@ -100,19 +108,28 @@ void main() {
   });
 
   setUp(() {
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     contractRepository = MockContractRepository();
     approvalService = _FakeApprovalService();
     ledger = MockSlaAuditLedgerRepository();
     clock = FakeDateTimeProvider(nowUtc);
     handler = SubmitContractForApprovalHandler(
+      tenantValidator: tenantValidator,
       contractRepository: contractRepository,
       approvalService: approvalService,
       ledger: ledger,
       rbac: RbacService(),
       clock: clock,
     );
-
     when(() => ledger.append(any())).thenAnswer((_) async => 'entry-id');
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: 'org-1',
+      ),
+    );
   });
 
   group('SubmitContractForApprovalHandler', () {

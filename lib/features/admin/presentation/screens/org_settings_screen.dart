@@ -198,6 +198,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final role = ref.read(currentUserRoleProvider);
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
       final command = UpdateOrgSettingsCommand(
         organizationId: orgId!,
@@ -212,6 +213,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
         logoUrl: _logoUrlController.text.trim().isEmpty
             ? null
             : _logoUrlController.text.trim(),
+        sessionId: sessionId,
       );
 
       await ref.read(updateOrgSettingsHandlerProvider).handle(command);

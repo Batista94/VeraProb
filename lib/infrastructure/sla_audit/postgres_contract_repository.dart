@@ -7,6 +7,7 @@ import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Postgres implementation of [ContractRepository].
 ///
@@ -14,7 +15,9 @@ import 'package:veraprob/domain/shared/money.dart';
 /// (activate, close). Organization isolation is enforced at two layers:
 /// 1. Query predicates always include `organization_id`
 /// 2. RLS policy on `contracts` table rejects cross-tenant access
-class PostgresContractRepository implements ContractRepository {
+class PostgresContractRepository
+    with PostgresErrorInterceptor
+    implements ContractRepository {
   final SupabaseClient? _injectedClient;
 
   // Lazy accessor — unit tests that only call assertFields/parseUtc
@@ -77,30 +80,38 @@ class PostgresContractRepository implements ContractRepository {
 
   @override
   Future<void> save(Contract contract) async {
-    await _client.from('contracts').upsert({
-      'id': contract.id,
-      'organization_id': contract.organizationId,
-      'name': contract.name,
-      'contractor_name': contract.contractorName,
-      'description': contract.description,
-      'valid_from_utc': contract.validFromUtc.toIso8601String(),
-      'valid_until_utc': contract.validUntilUtc.toIso8601String(),
-      'status': contract.status.name,
-      'created_at_utc': contract.createdAtUtc.toIso8601String(),
-      'activated_at_utc': contract.activatedAtUtc?.toIso8601String(),
-      'closed_at_utc': contract.closedAtUtc?.toIso8601String(),
-      'closed_by_user_id': contract.closedByUserId,
-      'close_reason': contract.closeReason,
-      'cloned_from_contract_id': contract.clonedFromContractId,
-      'financial_ceiling_cents': contract.financialCeiling?.cents,
-      'submitted_for_approval_at_utc': contract.submittedForApprovalAtUtc
-          ?.toIso8601String(),
-      'penalty_multiplier':
-          contract.penaltyMultiplierBps /
-          10000.0, // Physical Metric - Double Required
-      'latitude': contract.latitude, // Physical Metric - Double Required
-      'longitude': contract.longitude, // Physical Metric - Double Required
-    });
+    try {
+      await _client.from('contracts').upsert({
+        'id': contract.id,
+        'organization_id': contract.organizationId,
+        'name': contract.name,
+        'contractor_name': contract.contractorName,
+        'description': contract.description,
+        'valid_from_utc': contract.validFromUtc.toIso8601String(),
+        'valid_until_utc': contract.validUntilUtc.toIso8601String(),
+        'status': contract.status.name,
+        'created_at_utc': contract.createdAtUtc.toIso8601String(),
+        'activated_at_utc': contract.activatedAtUtc?.toIso8601String(),
+        'closed_at_utc': contract.closedAtUtc?.toIso8601String(),
+        'closed_by_user_id': contract.closedByUserId,
+        'close_reason': contract.closeReason,
+        'cloned_from_contract_id': contract.clonedFromContractId,
+        'financial_ceiling_cents': contract.financialCeiling?.cents,
+        'submitted_for_approval_at_utc': contract.submittedForApprovalAtUtc
+            ?.toIso8601String(),
+        'penalty_multiplier':
+            contract.penaltyMultiplierBps /
+            10000.0, // Physical Metric - Double Required
+        'latitude': contract.latitude, // Physical Metric - Double Required
+        'longitude': contract.longitude, // Physical Metric - Double Required
+      });
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'contract',
+        resourceId: contract.id,
+      );
+    }
   }
 
   @override
@@ -108,16 +119,24 @@ class PostgresContractRepository implements ContractRepository {
     String id, {
     required String organizationId,
   }) async {
-    final data = await _client
-        .from('contracts')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('id', id)
-        .maybeSingle();
+    try {
+      final data = await _client
+          .from('contracts')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('id', id)
+          .maybeSingle();
 
-    if (data == null) return null;
-    assertFields(data);
-    return _mapToEntity(data);
+      if (data == null) return null;
+      assertFields(data);
+      return _mapToEntity(data);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'contract',
+        resourceId: id,
+      );
+    }
   }
 
   @override
@@ -125,25 +144,33 @@ class PostgresContractRepository implements ContractRepository {
     String organizationId, {
     ContractStatus? status,
   }) async {
-    var query = _client
-        .from('contracts')
-        .select()
-        .eq('organization_id', organizationId);
+    try {
+      var query = _client
+          .from('contracts')
+          .select()
+          .eq('organization_id', organizationId);
 
-    if (status != null) {
-      query = query.eq('status', status.name);
+      if (status != null) {
+        query = query.eq('status', status.name);
+      }
+
+      final List<dynamic> rows = await query.order(
+        'created_at_utc',
+        ascending: false,
+      );
+
+      return rows.map((r) {
+        final row = r as Map<String, dynamic>;
+        assertFields(row);
+        return _mapToEntity(row);
+      }).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'contract',
+        resourceId: organizationId,
+      );
     }
-
-    final List<dynamic> rows = await query.order(
-      'created_at_utc',
-      ascending: false,
-    );
-
-    return rows.map((r) {
-      final row = r as Map<String, dynamic>;
-      assertFields(row);
-      return _mapToEntity(row);
-    }).toList();
   }
 
   // ── Private mapper ─────────────────────────────────────────

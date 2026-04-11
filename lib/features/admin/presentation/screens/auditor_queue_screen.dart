@@ -211,11 +211,14 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
+      // INV-26: No internal details leaked — generic error only
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao simular: $e'),
+          const SnackBar(
+            content: Text(
+              'Não foi possível simular a sanção. Verifique se há contratos ativos.',
+            ),
             backgroundColor: VeraProbColors.error,
           ),
         );

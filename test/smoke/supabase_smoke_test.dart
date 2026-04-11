@@ -23,9 +23,14 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 
 // Domain
 import 'package:veraprob/application/normalization/models/connectivity_state.dart';
@@ -178,6 +183,8 @@ ShiftPattern _buildSmokePattern() {
 // main
 // ─────────────────────────────────────────────────────────────────────────────
 
+class _SmokeMockAuth extends Mock implements IAuthRepository {}
+
 void main() {
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
   const supabaseKey = String.fromEnvironment('SUPABASE_KEY', defaultValue: '');
@@ -229,13 +236,21 @@ void main() {
 
       final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
 
+      final mockAuth = _SmokeMockAuth();
+      when(
+        () => mockAuth.getUserBySessionId(any<String>()),
+      ).thenAnswer((_) async => const domain.AuthUser(id: 'user-1', tenantId: orgId));
+      final tenantValidator = TenantValidationService(authRepository: mockAuth);
+
       createHandler = CreateContractHandler(
+        tenantValidator: tenantValidator,
         contractRepository: contractRepo,
         ledger: ledgerRepo,
         clock: clock,
       );
 
       declareHandler = DeclareContractualPlanHandler(
+        tenantValidator: tenantValidator,
         repository: planRepo,
         ledger: ledgerRepo,
         ruleRepository: _SmokeRuleRepository(),
@@ -281,6 +296,7 @@ void main() {
             contractorName: 'SPTRANS Smoke Corp',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-smoke-1',
           ),
         );
 
@@ -318,6 +334,7 @@ void main() {
             declaredAtUtc: DateTime.utc(2026, 4, 8, 0, 0, 0),
             shiftPatterns: [pattern],
             contractualValueCents: 50000, // R$ 500,00
+            sessionId: 'session-smoke-b2b',
           );
 
           final plan = await declareHandler.handle(cmd);
@@ -681,7 +698,17 @@ void main() {
 
       setUpAll(() {
         templateRepo = PostgresSlaTemplateRepository(client);
+
+        final mockAuthClone = _SmokeMockAuth();
+        when(() => mockAuthClone.getUserBySessionId(any<String>())).thenAnswer(
+          (_) async => const domain.AuthUser(id: 'user-1', tenantId: orgId),
+        );
+        final cloneTenantValidator = TenantValidationService(
+          authRepository: mockAuthClone,
+        );
+
         cloneHandler = CloneContractHandler(
+          tenantValidator: cloneTenantValidator,
           contractRepository: contractRepo,
           ledger: ledgerRepo,
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
@@ -697,6 +724,7 @@ void main() {
             contractorName: 'SPTRANS Source Corp',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-smoke-5',
           ),
         );
         sourceContractId = source.id;
@@ -707,6 +735,7 @@ void main() {
             sourceContractId: source.id,
             name: 'Smoke Clone $runId',
             contractorName: source.contractorName,
+            sessionId: 'session-smoke-clone-1',
           ),
           validFromUtc: DateTime.utc(2026, 7, 1),
           validUntilUtc: DateTime.utc(2026, 12, 31),
@@ -739,6 +768,7 @@ void main() {
               sourceContractId: const Uuid().v4(), // ID inexistente nesta org
               name: 'Smoke Malicious Clone',
               contractorName: 'Evil Corp',
+              sessionId: 'session-smoke-clone-2',
             ),
             validFromUtc: DateTime.utc(2026, 7, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),

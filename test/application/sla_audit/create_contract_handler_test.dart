@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/create_contract_command.dart';
 import 'package:veraprob/application/sla_audit/create_contract_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
@@ -9,6 +13,10 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import '../../mocks/fake_date_time_provider.dart';
+
+// ── Mocks ────────────────────────────────────────────────────────────────────
+
+class MockAuthRepository extends Mock implements IAuthRepository {}
 
 /// Fake repository that raises a Postgres P0001 on [save].
 class _QuotaExceededContractRepository implements ContractRepository {
@@ -34,22 +42,33 @@ class _QuotaExceededContractRepository implements ContractRepository {
 }
 
 void main() {
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
   late InMemoryContractRepository repository;
   late InMemorySlaAuditLedgerRepository ledger;
   late CreateContractHandler handler;
 
   setUp(() {
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     repository = InMemoryContractRepository();
     ledger = InMemorySlaAuditLedgerRepository();
     handler = CreateContractHandler(
+      tenantValidator: tenantValidator,
       contractRepository: repository,
       ledger: ledger,
       clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
     );
+
+    // Default: session is valid and matches org-1
+    when(
+      () => mockAuthRepo.getUserBySessionId(any<String>()),
+    ).thenAnswer((_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'));
   });
 
   CreateContractCommand makeCommand({
     String organizationId = 'org-1',
+    String sessionId = 'session-default',
     String name = 'Contrato Norte',
     String contractorName = 'Trans Norte Ltda',
     String? description,
@@ -63,6 +82,7 @@ void main() {
       description: description,
       validFromUtc: validFrom ?? DateTime.utc(2026, 1, 1),
       validUntilUtc: validUntil ?? DateTime.utc(2026, 12, 31),
+      sessionId: sessionId,
     );
   }
 
@@ -124,6 +144,11 @@ void main() {
     });
 
     test('tenant isolation — findById returns null for wrong org', () async {
+      // Stub session for org-A
+      when(() => mockAuthRepo.getUserBySessionId(any<String>())).thenAnswer(
+        (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-A'),
+      );
+
       final contract = await handler.handle(
         makeCommand(organizationId: 'org-A'),
       );
@@ -159,9 +184,15 @@ void main() {
     late CreateContractHandler quotaHandler;
 
     setUp(() {
+      final mockAuth = MockAuthRepository();
+      when(() => mockAuth.getUserBySessionId(any<String>())).thenAnswer(
+        (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'),
+      );
+      final tvs = TenantValidationService(authRepository: mockAuth);
       quotaRepo = _QuotaExceededContractRepository();
       quotaLedger = InMemorySlaAuditLedgerRepository();
       quotaHandler = CreateContractHandler(
+        tenantValidator: tvs,
         contractRepository: quotaRepo,
         ledger: quotaLedger,
         clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),

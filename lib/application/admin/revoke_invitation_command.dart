@@ -11,9 +11,13 @@ class RevokeInvitationCommand {
   final UserRole callerRole;
   final String invitationId;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const RevokeInvitationCommand({
     required this.organizationId,
     required this.callerRole,
     required this.invitationId,
+    required this.sessionId,
   });
 }

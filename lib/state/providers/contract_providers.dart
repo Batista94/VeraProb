@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/accept_by_contractor_handler.dart';
 import 'package:veraprob/application/sla_audit/clone_contract_handler.dart';
 import 'package:veraprob/application/sla_audit/close_contract_handler.dart';
@@ -46,10 +47,21 @@ final contractualRuleRepositoryProvider = Provider<ContractualRuleRepository>((
   };
 });
 
+// ── Tenant Validation Service ──────────────────────────────────────────
+
+final tenantValidationServiceProvider = Provider<TenantValidationService>((
+  ref,
+) {
+  return TenantValidationService(
+    authRepository: ref.watch(authRepositoryProvider),
+  );
+});
+
 // ── Handlers ────────────────────────────────────────────────
 
 final createContractHandlerProvider = Provider<CreateContractHandler>((ref) {
   return CreateContractHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     contractRepository: ref.watch(contractRepositoryProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
     clock: ref.watch(dateTimeProviderProvider),
@@ -58,6 +70,7 @@ final createContractHandlerProvider = Provider<CreateContractHandler>((ref) {
 
 final cloneContractHandlerProvider = Provider<CloneContractHandler>((ref) {
   return CloneContractHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     contractRepository: ref.watch(contractRepositoryProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
     clock: ref.watch(dateTimeProviderProvider),
@@ -66,6 +79,7 @@ final cloneContractHandlerProvider = Provider<CloneContractHandler>((ref) {
 
 final closeContractHandlerProvider = Provider<CloseContractHandler>((ref) {
   return CloseContractHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     contractRepository: ref.watch(contractRepositoryProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
     rbac: RbacService(),
@@ -85,6 +99,7 @@ final contractApprovalCommandServiceProvider =
 final submitContractForApprovalHandlerProvider =
     Provider<SubmitContractForApprovalHandler>((ref) {
       return SubmitContractForApprovalHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
         contractRepository: ref.watch(contractRepositoryProvider),
         approvalService: ref.watch(contractApprovalCommandServiceProvider),
         ledger: ref.watch(slaAuditLedgerRepositoryProvider),
@@ -97,6 +112,7 @@ final acceptByContractorHandlerProvider = Provider<AcceptByContractorHandler>((
   ref,
 ) {
   return AcceptByContractorHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     approvalService: ref.watch(contractApprovalCommandServiceProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
     clock: ref.watch(dateTimeProviderProvider),
@@ -122,6 +138,7 @@ final shiftProjectionServiceProvider = Provider<ShiftProjectionService>((ref) {
 final declareContractualPlanHandlerProvider =
     Provider<DeclareContractualPlanHandler>((ref) {
       return DeclareContractualPlanHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
         repository: ref.watch(planDeclarationRepositoryProvider),
         ledger: ref.watch(slaAuditLedgerRepositoryProvider),
         ruleRepository: ref.watch(contractualRuleRepositoryProvider),

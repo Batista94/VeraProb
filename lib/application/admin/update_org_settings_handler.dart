@@ -1,3 +1,4 @@
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/admin/organization_repository.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
@@ -9,14 +10,24 @@ import 'update_org_settings_command.dart';
 ///
 /// RBAC: Requires [UserPermission.canManageOrganization].
 class UpdateOrgSettingsHandler {
+  final TenantValidationService _tenantValidator;
   final OrganizationRepository _repository;
   final RbacService _rbac = RbacService();
 
-  UpdateOrgSettingsHandler({required OrganizationRepository repository})
-    : _repository = repository;
+  UpdateOrgSettingsHandler({
+    required TenantValidationService tenantValidator,
+    required OrganizationRepository repository,
+  }) : _tenantValidator = tenantValidator,
+       _repository = repository;
 
   Future<void> handle(UpdateOrgSettingsCommand command) async {
-    // 1. RBAC check
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageOrganization)) {
       throw DomainException(
         'Unauthorized: Caller identifies as ${command.callerRole} but needs canManageOrganization permission',

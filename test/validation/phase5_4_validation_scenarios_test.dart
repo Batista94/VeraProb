@@ -16,8 +16,10 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/close_contract_command.dart';
 import 'package:veraprob/application/sla_audit/close_contract_handler.dart';
 import 'package:veraprob/application/sla_audit/create_contract_command.dart';
@@ -28,6 +30,8 @@ import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_query_service_in_memory.dart';
 import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
 import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
@@ -80,6 +84,26 @@ class _StubRuleRepository implements ContractualRuleRepository {
 
 // ── Test suite ─────────────────────────────────────────────────────────────
 
+class _Phase5MockAuth extends Mock implements IAuthRepository {}
+
+CreateContractHandler _makeCreateHandler({
+  required InMemoryContractRepository contractRepo,
+  required InMemorySlaAuditLedgerRepository ledger,
+  required String tenantId,
+}) {
+  final mockAuth = _Phase5MockAuth();
+  when(
+    () => mockAuth.getUserBySessionId(any<String>()),
+  ).thenAnswer((_) async => domain.AuthUser(id: 'user-1', tenantId: tenantId));
+  final tvs = TenantValidationService(authRepository: mockAuth);
+  return CreateContractHandler(
+    tenantValidator: tvs,
+    contractRepository: contractRepo,
+    ledger: ledger,
+    clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+  );
+}
+
 void main() {
   setUpAll(() {
     tz_data.initializeTimeZones();
@@ -97,33 +121,72 @@ void main() {
     planRepo = InMemoryPlanDeclarationRepository();
     ledger = InMemorySlaAuditLedgerRepository();
 
-    final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
-
-    createHandler = CreateContractHandler(
-      contractRepository: contractRepo,
+    createHandler = _makeCreateHandler(
+      contractRepo: contractRepo,
       ledger: ledger,
-      clock: clock,
+      tenantId: 'org-1',
     );
+
+    final closeMockAuth = _Phase5MockAuth();
+    when(
+      () => closeMockAuth.getUserBySessionId(any<String>()),
+    ).thenAnswer((_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'));
+    final closeTvs = TenantValidationService(authRepository: closeMockAuth);
+
     closeHandler = CloseContractHandler(
+      tenantValidator: closeTvs,
       contractRepository: contractRepo,
       ledger: ledger,
       rbac: RbacService(),
-      clock: clock,
+      clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
     );
+
+    final planMockAuth = _Phase5MockAuth();
+    when(
+      () => planMockAuth.getUserBySessionId(any<String>()),
+    ).thenAnswer((_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'));
+    final planTvs = TenantValidationService(authRepository: planMockAuth);
+
     planHandler = DeclareContractualPlanHandler(
+      tenantValidator: planTvs,
       repository: planRepo,
       ledger: ledger,
       ruleRepository: _StubRuleRepository(),
       contractRepository: contractRepo,
       zoneRepository: _StubZoneRepository(),
       vehicleRepository: _StubVehicleRepository(),
-      clock: clock,
+      clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
     );
   });
 
   // ── Cenário 5.1 ───────────────────────────────────────────────────────────
 
   group('Cenário 5.1 — Plano criado via UI gera PLAN_DECLARED no ledger', () {
+    setUp(() {
+      createHandler = _makeCreateHandler(
+        contractRepo: contractRepo,
+        ledger: ledger,
+        tenantId: 'org-5-1',
+      );
+
+      final p51MockAuth = _Phase5MockAuth();
+      when(() => p51MockAuth.getUserBySessionId(any<String>())).thenAnswer(
+        (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-1'),
+      );
+      final p51Tvs = TenantValidationService(authRepository: p51MockAuth);
+
+      planHandler = DeclareContractualPlanHandler(
+        tenantValidator: p51Tvs,
+        repository: planRepo,
+        ledger: ledger,
+        ruleRepository: _StubRuleRepository(),
+        contractRepository: contractRepo,
+        zoneRepository: _StubZoneRepository(),
+        vehicleRepository: _StubVehicleRepository(),
+        clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+      );
+    });
+
     test(
       '5.1.a: handler produz entrada PLAN_DECLARED idêntica ao fluxo de API',
       () async {
@@ -136,6 +199,7 @@ void main() {
             contractorName: 'Trans Leste',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
@@ -152,6 +216,7 @@ void main() {
             originalFileHash: uiGeneratedHash,
             declaredAtUtc: DateTime.utc(2026, 1, 15),
             services: [_makeService()],
+            sessionId: 'session-val',
           ),
         );
 
@@ -177,6 +242,29 @@ void main() {
     test(
       '5.1.b: hash do plano é preservado sem alteração pelo handler',
       () async {
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-5-1b',
+        );
+
+        final p51bMockAuth = _Phase5MockAuth();
+        when(() => p51bMockAuth.getUserBySessionId(any<String>())).thenAnswer(
+          (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-1b'),
+        );
+        final p51bTvs = TenantValidationService(authRepository: p51bMockAuth);
+
+        planHandler = DeclareContractualPlanHandler(
+          tenantValidator: p51bTvs,
+          repository: planRepo,
+          ledger: ledger,
+          ruleRepository: _StubRuleRepository(),
+          contractRepository: contractRepo,
+          zoneRepository: _StubZoneRepository(),
+          vehicleRepository: _StubVehicleRepository(),
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+        );
+
         final contract = await createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-1b',
@@ -184,6 +272,7 @@ void main() {
             contractorName: 'Trans Sul',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
@@ -198,6 +287,7 @@ void main() {
             originalFileHash: expectedHash,
             declaredAtUtc: DateTime.utc(2026, 1, 10),
             services: [_makeService()],
+            sessionId: 'session-val',
           ),
         );
 
@@ -213,7 +303,37 @@ void main() {
   group(
     'Cenário 5.2 — Plano publicado não pode ser editado; apenas nova versão',
     () {
+      setUp(() {
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-5-2',
+        );
+
+        final p52MockAuth = _Phase5MockAuth();
+        when(() => p52MockAuth.getUserBySessionId(any<String>())).thenAnswer(
+          (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-2'),
+        );
+        final p52Tvs = TenantValidationService(authRepository: p52MockAuth);
+
+        planHandler = DeclareContractualPlanHandler(
+          tenantValidator: p52Tvs,
+          repository: planRepo,
+          ledger: ledger,
+          ruleRepository: _StubRuleRepository(),
+          contractRepository: contractRepo,
+          zoneRepository: _StubZoneRepository(),
+          vehicleRepository: _StubVehicleRepository(),
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+        );
+      });
+
       test('5.2.a: PlanDeclaration expõe services como lista imutável', () async {
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-5-2',
+        );
         final contract = await createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-2',
@@ -221,6 +341,7 @@ void main() {
             contractorName: 'Empresa I',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
@@ -233,6 +354,7 @@ void main() {
             originalFileHash: 'hash-v1',
             declaredAtUtc: DateTime.utc(2026, 1, 10),
             services: [_makeService()],
+            sessionId: 'session-val',
           ),
         );
 
@@ -252,6 +374,29 @@ void main() {
       test(
         '5.2.b: nova versão do plano cria aggregate distinto (não sobrescreve)',
         () async {
+          createHandler = _makeCreateHandler(
+            contractRepo: contractRepo,
+            ledger: ledger,
+            tenantId: 'org-5-2b',
+          );
+
+          final p52bMockAuth = _Phase5MockAuth();
+          when(() => p52bMockAuth.getUserBySessionId(any<String>())).thenAnswer(
+            (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-2b'),
+          );
+          final p52bTvs = TenantValidationService(authRepository: p52bMockAuth);
+
+          planHandler = DeclareContractualPlanHandler(
+            tenantValidator: p52bTvs,
+            repository: planRepo,
+            ledger: ledger,
+            ruleRepository: _StubRuleRepository(),
+            contractRepository: contractRepo,
+            zoneRepository: _StubZoneRepository(),
+            vehicleRepository: _StubVehicleRepository(),
+            clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+          );
+
           final contract = await createHandler.handle(
             CreateContractCommand(
               organizationId: 'org-5-2b',
@@ -259,6 +404,7 @@ void main() {
               contractorName: 'Empresa V',
               validFromUtc: DateTime.utc(2026, 1, 1),
               validUntilUtc: DateTime.utc(2026, 12, 31),
+              sessionId: 'session-val',
             ),
           );
 
@@ -271,6 +417,7 @@ void main() {
               originalFileHash: 'hash-v1',
               declaredAtUtc: DateTime.utc(2026, 1, 10),
               services: [_makeService(DateTime.utc(2026, 2, 1, 6, 0))],
+              sessionId: 'session-val',
             ),
           );
 
@@ -286,6 +433,7 @@ void main() {
                 _makeService(DateTime.utc(2026, 3, 1, 6, 0)),
                 _makeService(DateTime.utc(2026, 3, 1, 8, 0)),
               ],
+              sessionId: 'session-val',
             ),
           );
 
@@ -317,6 +465,29 @@ void main() {
       test(
         '5.2.c: PlanDeclaration.domainEvents são imutáveis após criação',
         () async {
+          createHandler = _makeCreateHandler(
+            contractRepo: contractRepo,
+            ledger: ledger,
+            tenantId: 'org-5-2c',
+          );
+
+          final p52cMockAuth = _Phase5MockAuth();
+          when(() => p52cMockAuth.getUserBySessionId(any<String>())).thenAnswer(
+            (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-2c'),
+          );
+          final p52cTvs = TenantValidationService(authRepository: p52cMockAuth);
+
+          planHandler = DeclareContractualPlanHandler(
+            tenantValidator: p52cTvs,
+            repository: planRepo,
+            ledger: ledger,
+            ruleRepository: _StubRuleRepository(),
+            contractRepository: contractRepo,
+            zoneRepository: _StubZoneRepository(),
+            vehicleRepository: _StubVehicleRepository(),
+            clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+          );
+
           final contract = await createHandler.handle(
             CreateContractCommand(
               organizationId: 'org-5-2c',
@@ -324,6 +495,7 @@ void main() {
               contractorName: 'Empresa E',
               validFromUtc: DateTime.utc(2026, 1, 1),
               validUntilUtc: DateTime.utc(2026, 12, 31),
+              sessionId: 'session-val',
             ),
           );
 
@@ -336,6 +508,7 @@ void main() {
               originalFileHash: 'hash-v1',
               declaredAtUtc: DateTime.utc(2026, 1, 10),
               services: [_makeService()],
+              sessionId: 'session-val',
             ),
           );
 
@@ -356,6 +529,11 @@ void main() {
       '5.3.a: ContractRepository.findByOrganization isola por tenant',
       () async {
         // Org A cria 2 contratos
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-A',
+        );
         await createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-A',
@@ -363,6 +541,7 @@ void main() {
             contractorName: 'Empresa A',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
         await createHandler.handle(
@@ -372,10 +551,16 @@ void main() {
             contractorName: 'Empresa A',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
         // Org B cria 1 contrato
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-B',
+        );
         await createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-B',
@@ -383,6 +568,7 @@ void main() {
             contractorName: 'Empresa B',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
@@ -415,6 +601,11 @@ void main() {
         );
 
         // Org A cria contrato
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-A',
+        );
         final contractA = await createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-A',
@@ -422,10 +613,16 @@ void main() {
             contractorName: 'Empresa A',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
         // Org B cria contrato
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-B',
+        );
         await createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-B',
@@ -433,6 +630,7 @@ void main() {
             contractorName: 'Empresa B',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
@@ -449,6 +647,11 @@ void main() {
     test(
       '5.3.c: findById com org errada retorna null (acesso cross-tenant negado)',
       () async {
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-A',
+        );
         final contractA = await createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-A',
@@ -456,6 +659,7 @@ void main() {
             contractorName: 'Empresa A',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
@@ -476,9 +680,41 @@ void main() {
   // ── Cenário 5.4 ───────────────────────────────────────────────────────────
 
   group('Cenário 5.4 — Contrato encerrado não aceita novos planos', () {
+    setUp(() {
+      final p54MockAuth = _Phase5MockAuth();
+      when(() => p54MockAuth.getUserBySessionId(any<String>())).thenAnswer(
+        (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-4'),
+      );
+      final p54Tvs = TenantValidationService(authRepository: p54MockAuth);
+
+      closeHandler = CloseContractHandler(
+        tenantValidator: p54Tvs,
+        contractRepository: contractRepo,
+        ledger: ledger,
+        rbac: RbacService(),
+        clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+      );
+
+      planHandler = DeclareContractualPlanHandler(
+        tenantValidator: p54Tvs,
+        repository: planRepo,
+        ledger: ledger,
+        ruleRepository: _StubRuleRepository(),
+        contractRepository: contractRepo,
+        zoneRepository: _StubZoneRepository(),
+        vehicleRepository: _StubVehicleRepository(),
+        clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+      );
+    });
+
     test(
       '5.4.a: DeclareContractualPlanHandler lança DomainException para contrato closed',
       () async {
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-5-4',
+        );
         final contract = await createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-4',
@@ -486,6 +722,7 @@ void main() {
             contractorName: 'Empresa F',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
@@ -499,6 +736,7 @@ void main() {
             originalFileHash: 'hash-v1',
             declaredAtUtc: DateTime.utc(2026, 1, 15),
             services: [_makeService()],
+            sessionId: 'session-val',
           ),
         );
 
@@ -510,6 +748,7 @@ void main() {
             closedByUserId: 'user-1',
             reason: 'Período encerrado.',
             callerRole: UserRole.admin,
+            sessionId: 'session-val',
           ),
         );
 
@@ -526,6 +765,7 @@ void main() {
               originalFileHash: 'hash-v2',
               declaredAtUtc: DateTime.utc(2026, 12, 1),
               services: [_makeService(DateTime.utc(2027, 1, 1, 6, 0))],
+              sessionId: 'session-val',
             ),
           ),
           throwsA(isA<DomainException>()),
@@ -544,6 +784,36 @@ void main() {
     test(
       '5.4.b: assertCanReceivePlan impede plano mesmo em contrato draft encerrado diretamente',
       () async {
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-5-4b',
+        );
+
+        final p54bMockAuth = _Phase5MockAuth();
+        when(() => p54bMockAuth.getUserBySessionId(any<String>())).thenAnswer(
+          (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-4b'),
+        );
+        final p54bTvs = TenantValidationService(authRepository: p54bMockAuth);
+
+        closeHandler = CloseContractHandler(
+          tenantValidator: p54bTvs,
+          contractRepository: contractRepo,
+          ledger: ledger,
+          rbac: RbacService(),
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+        );
+
+        planHandler = DeclareContractualPlanHandler(
+          tenantValidator: p54bTvs,
+          repository: planRepo,
+          ledger: ledger,
+          ruleRepository: _StubRuleRepository(),
+          contractRepository: contractRepo,
+          zoneRepository: _StubZoneRepository(),
+          vehicleRepository: _StubVehicleRepository(),
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+        );
         final contract = await createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-4b',
@@ -551,6 +821,7 @@ void main() {
             contractorName: 'Empresa G',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
@@ -562,6 +833,7 @@ void main() {
             closedByUserId: 'admin-1',
             reason: 'Cancelado antes de operar.',
             callerRole: UserRole.admin,
+            sessionId: 'session-val',
           ),
         );
 
@@ -574,6 +846,7 @@ void main() {
               planVersion: 1,
               originalFileHash: 'hash-v1',
               declaredAtUtc: DateTime.utc(2026, 1, 15),
+              sessionId: 'session-val',
               services: [_makeService()],
             ),
           ),
@@ -587,6 +860,29 @@ void main() {
     test(
       '5.4.c: contrato active (não closed) aceita plano normalmente',
       () async {
+        createHandler = _makeCreateHandler(
+          contractRepo: contractRepo,
+          ledger: ledger,
+          tenantId: 'org-5-4c',
+        );
+
+        final p54cMockAuth = _Phase5MockAuth();
+        when(() => p54cMockAuth.getUserBySessionId(any<String>())).thenAnswer(
+          (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-4c'),
+        );
+        final p54cTvs = TenantValidationService(authRepository: p54cMockAuth);
+
+        planHandler = DeclareContractualPlanHandler(
+          tenantValidator: p54cTvs,
+          repository: planRepo,
+          ledger: ledger,
+          ruleRepository: _StubRuleRepository(),
+          contractRepository: contractRepo,
+          zoneRepository: _StubZoneRepository(),
+          vehicleRepository: _StubVehicleRepository(),
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+        );
+
         final contract = await createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-4c',
@@ -594,6 +890,7 @@ void main() {
             contractorName: 'Empresa H',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-val',
           ),
         );
 
@@ -607,6 +904,7 @@ void main() {
             originalFileHash: 'hash-v1',
             declaredAtUtc: DateTime.utc(2026, 1, 10),
             services: [_makeService()],
+            sessionId: 'session-val',
           ),
         );
 
@@ -619,7 +917,8 @@ void main() {
             planVersion: 2,
             originalFileHash: 'hash-v2',
             declaredAtUtc: DateTime.utc(2026, 2, 1),
-            services: [_makeService(DateTime.utc(2026, 3, 1, 8, 0))],
+            services: [_makeService(DateTime.utc(2026, 3, 1, 6, 0))],
+            sessionId: 'session-val',
           ),
         );
 
@@ -677,12 +976,20 @@ void main() {
             DateTime.utc(2026, 4, 8, 12, 0, 0),
           );
 
+          final b2bMockAuth = _Phase5MockAuth();
+          when(() => b2bMockAuth.getUserBySessionId(any<String>())).thenAnswer(
+            (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-5-1-b2b'),
+          );
+          final b2bTvs = TenantValidationService(authRepository: b2bMockAuth);
+
           final b2bCreateHandler = CreateContractHandler(
+            tenantValidator: b2bTvs,
             contractRepository: b2bContractRepo,
             ledger: b2bLedger,
             clock: clock,
           );
           final b2bPlanHandler = DeclareContractualPlanHandler(
+            tenantValidator: b2bTvs,
             repository: b2bPlanRepo,
             ledger: b2bLedger,
             ruleRepository: _StubRuleRepository(),
@@ -700,6 +1007,7 @@ void main() {
               contractorName: 'Trans B2B',
               validFromUtc: DateTime.utc(2026, 1, 1),
               validUntilUtc: DateTime.utc(2026, 12, 31),
+              sessionId: 'session-val',
             ),
           );
 
@@ -733,6 +1041,7 @@ void main() {
               declaredAtUtc: DateTime.utc(2026, 1, 15),
               shiftPatterns: [pattern],
               contractualValueCents: 15000,
+              sessionId: 'session-val',
             ),
           );
 

@@ -421,6 +421,7 @@ class _DeclareContractPlanFormState
   Future<void> _submit() async {
     final organizationId = ref.read(currentOrganizationIdProvider);
     final operatorId = ref.read(currentOperatorIdProvider);
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
     if (organizationId == null || operatorId == null) {
       setState(() => _errorMessage = 'Sessão inválida. Faça login novamente.');
       return;
@@ -462,6 +463,7 @@ class _DeclareContractPlanFormState
         declaredAtUtc: DateTime.now().toUtc(),
         shiftPatterns: patterns,
         contractualValueCents: baseValueCents,
+        sessionId: sessionId,
       );
 
       cmd = DeclareContractualPlanCommand(
@@ -473,6 +475,7 @@ class _DeclareContractPlanFormState
         declaredAtUtc: cmd.declaredAtUtc,
         shiftPatterns: cmd.shiftPatterns,
         contractualValueCents: cmd.contractualValueCents,
+        sessionId: sessionId,
       );
 
       final handler = ref.read(declareContractualPlanHandlerProvider);

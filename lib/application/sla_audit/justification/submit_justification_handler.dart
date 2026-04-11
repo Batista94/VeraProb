@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -30,6 +31,7 @@ import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 /// Idempotency (INV-11): deterministic [PendingFact.factId] derived from
 /// contractId + setId + actorUserId prevents duplicate enqueue on retry.
 class SubmitJustificationHandler {
+  final TenantValidationService _tenantValidator;
   final JustificationRepository _justificationRepo;
   final SlaAuditLedgerRepository _ledger;
   final LocalFactQueueRepository _factQueue;
@@ -37,12 +39,14 @@ class SubmitJustificationHandler {
   final IDateTimeProvider _clock;
 
   SubmitJustificationHandler({
+    required TenantValidationService tenantValidator,
     required JustificationRepository justificationRepo,
     required SlaAuditLedgerRepository ledger,
     required LocalFactQueueRepository factQueue,
     required RbacService rbac,
     required IDateTimeProvider clock,
-  }) : _justificationRepo = justificationRepo,
+  }) : _tenantValidator = tenantValidator,
+       _justificationRepo = justificationRepo,
        _ledger = ledger,
        _factQueue = factQueue,
        _rbac = rbac,
@@ -51,7 +55,13 @@ class SubmitJustificationHandler {
   Future<ContractorJustification> handle(
     SubmitJustificationCommand command,
   ) async {
-    // 1. RBAC — token path (null role) bypasses permission check (PO-1)
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC — token path (null role) bypasses permission check (PO-1)
     final isTokenPath =
         command.callerRole == null && command.submittedByTokenId != null;
     final role = command.callerRole;

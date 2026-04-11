@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/admin/update_org_settings_command.dart';
 import 'package:veraprob/application/admin/update_org_settings_handler.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/admin/organization_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
@@ -9,8 +10,12 @@ import 'package:veraprob/domain/enums/user_role.dart';
 class MockOrganizationRepository extends Mock
     implements OrganizationRepository {}
 
+class MockTenantValidationService extends Mock
+    implements TenantValidationService {}
+
 void main() {
   late MockOrganizationRepository repository;
+  late MockTenantValidationService tenantValidator;
   late UpdateOrgSettingsHandler handler;
 
   setUpAll(() {
@@ -37,7 +42,19 @@ void main() {
 
   setUp(() {
     repository = MockOrganizationRepository();
-    handler = UpdateOrgSettingsHandler(repository: repository);
+    tenantValidator = MockTenantValidationService();
+    handler = UpdateOrgSettingsHandler(
+      tenantValidator: tenantValidator,
+      repository: repository,
+    );
+
+    // Default: tenant validation passes
+    when(
+      () => tenantValidator.assertTenantMatches(
+        payloadOrgId: any(named: 'payloadOrgId'),
+        sessionId: any(named: 'sessionId'),
+      ),
+    ).thenAnswer((_) async => {});
 
     // Default mock behavior for successful org lookup
     when(() => repository.findById(any())).thenAnswer((_) async => org);
@@ -50,11 +67,12 @@ void main() {
       name: 'New Name',
       timezone: 'America/Sao_Paulo',
       currencyCode: 'USD',
+      sessionId: 'session-1',
     );
   }
 
   group('UpdateOrgSettingsHandler', () {
-    test('Rejeita operator/auditor/admin para campos críticos', () async {
+    test('Rejeita operator/auditor/admin para campos criticos', () async {
       expect(
         () => handler.handle(makeCommand(role: UserRole.operator)),
         throwsException,
@@ -85,7 +103,7 @@ void main() {
       expect(captured.id, 'org-1');
     });
 
-    test('Erro quando organização não existe', () async {
+    test('Erro quando organizacao nao existe', () async {
       when(() => repository.findById('org-1')).thenAnswer((_) async => null);
 
       expect(

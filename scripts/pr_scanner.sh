@@ -458,8 +458,89 @@ if [[ -n "$INFRA_STRICT" ]]; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FINAL SUMMARY
+# PILLAR E — FORENSIC IDENTITY & ERROR PARITY (INV-1 / INV-26)
 # ─────────────────────────────────────────────────────────────────────────────
+
+header "PILLAR E — Forensic Identity & Error Parity"
+
+echo ""
+echo "  E1 — Identity Sovereignty: validating TenantValidationService in Handlers (INV-1)..."
+
+# Target: Files in lib/application/ ending in _handler.dart
+HANDLER_FILES=$(find lib/application/ -name "*_handler.dart" 2>/dev/null || true)
+
+if [[ -z "$HANDLER_FILES" ]]; then
+  pass "No application handlers found to validate"
+else
+  INV1_BLOCK_FOUND=0
+  while IFS= read -r handler_file; do
+    [[ -z "$handler_file" ]] && continue
+
+    # Pre-processing: Strip multiline comments, single-line comments (starting with //), and imports
+    CLEAN_TEXT=$(perl -0777 -pe 's/\/\*.*?\*\///gs' "$handler_file" | sed '/^\s*\/\//d; /^\s*import/d')
+
+    # Handlers exempt from tenant validation (public token ops, super-admin, MFA)
+    BASENAME=$(basename "$handler_file")
+    if [[ "$BASENAME" == "accept_invitation_handler.dart" ]] || \
+       [[ "$BASENAME" == "accept_by_contractor_handler.dart" ]] || \
+       [[ "$BASENAME" == "mfa_challenge_handler.dart" ]] || \
+       [[ "$BASENAME" == "mfa_enrollment_handler.dart" ]] || \
+       [[ "$BASENAME" == "create_organization_handler.dart" ]]; then
+      continue
+    fi
+
+    # Check INV-1: _tenantValidator.assertTenantMatches( must be present in the clean text
+    if ! echo "$CLEAN_TEXT" | grep -q "assertTenantMatches("; then
+      # Allow bypass if explicitly ignored in the file
+      if ! grep -q "// pr_scanner: ignore" "$handler_file"; then
+        block "[INV-1-BLOCK] $handler_file missing _tenantValidator.assertTenantMatches() call."
+        INV1_BLOCK_FOUND=1
+      fi
+    fi
+  done <<< "$HANDLER_FILES"
+
+  if [[ $INV1_BLOCK_FOUND -eq 0 ]]; then
+    pass "All application handlers implement mandatory identity sovereignty checks (INV-1)"
+  fi
+fi
+
+echo ""
+echo "  E2 — Error Parity: scanning lib/ for forbidden error patterns (INV-26)..."
+
+# Search for forbidden patterns in all dart files in lib/
+# We use the same stripping logic per file to ensure we don't block commented-out code
+FORBIDDEN_HITS=""
+DART_FILES=$(find lib/ -name "*.dart" 2>/dev/null || true)
+
+if [[ -n "$DART_FILES" ]]; then
+  while IFS= read -r dart_file; do
+    [[ -z "$dart_file" ]] && continue
+    
+    # Pre-processing: Strip multiline comments, single-line comments, and imports
+    CLEAN_LINES=$(perl -0777 -pe 's/\/\*.*?\*\///gs' "$dart_file" | sed '/^\s*\/\//d; /^\s*import/d')
+    
+    # Check for INV-26 forbidden patterns
+    ERR_HITS=$(echo "$CLEAN_LINES" | grep -nE "throw Exception|return 403|return 401" || true)
+    
+    if [[ -n "$ERR_HITS" ]]; then
+       if ! grep -q "// pr_scanner: ignore" "$dart_file"; then
+         while IFS= read -r hit; do
+           line_num=$(echo "$hit" | cut -d: -f1)
+           content=$(echo "$hit" | cut -d: -f2-)
+           FORBIDDEN_HITS="${FORBIDDEN_HITS}${dart_file}:${line_num}:${content}\n"
+         done <<< "$ERR_HITS"
+       fi
+    fi
+  done <<< "$DART_FILES"
+fi
+
+if [[ -n "$FORBIDDEN_HITS" ]]; then
+  block "[INV-26-BLOCK] Forbidden error patterns (throw Exception/return 401/403) detected — use DomainException (INV-26)"
+  echo -e "$FORBIDDEN_HITS" | print_hits 5
+else
+  pass "No forbidden error patterns detected in lib/ (INV-26 compliance)"
+fi
+
 
 echo ""
 echo -e "${BOLD}════════════════════════════════════════════════════════════${NC}"

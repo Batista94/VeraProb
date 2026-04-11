@@ -1,15 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/save_contractor_command.dart';
 import 'package:veraprob/application/sla_audit/save_contractor_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractor.dart';
 import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import '../../mocks/fake_date_time_provider.dart';
 
+class MockAuthRepository extends Mock implements IAuthRepository {}
+
 class MockContractorRepository extends Mock implements ContractorRepository {}
 
 void main() {
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
   late MockContractorRepository repository;
   late SaveContractorHandler handler;
 
@@ -27,10 +34,20 @@ void main() {
   });
 
   setUp(() {
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     repository = MockContractorRepository();
     handler = SaveContractorHandler(
+      tenantValidator: tenantValidator,
       repository: repository,
       clock: FakeDateTimeProvider(DateTime.utc(2026, 1, 1)),
+    );
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: 'org-1',
+      ),
     );
   });
 
@@ -45,6 +62,7 @@ void main() {
       name: 'Contractor X',
       primaryEmail: 'x@x.com',
       contactName: 'Mr X',
+      sessionId: 'session-1',
     );
   }
 

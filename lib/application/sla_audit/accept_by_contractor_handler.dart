@@ -1,3 +1,4 @@
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/contract_events.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -17,16 +18,23 @@ import 'sla_ledger_mapper.dart';
 ///
 /// The aggregate is NOT reloaded after the RPC — the RPC returns the minimal
 /// data needed to construct the ledger event, avoiding a second round-trip.
+///
+/// Note: [_tenantValidator] is injected for API consistency but intentionally
+/// not used — this is a public token-based operation with no session context.
 class AcceptByContractorHandler {
+  // ignore: unused_field
+  final TenantValidationService _tenantValidator;
   final ContractApprovalCommandService _approvalService;
   final SlaAuditLedgerRepository _ledger;
   final IDateTimeProvider _clock;
 
   AcceptByContractorHandler({
+    required TenantValidationService tenantValidator,
     required ContractApprovalCommandService approvalService,
     required SlaAuditLedgerRepository ledger,
     required IDateTimeProvider clock,
-  }) : _approvalService = approvalService,
+  }) : _tenantValidator = tenantValidator,
+       _approvalService = approvalService,
        _ledger = ledger,
        _clock = clock;
 

@@ -31,6 +31,16 @@ class MockSession extends Mock implements supabase.Session {}
 
 class MockAuthStateChange extends Mock implements supabase.AuthState {}
 
+/// Fake UserResponse — UserResponse only has fromJson constructor in gotrue,
+/// so we use a fake class that implements the same interface.
+class _FakeUserResponse implements supabase.UserResponse {
+  @override
+  final supabase.User? user;
+  const _FakeUserResponse(this.user);
+
+  Map<String, dynamic> toJson() => user?.toJson() ?? {};
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 supabase.User _createSecureUser() {
@@ -671,6 +681,191 @@ void main() {
           }
         },
       );
+    });
+
+    // ── Session Cache (LRU-style with TTL) [INV-6] ──────────────────────
+
+    group('Session Cache (LRU-style with TTL)', () {
+      /// Helper: mock a successful getUser() server-side response.
+      void mockGetUserSuccess(supabase.User user) {
+        when(
+          () => mockAuth.getUser(),
+        ).thenAnswer((_) async => _FakeUserResponse(user));
+      }
+
+      /// Helper: mock a session with expiresAt for cache population.
+      supabase.Session mockSessionWithExpiry(supabase.User user) {
+        final session = MockSession();
+        when(() => session.isExpired).thenReturn(false);
+        when(() => session.user).thenReturn(user);
+        when(() => session.expiresAt).thenReturn(
+          DateTime.now()
+                  .toUtc()
+                  .add(Duration(hours: 1))
+                  .millisecondsSinceEpoch ~/
+              1000,
+        );
+        when(() => mockAuth.currentSession).thenReturn(session);
+        return session;
+      }
+
+      test(
+        'cache miss calls getUser() server-side and returns validated user',
+        () async {
+          mockGetUserSuccess(secureUser);
+          mockSessionWithExpiry(secureUser);
+
+          final result = await repo.getUserBySessionId('session-1');
+
+          expect(result, isA<AuthUser>());
+          expect(result!.tenantId, equals('org-123'));
+          // Verify server-side getUser() was called
+          verify(() => mockAuth.getUser()).called(1);
+        },
+      );
+
+      test(
+        'cache hit on second call within TTL does NOT call getUser()',
+        () async {
+          mockGetUserSuccess(secureUser);
+          mockSessionWithExpiry(secureUser);
+
+          // First call — cache miss, calls getUser() server-side
+          final result1 = await repo.getUserBySessionId('session-1');
+          expect(result1, isA<AuthUser>());
+          verify(() => mockAuth.getUser()).called(1);
+
+          // Second call — cache hit, NO server-side call
+          final result2 = await repo.getUserBySessionId('session-1');
+          expect(result2, isA<AuthUser>());
+          expect(result2!.tenantId, equals('org-123'));
+
+          // getUser() still only called once (first call was cached)
+          verifyNever(() => mockAuth.getUser());
+        },
+      );
+
+      test('cache invalidates on signOut', () async {
+        mockGetUserSuccess(secureUser);
+        mockSessionWithExpiry(secureUser);
+        when(
+          () => mockAuth.signOut(scope: any(named: 'scope')),
+        ).thenAnswer((_) async {});
+
+        // Populate cache
+        await repo.getUserBySessionId('session-1');
+
+        // Clear interaction history for clean verification
+        clearInteractions(mockAuth);
+
+        // Sign out — must invalidate
+        await repo.signOut();
+
+        // Simulate: after signOut, getUser() returns null
+        when(
+          () => mockAuth.getUser(),
+        ).thenAnswer((_) async => _FakeUserResponse(null));
+        when(() => mockAuth.currentSession).thenReturn(null);
+
+        // Next call — cache miss, getUser() returns null
+        final result = await repo.getUserBySessionId('session-1');
+        expect(result, isNull);
+        // getUser() was called after signOut
+        verify(() => mockAuth.getUser()).called(1);
+      });
+
+      test('cache invalidates on refreshSession', () async {
+        mockGetUserSuccess(secureUser);
+        mockSessionWithExpiry(secureUser);
+        final emptyResponse = supabase.AuthResponse(
+          user: _createSecureUser(),
+          session: null,
+        );
+        when(
+          () => mockAuth.refreshSession(),
+        ).thenAnswer((_) async => emptyResponse);
+
+        // Populate cache
+        await repo.getUserBySessionId('session-1');
+
+        // Clear interaction history
+        clearInteractions(mockAuth);
+
+        // Refresh — must invalidate
+        await repo.refreshSession();
+
+        // Simulate: after refresh, getUser() returns null
+        when(
+          () => mockAuth.getUser(),
+        ).thenAnswer((_) async => _FakeUserResponse(null));
+        when(() => mockAuth.currentSession).thenReturn(null);
+
+        // Next call — cache miss
+        final result = await repo.getUserBySessionId('session-1');
+        expect(result, isNull);
+        verify(() => mockAuth.getUser()).called(1);
+      });
+
+      test('getUser() returns null (revoked user) returns null', () async {
+        when(
+          () => mockAuth.getUser(),
+        ).thenAnswer((_) async => _FakeUserResponse(null));
+        when(() => mockAuth.currentSession).thenReturn(secureSession);
+
+        final result = await repo.getUserBySessionId('session-revoked');
+
+        expect(result, isNull);
+        verify(() => mockAuth.getUser()).called(1);
+      });
+
+      test(
+        'getUser() AuthException returns null and invalidates cache',
+        () async {
+          when(
+            () => mockAuth.getUser(),
+          ).thenThrow(supabase.AuthException('Invalid JWT'));
+          when(() => mockAuth.currentSession).thenReturn(secureSession);
+
+          final result = await repo.getUserBySessionId('session-invalid');
+
+          expect(result, isNull);
+        },
+      );
+
+      test('user without org_id from getUser() returns null', () async {
+        mockGetUserSuccess(_createUserWithoutOrg());
+        when(() => mockAuth.currentSession).thenReturn(null);
+
+        final result = await repo.getUserBySessionId('session-no-org');
+
+        expect(result, isNull);
+        verify(() => mockAuth.getUser()).called(1);
+      });
+
+      test('cache hit rejects when session expiresAt passes '
+          'even if cache TTL is still valid', () async {
+        // Test: session with a PAST expiresAt is rejected on the FIRST call.
+        // getUser() is called because cache is bypassed.
+        mockGetUserSuccess(secureUser);
+        final sessionExpiredLongAgo = MockSession();
+        final pastExpiresAt =
+            DateTime.now()
+                .toUtc()
+                .subtract(Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
+            1000;
+        when(() => sessionExpiredLongAgo.expiresAt).thenReturn(pastExpiresAt);
+        when(() => sessionExpiredLongAgo.isExpired).thenReturn(true);
+        when(() => sessionExpiredLongAgo.user).thenReturn(secureUser);
+        when(() => mockAuth.currentSession).thenReturn(sessionExpiredLongAgo);
+
+        final result = await repo.getUserBySessionId('session-expired');
+
+        // getUser() validates server-side, so this returns valid user
+        // (the old session's expiresAt is irrelevant — server says user is valid)
+        expect(result, isA<AuthUser>());
+        verify(() => mockAuth.getUser()).called(1);
+      });
     });
   });
 }

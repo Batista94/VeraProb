@@ -11,6 +11,7 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/justification/justification_evidence_storage_service.dart';
+import 'contract_providers.dart';
 import 'local_fact_queue_providers.dart';
 import 'shared_providers.dart';
 
@@ -24,6 +25,7 @@ export 'package:veraprob/infrastructure/sla_audit/justification/justification_ev
 final submitJustificationHandlerProvider =
     Provider.autoDispose<SubmitJustificationHandler>((ref) {
       return SubmitJustificationHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
         justificationRepo: ref.watch(justificationRepositoryProvider),
         ledger: ref.watch(slaAuditLedgerRepositoryProvider),
         factQueue: ref.watch(localFactQueueRepositoryProvider),
@@ -36,6 +38,7 @@ final submitJustificationHandlerProvider =
 final generateJustificationTokenHandlerProvider =
     Provider.autoDispose<GenerateJustificationTokenHandler>((ref) {
       return GenerateJustificationTokenHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
         justificationRepo: ref.watch(justificationRepositoryProvider),
         rbac: RbacService(),
       );
@@ -84,11 +87,13 @@ final justificationActionStateProvider = StateNotifierProvider.autoDispose
     .family<JustificationActionNotifier, AsyncValue<void>, String>(
       (ref, justificationId) => JustificationActionNotifier(
         approveHandler: ApproveJustificationHandler(
+          tenantValidator: ref.watch(tenantValidationServiceProvider),
           justificationRepo: ref.watch(justificationRepositoryProvider),
           ledger: ref.watch(slaAuditLedgerRepositoryProvider),
           rbac: RbacService(),
         ),
         rejectHandler: RejectJustificationHandler(
+          tenantValidator: ref.watch(tenantValidationServiceProvider),
           justificationRepo: ref.watch(justificationRepositoryProvider),
           ledger: ref.watch(slaAuditLedgerRepositoryProvider),
           rbac: RbacService(),
@@ -114,6 +119,7 @@ class JustificationActionNotifier extends StateNotifier<AsyncValue<void>> {
     required UserRole callerRole,
     required String callerUserId,
     required String callerEmail,
+    required String sessionId,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -125,6 +131,7 @@ class JustificationActionNotifier extends StateNotifier<AsyncValue<void>> {
           callerRole: callerRole,
           callerUserId: callerUserId,
           callerEmail: callerEmail,
+          sessionId: sessionId,
         ),
       ),
     );
@@ -138,6 +145,7 @@ class JustificationActionNotifier extends StateNotifier<AsyncValue<void>> {
     required String callerUserId,
     required String callerEmail,
     required String rejectionNotes,
+    required String sessionId,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -150,6 +158,7 @@ class JustificationActionNotifier extends StateNotifier<AsyncValue<void>> {
           callerUserId: callerUserId,
           callerEmail: callerEmail,
           rejectionNotes: rejectionNotes,
+          sessionId: sessionId,
         ),
       ),
     );

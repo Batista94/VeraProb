@@ -5,6 +5,7 @@ import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_repository.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Postgres implementation of [VehicleInfractionRecurrenceRepository].
 ///
@@ -14,6 +15,7 @@ import 'package:veraprob/domain/shared/integrity_exception.dart';
 /// INV-1: All queries filter by [organizationId].
 /// INV-9: Month boundaries computed in UTC.
 class PostgresVehicleInfractionRecurrenceRepository
+    with PostgresErrorInterceptor
     implements VehicleInfractionRecurrenceRepository {
   final SupabaseClient _client;
 
@@ -27,23 +29,34 @@ class PostgresVehicleInfractionRecurrenceRepository
     required DateTime referenceUtc,
     required String excludeQueueEntryId,
   }) async {
-    final monthStart = DateTime.utc(referenceUtc.year, referenceUtc.month, 1);
-    final monthEnd = DateTime.utc(referenceUtc.year, referenceUtc.month + 1, 1);
+    try {
+      final monthStart = DateTime.utc(referenceUtc.year, referenceUtc.month, 1);
+      final monthEnd = DateTime.utc(
+        referenceUtc.year,
+        referenceUtc.month + 1,
+        1,
+      );
 
-    final response = await _client
-        .from('sanction_review_queue')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('vehicle_plate', vehiclePlate)
-        .gte('created_at', monthStart.toIso8601String())
-        .lt('created_at', monthEnd.toIso8601String())
-        .neq('id', excludeQueueEntryId)
-        .order('created_at', ascending: true)
-        .limit(100);
+      final response = await _client
+          .from('sanction_review_queue')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('vehicle_plate', vehiclePlate)
+          .gte('created_at', monthStart.toIso8601String())
+          .lt('created_at', monthEnd.toIso8601String())
+          .neq('id', excludeQueueEntryId)
+          .order('created_at', ascending: true)
+          .limit(100);
 
-    return (response as List)
-        .map((row) => _fromRow(row as Map<String, dynamic>))
-        .toList();
+      return (response as List)
+          .map((row) => _fromRow(row as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'vehicle_infraction',
+      );
+    }
   }
 
   static SanctionReviewQueueEntry _fromRow(Map<String, dynamic> row) {

@@ -17,6 +17,9 @@ class SubmitJustificationCommand {
   final String? submittedByTokenId;
   final List<String> evidenceHashes;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const SubmitJustificationCommand({
     required this.organizationId,
     required this.contractId,
@@ -29,5 +32,6 @@ class SubmitJustificationCommand {
     required this.callerEmail,
     required this.submittedByTokenId,
     required this.evidenceHashes,
+    required this.sessionId,
   });
 }

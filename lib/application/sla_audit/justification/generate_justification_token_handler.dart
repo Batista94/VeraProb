@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -17,22 +18,31 @@ import 'generate_justification_token_command.dart';
 ///
 /// [expiresInHours] must be within [1, 72] (PO-6).
 class GenerateJustificationTokenHandler {
+  final TenantValidationService _tenantValidator;
   final JustificationRepository _justificationRepo;
   final RbacService _rbac;
   final IDateTimeProvider _dateTimeProvider;
 
   GenerateJustificationTokenHandler({
+    required TenantValidationService tenantValidator,
     required JustificationRepository justificationRepo,
     required RbacService rbac,
     IDateTimeProvider? dateTimeProvider,
-  }) : _justificationRepo = justificationRepo,
+  }) : _tenantValidator = tenantValidator,
+       _justificationRepo = justificationRepo,
        _rbac = rbac,
        _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   Future<JustificationSubmissionToken> handle(
     GenerateJustificationTokenCommand command,
   ) async {
-    // 1. RBAC — only admin/operator may generate links
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC — only admin/operator may generate links
     if (!_rbac.can(command.callerRole, UserPermission.canSubmitJustification)) {
       throw const DomainException('Unauthorized.');
     }

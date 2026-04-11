@@ -12,6 +12,9 @@ class RejectSanctionCommand {
   final UserRole callerRole;
   final String organizationId;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const RejectSanctionCommand({
     required this.queueEntryId,
     required this.rejectedByUserId,
@@ -19,5 +22,6 @@ class RejectSanctionCommand {
     required this.rejectionReason,
     required this.callerRole,
     required this.organizationId,
+    required this.sessionId,
   });
 }

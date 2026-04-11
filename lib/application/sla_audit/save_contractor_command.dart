@@ -9,6 +9,9 @@ class SaveContractorCommand {
   final String primaryEmail;
   final String contactName;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const SaveContractorCommand({
     required this.organizationId,
     required this.callerRole,
@@ -17,5 +20,6 @@ class SaveContractorCommand {
     this.taxId,
     required this.primaryEmail,
     required this.contactName,
+    required this.sessionId,
   });
 }

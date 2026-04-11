@@ -6,10 +6,14 @@ class ChangeUserRoleCommand {
   final String targetUserId;
   final UserRole newRole;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const ChangeUserRoleCommand({
     required this.organizationId,
     required this.callerRole,
     required this.targetUserId,
     required this.newRole,
+    required this.sessionId,
   });
 }

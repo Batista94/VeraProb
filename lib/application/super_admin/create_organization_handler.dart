@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/application/admin/invite_user_command.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/application/shared/app_types.dart';
@@ -94,9 +95,11 @@ class CreateOrganizationHandler {
       orgId: orgId,
       superAdminUserId: cmd.superAdminUserId,
     );
+    // Super-admin context: use a bypass tenant validator that always passes
     final inviteHandler = InviteUserHandler(
-      invitationService,
-      _dateTimeProvider,
+      tenantValidator: const _BypassTenantValidator(),
+      commandService: invitationService,
+      dateTimeProvider: _dateTimeProvider,
     );
 
     final token = await inviteHandler.handle(
@@ -106,6 +109,7 @@ class CreateOrganizationHandler {
         invitedByUserId: cmd.superAdminUserId,
         email: email,
         roleToAssign: UserRole.admin,
+        sessionId: '', // super-admin context — no regular session
       ),
     );
 
@@ -129,5 +133,31 @@ class CreateOrganizationHandler {
     } catch (_) {
       // Silent — the invite link in the dialog is the primary delivery path.
     }
+  }
+}
+
+/// Bypass tenant validator for super-admin operations.
+///
+/// Super-admin creates organizations outside the normal tenant flow —
+/// there is no JWT session with an organization_id to validate against.
+class _BypassTenantValidator implements TenantValidationService {
+  const _BypassTenantValidator();
+
+  @override
+  Future<void> assertTenantMatches({
+    required String payloadOrgId,
+    required String sessionId,
+  }) async {
+    // No-op: super-admin context has no tenant session to validate.
+  }
+
+  @override
+  void verifySourceOwnership({
+    required String resourceOrgId,
+    required String requesterOrgId,
+    String? resourceType,
+    String? resourceId,
+  }) {
+    // No-op: super-admin owns all resources.
   }
 }

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/shadow_verdict.dart';
 import 'package:veraprob/domain/sla_audit/shadow_verdict_repository.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Postgres implementation of [ShadowVerdictRepository].
 ///
@@ -14,7 +15,9 @@ import 'package:veraprob/domain/sla_audit/shadow_verdict_repository.dart';
 ///    engine fields. Only [syncManualVerdicts] updates manual/divergence columns (INV-7).
 /// 4. **No delete**: No delete method exists on this class (INV-7).
 /// 5. **Explicit columns**: No `select('*')` — column lists are declared in [_columns].
-class PostgresShadowVerdictRepository implements ShadowVerdictRepository {
+class PostgresShadowVerdictRepository
+    with PostgresErrorInterceptor
+    implements ShadowVerdictRepository {
   final SupabaseClient _client;
 
   PostgresShadowVerdictRepository([SupabaseClient? client])
@@ -34,27 +37,31 @@ class PostgresShadowVerdictRepository implements ShadowVerdictRepository {
 
   @override
   Future<void> save(ShadowVerdict verdict) async {
-    await _client
-        .from('shadow_verdicts')
-        .upsert(
-          {
-            'id': verdict.id,
-            'organization_id': verdict.organizationId,
-            'set_id': verdict.setId,
-            'contract_id': verdict.contractId,
-            'engine_verdict': verdict.engineVerdict,
-            'engine_verdict_at_utc': verdict.engineVerdictAtUtc
-                .toIso8601String(),
-            'engine_version': verdict.engineVersion,
-            'verdict_evidence': verdict.verdictEvidence.toJson(),
-            'traceability_hash': verdict.traceabilityHash,
-            'divergence_type': _divergenceToString(verdict.divergenceType),
-            'created_at': verdict.createdAtUtc.toIso8601String(),
-          },
-          // UPSERT: second call for the same obligation is silently ignored (INV-11).
-          onConflict: 'organization_id,set_id,contract_id',
-          ignoreDuplicates: true,
-        );
+    try {
+      await _client
+          .from('shadow_verdicts')
+          .upsert(
+            {
+              'id': verdict.id,
+              'organization_id': verdict.organizationId,
+              'set_id': verdict.setId,
+              'contract_id': verdict.contractId,
+              'engine_verdict': verdict.engineVerdict,
+              'engine_verdict_at_utc': verdict.engineVerdictAtUtc
+                  .toIso8601String(),
+              'engine_version': verdict.engineVersion,
+              'verdict_evidence': verdict.verdictEvidence.toJson(),
+              'traceability_hash': verdict.traceabilityHash,
+              'divergence_type': _divergenceToString(verdict.divergenceType),
+              'created_at': verdict.createdAtUtc.toIso8601String(),
+            },
+            // UPSERT: second call for the same obligation is silently ignored (INV-11).
+            onConflict: 'organization_id,set_id,contract_id',
+            ignoreDuplicates: true,
+          );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'shadow_verdict');
+    }
   }
 
   // ── Read ───────────────────────────────────────────────────────────────────
@@ -66,18 +73,22 @@ class PostgresShadowVerdictRepository implements ShadowVerdictRepository {
     required DateTime toUtc,
     int limit = 100,
   }) async {
-    final rows = await _client
-        .from('shadow_verdicts')
-        .select(_columns)
-        .eq('organization_id', organizationId)
-        .gte('created_at', fromUtc.toIso8601String())
-        .lte('created_at', toUtc.toIso8601String())
-        .order('created_at', ascending: false)
-        .limit(limit);
+    try {
+      final rows = await _client
+          .from('shadow_verdicts')
+          .select(_columns)
+          .eq('organization_id', organizationId)
+          .gte('created_at', fromUtc.toIso8601String())
+          .lte('created_at', toUtc.toIso8601String())
+          .order('created_at', ascending: false)
+          .limit(limit);
 
-    return (rows as List)
-        .map((r) => _fromRow(r as Map<String, dynamic>))
-        .toList();
+      return (rows as List)
+          .map((r) => _fromRow(r as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'shadow_verdict');
+    }
   }
 
   @override
@@ -86,19 +97,23 @@ class PostgresShadowVerdictRepository implements ShadowVerdictRepository {
     required DateTime fromUtc,
     required DateTime toUtc,
   }) async {
-    final rows = await _client
-        .from('shadow_verdicts')
-        .select(_columns)
-        .eq('organization_id', organizationId)
-        .inFilter('divergence_type', ['false_positive', 'false_negative'])
-        .gte('created_at', fromUtc.toIso8601String())
-        .lte('created_at', toUtc.toIso8601String())
-        .order('created_at', ascending: false)
-        .limit(500);
+    try {
+      final rows = await _client
+          .from('shadow_verdicts')
+          .select(_columns)
+          .eq('organization_id', organizationId)
+          .inFilter('divergence_type', ['false_positive', 'false_negative'])
+          .gte('created_at', fromUtc.toIso8601String())
+          .lte('created_at', toUtc.toIso8601String())
+          .order('created_at', ascending: false)
+          .limit(500);
 
-    return (rows as List)
-        .map((r) => _fromRow(r as Map<String, dynamic>))
-        .toList();
+      return (rows as List)
+          .map((r) => _fromRow(r as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'shadow_verdict');
+    }
   }
 
   // ── Sync ───────────────────────────────────────────────────────────────────
@@ -106,34 +121,46 @@ class PostgresShadowVerdictRepository implements ShadowVerdictRepository {
   @override
   Future<int> syncManualVerdicts({required String organizationId}) async {
     // Step 1: fetch shadow verdicts still awaiting a human decision.
-    final pendingRows = await _client
-        .from('shadow_verdicts')
-        .select(_columns)
-        .eq('organization_id', organizationId)
-        .isFilter('manual_verdict', null)
-        .limit(500);
+    final dynamic pendingRows;
+    try {
+      pendingRows = await _client
+          .from('shadow_verdicts')
+          .select(_columns)
+          .eq('organization_id', organizationId)
+          .isFilter('manual_verdict', null)
+          .limit(500);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'shadow_verdict');
+    }
 
-    final pending = (pendingRows as List)
+    if (pendingRows is! List) return 0;
+    final pending = pendingRows
         .map((r) => _fromRow(r as Map<String, dynamic>))
         .toList();
 
     if (pending.isEmpty) return 0;
 
     // Step 2: fetch reviewed sanction queue entries for the same org.
-    final srqRows = await _client
-        .from('sanction_review_queue')
-        .select(_srqColumns)
-        .eq('organization_id', organizationId)
-        .inFilter('status', ['applied', 'rejected'])
-        .limit(1000);
+    final dynamic srqRows;
+    try {
+      srqRows = await _client
+          .from('sanction_review_queue')
+          .select(_srqColumns)
+          .eq('organization_id', organizationId)
+          .inFilter('status', ['applied', 'rejected'])
+          .limit(1000);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'shadow_verdict');
+    }
 
-    if ((srqRows as List).isEmpty) return 0;
+    if (srqRows is! List || srqRows.isEmpty) return 0;
 
     // Step 3: build a lookup keyed on (set_id, contract_id).
     final srqByKey = <String, Map<String, dynamic>>{};
-    for (final row in srqRows.cast<Map<String, dynamic>>()) {
-      final key = '${row['set_id']}::${row['contract_id']}';
-      srqByKey[key] = row;
+    for (final row in srqRows) {
+      final map = row as Map<String, dynamic>;
+      final key = '${map['set_id']}::${map['contract_id']}';
+      srqByKey[key] = map;
     }
 
     // Step 4: match pending shadow verdicts to reviewed SRQ entries,
@@ -156,17 +183,21 @@ class PostgresShadowVerdictRepository implements ShadowVerdictRepository {
         manualReviewedBy: reviewedBy,
       );
 
-      await _client
-          .from('shadow_verdicts')
-          .update({
-            'manual_verdict': classified.manualVerdict,
-            'manual_verdict_at_utc': classified.manualVerdictAtUtc
-                ?.toIso8601String(),
-            'manual_reviewed_by': classified.manualReviewedBy,
-            'divergence_type': _divergenceToString(classified.divergenceType),
-          })
-          .eq('id', classified.id)
-          .eq('organization_id', classified.organizationId);
+      try {
+        await _client
+            .from('shadow_verdicts')
+            .update({
+              'manual_verdict': classified.manualVerdict,
+              'manual_verdict_at_utc': classified.manualVerdictAtUtc
+                  ?.toIso8601String(),
+              'manual_reviewed_by': classified.manualReviewedBy,
+              'divergence_type': _divergenceToString(classified.divergenceType),
+            })
+            .eq('id', classified.id)
+            .eq('organization_id', classified.organizationId);
+      } on PostgrestException catch (e) {
+        throw mapPostgrestToDomainException(e, resourceType: 'shadow_verdict');
+      }
 
       updated++;
     }

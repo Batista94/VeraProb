@@ -9,6 +9,9 @@ class ApproveJustificationCommand {
   final String callerUserId;
   final String callerEmail;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const ApproveJustificationCommand({
     required this.justificationId,
     required this.organizationId,
@@ -16,6 +19,7 @@ class ApproveJustificationCommand {
     required this.callerRole,
     required this.callerUserId,
     required this.callerEmail,
+    required this.sessionId,
   });
 }
 
@@ -28,6 +32,9 @@ class RejectJustificationCommand {
   final String callerEmail;
   final String rejectionNotes;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const RejectJustificationCommand({
     required this.justificationId,
     required this.organizationId,
@@ -36,5 +43,6 @@ class RejectJustificationCommand {
     required this.callerUserId,
     required this.callerEmail,
     required this.rejectionNotes,
+    required this.sessionId,
   });
 }

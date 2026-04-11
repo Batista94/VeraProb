@@ -1,15 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/create_contract_command.dart';
 import 'package:veraprob/application/sla_audit/create_contract_handler.dart';
 import 'package:veraprob/application/sla_audit/close_contract_command.dart';
 import 'package:veraprob/application/sla_audit/close_contract_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import '../../mocks/fake_date_time_provider.dart';
+
+// ── Mocks ────────────────────────────────────────────────────────────────────
+
+class MockAuthRepo extends Mock implements IAuthRepository {}
 
 void main() {
   late InMemoryContractRepository repository;
@@ -17,20 +26,53 @@ void main() {
   late CreateContractHandler createHandler;
   late CloseContractHandler closeHandler;
 
+  CreateContractHandler makeCreateHandler({String tenantId = 'org-1'}) {
+    final mockAuth = MockAuthRepo();
+    when(() => mockAuth.getUserBySessionId(any<String>())).thenAnswer(
+      (_) async => domain.AuthUser(id: 'user-1', tenantId: tenantId),
+    );
+    final tvs = TenantValidationService(authRepository: mockAuth);
+    return CreateContractHandler(
+      tenantValidator: tvs,
+      contractRepository: repository,
+      ledger: ledger,
+      clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+    );
+  }
+
+  Future<String> createContract({
+    String orgId = 'org-1',
+    String sessionId = 'session-close',
+    String name = 'Contrato A',
+  }) async {
+    createHandler = makeCreateHandler(tenantId: orgId);
+    final created = await createHandler.handle(
+      CreateContractCommand(
+        organizationId: orgId,
+        name: name,
+        contractorName: 'Empresa A',
+        validFromUtc: DateTime.utc(2026, 1, 1),
+        validUntilUtc: DateTime.utc(2026, 12, 31),
+        sessionId: sessionId,
+      ),
+    );
+    return created.id;
+  }
+
   setUp(() {
     repository = InMemoryContractRepository();
     ledger = InMemorySlaAuditLedgerRepository();
-    final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
-    createHandler = CreateContractHandler(
-      contractRepository: repository,
-      ledger: ledger,
-      clock: clock,
-    );
+    final mockAuth = MockAuthRepo();
+    when(
+      () => mockAuth.getUserBySessionId(any<String>()),
+    ).thenAnswer((_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-1'));
+    final tvs = TenantValidationService(authRepository: mockAuth);
     closeHandler = CloseContractHandler(
+      tenantValidator: tvs,
       contractRepository: repository,
       ledger: ledger,
       rbac: RbacService(),
-      clock: clock,
+      clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
     );
   });
 
@@ -38,23 +80,16 @@ void main() {
     test(
       'closes a draft contract — appends CONTRACT_CLOSED to ledger',
       () async {
-        final created = await createHandler.handle(
-          CreateContractCommand(
-            organizationId: 'org-1',
-            name: 'Contrato A',
-            contractorName: 'Empresa A',
-            validFromUtc: DateTime.utc(2026, 1, 1),
-            validUntilUtc: DateTime.utc(2026, 12, 31),
-          ),
-        );
+        final contractId = await createContract();
 
         final closed = await closeHandler.handle(
           CloseContractCommand(
             organizationId: 'org-1',
-            contractId: created.id,
+            contractId: contractId,
             closedByUserId: 'user-1',
             reason: 'Cancelled',
             callerRole: UserRole.operator,
+            sessionId: 'session-1',
           ),
         );
 
@@ -63,14 +98,12 @@ void main() {
         expect(closed.closeReason, 'Cancelled');
         expect(closed.closedAtUtc, isNotNull);
 
-        // Persisted state updated
         final found = await repository.findById(
-          created.id,
+          contractId,
           organizationId: 'org-1',
         );
         expect(found!.status, ContractStatus.closed);
 
-        // Ledger: CONTRACT_CREATED + CONTRACT_CLOSED
         expect(ledger.entries, hasLength(2));
         expect(ledger.entries.first.type, 'CONTRACT_CREATED');
         expect(ledger.entries.last.type, 'CONTRACT_CLOSED');
@@ -86,6 +119,7 @@ void main() {
             closedByUserId: 'user-1',
             reason: 'Done',
             callerRole: UserRole.operator,
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -93,29 +127,22 @@ void main() {
     });
 
     test(
-      'throws DomainException for wrong organization (tenant isolation)',
+      'throws SovereigntyViolationException for wrong organization (tenant isolation)',
       () async {
-        final created = await createHandler.handle(
-          CreateContractCommand(
-            organizationId: 'org-A',
-            name: 'Contract A',
-            contractorName: 'Empresa A',
-            validFromUtc: DateTime.utc(2026, 1, 1),
-            validUntilUtc: DateTime.utc(2026, 12, 31),
-          ),
-        );
+        final contractId = await createContract(orgId: 'org-A');
 
         expect(
           () => closeHandler.handle(
             CloseContractCommand(
               organizationId: 'org-B',
-              contractId: created.id,
+              contractId: contractId,
               closedByUserId: 'user-1',
               reason: 'Done',
               callerRole: UserRole.operator,
+              sessionId: 'session-1',
             ),
           ),
-          throwsA(isA<DomainException>()),
+          throwsA(isA<SovereigntyViolationException>()),
         );
       },
     );
@@ -123,23 +150,16 @@ void main() {
     test(
       'throws DomainException when closing an already-closed contract',
       () async {
-        final created = await createHandler.handle(
-          CreateContractCommand(
-            organizationId: 'org-1',
-            name: 'Contract B',
-            contractorName: 'Empresa B',
-            validFromUtc: DateTime.utc(2026, 1, 1),
-            validUntilUtc: DateTime.utc(2026, 12, 31),
-          ),
-        );
+        final contractId = await createContract(name: 'Contract B');
 
         await closeHandler.handle(
           CloseContractCommand(
             organizationId: 'org-1',
-            contractId: created.id,
+            contractId: contractId,
             closedByUserId: 'user-1',
             reason: 'First close',
             callerRole: UserRole.operator,
+            sessionId: 'session-1',
           ),
         );
 
@@ -147,10 +167,11 @@ void main() {
           () => closeHandler.handle(
             CloseContractCommand(
               organizationId: 'org-1',
-              contractId: created.id,
+              contractId: contractId,
               closedByUserId: 'user-1',
               reason: 'Second close',
               callerRole: UserRole.operator,
+              sessionId: 'session-1',
             ),
           ),
           throwsA(isA<DomainException>()),
@@ -159,24 +180,17 @@ void main() {
     );
 
     test('throws DomainException for empty closedByUserId', () async {
-      final created = await createHandler.handle(
-        CreateContractCommand(
-          organizationId: 'org-1',
-          name: 'Contract C',
-          contractorName: 'Empresa C',
-          validFromUtc: DateTime.utc(2026, 1, 1),
-          validUntilUtc: DateTime.utc(2026, 12, 31),
-        ),
-      );
+      final contractId = await createContract(name: 'Contract C');
 
       expect(
         () => closeHandler.handle(
           CloseContractCommand(
             organizationId: 'org-1',
-            contractId: created.id,
+            contractId: contractId,
             closedByUserId: '',
             reason: 'Done',
             callerRole: UserRole.operator,
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -184,31 +198,22 @@ void main() {
     });
 
     test('throws DomainException for blank reason', () async {
-      final created = await createHandler.handle(
-        CreateContractCommand(
-          organizationId: 'org-1',
-          name: 'Contract D',
-          contractorName: 'Empresa D',
-          validFromUtc: DateTime.utc(2026, 1, 1),
-          validUntilUtc: DateTime.utc(2026, 12, 31),
-        ),
-      );
+      final contractId = await createContract(name: 'Contract D');
 
       expect(
         () => closeHandler.handle(
           CloseContractCommand(
             organizationId: 'org-1',
-            contractId: created.id,
+            contractId: contractId,
             closedByUserId: 'user-1',
             reason: '   ',
             callerRole: UserRole.operator,
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
       );
     });
-
-    // ── RBAC ──────────────────────────────────────────────────────────────
 
     test('RBAC: auditor is rejected before any I/O', () async {
       expect(
@@ -219,32 +224,25 @@ void main() {
             closedByUserId: 'user-auditor',
             reason: 'Attempt',
             callerRole: UserRole.auditor,
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
       );
-      // Ledger must remain empty — RBAC check fires before repository I/O
       expect(ledger.entries, isEmpty);
     });
 
     test('RBAC: operator is authorized to close contracts', () async {
-      final created = await createHandler.handle(
-        CreateContractCommand(
-          organizationId: 'org-1',
-          name: 'Contract E',
-          contractorName: 'Empresa E',
-          validFromUtc: DateTime.utc(2026, 1, 1),
-          validUntilUtc: DateTime.utc(2026, 12, 31),
-        ),
-      );
+      final contractId = await createContract(name: 'Contract E');
 
       final closed = await closeHandler.handle(
         CloseContractCommand(
           organizationId: 'org-1',
-          contractId: created.id,
+          contractId: contractId,
           closedByUserId: 'user-operator',
           reason: 'Closed by operator',
           callerRole: UserRole.operator,
+          sessionId: 'session-1',
         ),
       );
 
@@ -252,23 +250,16 @@ void main() {
     });
 
     test('RBAC: admin is authorized to close contracts', () async {
-      final created = await createHandler.handle(
-        CreateContractCommand(
-          organizationId: 'org-1',
-          name: 'Contract F',
-          contractorName: 'Empresa F',
-          validFromUtc: DateTime.utc(2026, 1, 1),
-          validUntilUtc: DateTime.utc(2026, 12, 31),
-        ),
-      );
+      final contractId = await createContract(name: 'Contract F');
 
       final closed = await closeHandler.handle(
         CloseContractCommand(
           organizationId: 'org-1',
-          contractId: created.id,
+          contractId: contractId,
           closedByUserId: 'user-admin',
           reason: 'Closed by admin',
           callerRole: UserRole.admin,
+          sessionId: 'session-1',
         ),
       );
 

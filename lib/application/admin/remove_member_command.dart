@@ -8,9 +8,13 @@ class RemoveMemberCommand {
   final UserRole callerRole;
   final String targetUserId;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const RemoveMemberCommand({
     required this.organizationId,
     required this.callerRole,
     required this.targetUserId,
+    required this.sessionId,
   });
 }

@@ -481,6 +481,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
 
     final userId = ref.read(currentOperatorIdProvider) ?? '';
     final email = ref.read(currentOperatorEmailProvider);
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
     await ref
         .read(sanctionActionStateProvider(widget.item.id).notifier)
         .approve(
@@ -489,6 +490,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
           actorEmail: email,
           callerRole: UserRole.auditor,
           organizationId: widget.item.organizationId,
+          sessionId: sessionId,
         );
     // Force stream re-query so the card disappears without requiring a second click.
     final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
@@ -500,6 +502,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   Future<void> _onReject(BuildContext context) async {
     final userId = ref.read(currentOperatorIdProvider) ?? '';
     final email = ref.read(currentOperatorEmailProvider);
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
     await ref
         .read(sanctionActionStateProvider(widget.item.id).notifier)
         .reject(
@@ -509,6 +512,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
           rejectionReason: _rejectController.text,
           callerRole: UserRole.auditor,
           organizationId: widget.item.organizationId,
+          sessionId: sessionId,
         );
     final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
     if (actionState is AsyncData) {

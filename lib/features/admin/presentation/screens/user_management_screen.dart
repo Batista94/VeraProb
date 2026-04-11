@@ -247,6 +247,7 @@ class UserManagementScreen extends ConsumerWidget {
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final callerRole = ref.read(currentUserRoleProvider);
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
       if (orgId == null) {
         throw StateError(
@@ -262,6 +263,7 @@ class UserManagementScreen extends ConsumerWidget {
               callerRole: callerRole,
               targetUserId: userId,
               newRole: newRole,
+              sessionId: sessionId,
             ),
           );
       ref.invalidate(orgMembersProvider);
@@ -317,6 +319,7 @@ class UserManagementScreen extends ConsumerWidget {
       try {
         final orgId = ref.read(currentOrganizationIdProvider);
         final callerRole = ref.read(currentUserRoleProvider);
+        final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
         if (orgId == null) {
           throw StateError(
@@ -331,6 +334,7 @@ class UserManagementScreen extends ConsumerWidget {
                 organizationId: orgId,
                 callerRole: callerRole,
                 targetUserId: userId,
+                sessionId: sessionId,
               ),
             );
         ref.invalidate(orgMembersProvider);
@@ -386,6 +390,7 @@ class UserManagementScreen extends ConsumerWidget {
       try {
         final orgId = ref.read(currentOrganizationIdProvider);
         final callerRole = ref.read(currentUserRoleProvider);
+        final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
         if (orgId == null) {
           throw StateError(
@@ -400,6 +405,7 @@ class UserManagementScreen extends ConsumerWidget {
                 organizationId: orgId,
                 callerRole: callerRole,
                 invitationId: invitation.id,
+                sessionId: sessionId,
               ),
             );
         ref.invalidate(orgInvitationsProvider);
@@ -644,6 +650,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
       final orgId = widget.parentRef.read(currentOrganizationIdProvider);
       final callerRole = widget.parentRef.read(currentUserRoleProvider);
       final userId = widget.parentRef.read(currentOperatorIdProvider);
+      final sessionId = widget.parentRef.read(currentSessionIdProvider) ?? '';
 
       final token = await ref
           .read(inviteUserHandlerProvider)
@@ -654,6 +661,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
               invitedByUserId: userId ?? '',
               email: _emailController.text,
               roleToAssign: _selectedRole,
+              sessionId: sessionId,
             ),
           );
 

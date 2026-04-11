@@ -1,5 +1,6 @@
 import 'package:veraprob/domain/auth/auth_failure_exception.dart';
 import 'package:veraprob/domain/auth/auth_user.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 
 /// Port for authentication operations.
 ///
@@ -61,4 +62,14 @@ abstract class IAuthRepository {
   /// Throws [AuthFailureException] if the user lacks `org_id` in
   /// `app_metadata` (tenant isolation violation).
   Future<AuthUser?> getCurrentUser();
+
+  /// Resolves an [AuthUser] from a session identifier.
+  ///
+  /// Used by [TenantValidationService] to perform the Fail-Fast Identity
+  /// Sync check (INV-1): comparing `payload.org_id` against `jwt.org_id`.
+  ///
+  /// Returns `null` if the session does not exist or is expired.
+  /// Throws [SovereigntyViolationException] if the session is invalid
+  /// and a payload org_id was provided (indicates a spoofing attempt).
+  Future<AuthUser?> getUserBySessionId(String sessionId);
 }

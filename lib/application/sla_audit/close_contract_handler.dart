@@ -1,3 +1,4 @@
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
@@ -17,17 +18,20 @@ import 'sla_ledger_mapper.dart';
 /// Contains NO domain logic — all state validation is delegated to [Contract.close()].
 /// Authorization is enforced here (Application Layer) before any I/O is performed.
 class CloseContractHandler {
+  final TenantValidationService _tenantValidator;
   final ContractRepository _contractRepository;
   final SlaAuditLedgerRepository _ledger;
   final RbacService _rbac;
   final IDateTimeProvider _clock;
 
   CloseContractHandler({
+    required TenantValidationService tenantValidator,
     required ContractRepository contractRepository,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
     required IDateTimeProvider clock,
-  }) : _contractRepository = contractRepository,
+  }) : _tenantValidator = tenantValidator,
+       _contractRepository = contractRepository,
        _ledger = ledger,
        _rbac = rbac,
        _clock = clock;
@@ -43,7 +47,13 @@ class CloseContractHandler {
   /// - Contract is already closed
   /// - [closedByUserId] or [reason] are empty
   Future<Contract> handle(CloseContractCommand command) async {
-    // 1. RBAC check — before any I/O (prevents oracle attacks)
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC check — before any I/O (prevents oracle attacks)
     if (!_rbac.can(command.callerRole, UserPermission.canCloseContracts)) {
       throw const DomainException('Unauthorized.');
     }

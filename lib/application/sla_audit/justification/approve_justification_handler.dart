@@ -1,3 +1,4 @@
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -18,23 +19,32 @@ import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 /// Actor identity is carried in both the ledger entry payload and the DB row
 /// for full traceability (INV-22).
 class ApproveJustificationHandler {
+  final TenantValidationService _tenantValidator;
   final JustificationRepository _justificationRepo;
   final SlaAuditLedgerRepository _ledger;
   final RbacService _rbac;
   final IDateTimeProvider _dateTimeProvider;
 
   ApproveJustificationHandler({
+    required TenantValidationService tenantValidator,
     required JustificationRepository justificationRepo,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
     IDateTimeProvider? dateTimeProvider,
-  }) : _justificationRepo = justificationRepo,
+  }) : _tenantValidator = tenantValidator,
+       _justificationRepo = justificationRepo,
        _ledger = ledger,
        _rbac = rbac,
        _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   Future<void> handle(ApproveJustificationCommand command) async {
-    // 1. RBAC — only admin/operator may approve (INV-22)
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC — only admin/operator may approve (INV-22)
     if (!_rbac.can(
       command.callerRole,
       UserPermission.canReviewJustifications,

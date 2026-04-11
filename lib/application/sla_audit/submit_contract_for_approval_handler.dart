@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -24,6 +25,7 @@ import 'submit_contract_for_approval_command.dart';
 ///   6. Append [ContractSubmittedForApprovalEvent] to ledger
 ///   7. Return raw token string (UI builds the sharable link)
 class SubmitContractForApprovalHandler {
+  final TenantValidationService _tenantValidator;
   final ContractRepository _contractRepository;
   final ContractApprovalCommandService _approvalService;
   final SlaAuditLedgerRepository _ledger;
@@ -33,12 +35,14 @@ class SubmitContractForApprovalHandler {
   static const _tokenTtl = Duration(days: 30);
 
   SubmitContractForApprovalHandler({
+    required TenantValidationService tenantValidator,
     required ContractRepository contractRepository,
     required ContractApprovalCommandService approvalService,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
     required IDateTimeProvider clock,
-  }) : _contractRepository = contractRepository,
+  }) : _tenantValidator = tenantValidator,
+       _contractRepository = contractRepository,
        _approvalService = approvalService,
        _ledger = ledger,
        _rbac = rbac,
@@ -52,7 +56,13 @@ class SubmitContractForApprovalHandler {
   /// - Contract not found for the given [organizationId]
   /// - Contract is not in [draft] status
   Future<String> handle(SubmitContractForApprovalCommand command) async {
-    // 1. RBAC — before any I/O
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC — before any I/O
     if (!_rbac.can(
       command.callerRole,
       UserPermission.canApproveContractAcceptance,

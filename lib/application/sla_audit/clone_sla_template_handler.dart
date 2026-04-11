@@ -1,3 +1,4 @@
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_template.dart';
 import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
@@ -8,10 +9,14 @@ import 'sla_template_presets.dart';
 /// Supports cloning from both system presets (in-memory) and org-owned
 /// templates (database). Creates a new org-owned copy.
 class CloneSlaTemplateHandler {
+  final TenantValidationService _tenantValidator;
   final SlaTemplateRepository _repository;
 
-  CloneSlaTemplateHandler({required SlaTemplateRepository repository})
-    : _repository = repository;
+  CloneSlaTemplateHandler({
+    required TenantValidationService tenantValidator,
+    required SlaTemplateRepository repository,
+  }) : _tenantValidator = tenantValidator,
+       _repository = repository;
 
   /// Clones the template identified by [sourceId] into a new org-owned copy.
   ///
@@ -23,8 +28,15 @@ class CloneSlaTemplateHandler {
   Future<SlaTemplate> handle({
     required String sourceId,
     required String organizationId,
+    required String sessionId,
     String? nameOverride,
   }) async {
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: organizationId,
+      sessionId: sessionId,
+    );
+
     final source = await _resolveSource(sourceId, organizationId);
     if (source == null) {
       throw const DomainException('Template de origem não encontrado.');

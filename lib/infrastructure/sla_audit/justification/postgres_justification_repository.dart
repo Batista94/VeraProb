@@ -7,6 +7,7 @@ import 'package:veraprob/domain/sla_audit/justification/justification_evidence.d
 import 'package:veraprob/domain/sla_audit/justification/justification_repository.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_submission_token.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Supabase / Postgres implementation of [JustificationRepository].
 ///
@@ -17,7 +18,9 @@ import 'package:veraprob/domain/sla_audit/justification/justification_submission
 /// 4. **Status-only mutation**: [updateStatus] only writes review fields.
 /// 5. **Token single-use**: [useToken] delegates to the `use_justification_token`
 ///    SECURITY DEFINER RPC (PO-1 — anon-safe).
-class PostgresJustificationRepository implements JustificationRepository {
+class PostgresJustificationRepository
+    with PostgresErrorInterceptor
+    implements JustificationRepository {
   final SupabaseClient _client;
 
   PostgresJustificationRepository([SupabaseClient? client])
@@ -29,18 +32,22 @@ class PostgresJustificationRepository implements JustificationRepository {
   Future<ContractorJustification> create(
     ContractorJustification justification,
   ) async {
-    await _client.from('contractor_justifications').insert({
-      'id': justification.id,
-      'organization_id': justification.organizationId,
-      'contract_id': justification.contractId,
-      'set_id': justification.setId,
-      'submitted_by_token': justification.submittedByToken,
-      'category': justification.category.dbValue,
-      'description': justification.description,
-      'status': justification.status.dbValue,
-      'created_at_utc': justification.createdAtUtc.toIso8601String(),
-    });
-    return justification;
+    try {
+      await _client.from('contractor_justifications').insert({
+        'id': justification.id,
+        'organization_id': justification.organizationId,
+        'contract_id': justification.contractId,
+        'set_id': justification.setId,
+        'submitted_by_token': justification.submittedByToken,
+        'category': justification.category.dbValue,
+        'description': justification.description,
+        'status': justification.status.dbValue,
+        'created_at_utc': justification.createdAtUtc.toIso8601String(),
+      });
+      return justification;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'justification');
+    }
   }
 
   @override
@@ -48,20 +55,24 @@ class PostgresJustificationRepository implements JustificationRepository {
     required String id,
     required String organizationId,
   }) async {
-    final row = await _client
-        .from('contractor_justifications')
-        .select(
-          'id, organization_id, contract_id, set_id, submitted_by_token, '
-          'category, description, status, reviewed_by_user_id, '
-          'reviewed_at_utc, created_at_utc',
-        )
-        .eq('id', id)
-        .eq('organization_id', organizationId)
-        .limit(1)
-        .maybeSingle();
+    try {
+      final row = await _client
+          .from('contractor_justifications')
+          .select(
+            'id, organization_id, contract_id, set_id, submitted_by_token, '
+            'category, description, status, reviewed_by_user_id, '
+            'reviewed_at_utc, created_at_utc',
+          )
+          .eq('id', id)
+          .eq('organization_id', organizationId)
+          .limit(1)
+          .maybeSingle();
 
-    if (row == null) return null;
-    return _justificationFromRow(row);
+      if (row == null) return null;
+      return _justificationFromRow(row);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'justification');
+    }
   }
 
   @override
@@ -71,29 +82,33 @@ class PostgresJustificationRepository implements JustificationRepository {
     JustificationStatus? status,
     int limit = 100,
   }) async {
-    var query = _client
-        .from('contractor_justifications')
-        .select(
-          'id, organization_id, contract_id, set_id, submitted_by_token, '
-          'category, description, status, reviewed_by_user_id, '
-          'reviewed_at_utc, created_at_utc',
-        )
-        .eq('organization_id', organizationId);
+    try {
+      var query = _client
+          .from('contractor_justifications')
+          .select(
+            'id, organization_id, contract_id, set_id, submitted_by_token, '
+            'category, description, status, reviewed_by_user_id, '
+            'reviewed_at_utc, created_at_utc',
+          )
+          .eq('organization_id', organizationId);
 
-    if (contractId != null) {
-      query = query.eq('contract_id', contractId);
+      if (contractId != null) {
+        query = query.eq('contract_id', contractId);
+      }
+      if (status != null) {
+        query = query.eq('status', status.dbValue);
+      }
+
+      final rows = await query
+          .order('created_at_utc', ascending: false)
+          .limit(limit);
+
+      return (rows as List)
+          .map((r) => _justificationFromRow(r as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'justification');
     }
-    if (status != null) {
-      query = query.eq('status', status.dbValue);
-    }
-
-    final rows = await query
-        .order('created_at_utc', ascending: false)
-        .limit(limit);
-
-    return (rows as List)
-        .map((r) => _justificationFromRow(r as Map<String, dynamic>))
-        .toList();
   }
 
   @override
@@ -104,21 +119,25 @@ class PostgresJustificationRepository implements JustificationRepository {
     required String reviewedByUserId,
     required DateTime reviewedAtUtc,
   }) async {
-    await _client
-        .from('contractor_justifications')
-        .update({
-          'status': status.dbValue,
-          'reviewed_by_user_id': reviewedByUserId,
-          'reviewed_at_utc': reviewedAtUtc.toIso8601String(),
-        })
-        .eq('id', id)
-        .eq('organization_id', organizationId);
+    try {
+      await _client
+          .from('contractor_justifications')
+          .update({
+            'status': status.dbValue,
+            'reviewed_by_user_id': reviewedByUserId,
+            'reviewed_at_utc': reviewedAtUtc.toIso8601String(),
+          })
+          .eq('id', id)
+          .eq('organization_id', organizationId);
 
-    final updated = await findById(id: id, organizationId: organizationId);
-    if (updated == null) {
-      throw StateError('Justification $id not found after update.');
+      final updated = await findById(id: id, organizationId: organizationId);
+      if (updated == null) {
+        throw StateError('Justification $id not found after update.');
+      }
+      return updated;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'justification');
     }
-    return updated;
   }
 
   // ── Evidence ──────────────────────────────────────────────────────────────
@@ -127,16 +146,20 @@ class PostgresJustificationRepository implements JustificationRepository {
   Future<JustificationEvidence> addEvidence(
     JustificationEvidence evidence,
   ) async {
-    await _client.from('justification_evidence_uploads').insert({
-      'id': evidence.id,
-      'justification_id': evidence.justificationId,
-      'organization_id': evidence.organizationId,
-      'file_name': evidence.fileName,
-      'content_hash': evidence.contentHash,
-      'storage_path': evidence.storagePath,
-      'uploaded_at_utc': evidence.uploadedAtUtc.toIso8601String(),
-    });
-    return evidence;
+    try {
+      await _client.from('justification_evidence_uploads').insert({
+        'id': evidence.id,
+        'justification_id': evidence.justificationId,
+        'organization_id': evidence.organizationId,
+        'file_name': evidence.fileName,
+        'content_hash': evidence.contentHash,
+        'storage_path': evidence.storagePath,
+        'uploaded_at_utc': evidence.uploadedAtUtc.toIso8601String(),
+      });
+      return evidence;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'justification');
+    }
   }
 
   @override
@@ -144,19 +167,23 @@ class PostgresJustificationRepository implements JustificationRepository {
     required String justificationId,
     required String organizationId,
   }) async {
-    final rows = await _client
-        .from('justification_evidence_uploads')
-        .select(
-          'id, justification_id, organization_id, file_name, '
-          'content_hash, storage_path, uploaded_at_utc',
-        )
-        .eq('justification_id', justificationId)
-        .eq('organization_id', organizationId)
-        .limit(100);
+    try {
+      final rows = await _client
+          .from('justification_evidence_uploads')
+          .select(
+            'id, justification_id, organization_id, file_name, '
+            'content_hash, storage_path, uploaded_at_utc',
+          )
+          .eq('justification_id', justificationId)
+          .eq('organization_id', organizationId)
+          .limit(100);
 
-    return (rows as List)
-        .map((r) => _evidenceFromRow(r as Map<String, dynamic>))
-        .toList();
+      return (rows as List)
+          .map((r) => _evidenceFromRow(r as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'justification');
+    }
   }
 
   // ── Submission tokens ─────────────────────────────────────────────────────
@@ -165,34 +192,42 @@ class PostgresJustificationRepository implements JustificationRepository {
   Future<JustificationSubmissionToken> createToken(
     JustificationSubmissionToken token,
   ) async {
-    await _client.from('justification_submission_tokens').insert({
-      'id': token.id,
-      'organization_id': token.organizationId,
-      'contract_id': token.contractId,
-      'set_id': token.setId,
-      'justification_id': token.justificationId,
-      'token': token.token,
-      'created_by_user_id': token.createdByUserId,
-      'expires_at_utc': token.expiresAtUtc.toIso8601String(),
-      'created_at_utc': token.createdAtUtc.toIso8601String(),
-    });
-    return token;
+    try {
+      await _client.from('justification_submission_tokens').insert({
+        'id': token.id,
+        'organization_id': token.organizationId,
+        'contract_id': token.contractId,
+        'set_id': token.setId,
+        'justification_id': token.justificationId,
+        'token': token.token,
+        'created_by_user_id': token.createdByUserId,
+        'expires_at_utc': token.expiresAtUtc.toIso8601String(),
+        'created_at_utc': token.createdAtUtc.toIso8601String(),
+      });
+      return token;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'justification');
+    }
   }
 
   @override
   Future<JustificationSubmissionToken?> findToken(String tokenValue) async {
-    final row = await _client
-        .from('justification_submission_tokens')
-        .select(
-          'id, organization_id, contract_id, set_id, justification_id, '
-          'token, created_by_user_id, expires_at_utc, used_at_utc, created_at_utc',
-        )
-        .eq('token', tokenValue)
-        .limit(1)
-        .maybeSingle();
+    try {
+      final row = await _client
+          .from('justification_submission_tokens')
+          .select(
+            'id, organization_id, contract_id, set_id, justification_id, '
+            'token, created_by_user_id, expires_at_utc, used_at_utc, created_at_utc',
+          )
+          .eq('token', tokenValue)
+          .limit(1)
+          .maybeSingle();
 
-    if (row == null) return null;
-    return _tokenFromRow(row);
+      if (row == null) return null;
+      return _tokenFromRow(row);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'justification');
+    }
   }
 
   @override
@@ -201,15 +236,19 @@ class PostgresJustificationRepository implements JustificationRepository {
     required String category,
     required String description,
   }) async {
-    final result = await _client.rpc(
-      'use_justification_token',
-      params: {
-        'p_token': tokenValue,
-        'p_category': category,
-        'p_description': description,
-      },
-    );
-    return result as String;
+    try {
+      final result = await _client.rpc(
+        'use_justification_token',
+        params: {
+          'p_token': tokenValue,
+          'p_category': category,
+          'p_description': description,
+        },
+      );
+      return result as String;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'justification');
+    }
   }
 
   // ── Private mappers ───────────────────────────────────────────────────────

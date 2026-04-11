@@ -179,6 +179,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final callerRole = ref.read(currentUserRoleProvider);
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
       final newContractor = await ref
           .read(saveContractorHandlerProvider)
@@ -193,6 +194,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
                   : _taxIdController.text.trim(),
               primaryEmail: _emailController.text.trim(),
               contactName: _contactController.text.trim(),
+              sessionId: sessionId,
             ),
           );
 

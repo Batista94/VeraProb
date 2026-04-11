@@ -1,3 +1,4 @@
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -17,17 +18,20 @@ import 'sla_ledger_mapper.dart';
 /// Contains NO domain logic — authorization and idempotency guards are
 /// application-layer concerns. Ledger append is irreversible (INV-1).
 class ApproveSanctionHandler {
+  final TenantValidationService _tenantValidator;
   final SanctionReviewQueueRepository _queueRepo;
   final SlaAuditLedgerRepository _ledger;
   final RbacService _rbac;
   final IDateTimeProvider _dateTimeProvider;
 
   ApproveSanctionHandler({
+    required TenantValidationService tenantValidator,
     required SanctionReviewQueueRepository queueRepo,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
     IDateTimeProvider? dateTimeProvider,
-  }) : _queueRepo = queueRepo,
+  }) : _tenantValidator = tenantValidator,
+       _queueRepo = queueRepo,
        _ledger = ledger,
        _rbac = rbac,
        _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
@@ -40,7 +44,13 @@ class ApproveSanctionHandler {
   /// - Queue entry not found for the given [organizationId]
   /// - Entry is not in [SanctionReviewStatus.pending] (idempotency guard, INV-24)
   Future<void> handle(ApproveSanctionCommand command) async {
-    // 1. RBAC check — before any I/O (prevents oracle attacks)
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC check — before any I/O (prevents oracle attacks)
     if (!_rbac.can(command.callerRole, UserPermission.canApproveSanctions)) {
       throw const DomainException('Unauthorized.');
     }

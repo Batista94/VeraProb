@@ -1,18 +1,22 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/core/config/supabase_client.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Postgres implementation of [PlanDeclarationRepository].
 ///
 /// Ensures Immutability, Monotonic Versioning, and Atomic Aggregate Persistence.
 /// DELETION is physically and logically prohibited by lack of implementation.
-class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
+class PostgresPlanDeclarationRepository
+    with PostgresErrorInterceptor
+    implements PlanDeclarationRepository {
   final SupabaseClient _client;
 
   PostgresPlanDeclarationRepository([SupabaseClient? client])
@@ -21,17 +25,28 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
   @override
   Future<void> save(PlanDeclaration plan) async {
     // 1. Check for existing version to ensure Monotonicity & Immutability
-    final existing = await _client
-        .from('plan_declarations')
-        .select('id')
-        .eq('organization_id', plan.organizationId)
-        .eq('contract_id', plan.contractId)
-        .eq('plan_version', plan.planVersion)
-        .maybeSingle();
+    try {
+      final existing = await _client
+          .from('plan_declarations')
+          .select('id')
+          .eq('organization_id', plan.organizationId)
+          .eq('contract_id', plan.contractId)
+          .eq('plan_version', plan.planVersion)
+          .maybeSingle();
 
-    if (existing != null) {
-      throw Exception(
-        'Version ${plan.planVersion} for contract ${plan.contractId} already exists and is immutable.',
+      if (existing != null) {
+        throw const IntegrityException(
+          'Version violation: duplicate plan version for contract.',
+          field: 'plan_version',
+        );
+      }
+    } on IntegrityException {
+      rethrow;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'plan_declaration',
+        resourceId: plan.contractId,
       );
     }
 

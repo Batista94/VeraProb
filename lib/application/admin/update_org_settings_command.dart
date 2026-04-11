@@ -8,6 +8,9 @@ class UpdateOrgSettingsCommand {
   final String? currencyCode;
   final String? logoUrl;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const UpdateOrgSettingsCommand({
     required this.organizationId,
     required this.callerRole,
@@ -15,5 +18,6 @@ class UpdateOrgSettingsCommand {
     this.timezone,
     this.currencyCode,
     this.logoUrl,
+    required this.sessionId,
   });
 }

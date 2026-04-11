@@ -21,6 +21,9 @@ class UpdateOrganizationQuotaCommand {
   /// Optional reason recorded in the billing factEvent.
   final String? reason;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const UpdateOrganizationQuotaCommand({
     required this.organizationId,
     required this.newPlanType,
@@ -28,5 +31,6 @@ class UpdateOrganizationQuotaCommand {
     this.newMaxActiveContracts,
     required this.superAdminUserId,
     this.reason,
+    required this.sessionId,
   });
 }

@@ -229,6 +229,7 @@ class _ContractorManagementScreenState
       try {
         final orgId = ref.read(currentOrganizationIdProvider);
         final callerRole = ref.read(currentUserRoleProvider);
+        final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
         await ref
             .read(deleteContractorHandlerProvider)
@@ -237,6 +238,7 @@ class _ContractorManagementScreenState
                 organizationId: orgId!,
                 callerRole: callerRole,
                 contractorId: contractor.id,
+                sessionId: sessionId,
               ),
             );
         ref.invalidate(contractorListProvider);

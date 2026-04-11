@@ -245,10 +245,15 @@ class _SlaTemplateLibraryScreenState
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       if (orgId == null) return;
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
       final cloneDomain = await ref
           .read(cloneSlaTemplateHandlerProvider)
-          .handle(sourceId: source.id, organizationId: orgId);
+          .handle(
+            sourceId: source.id,
+            organizationId: orgId,
+            sessionId: sessionId,
+          );
 
       final clone = SlaTemplateView.fromDomain(cloneDomain);
       ref.invalidate(slaTemplatesProvider);

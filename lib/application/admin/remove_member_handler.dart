@@ -2,24 +2,34 @@ import 'package:veraprob/application/admin/remove_member_command.dart';
 import 'package:veraprob/application/admin/user_management_command_service.dart';
 import 'package:veraprob/application/admin/user_management_query_service.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 
 /// Application handler for removing a member from an organization.
 ///
 /// RBAC: Requires [UserPermission.canManageUsers].
 /// Invariant: Cannot remove the last administrator (belt-and-suspenders with SQL).
 class RemoveMemberHandler {
+  final TenantValidationService _tenantValidator;
   final UserManagementCommandService _commandService;
   final UserManagementQueryService _queryService;
   final RbacService _rbac = RbacService();
 
   RemoveMemberHandler({
+    required TenantValidationService tenantValidator,
     required UserManagementCommandService commandService,
     required UserManagementQueryService queryService,
-  }) : _commandService = commandService,
+  }) : _tenantValidator = tenantValidator,
+       _commandService = commandService,
        _queryService = queryService;
 
   Future<void> handle(RemoveMemberCommand command) async {
-    // 1. RBAC check
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC check
     if (!_rbac.can(command.callerRole, UserPermission.canManageUsers)) {
       throw DomainException(
         'Unauthorized: Caller identifies as ${command.callerRole} but needs canManageUsers permission',

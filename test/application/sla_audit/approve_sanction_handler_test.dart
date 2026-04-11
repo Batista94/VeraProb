@@ -1,7 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/approve_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/approve_sanction_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
@@ -10,10 +15,14 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sanction_review_queue_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 
+class MockAuthRepository extends Mock implements IAuthRepository {}
+
 void main() {
   late InMemorySanctionReviewQueueRepository queueRepo;
   late InMemorySlaAuditLedgerRepository ledger;
   late ApproveSanctionHandler handler;
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
 
   final evidence = VerdictEvidence.create(
     clauseRef: 'no-show-rule-1',
@@ -47,10 +56,20 @@ void main() {
   setUp(() {
     queueRepo = InMemorySanctionReviewQueueRepository();
     ledger = InMemorySlaAuditLedgerRepository();
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     handler = ApproveSanctionHandler(
+      tenantValidator: tenantValidator,
       queueRepo: queueRepo,
       ledger: ledger,
       rbac: RbacService(),
+    );
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: 'org-1',
+      ),
     );
   });
 
@@ -66,6 +85,7 @@ void main() {
             actorEmail: 'op@test.com',
             callerRole: UserRole.operator,
             organizationId: 'org-1',
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -83,6 +103,7 @@ void main() {
             actorEmail: 'cv@test.com',
             callerRole: UserRole.contractorViewer,
             organizationId: 'org-1',
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -100,6 +121,7 @@ void main() {
             actorEmail: 'auditor@test.com',
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
+            sessionId: 'session-1',
           ),
         ),
         completes,
@@ -117,6 +139,7 @@ void main() {
             actorEmail: 'admin@test.com',
             callerRole: UserRole.admin,
             organizationId: 'org-1',
+            sessionId: 'session-1',
           ),
         ),
         completes,
@@ -150,6 +173,7 @@ void main() {
             actorEmail: 'auditor@test.com',
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
+            sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -158,22 +182,26 @@ void main() {
   });
 
   group('Tenant isolation (INV-6)', () {
-    test('throws DomainException if orgId does not match', () async {
-      await queueRepo.enqueue(makePendingEntry(orgId: 'org-1'));
+    test(
+      'throws SovereigntyViolationException if orgId does not match',
+      () async {
+        await queueRepo.enqueue(makePendingEntry(orgId: 'org-1'));
 
-      expect(
-        () => handler.handle(
-          const ApproveSanctionCommand(
-            queueEntryId: 'entry-001',
-            approvedByUserId: 'auditor-evil',
-            actorEmail: 'evil@other.com',
-            callerRole: UserRole.auditor,
-            organizationId: 'org-2', // wrong org
+        expect(
+          () => handler.handle(
+            const ApproveSanctionCommand(
+              queueEntryId: 'entry-001',
+              approvedByUserId: 'auditor-evil',
+              actorEmail: 'evil@other.com',
+              callerRole: UserRole.auditor,
+              organizationId: 'org-2', // wrong org
+              sessionId: 'session-1',
+            ),
           ),
-        ),
-        throwsA(isA<DomainException>()),
-      );
-    });
+          throwsA(isA<SovereigntyViolationException>()),
+        );
+      },
+    );
   });
 
   group('Happy path', () {
@@ -187,6 +215,7 @@ void main() {
           actorEmail: 'auditor@veraprob.com',
           callerRole: UserRole.auditor,
           organizationId: 'org-1',
+          sessionId: 'session-1',
         ),
       );
 
@@ -208,6 +237,7 @@ void main() {
           actorEmail: 'auditor@veraprob.com',
           callerRole: UserRole.auditor,
           organizationId: 'org-1',
+          sessionId: 'session-1',
         ),
       );
 

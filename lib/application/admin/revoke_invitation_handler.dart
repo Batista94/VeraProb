@@ -1,3 +1,4 @@
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -8,17 +9,28 @@ import 'revoke_invitation_command.dart';
 ///
 /// RBAC: Requires [UserPermission.canInviteUsers] (admin only).
 class RevokeInvitationHandler {
+  final TenantValidationService _tenantValidator;
   final InvitationCommandService _commandService;
   final RbacService _rbac = RbacService();
 
-  RevokeInvitationHandler(this._commandService);
+  RevokeInvitationHandler({
+    required TenantValidationService tenantValidator,
+    required InvitationCommandService commandService,
+  }) : _tenantValidator = tenantValidator,
+       _commandService = commandService;
 
   /// Handles the command by revoking the pending invitation.
   ///
   /// Throws [DomainException] if:
   /// - [callerRole] does not have [UserPermission.canInviteUsers]
   Future<void> handle(RevokeInvitationCommand command) async {
-    // 1. RBAC check — before any I/O
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC check — before any I/O
     if (!_rbac.can(command.callerRole, UserPermission.canInviteUsers)) {
       throw const DomainException('Unauthorized: canInviteUsers required.');
     }

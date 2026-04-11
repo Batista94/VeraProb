@@ -1,3 +1,4 @@
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -19,15 +20,18 @@ import 'sla_ledger_mapper.dart';
 /// - The clone receives a new UUID and a new [ContractCreatedEvent].
 /// - [clonedFromContractId] is stored as an immutable audit field.
 class CloneContractHandler {
+  final TenantValidationService _tenantValidator;
   final ContractRepository _contractRepository;
   final SlaAuditLedgerRepository _ledger;
   final IDateTimeProvider _clock;
 
   CloneContractHandler({
+    required TenantValidationService tenantValidator,
     required ContractRepository contractRepository,
     required SlaAuditLedgerRepository ledger,
     required IDateTimeProvider clock,
-  }) : _contractRepository = contractRepository,
+  }) : _tenantValidator = tenantValidator,
+       _contractRepository = contractRepository,
        _ledger = ledger,
        _clock = clock;
 
@@ -40,7 +44,13 @@ class CloneContractHandler {
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
   }) async {
-    // 1. Verify source belongs to the same org (tenant isolation)
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. Verify source belongs to the same org (tenant isolation)
     final source = await _contractRepository.findById(
       command.sourceContractId,
       organizationId: command.organizationId,

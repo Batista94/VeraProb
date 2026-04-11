@@ -3,12 +3,15 @@ import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/entities/vehicle.dart';
 import 'package:veraprob/domain/enums/vehicle_status.dart';
 import 'package:veraprob/domain/assets/i_vehicle_asset_repository.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Supabase implementation of [IVehicleAssetRepository].
 ///
 /// Wraps `SupabaseClient` so that no Widget ever imports
 /// `supabase_flutter` directly (SRP-UI-LEAK prevention).
-class PostgresVehicleAssetRepository implements IVehicleAssetRepository {
+class PostgresVehicleAssetRepository
+    with PostgresErrorInterceptor
+    implements IVehicleAssetRepository {
   final SupabaseClient _client;
 
   PostgresVehicleAssetRepository([SupabaseClient? client])
@@ -23,13 +26,17 @@ class PostgresVehicleAssetRepository implements IVehicleAssetRepository {
 
   @override
   Future<List<Vehicle>> getVehicles() async {
-    final response = await _client
-        .from('vehicles')
-        .select()
-        .order('plate', ascending: true);
-    return (response as List)
-        .map((row) => Vehicle.fromJson(row as Map<String, dynamic>))
-        .toList();
+    try {
+      final response = await _client
+          .from('vehicles')
+          .select()
+          .order('plate', ascending: true);
+      return (response as List)
+          .map((row) => Vehicle.fromJson(row as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
+    }
   }
 
   @override
@@ -39,35 +46,47 @@ class PostgresVehicleAssetRepository implements IVehicleAssetRepository {
     required int capacity,
     VehicleStatus status = VehicleStatus.available,
   }) async {
-    final response = await _client
-        .from('vehicles')
-        .insert({
-          'organization_id': _orgId,
-          'plate': plate.toUpperCase().trim(),
-          'model': model?.trim(),
-          'capacity': capacity,
-          'status': status.dbValue,
-        })
-        .select()
-        .single();
-    return Vehicle.fromJson(response);
+    try {
+      final response = await _client
+          .from('vehicles')
+          .insert({
+            'organization_id': _orgId,
+            'plate': plate.toUpperCase().trim(),
+            'model': model?.trim(),
+            'capacity': capacity,
+            'status': status.dbValue,
+          })
+          .select()
+          .single();
+      return Vehicle.fromJson(response);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
+    }
   }
 
   @override
   Future<void> updateVehicle(Vehicle vehicle) async {
-    await _client
-        .from('vehicles')
-        .update({
-          'plate': vehicle.plate.toUpperCase().trim(),
-          'model': vehicle.model?.trim(),
-          'capacity': vehicle.capacity,
-          'status': vehicle.status.dbValue,
-        })
-        .eq('id', vehicle.id);
+    try {
+      await _client
+          .from('vehicles')
+          .update({
+            'plate': vehicle.plate.toUpperCase().trim(),
+            'model': vehicle.model?.trim(),
+            'capacity': vehicle.capacity,
+            'status': vehicle.status.dbValue,
+          })
+          .eq('id', vehicle.id);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
+    }
   }
 
   @override
   Future<void> deleteVehicle(String vehicleId) async {
-    await _client.from('vehicles').delete().eq('id', vehicleId);
+    try {
+      await _client.from('vehicles').delete().eq('id', vehicleId);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
+    }
   }
 }

@@ -19,11 +19,15 @@ class CloseContractCommand {
   /// before any I/O is performed.
   final UserRole callerRole;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const CloseContractCommand({
     required this.organizationId,
     required this.contractId,
     required this.closedByUserId,
     required this.reason,
     required this.callerRole,
+    required this.sessionId,
   });
 }

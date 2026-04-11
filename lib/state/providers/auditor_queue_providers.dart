@@ -11,6 +11,7 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/infraction_recurrence_report.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_service.dart';
 import 'auth_providers.dart';
+import 'contract_providers.dart';
 import 'shared_providers.dart';
 import 'sla_providers.dart';
 
@@ -110,11 +111,13 @@ final sanctionActionStateProvider = StateNotifierProvider.autoDispose
     .family<SanctionActionNotifier, AsyncValue<void>, String>(
       (ref, sanctionId) => SanctionActionNotifier(
         approveHandler: ApproveSanctionHandler(
+          tenantValidator: ref.watch(tenantValidationServiceProvider),
           queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
           ledger: ref.watch(slaAuditLedgerRepositoryProvider),
           rbac: RbacService(),
         ),
         rejectHandler: RejectSanctionHandler(
+          tenantValidator: ref.watch(tenantValidationServiceProvider),
           queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
           ledger: ref.watch(slaAuditLedgerRepositoryProvider),
           rbac: RbacService(),
@@ -140,6 +143,7 @@ class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
     required String actorEmail,
     required UserRole callerRole,
     required String organizationId,
+    required String sessionId,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -150,6 +154,7 @@ class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
           actorEmail: actorEmail,
           callerRole: callerRole,
           organizationId: organizationId,
+          sessionId: sessionId,
         ),
       ),
     );
@@ -162,6 +167,7 @@ class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
     required String rejectionReason,
     required UserRole callerRole,
     required String organizationId,
+    required String sessionId,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -173,6 +179,7 @@ class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
           rejectionReason: rejectionReason,
           callerRole: callerRole,
           organizationId: organizationId,
+          sessionId: sessionId,
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
@@ -33,6 +34,7 @@ import 'sla_ledger_mapper.dart';
 ///
 /// If any [DomainException] is thrown during creation, nothing is persisted.
 class DeclareContractualPlanHandler {
+  final TenantValidationService _tenantValidator;
   final PlanDeclarationRepository _repository;
   final SlaAuditLedgerRepository _ledger;
   final ContractualRuleRepository _ruleRepository;
@@ -52,6 +54,7 @@ class DeclareContractualPlanHandler {
   final IDateTimeProvider _clock;
 
   DeclareContractualPlanHandler({
+    required TenantValidationService tenantValidator,
     required PlanDeclarationRepository repository,
     required SlaAuditLedgerRepository ledger,
     required ContractualRuleRepository ruleRepository,
@@ -60,7 +63,8 @@ class DeclareContractualPlanHandler {
     required IActiveVehicleRepository vehicleRepository,
     required IDateTimeProvider clock,
     ShiftProjectionService? projectionService,
-  }) : _repository = repository,
+  }) : _tenantValidator = tenantValidator,
+       _repository = repository,
        _ledger = ledger,
        _ruleRepository = ruleRepository,
        _contractRepository = contractRepository,
@@ -77,6 +81,12 @@ class DeclareContractualPlanHandler {
   /// Throws [DomainException] if any invariant is violated —
   /// in which case nothing is persisted and the ledger remains untouched.
   Future<PlanDeclaration> handle(DeclareContractualPlanCommand command) async {
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
     final isShiftBased = command.shiftPatterns.isNotEmpty;
     final isManual = command.services.isNotEmpty;
 

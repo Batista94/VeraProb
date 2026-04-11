@@ -101,3 +101,15 @@ final currentOperatorEmailProvider = Provider<String>((ref) {
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   return SupabaseAuthRepository();
 });
+
+/// Current session identifier — used for INV-1 tenant validation.
+///
+/// Returns the current access token as the session identifier.
+/// The [TenantValidationService] uses this to validate that the
+/// command's [organizationId] matches the JWT claim.
+///
+/// Returns `null` if there is no active session.
+final currentSessionIdProvider = Provider<String?>((ref) {
+  final session = ref.watch(authStateProvider).valueOrNull?.session;
+  return session?.accessToken;
+});

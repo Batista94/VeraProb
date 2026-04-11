@@ -6,6 +6,7 @@ import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
 import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
 import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// PostgreSQL implementation of [ISuperAdminRepository].
 ///
@@ -17,28 +18,34 @@ import 'package:veraprob/domain/super_admin/update_organization_quota_command.da
 /// Write RPCs use [_authenticatedClient] directly so that `auth.uid()` is
 /// non-null inside the RPC and the super_admin JWT claim is validated
 /// server-side (migration 20260405000007 intent).
-class SupabaseSuperAdminRepository implements ISuperAdminRepository {
+class SupabaseSuperAdminRepository
+    with PostgresErrorInterceptor
+    implements ISuperAdminRepository {
   final SupabaseClient _authenticatedClient;
 
   SupabaseSuperAdminRepository(this._authenticatedClient);
 
   @override
   Future<String> createOrganization(CreateOrganizationCommand cmd) async {
-    final result = await _authenticatedClient.rpc(
-      'super_admin_create_organization',
-      params: {
-        'p_legal_name': cmd.legalName,
-        'p_trade_name': cmd.tradeName,
-        'p_cnpj': cmd.cnpj.replaceAll(RegExp(r'\D'), ''),
-        'p_timezone': cmd.timezone,
-        'p_currency_code': cmd.currencyCode,
-        'p_plan_type': cmd.planType.name,
-        'p_max_vehicles': cmd.maxVehicles,
-        'p_max_active_contracts': cmd.maxActiveContracts,
-        'p_super_admin_user_id': cmd.superAdminUserId,
-      },
-    );
-    return result as String;
+    try {
+      final result = await _authenticatedClient.rpc(
+        'super_admin_create_organization',
+        params: {
+          'p_legal_name': cmd.legalName,
+          'p_trade_name': cmd.tradeName,
+          'p_cnpj': cmd.cnpj.replaceAll(RegExp(r'\D'), ''),
+          'p_timezone': cmd.timezone,
+          'p_currency_code': cmd.currencyCode,
+          'p_plan_type': cmd.planType.name,
+          'p_max_vehicles': cmd.maxVehicles,
+          'p_max_active_contracts': cmd.maxActiveContracts,
+          'p_super_admin_user_id': cmd.superAdminUserId,
+        },
+      );
+      return result as String;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
   }
 
   @override
@@ -50,18 +57,22 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
     required DateTime expiresAtUtc,
     required String superAdminUserId,
   }) async {
-    await _authenticatedClient.rpc(
-      'super_admin_invite_first_admin',
-      params: {
-        'p_org_id': orgId,
-        'p_email': email,
-        'p_role': 'TENANT_ADMIN',
-        'p_token': token,
-        'p_invitation_id': invitationId,
-        'p_expires_at': expiresAtUtc.toIso8601String(),
-        'p_invited_by': superAdminUserId,
-      },
-    );
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_invite_first_admin',
+        params: {
+          'p_org_id': orgId,
+          'p_email': email,
+          'p_role': 'TENANT_ADMIN',
+          'p_token': token,
+          'p_invitation_id': invitationId,
+          'p_expires_at': expiresAtUtc.toIso8601String(),
+          'p_invited_by': superAdminUserId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
   }
 
   @override
@@ -85,11 +96,15 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
 
   @override
   Future<bool> checkCnpjExists(String cnpjDigits) async {
-    final result = await _authenticatedClient.rpc(
-      'super_admin_check_cnpj_exists',
-      params: {'p_cnpj': cnpjDigits},
-    );
-    return result as bool;
+    try {
+      final result = await _authenticatedClient.rpc(
+        'super_admin_check_cnpj_exists',
+        params: {'p_cnpj': cnpjDigits},
+      );
+      return result as bool;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
   }
 
   @override
@@ -127,16 +142,20 @@ class SupabaseSuperAdminRepository implements ISuperAdminRepository {
   Future<void> updateOrganizationQuota(
     UpdateOrganizationQuotaCommand cmd,
   ) async {
-    await _authenticatedClient.rpc(
-      'super_admin_update_organization_quota',
-      params: {
-        'p_org_id': cmd.organizationId,
-        'p_new_plan_type': cmd.newPlanType,
-        'p_new_max_vehicles': cmd.newMaxVehicles,
-        'p_new_max_contracts': cmd.newMaxActiveContracts,
-        'p_super_admin_user_id': cmd.superAdminUserId,
-        'p_reason': cmd.reason,
-      },
-    );
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_update_organization_quota',
+        params: {
+          'p_org_id': cmd.organizationId,
+          'p_new_plan_type': cmd.newPlanType,
+          'p_new_max_vehicles': cmd.newMaxVehicles,
+          'p_new_max_contracts': cmd.newMaxActiveContracts,
+          'p_super_admin_user_id': cmd.superAdminUserId,
+          'p_reason': cmd.reason,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
   }
 }

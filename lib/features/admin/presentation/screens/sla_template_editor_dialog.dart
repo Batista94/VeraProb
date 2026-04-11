@@ -166,6 +166,7 @@ class _SlaTemplateEditorDialogState
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       if (orgId == null) return;
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
       final penalties = PenaltiesFormData(
         noShowPenaltyBps:
@@ -186,6 +187,7 @@ class _SlaTemplateEditorDialogState
           .read(saveSlaTemplateHandlerProvider)
           .handle(
             organizationId: orgId,
+            sessionId: sessionId,
             name: _nameCtl.text.trim(),
             description: _descCtl.text.trim().isEmpty
                 ? null

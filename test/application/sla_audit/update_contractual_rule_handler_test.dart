@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/rule_studio_command_service.dart';
 import 'package:veraprob/application/sla_audit/update_contractual_rule_command.dart';
 import 'package:veraprob/application/sla_audit/update_contractual_rule_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
@@ -33,17 +37,33 @@ class _FakeCommandService implements RuleStudioCommandService {
   }
 }
 
+// ── Mocks ────────────────────────────────────────────────────────────────────
+
+class MockAuthRepository extends Mock implements IAuthRepository {}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 void main() {
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
   late _FakeCommandService fakeService;
   late UpdateContractualRuleHandler handler;
 
   setUp(() {
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     fakeService = _FakeCommandService();
     handler = UpdateContractualRuleHandler(
+      tenantValidator: tenantValidator,
       commandService: fakeService,
       rbac: RbacService(),
+    );
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: 'org-1',
+      ),
     );
   });
 
@@ -61,6 +81,7 @@ void main() {
       newConfig: config ?? {'min_dwell_seconds': 45},
       evaluationOrder: 1,
       callerRole: role,
+      sessionId: 'session-1',
     );
   }
 

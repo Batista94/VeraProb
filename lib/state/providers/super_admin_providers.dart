@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/super_admin/create_organization_handler.dart';
 import 'package:veraprob/application/super_admin/update_organization_quota_handler.dart';
 import 'package:veraprob/application/super_admin/system_audit_log_view.dart';
@@ -9,6 +10,7 @@ import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/infrastructure/super_admin/receita_ws_cnpj_service.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_super_admin_repository.dart';
+import 'auth_providers.dart';
 import 'shared_providers.dart';
 
 /// Read operations route through the `super-admin-proxy` Edge Function
@@ -27,8 +29,12 @@ final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthView>>((
 
 final updateOrganizationQuotaHandlerProvider =
     Provider<UpdateOrganizationQuotaHandler>((ref) {
-      final repo = ref.watch(superAdminRepositoryProvider);
-      return UpdateOrganizationQuotaHandler(repo);
+      return UpdateOrganizationQuotaHandler(
+        tenantValidator: TenantValidationService(
+          authRepository: ref.watch(authRepositoryProvider),
+        ),
+        repository: ref.watch(superAdminRepositoryProvider),
+      );
     });
 
 final createOrganizationHandlerProvider = Provider<CreateOrganizationHandler>((

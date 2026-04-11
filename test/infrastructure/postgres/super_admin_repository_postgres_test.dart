@@ -321,6 +321,7 @@ void main() async {
               newMaxActiveContracts: 50,
               superAdminUserId: superAdminId,
               reason: 'Upgrade for integration test',
+              sessionId: _uuid.v4(),
             ),
           );
 
@@ -360,6 +361,7 @@ void main() async {
               newMaxVehicles: null,
               newMaxActiveContracts: null,
               superAdminUserId: superAdminId,
+              sessionId: _uuid.v4(),
             ),
           );
 
@@ -401,6 +403,7 @@ void main() async {
               newMaxVehicles: 50,
               newMaxActiveContracts: 20,
               superAdminUserId: superAdminId,
+              sessionId: _uuid.v4(),
             ),
           );
 

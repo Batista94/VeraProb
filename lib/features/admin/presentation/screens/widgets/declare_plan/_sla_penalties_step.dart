@@ -85,6 +85,7 @@ class Step3SlaPenalties extends ConsumerWidget {
   Future<void> _saveAsTemplate(BuildContext context, WidgetRef ref) async {
     final orgId = ref.read(currentOrganizationIdProvider);
     if (orgId == null) return;
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
     final name = await showDialog<String>(
       context: context,
@@ -157,7 +158,12 @@ class Step3SlaPenalties extends ConsumerWidget {
 
       await ref
           .read(saveSlaTemplateHandlerProvider)
-          .handle(organizationId: orgId, name: name, penalties: penalties);
+          .handle(
+            organizationId: orgId,
+            sessionId: sessionId,
+            name: name,
+            penalties: penalties,
+          );
 
       ref.invalidate(slaTemplatesProvider);
 

@@ -13,7 +13,15 @@
       "Bash(findstr *)",
       "Read(c:\\Users\\wes_b\\.antigravity\\extensions\\qwenlm.qwen-code-vscode-ide-companion-0.14.2-win32-x64\\dist\\qwen-cli\\bundled\\qc-helper\\docs/configuration/**)",
       "Read(C:\\Users\\wes_b\\.qwen/**)",
-      "Read(C:\\Projects\\VeraProb/**)"
+      "Read(C:\\Projects\\VeraProb/**)",
+      "Bash(del *)",
+      "Bash(git checkout *)",
+      "Bash(sed *)",
+      "Bash(\"c:\\program files\\git\\usr\\bin\\sed.exe\" *)",
+      "Bash($f,$c)\")",
+      "Bash(\"c:\\program files\\git\\usr\\bin\\bash.exe\" *)",
+      "Bash(c:\\progra~1\\git\\usr\\bin\\bash.exe *)",
+      "Bash(grep *)"
     ]
   },
   "$version": 3

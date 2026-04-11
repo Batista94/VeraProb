@@ -327,6 +327,7 @@ class _SolicitarDefesaButtonState
     final orgId = ref.read(currentOrganizationIdProvider);
     final userId = ref.read(currentOperatorIdProvider);
     final role = ref.read(currentUserRoleProvider);
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
     if (orgId == null || userId == null) return;
 
     // Ask operator for expiry hours
@@ -345,6 +346,7 @@ class _SolicitarDefesaButtonState
               callerRole: role,
               callerUserId: userId,
               expiresInHours: hours,
+              sessionId: sessionId,
             ),
           );
 

@@ -98,12 +98,40 @@ files.forEach(file => {
     if (config.exclude_path_pattern && new RegExp(config.exclude_path_pattern, 'i').test(file)) return;
 
     // Files Containing filter (e.g. for FINANCIAL-BLOCK)
+    // Exclude specific files (exact match or partial)
+    if (config.exclude_files && config.exclude_files.some(exclude => file.includes(exclude))) return;
+
+    // Files Containing filter (e.g. for FINANCIAL-BLOCK)
     if (config.files_containing) {
        const matchesFile = config.files_containing.some(term => file.includes(term));
        if (!matchesFile) return;
     }
 
     const regex = new RegExp(config.pattern);
+
+    // ── Absence Check (INV-1: Handler must call TenantValidationService) ──
+    if (config.type === 'absence_check') {
+      // Step 1: Does this file declare a Handler class?
+      if (!regex.test(content)) return;
+
+      // Step 2: Strip ALL comments to prevent fake compliance via commented code.
+      // This removes:
+      //   - Single-line comments: // ...
+      //   - Multi-line comments: /* ... */
+      //   - Doc comments: /// ...
+      const strippedContent = content
+        .replace(/\/\*[\s\S]*?\*\//g, '')   // multi-line /* ... */
+        .replace(/\/\/\/.*$/gm, '')           // doc comments ///
+        .replace(/\/\/.*$/gm, '');            // single-line //
+
+      // Step 3: Check if the required security pattern exists in active code
+      const mustAlsoContain = new RegExp(config.must_also_contain);
+      if (!mustAlsoContain.test(strippedContent)) {
+        console.log(\`  BLOCK: \${file} - \${ruleName}: \${config.description}\`);
+        blocks++;
+      }
+      return;
+    }
 
     lines.forEach((line, index) => {
       if (!regex.test(line)) return;
@@ -186,8 +214,25 @@ files.forEach(file => {
   Object.entries(patterns).forEach(([ruleName, config]) => {
     if (config.path_filter && !new RegExp(config.path_filter).test(file)) return;
     if (config.exclude_path_pattern && new RegExp(config.exclude_path_pattern, 'i').test(file)) return;
+    if (config.exclude_files && config.exclude_files.some(exclude => file.includes(exclude))) return;
     if (config.files_containing && !config.files_containing.some(term => file.includes(term))) return;
     const regex = new RegExp(config.pattern);
+
+    // ── Absence Check (INV-1) ──
+    if (config.type === 'absence_check') {
+      if (!regex.test(content)) return;
+      const strippedContent = content
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/\/.*$/gm, '')
+        .replace(/\/\/.*$/gm, '');
+      const mustAlsoContain = new RegExp(config.must_also_contain);
+      if (!mustAlsoContain.test(strippedContent)) {
+        console.log(\`  BLOCK: \${file} - \${ruleName}: \${config.description}\`);
+        blocks++;
+      }
+      return;
+    }
+
     lines.forEach((line, index) => {
       if (!regex.test(line)) return;
 

@@ -6,6 +6,7 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_contractor_repository
 import 'package:veraprob/application/sla_audit/save_contractor_handler.dart';
 import 'package:veraprob/application/sla_audit/delete_contractor_handler.dart';
 import 'auth_providers.dart';
+import 'contract_providers.dart';
 import 'shared_providers.dart';
 
 /// Provider for the contractor repository implementation.
@@ -28,6 +29,7 @@ final contractorListProvider = FutureProvider<List<ContractorView>>((
 /// Provider for the save contractor handler.
 final saveContractorHandlerProvider = Provider<SaveContractorHandler>((ref) {
   return SaveContractorHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(contractorRepositoryProvider),
     clock: ref.watch(dateTimeProviderProvider),
   );
@@ -38,6 +40,7 @@ final deleteContractorHandlerProvider = Provider<DeleteContractorHandler>((
   ref,
 ) {
   return DeleteContractorHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(contractorRepositoryProvider),
   );
 });

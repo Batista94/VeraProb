@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_justification_command.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_justification_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -9,11 +13,15 @@ import 'package:veraprob/infrastructure/sla_audit/justification/in_memory_justif
 import 'package:veraprob/infrastructure/local_fact_db/in_memory_local_fact_queue_repository.dart';
 import '../../../mocks/fake_date_time_provider.dart';
 
+class MockAuthRepository extends Mock implements IAuthRepository {}
+
 void main() {
   late InMemoryJustificationRepository justificationRepo;
   late InMemorySlaAuditLedgerRepository ledger;
   late InMemoryLocalFactQueueRepository factQueue;
   late SubmitJustificationHandler handler;
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
 
   SubmitJustificationCommand makeCommand({
     UserRole? role = UserRole.operator,
@@ -32,6 +40,7 @@ void main() {
       callerEmail: 'op@tenant.com',
       submittedByTokenId: tokenId,
       evidenceHashes: const [],
+      sessionId: 'session-1',
     );
   }
 
@@ -41,12 +50,22 @@ void main() {
     justificationRepo = InMemoryJustificationRepository();
     ledger = InMemorySlaAuditLedgerRepository();
     factQueue = InMemoryLocalFactQueueRepository(clockProvider);
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     handler = SubmitJustificationHandler(
+      tenantValidator: tenantValidator,
       justificationRepo: justificationRepo,
       ledger: ledger,
       factQueue: factQueue,
       rbac: RbacService(),
       clock: clockProvider,
+    );
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: 'org-abc',
+      ),
     );
   });
 
@@ -105,6 +124,7 @@ void main() {
         callerEmail: 'op@tenant.com',
         submittedByTokenId: null,
         evidenceHashes: [],
+        sessionId: 'session-1',
       );
       await expectLater(handler.handle(cmd), throwsA(isA<DomainException>()));
     });

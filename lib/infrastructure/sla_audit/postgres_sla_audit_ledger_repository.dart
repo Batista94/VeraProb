@@ -5,6 +5,7 @@ import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 import 'package:veraprob/infrastructure/sla_audit/dto/sla_ledger_entry_dto.dart';
 
 /// Postgres implementation of [SlaAuditLedgerRepository].
@@ -14,7 +15,9 @@ import 'package:veraprob/infrastructure/sla_audit/dto/sla_ledger_entry_dto.dart'
 /// 2. **Monotonic Ordering**: Uses Postgres `bigserial` (ID) as the primary ordering criterion.
 /// 3. **Idempotency**: Prevents duplicate entries via causal linkage checks or cautious inserts.
 /// 4. **Structured Mapping**: Persists structured [SlaLedgerEntry] instead of raw events.
-class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
+class PostgresSlaAuditLedgerRepository
+    with PostgresErrorInterceptor
+    implements SlaAuditLedgerRepository {
   final SupabaseClient? _injectedClient;
 
   // Accessed lazily so unit tests that only call assertFields/parseUtc
@@ -73,15 +76,23 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
 
   @override
   Future<String> append(SlaLedgerEntry entry) async {
-    final dto = SlaLedgerEntryDto.fromDomain(entry);
+    try {
+      final dto = SlaLedgerEntryDto.fromDomain(entry);
 
-    final response = await _client
-        .from('sla_audit_ledger_v2')
-        .insert(dto.toJson())
-        .select('id')
-        .single();
+      final response = await _client
+          .from('sla_audit_ledger_v2')
+          .insert(dto.toJson())
+          .select('id')
+          .single();
 
-    return response['id'] as String;
+      return response['id'] as String;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'sla_audit_ledger',
+        resourceId: entry.id?.toString(),
+      );
+    }
   }
 
   @override
@@ -89,20 +100,28 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
     String? organizationId,
     String? contractId,
   }) async {
-    var query = _client.from('sla_audit_ledger_v2').select('id');
-    if (organizationId != null) {
-      query = query.eq('organization_id', organizationId);
-    }
-    if (contractId != null) {
-      query = query.eq('contract_id', contractId);
-    }
-    final response = await query
-        .order('occurred_at_utc', ascending: false)
-        .limit(1)
-        .maybeSingle();
+    try {
+      var query = _client.from('sla_audit_ledger_v2').select('id');
+      if (organizationId != null) {
+        query = query.eq('organization_id', organizationId);
+      }
+      if (contractId != null) {
+        query = query.eq('contract_id', contractId);
+      }
+      final response = await query
+          .order('occurred_at_utc', ascending: false)
+          .limit(1)
+          .maybeSingle();
 
-    if (response == null) return null;
-    return response['id'] as String;
+      if (response == null) return null;
+      return response['id'] as String;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'sla_audit_ledger',
+        resourceId: contractId ?? organizationId,
+      );
+    }
   }
 
   @override
@@ -110,25 +129,33 @@ class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
     String setId, {
     String? organizationId,
   }) async {
-    var query = _client
-        .from('sla_audit_ledger_v2')
-        .select()
-        .eq('set_id', setId);
-    if (organizationId != null) {
-      query = query.eq('organization_id', organizationId);
-    }
-    final response = await query.order('occurred_at_utc', ascending: true);
+    try {
+      var query = _client
+          .from('sla_audit_ledger_v2')
+          .select()
+          .eq('set_id', setId);
+      if (organizationId != null) {
+        query = query.eq('organization_id', organizationId);
+      }
+      final response = await query.order('occurred_at_utc', ascending: true);
 
-    return (response as List).map((row) {
-      final typedRow = row as Map<String, dynamic>;
-      assertFields(typedRow);
-      final normalizedRow = Map<String, dynamic>.from(typedRow);
-      normalizedRow['occurred_at_utc'] = parseUtc(
-        typedRow['occurred_at_utc'],
-        'occurred_at_utc',
-      ).toIso8601String();
-      final dto = SlaLedgerEntryDto.fromJson(normalizedRow);
-      return dto.toDomain(typedRow['id'] as String);
-    }).toList();
+      return (response as List).map((row) {
+        final typedRow = row as Map<String, dynamic>;
+        assertFields(typedRow);
+        final normalizedRow = Map<String, dynamic>.from(typedRow);
+        normalizedRow['occurred_at_utc'] = parseUtc(
+          typedRow['occurred_at_utc'],
+          'occurred_at_utc',
+        ).toIso8601String();
+        final dto = SlaLedgerEntryDto.fromJson(normalizedRow);
+        return dto.toDomain(typedRow['id'] as String);
+      }).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'sla_audit_ledger',
+        resourceId: setId,
+      );
+    }
   }
 }
