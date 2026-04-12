@@ -12,7 +12,6 @@ import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
@@ -44,7 +43,7 @@ class _MockDateTimeProvider implements IDateTimeProvider {
 
 class _MockAuthRepo implements IAuthRepository {
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _MockTenantValidationService extends TenantValidationService {
@@ -67,12 +66,12 @@ class _MockTenantValidationService extends TenantValidationService {
 
 class _MockQueueRepo implements SanctionReviewQueueRepository {
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _MockLedgerRepo implements SlaAuditLedgerRepository {
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _MockApproveHandler extends ApproveSanctionHandler {

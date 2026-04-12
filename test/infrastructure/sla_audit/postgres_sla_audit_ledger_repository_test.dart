@@ -1,3 +1,4 @@
+import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
@@ -6,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../postgres/postgres_test_config.dart';
+
+class _MockSupabaseClient extends Mock implements SupabaseClient {}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -195,7 +198,7 @@ void main() async {
   group('Unit: assertFields — schema assertion (INV-18)', () {
     // Instantiation without a real client; only unit methods are called.
     // ignore: invalid_use_of_visible_for_testing_member
-    final repo = PostgresSlaAuditLedgerRepository();
+    final repo = PostgresSlaAuditLedgerRepository(_MockSupabaseClient());
 
     for (final field in _requiredFields) {
       test('T05.$field: campo ausente lança IntegrityException', () {
@@ -226,7 +229,7 @@ void main() async {
 
   group('Unit: parseUtc — UTC enforcement (INV-9)', () {
     // ignore: invalid_use_of_visible_for_testing_member
-    final repo = PostgresSlaAuditLedgerRepository();
+    final repo = PostgresSlaAuditLedgerRepository(_MockSupabaseClient());
 
     test('T05.parseUtc: null lança IntegrityException', () {
       expect(

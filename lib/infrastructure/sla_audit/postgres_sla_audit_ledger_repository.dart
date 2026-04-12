@@ -1,11 +1,10 @@
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/dto/sla_ledger_entry_dto.dart';
 
 /// Postgres implementation of [SlaAuditLedgerRepository].
@@ -15,17 +14,9 @@ import 'package:veraprob/infrastructure/sla_audit/dto/sla_ledger_entry_dto.dart'
 /// 2. **Monotonic Ordering**: Uses Postgres `bigserial` (ID) as the primary ordering criterion.
 /// 3. **Idempotency**: Prevents duplicate entries via causal linkage checks or cautious inserts.
 /// 4. **Structured Mapping**: Persists structured [SlaLedgerEntry] instead of raw events.
-class PostgresSlaAuditLedgerRepository
-    with PostgresErrorInterceptor
+class PostgresSlaAuditLedgerRepository extends BasePostgresRepository
     implements SlaAuditLedgerRepository {
-  final SupabaseClient? _injectedClient;
-
-  // Accessed lazily so unit tests that only call assertFields/parseUtc
-  // do not trigger Supabase.instance before initialization.
-  SupabaseClient get _client => _injectedClient ?? supabase;
-
-  PostgresSlaAuditLedgerRepository([SupabaseClient? client])
-    : _injectedClient = client;
+  PostgresSlaAuditLedgerRepository(super.client);
 
   static const _requiredFields = [
     'organization_id',
@@ -79,7 +70,7 @@ class PostgresSlaAuditLedgerRepository
     try {
       final dto = SlaLedgerEntryDto.fromDomain(entry);
 
-      final response = await _client
+      final response = await client
           .from('sla_audit_ledger_v2')
           .insert(dto.toJson())
           .select('id')
@@ -101,7 +92,7 @@ class PostgresSlaAuditLedgerRepository
     String? contractId,
   }) async {
     try {
-      var query = _client.from('sla_audit_ledger_v2').select('id');
+      var query = client.from('sla_audit_ledger_v2').select('id');
       if (organizationId != null) {
         query = query.eq('organization_id', organizationId);
       }
@@ -130,7 +121,7 @@ class PostgresSlaAuditLedgerRepository
     String? organizationId,
   }) async {
     try {
-      var query = _client
+      var query = client
           .from('sla_audit_ledger_v2')
           .select()
           .eq('set_id', setId);

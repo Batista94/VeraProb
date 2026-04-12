@@ -19,6 +19,7 @@ import 'infrastructure/persistence/persistence_mode.dart';
 import 'infrastructure/persistence/persistence_provider.dart';
 import 'infrastructure/observability/sentry_observer.dart';
 import 'infrastructure/observability/analytics_service.dart';
+import 'infrastructure/providers/supabase_provider.dart';
 import 'state/providers/sla_providers.dart';
 import 'state/providers/auth_providers.dart';
 
@@ -67,6 +68,10 @@ void main() async {
           observers: const [SentryRiverpodObserver()],
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
+            // INV-30: Single bridge — Supabase client injected via Riverpod.
+            // All repositories must read from supabaseClientProvider, never
+            // access Supabase.instance.client directly.
+            supabaseClientProvider.overrideWithValue(supabase),
             // FASE 6 — Atomic Switch: runtime now operates on Postgres.
             persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
           ],

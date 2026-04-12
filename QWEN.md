@@ -67,6 +67,7 @@ O projeto utiliza um **Conselho de Personas** distribuído. Cada persona atua co
 | **INV-26** | **Paridade de Erro** | Endpoints sensíveis à segurança MUST retornar status idêntico (404) para 'Not Found' e 'Other Org' — previne Oracle Attacks. ALL Postgres repos MUST usar `PostgresErrorInterceptor` ou estender `BasePostgresRepository`. |
 | **INV-30** | **DI Total (Anti-Singleton)** | Proibido usar `Supabase.instance`. O `SupabaseClient` DEVE ser injetado via construtor em todos os repositórios e serviços. |
 | **INV-31** | **HMAC Zero-Knowledge** | Assinatura HMAC ocorre APENAS nas Edge Functions. Chave isolada do DB. Verificação obrigatória On-Read para Ledger/SLA. |
+| **INV-31.2** | **Graceful Key Rotation** | Todo HMAC gerado deve carregar prefixo de versão (`vN\|hexhash`). Chaves legadas são resolvidas via mapeamento de ambiente (`HMAC_SECRET_KEY_V{N}`). Troca de segredos NÃO invalida histórico do Ledger. |
 
 ### 🟡 TODOS OS 27 INVARIANTES
 
@@ -102,6 +103,7 @@ O projeto utiliza um **Conselho de Personas** distribuído. Cada persona atua co
 | **INV-28** | **Testabilidade Emasculada** | Widgets NÃO devem ter dependências ocultas de Singletons. Todo estado externo MUST ser mockável via `ProviderScope` overrides. |
 | **INV-30** | **DI Total (Anti-Singleton)** | Proibido `Supabase.instance`. `SupabaseClient` injetado via construtor em TODOS os repos e serviços. |
 | **INV-31** | **HMAC Zero-Knowledge** | HMAC APENAS nas Edge Functions. Chave isolada do DB. Verificação On-Read obrigatória para Ledger/SLA. |
+| **INV-31.2** | **Graceful Key Rotation** | HMAC prefixado com versão (`vN\|hexhash`). Chaves legadas resolvidas via env. Rotação sem brick do histórico. |
 
 ---
 

@@ -1,28 +1,23 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
 import 'package:veraprob/domain/sla_audit/sla_template.dart';
 import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
 import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Postgres implementation of [SlaTemplateRepository].
 ///
 /// RLS guarantees tenant isolation: all queries are scoped to the
 /// authenticated user's organization via JWT `organization_id`.
-class PostgresSlaTemplateRepository
-    with PostgresErrorInterceptor
+class PostgresSlaTemplateRepository extends BasePostgresRepository
     implements SlaTemplateRepository {
-  final SupabaseClient _client;
-
-  PostgresSlaTemplateRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+  PostgresSlaTemplateRepository(super.client);
 
   @override
   Future<void> save(SlaTemplate template) async {
     try {
-      await _client.from('sla_templates').upsert({
+      await client.from('sla_templates').upsert({
         'id': template.id,
         'organization_id': template.organizationId,
         'name': template.name,
@@ -39,7 +34,7 @@ class PostgresSlaTemplateRepository
   @override
   Future<List<SlaTemplate>> findByOrganization(String organizationId) async {
     try {
-      final List<Map<String, dynamic>> rows = await _client
+      final List<Map<String, dynamic>> rows = await client
           .from('sla_templates')
           .select()
           .eq('organization_id', organizationId)
@@ -57,7 +52,7 @@ class PostgresSlaTemplateRepository
     required String organizationId,
   }) async {
     try {
-      final List<Map<String, dynamic>> rows = await _client
+      final List<Map<String, dynamic>> rows = await client
           .from('sla_templates')
           .select()
           .eq('id', id)
@@ -74,7 +69,7 @@ class PostgresSlaTemplateRepository
   @override
   Future<void> delete(String id, {required String organizationId}) async {
     try {
-      await _client
+      await client
           .from('sla_templates')
           .delete()
           .eq('id', id)

@@ -1,15 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/infrastructure/auth/supabase_auth_repository.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 
 /// Stream of auth state changes.
+/// INV-30: Client injected via supabaseClientProvider.
 final authStateProvider = StreamProvider<AuthState>((ref) {
-  return supabase.auth.onAuthStateChange;
+  return ref.watch(supabaseClientProvider).auth.onAuthStateChange;
 });
 
 /// Current operator ID (from auth session in production).
@@ -21,13 +22,15 @@ final currentOperatorIdProvider = Provider<String?>((ref) {
 /// Extracts the strict `organization_id` boundary from the JWT claims
 /// injected by the Postgres `custom_access_token_hook`.
 /// Direct fetcher for organization ID when JWT metadata is missing/syncing.
+/// INV-30: Client injected via supabaseClientProvider.
 final organizationIdFetcherProvider = FutureProvider<String?>((ref) async {
   final authState = ref.watch(authStateProvider).valueOrNull;
   final userId = authState?.session?.user.id;
   if (userId == null) return null;
 
   try {
-    final response = await supabase
+    final response = await ref
+        .watch(supabaseClientProvider)
         .from('user_roles')
         .select('organization_id')
         .eq('user_id', userId)
@@ -98,8 +101,9 @@ final currentOperatorEmailProvider = Provider<String>((ref) {
 /// Widgets MUST use this provider for all auth operations (signIn, signOut,
 /// signUp, refreshSession). Eliminates direct `Supabase.instance.client.auth`
 /// calls from the presentation layer (SRP-UI-LEAK prevention).
+/// INV-30: Client injected via supabaseClientProvider.
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
-  return SupabaseAuthRepository();
+  return SupabaseAuthRepository(ref.watch(supabaseClientProvider));
 });
 
 /// Current session identifier — used for INV-1 tenant validation.

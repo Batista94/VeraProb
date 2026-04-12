@@ -14,10 +14,12 @@ void main() {
   group('RealtimeDataProvider Connection Coverage', () {
     late RealtimeDataProvider provider;
     late MockDateTimeProvider mockDateTime;
+    late MockSupabaseClient mockClient;
 
     setUp(() {
       mockDateTime = MockDateTimeProvider();
-      provider = RealtimeDataProvider(mockDateTime);
+      mockClient = MockSupabaseClient();
+      provider = RealtimeDataProvider(mockDateTime, mockClient);
     });
 
     test('isConnected initial state', () {

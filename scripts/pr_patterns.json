@@ -68,5 +68,30 @@
     ],
     "description": "Every file making Supabase calls MUST implement PostgresErrorInterceptor (INV-26: Error Parity).",
     "severity": "BLOCK"
+  },
+  "INV-30-CHECK": {
+    "type": "absence_check",
+    "pattern": "Supabase\\.instance\\.client",
+    "path_filter": "lib/",
+    "exclude_files": [
+      "supabase_client.dart",
+      "supabase_provider.dart"
+    ],
+    "exclude_path_pattern": "test/",
+    "must_also_contain": "^$",
+    "description": "INV-30 violation: Direct Supabase.instance.client access outside bootstrap (main.dart, supabase_provider.dart). Use DI via constructor or supabaseClientProvider.",
+    "severity": "BLOCK"
+  },
+  "HMAC-SIGN-CHECK": {
+    "type": "absence_check",
+    "pattern": "ingest|ledger|verdict|financial",
+    "path_filter": "supabase/functions/.*index\\.ts",
+    "exclude_files": [
+      "notify-invite",
+      "super-admin-proxy"
+    ],
+    "must_also_contain": "hmac_signer|hmac|signPayload|verifyPayload|loadAllKeys",
+    "description": "INV-31: Ingestion/ledger Edge Functions MUST import hmac_signer.ts for HMAC signing (Zero-Knowledge integrity).",
+    "severity": "BLOCK"
   }
 }

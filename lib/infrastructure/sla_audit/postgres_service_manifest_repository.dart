@@ -1,28 +1,23 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/service_manifest.dart';
 import 'package:veraprob/domain/sla_audit/service_manifest_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
 import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Postgres implementation of [ServiceManifestRepository].
 ///
 /// RLS guarantees tenant isolation: all queries are scoped to the
 /// authenticated user's organization via JWT `organization_id`.
-class PostgresServiceManifestRepository
-    with PostgresErrorInterceptor
+class PostgresServiceManifestRepository extends BasePostgresRepository
     implements ServiceManifestRepository {
-  final SupabaseClient _client;
-
-  PostgresServiceManifestRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+  PostgresServiceManifestRepository(super.client);
 
   @override
   Future<void> save(ServiceManifest manifest) async {
     try {
-      await _client.from('service_manifests').upsert({
+      await client.from('service_manifests').upsert({
         'id': manifest.id,
         'organization_id': manifest.organizationId,
         'contract_id': manifest.contractId,
@@ -44,7 +39,7 @@ class PostgresServiceManifestRepository
     required String organizationId,
   }) async {
     try {
-      final List<Map<String, dynamic>> rows = await _client
+      final List<Map<String, dynamic>> rows = await client
           .from('service_manifests')
           .select()
           .eq('organization_id', organizationId)
@@ -63,7 +58,7 @@ class PostgresServiceManifestRepository
     required String organizationId,
   }) async {
     try {
-      final List<Map<String, dynamic>> rows = await _client
+      final List<Map<String, dynamic>> rows = await client
           .from('service_manifests')
           .select()
           .eq('id', id)
@@ -80,7 +75,7 @@ class PostgresServiceManifestRepository
   @override
   Future<void> delete(String id, {required String organizationId}) async {
     try {
-      await _client
+      await client
           .from('service_manifests')
           .delete()
           .eq('id', id)

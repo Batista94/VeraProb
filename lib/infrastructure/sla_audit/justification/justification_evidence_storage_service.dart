@@ -2,8 +2,6 @@ import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/core/config/supabase_client.dart';
-
 /// Uploads raw evidence bytes to Supabase Storage and returns the storage path.
 ///
 /// **Operator / authenticated path:** calls
@@ -18,10 +16,9 @@ import 'package:veraprob/core/config/supabase_client.dart';
 class JustificationEvidenceStorageService {
   static const _bucket = 'justification-evidence';
 
-  final SupabaseClient _client;
+  final SupabaseClient client;
 
-  JustificationEvidenceStorageService([SupabaseClient? client])
-    : _client = client ?? supabase;
+  JustificationEvidenceStorageService(this.client);
 
   /// Uploads [bytes] for an authenticated operator/admin user.
   ///
@@ -36,7 +33,7 @@ class JustificationEvidenceStorageService {
     required Uint8List bytes,
   }) async {
     final path = '$organizationId/$justificationId/$fileName';
-    await _client.storage
+    await client.storage
         .from(_bucket)
         .uploadBinary(
           path,
@@ -57,7 +54,7 @@ class JustificationEvidenceStorageService {
     required String justificationToken,
     required String fileName,
   }) async {
-    final response = await _client.functions.invoke(
+    final response = await client.functions.invoke(
       'get-justification-upload-url',
       body: {'token': justificationToken, 'fileName': fileName},
     );

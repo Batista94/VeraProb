@@ -1,9 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/shadow_verdict.dart';
 import 'package:veraprob/domain/sla_audit/shadow_verdict_repository.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Postgres implementation of [ShadowVerdictRepository].
 ///
@@ -15,13 +14,9 @@ import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 ///    engine fields. Only [syncManualVerdicts] updates manual/divergence columns (INV-7).
 /// 4. **No delete**: No delete method exists on this class (INV-7).
 /// 5. **Explicit columns**: No `select('*')` — column lists are declared in [_columns].
-class PostgresShadowVerdictRepository
-    with PostgresErrorInterceptor
+class PostgresShadowVerdictRepository extends BasePostgresRepository
     implements ShadowVerdictRepository {
-  final SupabaseClient _client;
-
-  PostgresShadowVerdictRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+  PostgresShadowVerdictRepository(super.client);
 
   // ── Column projection (security rule: no select('*')) ─────────────────────
   static const _columns =
@@ -38,7 +33,7 @@ class PostgresShadowVerdictRepository
   @override
   Future<void> save(ShadowVerdict verdict) async {
     try {
-      await _client
+      await client
           .from('shadow_verdicts')
           .upsert(
             {
@@ -74,7 +69,7 @@ class PostgresShadowVerdictRepository
     int limit = 100,
   }) async {
     try {
-      final rows = await _client
+      final rows = await client
           .from('shadow_verdicts')
           .select(_columns)
           .eq('organization_id', organizationId)
@@ -98,7 +93,7 @@ class PostgresShadowVerdictRepository
     required DateTime toUtc,
   }) async {
     try {
-      final rows = await _client
+      final rows = await client
           .from('shadow_verdicts')
           .select(_columns)
           .eq('organization_id', organizationId)
@@ -123,7 +118,7 @@ class PostgresShadowVerdictRepository
     // Step 1: fetch shadow verdicts still awaiting a human decision.
     final dynamic pendingRows;
     try {
-      pendingRows = await _client
+      pendingRows = await client
           .from('shadow_verdicts')
           .select(_columns)
           .eq('organization_id', organizationId)
@@ -143,7 +138,7 @@ class PostgresShadowVerdictRepository
     // Step 2: fetch reviewed sanction queue entries for the same org.
     final dynamic srqRows;
     try {
-      srqRows = await _client
+      srqRows = await client
           .from('sanction_review_queue')
           .select(_srqColumns)
           .eq('organization_id', organizationId)
@@ -184,7 +179,7 @@ class PostgresShadowVerdictRepository
       );
 
       try {
-        await _client
+        await client
             .from('shadow_verdicts')
             .update({
               'manual_verdict': classified.manualVerdict,

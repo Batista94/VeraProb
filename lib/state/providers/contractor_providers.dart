@@ -1,17 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
 import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_contractor_repository.dart';
 import 'package:veraprob/application/sla_audit/save_contractor_handler.dart';
 import 'package:veraprob/application/sla_audit/delete_contractor_handler.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'auth_providers.dart';
 import 'contract_providers.dart';
 import 'shared_providers.dart';
 
 /// Provider for the contractor repository implementation.
+/// INV-30: Client injected via supabaseClientProvider.
 final contractorRepositoryProvider = Provider<ContractorRepository>((ref) {
-  return PostgresContractorRepository(supabase);
+  return PostgresContractorRepository(ref.watch(supabaseClientProvider));
 });
 
 /// Future provider for the list of contractors in the current organization.

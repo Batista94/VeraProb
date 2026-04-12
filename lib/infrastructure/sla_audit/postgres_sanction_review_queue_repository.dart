@@ -1,11 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Postgres implementation of [SanctionReviewQueueRepository].
 ///
@@ -14,18 +13,14 @@ import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 /// 2. **Tenant isolation**: All queries scoped to `organization_id` (INV-6).
 /// 3. **Status-only mutation**: DB trigger blocks updates to immutable fields (INV-1).
 /// 4. **No delete**: No delete method exists on this class.
-class PostgresSanctionReviewQueueRepository
-    with PostgresErrorInterceptor
+class PostgresSanctionReviewQueueRepository extends BasePostgresRepository
     implements SanctionReviewQueueRepository {
-  final SupabaseClient _client;
-
-  PostgresSanctionReviewQueueRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+  PostgresSanctionReviewQueueRepository(super.client);
 
   @override
   Future<void> enqueue(SanctionReviewQueueEntry entry) async {
     try {
-      await _client
+      await client
           .from('sanction_review_queue')
           .upsert(
             {
@@ -52,7 +47,7 @@ class PostgresSanctionReviewQueueRepository
     required String organizationId,
   }) async {
     try {
-      final response = await _client
+      final response = await client
           .from('sanction_review_queue')
           .select()
           .eq('id', id)
@@ -71,7 +66,7 @@ class PostgresSanctionReviewQueueRepository
     required String organizationId,
   }) async {
     try {
-      final response = await _client
+      final response = await client
           .from('sanction_review_queue')
           .select()
           .eq('organization_id', organizationId)
@@ -89,7 +84,7 @@ class PostgresSanctionReviewQueueRepository
   @override
   Future<void> updateStatus(SanctionReviewQueueEntry entry) async {
     try {
-      await _client
+      await client
           .from('sanction_review_queue')
           .update({
             'status': entry.status.name,

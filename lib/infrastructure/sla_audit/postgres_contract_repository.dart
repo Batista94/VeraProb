@@ -1,13 +1,12 @@
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Postgres implementation of [ContractRepository].
 ///
@@ -15,17 +14,9 @@ import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 /// (activate, close). Organization isolation is enforced at two layers:
 /// 1. Query predicates always include `organization_id`
 /// 2. RLS policy on `contracts` table rejects cross-tenant access
-class PostgresContractRepository
-    with PostgresErrorInterceptor
+class PostgresContractRepository extends BasePostgresRepository
     implements ContractRepository {
-  final SupabaseClient? _injectedClient;
-
-  // Lazy accessor — unit tests that only call assertFields/parseUtc
-  // do not trigger Supabase.instance before initialization.
-  SupabaseClient get _client => _injectedClient ?? supabase;
-
-  PostgresContractRepository([SupabaseClient? client])
-    : _injectedClient = client;
+  PostgresContractRepository(super.client);
 
   static const _requiredFields = [
     'id',
@@ -81,7 +72,7 @@ class PostgresContractRepository
   @override
   Future<void> save(Contract contract) async {
     try {
-      await _client.from('contracts').upsert({
+      await client.from('contracts').upsert({
         'id': contract.id,
         'organization_id': contract.organizationId,
         'name': contract.name,
@@ -120,7 +111,7 @@ class PostgresContractRepository
     required String organizationId,
   }) async {
     try {
-      final data = await _client
+      final data = await client
           .from('contracts')
           .select()
           .eq('organization_id', organizationId)
@@ -145,7 +136,7 @@ class PostgresContractRepository
     ContractStatus? status,
   }) async {
     try {
-      var query = _client
+      var query = client
           .from('contracts')
           .select()
           .eq('organization_id', organizationId);

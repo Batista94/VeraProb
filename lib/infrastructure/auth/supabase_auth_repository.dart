@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
-import 'package:veraprob/core/config/supabase_client.dart' as config;
 import 'package:veraprob/domain/auth/auth_failure_exception.dart';
 import 'package:veraprob/domain/auth/auth_user.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
@@ -23,8 +22,8 @@ import 'package:veraprob/infrastructure/auth/supabase_user_mapper.dart';
 class SupabaseAuthRepository implements IAuthRepository {
   final sb.SupabaseClient _client;
 
-  SupabaseAuthRepository([sb.SupabaseClient? client])
-    : _client = client ?? config.supabase;
+  /// INV-30: SupabaseClient must be injected — no fallback to singleton.
+  SupabaseAuthRepository(this._client);
 
   @override
   bool get isAuthenticated => _client.auth.currentSession != null;

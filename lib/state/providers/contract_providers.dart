@@ -157,6 +157,7 @@ final contractQueryServiceProvider = Provider<ContractQueryService>((ref) {
 
   if (mode == PersistenceMode.postgres) {
     return PostgresContractQueryService(
+      client: ref.watch(supabaseClientProvider),
       slaExecutionQueryService: ref.watch(slaExecutionQueryServiceProvider),
     );
   }

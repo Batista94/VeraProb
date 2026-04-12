@@ -21,7 +21,9 @@
       "Bash($f,$c)\")",
       "Bash(\"c:\\program files\\git\\usr\\bin\\bash.exe\" *)",
       "Bash(c:\\progra~1\\git\\usr\\bin\\bash.exe *)",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(node *)",
+      "Bash(deno *)"
     ]
   },
   "$version": 3

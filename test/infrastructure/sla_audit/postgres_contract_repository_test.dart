@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
@@ -10,6 +11,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../postgres/postgres_test_config.dart';
+
+class _MockSupabaseClient extends Mock implements SupabaseClient {}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -72,7 +75,7 @@ void main() async {
   // -------------------------------------------------------------------------
   group('Unit: _assertFields — schema assertion (INV-18)', () {
     // ignore: invalid_use_of_visible_for_testing_member
-    final repo = PostgresContractRepository();
+    final repo = PostgresContractRepository(_MockSupabaseClient());
 
     for (final field in _requiredFields) {
       test('T04.$field: campo ausente lança IntegrityException', () {
@@ -109,7 +112,7 @@ void main() async {
   // -------------------------------------------------------------------------
   group('Unit: _parseUtc — UTC enforcement (INV-9)', () {
     // ignore: invalid_use_of_visible_for_testing_member
-    final repo = PostgresContractRepository();
+    final repo = PostgresContractRepository(_MockSupabaseClient());
 
     test('T05._parseUtc: null lança IntegrityException', () {
       expect(

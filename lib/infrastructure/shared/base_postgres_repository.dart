@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
@@ -85,24 +86,81 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
   /// to ensure canonical JSON — identical to the Deno `sortKeys()` function used
   /// by the HMAC verification worker. Without this, Dart's `jsonEncode` preserves
   /// Map insertion order, which would produce different hashes than the Deno side.
+  ///
+  /// **INV-9 (Evidence Sealing):** Type normalization is applied before hashing:
+  /// `DateTime` objects are converted to ISO-8601 strings so that Dart and Deno
+  /// produce byte-identical JSON for the same logical payload.
   static String? _hashPayloadIfPresent(Map<String, dynamic>? payload) {
     if (payload == null || payload.isEmpty) return null;
     final canonicalJson = jsonEncode(_sortKeys(payload));
     return sha256.convert(utf8.encode(canonicalJson)).toString();
   }
 
-  /// Recursively sorts Map keys alphabetically for canonical JSON serialization.
+  /// Recursively sorts Map keys alphabetically and normalizes types for
+  /// canonical JSON serialization.
   ///
   /// Dart's `jsonEncode` preserves Map insertion order. To ensure identical hashes
   /// between Dart (insert) and Deno (verification), keys MUST be sorted
-  /// alphabetically — matching the Deno `sortKeys()` function in `hmac_signer.ts`.
+  /// alphabetically — matching the Deno `sortKeys()` function in `canonical_json.ts`.
+  ///
+  /// **Type normalization (INV-9 parity):**
+  /// - `DateTime` → ISO-8601 string with 'Z' suffix (e.g. `2026-04-11T00:00:00.000Z`)
+  /// - `Map<String, dynamic>` → keys sorted, values recursively normalized
+  /// - `List<dynamic>` → each element recursively normalized
+  /// - Primitives (null, String, int, double, bool) → returned as-is
+  ///
+  /// This ensures that a `DateTime` embedded in a nested list or map is
+  /// serialized identically on both Dart and Deno sides before hashing.
   static dynamic _sortKeys(dynamic obj) {
-    if (obj == null || obj is! Map<String, dynamic>) return obj;
-    final sorted = <String, dynamic>{};
-    final keys = obj.keys.toList()..sort();
-    for (final key in keys) {
-      sorted[key] = _sortKeys(obj[key]);
+    if (obj == null) return null;
+
+    // Type normalization: DateTime → ISO-8601 string (Z-suffix for UTC parity)
+    if (obj is DateTime) {
+      final iso = obj.toUtc().toIso8601String();
+      // Ensure 'Z' suffix for deterministic parity with Deno
+      return iso.endsWith('Z') ? iso : '${iso}Z';
     }
-    return sorted;
+
+    // Recursive map: sort keys + normalize values
+    if (obj is Map<String, dynamic>) {
+      final sorted = <String, dynamic>{};
+      final keys = obj.keys.toList()..sort();
+      for (final key in keys) {
+        sorted[key] = _sortKeys(obj[key]);
+      }
+      return sorted;
+    }
+
+    // Recursive list: normalize each element
+    if (obj is List) {
+      return obj.map(_sortKeys).toList();
+    }
+
+    // Case base: primitives (String, int, double, bool, num) pass through
+    return obj;
+  }
+
+  // ── Test Hooks (public access to private static methods) ──────────────────
+
+  /// Public wrapper for [_hashPayloadIfPresent] — used by tests to verify
+  /// deterministic hashing without exposing the private method.
+  @visibleForTesting
+  static String? hashPayload(Map<String, dynamic>? payload) {
+    return _hashPayloadIfPresent(payload);
+  }
+
+  /// Public wrapper for [_sortKeys] — used by tests to verify canonical
+  /// JSON serialization and type normalization.
+  @visibleForTesting
+  static dynamic sortKeys(dynamic obj) {
+    return _sortKeys(obj);
+  }
+
+  /// Returns the canonical JSON string for a payload (sorted keys + normalized
+  /// types). Useful for debugging hash mismatches and verifying parity with
+  /// the Deno `canonical_json.ts` implementation.
+  @visibleForTesting
+  static String canonicalJson(Map<String, dynamic> payload) {
+    return jsonEncode(_sortKeys(payload));
   }
 }

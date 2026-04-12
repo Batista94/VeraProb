@@ -116,9 +116,7 @@ void main() {
       UtcDateTimeProvider(),
     );
     ledgerRepo = PostgresSlaAuditLedgerRepository(client);
-    snapshotRepo = PostgresContractualFinancialSnapshotRepository(
-      client: client,
-    );
+    snapshotRepo = PostgresContractualFinancialSnapshotRepository(client);
 
     // Instantiate Application Layer
     final mockAuth = _MockAuthRepository();

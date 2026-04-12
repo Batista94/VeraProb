@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_mfa_repository.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'auth_providers.dart';
 
 /// Returns true if the current authenticated user is a SuperAdmin.
@@ -57,6 +57,7 @@ final superAdminRoleProvider = Provider<UserRole?>((ref) {
 /// this wires the missing Riverpod binding.
 /// Widgets that handle TOTP enrollment and challenge verification
 /// MUST consume this provider instead of instantiating the repository directly.
+/// INV-30: Client injected via supabaseClientProvider.
 final mfaRepositoryProvider = Provider<IMfaRepository>((ref) {
-  return SupabaseMfaRepository(supabase);
+  return SupabaseMfaRepository(ref.watch(supabaseClientProvider));
 });

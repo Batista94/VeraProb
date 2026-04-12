@@ -4,17 +4,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/adapters/realtime_data_provider.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 
+class MockSupabaseClient extends Mock implements SupabaseClient {}
+
 class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 void main() {
   group('RealtimeDataProvider onPayloadReceived', () {
     late RealtimeDataProvider provider;
     late MockDateTimeProvider mockDateTime;
+    late MockSupabaseClient mockClient;
 
     setUp(() {
       mockDateTime = MockDateTimeProvider();
+      mockClient = MockSupabaseClient();
       when(() => mockDateTime.now()).thenReturn(DateTime.now().toUtc());
-      provider = RealtimeDataProvider(mockDateTime);
+      provider = RealtimeDataProvider(mockDateTime, mockClient);
     });
 
     tearDown(() async {

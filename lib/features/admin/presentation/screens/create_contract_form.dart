@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/sla_audit/create_contract_command.dart';
-import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
@@ -145,7 +143,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
           ? null
           : int.tryParse(cleanValue);
 
-      final contract = await handler.handle(
+      final result = await handler.submitForm(
         CreateContractCommand(
           organizationId: organizationId,
           name: _nameController.text.trim(),
@@ -160,13 +158,11 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
         ),
       );
 
-      if (mounted) Navigator.of(context).pop(contract.id);
-    } on SovereigntyViolationException {
-      // INV-26: Generic message — no forensic details leaked to the UI.
-      // The actual tenant mismatch is logged to Sentry internally.
-      setState(() => _errorMessage = 'Contrato não encontrado.');
-    } on DomainException catch (e) {
-      setState(() => _errorMessage = e.message);
+      if (result.isSuccess) {
+        if (mounted) Navigator.of(context).pop(result.contractId);
+      } else {
+        setState(() => _errorMessage = result.errorMessage);
+      }
     } catch (e) {
       setState(() => _errorMessage = 'Erro inesperado: $e');
     } finally {

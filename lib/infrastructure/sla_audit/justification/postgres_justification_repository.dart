@@ -1,13 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_category.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_evidence.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_repository.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_submission_token.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Supabase / Postgres implementation of [JustificationRepository].
 ///
@@ -18,13 +17,9 @@ import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 /// 4. **Status-only mutation**: [updateStatus] only writes review fields.
 /// 5. **Token single-use**: [useToken] delegates to the `use_justification_token`
 ///    SECURITY DEFINER RPC (PO-1 — anon-safe).
-class PostgresJustificationRepository
-    with PostgresErrorInterceptor
+class PostgresJustificationRepository extends BasePostgresRepository
     implements JustificationRepository {
-  final SupabaseClient _client;
-
-  PostgresJustificationRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+  PostgresJustificationRepository(super.client);
 
   // ── Justifications ────────────────────────────────────────────────────────
 
@@ -33,7 +28,7 @@ class PostgresJustificationRepository
     ContractorJustification justification,
   ) async {
     try {
-      await _client.from('contractor_justifications').insert({
+      await client.from('contractor_justifications').insert({
         'id': justification.id,
         'organization_id': justification.organizationId,
         'contract_id': justification.contractId,
@@ -56,7 +51,7 @@ class PostgresJustificationRepository
     required String organizationId,
   }) async {
     try {
-      final row = await _client
+      final row = await client
           .from('contractor_justifications')
           .select(
             'id, organization_id, contract_id, set_id, submitted_by_token, '
@@ -83,7 +78,7 @@ class PostgresJustificationRepository
     int limit = 100,
   }) async {
     try {
-      var query = _client
+      var query = client
           .from('contractor_justifications')
           .select(
             'id, organization_id, contract_id, set_id, submitted_by_token, '
@@ -120,7 +115,7 @@ class PostgresJustificationRepository
     required DateTime reviewedAtUtc,
   }) async {
     try {
-      await _client
+      await client
           .from('contractor_justifications')
           .update({
             'status': status.dbValue,
@@ -147,7 +142,7 @@ class PostgresJustificationRepository
     JustificationEvidence evidence,
   ) async {
     try {
-      await _client.from('justification_evidence_uploads').insert({
+      await client.from('justification_evidence_uploads').insert({
         'id': evidence.id,
         'justification_id': evidence.justificationId,
         'organization_id': evidence.organizationId,
@@ -168,7 +163,7 @@ class PostgresJustificationRepository
     required String organizationId,
   }) async {
     try {
-      final rows = await _client
+      final rows = await client
           .from('justification_evidence_uploads')
           .select(
             'id, justification_id, organization_id, file_name, '
@@ -193,7 +188,7 @@ class PostgresJustificationRepository
     JustificationSubmissionToken token,
   ) async {
     try {
-      await _client.from('justification_submission_tokens').insert({
+      await client.from('justification_submission_tokens').insert({
         'id': token.id,
         'organization_id': token.organizationId,
         'contract_id': token.contractId,
@@ -213,7 +208,7 @@ class PostgresJustificationRepository
   @override
   Future<JustificationSubmissionToken?> findToken(String tokenValue) async {
     try {
-      final row = await _client
+      final row = await client
           .from('justification_submission_tokens')
           .select(
             'id, organization_id, contract_id, set_id, justification_id, '
@@ -237,7 +232,7 @@ class PostgresJustificationRepository
     required String description,
   }) async {
     try {
-      final result = await _client.rpc(
+      final result = await client.rpc(
         'use_justification_token',
         params: {
           'p_token': tokenValue,

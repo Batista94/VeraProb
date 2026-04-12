@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/sla_audit/justification/approve_justification_handler.dart';
 import 'package:veraprob/application/sla_audit/justification/generate_justification_token_handler.dart';
@@ -11,6 +10,7 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/justification/justification_evidence_storage_service.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'contract_providers.dart';
 import 'local_fact_queue_providers.dart';
 import 'shared_providers.dart';
@@ -46,7 +46,9 @@ final generateJustificationTokenHandlerProvider =
 
 final justificationStorageServiceProvider =
     Provider<JustificationEvidenceStorageService>((ref) {
-      return JustificationEvidenceStorageService();
+      return JustificationEvidenceStorageService(
+        ref.watch(supabaseClientProvider),
+      );
     });
 
 // ── Realtime stream of all justifications ────────────────────────────────────
@@ -55,9 +57,11 @@ final justificationStorageServiceProvider =
 /// ordered by submission time descending. Backed by Supabase Realtime.
 ///
 /// RLS enforces tenant isolation — no explicit org_id filter needed.
+/// INV-30: Client injected via supabaseClientProvider.
 final justificationListStreamProvider =
     StreamProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
-      return Supabase.instance.client
+      return ref
+          .watch(supabaseClientProvider)
           .from('contractor_justifications')
           .stream(primaryKey: ['id'])
           .order('created_at_utc', ascending: false)

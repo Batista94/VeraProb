@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'operational_data_provider.dart';
@@ -19,8 +18,10 @@ import 'operational_data_provider.dart';
 /// represents the **current operational state** of the fleet.
 class RealtimeDataProvider implements IOperationalDataProvider {
   final IDateTimeProvider _dateTimeProvider;
+  final SupabaseClient _client;
 
-  RealtimeDataProvider(this._dateTimeProvider);
+  /// INV-30: SupabaseClient must be injected — no fallback to singleton.
+  RealtimeDataProvider(this._dateTimeProvider, this._client);
 
   final _controller = StreamController<List<VehiclePosition>>.broadcast();
   RealtimeChannel? _channel;
@@ -46,7 +47,7 @@ class RealtimeDataProvider implements IOperationalDataProvider {
   Future<void> connect() async {
     if (_isConnected) return;
 
-    _channel = supabase.channel('fleet-live-positions');
+    _channel = _client.channel('fleet-live-positions');
 
     _channel!
         .onPostgresChanges(

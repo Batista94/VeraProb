@@ -5,9 +5,11 @@ import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'create_contract_command.dart';
+import 'contract_form_result.dart';
 import 'sla_ledger_mapper.dart';
 
 /// Application handler for [CreateContractCommand].
@@ -88,5 +90,29 @@ class CreateContractHandler {
 
     // ── Step 5: Return aggregate ─────────────────────────────────────────
     return contract;
+  }
+
+  /// Form-friendly wrapper around [handle] that catches domain exceptions
+  /// and returns a [ContractFormResult] instead of throwing.
+  ///
+  /// This allows the UI layer to handle errors without importing
+  /// domain-layer exceptions (INV-4 / INV-13).
+  ///
+  /// **Mapping:**
+  /// - [SovereigntyViolationException] → `ContractFormResult.failure` (INV-26: generic message)
+  /// - [DomainException] → `ContractFormResult.failure` (user-facing message)
+  /// - Other exceptions → `ContractFormResult.unknownError()`
+  Future<ContractFormResult> submitForm(CreateContractCommand command) async {
+    try {
+      final contract = await handle(command);
+      return ContractFormResult.success(contract.id);
+    } on SovereigntyViolationException {
+      // INV-26: Generic message — no forensic details leaked to the UI.
+      return const ContractFormResult.failure('Contrato não encontrado.');
+    } on DomainException catch (e) {
+      return ContractFormResult.failure(e.message);
+    } catch (_) {
+      return const ContractFormResult.unknownError();
+    }
   }
 }

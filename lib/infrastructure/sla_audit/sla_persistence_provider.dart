@@ -40,7 +40,9 @@ final planDeclarationRepositoryProvider = Provider<PlanDeclarationRepository>((
 ) {
   return switch (ref.watch(persistenceModeProvider)) {
     PersistenceMode.inMemory => InMemoryPlanDeclarationRepository(),
-    PersistenceMode.postgres => PostgresPlanDeclarationRepository(),
+    PersistenceMode.postgres => PostgresPlanDeclarationRepository(
+      ref.watch(supabaseClientProvider),
+    ),
   };
 });
 
@@ -61,7 +63,9 @@ final slaAuditLedgerRepositoryProvider = Provider<SlaAuditLedgerRepository>((
 ) {
   return switch (ref.watch(persistenceModeProvider)) {
     PersistenceMode.inMemory => InMemorySlaAuditLedgerRepository(),
-    PersistenceMode.postgres => PostgresSlaAuditLedgerRepository(),
+    PersistenceMode.postgres => PostgresSlaAuditLedgerRepository(
+      ref.watch(supabaseClientProvider),
+    ),
   };
 });
 
@@ -71,14 +75,18 @@ final contractualFinancialSnapshotRepositoryProvider =
         PersistenceMode.inMemory =>
           InMemoryContractualFinancialSnapshotRepository(),
         PersistenceMode.postgres =>
-          PostgresContractualFinancialSnapshotRepository(),
+          PostgresContractualFinancialSnapshotRepository(
+            ref.watch(supabaseClientProvider),
+          ),
       };
     });
 
 final contractRepositoryProvider = Provider<ContractRepository>((ref) {
   return switch (ref.watch(persistenceModeProvider)) {
     PersistenceMode.inMemory => InMemoryContractRepository(),
-    PersistenceMode.postgres => PostgresContractRepository(),
+    PersistenceMode.postgres => PostgresContractRepository(
+      ref.watch(supabaseClientProvider),
+    ),
   };
 });
 
@@ -86,7 +94,9 @@ final sanctionReviewQueueRepositoryProvider =
     Provider<SanctionReviewQueueRepository>((ref) {
       return switch (ref.watch(persistenceModeProvider)) {
         PersistenceMode.inMemory => InMemorySanctionReviewQueueRepository(),
-        PersistenceMode.postgres => PostgresSanctionReviewQueueRepository(),
+        PersistenceMode.postgres => PostgresSanctionReviewQueueRepository(
+          ref.watch(supabaseClientProvider),
+        ),
       };
     });
 
@@ -95,7 +105,9 @@ final justificationRepositoryProvider = Provider<JustificationRepository>((
 ) {
   return switch (ref.watch(persistenceModeProvider)) {
     PersistenceMode.inMemory => InMemoryJustificationRepository(),
-    PersistenceMode.postgres => PostgresJustificationRepository(),
+    PersistenceMode.postgres => PostgresJustificationRepository(
+      ref.watch(supabaseClientProvider),
+    ),
   };
 });
 
@@ -105,6 +117,8 @@ final vehicleInfractionRecurrenceRepositoryProvider =
         PersistenceMode.inMemory =>
           const InMemoryVehicleInfractionRecurrenceRepository(),
         PersistenceMode.postgres =>
-          PostgresVehicleInfractionRecurrenceRepository(),
+          PostgresVehicleInfractionRecurrenceRepository(
+            ref.watch(supabaseClientProvider),
+          ),
       };
     });

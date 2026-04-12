@@ -18,6 +18,7 @@ import 'package:veraprob/application/adapters/stress_scenario_config.dart';
 import 'package:veraprob/application/projections/providers/command_center_filter_provider.dart';
 import 'package:veraprob/application/projections/providers/fleet_attention_projection_provider.dart';
 import 'package:veraprob/application/projections/models/attention_state.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'sla_providers.dart';
 
 // ── Core Services ──────────────────────────────────────
@@ -125,7 +126,10 @@ final operationalDataProvider = Provider<IOperationalDataProvider>((ref) {
   if (stressConfig != null) {
     return SimulationDataProvider(ref.watch(fleetSimulationProvider));
   }
-  return RealtimeDataProvider(ref.watch(dateTimeProviderProvider));
+  return RealtimeDataProvider(
+    ref.watch(dateTimeProviderProvider),
+    ref.watch(supabaseClientProvider),
+  );
 });
 
 // ── Position Stream ────────────────────────────────────

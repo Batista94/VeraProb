@@ -2,7 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// PostgreSQL implementation of [ContractualFinancialSnapshotRepository].
 ///
@@ -13,17 +13,14 @@ import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 /// chain in memory after fetching records, guaranteeing that only the most
 /// recent snapshot of a chain represents the official closed status.
 class PostgresContractualFinancialSnapshotRepository
-    with PostgresErrorInterceptor
+    extends BasePostgresRepository
     implements ContractualFinancialSnapshotRepository {
-  final SupabaseClient _client;
-
-  PostgresContractualFinancialSnapshotRepository({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  PostgresContractualFinancialSnapshotRepository(super.client);
 
   @override
   Future<void> save(ContractualFinancialDailySnapshot snapshot) async {
     try {
-      await _client.from('contractual_financial_snapshot').insert({
+      await client.from('contractual_financial_snapshot').insert({
         'id': snapshot.id,
         'organization_id': snapshot.organizationId,
         'contract_id': snapshot.contractId,
@@ -59,7 +56,7 @@ class PostgresContractualFinancialSnapshotRepository
     String? contractId,
   }) async {
     try {
-      var query = _client
+      var query = client
           .from('contractual_financial_snapshot')
           .select()
           .eq('organization_id', organizationId);
@@ -94,7 +91,7 @@ class PostgresContractualFinancialSnapshotRepository
     String? contractId,
   }) async {
     try {
-      var query = _client
+      var query = client
           .from('contractual_financial_snapshot')
           .select()
           .eq('organization_id', organizationId)

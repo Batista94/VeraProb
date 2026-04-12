@@ -6,7 +6,6 @@ import 'package:veraprob/application/sla_audit/projections/contract_status_view.
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 
@@ -16,21 +15,20 @@ import 'package:veraprob/domain/shared/integrity_exception.dart';
 /// `execution_states` tables using targeted queries.
 /// Purely read-only — never mutates state.
 class PostgresContractQueryService implements ContractQueryService {
-  final SupabaseClient _client;
+  final SupabaseClient client;
   final SlaExecutionQueryService _slaExecutionQueryService;
 
   PostgresContractQueryService({
-    SupabaseClient? client,
+    required this.client,
     required SlaExecutionQueryService slaExecutionQueryService,
-  }) : _client = client ?? supabase,
-       _slaExecutionQueryService = slaExecutionQueryService;
+  }) : _slaExecutionQueryService = slaExecutionQueryService;
 
   @override
   Future<List<ContractSummaryView>> listContracts({
     required String organizationId,
     ContractStatusView? status,
   }) async {
-    var query = _client
+    var query = client
         .from('contracts')
         .select()
         .eq('organization_id', organizationId);
@@ -58,7 +56,7 @@ class PostgresContractQueryService implements ContractQueryService {
     required String organizationId,
     required String contractId,
   }) async {
-    final row = await _client
+    final row = await client
         .from('contracts')
         .select()
         .eq('organization_id', organizationId)
@@ -70,7 +68,7 @@ class PostgresContractQueryService implements ContractQueryService {
     final summary = await _buildSummary(contractId, organizationId, row);
 
     // Recent executions — all SETs for this contract, ordered by windowStart desc
-    final List<dynamic> stateRows = await _client
+    final List<dynamic> stateRows = await client
         .from('execution_states')
         .select()
         .eq('organization_id', organizationId)
@@ -106,7 +104,7 @@ class PostgresContractQueryService implements ContractQueryService {
     // Merge projected SETs from contractual_service_executions.
     // These are visible immediately after plan declaration, before any telemetry
     // arrives. SETs already present in execution_states are skipped (already merged).
-    final List<dynamic> planIdRows = await _client
+    final List<dynamic> planIdRows = await client
         .from('plan_declarations')
         .select('id')
         .eq('organization_id', organizationId)
@@ -117,7 +115,7 @@ class PostgresContractQueryService implements ContractQueryService {
     if (planIds.isNotEmpty) {
       final evaluatedSetIds = recentExecutions.map((e) => e.setId).toSet();
 
-      final List<dynamic> projectedRows = await _client
+      final List<dynamic> projectedRows = await client
           .from('contractual_service_executions')
           .select()
           .inFilter('plan_declaration_id', planIds)
@@ -178,7 +176,7 @@ class PostgresContractQueryService implements ContractQueryService {
     Map<String, dynamic> row,
   ) async {
     // Plan counters
-    final List<dynamic> planRows = await _client
+    final List<dynamic> planRows = await client
         .from('plan_declarations')
         .select('plan_version')
         .eq('organization_id', organizationId)
@@ -191,7 +189,7 @@ class PostgresContractQueryService implements ContractQueryService {
         : (planRows.first['plan_version'] as int);
 
     // Execution state counters (single query — aggregate in Dart to avoid RPC)
-    final List<dynamic> stateRows = await _client
+    final List<dynamic> stateRows = await client
         .from('execution_states')
         .select('status')
         .eq('organization_id', organizationId)

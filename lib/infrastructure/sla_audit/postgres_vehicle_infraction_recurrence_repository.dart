@@ -1,11 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_repository.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Postgres implementation of [VehicleInfractionRecurrenceRepository].
 ///
@@ -15,12 +14,9 @@ import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 /// INV-1: All queries filter by [organizationId].
 /// INV-9: Month boundaries computed in UTC.
 class PostgresVehicleInfractionRecurrenceRepository
-    with PostgresErrorInterceptor
+    extends BasePostgresRepository
     implements VehicleInfractionRecurrenceRepository {
-  final SupabaseClient _client;
-
-  PostgresVehicleInfractionRecurrenceRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+  PostgresVehicleInfractionRecurrenceRepository(super.client);
 
   @override
   Future<List<SanctionReviewQueueEntry>> findByPlateInMonth({
@@ -37,7 +33,7 @@ class PostgresVehicleInfractionRecurrenceRepository
         1,
       );
 
-      final response = await _client
+      final response = await client
           .from('sanction_review_queue')
           .select()
           .eq('organization_id', organizationId)

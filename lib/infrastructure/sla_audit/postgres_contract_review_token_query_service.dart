@@ -1,7 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/core/config/supabase_client.dart';
-
 /// Read-only query service for contract review data.
 ///
 /// Used exclusively by [ReviewContractScreen] to load the contract summary
@@ -10,10 +8,9 @@ import 'package:veraprob/core/config/supabase_client.dart';
 /// Calls the public `get_contract_for_review` RPC which works without
 /// Supabase auth (anon key is sufficient).
 class PostgresContractReviewTokenQueryService {
-  final SupabaseClient _client;
+  final SupabaseClient client;
 
-  PostgresContractReviewTokenQueryService([SupabaseClient? client])
-    : _client = client ?? supabase;
+  PostgresContractReviewTokenQueryService(this.client);
 
   /// Returns a [ContractReviewSummary] for the given [token],
   /// or `null` if the token is invalid, expired, or the contract is
@@ -23,7 +20,7 @@ class PostgresContractReviewTokenQueryService {
   ) async {
     try {
       final result =
-          await _client.rpc(
+          await client.rpc(
                 'get_contract_for_review',
                 params: {'p_token': token},
               )

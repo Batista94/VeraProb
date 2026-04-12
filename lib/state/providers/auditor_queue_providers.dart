@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/sla_audit/approve_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/approve_sanction_handler.dart';
@@ -10,6 +9,7 @@ import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/infraction_recurrence_report.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_service.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'auth_providers.dart';
 import 'contract_providers.dart';
 import 'shared_providers.dart';
@@ -21,9 +21,11 @@ import 'sla_providers.dart';
 /// Backed by Supabase Realtime — updates arrive in <30s (INV-23 notification SLA).
 ///
 /// RLS enforces tenant isolation; no explicit org_id filter needed in query.
+/// INV-30: Client injected via supabaseClientProvider (no Supabase.instance).
 final pendingSanctionsStreamProvider =
     StreamProvider.autoDispose<List<SanctionQueueItemView>>((ref) {
-      return Supabase.instance.client
+      return ref
+          .watch(supabaseClientProvider)
           .from('sanction_review_queue')
           .stream(primaryKey: ['id'])
           .eq('status', 'pending')
@@ -48,9 +50,11 @@ final pendingSanctionsCountProvider = Provider.autoDispose<int>((ref) {
 ///
 /// Returns null if the contract is not found (RLS will silently block
 /// cross-tenant access — no explicit error exposed to the UI).
+/// INV-30: Client injected via supabaseClientProvider.
 final contractNameProvider = FutureProvider.autoDispose.family<String?, String>(
   (ref, contractId) async {
-    final row = await Supabase.instance.client
+    final row = await ref
+        .watch(supabaseClientProvider)
         .from('contracts')
         .select('name')
         .eq('id', contractId)

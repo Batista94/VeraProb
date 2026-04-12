@@ -1,25 +1,20 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:veraprob/core/config/supabase_client.dart';
 import 'package:veraprob/domain/entities/vehicle.dart';
 import 'package:veraprob/domain/enums/vehicle_status.dart';
 import 'package:veraprob/domain/assets/i_vehicle_asset_repository.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Supabase implementation of [IVehicleAssetRepository].
 ///
 /// Wraps `SupabaseClient` so that no Widget ever imports
 /// `supabase_flutter` directly (SRP-UI-LEAK prevention).
-class PostgresVehicleAssetRepository
-    with PostgresErrorInterceptor
+class PostgresVehicleAssetRepository extends BasePostgresRepository
     implements IVehicleAssetRepository {
-  final SupabaseClient _client;
-
-  PostgresVehicleAssetRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+  PostgresVehicleAssetRepository(super.client);
 
   String get _orgId {
     final orgId =
-        _client.auth.currentSession?.user.appMetadata['org_id'] as String?;
+        client.auth.currentSession?.user.appMetadata['org_id'] as String?;
     if (orgId == null) throw StateError('No organization in session JWT');
     return orgId;
   }
@@ -27,7 +22,7 @@ class PostgresVehicleAssetRepository
   @override
   Future<List<Vehicle>> getVehicles() async {
     try {
-      final response = await _client
+      final response = await client
           .from('vehicles')
           .select()
           .order('plate', ascending: true);
@@ -47,7 +42,7 @@ class PostgresVehicleAssetRepository
     VehicleStatus status = VehicleStatus.available,
   }) async {
     try {
-      final response = await _client
+      final response = await client
           .from('vehicles')
           .insert({
             'organization_id': _orgId,
@@ -67,7 +62,7 @@ class PostgresVehicleAssetRepository
   @override
   Future<void> updateVehicle(Vehicle vehicle) async {
     try {
-      await _client
+      await client
           .from('vehicles')
           .update({
             'plate': vehicle.plate.toUpperCase().trim(),
@@ -84,7 +79,7 @@ class PostgresVehicleAssetRepository
   @override
   Future<void> deleteVehicle(String vehicleId) async {
     try {
-      await _client.from('vehicles').delete().eq('id', vehicleId);
+      await client.from('vehicles').delete().eq('id', vehicleId);
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
     }

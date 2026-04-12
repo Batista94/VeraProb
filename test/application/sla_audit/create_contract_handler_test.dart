@@ -219,4 +219,85 @@ void main() {
       expect(quotaLedger.entries, isEmpty);
     });
   });
+
+  group('submitForm — UI-friendly wrapper', () {
+    test(
+      'happy path — returns ContractFormResult.success with contract ID',
+      () async {
+        final result = await handler.submitForm(makeCommand());
+
+        expect(result.isSuccess, isTrue);
+        expect(result.contractId, isNotEmpty);
+        expect(result.errorMessage, isNull);
+      },
+    );
+
+    test(
+      'DomainException — returns ContractFormResult.failure with user message',
+      () async {
+        final result = await handler.submitForm(makeCommand(name: ''));
+
+        expect(result.isFailure, isTrue);
+        expect(result.contractId, isNull);
+        expect(result.errorMessage, contains('name must not be empty'));
+      },
+    );
+
+    test(
+      'SovereigntyViolationException — returns ContractFormResult.failure with INV-26 generic message',
+      () async {
+        // Stub session to return a different tenant than the one in the command
+        when(() => mockAuthRepo.getUserBySessionId(any<String>())).thenAnswer(
+          (_) async => const domain.AuthUser(id: 'user-1', tenantId: 'org-B'),
+        );
+
+        final result = await handler.submitForm(makeCommand());
+
+        expect(result.isFailure, isTrue);
+        expect(result.contractId, isNull);
+        // INV-26: Message must NOT leak forensic details (org IDs)
+        expect(result.errorMessage, 'Contrato não encontrado.');
+      },
+    );
+
+    test(
+      'unexpected error — returns ContractFormResult.unknownError',
+      () async {
+        final bombRepo = _BombContractRepository();
+        final bombHandler = CreateContractHandler(
+          tenantValidator: tenantValidator,
+          contractRepository: bombRepo,
+          ledger: ledger,
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+        );
+
+        final result = await bombHandler.submitForm(makeCommand());
+
+        expect(result.isFailure, isTrue);
+        expect(result.contractId, isNull);
+        expect(result.errorMessage, 'Erro inesperado. Tente novamente.');
+      },
+    );
+  });
+}
+
+/// Repository that throws an unexpected exception (not DomainException or
+/// SovereigntyViolationException) to test the catch-all branch of submitForm.
+class _BombContractRepository implements ContractRepository {
+  @override
+  Future<void> save(Contract contract) async {
+    throw Exception('database on fire');
+  }
+
+  @override
+  Future<Contract?> findById(
+    String id, {
+    required String organizationId,
+  }) async => null;
+
+  @override
+  Future<List<Contract>> findByOrganization(
+    String organizationId, {
+    ContractStatus? status,
+  }) async => [];
 }
