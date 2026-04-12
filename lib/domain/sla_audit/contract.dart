@@ -37,6 +37,11 @@ class Contract extends Equatable {
   /// UUID v4 generated internally. Immutable.
   final String id;
 
+  /// Optimistic locking version counter. Auto-incremented on each UPDATE.
+  /// Used to detect concurrent modifications (Lost Update prevention).
+  /// New aggregates start at version 1.
+  final int version;
+
   // ── Attributes ────────────────────────────────────────────
   final String organizationId;
   final String name;
@@ -88,6 +93,7 @@ class Contract extends Equatable {
   // ignore: prefer_const_constructors_in_immutables
   Contract._({
     required this.id,
+    required this.version,
     required this.organizationId,
     required this.name,
     required this.contractorName,
@@ -167,6 +173,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: 1, // New aggregate starts at version 1
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -234,6 +241,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: 1, // Cloned aggregate starts at version 1
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -256,6 +264,7 @@ class Contract extends Equatable {
   /// Used by infrastructure repositories. Does NOT emit domain events.
   static Contract reconstitute({
     required String id,
+    required int version,
     required String organizationId,
     required String name,
     required String contractorName,
@@ -277,6 +286,7 @@ class Contract extends Equatable {
   }) {
     return Contract._(
       id: id,
+      version: version,
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -330,6 +340,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: version, // Version preserved — incremented by DB trigger on save
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -379,6 +390,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: version, // Version preserved — incremented by DB trigger on save
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -425,6 +437,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: version, // Version preserved — incremented by DB trigger on save
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -487,6 +500,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: version, // Version preserved — incremented by DB trigger on save
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -549,6 +563,7 @@ class Contract extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    version,
     organizationId,
     name,
     contractorName,

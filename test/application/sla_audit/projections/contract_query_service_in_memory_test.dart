@@ -45,6 +45,7 @@ void main() {
     test('listContracts success', () async {
       final contract = Contract.reconstitute(
         id: 'c1-id',
+        version: 1,
         organizationId: 'org1',
         name: 'c1',
         contractorName: 'contractor1',
@@ -95,6 +96,7 @@ void main() {
     test('getContractDetail success', () async {
       final contract = Contract.reconstitute(
         id: 'c1-id',
+        version: 1,
         organizationId: 'org1',
         name: 'c1',
         contractorName: 'contractor1',

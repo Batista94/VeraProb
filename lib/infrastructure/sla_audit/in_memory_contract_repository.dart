@@ -12,8 +12,9 @@ class InMemoryContractRepository implements ContractRepository {
   final Map<String, Contract> _store = {};
 
   @override
-  Future<void> save(Contract contract) async {
+  Future<Contract> save(Contract contract) async {
     _store[contract.id] = contract;
+    return contract;
   }
 
   @override

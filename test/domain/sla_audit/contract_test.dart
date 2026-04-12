@@ -134,6 +134,7 @@ void main() {
     test('does NOT emit domain events', () {
       final contract = Contract.reconstitute(
         id: 'existing-id',
+        version: 1,
         organizationId: 'org-1',
         name: 'Contract B',
         contractorName: 'Empresa B',
@@ -155,6 +156,7 @@ void main() {
 
       final contract = Contract.reconstitute(
         id: 'c-123',
+        version: 1,
         organizationId: 'org-5',
         name: 'Contract C',
         contractorName: 'Empresa C',
@@ -350,6 +352,7 @@ void main() {
     test('two reconstituted contracts with same data are equal', () {
       final c1 = Contract.reconstitute(
         id: 'same-id',
+        version: 1,
         organizationId: 'org-1',
         name: 'Name',
         contractorName: 'Contractor',
@@ -361,6 +364,7 @@ void main() {
       );
       final c2 = Contract.reconstitute(
         id: 'same-id',
+        version: 1,
         organizationId: 'org-1',
         name: 'Name',
         contractorName: 'Contractor',

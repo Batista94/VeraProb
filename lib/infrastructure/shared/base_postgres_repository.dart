@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// INV-26: Base repository for all Postgres-backed implementations.
@@ -74,6 +75,101 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
         resourceId: forensicResourceId,
       );
     }
+  }
+
+  // ── Optimistic Locking Support ────────────────────────────────────────
+
+  /// Executes an UPDATE with optimistic locking via version column.
+  ///
+  /// **How it works:**
+  /// 1. Filters the update by `.eq('version', currentVersion)` — if another
+  ///    user has already bumped the version, this filter matches zero rows.
+  /// 2. Appends `.select('id, version').maybeSingle()` to detect whether the
+  ///    update actually found and modified a row.
+  /// 3. If the result is null:
+  ///    a. First, check if the row still exists (without version filter).
+  ///    b. If it exists → [ConflictException.staleVersion] (another user won)
+  ///    c. If it doesn't → [ConflictException.deleted] (resource was deleted)
+  ///
+  /// **Why this pattern:** Supabase/PostgREST does not return the number of
+  /// affected rows. The only way to detect "zero rows matched" is to request
+  /// the updated row back and check if it comes back.
+  ///
+  /// **Return value:** Returns the DB-assigned `version` after the update.
+  /// The caller MUST use this value to update its local entity reference,
+  /// otherwise subsequent updates on the same entity will fail with a
+  /// [ConflictException] (stale version).
+  ///
+  /// [table] — Postgres table name (e.g., 'contracts').
+  /// [data] — the update payload (WITHOUT version field — trigger handles it).
+  /// [id] — primary key of the row to update.
+  /// [currentVersion] — the version the client read before editing.
+  /// [resourceType] — domain name for error messages (e.g., 'contract').
+  ///
+  /// Returns the updated `version` assigned by the database trigger.
+  Future<int> updateWithVersion({
+    required String table,
+    required Map<String, dynamic> data,
+    required String id,
+    required int currentVersion,
+    required String resourceType,
+  }) async {
+    // Step 1: Attempt update filtered by expected version.
+    // The DB trigger bumps version to currentVersion + 1 on success.
+    // maybeSingle() may throw PGRST116 when 0 rows — treat as null.
+    Map<String, dynamic>? updated;
+    try {
+      updated = await client
+          .from(table)
+          .update(data)
+          .eq('id', id)
+          .eq('version', currentVersion)
+          .select('id, version')
+          .maybeSingle();
+    } on PostgrestException catch (e) {
+      if (e.code != 'PGRST116' && e.code != '406') rethrow;
+      updated = null;
+    }
+
+    if (updated != null) {
+      // Happy path: update succeeded, trigger incremented version.
+      return updated['version'] as int;
+    }
+
+    // Step 2: Conflict or deletion — discriminate forensically.
+    // maybeSingle() may throw PGRST116 when 0 rows — treat as null.
+    Map<String, dynamic>? exists;
+    try {
+      exists = await client
+          .from(table)
+          .select('id, version')
+          .eq('id', id)
+          .maybeSingle();
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST116' || e.code == '406') {
+        exists = null;
+      } else {
+        rethrow;
+      }
+    }
+
+    if (exists == null) {
+      // Resource was deleted by another user while we were editing.
+      throw ConflictException.deleted(
+        resourceType: resourceType,
+        resourceId: id,
+        clientVersion: currentVersion,
+      );
+    }
+
+    // Resource exists but at a different version → stale write.
+    final serverVersion = exists['version'] as int?;
+    throw ConflictException.staleVersion(
+      resourceType: resourceType,
+      resourceId: id,
+      clientVersion: currentVersion,
+      currentVersion: serverVersion ?? -1,
+    );
   }
 
   /// Generates a SHA-256 hex digest of a JSON payload for forensic traceability.

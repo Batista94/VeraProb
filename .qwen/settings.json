@@ -23,7 +23,12 @@
       "Bash(c:\\progra~1\\git\\usr\\bin\\bash.exe *)",
       "Bash(grep *)",
       "Bash(node *)",
-      "Bash(deno *)"
+      "Bash(deno *)",
+      "Bash(taskkill *)",
+      "Bash(timeout *)",
+      "Bash(supabase *)",
+      "Bash(docker exec *)",
+      "Bash(docker ps *)"
     ]
   },
   "$version": 3

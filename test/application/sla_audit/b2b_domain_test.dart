@@ -274,6 +274,7 @@ class MockContractRepo implements ContractRepository {
     if (id == contractId && organizationId == orgId) {
       return Contract.reconstitute(
         id: contractId,
+        version: 1,
         organizationId: orgId,
         name: 'Test',
         contractorName: 'Tester',
@@ -288,7 +289,7 @@ class MockContractRepo implements ContractRepository {
   }
 
   @override
-  Future<void> save(Contract contract) async {}
+  Future<Contract> save(Contract contract) async => contract;
   @override
   Future<List<Contract>> findByOrganization(
     String orgId, {

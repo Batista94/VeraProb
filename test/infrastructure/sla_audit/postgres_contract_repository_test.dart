@@ -52,6 +52,7 @@ Contract _buildContract({
 }) {
   return Contract.reconstitute(
     id: id,
+    version: 1,
     organizationId: organizationId,
     name: 'Contract $id',
     contractorName: 'Contractor LTDA',

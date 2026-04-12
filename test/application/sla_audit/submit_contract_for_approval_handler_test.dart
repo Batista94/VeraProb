@@ -59,6 +59,7 @@ class _FakeApprovalService extends Fake
 Contract _makeContract({ContractStatus status = ContractStatus.draft}) {
   return Contract.reconstitute(
     id: 'contract-1',
+    version: 1,
     organizationId: 'org-1',
     name: 'Contrato Teste',
     contractorName: 'Empresa ABC',

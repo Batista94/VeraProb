@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/entities/vehicle.dart';
 import 'package:veraprob/domain/enums/vehicle_status.dart';
 import 'package:veraprob/domain/assets/i_vehicle_asset_repository.dart';
+import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Supabase implementation of [IVehicleAssetRepository].
@@ -60,17 +61,24 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
   }
 
   @override
-  Future<void> updateVehicle(Vehicle vehicle) async {
+  Future<Vehicle> updateVehicle(Vehicle vehicle) async {
     try {
-      await client
-          .from('vehicles')
-          .update({
-            'plate': vehicle.plate.toUpperCase().trim(),
-            'model': vehicle.model?.trim(),
-            'capacity': vehicle.capacity,
-            'status': vehicle.status.dbValue,
-          })
-          .eq('id', vehicle.id);
+      final newVersion = await updateWithVersion(
+        table: 'vehicles',
+        data: {
+          'plate': vehicle.plate.toUpperCase().trim(),
+          'model': vehicle.model?.trim(),
+          'capacity': vehicle.capacity,
+          'status': vehicle.status.dbValue,
+        },
+        id: vehicle.id,
+        currentVersion: vehicle.version,
+        resourceType: 'vehicle',
+      );
+      // Vehicle has copyWith — return updated entity with new version.
+      return vehicle.copyWith(version: newVersion);
+    } on ConflictException {
+      rethrow; // Already typed — propagate directly (INV-10)
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
     }

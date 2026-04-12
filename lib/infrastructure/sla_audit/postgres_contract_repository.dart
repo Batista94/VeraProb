@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
@@ -70,9 +71,22 @@ class PostgresContractRepository extends BasePostgresRepository
   }
 
   @override
-  Future<void> save(Contract contract) async {
+  Future<Contract> save(Contract contract) async {
+    // Dispatch to create or update based on version:
+    // version == 1 means this is a new aggregate (never persisted).
+    // version > 1 means this aggregate was loaded from DB and mutated.
+    if (contract.version == 1) {
+      await _create(contract);
+      return contract; // Insert: version stays at 1 until first update
+    } else {
+      return _update(contract); // Returns entity with bumped version
+    }
+  }
+
+  /// Inserts a new contract into the database (first-time persistence).
+  Future<void> _create(Contract contract) async {
     try {
-      await client.from('contracts').upsert({
+      await client.from('contracts').insert({
         'id': contract.id,
         'organization_id': contract.organizationId,
         'name': contract.name,
@@ -95,7 +109,82 @@ class PostgresContractRepository extends BasePostgresRepository
             10000.0, // Physical Metric - Double Required
         'latitude': contract.latitude, // Physical Metric - Double Required
         'longitude': contract.longitude, // Physical Metric - Double Required
+        // version starts at 1 in the DB default — no need to send it on insert
       });
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'contract',
+        resourceId: contract.id,
+      );
+    }
+  }
+
+  /// Updates an existing contract with optimistic locking.
+  ///
+  /// Uses [updateWithVersion] from [BasePostgresRepository] to ensure that
+  /// the update only succeeds if the version in the database matches the
+  /// version the client read. Otherwise, throws [ConflictException].
+  ///
+  /// **Returns** the contract with updated version (reconstituted from DB
+  /// response). The caller MUST use this returned instance for any
+  /// subsequent operations.
+  Future<Contract> _update(Contract contract) async {
+    try {
+      final newVersion = await updateWithVersion(
+        table: 'contracts',
+        data: {
+          'organization_id': contract.organizationId,
+          'name': contract.name,
+          'contractor_name': contract.contractorName,
+          'description': contract.description,
+          'valid_from_utc': contract.validFromUtc.toIso8601String(),
+          'valid_until_utc': contract.validUntilUtc.toIso8601String(),
+          'status': contract.status.name,
+          'activated_at_utc': contract.activatedAtUtc?.toIso8601String(),
+          'closed_at_utc': contract.closedAtUtc?.toIso8601String(),
+          'closed_by_user_id': contract.closedByUserId,
+          'close_reason': contract.closeReason,
+          'cloned_from_contract_id': contract.clonedFromContractId,
+          'financial_ceiling_cents': contract.financialCeiling?.cents,
+          'submitted_for_approval_at_utc': contract.submittedForApprovalAtUtc
+              ?.toIso8601String(),
+          'penalty_multiplier':
+              contract.penaltyMultiplierBps /
+              10000.0, // Physical Metric - Double Required
+          'latitude': contract.latitude, // Physical Metric - Double Required
+          'longitude': contract.longitude, // Physical Metric - Double Required
+        },
+        id: contract.id,
+        currentVersion: contract.version,
+        resourceType: 'contract',
+      );
+      // Return entity with the new version assigned by the DB trigger.
+      // Contract is immutable — reconstitute a new instance with updated version.
+      return Contract.reconstitute(
+        id: contract.id,
+        version: newVersion,
+        organizationId: contract.organizationId,
+        name: contract.name,
+        contractorName: contract.contractorName,
+        description: contract.description,
+        validFromUtc: contract.validFromUtc,
+        validUntilUtc: contract.validUntilUtc,
+        status: contract.status,
+        createdAtUtc: contract.createdAtUtc,
+        activatedAtUtc: contract.activatedAtUtc,
+        closedAtUtc: contract.closedAtUtc,
+        closedByUserId: contract.closedByUserId,
+        closeReason: contract.closeReason,
+        submittedForApprovalAtUtc: contract.submittedForApprovalAtUtc,
+        clonedFromContractId: contract.clonedFromContractId,
+        financialCeiling: contract.financialCeiling,
+        penaltyMultiplierBps: contract.penaltyMultiplierBps,
+        latitude: contract.latitude,
+        longitude: contract.longitude,
+      );
+    } on ConflictException {
+      rethrow; // Already typed — propagate directly (INV-10)
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(
         e,
@@ -169,6 +258,7 @@ class PostgresContractRepository extends BasePostgresRepository
   Contract _mapToEntity(Map<String, dynamic> row) {
     return Contract.reconstitute(
       id: row['id'] as String,
+      version: (row['version'] as num?)?.toInt() ?? 1,
       organizationId: row['organization_id'] as String,
       name: row['name'] as String,
       contractorName: row['contractor_name'] as String,

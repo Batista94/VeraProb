@@ -13,6 +13,12 @@ abstract class IVehicleAssetRepository {
     required int capacity,
     VehicleStatus status,
   });
-  Future<void> updateVehicle(Vehicle vehicle);
+
+  /// Updates a vehicle with optimistic locking (INV-32).
+  ///
+  /// **Returns** the vehicle with the new `version` assigned by the database.
+  /// The caller MUST use the returned instance for subsequent operations
+  /// to avoid [ConflictException] from stale versions.
+  Future<Vehicle> updateVehicle(Vehicle vehicle);
   Future<void> deleteVehicle(String vehicleId);
 }

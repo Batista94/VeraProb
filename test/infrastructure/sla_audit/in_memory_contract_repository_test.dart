@@ -18,6 +18,7 @@ void main() {
   }) {
     return Contract.reconstitute(
       id: id,
+      version: 1,
       organizationId: organizationId,
       name: name,
       contractorName: 'Contractor',
@@ -118,6 +119,7 @@ void main() {
       () async {
         final older = Contract.reconstitute(
           id: 'c-old',
+          version: 1,
           organizationId: 'org-1',
           name: 'Older',
           contractorName: 'C',
@@ -129,6 +131,7 @@ void main() {
         );
         final newer = Contract.reconstitute(
           id: 'c-new',
+          version: 1,
           organizationId: 'org-1',
           name: 'Newer',
           contractorName: 'C',

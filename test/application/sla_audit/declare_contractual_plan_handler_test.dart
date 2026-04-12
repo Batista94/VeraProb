@@ -347,6 +347,7 @@ class MockContractRepository implements ContractRepository {
     if (id.isEmpty) return null;
     return Contract.reconstitute(
       id: id,
+      version: 1,
       organizationId: organizationId,
       name: 'Test Contract',
       contractorName: 'Test Contractor',
@@ -359,7 +360,7 @@ class MockContractRepository implements ContractRepository {
   }
 
   @override
-  Future<void> save(Contract contract) async {}
+  Future<Contract> save(Contract contract) async => contract;
 
   @override
   Future<List<Contract>> findByOrganization(

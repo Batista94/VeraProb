@@ -102,6 +102,7 @@ class _SmokeContractStub implements ContractRepository {
     if (id != contractId) return null;
     return Contract.reconstitute(
       id: id,
+      version: 1,
       organizationId: organizationId,
       name: 'Smoke B2B Contract',
       contractorName: 'SPTRANS Smoke Corp',
@@ -114,7 +115,7 @@ class _SmokeContractStub implements ContractRepository {
   }
 
   @override
-  Future<void> save(Contract contract) async {}
+  Future<Contract> save(Contract contract) async => contract;
 
   @override
   Future<List<Contract>> findByOrganization(

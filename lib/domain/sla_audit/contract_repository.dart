@@ -10,7 +10,12 @@ import 'contract_status.dart';
 /// All queries are scoped by [organizationId] — multi-tenancy invariant.
 abstract class ContractRepository {
   /// Persists a [Contract] aggregate (insert or update).
-  Future<void> save(Contract contract);
+  ///
+  /// **INV-32 (Optimistic Locking):** When updating an existing aggregate,
+  /// returns the contract with the new `version` assigned by the database.
+  /// The caller MUST use the returned instance for any subsequent operations
+  /// to avoid [ConflictException] from stale versions.
+  Future<Contract> save(Contract contract);
 
   /// Retrieves a [Contract] by its unique ID, scoped to [organizationId].
   ///
