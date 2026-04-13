@@ -96,13 +96,14 @@ class SubmitContractForApprovalHandler {
       nowUtc: _clock.now(),
     );
 
-    // 5. Atomic RPC: transitions contract + inserts token row
+    // 5. Atomic RPC: transitions contract + inserts token row (INV-32: version check)
     await _approvalService.submitForApproval(
       contractId: command.contractId,
       organizationId: command.organizationId,
       tokenId: tokenId,
       token: token,
       expiresAtUtc: expiresAtUtc,
+      expectedVersion: existing.version,
     );
 
     // 6. Append domain event to immutable ledger

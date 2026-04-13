@@ -33,6 +33,7 @@ class _FakeApprovalService extends Fake
     required String tokenId,
     required String token,
     required DateTime expiresAtUtc,
+    int? expectedVersion,
   }) async {}
 
   @override

@@ -177,6 +177,12 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 
 ---
 
+## Technical Debt & Maintenance
+
+- **[TECH] Batch RPC Schema Sync:** `batch_update_vehicles` e `batch_update_contracts` (migration `20260412000004`) são funções hardcoded. Ao adicionar colunas atualizáveis a `vehicles` ou `contracts`, adicionar a linha `COALESCE` correspondente nas funções. Backlog: substituir por script de geração estática em CI/CD (evita risco de PL/pgSQL dinâmico e conflitos de placeholders `format()` vs `RAISE`).
+
+---
+
 ## Phase 11+ — VeraProb Enterprise: Scale & Integrations
 
 API/Webhooks (SAP/Oracle), Passive Capture (OCR/SDK), JIT Signature.

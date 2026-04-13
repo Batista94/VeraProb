@@ -19,6 +19,7 @@ class PostgresContractApprovalCommandService
     required String tokenId,
     required String token,
     required DateTime expiresAtUtc,
+    int? expectedVersion,
   }) async {
     await client.rpc(
       'submit_contract_for_approval',
@@ -27,6 +28,7 @@ class PostgresContractApprovalCommandService
         'p_token_id': tokenId,
         'p_token': token,
         'p_expires_at': expiresAtUtc.toIso8601String(),
+        'p_expected_version': expectedVersion,
       },
     );
   }
