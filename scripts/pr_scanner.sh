@@ -249,14 +249,22 @@ echo ""
 echo "  B1 — Dart Analyzer: running flutter analyze --no-pub..."
 echo "       (this may take 10–30 seconds)"
 
-ANALYZE_OUTPUT=$(flutter analyze --no-pub 2>&1 || true)
+ANALYZE_OUTPUT=$(flutter analyze --no-pub 2>&1)
+ANALYZE_EXIT=$?
 ANALYZE_ERRORS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+error •" || true)
 ANALYZE_WARNINGS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+warning •" || true)
 ANALYZE_INFOS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+info •" || true)
 
-if [[ -n "$ANALYZE_ERRORS" ]]; then
+if [[ $ANALYZE_EXIT -ne 0 && -z "$ANALYZE_ERRORS" ]]; then
+  block "[ANALYZE-BLOCK] flutter analyze failed to execute. Check environment/shebangs."
+  echo -e "         ${RED}Output: $(echo "$ANALYZE_OUTPUT" | head -n 2)${NC}"
+fi
+
+if [[ $ANALYZE_EXIT -ne 0 && -n "$ANALYZE_ERRORS" ]]; then
   block "[ANALYZE-BLOCK] flutter analyze reported errors — fix before merge"
   echo "$ANALYZE_ERRORS" | print_hits 10
+elif [[ $ANALYZE_EXIT -eq 0 && -z "$ANALYZE_WARNINGS" ]]; then
+  pass "flutter analyze: clean"
 fi
 
 if [[ -n "$ANALYZE_WARNINGS" ]]; then
@@ -268,17 +276,25 @@ if [[ -n "$ANALYZE_INFOS" ]]; then
   echo -e "  ${NC}[INFO]  $(echo "$ANALYZE_INFOS" | wc -l | tr -d ' ') info hints (non-blocking)"
 fi
 
-if [[ -z "$ANALYZE_ERRORS" && -z "$ANALYZE_WARNINGS" ]]; then
-  pass "flutter analyze: clean"
-fi
-
 # ── B2: Format Check ─────────────────────────────────────────────────────────
 echo ""
 echo "  B2 — Format Check: running dart format check on lib/..."
 
-if ! dart format --output=none --set-exit-if-changed lib/ > /dev/null 2>&1; then
-  warn "[FORMAT-WARN] Unformatted files detected — run: dart format lib/"
-  echo -e "         ${YELLOW}(Run 'dart format lib/' to auto-fix before committing)${NC}"
+FORMAT_OUTPUT=$(dart format --output=none --set-exit-if-changed lib/ 2>&1)
+FORMAT_EXIT=$?
+
+if [[ $FORMAT_EXIT -eq 1 ]]; then
+  # Check if it was actually unformatted files or an execution error
+  if echo "$FORMAT_OUTPUT" | grep -q "Changed "; then
+    warn "[FORMAT-WARN] Unformatted files detected — run: dart format lib/"
+    echo -e "         ${YELLOW}(Run 'dart format lib/' to auto-fix before committing)${NC}"
+  else
+    block "[FORMAT-BLOCK] dart format failed to execute. Check environment/shebangs."
+    echo -e "         ${RED}Output: $(echo "$FORMAT_OUTPUT" | head -n 2)${NC}"
+  fi
+elif [[ $FORMAT_EXIT -ne 0 ]]; then
+  block "[FORMAT-BLOCK] dart format exited with code $FORMAT_EXIT"
+  echo -e "         ${RED}Output: $(echo "$FORMAT_OUTPUT" | head -n 2)${NC}"
 else
   pass "dart format: all files properly formatted"
 fi

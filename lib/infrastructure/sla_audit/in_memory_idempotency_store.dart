@@ -1,10 +1,15 @@
 import 'package:veraprob/domain/shared/idempotency_key.dart';
 import 'package:veraprob/domain/shared/idempotency_registration_result.dart';
 import 'package:veraprob/domain/shared/idempotency_store.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// In-memory implementation of [IIdempotencyStore] for unit testing.
 class InMemoryIdempotencyStore implements IIdempotencyStore {
   final Map<String, IdempotencyKey> _keys = {};
+  final IDateTimeProvider _clock;
+
+  InMemoryIdempotencyStore({IDateTimeProvider? clock})
+    : _clock = clock ?? BrazilDateTimeProvider();
 
   @override
   Future<IdempotencyRegistrationResult> tryRegister(
@@ -21,10 +26,7 @@ class InMemoryIdempotencyStore implements IIdempotencyStore {
     // [Atomic Simulation] Logic to determine if we acquire or hit
     if (existing.isError ||
         (existing.isProcessing &&
-            DateTime.now()
-                    .toUtc()
-                    .difference(existing.createdAtUtc)
-                    .inMinutes >=
+            _clock.now().difference(existing.createdAtUtc).inMinutes >=
                 staleThresholdMinutes)) {
       // Re-acquire stale or error key
       _keys[key.id] = key;
@@ -88,7 +90,7 @@ class InMemoryIdempotencyStore implements IIdempotencyStore {
 
   @override
   Future<int> cleanupExpired({int daysThreshold = 30}) async {
-    final now = DateTime.now().toUtc();
+    final now = _clock.now();
     final toRemove = _keys.entries
         .where((e) {
           final age = now.difference(e.value.createdAtUtc).inDays;

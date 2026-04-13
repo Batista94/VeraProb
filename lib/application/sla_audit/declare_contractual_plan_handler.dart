@@ -56,6 +56,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
       userId: command.declaredByUserId,
       commandPath: 'declare_contract_plan',
       organizationId: command.organizationId,
+      clock: _clock,
       businessLogic: () => _execute(command),
       toIdempotencyDto: (plan) => {
         'id': plan.id,

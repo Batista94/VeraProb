@@ -172,7 +172,8 @@ BEGIN
   -- Delete old completed/error keys.
   -- 'processing' keys are NEVER deleted — they indicate an in-flight operation
   -- or a rolled-back transaction (which should be rare and investigated).
-  DELETE FROM public.idempotency_keys
+  DELETE
+    FROM public.idempotency_keys
    WHERE status IN ('completed', 'error')
      AND created_at_utc < v_cutoff;
 

@@ -3,6 +3,7 @@ import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// Mixin for Application Handlers to orchestrate resilient, idempotent execution.
 ///
@@ -29,6 +30,7 @@ mixin IdempotentHandlerMixin {
     required Map<String, dynamic> Function(T) toIdempotencyDto,
     required Future<T?> Function(Map<String, dynamic>) reloadEntity,
     Future<T?> Function()? recoverIfAlreadyCompleted,
+    required IDateTimeProvider clock,
     int staleThresholdMinutes = 5,
   }) async {
     final registrationTemplate = IdempotencyKey.processing(
@@ -36,7 +38,7 @@ mixin IdempotentHandlerMixin {
       userId: userId,
       commandPath: commandPath,
       organizationId: organizationId,
-      nowUtc: DateTime.now().toUtc(),
+      nowUtc: clock.now(),
       staleThresholdMinutes: staleThresholdMinutes,
     );
 
@@ -56,7 +58,7 @@ mixin IdempotentHandlerMixin {
           userId: userId,
           responseCode: 200,
           responseBody: dto,
-          nowUtc: DateTime.now().toUtc(),
+          nowUtc: clock.now(),
         );
 
         return entity;
@@ -67,7 +69,7 @@ mixin IdempotentHandlerMixin {
           id: idempotencyKey,
           userId: userId,
           responseCode: 409, // Conflict
-          nowUtc: DateTime.now().toUtc(),
+          nowUtc: clock.now(),
         );
         rethrow;
       } on DomainException catch (e) {
@@ -81,7 +83,7 @@ mixin IdempotentHandlerMixin {
               userId: userId,
               responseCode: 200,
               responseBody: dto,
-              nowUtc: DateTime.now().toUtc(),
+              nowUtc: clock.now(),
             );
             return recovered;
           }
@@ -93,7 +95,7 @@ mixin IdempotentHandlerMixin {
           userId: userId,
           responseCode: 400,
           responseBody: {'errorMessage': e.message},
-          nowUtc: DateTime.now().toUtc(),
+          nowUtc: clock.now(),
         );
         rethrow;
       } catch (e) {
@@ -103,7 +105,7 @@ mixin IdempotentHandlerMixin {
           id: idempotencyKey,
           userId: userId,
           responseCode: 500,
-          nowUtc: DateTime.now().toUtc(),
+          nowUtc: clock.now(),
         );
         rethrow;
       }

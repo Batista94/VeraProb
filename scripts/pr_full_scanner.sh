@@ -70,31 +70,49 @@ if [[ -z "$CHANGED_FILES" ]]; then
   SCAN_JSON='{"blocks":0,"warns":0,"has_regression":false,"violations":[],"regression_files":[]}'
 else
   # Node.js single-pass engine returns structured JSON
-  SCAN_JSON=$(echo "$CHANGED_FILES" | $NODE_CMD "$SCRIPT_DIR_WIN/scanner_engine.js" "--base-branch=$BASE_BRANCH")
+  SCAN_JSON_RAW=$(echo "$CHANGED_FILES" | $NODE_CMD "$SCRIPT_DIR_WIN/scanner_engine.js" "--base-branch=$BASE_BRANCH" 2>&1)
+  NODE_EXIT=$?
 
-  # Display violations in human-readable format
-  echo "$SCAN_JSON" | $NODE_CMD -e "
-const data = JSON.parse(require('fs').readFileSync(0, 'utf8'));
-const RED = '\x1b[0;31m';
-const YELLOW = '\x1b[1;33m';
-const BOLD = '\x1b[1m';
-const NC = '\x1b[0m';
-
-data.violations.forEach(v => {
-  const tag = v.severity === 'BLOCK'
-    ? RED + BOLD + '[BLOCK]' + NC
-    : YELLOW + BOLD + '[WARN]' + NC;
-  const loc = v.line ? v.file + ':' + v.line : v.file;
-  console.log('  ' + tag + ' ' + loc + ' — ' + v.rule + ': ' + v.description);
-});
-"
+  if [[ $NODE_EXIT -ne 0 ]]; then
+    echo -e "  ${RED}${BOLD}[ERROR]${NC} Node.js scanner engine crashed or failed to execute."
+    echo -e "          Output: $(echo "$SCAN_JSON_RAW" | head -n 2)"
+    SCAN_JSON='{"blocks":1,"warns":0,"has_regression":false,"violations":[],"regression_files":[]}'
+  else
+    SCAN_JSON="$SCAN_JSON_RAW"
+    # Display violations in human-readable format
+    echo "$SCAN_JSON" | $NODE_CMD -e "
+    const fs = require('fs');
+    try {
+      const data = JSON.parse(fs.readFileSync(0, 'utf8'));
+      const RED = '\x1b[0;31m';
+      const YELLOW = '\x1b[1;33m';
+      const BOLD = '\x1b[1m';
+      const NC = '\x1b[0m';
+      if (data.violations) {
+        data.violations.forEach(v => {
+          const tag = v.severity === 'BLOCK'
+            ? RED + BOLD + '[BLOCK]' + NC
+            : YELLOW + BOLD + '[WARN]' + NC;
+          const loc = v.line ? v.file + ':' + v.line : v.file;
+          console.log('  ' + tag + ' ' + loc + ' — ' + v.rule + ': ' + v.description);
+        });
+      }
+    } catch (e) {
+      console.error('  [ERROR] Failed to parse scanner output: ' + e.message);
+    }
+    "
+  fi
 fi
 
-# Extract counts from JSON
-S2_BLOCKS=$(echo "$SCAN_JSON" | $NODE_CMD -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).blocks)")
-S2_WARNS=$(echo "$SCAN_JSON" | $NODE_CMD -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).warns)")
-HAS_REGRESSION=$(echo "$SCAN_JSON" | $NODE_CMD -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).has_regression)")
-REGRESSION_FILES=$(echo "$SCAN_JSON" | $NODE_CMD -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).regression_files.join('\n'))")
+# Extract counts from JSON (robust fallback to 0)
+extract_json_field() {
+  echo "$SCAN_JSON" | $NODE_CMD -e "try { console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).$1 ?? '0'); } catch(e) { console.log('$2'); }" || echo "$2"
+}
+
+S2_BLOCKS=$(extract_json_field "blocks" "1")
+S2_WARNS=$(extract_json_field "warns" "0")
+HAS_REGRESSION=$(extract_json_field "has_regression" "false")
+REGRESSION_FILES=$(echo "$SCAN_JSON" | $NODE_CMD -e "try { console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).regression_files.join('\n')); } catch(e) { console.log(''); }" || echo "")
 
 TOTAL_BLOCKS=$((S1_BLOCKS + S2_BLOCKS))
 TOTAL_WARNS=$((S1_WARNS + S2_WARNS))

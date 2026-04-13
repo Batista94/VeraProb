@@ -46,6 +46,7 @@ class CloseContractHandler with IdempotentHandlerMixin {
       userId: command.closedByUserId,
       commandPath: 'close_contract',
       organizationId: command.organizationId,
+      clock: _clock,
       staleThresholdMinutes: 5,
       businessLogic: () => _execute(command),
       toIdempotencyDto: (contract) => {

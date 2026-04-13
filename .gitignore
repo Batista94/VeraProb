@@ -56,3 +56,7 @@ Thumbs.db
 .claude/logs/
 .claude/*.log
 !.claude/skills/
+
+# Supabase Local Infrastructure
+supabase/.temp/
+supabase/.branches/
