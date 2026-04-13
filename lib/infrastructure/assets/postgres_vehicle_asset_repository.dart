@@ -92,4 +92,54 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
       throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
     }
   }
+
+  /// Batch update with atomic optimistic locking via Postgres RPC.
+  ///
+  /// If ANY vehicle has a stale version, the ENTIRE batch is rolled back
+  /// by Postgres — zero partial commits possible.
+  ///
+  /// Returns the updated vehicles list (same order as input).
+  Future<List<Vehicle>> batchUpdateVehicles(
+    List<BatchUpdateSpec> updates,
+  ) async {
+    try {
+      await batchUpdateWithVersion(
+        rpcFunction: 'batch_update_vehicles',
+        updates: updates,
+      );
+
+      // Re-fetch updated vehicles to return fresh state with new versions
+      final ids = updates.map((u) => u.id).toList();
+      final rows = await client.from('vehicles').select().inFilter('id', ids);
+      return (rows as List)
+          .map((row) => Vehicle.fromJson(row as Map<String, dynamic>))
+          .toList();
+    } on ConflictException {
+      rethrow;
+    } on PostgrestException catch (e) {
+      // P0001 from batch RPC = conflict → convert to ConflictException
+      if (e.message.contains('Batch conflict') || e.message.contains('P0001')) {
+        final staleIds = _extractBatchStaleIds(e.message);
+        throw ConflictException.staleVersion(
+          resourceType: 'batch',
+          resourceId: staleIds.join(', '),
+          clientVersion: -1,
+          currentVersion: -1,
+        );
+      }
+      throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
+    }
+  }
+
+  /// Extracts vehicle IDs from a batch conflict error message.
+  List<String> _extractBatchStaleIds(String message) {
+    final ids = <String>[];
+    final matches = RegExp(
+      r'vehicle\s+([a-f0-9-]+)',
+    ).allMatches(message.toLowerCase());
+    for (final match in matches) {
+      if (match.groupCount >= 1) ids.add(match.group(1)!);
+    }
+    return ids.isEmpty ? ['unknown'] : ids;
+  }
 }

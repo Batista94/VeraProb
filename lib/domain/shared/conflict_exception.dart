@@ -42,10 +42,10 @@ class ConflictException extends IntegrityException {
     required this.clientVersion,
     this.currentVersion,
   }) : super(
-          'Optimistic lock conflict on $resourceType "$resourceId": '
-          'client sent version $clientVersion, '
-          '${currentVersion != null ? 'current version is $currentVersion' : 'resource no longer exists'}',
-        );
+         'Optimistic lock conflict on $resourceType "$resourceId": '
+         'client sent version $clientVersion, '
+         '${currentVersion != null ? 'current version is $currentVersion' : 'resource no longer exists'}',
+       );
 
   /// Constructor for the case where the resource was deleted concurrently.
   const ConflictException.deleted({
@@ -53,11 +53,11 @@ class ConflictException extends IntegrityException {
     required String resourceId,
     required int clientVersion,
   }) : this(
-          resourceType: resourceType,
-          resourceId: resourceId,
-          clientVersion: clientVersion,
-          currentVersion: null,
-        );
+         resourceType: resourceType,
+         resourceId: resourceId,
+         clientVersion: clientVersion,
+         currentVersion: null,
+       );
 
   /// Constructor for the case where the resource exists but at a newer version.
   const ConflictException.staleVersion({
@@ -66,11 +66,11 @@ class ConflictException extends IntegrityException {
     required int clientVersion,
     required int currentVersion,
   }) : this(
-          resourceType: resourceType,
-          resourceId: resourceId,
-          clientVersion: clientVersion,
-          currentVersion: currentVersion,
-        );
+         resourceType: resourceType,
+         resourceId: resourceId,
+         clientVersion: clientVersion,
+         currentVersion: currentVersion,
+       );
 
   /// Returns true if the resource was deleted concurrently.
   bool get isDeleted => currentVersion == null;

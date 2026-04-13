@@ -104,7 +104,7 @@ O projeto utiliza um **Conselho de Personas** distribuído. Cada persona atua co
 | **INV-30** | **DI Total (Anti-Singleton)** | Proibido `Supabase.instance`. `SupabaseClient` injetado via construtor em TODOS os repos e serviços. |
 | **INV-31** | **HMAC Zero-Knowledge** | HMAC APENAS nas Edge Functions. Chave isolada do DB. Verificação On-Read obrigatória para Ledger/SLA. |
 | **INV-31.2** | **Graceful Key Rotation** | HMAC prefixado com versão (`vN\|hexhash`). Chaves legadas resolvidas via env. Rotação sem brick do histórico. |
-| **INV-32** | **Optimistic Locking (Lost Update Prevention)** | Todo aggregate root mutável (Contract, Vehicle) possui coluna `version INT NOT NULL DEFAULT 1` com trigger de autoincremento. Repositories MUST usar `updateWithVersion()` que filtra por `.eq('version', entity.version)` e discrimina forense entre `ConflictException.staleVersion` (concorrência) e `ConflictException.deleted` (recurso deletado). Append-only (Ledger) é excluído. |
+| **INV-32** | **Optimistic Locking (Lost Update Prevention)** | Todo aggregate root mutável (Contract, Vehicle) possui coluna `version BIGINT NOT NULL DEFAULT 1` com trigger de autoincremento. Repositories MUST usar `updateWithVersion()` que filtra por `.eq('version', entity.version)` e discrimina forense entre `ConflictException.staleVersion` (concorrência) e `ConflictException.deleted` (recurso deletado). Append-only (Ledger) é excluído. BIGINT garante consistência com `Money.cents` e previne overflow mesmo em tabelas high-throughput futuras (INT4 levaria 68 anos a 1 update/segundo). |
 
 ---
 

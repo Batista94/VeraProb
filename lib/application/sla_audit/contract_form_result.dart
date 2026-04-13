@@ -21,11 +21,9 @@ class ContractFormResult {
   /// Whether the operation failed.
   bool get isFailure => contractId == null;
 
-  const ContractFormResult.success(this.contractId)
-    : errorMessage = null;
+  const ContractFormResult.success(this.contractId) : errorMessage = null;
 
-  const ContractFormResult.failure(this.errorMessage)
-    : contractId = null;
+  const ContractFormResult.failure(this.errorMessage) : contractId = null;
 
   /// Factory for generic/unexpected failures.
   const ContractFormResult.unknownError()

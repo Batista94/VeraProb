@@ -5,8 +5,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/entities/vehicle.dart';
+import 'package:veraprob/domain/enums/vehicle_status.dart';
 import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
+import 'package:veraprob/infrastructure/assets/postgres_vehicle_asset_repository.dart';
 import 'package:uuid/uuid.dart';
 
 import '../postgres/postgres_test_config.dart';
@@ -21,14 +24,12 @@ class _TestContractRepository extends BasePostgresRepository
 
   @override
   Future<Contract> save(Contract contract) async {
-    final existing =
-        await client
-                .from('contracts')
-                .select('id, version')
-                .eq('id', contract.id)
-                .maybeSingle()
-                .catchError((_) => null)
-            as Map<String, dynamic>?;
+    final existing = await client
+        .from('contracts')
+        .select('id, version')
+        .eq('id', contract.id)
+        .maybeSingle()
+        .catchError((_) => null);
 
     if (existing == null) {
       await client.from('contracts').insert({
@@ -87,7 +88,7 @@ class _TestContractRepository extends BasePostgresRepository
         .maybeSingle()
         .catchError((_) => null);
     if (data == null) return null;
-    final row = data as Map<String, dynamic>;
+    final row = data;
     return Contract.reconstitute(
       id: row['id'] as String,
       version: (row['version'] as num?)?.toInt() ?? 1,
@@ -162,7 +163,11 @@ void main() async {
     });
 
     setUp(() async {
-      await client.from('contracts').delete().like('name', 'OL %');
+      // Aggressive cleanup: delete ALL test contracts to avoid quota issues
+      await client
+          .from('contracts')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000');
     });
 
     // ── T01: Happy Path ──────────────────────────────────────────────
@@ -286,5 +291,111 @@ void main() async {
         reason: 'Trigger forced OLD.version(2) + 1 = 3, ignored 999',
       );
     });
+
+    // ── T06: Batch Atomicity — sabotage #3, prove total rollback ────────
+    test(
+      'T06: Batch update — sabotage vehicle #3, prove ZERO vehicles updated',
+      () async {
+        final repo = PostgresVehicleAssetRepository(client);
+        final ts = DateTime.now().millisecondsSinceEpoch;
+
+        // Create 5 vehicles with unique plates to avoid FK cleanup issues
+        final ids = <String>[];
+        for (var i = 0; i < 5; i++) {
+          await client
+              .from('vehicles')
+              .insert({
+                'id': _uuid.v4(),
+                'organization_id': PostgresTestConfig.testOrgId,
+                'plate': 'BL${ts}T06-$i',
+                'model': 'Batch Test $i',
+                'capacity': 40 + i,
+                'status': 'available',
+              })
+              .select()
+              .single()
+              .then((row) {
+                ids.add(row['id'] as String);
+              });
+        }
+
+        // Read all 5 (all version=1)
+        final rows = await client.from('vehicles').select().inFilter('id', ids);
+        final vehicles = (rows as List)
+            .map((r) => Vehicle.fromJson(r as Map<String, dynamic>))
+            .toList();
+        expect(vehicles.length, 5);
+        for (final v in vehicles) {
+          expect(v.version, 1);
+        }
+
+        // Sabotate vehicle #3: update it (trigger bumps version 1→2)
+        await client
+            .from('vehicles')
+            .update({'status': 'maintenance'})
+            .eq('id', ids[2]);
+
+        // Attempt batch update — change status of all 5
+        final updates = vehicles.map((v) {
+          return BatchUpdateSpec(
+            id: v.id,
+            version: v.version, // version=1 for all
+            data: {'status': VehicleStatus.inService.dbValue},
+          );
+        }).toList();
+
+        // Should fail with ConflictException (vehicle #3 is now version 2)
+        await expectLater(
+          () => repo.batchUpdateVehicles(updates),
+          throwsA(isA<ConflictException>()),
+        );
+
+        // PROVE ROLLBACK: Vehicles #1,2,4,5 still version=1, #3 still version=2
+        final afterRows = await client
+            .from('vehicles')
+            .select()
+            .inFilter('id', ids);
+        final afterVehicles = (afterRows as List)
+            .map((r) => Vehicle.fromJson(r as Map<String, dynamic>))
+            .toList();
+
+        for (final v in afterVehicles) {
+          final idx = ids.indexOf(v.id);
+          if (idx == 2) {
+            // Sabotaged: version=2 from sabotage, NOT 3 (batch didn't apply)
+            expect(
+              v.version,
+              2,
+              reason:
+                  'Vehicle ${v.plate} should be version 2 (sabotage), '
+                  'NOT 3 — batch must rollback entirely',
+            );
+            expect(v.status, VehicleStatus.maintenance);
+          } else {
+            expect(
+              v.version,
+              1,
+              reason:
+                  'Vehicle ${v.plate} should still be version 1 — '
+                  'batch must rollback entirely on single conflict',
+            );
+            expect(
+              v.status,
+              VehicleStatus.available,
+              reason:
+                  'Vehicle ${v.plate} status must be unchanged — '
+                  'no partial updates allowed in batch',
+            );
+          }
+        }
+
+        // Cleanup: vehicles use unique plates so no FK cleanup needed
+        await client
+            .from('vehicles')
+            .delete()
+            .inFilter('id', ids)
+            .catchError((_) {});
+      },
+    );
   }, skip: skipReason);
 }

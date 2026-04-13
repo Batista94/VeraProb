@@ -21,12 +21,21 @@
 -- ============================================================
 
 -- ── 1. Add version column ──────────────────────────────────
+--
+-- DECISION: BIGINT (INT8) instead of INT4.
+-- Rationale:
+--   - INT4 max (2.1B) would take 68+ years even at 1 update/second.
+--   - However, BIGINT ensures consistency with Money.cents (already BIGINT)
+--     and eliminates any future risk if versioning is extended to
+--     high-throughput tables (telemetry, events).
+--   - Storage cost: +4 bytes/row ≈ 40MB for 10M rows — negligible.
+--   - Migration cost from INT4→BIGINT later is high — do it right now.
 
 ALTER TABLE public.contracts
-  ADD COLUMN IF NOT EXISTS version INT NOT NULL DEFAULT 1;
+  ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 1;
 
 ALTER TABLE public.vehicles
-  ADD COLUMN IF NOT EXISTS version INT NOT NULL DEFAULT 1;
+  ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 1;
 
 -- Index for version-aware updates (optimistic lock filter)
 CREATE INDEX IF NOT EXISTS idx_contracts_id_version

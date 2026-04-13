@@ -1,3 +1,4 @@
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
 import 'package:veraprob/domain/shared/money.dart';
@@ -9,6 +10,7 @@ import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'declare_contractual_plan_command.dart';
 import 'shift_projection_service.dart';
@@ -222,7 +224,47 @@ class DeclareContractualPlanHandler {
     // 5. If contract is still draft, activate it (first plan — draft→active)
     if (contract.isDraft) {
       final activated = contract.activate(nowUtc: nowUtc);
-      await _contractRepository.save(activated);
+      try {
+        await _contractRepository.save(activated);
+      } on ConflictException catch (e) {
+        if (e.isVersionMismatch) {
+          // Forensic log: auto-merge triggered by concurrent modification
+          await Sentry.addBreadcrumb(
+            Breadcrumb(
+              category: 'optimistic_lock',
+              level: SentryLevel.warning,
+              message:
+                  '[AUTO-MERGE] Contract ${command.contractId}: '
+                  'version conflict during plan declaration activation '
+                  '(client=${e.clientVersion}, server=${e.currentVersion}).',
+              data: {
+                'contractId': command.contractId,
+                'clientVersion': e.clientVersion,
+                'serverVersion': e.currentVersion,
+                'action': 'activate_on_plan_declaration',
+              },
+            ),
+          );
+          await Sentry.captureMessage(
+            'Auto-merge: Contract ${command.contractId} activated during plan declaration '
+            'with stale version (client=${e.clientVersion}, server=${e.currentVersion})',
+            level: SentryLevel.warning,
+          );
+
+          // Auto-merge: re-fetch and re-activate on latest
+          final latest = await _contractRepository.findById(
+            command.contractId,
+            organizationId: command.organizationId,
+          );
+          if (latest != null && latest.isDraft) {
+            final merged = latest.activate(nowUtc: nowUtc);
+            await _contractRepository.save(merged);
+          }
+          // If latest is null or not draft → silently skip (race: already activated)
+        } else {
+          rethrow;
+        }
+      }
       for (final event in activated.domainEvents) {
         final entry = SlaLedgerMapper.mapToEntry(event);
         await _ledger.append(entry);

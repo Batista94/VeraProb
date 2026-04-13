@@ -172,6 +172,81 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
     );
   }
 
+  // ── Batch Update with Optimistic Locking (Atomic via RPC) ──────────────
+
+  /// Executes a batch UPDATE with **atomic** optimistic locking via Postgres RPC.
+  ///
+  /// **Guarantee:** If ANY entity has a stale version, the ENTIRE batch is
+  /// rolled back by Postgres — zero partial commits possible.
+  ///
+  /// **How it works:**
+  /// 1. Encodes all update specs as JSONB
+  /// 2. Calls the table-specific RPC function (`batch_update_{table}`)
+  /// 3. The RPC verifies ALL versions BEFORE any write, then updates in one txn
+  /// 4. On conflict: P0001 exception → mapped to [ConflictException] with stale IDs
+  ///
+  /// **TOCTOU protection:** The RPC re-checks versions with WHERE clauses and
+  /// uses `GET DIAGNOSTICS ROW_COUNT` to detect concurrent modifications.
+  ///
+  /// [rpcFunction] — the Postgres RPC name (e.g., `batch_update_vehicles`).
+  /// [updates] — list of update specs (id, version, data payload).
+  ///
+  /// Returns the number of successfully updated entities.
+  Future<int> batchUpdateWithVersion({
+    required String rpcFunction,
+    required List<BatchUpdateSpec> updates,
+  }) async {
+    if (updates.isEmpty) return 0;
+
+    // Encode as JSONB array: [{id, version, data}, ...]
+    final jsonUpdates = updates.map((spec) {
+      final map = <String, dynamic>{'id': spec.id, 'version': spec.version};
+      map.addAll(spec.data);
+      return map;
+    }).toList();
+
+    try {
+      final result = await client.rpc(
+        rpcFunction,
+        params: {'p_updates': jsonUpdates},
+      );
+      final resultMap = result as Map<String, dynamic>;
+      return resultMap['updated_count'] as int;
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST116' ||
+          e.message.contains('P0001') ||
+          e.message.contains('Batch conflict') ||
+          e.message.contains('stale')) {
+        // Extract stale IDs from error message
+        final staleIds = _extractStaleIds(e.message);
+        throw ConflictException.staleVersion(
+          resourceType: 'batch',
+          resourceId: staleIds.join(', '),
+          clientVersion: -1,
+          currentVersion: -1,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Extracts entity IDs from a batch conflict error message.
+  static List<String> _extractStaleIds(String message) {
+    // Pattern: "Batch conflict: vehicle abc-123 is stale" or
+    //          "Batch conflict: vehicle abc-123 was modified concurrently"
+    final ids = <String>[];
+    final matches = RegExp(
+      r'(?:vehicle|contract)\s+([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})',
+    ).allMatches(message.toLowerCase());
+    for (final match in matches) {
+      if (match.groupCount >= 1) {
+        final id = match.group(1);
+        if (id != null) ids.add(id);
+      }
+    }
+    return ids.isEmpty ? ['unknown'] : ids;
+  }
+
   /// Generates a SHA-256 hex digest of a JSON payload for forensic traceability.
   ///
   /// Returns null if payload is null or empty.
@@ -259,4 +334,25 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
   static String canonicalJson(Map<String, dynamic> payload) {
     return jsonEncode(_sortKeys(payload));
   }
+}
+
+/// Immutable specification for a single batch update entry.
+///
+/// Used with [BasePostgresRepository.batchUpdateWithVersion] to define
+/// which entity to update, what version it must have, and what data to write.
+class BatchUpdateSpec {
+  /// Primary key of the entity to update.
+  final String id;
+
+  /// Expected version number (optimistic lock).
+  final int version;
+
+  /// Data fields to update (key-value pairs, same as .update() payload).
+  final Map<String, dynamic> data;
+
+  const BatchUpdateSpec({
+    required this.id,
+    required this.version,
+    required this.data,
+  });
 }
