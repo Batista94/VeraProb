@@ -16,3 +16,19 @@ Thumbs.db
 .idea/
 .vscode/
 QWEN.MD
+
+# Platform specific folders (Noise for most tasks)
+android/
+ios/
+windows/
+macos/
+web/
+linux/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# Backups
+.claude_backup_*/
+*.bak
