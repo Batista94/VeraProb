@@ -18,7 +18,7 @@ class PostgresPlanDeclarationRepository extends BasePostgresRepository
   PostgresPlanDeclarationRepository(super.client);
 
   @override
-  Future<void> save(PlanDeclaration plan) async {
+  Future<PlanDeclaration> save(PlanDeclaration plan) async {
     // 1. Check for existing version to ensure Monotonicity & Immutability
     try {
       final existing = await client
@@ -85,6 +85,7 @@ class PostgresPlanDeclarationRepository extends BasePostgresRepository
     }).toList();
 
     await client.from('contractual_service_executions').insert(servicesData);
+    return plan;
   }
 
   @override

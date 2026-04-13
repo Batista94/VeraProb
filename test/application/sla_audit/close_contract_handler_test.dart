@@ -14,6 +14,7 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
 import '../../mocks/fake_date_time_provider.dart';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
@@ -73,6 +74,7 @@ void main() {
       ledger: ledger,
       rbac: RbacService(),
       clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+      idempotencyStore: InMemoryIdempotencyStore(),
     );
   });
 
@@ -90,6 +92,7 @@ void main() {
             reason: 'Cancelled',
             callerRole: UserRole.operator,
             sessionId: 'session-1',
+            idempotencyKey: 'idemp-1',
           ),
         );
 
@@ -120,6 +123,7 @@ void main() {
             reason: 'Done',
             callerRole: UserRole.operator,
             sessionId: 'session-1',
+            idempotencyKey: 'idemp-err-1',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -140,6 +144,7 @@ void main() {
               reason: 'Done',
               callerRole: UserRole.operator,
               sessionId: 'session-1',
+              idempotencyKey: 'idemp-sov-1',
             ),
           ),
           throwsA(isA<SovereigntyViolationException>()),
@@ -160,22 +165,23 @@ void main() {
             reason: 'First close',
             callerRole: UserRole.operator,
             sessionId: 'session-1',
+            idempotencyKey: 'idemp-double-1',
           ),
         );
 
-        expect(
-          () => closeHandler.handle(
-            CloseContractCommand(
-              organizationId: 'org-1',
-              contractId: contractId,
-              closedByUserId: 'user-1',
-              reason: 'Second close',
-              callerRole: UserRole.operator,
-              sessionId: 'session-1',
-            ),
+        final closed2 = await closeHandler.handle(
+          CloseContractCommand(
+            organizationId: 'org-1',
+            contractId: contractId,
+            closedByUserId: 'user-1',
+            reason: 'Second close', // This is now a successful NO-OP via self-heal
+            callerRole: UserRole.operator,
+            sessionId: 'session-1',
+            idempotencyKey: 'idemp-double-2', 
           ),
-          throwsA(isA<DomainException>()),
         );
+
+        expect(closed2.status, ContractStatus.closed);
       },
     );
 
@@ -191,6 +197,7 @@ void main() {
             reason: 'Done',
             callerRole: UserRole.operator,
             sessionId: 'session-1',
+            idempotencyKey: 'idemp-blank-user',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -209,6 +216,7 @@ void main() {
             reason: '   ',
             callerRole: UserRole.operator,
             sessionId: 'session-1',
+            idempotencyKey: 'idemp-blank-reason',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -225,6 +233,7 @@ void main() {
             reason: 'Attempt',
             callerRole: UserRole.auditor,
             sessionId: 'session-1',
+            idempotencyKey: 'idemp-auditor',
           ),
         ),
         throwsA(isA<DomainException>()),
@@ -243,6 +252,7 @@ void main() {
           reason: 'Closed by operator',
           callerRole: UserRole.operator,
           sessionId: 'session-1',
+          idempotencyKey: 'idemp-rbac-op',
         ),
       );
 
@@ -260,6 +270,7 @@ void main() {
           reason: 'Closed by admin',
           callerRole: UserRole.admin,
           sessionId: 'session-1',
+          idempotencyKey: 'idemp-rbac-admin',
         ),
       );
 

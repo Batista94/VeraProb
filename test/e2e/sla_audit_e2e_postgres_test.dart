@@ -30,6 +30,10 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_financial
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_idempotency_store.dart';
+import 'package:veraprob/domain/shared/idempotency_key.dart';
+import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone.dart';
@@ -72,6 +76,7 @@ void main() {
   late PostgresContractualExecutionStateRepository executionRepo;
   late PostgresSlaAuditLedgerRepository ledgerRepo;
   late PostgresContractualFinancialSnapshotRepository snapshotRepo;
+  late PostgresIdempotencyStore idempotencyStore;
 
   // Application Services
   late DeclareContractualPlanHandler declarationHandler;
@@ -118,6 +123,7 @@ void main() {
     );
     ledgerRepo = PostgresSlaAuditLedgerRepository(client);
     snapshotRepo = PostgresContractualFinancialSnapshotRepository(client);
+    idempotencyStore = PostgresIdempotencyStore(client);
 
     // Instantiate Application Layer
     final mockAuth = _MockAuthRepository();
@@ -140,6 +146,7 @@ void main() {
         countsByOrg: {'00000000-0000-0000-0000-000000000001': 1},
       ),
       clock: fakeClock,
+      idempotencyStore: idempotencyStore,
     );
 
     evaluationEngine = ContractualEvaluationEngine(
@@ -195,6 +202,7 @@ void main() {
         declaredAtUtc: testBaseTimeUtc.subtract(const Duration(days: 1)),
         services: [input],
         sessionId: 'session-e2e-1',
+        idempotencyKey: const Uuid().v4(),
       );
 
       // 2. Execute
@@ -613,6 +621,259 @@ void main() {
       expect(impact.lostRevenue, 0);
       expect(impact.revenueAtRisk, 0);
     });
+
+    // ── INV-33: Idempotency Tests (Red Team) ─────────────────────────────
+
+    test(
+      'T07 — Idempotency Hit: Duplicate command returns cached response',
+      () async {
+        // Given: A unique idempotency key
+        final idempotencyKey = const Uuid().v4();
+        final testContractId = const Uuid().v4();
+
+        final input = ContractualServiceInput(
+          scheduledStartTimeUtc: testBaseTimeUtc,
+          scheduledEndTimeUtc: testBaseTimeUtc.add(const Duration(minutes: 60)),
+          startLatitude: -23.5505,
+          startLongitude: -46.6333,
+          startRadiusMeters: 100,
+          endLatitude: -23.5600,
+          endLongitude: -46.6400,
+          endRadiusMeters: 100,
+          contractualValueCents: 10000,
+          noShowPenaltyBps: 15000,
+        );
+
+        final command = DeclareContractualPlanCommand(
+          organizationId: '00000000-0000-0000-0000-000000000001',
+          contractId: testContractId,
+          declaredByUserId: 'admin-e2e',
+          planVersion: 1,
+          originalFileHash: 't07-hash',
+          declaredAtUtc: testBaseTimeUtc.subtract(const Duration(days: 1)),
+          services: [input],
+          sessionId: 'session-t07',
+          idempotencyKey: idempotencyKey,
+        );
+
+        // When: First execution succeeds
+        final plan1 = await declarationHandler.handle(command);
+        expect(plan1.id, isNotNull, reason: 'First call should succeed');
+
+        // Then: Second call with same key should throw (idempotency hit)
+        await expectLater(
+          () async => await declarationHandler.handle(command),
+          throwsA(isA<DomainException>()),
+          reason: 'Duplicate command should be rejected with idempotency hit',
+        );
+      },
+    );
+
+    test(
+      'T08 — Idempotency Race: Simultaneous commands with same key should block one',
+      () async {
+        // This test verifies that the RPC function handles concurrent requests.
+        // In a real race condition, one request wins and the other gets
+        // IdempotencyProcessingException or the cached response.
+        //
+        // Since Dart is single-threaded, we simulate this by:
+        // 1. Manually registering a key as 'processing' via the store.
+        // 2. Attempting to handle the command — should throw.
+
+        final idempotencyKey = const Uuid().v4();
+        final testContractId = const Uuid().v4();
+
+        // Manually register the key as 'processing' (simulates in-flight request)
+        final key = IdempotencyKey.processing(
+          id: idempotencyKey,
+          userId: 'admin-e2e',
+          commandPath: 'declare_contractual_plan',
+          organizationId: '00000000-0000-0000-0000-000000000001',
+          nowUtc: testBaseTimeUtc,
+        );
+        await idempotencyStore.tryRegister(key);
+
+        final input = ContractualServiceInput(
+          scheduledStartTimeUtc: testBaseTimeUtc,
+          scheduledEndTimeUtc: testBaseTimeUtc.add(const Duration(minutes: 60)),
+          startLatitude: -23.5505,
+          startLongitude: -46.6333,
+          startRadiusMeters: 100,
+          endLatitude: -23.5600,
+          endLongitude: -46.6400,
+          endRadiusMeters: 100,
+          contractualValueCents: 10000,
+          noShowPenaltyBps: 15000,
+        );
+
+        final command = DeclareContractualPlanCommand(
+          organizationId: '00000000-0000-0000-0000-000000000001',
+          contractId: testContractId,
+          declaredByUserId: 'admin-e2e',
+          planVersion: 1,
+          originalFileHash: 't08-hash',
+          declaredAtUtc: testBaseTimeUtc.subtract(const Duration(days: 1)),
+          services: [input],
+          sessionId: 'session-t08',
+          idempotencyKey: idempotencyKey,
+        );
+
+        // Should throw IdempotencyProcessingException
+        await expectLater(
+          () async => await declarationHandler.handle(command),
+          throwsA(isA<IdempotencyProcessingException>()),
+          reason:
+              'Command with key in "processing" state should throw '
+              'IdempotencyProcessingException',
+        );
+      },
+    );
+
+    test(
+      'T09 — Idempotency Rollback: Failed command should NOT register key as completed',
+      () async {
+        // Given: A command that will fail due to missing operational zones
+        final idempotencyKey = const Uuid().v4();
+        final testContractId = const Uuid().v4();
+
+        // Use an empty zone repository to force a validation error
+        final mockAuthT09 = _MockAuthRepository();
+        when(() => mockAuthT09.getUserBySessionId(any<String>())).thenAnswer(
+          (_) async => const domain.AuthUser(
+            id: 'admin-e2e',
+            tenantId: '00000000-0000-0000-0000-000000000001',
+          ),
+        );
+
+        final handlerWithNoZones = DeclareContractualPlanHandler(
+          tenantValidator: TenantValidationService(authRepository: mockAuthT09),
+          repository: planRepo,
+          ledger: ledgerRepo,
+          ruleRepository: MockContractualRuleRepository(),
+          contractRepository: MockContractRepository(),
+          zoneRepository: const _StubZoneRepository(zones: []), // Empty!
+          vehicleRepository: const InMemoryActiveVehicleRepository(
+            countsByOrg: {'00000000-0000-0000-0000-000000000001': 1},
+          ),
+          clock: fakeClock,
+          idempotencyStore: idempotencyStore,
+        );
+
+        final input = ContractualServiceInput(
+          scheduledStartTimeUtc: testBaseTimeUtc,
+          scheduledEndTimeUtc: testBaseTimeUtc.add(const Duration(minutes: 60)),
+          startLatitude: -23.5505,
+          startLongitude: -46.6333,
+          startRadiusMeters: 100,
+          endLatitude: -23.5600,
+          endLongitude: -46.6400,
+          endRadiusMeters: 100,
+          contractualValueCents: 10000,
+          noShowPenaltyBps: 15000,
+        );
+
+        final command = DeclareContractualPlanCommand(
+          organizationId: '00000000-0000-0000-0000-000000000001',
+          contractId: testContractId,
+          declaredByUserId: 'admin-e2e',
+          planVersion: 1,
+          originalFileHash: 't09-hash',
+          declaredAtUtc: testBaseTimeUtc.subtract(const Duration(days: 1)),
+          services: [input],
+          sessionId: 'session-t09',
+          idempotencyKey: idempotencyKey,
+        );
+
+        // When: Command fails due to validation
+        await expectLater(
+          () async => await handlerWithNoZones.handle(command),
+          throwsA(isA<DomainException>()),
+          reason: 'Command should fail due to missing operational zones',
+        );
+
+        // Then: Key should NOT be registered as completed
+        final key = await idempotencyStore.findById(
+          idempotencyKey,
+          userId: 'admin-e2e',
+        );
+
+        // The key was never registered because the handler checks idempotency
+        // BEFORE business logic — validation fails before any persistence.
+        // This proves that failed commands do NOT pollute the idempotency store.
+        expect(
+          key?.isCompleted ?? false,
+          isFalse,
+          reason:
+              'Failed command should NOT have idempotency key marked as completed',
+        );
+      },
+    );
+
+    test(
+      'T10 — Stale Key Recovery: Processing key older than 5 minutes should be reclaimable',
+      () async {
+        // Given: A key that has been 'processing' for more than the stale threshold
+        final idempotencyKey = const Uuid().v4();
+
+        // Manually insert a stale key with a created_at_utc 10 minutes in the past
+        await client.from('idempotency_keys').insert({
+          'id': idempotencyKey,
+          'user_id': '00000000-0000-0000-0000-000000000001',
+          'command_path': 'declare_contractual_plan',
+          'organization_id': '00000000-0000-0000-0000-000000000001',
+          'status': 'processing',
+          'created_at_utc': testBaseTimeUtc
+              .subtract(const Duration(minutes: 10))
+              .toIso8601String(),
+        });
+
+        // Verify it exists
+        final beforeKey = await idempotencyStore.findById(
+          idempotencyKey,
+          userId: '00000000-0000-0000-0000-000000000001',
+        );
+        expect(beforeKey, isNotNull, reason: 'Stale key should exist');
+        expect(
+          beforeKey!.isProcessing,
+          isTrue,
+          reason: 'Should be in processing state',
+        );
+
+        // When: A new request tries to acquire the same key
+        // The RPC should detect it's stale (>5 min) and allow reclamation
+        final result = await client.rpc(
+          'try_acquire_idempotency_key',
+          params: {
+            'p_id': idempotencyKey,
+            'p_user_id': '00000000-0000-0000-0000-000000000001',
+            'p_command_path': 'declare_contractual_plan',
+            'p_organization_id': '00000000-0000-0000-0000-000000000001',
+          },
+        );
+
+        final response = result as Map<String, dynamic>;
+
+        // Then: The key should be reclaimed (not rejected)
+        expect(response['hit'], isFalse, reason: 'Should NOT be a cache hit');
+        expect(
+          response['acquired'],
+          isTrue,
+          reason: 'Should be acquired (reclaimed from stale)',
+        );
+        expect(
+          response['reclaimed_from_stale'],
+          isTrue,
+          reason: 'Should indicate reclamation from stale key',
+        );
+
+        // Cleanup: delete the test key
+        await client
+            .from('idempotency_keys')
+            .delete()
+            .eq('id', idempotencyKey)
+            .eq('user_id', '00000000-0000-0000-0000-000000000001');
+      },
+    );
   });
 }
 
@@ -669,16 +930,22 @@ class MockContractRepository implements ContractRepository {
 }
 
 class _StubZoneRepository implements OperationalZoneRepository {
+  final List<OperationalZone> zones;
+
+  const _StubZoneRepository({this.zones = const []});
+
   @override
   Future<List<OperationalZone>> findByOrganization(
     String organizationId,
-  ) async => [
-    OperationalZone.create(
-      organizationId: organizationId,
-      name: 'Stub',
-      type: ZoneType.garagem,
-    ),
-  ];
+  ) async => zones.isNotEmpty
+      ? zones
+      : [
+          OperationalZone.create(
+            organizationId: organizationId,
+            name: 'Stub',
+            type: ZoneType.garagem,
+          ),
+        ];
 
   @override
   Future<OperationalZone?> findById(

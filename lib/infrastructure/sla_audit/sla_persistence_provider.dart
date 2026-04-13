@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
@@ -23,6 +24,8 @@ import 'justification/postgres_justification_repository.dart';
 import 'postgres_contract_repository.dart';
 import 'postgres_contractual_execution_state_repository.dart';
 import 'postgres_contractual_financial_snapshot_repository.dart';
+import 'postgres_idempotency_store.dart';
+import 'in_memory_idempotency_store.dart';
 import 'postgres_plan_declaration_repository.dart';
 import 'in_memory_vehicle_infraction_recurrence_repository.dart';
 import 'postgres_sanction_review_queue_repository.dart';
@@ -122,3 +125,16 @@ final vehicleInfractionRecurrenceRepositoryProvider =
           ),
       };
     });
+
+/// Idempotency store provider (INV-33).
+///
+/// In Postgres mode: uses [PostgresIdempotencyStore] with RPC functions.
+/// In in-memory mode: uses [InMemoryIdempotencyStore] for testing only.
+final idempotencyStoreProvider = Provider<IIdempotencyStore>((ref) {
+  return switch (ref.watch(persistenceModeProvider)) {
+    PersistenceMode.inMemory => InMemoryIdempotencyStore(),
+    PersistenceMode.postgres => PostgresIdempotencyStore(
+      ref.watch(supabaseClientProvider),
+    ),
+  };
+});

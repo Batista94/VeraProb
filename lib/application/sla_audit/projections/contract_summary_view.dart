@@ -70,4 +70,36 @@ class ContractSummaryView extends Equatable {
     slaHealthBps,
     financialCeilingCents,
   ];
+
+  ContractSummaryView copyWith({
+    String? id,
+    String? name,
+    String? contractorName,
+    ContractStatusView? status,
+    DateTime? validFromUtc,
+    DateTime? validUntilUtc,
+    DateTime? createdAtUtc,
+    DateTime? activatedAtUtc,
+    int? planCount,
+    int? activePlanVersion,
+    int? totalSetsInProgress,
+    int? slaHealthBps,
+    int? financialCeilingCents,
+  }) {
+    return ContractSummaryView(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      contractorName: contractorName ?? this.contractorName,
+      status: status ?? this.status,
+      validFromUtc: validFromUtc ?? this.validFromUtc,
+      validUntilUtc: validUntilUtc ?? this.validUntilUtc,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      activatedAtUtc: activatedAtUtc ?? this.activatedAtUtc,
+      planCount: planCount ?? this.planCount,
+      activePlanVersion: activePlanVersion ?? this.activePlanVersion,
+      totalSetsInProgress: totalSetsInProgress ?? this.totalSetsInProgress,
+      slaHealthBps: slaHealthBps ?? this.slaHealthBps,
+      financialCeilingCents: financialCeilingCents ?? this.financialCeilingCents,
+    );
+  }
 }

@@ -11,6 +11,7 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
+import 'package:veraprob/state/notifiers/contract_command_notifier.dart';
 
 import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/declare_plan_dialog_header.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/declare_plan_ui_utils.dart';
@@ -22,8 +23,8 @@ import 'package:veraprob/features/admin/presentation/screens/widgets/declare_pla
 
 /// Dialog form for declaring a new B2B Plan for an existing contract.
 ///
-/// Supports declaring multiple [ShiftPattern]s (e.g., round-trip) in a
-/// single wizard session by accumulating confirmed turns via [ShiftDraftSnapshot].
+/// **INV-33 (Idempotency):** Integrated with [ContractCommandNotifier] to 
+/// handle stable keys and intention-based recycling (onFormChanged).
 class DeclareContractPlanForm extends ConsumerStatefulWidget {
   final String contractId;
   final String contractName;
@@ -122,15 +123,21 @@ class _DeclareContractPlanFormState
   @override
   void initState() {
     super.initState();
-    _baseValueController.addListener(_clearError);
-    _delayToleranceController.addListener(_clearError);
-    _earlyArrivalToleranceController.addListener(_clearError);
-    _dwellTimeController.addListener(_clearError);
-    _noShowMultiplierController.addListener(_clearError);
-    _noShowThresholdController.addListener(_clearError);
-    _delayMinuteValueController.addListener(_clearError);
-    _downgradeValueController.addListener(_clearError);
-    _gracePeriodController.addListener(_clearError);
+    // [INV-33] Data change triggers new idempotency key if in error state
+    _baseValueController.addListener(_onDataChanged);
+    _delayToleranceController.addListener(_onDataChanged);
+    _earlyArrivalToleranceController.addListener(_onDataChanged);
+    _dwellTimeController.addListener(_onDataChanged);
+    _noShowMultiplierController.addListener(_onDataChanged);
+    _noShowThresholdController.addListener(_onDataChanged);
+    _delayMinuteValueController.addListener(_onDataChanged);
+    _downgradeValueController.addListener(_onDataChanged);
+    _gracePeriodController.addListener(_onDataChanged);
+  }
+
+  void _onDataChanged() {
+    _clearError();
+    ref.read(contractCommandNotifierProvider(widget.contractId).notifier).onFormChanged();
   }
 
   void _clearError() {
@@ -372,11 +379,11 @@ class _DeclareContractPlanFormState
 
   // ── Submit ───────────────────────────────────────────────────
 
-  String _computeHash(DeclareContractualPlanCommand cmd) {
+  String _computeHash(List<ShiftPattern> patterns, int baseValueCents) {
     final payload = {
-      'contract_id': cmd.contractId,
-      'base_value_cents': cmd.contractualValueCents,
-      'patterns': cmd.shiftPatterns
+      'contract_id': widget.contractId,
+      'base_value_cents': baseValueCents,
+      'patterns': patterns
           .map(
             (p) => {
               'days': p.daysOfWeek.map((d) => d.value).toList()..sort(),
@@ -454,36 +461,29 @@ class _DeclareContractPlanFormState
           : existing.map((p) => p.planVersion).reduce((a, b) => a > b ? a : b) +
                 1;
 
-      var cmd = DeclareContractualPlanCommand(
-        organizationId: organizationId,
+      final notifier = ref.read(contractCommandNotifierProvider(widget.contractId).notifier);
+      
+      final planId = await notifier.declareContractualPlan(
         contractId: widget.contractId,
+        organizationId: organizationId,
         declaredByUserId: operatorId,
+        sessionId: sessionId,
         planVersion: nextVersion,
-        originalFileHash: '',
+        originalFileHash: _computeHash(patterns, baseValueCents),
         declaredAtUtc: DateTime.now().toUtc(),
         shiftPatterns: patterns,
         contractualValueCents: baseValueCents,
-        sessionId: sessionId,
       );
 
-      cmd = DeclareContractualPlanCommand(
-        organizationId: cmd.organizationId,
-        contractId: cmd.contractId,
-        declaredByUserId: cmd.declaredByUserId,
-        planVersion: cmd.planVersion,
-        originalFileHash: _computeHash(cmd),
-        declaredAtUtc: cmd.declaredAtUtc,
-        shiftPatterns: cmd.shiftPatterns,
-        contractualValueCents: cmd.contractualValueCents,
-        sessionId: sessionId,
-      );
-
-      final handler = ref.read(declareContractualPlanHandlerProvider);
-      await handler.handle(cmd);
-
-      if (mounted) Navigator.of(context).pop(true);
-    } on DomainException catch (e) {
-      setState(() => _errorMessage = e.message);
+      if (planId != null && mounted) {
+        Navigator.of(context).pop(true);
+      } else {
+        // [Forensic Error Display] Read status from notifier
+        final status = ref.read(contractCommandNotifierProvider(widget.contractId)).status;
+        if (status is AsyncError) {
+          setState(() => _errorMessage = status.error.toString().replaceAll('Exception: ', ''));
+        }
+      }
     } catch (e) {
       setState(() => _errorMessage = 'Erro inesperado: $e');
     } finally {
@@ -511,13 +511,28 @@ class _DeclareContractPlanFormState
         } else {
           _selectedDays.remove(day);
         }
+        _onDataChanged();
       }),
-      onDepartureTimeChanged: (time) => setState(() => _departureTime = time),
-      onArrivalTimeChanged: (time) => setState(() => _arrivalTime = time),
-      onTimezoneChanged: (tz) => setState(() => _timezone = tz),
-      onVehicleCategoryChanged: (c) =>
-          setState(() => _requiredVehicleCategory = c),
-      onWeekCycleChanged: (c) => setState(() => _weekCycle = c),
+      onDepartureTimeChanged: (time) => setState(() {
+        _departureTime = time;
+        _onDataChanged();
+      }),
+      onArrivalTimeChanged: (time) => setState(() {
+        _arrivalTime = time;
+        _onDataChanged();
+      }),
+      onTimezoneChanged: (tz) => setState(() {
+        _timezone = tz;
+        _onDataChanged();
+      }),
+      onVehicleCategoryChanged: (c) => setState(() {
+        _requiredVehicleCategory = c;
+        _onDataChanged();
+      }),
+      onWeekCycleChanged: (c) => setState(() {
+        _weekCycle = c;
+        _onDataChanged();
+      }),
     );
   }
 
@@ -562,6 +577,10 @@ class _DeclareContractPlanFormState
 
   @override
   Widget build(BuildContext context) {
+    // Watch status for spinner
+    final commandStatus = ref.watch(contractCommandNotifierProvider(widget.contractId).select((s) => s.status));
+    final isLoading = commandStatus is AsyncLoading || _isSubmitting;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
@@ -636,10 +655,10 @@ class _DeclareContractPlanFormState
                       runSpacing: 8,
                       children: [
                         FilledButton.icon(
-                          onPressed: _isSubmitting
+                          onPressed: isLoading
                               ? null
                               : details.onStepContinue,
-                          icon: _isSubmitting
+                          icon: isLoading
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
@@ -659,12 +678,12 @@ class _DeclareContractPlanFormState
                         ),
                         if (isStep3)
                           OutlinedButton.icon(
-                            onPressed: _isSubmitting ? null : _addReturnShift,
+                            onPressed: isLoading ? null : _addReturnShift,
                             icon: const Icon(Icons.add, size: 16),
                             label: const Text('+ Adicionar Turno de Retorno'),
                           ),
                         TextButton(
-                          onPressed: _isSubmitting
+                          onPressed: isLoading
                               ? null
                               : details.onStepCancel,
                           child: Text(
@@ -687,15 +706,21 @@ class _DeclareContractPlanFormState
                       onOriginChanged: (zone) => setState(() {
                         _selectedOriginZone = zone;
                         _selectedOriginZoneId = zone?.id;
+                        _onDataChanged();
                       }),
-                      onOriginConfigured: (zone) =>
-                          setState(() => _selectedOriginZone = zone),
+                      onOriginConfigured: (zone) => setState(() {
+                        _selectedOriginZone = zone;
+                        _onDataChanged();
+                      }),
                       onDestinationChanged: (zone) => setState(() {
                         _selectedDestinationZone = zone;
                         _selectedDestinationZoneId = zone?.id;
+                        _onDataChanged();
                       }),
-                      onDestinationConfigured: (zone) =>
-                          setState(() => _selectedDestinationZone = zone),
+                      onDestinationConfigured: (zone) => setState(() {
+                        _selectedDestinationZone = zone;
+                        _onDataChanged();
+                      }),
                       onSwap: () {
                         setState(() {
                           final tmpZone = _selectedOriginZone;
@@ -704,6 +729,7 @@ class _DeclareContractPlanFormState
                           final tmpId = _selectedOriginZoneId;
                           _selectedOriginZoneId = _selectedDestinationZoneId;
                           _selectedDestinationZoneId = tmpId;
+                          _onDataChanged();
                         });
                       },
                     ),

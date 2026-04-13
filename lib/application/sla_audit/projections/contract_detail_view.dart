@@ -31,4 +31,16 @@ class ContractDetailView extends Equatable {
 
   @override
   List<Object?> get props => [summary, recentExecutions, financialSummary];
+
+  ContractDetailView copyWith({
+    ContractSummaryView? summary,
+    List<SlaExecutionItemView>? recentExecutions,
+    SlaExecutionSummary? financialSummary,
+  }) {
+    return ContractDetailView(
+      summary: summary ?? this.summary,
+      recentExecutions: recentExecutions ?? this.recentExecutions,
+      financialSummary: financialSummary ?? this.financialSummary,
+    );
+  }
 }

@@ -21,7 +21,10 @@ import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repositor
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
 import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 class MockAuthRepository extends Mock implements IAuthRepository {}
@@ -44,6 +47,7 @@ void main() {
     int activeVehicleCount = 1,
     InMemoryOperationalZoneRepository? zones,
   }) {
+    final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
     return DeclareContractualPlanHandler(
       tenantValidator: tenantValidator,
       repository: repository,
@@ -54,7 +58,14 @@ void main() {
       vehicleRepository: InMemoryActiveVehicleRepository(
         countsByOrg: {_orgId: activeVehicleCount},
       ),
-      clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+      projectionService: ShiftProjectionService(
+        planRepo: repository,
+        zoneRepo: zones ?? zoneRepository,
+        alertRepo: InMemoryOperationalAlertRepository(),
+        dateTimeProvider: clock,
+      ),
+      clock: clock,
+      idempotencyStore: InMemoryIdempotencyStore(),
     );
   }
 
@@ -130,6 +141,7 @@ void main() {
       declaredAtUtc: declaredAt ?? DateTime.utc(2026, 2, 25),
       services: services ?? [makeInput()],
       sessionId: 'session-1',
+      idempotencyKey: 'idemp-${contractId}-${version}-${hash}',
     );
   }
 
@@ -245,7 +257,7 @@ void main() {
           final handlerWithNoZones = makeHandler(zones: emptyZones);
 
           await expectLater(
-            () => handlerWithNoZones.handle(makeCommand()),
+            () => handlerWithNoZones.handle(makeCommand(hash: 'un-zones')),
             throwsA(
               isA<DomainException>().having(
                 (e) => e.message,
@@ -293,11 +305,12 @@ void main() {
             contractId: 'contract-1',
             declaredByUserId: 'user-1',
             planVersion: 1,
-            originalFileHash: 'hash',
+            originalFileHash: 'un-vehicles',
             declaredAtUtc: DateTime.utc(2026, 2, 25),
             shiftPatterns: [pattern],
             contractualValueCents: 10000,
             sessionId: 'session-1',
+            idempotencyKey: 'idemp-fail-vehicles',
           );
 
           await expectLater(

@@ -16,8 +16,9 @@ class InMemoryPlanDeclarationRepository implements PlanDeclarationRepository {
       {};
 
   @override
-  Future<void> save(PlanDeclaration plan) async {
+  Future<PlanDeclaration> save(PlanDeclaration plan) async {
     _store[plan.id] = plan;
+    return plan;
   }
 
   @override

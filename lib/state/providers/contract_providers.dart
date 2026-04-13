@@ -21,7 +21,6 @@ import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_rule_repository.dart';
-import 'package:veraprob/infrastructure/sla_audit/postgres_contract_query_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_rule_repository.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'admin_providers.dart';
@@ -84,6 +83,7 @@ final closeContractHandlerProvider = Provider<CloseContractHandler>((ref) {
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
     rbac: RbacService(),
     clock: ref.watch(dateTimeProviderProvider),
+    idempotencyStore: ref.watch(idempotencyStoreProvider),
   );
 });
 
@@ -147,6 +147,7 @@ final declareContractualPlanHandlerProvider =
         vehicleRepository: ref.watch(activeVehicleRepositoryProvider),
         projectionService: ref.watch(shiftProjectionServiceProvider),
         clock: ref.watch(dateTimeProviderProvider),
+        idempotencyStore: ref.watch(idempotencyStoreProvider),
       );
     });
 
@@ -196,17 +197,41 @@ final contractListProvider = FutureProvider<List<ContractSummaryView>>((
   return service.listContracts(organizationId: organizationId, status: status);
 });
 
-final contractDetailProvider =
-    FutureProvider.family<ContractDetailView?, String>((ref, contractId) async {
-      final organizationId = ref.watch(currentOrganizationIdProvider);
-      if (organizationId == null) return null;
+// ── Contract Detail Notifier (Anti-Pipoco) ──────────────────
 
-      final service = ref.watch(contractQueryServiceProvider);
-      return service.getContractDetail(
-        organizationId: organizationId,
-        contractId: contractId,
-      );
-    });
+/// AsyncNotifier for the contract detail view (INV-33).
+///
+/// Supports manual state updates via [updateState] to synchronization
+/// UI after command mutations without requiring a database round-trip.
+class ContractDetailNotifier
+    extends FamilyAsyncNotifier<ContractDetailView?, String> {
+  @override
+  Future<ContractDetailView?> build(String contractId) async {
+    final organizationId = ref.watch(currentOrganizationIdProvider);
+    if (organizationId == null) return null;
+
+    final service = ref.watch(contractQueryServiceProvider);
+    return service.getContractDetail(
+      organizationId: organizationId,
+      contractId: contractId,
+    );
+  }
+
+  /// Manually updates the state with a new view model (INV-33).
+  ///
+  /// Used by command notifiers to inject partial updates (status, version)
+  /// while preserving heavy aggregates (executions, financials).
+  void updateState(ContractDetailView? newState) {
+    state = AsyncData(newState);
+  }
+}
+
+final contractDetailProvider =
+    AsyncNotifierProvider.family<
+      ContractDetailNotifier,
+      ContractDetailView?,
+      String
+    >(ContractDetailNotifier.new);
 
 /// Unique sorted contractor names across all contracts for this org.
 /// Used by the zone form's contractor label Autocomplete.
@@ -221,6 +246,6 @@ final contractorNamesProvider = FutureProvider<List<String>>((ref) async {
           .where((n) => n.trim().isNotEmpty)
           .toSet()
           .toList()
-        ..sort();
+          .sort();
   return names;
 });
