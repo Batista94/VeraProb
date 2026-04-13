@@ -174,10 +174,11 @@ void main() {
             organizationId: 'org-1',
             contractId: contractId,
             closedByUserId: 'user-1',
-            reason: 'Second close', // This is now a successful NO-OP via self-heal
+            reason:
+                'Second close', // This is now a successful NO-OP via self-heal
             callerRole: UserRole.operator,
             sessionId: 'session-1',
-            idempotencyKey: 'idemp-double-2', 
+            idempotencyKey: 'idemp-double-2',
           ),
         );
 

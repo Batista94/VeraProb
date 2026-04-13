@@ -16,6 +16,10 @@ import 'package:veraprob/application/sla_audit/projections/contract_query_servic
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
 import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
+import 'package:veraprob/domain/shared/idempotency_store.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_idempotency_store.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contract_query_service.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
@@ -32,6 +36,17 @@ import 'shared_providers.dart';
 // Re-export so features/ can use ContractReviewSummary without importing infra/.
 export 'package:veraprob/infrastructure/sla_audit/postgres_contract_review_token_query_service.dart'
     show ContractReviewSummary;
+
+// ── Idempotency Store ──────────────────────────────────────────
+
+final idempotencyStoreProvider = Provider<IIdempotencyStore>((ref) {
+  return switch (ref.watch(persistenceModeProvider)) {
+    PersistenceMode.inMemory => InMemoryIdempotencyStore(),
+    PersistenceMode.postgres => PostgresIdempotencyStore(
+      ref.watch(supabaseClientProvider),
+    ),
+  };
+});
 
 // ── Rule repository ──────────────────────────────────────────
 
@@ -141,11 +156,9 @@ final declareContractualPlanHandlerProvider =
         tenantValidator: ref.watch(tenantValidationServiceProvider),
         repository: ref.watch(planDeclarationRepositoryProvider),
         ledger: ref.watch(slaAuditLedgerRepositoryProvider),
-        ruleRepository: ref.watch(contractualRuleRepositoryProvider),
         contractRepository: ref.watch(contractRepositoryProvider),
         zoneRepository: ref.watch(operationalZoneRepositoryProvider),
         vehicleRepository: ref.watch(activeVehicleRepositoryProvider),
-        projectionService: ref.watch(shiftProjectionServiceProvider),
         clock: ref.watch(dateTimeProviderProvider),
         idempotencyStore: ref.watch(idempotencyStoreProvider),
       );
@@ -240,12 +253,11 @@ final contractorNamesProvider = FutureProvider<List<String>>((ref) async {
   if (organizationId == null) return [];
   final service = ref.watch(contractQueryServiceProvider);
   final contracts = await service.listContracts(organizationId: organizationId);
-  final names =
-      contracts
-          .map((c) => c.contractorName)
-          .where((n) => n.trim().isNotEmpty)
-          .toSet()
-          .toList()
-          .sort();
+  final names = contracts
+      .map((c) => c.contractorName)
+      .where((n) => n.trim().isNotEmpty)
+      .toSet()
+      .toList();
+  names.sort();
   return names;
 });

@@ -21,7 +21,10 @@ class InMemoryIdempotencyStore implements IIdempotencyStore {
     // [Atomic Simulation] Logic to determine if we acquire or hit
     if (existing.isError ||
         (existing.isProcessing &&
-            DateTime.now().toUtc().difference(existing.createdAtUtc).inMinutes >=
+            DateTime.now()
+                    .toUtc()
+                    .difference(existing.createdAtUtc)
+                    .inMinutes >=
                 staleThresholdMinutes)) {
       // Re-acquire stale or error key
       _keys[key.id] = key;
@@ -86,14 +89,13 @@ class InMemoryIdempotencyStore implements IIdempotencyStore {
   @override
   Future<int> cleanupExpired({int daysThreshold = 30}) async {
     final now = DateTime.now().toUtc();
-    final toRemove =
-        _keys.entries
-            .where((e) {
-              final age = now.difference(e.value.createdAtUtc).inDays;
-              return age >= daysThreshold;
-            })
-            .map((e) => e.key)
-            .toList();
+    final toRemove = _keys.entries
+        .where((e) {
+          final age = now.difference(e.value.createdAtUtc).inDays;
+          return age >= daysThreshold;
+        })
+        .map((e) => e.key)
+        .toList();
 
     for (final id in toRemove) {
       _keys.remove(id);

@@ -28,28 +28,23 @@ import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
 import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_query_service_in_memory.dart';
-import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
 import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
 import 'package:veraprob/domain/auth/auth_user.dart' as domain;
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
-import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
-import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone.dart';
-import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
 import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
-import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
 import '../mocks/fake_date_time_provider.dart';
 
@@ -69,17 +64,6 @@ ContractualServiceInput _makeService([DateTime? start]) {
     contractualValueCents: 15000,
     noShowPenaltyBps: 15000,
   );
-}
-
-class _StubRuleRepository implements ContractualRuleRepository {
-  @override
-  Future<RuleSnapshot> getActiveSnapshotForContract(
-    String orgId,
-    String contractId,
-  ) async => const RuleSnapshot([]);
-
-  @override
-  Future<void> saveRule(ContractualRule rule) async {}
 }
 
 // ── Test suite ─────────────────────────────────────────────────────────────
@@ -139,6 +123,7 @@ void main() {
       ledger: ledger,
       rbac: RbacService(),
       clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+      idempotencyStore: InMemoryIdempotencyStore(),
     );
 
     final planMockAuth = _Phase5MockAuth();
@@ -151,11 +136,11 @@ void main() {
       tenantValidator: planTvs,
       repository: planRepo,
       ledger: ledger,
-      ruleRepository: _StubRuleRepository(),
       contractRepository: contractRepo,
       zoneRepository: _StubZoneRepository(),
       vehicleRepository: _StubVehicleRepository(),
       clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+      idempotencyStore: InMemoryIdempotencyStore(),
     );
   });
 
@@ -179,11 +164,11 @@ void main() {
         tenantValidator: p51Tvs,
         repository: planRepo,
         ledger: ledger,
-        ruleRepository: _StubRuleRepository(),
         contractRepository: contractRepo,
         zoneRepository: _StubZoneRepository(),
         vehicleRepository: _StubVehicleRepository(),
         clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+        idempotencyStore: InMemoryIdempotencyStore(),
       );
     });
 
@@ -217,6 +202,7 @@ void main() {
             declaredAtUtc: DateTime.utc(2026, 1, 15),
             services: [_makeService()],
             sessionId: 'session-val',
+            idempotencyKey: 'plan-51a',
           ),
         );
 
@@ -259,11 +245,11 @@ void main() {
           tenantValidator: p51bTvs,
           repository: planRepo,
           ledger: ledger,
-          ruleRepository: _StubRuleRepository(),
           contractRepository: contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+          idempotencyStore: InMemoryIdempotencyStore(),
         );
 
         final contract = await createHandler.handle(
@@ -289,6 +275,7 @@ void main() {
             declaredAtUtc: DateTime.utc(2026, 1, 10),
             services: [_makeService()],
             sessionId: 'session-val',
+            idempotencyKey: 'plan-51b',
           ),
         );
 
@@ -321,11 +308,11 @@ void main() {
           tenantValidator: p52Tvs,
           repository: planRepo,
           ledger: ledger,
-          ruleRepository: _StubRuleRepository(),
           contractRepository: contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+          idempotencyStore: InMemoryIdempotencyStore(),
         );
       });
 
@@ -356,6 +343,7 @@ void main() {
             declaredAtUtc: DateTime.utc(2026, 1, 10),
             services: [_makeService()],
             sessionId: 'session-val',
+            idempotencyKey: 'plan-imutavel-final',
           ),
         );
 
@@ -392,11 +380,11 @@ void main() {
             tenantValidator: p52bTvs,
             repository: planRepo,
             ledger: ledger,
-            ruleRepository: _StubRuleRepository(),
             contractRepository: contractRepo,
             zoneRepository: _StubZoneRepository(),
             vehicleRepository: _StubVehicleRepository(),
             clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+            idempotencyStore: InMemoryIdempotencyStore(),
           );
 
           final contract = await createHandler.handle(
@@ -420,6 +408,7 @@ void main() {
               declaredAtUtc: DateTime.utc(2026, 1, 10),
               services: [_makeService(DateTime.utc(2026, 2, 1, 6, 0))],
               sessionId: 'session-val',
+              idempotencyKey: 'plan-v1',
             ),
           );
 
@@ -436,6 +425,7 @@ void main() {
                 _makeService(DateTime.utc(2026, 3, 1, 8, 0)),
               ],
               sessionId: 'session-val',
+              idempotencyKey: 'plan-v2',
             ),
           );
 
@@ -484,11 +474,11 @@ void main() {
             tenantValidator: p52cTvs,
             repository: planRepo,
             ledger: ledger,
-            ruleRepository: _StubRuleRepository(),
             contractRepository: contractRepo,
             zoneRepository: _StubZoneRepository(),
             vehicleRepository: _StubVehicleRepository(),
             clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+            idempotencyStore: InMemoryIdempotencyStore(),
           );
 
           final contract = await createHandler.handle(
@@ -512,6 +502,7 @@ void main() {
               declaredAtUtc: DateTime.utc(2026, 1, 10),
               services: [_makeService()],
               sessionId: 'session-val',
+              idempotencyKey: 'plan-events',
             ),
           );
 
@@ -696,17 +687,18 @@ void main() {
         ledger: ledger,
         rbac: RbacService(),
         clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+        idempotencyStore: InMemoryIdempotencyStore(),
       );
 
       planHandler = DeclareContractualPlanHandler(
         tenantValidator: p54Tvs,
         repository: planRepo,
         ledger: ledger,
-        ruleRepository: _StubRuleRepository(),
         contractRepository: contractRepo,
         zoneRepository: _StubZoneRepository(),
         vehicleRepository: _StubVehicleRepository(),
         clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+        idempotencyStore: InMemoryIdempotencyStore(),
       );
     });
 
@@ -740,6 +732,7 @@ void main() {
             declaredAtUtc: DateTime.utc(2026, 1, 15),
             services: [_makeService()],
             sessionId: 'session-val',
+            idempotencyKey: 'plan-v1-54a',
           ),
         );
 
@@ -752,6 +745,7 @@ void main() {
             reason: 'Período encerrado.',
             callerRole: UserRole.admin,
             sessionId: 'session-val',
+            idempotencyKey: 'close-1',
           ),
         );
 
@@ -769,6 +763,7 @@ void main() {
               declaredAtUtc: DateTime.utc(2026, 12, 1),
               services: [_makeService(DateTime.utc(2027, 1, 1, 6, 0))],
               sessionId: 'session-val',
+              idempotencyKey: 'plan-v2-rejected',
             ),
           ),
           throwsA(isA<DomainException>()),
@@ -806,17 +801,18 @@ void main() {
           ledger: ledger,
           rbac: RbacService(),
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+          idempotencyStore: InMemoryIdempotencyStore(),
         );
 
         planHandler = DeclareContractualPlanHandler(
           tenantValidator: p54bTvs,
           repository: planRepo,
           ledger: ledger,
-          ruleRepository: _StubRuleRepository(),
           contractRepository: contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+          idempotencyStore: InMemoryIdempotencyStore(),
         );
         final contract = await createHandler.handle(
           CreateContractCommand(
@@ -838,6 +834,7 @@ void main() {
             reason: 'Cancelado antes de operar.',
             callerRole: UserRole.admin,
             sessionId: 'session-val',
+            idempotencyKey: 'close-cancelled',
           ),
         );
 
@@ -852,6 +849,7 @@ void main() {
               declaredAtUtc: DateTime.utc(2026, 1, 15),
               sessionId: 'session-val',
               services: [_makeService()],
+              idempotencyKey: 'plan-rejected-closed',
             ),
           ),
           throwsA(isA<DomainException>()),
@@ -881,11 +879,11 @@ void main() {
           tenantValidator: p54cTvs,
           repository: planRepo,
           ledger: ledger,
-          ruleRepository: _StubRuleRepository(),
           contractRepository: contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
+          idempotencyStore: InMemoryIdempotencyStore(),
         );
 
         final contract = await createHandler.handle(
@@ -910,6 +908,7 @@ void main() {
             declaredAtUtc: DateTime.utc(2026, 1, 10),
             services: [_makeService()],
             sessionId: 'session-val',
+            idempotencyKey: 'plan-v1-54c',
           ),
         );
 
@@ -924,6 +923,7 @@ void main() {
             declaredAtUtc: DateTime.utc(2026, 2, 1),
             services: [_makeService(DateTime.utc(2026, 3, 1, 6, 0))],
             sessionId: 'session-val',
+            idempotencyKey: 'plan-v2',
           ),
         );
 
@@ -942,7 +942,6 @@ void main() {
         () async {
           // Infra B2B
           final zoneRepo = InMemoryOperationalZoneRepository();
-          final alertRepo = InMemoryOperationalAlertRepository();
           final b2bPlanRepo = InMemoryPlanDeclarationRepository();
           final b2bLedger = InMemorySlaAuditLedgerRepository();
           final b2bContractRepo = InMemoryContractRepository();
@@ -970,13 +969,6 @@ void main() {
           await zoneRepo.save(origin);
           await zoneRepo.save(dest);
 
-          final projectionService = ShiftProjectionService(
-            planRepo: b2bPlanRepo,
-            zoneRepo: zoneRepo,
-            alertRepo: alertRepo,
-            dateTimeProvider: BrazilDateTimeProvider(),
-          );
-
           final clock = FakeDateTimeProvider(
             DateTime.utc(2026, 4, 8, 12, 0, 0),
           );
@@ -998,12 +990,11 @@ void main() {
             tenantValidator: b2bTvs,
             repository: b2bPlanRepo,
             ledger: b2bLedger,
-            ruleRepository: _StubRuleRepository(),
             contractRepository: b2bContractRepo,
             zoneRepository: zoneRepo,
             vehicleRepository: _StubVehicleRepository(),
-            projectionService: projectionService,
             clock: clock,
+            idempotencyStore: InMemoryIdempotencyStore(),
           );
 
           final contract = await b2bCreateHandler.handle(
@@ -1048,6 +1039,7 @@ void main() {
               shiftPatterns: [pattern],
               contractualValueCents: 15000,
               sessionId: 'session-val',
+              idempotencyKey: 'plan-b2b-v1',
             ),
           );
 

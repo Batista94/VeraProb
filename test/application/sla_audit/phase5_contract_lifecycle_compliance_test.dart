@@ -23,16 +23,14 @@ import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
 import 'package:veraprob/domain/auth/auth_user.dart' as domain;
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
-import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
-import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
-import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
@@ -55,6 +53,7 @@ void main() {
       contractRepo = InMemoryContractRepository();
       planRepo = InMemoryPlanDeclarationRepository();
       ledger = InMemorySlaAuditLedgerRepository();
+      final idempotencyStore = InMemoryIdempotencyStore();
 
       final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
       final mockAuth = _MockAuthRepo();
@@ -94,16 +93,17 @@ void main() {
         ledger: ledger,
         rbac: RbacService(),
         clock: clock,
+        idempotencyStore: idempotencyStore,
       );
       planHandler = DeclareContractualPlanHandler(
         tenantValidator: tvs,
         repository: planRepo,
         ledger: ledger,
-        ruleRepository: _MockRuleRepository(),
         contractRepository: contractRepo,
         zoneRepository: _StubZoneRepository(),
         vehicleRepository: _StubVehicleRepository(),
         clock: clock,
+        idempotencyStore: idempotencyStore,
       );
     });
 
@@ -146,6 +146,7 @@ void main() {
             declaredAtUtc: DateTime.utc(2026, 1, 15),
             services: [_makeService(DateTime.utc(2026, 2, 1, 6, 0))],
             sessionId: 'session-phase5',
+            idempotencyKey: 'plan-v1',
           ),
         );
 
@@ -187,6 +188,7 @@ void main() {
               _makeService(DateTime.utc(2026, 4, 1, 8, 0)),
             ],
             sessionId: 'session-phase5',
+            idempotencyKey: 'plan-v2',
           ),
         );
 
@@ -220,6 +222,7 @@ void main() {
             reason: 'Contract period ended.',
             callerRole: UserRole.admin,
             sessionId: 'session-phase5',
+            idempotencyKey: 'close-1',
           ),
         );
 
@@ -256,6 +259,7 @@ void main() {
               declaredAtUtc: DateTime.utc(2026, 12, 1),
               services: [_makeService(DateTime.utc(2027, 1, 1, 6, 0))],
               sessionId: 'session-phase5',
+              idempotencyKey: 'plan-rejected',
             ),
           ),
           throwsA(isA<DomainException>()),
@@ -340,6 +344,7 @@ void main() {
               reason: 'Attempted cross-tenant close',
               callerRole: UserRole.admin,
               sessionId: 'session-org-b',
+              idempotencyKey: 'close-org-b-attempt',
             ),
           ),
           throwsA(isA<SovereigntyViolationException>()),
@@ -365,17 +370,6 @@ ContractualServiceInput _makeService(DateTime start) {
     contractualValueCents: 15000,
     noShowPenaltyBps: 15000,
   );
-}
-
-class _MockRuleRepository implements ContractualRuleRepository {
-  @override
-  Future<RuleSnapshot> getActiveSnapshotForContract(
-    String orgId,
-    String contractId,
-  ) async => const RuleSnapshot([]);
-
-  @override
-  Future<void> saveRule(ContractualRule rule) async {}
 }
 
 /// Satisfies the INV-18 zone gate for any org without polluting lifecycle tests.

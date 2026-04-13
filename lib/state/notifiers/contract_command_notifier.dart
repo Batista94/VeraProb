@@ -2,24 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/sla_audit/close_contract_command.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
-import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
-import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
-import 'package:veraprob/state/providers/shared_providers.dart';
 import 'contract_command_state.dart';
 
 /// Notifier that executes contract commands (close, declare plan, etc.) and
-/// **automatically** synchronization UI state via manual updates — preventing 
+/// **automatically** synchronization UI state via manual updates — preventing
 /// the "UI pipoco" (stale state after mutation).
 ///
 /// **Anti-Pipoco Strategy (INV-33):**
-/// Instead of invalidating and forcing a full DB re-fetch (data blackout), 
+/// Instead of invalidating and forcing a full DB re-fetch (data blackout),
 /// this Notifier updates the local [contractDetailProvider] using `copyWith`.
-/// It preserves historical data (executions, financials) while updating 
+/// It preserves historical data (executions, financials) while updating
 /// mutable fields (status, plan versions).
 ///
 /// **INV-33 (Idempotency):**
@@ -38,7 +37,7 @@ class ContractCommandNotifier
 
   /// Called by the UI whenever form data changes.
   ///
-  /// **Intention Differentiation:** Generates a new key only if the 
+  /// **Intention Differentiation:** Generates a new key only if the
   /// current state is an error, signifying the user corrected data.
   void onFormChanged() {
     if (state.status is AsyncError) {
@@ -123,8 +122,8 @@ class ContractCommandNotifier
       final plan = await handler.handle(command);
 
       // ── Anti-Pipoco State Sync ────────────────────────────────────
-      // Not yet implementing deep contract update for plans since 
-      // the handler manages multiple aggregates. Best to invalidate 
+      // Not yet implementing deep contract update for plans since
+      // the handler manages multiple aggregates. Best to invalidate
       // the detail view for plans to ensure projection sync.
       ref.invalidate(contractDetailProvider(contractId));
       ref.invalidate(contractListProvider);
@@ -141,24 +140,28 @@ class ContractCommandNotifier
 
   /// Internally maps Domain Contract -> View Model and updates state.
   void _syncDetailView(String contractId, Contract domain) {
-    final currentView = ref.read(contractDetailProvider(contractId)).valueOrNull;
+    final currentView = ref
+        .read(contractDetailProvider(contractId))
+        .valueOrNull;
     if (currentView != null) {
       final updatedView = currentView.copyWith(
         summary: currentView.summary.copyWith(
           status: _mapStatus(domain.status),
           activatedAtUtc: domain.activatedAtUtc,
-          activePlanVersion: domain.activePlanVersion,
         ),
       );
-      
-      ref.read(contractDetailProvider(contractId).notifier).updateState(updatedView);
+
+      ref
+          .read(contractDetailProvider(contractId).notifier)
+          .updateState(updatedView);
     }
   }
 
   ContractStatusView _mapStatus(ContractStatus domainStatus) {
     return switch (domainStatus) {
       ContractStatus.draft => ContractStatusView.draft,
-      ContractStatus.awaitingAcceptance => ContractStatusView.awaitingContractorAcceptance,
+      ContractStatus.awaitingContractorAcceptance =>
+        ContractStatusView.awaitingContractorAcceptance,
       ContractStatus.active => ContractStatusView.active,
       ContractStatus.closed => ContractStatusView.closed,
     };

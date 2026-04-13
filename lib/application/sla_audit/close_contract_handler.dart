@@ -6,7 +6,6 @@ import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
-import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';

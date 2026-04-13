@@ -20,7 +20,7 @@ abstract class IIdempotencyStore {
   /// race conditions. It returns an [IdempotencyRegistrationResult] containing
   /// whether the lock was acquired and the current state of the key.
   ///
-  /// [staleThresholdMinutes] controls how long a 'processing' key remains 
+  /// [staleThresholdMinutes] controls how long a 'processing' key remains
   /// locked before it can be reclaimed by a retry.
   Future<IdempotencyRegistrationResult> tryRegister(
     IdempotencyKey key, {

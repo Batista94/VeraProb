@@ -6,7 +6,7 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 /// Mixin for Application Handlers to orchestrate resilient, idempotent execution.
 ///
-/// **Clean Architecture:** Orchestration lives in the Application layer, 
+/// **Clean Architecture:** Orchestration lives in the Application layer,
 /// while persistence is delegated to the [IIdempotencyStore] domain port.
 ///
 /// **Forensic Invariants (INV-33):**
@@ -60,7 +60,7 @@ mixin IdempotentHandlerMixin {
         );
 
         return entity;
-      } on ConflictException catch (e) {
+      } on ConflictException catch (_) {
         // [Conflict Guard] Optimistic locking conflict (409)
         // We do NOT cache the message to allow retry with fresh data.
         await idempotencyStore.markError(
@@ -114,8 +114,10 @@ mixin IdempotentHandlerMixin {
 
     if (cached.isCompleted) {
       final body = cached.responseBody;
-      if (body == null) throw StateError('Idempotency hit completed but body is missing.');
-      
+      if (body == null) {
+        throw StateError('Idempotency hit completed but body is missing.');
+      }
+
       final entity = await reloadEntity(body);
       if (entity == null) {
         // [Forensic Guardrail] Entity existed but was physically deleted
@@ -131,15 +133,16 @@ mixin IdempotentHandlerMixin {
     if (cached.isError) {
       final body = cached.responseBody;
       final responseCode = cached.responseCode ?? 500;
-      
+
       // If we cached a 4xx error message, throw DomainException
       if (responseCode >= 400 && responseCode < 500 && body != null) {
-        final msg = body['errorMessage'] as String? ?? 'Cached validation error';
+        final msg =
+            body['errorMessage'] as String? ?? 'Cached validation error';
         throw DomainException(msg);
       }
-      
-      // For 5xx errors or null bodies, allow retry by falling through to acquire 
-      // (The RPC handles stale reclamation, but here we likely just want 
+
+      // For 5xx errors or null bodies, allow retry by falling through to acquire
+      // (The RPC handles stale reclamation, but here we likely just want
       // the caller to retry after a short delay or throw to trigger the Notifier's AsyncError).
       throw IdempotencyProcessingException(
         idempotencyKey: idempotencyKey,

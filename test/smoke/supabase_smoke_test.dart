@@ -41,9 +41,6 @@ import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
-import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
-import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
-import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
 import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -61,6 +58,7 @@ import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.
 import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
 
 // Infrastructure
 import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
@@ -73,18 +71,6 @@ import 'package:veraprob/core/utils/date_time_provider.dart';
 import '../mocks/fake_date_time_provider.dart';
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────
-
-/// Repo de regras no-op (mesmo padrão do E2E).
-class _SmokeRuleRepository implements ContractualRuleRepository {
-  @override
-  Future<RuleSnapshot> getActiveSnapshotForContract(
-    String orgId,
-    String contractId,
-  ) async => const RuleSnapshot([]);
-
-  @override
-  Future<void> saveRule(ContractualRule rule) async {}
-}
 
 /// Retorna um contrato draft em memória — permite que o handler ative sem
 /// precisar de PostgresContractRepository nos grupos de plano.
@@ -254,7 +240,6 @@ void main() {
         tenantValidator: tenantValidator,
         repository: planRepo,
         ledger: ledgerRepo,
-        ruleRepository: _SmokeRuleRepository(),
         // Stub em memória — ativa o contrato no domínio sem exigir upsert
         contractRepository: _SmokeContractStub(
           contractId: contractId,
@@ -265,6 +250,7 @@ void main() {
           countsByOrg: {orgId: 1},
         ),
         clock: clock,
+        idempotencyStore: InMemoryIdempotencyStore(),
       );
 
       engine = ContractualEvaluationEngine(
@@ -272,6 +258,7 @@ void main() {
         planRepo: planRepo,
         ledgerRepo: ledgerRepo,
         traceRepo: InMemoryEvaluationTraceRepository(),
+        clock: clock,
       );
     });
 
@@ -336,6 +323,7 @@ void main() {
             shiftPatterns: [pattern],
             contractualValueCents: 50000, // R$ 500,00
             sessionId: 'session-smoke-b2b',
+            idempotencyKey: 'smoke-plan-$runId',
           );
 
           final plan = await declareHandler.handle(cmd);

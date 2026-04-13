@@ -4,11 +4,9 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/state/notifiers/contract_command_notifier.dart';
@@ -23,7 +21,7 @@ import 'package:veraprob/features/admin/presentation/screens/widgets/declare_pla
 
 /// Dialog form for declaring a new B2B Plan for an existing contract.
 ///
-/// **INV-33 (Idempotency):** Integrated with [ContractCommandNotifier] to 
+/// **INV-33 (Idempotency):** Integrated with [ContractCommandNotifier] to
 /// handle stable keys and intention-based recycling (onFormChanged).
 class DeclareContractPlanForm extends ConsumerStatefulWidget {
   final String contractId;
@@ -137,7 +135,9 @@ class _DeclareContractPlanFormState
 
   void _onDataChanged() {
     _clearError();
-    ref.read(contractCommandNotifierProvider(widget.contractId).notifier).onFormChanged();
+    ref
+        .read(contractCommandNotifierProvider(widget.contractId).notifier)
+        .onFormChanged();
   }
 
   void _clearError() {
@@ -461,8 +461,10 @@ class _DeclareContractPlanFormState
           : existing.map((p) => p.planVersion).reduce((a, b) => a > b ? a : b) +
                 1;
 
-      final notifier = ref.read(contractCommandNotifierProvider(widget.contractId).notifier);
-      
+      final notifier = ref.read(
+        contractCommandNotifierProvider(widget.contractId).notifier,
+      );
+
       final planId = await notifier.declareContractualPlan(
         contractId: widget.contractId,
         organizationId: organizationId,
@@ -479,9 +481,16 @@ class _DeclareContractPlanFormState
         Navigator.of(context).pop(true);
       } else {
         // [Forensic Error Display] Read status from notifier
-        final status = ref.read(contractCommandNotifierProvider(widget.contractId)).status;
+        final status = ref
+            .read(contractCommandNotifierProvider(widget.contractId))
+            .status;
         if (status is AsyncError) {
-          setState(() => _errorMessage = status.error.toString().replaceAll('Exception: ', ''));
+          setState(
+            () => _errorMessage = status.error.toString().replaceAll(
+              'Exception: ',
+              '',
+            ),
+          );
         }
       }
     } catch (e) {
@@ -578,7 +587,11 @@ class _DeclareContractPlanFormState
   @override
   Widget build(BuildContext context) {
     // Watch status for spinner
-    final commandStatus = ref.watch(contractCommandNotifierProvider(widget.contractId).select((s) => s.status));
+    final commandStatus = ref.watch(
+      contractCommandNotifierProvider(
+        widget.contractId,
+      ).select((s) => s.status),
+    );
     final isLoading = commandStatus is AsyncLoading || _isSubmitting;
 
     return Dialog(
@@ -655,9 +668,7 @@ class _DeclareContractPlanFormState
                       runSpacing: 8,
                       children: [
                         FilledButton.icon(
-                          onPressed: isLoading
-                              ? null
-                              : details.onStepContinue,
+                          onPressed: isLoading ? null : details.onStepContinue,
                           icon: isLoading
                               ? const SizedBox(
                                   width: 16,
@@ -683,9 +694,7 @@ class _DeclareContractPlanFormState
                             label: const Text('+ Adicionar Turno de Retorno'),
                           ),
                         TextButton(
-                          onPressed: isLoading
-                              ? null
-                              : details.onStepCancel,
+                          onPressed: isLoading ? null : details.onStepCancel,
                           child: Text(
                             _currentStep == 0 ? 'Cancelar' : 'Voltar',
                           ),

@@ -139,9 +139,8 @@ void main() {
       tenantValidator: tenantValidator,
       repository: planRepo,
       ledger: ledgerRepo,
-      ruleRepository: MockContractualRuleRepository(),
       contractRepository: MockContractRepository(),
-      zoneRepository: _StubZoneRepository(),
+      zoneRepository: const _StubZoneRepository(),
       vehicleRepository: const InMemoryActiveVehicleRepository(
         countsByOrg: {'00000000-0000-0000-0000-000000000001': 1},
       ),
@@ -749,7 +748,6 @@ void main() {
           tenantValidator: TenantValidationService(authRepository: mockAuthT09),
           repository: planRepo,
           ledger: ledgerRepo,
-          ruleRepository: MockContractualRuleRepository(),
           contractRepository: MockContractRepository(),
           zoneRepository: const _StubZoneRepository(zones: []), // Empty!
           vehicleRepository: const InMemoryActiveVehicleRepository(

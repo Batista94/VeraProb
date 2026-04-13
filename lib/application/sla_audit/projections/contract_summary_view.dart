@@ -99,7 +99,8 @@ class ContractSummaryView extends Equatable {
       activePlanVersion: activePlanVersion ?? this.activePlanVersion,
       totalSetsInProgress: totalSetsInProgress ?? this.totalSetsInProgress,
       slaHealthBps: slaHealthBps ?? this.slaHealthBps,
-      financialCeilingCents: financialCeilingCents ?? this.financialCeilingCents,
+      financialCeilingCents:
+          financialCeilingCents ?? this.financialCeilingCents,
     );
   }
 }
