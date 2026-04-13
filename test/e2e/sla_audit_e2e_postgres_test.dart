@@ -34,6 +34,7 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repository.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import '../mocks/fake_date_time_provider.dart';
 
 // ── Database Integrity Helpers ───────────────────────────
@@ -492,10 +493,10 @@ void main() {
         windowEndUtc: testBaseTimeUtc.add(const Duration(minutes: 60)),
       );
 
-      // This MUST throw a PostgrestException (code 23505 - unique_violation)
+      // This MUST throw an IntegrityException (mapped from code 23505 - unique_violation)
       expect(
         () async => await executionRepo.save(duplicateSet),
-        throwsA(isA<PostgrestException>()),
+        throwsA(isA<IntegrityException>()),
         reason:
             'Postgres UNIQUE(set_id) or (plan,shift,date) must reject duplicate insertions',
       );

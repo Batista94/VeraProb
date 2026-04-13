@@ -6,7 +6,7 @@ import 'package:veraprob/domain/shared/integrity_exception.dart';
 /// indicating that another concurrent modification has already been applied.
 ///
 /// **Why a separate exception (not [IntegrityException])?**
-/// - `IntegrityException` signals data corruption or constraint violations.
+/// - `IntegrityException` signals state corruption or constraint violations.
 /// - `ConflictException` signals a **recoverable concurrency conflict** — the
 ///   client can retry after refreshing the entity state.
 ///

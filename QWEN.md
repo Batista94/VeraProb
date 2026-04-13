@@ -26,7 +26,7 @@ O projeto utiliza um **Conselho de Personas** distribuído. Cada persona atua co
 | **QA & Security** | RLS, Isolamento de Tenant & Prova Forense | Valida RLS com `auth.jwt()`, Error Parity (INV-26), HMAC, tenant isolation, Red Team tests. |
 | **UX & Operations** | Material 3, OCC & Carga Cognitiva | Garante Material 3, paleta Industrial Deep, prevenção de eye-strain (24/7), layouts mobile-first. |
 | **Business Maverick** | ROI, Estratégia & Proteção de Lucro | Valida free-tier de serviços 3rd-party, impacto financeiro de decisões, product-market fit. |
-| **Lead Reviewer** | Gatekeeper — executa `/veraprob-pr-scanner` | **Último filtro antes do merge.** Executa scanner determinístico, reporta BLOCK/WARN/REGRESSION. |
+| **Lead Reviewer** | Gatekeeper — executa `/veraprob-pr-scanner` | **Último filtro antes do merge.** Executa `pr_full_scanner.sh`, reporta BLOCK/WARN e garante correção de falsos positivos em comentários. |
 
 ### Skills Disponíveis (`.claude/skills/`)
 
@@ -346,8 +346,10 @@ Para mudanças estruturais: Architect, Senior, QA devem concordar.
 - [ ] Este JSON será hasheado? → Se sim, aplicar `_sortKeys` para canonicidade (INV-9).
 - [ ] Este erro vaza códigos do banco? → Se sim, envolver com `withErrorHandler` (INV-26).
 - [ ] Este widget tem dependência oculta de Singleton? → Se sim, tornar mockável via `ProviderScope` (INV-28).
-- [ ] Estou usando `DateTime.now()` sem `.toUtc()`? → Se sim, corrigir (INV-6).
+- [ ] Estou usando `DateTime.now()` sem `.toUtc()`? → Se sim, corrigir (INV-6). **Obrigatório inclusive em arquivos de teste (A3-legacy).**
+- [ ] Usei termos genéricos como `data`, `event`, `getData` ou `handleResult` em `lib/domain/`? → Se sim, substituir por termos específicos (ex: `CanonicalFact`), inclusive em comentários e mensagens de erro (DDD-BAD-NAMES).
 - [ ] Este widget importa `domain/` ou `infrastructure/`? → Se sim, violação C4 (INV-13).
+- [ ] O teste E2E espera a exceção correta? → Garantir `IntegrityException` para violações de regra/unique-key em vez de `PostgrestException` (INV-26).
 
 **Qualquer checkbox marcado = refatorar ANTES de entregar.**
 

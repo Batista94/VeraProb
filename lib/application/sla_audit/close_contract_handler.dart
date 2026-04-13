@@ -128,7 +128,53 @@ class CloseContractHandler {
           reason: command.reason,
           nowUtc: _clock.now(),
         );
-        saved = await _contractRepository.save(merged);
+
+        // ── Second attempt with retry-storm protection ──────────────────
+        // If the auto-merge ALSO fails (concurrency storm), we DO NOT retry
+        // again — instead we fail-fast with a user-friendly message.
+        // A single retry is the maximum acceptable under load; looping would
+        // amplify contention and waste Supabase free-tier quotas (INV-16).
+        try {
+          saved = await _contractRepository.save(merged);
+        } on ConflictException catch (e2) {
+          // Forensic alert: concurrency storm detected (two conflicts in a row)
+          await Sentry.addBreadcrumb(
+            Breadcrumb(
+              category: 'optimistic_lock',
+              level: SentryLevel.error,
+              message:
+                  '[CONCURRENCY STORM] Contract ${command.contractId}: '
+                  'auto-merge ALSO failed on retry (client=${e2.clientVersion}, '
+                  'server=${e2.currentVersion}). Failing fast to prevent retry loop.',
+              data: {
+                'contractId': command.contractId,
+                'firstConflictClientVersion': e.clientVersion,
+                'secondConflictClientVersion': e2.clientVersion,
+                'secondConflictServerVersion': e2.currentVersion,
+                'action': 'close',
+              },
+            ),
+          );
+          Sentry.configureScope((scope) {
+            scope.setTag('concurrency_storm', 'true');
+            scope.setTag('contract_id', command.contractId);
+            scope.setTag('action', 'close_contract_retry_failed');
+          });
+          // unawaited: fire-and-forget telemetry before throwing
+          // ignore: unawaited_futures
+          Sentry.captureException(e2);
+
+          if (e2.isDeleted) {
+            throw const DomainException(
+              'Contrato fechado ou removido por outro operador. Atualize a tela.',
+            );
+          }
+          // Generic message — no forensic details leaked (INV-26)
+          throw const DomainException(
+            'Conflito de concorrência ao fechar contrato. '
+            'Atualize a tela e tente novamente.',
+          );
+        }
 
         await Sentry.addBreadcrumb(
           Breadcrumb(

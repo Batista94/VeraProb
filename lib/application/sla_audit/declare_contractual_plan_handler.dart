@@ -258,7 +258,38 @@ class DeclareContractualPlanHandler {
           );
           if (latest != null && latest.isDraft) {
             final merged = latest.activate(nowUtc: nowUtc);
-            await _contractRepository.save(merged);
+            try {
+              await _contractRepository.save(merged);
+            } on ConflictException catch (e2) {
+              // Retry-storm protection: second conflict in a row → fail-fast.
+              // We do NOT loop — this would amplify contention under load (INV-16).
+              await Sentry.addBreadcrumb(
+                Breadcrumb(
+                  category: 'optimistic_lock',
+                  level: SentryLevel.error,
+                  message:
+                      '[CONCURRENCY STORM] Contract ${command.contractId}: '
+                      'auto-merge ALSO failed during plan activation '
+                      '(client=${e2.clientVersion}, server=${e2.currentVersion}).',
+                  data: {
+                    'contractId': command.contractId,
+                    'firstConflictClientVersion': e.clientVersion,
+                    'secondConflictClientVersion': e2.clientVersion,
+                    'action': 'activate_on_plan_declaration',
+                  },
+                ),
+              );
+              Sentry.configureScope((scope) {
+                scope.setTag('concurrency_storm', 'true');
+                scope.setTag('contract_id', command.contractId);
+                scope.setTag('action', 'plan_activation_retry_failed');
+              });
+              // unawaited: fire-and-forget telemetry before silently skipping
+              // ignore: unawaited_futures
+              Sentry.captureException(e2);
+              // Silently skip — plan was saved, contract may have been activated
+              // by another operator. Non-fatal for this flow.
+            }
           }
           // If latest is null or not draft → silently skip (race: already activated)
         } else {

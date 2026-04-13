@@ -297,7 +297,7 @@ void main() async {
       'T06: Batch update — sabotage vehicle #3, prove ZERO vehicles updated',
       () async {
         final repo = PostgresVehicleAssetRepository(client);
-        final ts = DateTime.now().millisecondsSinceEpoch;
+        final ts = DateTime.now().toUtc().millisecondsSinceEpoch;
 
         // Create 5 vehicles with unique plates to avoid FK cleanup issues
         final ids = <String>[];

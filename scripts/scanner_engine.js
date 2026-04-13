@@ -97,14 +97,14 @@ changedFiles.forEach((file) => {
 
     const regex = new RegExp(config.pattern);
 
-    // ── Absence Check (INV-1 / INV-26-REPO) ──
+    // ── Absence Check (INV-1 / INV-26-REPO / INV-30) ──
     if (config.type === "absence_check") {
-      if (!regex.test(content)) return;
-
       const strippedContent = content
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/\/\/\/.*$/gm, "")
         .replace(/\/\/.*$/gm, "");
+
+      if (!regex.test(strippedContent)) return;
 
       if (config.requires_supabase_content) {
         const hasSupabaseCall = config.requires_supabase_content.some(
@@ -128,13 +128,19 @@ changedFiles.forEach((file) => {
 
     // ── Line-by-line check ──
     lines.forEach((line, index) => {
-      if (!regex.test(line)) return;
+      // Ignore full-line comments and strip end-of-line comments for matching
+      const strippedLine = line
+        .replace(/\/\/\/.*$/, "")
+        .replace(/\/\/.*$/, "")
+        .trim();
+
+      if (!regex.test(strippedLine)) return;
 
       // Bypass check
       const hasBypass =
-        bypasskeywords.some((kw) => line.includes(kw)) ||
+        bypassKeywords.some((kw) => line.includes(kw)) ||
         (lines[index + 1] &&
-          bypasskeywords.some((kw) => lines[index + 1].includes(kw)));
+          bypassKeywords.some((kw) => lines[index + 1].includes(kw)));
       if (hasBypass) return;
 
       // UTC special case
