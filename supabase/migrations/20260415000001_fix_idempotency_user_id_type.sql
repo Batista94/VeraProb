@@ -143,7 +143,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   v_existing        RECORD;
-  v_inserted        BOOLEAN;
+  v_inserted        INT;
   v_stale_threshold INTERVAL;
 BEGIN
   -- Step 1: Check if key already exists.

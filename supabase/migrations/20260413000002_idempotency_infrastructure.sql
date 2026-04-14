@@ -132,8 +132,7 @@ BEGIN
   IF NEW.id                IS DISTINCT FROM OLD.id                OR
      NEW.user_id           IS DISTINCT FROM OLD.user_id           OR
      NEW.command_path      IS DISTINCT FROM OLD.command_path      OR
-     NEW.organization_id   IS DISTINCT FROM OLD.organization_id   OR
-     NEW.created_at_utc    IS DISTINCT FROM OLD.created_at_utc
+     NEW.organization_id   IS DISTINCT FROM OLD.organization_id
   THEN
     RAISE EXCEPTION
       'idempotency_keys: immutable field mutation. id: %, user_id: %',
@@ -261,7 +260,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   v_existing RECORD;
-  v_inserted BOOLEAN;
+  v_inserted INT;
   v_stale_threshold INTERVAL;
 BEGIN
   -- Step 1: Check if key already exists.
