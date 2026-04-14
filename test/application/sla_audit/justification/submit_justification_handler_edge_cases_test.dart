@@ -84,10 +84,12 @@ void main() {
       mockRbac = MockRbac();
       clock = FakeClock(kEpoch);
 
+      // INV-1: Secure Baseline. Nada de 'any()'.
+      // Qualquer comando fora do padrão 'org-1'/'session-1' vai quebrar os testes.
       when(
         () => mockTenant.assertTenantMatches(
-          payloadOrgId: any(named: 'payloadOrgId'),
-          sessionId: any(named: 'sessionId'),
+          payloadOrgId: 'org-1',
+          sessionId: 'session-1',
         ),
       ).thenAnswer((_) async {});
 
@@ -227,12 +229,20 @@ void main() {
         final capturedEntry =
             verify(() => mockLedger.append(captureAny())).captured.last
                 as SlaLedgerEntry;
+        // Validate routing fields on the root of SlaLedgerEntry.
         expect(capturedEntry.organizationId, equals(command.organizationId));
-        expect(capturedEntry.setId, equals(command.setId));
-        final payloadHashes = capturedEntry.payload['justification_id'] != null
-            ? command.evidenceHashes
-            : <String>[];
-        expect(listEquals(payloadHashes, command.evidenceHashes), true);
+        expect(capturedEntry.contractId, equals(command.contractId));
+        expect(capturedEntry.occurredAtUtc.isUtc, isTrue);
+
+        // Validate forensic fields inside the payload map (INV-7).
+        final payload = capturedEntry.payload;
+        expect(payload['set_id'], equals(command.setId));
+        expect(payload['caller_user_id'], equals(command.callerUserId));
+
+        // Binary Shield: validate evidence hashes via listEquals (INV-33).
+        final payloadHashes =
+            List<String>.from(payload['evidence_hashes'] ?? []);
+        expect(listEquals(payloadHashes, command.evidenceHashes), isTrue);
       },
     );
 

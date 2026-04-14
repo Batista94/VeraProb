@@ -16,6 +16,7 @@ Thumbs.db
 .idea/
 .vscode/
 QWEN.MD
+.qwen/
 
 # Platform specific folders (Noise for most tasks)
 android/
