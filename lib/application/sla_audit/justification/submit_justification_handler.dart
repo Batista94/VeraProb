@@ -88,6 +88,13 @@ class SubmitJustificationHandler {
       );
     }
 
+    // 4. INV-9: Evidence is mandatory for forensic defensibility
+    if (command.evidenceHashes.isEmpty) {
+      throw const DomainException(
+        'Evidence required: At least one cryptographic hash must be provided.',
+      );
+    }
+
     final now = _clock.now();
     final id = const Uuid().v4();
     final actorUserId = command.callerUserId ?? 'TOKEN';

@@ -12,6 +12,9 @@ import 'package:veraprob/domain/sla_audit/justification/justification_submission
 class InMemoryJustificationRepository implements JustificationRepository {
   final List<ContractorJustification> _justifications = [];
   final List<JustificationEvidence> _evidence = [];
+
+  List<JustificationEvidence> get allEvidences => List.unmodifiable(_evidence);
+
   final List<JustificationSubmissionToken> _tokens = [];
 
   // ── Justifications ────────────────────────────────────────────────────────

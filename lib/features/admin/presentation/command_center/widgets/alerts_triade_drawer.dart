@@ -295,7 +295,6 @@ class _AlertCard extends ConsumerWidget {
                     try {
                       await facade.resolveAlert(
                         tripId: trip.id,
-                        simulateRole: 'level1_operator',
                       );
                       // No triggerUIRefresh needed here — trip status propagates
                       // via FleetSimulationService._emitCurrentState() stream.

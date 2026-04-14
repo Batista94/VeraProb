@@ -18,7 +18,7 @@ abstract class OperationalCommandBus {
 class UnauthorizedActionException implements Exception {
   final String reason;
 
-  UnauthorizedActionException(this.reason);
+  const UnauthorizedActionException(this.reason);
 
   @override
   String toString() => 'UnauthorizedActionException: $reason';

@@ -3,43 +3,32 @@ import 'package:flutter/foundation.dart';
 import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
 import 'package:veraprob/domain/authority/commands/trips/create_trip_event_command.dart';
 import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 
 export '../../domain/enums/event_type.dart';
 import 'package:veraprob/application/authority/operational_command_bus.dart';
 
 /// Application Facade for Operational Intent.
 ///
+/// INV-1 Compliance: Injects [IAuthRepository] to obtain real
+/// organization_id and role from authenticated session.
 /// The UI (Widgets, Controllers) must NEVER know that a CommandBus exists.
-/// They call semantic methods on this Facade just like they would on any Service.
-///
-/// This class is responsible for:
-/// 1. Instantiating the concrete [OperationalCommand] DTOs.
-/// 2. (In Phase 3/4) Providing the Mock [AuthorizationContext] to the Bus (eventually this comes from Auth layer).
-/// 3. Hiding complex Domain/Authority exceptions behind UI-friendly error states if needed.
 class OperationalControlFacade {
   final OperationalCommandBus _commandBus;
+  final IAuthRepository _authRepo;
 
-  OperationalControlFacade(this._commandBus);
+  OperationalControlFacade(this._commandBus, this._authRepo);
 
   /// Called by the UI when a user clicks "Resolve Alert".
   ///
-  /// In this Phase 4 Stub, we accept a [simulateRole] to test the Interceptor
-  /// rules without having real authentication wired up yet.
-  Future<void> resolveAlert({
-    required String tripId,
-    required String simulateRole, // e.g. 'level1_operator' or 'supervisor'
-  }) async {
-    // 1. Build Intention object
-    final command = ResolveAlertCommand(tripId: tripId);
+  /// INV-1: Obtains organization_id and role from authenticated session.
+  Future<void> resolveAlert({required String tripId}) async {
+    final user = await _authRepo.getCurrentUser();
+    if (user == null) {
+      throw const UnauthorizedActionException('No authenticated session');
+    }
 
-    // 2. Mock Context Generation Hack (For Phase 4 Testing only)
-    // The concrete AuthorizingCommandBus currently hardcodes the actor.
-    // For test observability, we will temporarily pass the mock context
-    // down if the Bus interface allowed it. But following pure DDD,
-    // the Interceptor itself usually reaches out to an `IAuthenticationSession` port.
-    //
-    // Since our AuthorizingCommandBus in Phase 3 hardcoded the Context inside of it,
-    // we will update that bus in a moment to accept a context from a provider.
+    final command = ResolveAlertCommand(tripId: tripId);
 
     try {
       if (kDebugMode) {
@@ -56,7 +45,6 @@ class OperationalControlFacade {
         print('====== UI RECEIVED: ERROR! Policy Blocked. ======');
         print('Reason: ${e.reason}');
       }
-      // Re-throw so the UI can show a Snackbar
       rethrow;
     }
   }
@@ -68,6 +56,11 @@ class OperationalControlFacade {
     Map<String, dynamic>? metadata,
     String? notes,
   }) async {
+    final user = await _authRepo.getCurrentUser();
+    if (user == null) {
+      throw const UnauthorizedActionException('No authenticated session');
+    }
+
     final command = CreateTripEventCommand(
       tripId: tripId,
       type: type,

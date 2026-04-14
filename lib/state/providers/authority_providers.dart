@@ -15,6 +15,7 @@ import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// ---------------------------------------------------------
 /// FASE 4: MOCK AUTH SESSION
@@ -81,5 +82,7 @@ final operationalControlFacadeProvider = Provider<OperationalControlFacade>((
   ref,
 ) {
   final bus = ref.watch(operationalCommandBusProvider);
-  return OperationalControlFacade(bus);
+  final authRepo = ref.watch(authRepositoryProvider);
+
+  return OperationalControlFacade(bus, authRepo);
 });

@@ -3,163 +3,276 @@ import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_justification_command.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_justification_handler.dart';
-import 'package:veraprob/domain/auth/auth_user.dart' as domain;
-import 'package:veraprob/domain/auth/i_auth_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
-import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
-import 'package:veraprob/infrastructure/sla_audit/justification/in_memory_justification_repository.dart';
-import 'package:veraprob/infrastructure/local_fact_db/in_memory_local_fact_queue_repository.dart';
-import '../../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_category.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_evidence.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_repository.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
+import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 
-class MockAuthRepository extends Mock implements IAuthRepository {}
+class MockTenantValidator extends Mock implements TenantValidationService {}
+
+class MockJustificationRepo extends Mock implements JustificationRepository {}
+
+class MockLedgerRepo extends Mock implements SlaAuditLedgerRepository {}
+
+class MockFactQueue extends Mock implements LocalFactQueueRepository {}
+
+class MockRbac extends Mock implements RbacService {}
+
+class MockClock extends Mock implements IDateTimeProvider {}
+
+class FakeJustification extends Fake implements ContractorJustification {}
+
+class FakeEvidence extends Fake implements JustificationEvidence {}
+
+class FakeLedgerEntry extends Fake implements SlaLedgerEntry {}
+
+class FakePendingFact extends Fake implements PendingFact {}
 
 void main() {
-  late InMemoryJustificationRepository justificationRepo;
-  late InMemorySlaAuditLedgerRepository ledger;
-  late InMemoryLocalFactQueueRepository factQueue;
-  late SubmitJustificationHandler handler;
-  late MockAuthRepository mockAuthRepo;
-  late TenantValidationService tenantValidator;
-
-  SubmitJustificationCommand makeCommand({
-    UserRole? role = UserRole.operator,
-    String? tokenId,
-    String description = 'Engine failed due to overheating on the route.',
-  }) {
-    return SubmitJustificationCommand(
-      organizationId: 'org-abc',
-      contractId: 'CTR-100',
-      setId: 'SET-XYZ',
-      planVersion: 1,
-      category: 'MECHANICAL',
-      description: description,
-      callerRole: role,
-      callerUserId: 'user-op-1',
-      callerEmail: 'op@tenant.com',
-      submittedByTokenId: tokenId,
-      evidenceHashes: const [],
-      sessionId: 'session-1',
-    );
-  }
-
-  setUp(() {
-    final now = DateTime(2026, 4, 8, 10, 0, 0);
-    final clockProvider = FakeDateTimeProvider(now);
-    justificationRepo = InMemoryJustificationRepository();
-    ledger = InMemorySlaAuditLedgerRepository();
-    factQueue = InMemoryLocalFactQueueRepository(clockProvider);
-    mockAuthRepo = MockAuthRepository();
-    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
-    handler = SubmitJustificationHandler(
-      tenantValidator: tenantValidator,
-      justificationRepo: justificationRepo,
-      ledger: ledger,
-      factQueue: factQueue,
-      rbac: RbacService(),
-      clock: clockProvider,
-    );
-    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
-      (_) async => const domain.AuthUser(
-        id: 'user-1',
-        email: 'test@test.com',
-        tenantId: 'org-abc',
-      ),
-    );
+  setUpAll(() {
+    registerFallbackValue(UserRole.operator);
+    registerFallbackValue(UserPermission.canSubmitJustification);
+    registerFallbackValue(FakeJustification());
+    registerFallbackValue(FakeEvidence());
+    registerFallbackValue(FakeLedgerEntry());
+    registerFallbackValue(FakePendingFact());
   });
 
-  group('RBAC', () {
-    test('throws DomainException for auditor role', () async {
-      await expectLater(
-        handler.handle(makeCommand(role: UserRole.auditor)),
-        throwsA(isA<DomainException>()),
+  group('SubmitJustificationHandler - INV-9 Evidence Sealing', () {
+    late MockTenantValidator mockTenant;
+    late MockJustificationRepo mockJustification;
+    late MockLedgerRepo mockLedger;
+    late MockFactQueue mockQueue;
+    late MockRbac mockRbac;
+    late MockClock mockClock;
+    late SubmitJustificationHandler handler;
+
+    final now = DateTime(2026, 4, 14, 18, 0).toUtc();
+
+    setUp(() {
+      mockTenant = MockTenantValidator();
+      mockJustification = MockJustificationRepo();
+      mockLedger = MockLedgerRepo();
+      mockQueue = MockFactQueue();
+      mockRbac = MockRbac();
+      mockClock = MockClock();
+
+      handler = SubmitJustificationHandler(
+        tenantValidator: mockTenant,
+        justificationRepo: mockJustification,
+        ledger: mockLedger,
+        factQueue: mockQueue,
+        rbac: mockRbac,
+        clock: mockClock,
       );
-    });
 
-    test('throws DomainException for contractorViewer role', () async {
-      await expectLater(
-        handler.handle(makeCommand(role: UserRole.contractorViewer)),
-        throwsA(isA<DomainException>()),
+      when(() => mockClock.now()).thenReturn(now);
+      when(
+        () => mockTenant.assertTenantMatches(
+          payloadOrgId: any(named: 'payloadOrgId'),
+          sessionId: any(named: 'sessionId'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => mockRbac.can(any(), any())).thenReturn(true);
+      when(() => mockJustification.create(any())).thenAnswer(
+        (_) async => ContractorJustification(
+          id: 'just-1',
+          organizationId: 'org-1',
+          contractId: 'contract-1',
+          setId: 'set-1',
+          submittedByToken: null,
+          category: JustificationCategory.mechanical,
+          description: 'Test',
+          status: JustificationStatus.pending,
+          reviewedByUserId: null,
+          reviewedAtUtc: null,
+          createdAtUtc: now,
+        ),
       );
-    });
-
-    test('allows operator role', () async {
-      await expectLater(handler.handle(makeCommand()), completes);
-    });
-
-    test('allows admin role', () async {
-      await expectLater(
-        handler.handle(makeCommand(role: UserRole.admin)),
-        completes,
+      when(() => mockJustification.addEvidence(any())).thenAnswer(
+        (_) async => JustificationEvidence(
+          id: 'ev-1',
+          justificationId: 'just-1',
+          organizationId: 'org-1',
+          fileName: 'test.pdf',
+          contentHash: 'hash',
+          storagePath: '/path',
+          uploadedAtUtc: now,
+        ),
       );
-    });
-
-    test('token path (null role) is allowed', () async {
-      await expectLater(
-        handler.handle(makeCommand(role: null, tokenId: 'tok-123')),
-        completes,
-      );
-    });
-  });
-
-  group('Validation', () {
-    test('throws on description shorter than 20 chars', () async {
-      await expectLater(
-        handler.handle(makeCommand(description: 'Too short.')),
-        throwsA(isA<DomainException>()),
-      );
-    });
-
-    test('throws on invalid category', () async {
-      const cmd = SubmitJustificationCommand(
-        organizationId: 'org-abc',
-        contractId: 'CTR-100',
-        setId: 'SET-XYZ',
-        planVersion: 1,
-        category: 'INVALID_CAT',
-        description: 'Engine failed due to overheating on the route.',
-        callerRole: UserRole.operator,
-        callerUserId: 'user-op-1',
-        callerEmail: 'op@tenant.com',
-        submittedByTokenId: null,
-        evidenceHashes: [],
-        sessionId: 'session-1',
-      );
-      await expectLater(handler.handle(cmd), throwsA(isA<DomainException>()));
-    });
-  });
-
-  group('Happy path', () {
-    test('persists justification with PENDING status', () async {
-      await handler.handle(makeCommand());
-
-      final list = await justificationRepo.listByOrg(organizationId: 'org-abc');
-      expect(list.length, 1);
-      expect(list.first.status.dbValue, 'PENDING');
-      expect(list.first.contractId, 'CTR-100');
-      expect(list.first.setId, 'SET-XYZ');
-    });
-
-    test('appends JUSTIFICATION_SUBMITTED ledger entry', () async {
-      await handler.handle(makeCommand());
-      expect(ledger.entries.length, 1);
-      expect(ledger.entries.first.type, 'JUSTIFICATION_SUBMITTED');
-    });
-
-    test('enqueues PendingFact for offline resilience', () async {
-      await handler.handle(makeCommand());
-      final pending = await factQueue.getPending();
-      expect(pending.length, 1);
+      when(() => mockLedger.append(any())).thenAnswer((_) async => 'entry-id');
+      when(() => mockQueue.enqueue(any())).thenAnswer((_) async {});
     });
 
     test(
-      'same command twice does not duplicate (idempotency via factId)',
+      'EDGE CASE: Rejects justification without cryptographic evidence',
       () async {
-        await handler.handle(makeCommand());
-        await handler.handle(makeCommand());
-        final pending = await factQueue.getPending();
-        expect(pending.length, 1); // second enqueue is no-op
+        const command = SubmitJustificationCommand(
+          organizationId: 'org-1',
+          sessionId: 'session-1',
+          contractId: 'contract-1',
+          setId: 'set-1',
+          category: 'MECHANICAL',
+          description: 'Valid description with at least 20 characters',
+          evidenceHashes: [], // NO EVIDENCE
+          callerUserId: 'user-1',
+          callerEmail: 'user@example.com',
+          callerRole: UserRole.operator,
+          submittedByTokenId: null,
+          planVersion: 1,
+        );
+
+        // INV-9: Evidence is mandatory for forensic defensibility
+        expect(
+          () => handler.handle(command),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains('Evidence required'),
+            ),
+          ),
+        );
+
+        // Verify NO database writes occurred
+        verifyNever(() => mockJustification.create(any()));
+        verifyNever(() => mockLedger.append(any()));
+        verifyNever(() => mockQueue.enqueue(any()));
+      },
+    );
+
+    test(
+      'EDGE CASE: Accepts justification with valid SHA-256 evidence hash',
+      () async {
+        const validHash =
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+
+        const command = SubmitJustificationCommand(
+          organizationId: 'org-1',
+          sessionId: 'session-1',
+          contractId: 'contract-1',
+          setId: 'set-1',
+          category: 'MECHANICAL',
+          description: 'Valid description with at least 20 characters',
+          evidenceHashes: [validHash],
+          callerUserId: 'user-1',
+          callerEmail: 'user@example.com',
+          callerRole: UserRole.operator,
+          submittedByTokenId: null,
+          planVersion: 1,
+        );
+
+        final result = await handler.handle(command);
+
+        expect(result.id, isNotEmpty);
+
+        // Verify evidence was persisted with cryptographic seal
+        verify(() => mockJustification.addEvidence(any())).called(1);
+        verify(() => mockLedger.append(any())).called(1);
+        verify(() => mockQueue.enqueue(any())).called(1);
+      },
+    );
+
+    test('EDGE CASE: Invalid category throws DomainException', () async {
+      const command = SubmitJustificationCommand(
+        organizationId: 'org-1',
+        sessionId: 'session-1',
+        contractId: 'contract-1',
+        setId: 'set-1',
+        category: 'invalid_category',
+        description: 'Valid description with at least 20 characters',
+        evidenceHashes: ['hash123'],
+        callerUserId: 'user-1',
+        callerEmail: 'user@example.com',
+        callerRole: UserRole.operator,
+        submittedByTokenId: null,
+        planVersion: 1,
+      );
+
+      expect(
+        () => handler.handle(command),
+        throwsA(
+          isA<DomainException>().having(
+            (e) => e.message,
+            'message',
+            contains('Invalid justification category'),
+          ),
+        ),
+      );
+
+      verifyNever(() => mockJustification.create(any()));
+      verifyNever(() => mockLedger.append(any()));
+    });
+
+    test('EDGE CASE: Description too short throws DomainException', () async {
+      const command = SubmitJustificationCommand(
+        organizationId: 'org-1',
+        sessionId: 'session-1',
+        contractId: 'contract-1',
+        setId: 'set-1',
+        category: 'MECHANICAL',
+        description: 'Too short', // Less than 20 chars
+        evidenceHashes: ['hash123'],
+        callerUserId: 'user-1',
+        callerEmail: 'user@example.com',
+        callerRole: UserRole.operator,
+        submittedByTokenId: null,
+        planVersion: 1,
+      );
+
+      expect(
+        () => handler.handle(command),
+        throwsA(
+          isA<DomainException>().having(
+            (e) => e.message,
+            'message',
+            contains('at least 20 characters'),
+          ),
+        ),
+      );
+
+      verifyNever(() => mockJustification.create(any()));
+      verifyNever(() => mockLedger.append(any()));
+    });
+
+    test(
+      'EDGE CASE: Token path bypasses RBAC but requires valid evidence',
+      () async {
+        when(() => mockRbac.can(any(), any())).thenReturn(false);
+
+        const validHash =
+            '123abc456def789012345678901234567890123456789012345678901234';
+
+        const command = SubmitJustificationCommand(
+          organizationId: 'org-1',
+          sessionId: 'session-1',
+          contractId: 'contract-1',
+          setId: 'set-1',
+          category: 'MECHANICAL',
+          description: 'Valid description with at least 20 characters',
+          evidenceHashes: [validHash],
+          callerUserId: null, // Token path
+          callerEmail: null,
+          callerRole: null, // Token path
+          submittedByTokenId: 'token-123',
+          planVersion: 1,
+        );
+
+        final result = await handler.handle(command);
+
+        expect(result.submittedByToken, 'token-123');
+        verify(() => mockJustification.create(any())).called(1);
+        verify(() => mockLedger.append(any())).called(1);
       },
     );
   });

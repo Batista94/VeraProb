@@ -24,9 +24,15 @@ class TelemetryNormalizer {
       return null;
     }
 
+    // 2. INV-18: Spoofing Detection - Reject unrealistic precision (emulator signature)
+    // Real GPS devices have stdDev >= 0.001 due to atmospheric noise
+    if (ping.accuracy < 0.001) {
+      return null; // Emulator or spoofed data
+    }
+
     final lastPing = _lastValidPings[ping.vehicleId];
 
-    // 2. Implied Speed Filter (Haversine Jump Check)
+    // 3. Implied Speed Filter (Haversine Jump Check)
     if (lastPing != null) {
       final distanceMeters = _calculateDistance(
         lastPing.latitude,
