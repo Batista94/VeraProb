@@ -344,7 +344,8 @@ void main() {
       expect(
         entries.length,
         3,
-        reason: '1 PLAN_DECLARED + 1 CONTRACT_ACTIVATED + 1 EXECUTION_BOUND expected',
+        reason:
+            '1 PLAN_DECLARED + 1 CONTRACT_ACTIVATED + 1 EXECUTION_BOUND expected',
       );
 
       DateTime? previousTime;
@@ -655,13 +656,17 @@ void main() {
           idempotencyKey: idempotencyKey,
         );
 
-      // When: First execution succeeds
+        // When: First execution succeeds
         final plan1 = await declarationHandler.handle(command);
         expect(plan1.id, isNotNull, reason: 'First call should succeed');
 
         // Then: Second call with same key should return the SAME plan (idempotency hit)
         final plan2 = await declarationHandler.handle(command);
-        expect(plan2.id, plan1.id, reason: 'Duplicate command should return cached Plan ID');
+        expect(
+          plan2.id,
+          plan1.id,
+          reason: 'Duplicate command should return cached Plan ID',
+        );
       },
     );
 
@@ -936,18 +941,21 @@ class MockContractRepository implements ContractRepository {
 class _StubZoneRepository implements OperationalZoneRepository {
   final List<OperationalZone>? _explicitZones;
 
-  const _StubZoneRepository({List<OperationalZone>? zones}) : _explicitZones = zones;
+  const _StubZoneRepository({List<OperationalZone>? zones})
+    : _explicitZones = zones;
 
   @override
   Future<List<OperationalZone>> findByOrganization(
     String organizationId,
-  ) async => _explicitZones ?? [
-          OperationalZone.create(
-            organizationId: organizationId,
-            name: 'Stub',
-            type: ZoneType.garagem,
-          ),
-        ];
+  ) async =>
+      _explicitZones ??
+      [
+        OperationalZone.create(
+          organizationId: organizationId,
+          name: 'Stub',
+          type: ZoneType.garagem,
+        ),
+      ];
 
   @override
   Future<OperationalZone?> findById(
