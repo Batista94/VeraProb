@@ -84,5 +84,69 @@ void main() {
       expect(context['requestIp'], '1.2.3.4');
       expect(context['payloadHash'], 'sha256hash');
     });
+
+    // ── Branch coverage for toSentryTags() optional fields ──────────────────
+
+    test('toSentryTags includes rawPayloadId when set, omits when null', () {
+      const withRaw = SecurityContext(
+        correlationId: 'corr-1',
+        edgeFunction: 'fn',
+        requestIp: '1.1.1.1',
+        rawPayloadId: 'raw-abc',
+      );
+      final tagsWith = withRaw.toSentryTags();
+      expect(tagsWith['raw_payload_id'], 'raw-abc');
+      expect(tagsWith.containsKey('canonical_fact_id'), isFalse);
+
+      const withoutRaw = SecurityContext(
+        correlationId: 'corr-1',
+        edgeFunction: 'fn',
+        requestIp: '1.1.1.1',
+      );
+      final tagsWithout = withoutRaw.toSentryTags();
+      expect(tagsWithout.containsKey('raw_payload_id'), isFalse);
+    });
+
+    test('toSentryTags includes canonicalFactId when set, omits when null', () {
+      const withFact = SecurityContext(
+        correlationId: 'corr-2',
+        edgeFunction: 'fn',
+        requestIp: '2.2.2.2',
+        canonicalFactId: 'fact-xyz',
+      );
+      final tagsWith = withFact.toSentryTags();
+      expect(tagsWith['canonical_fact_id'], 'fact-xyz');
+      expect(tagsWith.containsKey('raw_payload_id'), isFalse);
+
+      const withoutFact = SecurityContext(
+        correlationId: 'corr-2',
+        edgeFunction: 'fn',
+        requestIp: '2.2.2.2',
+      );
+      final tagsWithout = withoutFact.toSentryTags();
+      expect(tagsWithout.containsKey('canonical_fact_id'), isFalse);
+    });
+
+    test('toSentryContext exposes null optional fields as null entries', () {
+      // INV-1 note: org/role enforcement is at the Use Case layer, not here.
+      // This DTO is a pure observability carrier — no business invariants.
+      const ctx = SecurityContext(
+        correlationId: 'corr-null',
+        edgeFunction: 'fn-null',
+        requestIp: '0.0.0.0',
+      );
+
+      final context = ctx.toSentryContext();
+
+      expect(context['correlationId'], 'corr-null');
+      expect(context['edgeFunction'], 'fn-null');
+      expect(context['requestIp'], '0.0.0.0');
+      expect(context.containsKey('rawPayloadId'), isTrue);
+      expect(context['rawPayloadId'], isNull);
+      expect(context.containsKey('canonicalFactId'), isTrue);
+      expect(context['canonicalFactId'], isNull);
+      expect(context.containsKey('payloadHash'), isTrue);
+      expect(context['payloadHash'], isNull);
+    });
   });
 }

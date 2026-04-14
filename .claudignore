@@ -32,3 +32,6 @@ linux/
 # Backups
 .claude_backup_*/
 *.bak
+
+# Kiro
+.kiro/
