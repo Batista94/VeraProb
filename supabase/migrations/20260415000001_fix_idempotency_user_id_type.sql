@@ -48,11 +48,18 @@ ALTER TABLE public.idempotency_keys
 ALTER TABLE public.idempotency_keys
   DROP CONSTRAINT IF EXISTS idempotency_keys_pkey;
 
--- ── 3. Drop user_status index (will be recreated after type change) ──────────
-
+-- ── 3. Drop user_status index ────────────────────────────────────────────────
 DROP INDEX IF EXISTS public.idx_idempotency_keys_user_status;
 
--- ── 4. Change column type: UUID → TEXT ───────────────────────────────────────
+-- ── 4. Drop RLS policies depending on user_id ────────────────────────────────
+--
+-- Postgres blocks ALTER TYPE if the column is used in a policy definition.
+-- We must drop them first and recreate them after the type change.
+DROP POLICY IF EXISTS idempotency_keys_select_own ON public.idempotency_keys;
+DROP POLICY IF EXISTS idempotency_keys_insert_own ON public.idempotency_keys;
+DROP POLICY IF EXISTS idempotency_keys_update_own ON public.idempotency_keys;
+
+-- ── 5. Change column type: UUID → TEXT ───────────────────────────────────────
 --
 -- USING user_id::text casts existing UUID values to their standard string
 -- representation (e.g. '00000000-0000-0000-0000-000000000001').
@@ -71,18 +78,16 @@ ALTER TABLE public.idempotency_keys
 CREATE INDEX IF NOT EXISTS idx_idempotency_keys_user_status
   ON public.idempotency_keys (user_id, status);
 
--- ── 7. Update RLS policies ────────────────────────────────────────────────────
+-- ── 8. Recreate RLS policies ──────────────────────────────────────────────────
 --
 -- auth.uid() returns UUID. Comparing UUID = TEXT requires an explicit cast.
 -- Use auth.uid()::text for all user_id comparisons in these policies.
 
-DROP POLICY IF EXISTS idempotency_keys_select_own ON public.idempotency_keys;
 CREATE POLICY idempotency_keys_select_own
   ON public.idempotency_keys
   FOR SELECT
   USING (user_id = auth.uid()::text);
 
-DROP POLICY IF EXISTS idempotency_keys_insert_own ON public.idempotency_keys;
 CREATE POLICY idempotency_keys_insert_own
   ON public.idempotency_keys
   FOR INSERT
@@ -91,7 +96,6 @@ CREATE POLICY idempotency_keys_insert_own
     AND status = 'processing'
   );
 
-DROP POLICY IF EXISTS idempotency_keys_update_own ON public.idempotency_keys;
 CREATE POLICY idempotency_keys_update_own
   ON public.idempotency_keys
   FOR UPDATE
