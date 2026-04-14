@@ -297,6 +297,8 @@ class PostgresContractRepository extends BasePostgresRepository
       longitude: row['longitude'] != null
           ? (row['longitude'] as num).toDouble()
           : null, // Physical Metric - Double Required
+      previousHash: row['previous_hash'] as String?,
+      currentHash: row['current_hash'] as String?,
     );
   }
 }

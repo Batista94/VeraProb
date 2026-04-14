@@ -234,6 +234,8 @@ class PostgresPlanDeclarationRepository extends BasePostgresRepository
       cycleAnchorDateUtc: data['cycle_anchor_date_utc'] != null
           ? DateTime.parse(data['cycle_anchor_date_utc'] as String).toUtc()
           : null,
+      previousHash: data['previous_hash'] as String?,
+      currentHash: data['current_hash'] as String?,
     );
   }
 }

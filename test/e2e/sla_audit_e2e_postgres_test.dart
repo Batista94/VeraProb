@@ -864,7 +864,16 @@ void main() {
           reason: 'Should indicate reclamation from stale key',
         );
 
-        // Cleanup: delete the test key
+        // Cleanup: transition processing→error first to unblock the
+        // prevent_idempotency_processing_delete trigger, then delete.
+        await client.rpc(
+          'fail_idempotency_key',
+          params: {
+            'p_id': idempotencyKey,
+            'p_user_id': '00000000-0000-0000-0000-000000000001',
+            'p_response_code': 500,
+          },
+        );
         await client
             .from('idempotency_keys')
             .delete()

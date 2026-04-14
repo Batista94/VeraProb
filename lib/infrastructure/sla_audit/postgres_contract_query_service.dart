@@ -229,6 +229,8 @@ class PostgresContractQueryService implements ContractQueryService {
       totalSetsInProgress: pendingCount,
       slaHealthBps: slaHealthBps,
       financialCeilingCents: (row['financial_ceiling_cents'] as num?)?.toInt(),
+      previousHash: row['previous_hash'] as String?,
+      currentHash: row['current_hash'] as String?,
     );
   }
 }

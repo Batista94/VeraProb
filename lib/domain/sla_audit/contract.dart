@@ -86,6 +86,18 @@ class Contract extends Equatable {
   final double? latitude; // Physical Metric - Double Required
   final double? longitude; // Physical Metric - Double Required
 
+  // ── Forensic sealing (INV-34) ─────────────────────────────
+  /// SHA-256 hash of the previous row state. 'GENESIS' on first insert.
+  /// Null for rows that pre-date migration 20260415000000. Read-only —
+  /// computed by the DB trigger `seal_contracts_forensic`. NEVER sent
+  /// in INSERT/UPDATE payloads.
+  final String? previousHash;
+
+  /// SHA-256(id|version|status|organization_id|previous_hash) in hex.
+  /// Computed by the DB trigger. Null for pre-migration rows not yet updated.
+  /// Read-only — NEVER sent in INSERT/UPDATE payloads.
+  final String? currentHash;
+
   // ── Internal events ───────────────────────────────────────
   final List<DomainEvent> _domainEvents;
 
@@ -112,6 +124,8 @@ class Contract extends Equatable {
     required this.penaltyMultiplierBps,
     this.latitude,
     this.longitude,
+    this.previousHash,
+    this.currentHash,
     required List<DomainEvent> domainEvents,
   }) : _domainEvents = domainEvents;
 
@@ -283,6 +297,8 @@ class Contract extends Equatable {
     required int penaltyMultiplierBps,
     double? latitude, // Physical Metric - Double Required
     double? longitude, // Physical Metric - Double Required
+    String? previousHash,
+    String? currentHash,
   }) {
     return Contract._(
       id: id,
@@ -305,7 +321,62 @@ class Contract extends Equatable {
       penaltyMultiplierBps: penaltyMultiplierBps,
       latitude: latitude,
       longitude: longitude,
+      previousHash: previousHash,
+      currentHash: currentHash,
       domainEvents: const [], // RECONSTITUTION: no events emitted
+    );
+  }
+
+  // ── copyWith ──────────────────────────────────────────────
+  Contract copyWith({
+    String? id,
+    int? version,
+    String? organizationId,
+    String? name,
+    String? contractorName,
+    String? description,
+    DateTime? validFromUtc,
+    DateTime? validUntilUtc,
+    ContractStatus? status,
+    DateTime? createdAtUtc,
+    DateTime? activatedAtUtc,
+    DateTime? closedAtUtc,
+    String? closedByUserId,
+    String? closeReason,
+    DateTime? submittedForApprovalAtUtc,
+    String? clonedFromContractId,
+    Money? financialCeiling,
+    int? penaltyMultiplierBps,
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
+    String? previousHash,
+    String? currentHash,
+  }) {
+    return Contract._(
+      id: id ?? this.id,
+      version: version ?? this.version,
+      organizationId: organizationId ?? this.organizationId,
+      name: name ?? this.name,
+      contractorName: contractorName ?? this.contractorName,
+      description: description ?? this.description,
+      validFromUtc: validFromUtc ?? this.validFromUtc,
+      validUntilUtc: validUntilUtc ?? this.validUntilUtc,
+      status: status ?? this.status,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      activatedAtUtc: activatedAtUtc ?? this.activatedAtUtc,
+      closedAtUtc: closedAtUtc ?? this.closedAtUtc,
+      closedByUserId: closedByUserId ?? this.closedByUserId,
+      closeReason: closeReason ?? this.closeReason,
+      submittedForApprovalAtUtc:
+          submittedForApprovalAtUtc ?? this.submittedForApprovalAtUtc,
+      clonedFromContractId: clonedFromContractId ?? this.clonedFromContractId,
+      financialCeiling: financialCeiling ?? this.financialCeiling,
+      penaltyMultiplierBps: penaltyMultiplierBps ?? this.penaltyMultiplierBps,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      previousHash: previousHash ?? this.previousHash,
+      currentHash: currentHash ?? this.currentHash,
+      domainEvents: const [],
     );
   }
 
@@ -582,5 +653,7 @@ class Contract extends Equatable {
     penaltyMultiplierBps,
     latitude,
     longitude,
+    previousHash,
+    currentHash,
   ];
 }

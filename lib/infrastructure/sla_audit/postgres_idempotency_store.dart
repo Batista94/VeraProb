@@ -32,12 +32,33 @@ class PostgresIdempotencyStore extends BasePostgresRepository
       );
 
       final response = result as Map<String, dynamic>;
-      final acquired = !(response['hit'] as bool);
+      final isHit = response['hit'] as bool;
 
-      return IdempotencyRegistrationResult(
-        acquired: acquired,
-        key: _mapToEntity(response),
-      );
+      if (isHit) {
+        // Cache hit — key is already 'completed'. Reconstruct entity from
+        // input key fields + the cached response fields returned by the RPC.
+        return IdempotencyRegistrationResult(
+          acquired: false,
+          key: IdempotencyKey(
+            id: key.id,
+            userId: key.userId,
+            commandPath: key.commandPath,
+            organizationId: key.organizationId,
+            status: response['status'] as String? ?? 'completed',
+            responseCode: (response['response_code'] as num?)?.toInt(),
+            responseBody: _parseJsonb(response['response_body']),
+            createdAtUtc: key.createdAtUtc,
+            completedAtUtc: response['completed_at_utc'] != null
+                ? _parseUtc(response['completed_at_utc'], 'completed_at_utc')
+                : null,
+            staleThresholdMinutes: staleThresholdMinutes,
+          ),
+        );
+      }
+
+      // New registration (or stale reclaim / error retry) — caller holds the lock.
+      // The RPC does not return full entity fields on acquire; use input key as-is.
+      return IdempotencyRegistrationResult(acquired: true, key: key);
     } on PostgrestException catch (e) {
       if (e.code == 'unique_violation' ||
           e.message.contains('IdempotencyProcessingException')) {

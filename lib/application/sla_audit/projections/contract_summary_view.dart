@@ -38,6 +38,15 @@ class ContractSummaryView extends Equatable {
   /// Required for Step 4 Relative Risk calculation.
   final int? financialCeilingCents;
 
+  // ── Forensic sealing (INV-34) ─────────────────────────────
+  /// SHA-256 of the previous DB row state. 'GENESIS' on first insert.
+  /// Read-only — DB-computed. Null for pre-migration rows.
+  final String? previousHash;
+
+  /// SHA-256(id|version|status|organization_id|previous_hash) in hex.
+  /// Read-only — DB-computed. Null for pre-migration rows.
+  final String? currentHash;
+
   const ContractSummaryView({
     required this.id,
     required this.name,
@@ -52,6 +61,8 @@ class ContractSummaryView extends Equatable {
     required this.totalSetsInProgress,
     required this.slaHealthBps,
     this.financialCeilingCents,
+    this.previousHash,
+    this.currentHash,
   });
 
   @override
@@ -69,6 +80,8 @@ class ContractSummaryView extends Equatable {
     totalSetsInProgress,
     slaHealthBps,
     financialCeilingCents,
+    previousHash,
+    currentHash,
   ];
 
   ContractSummaryView copyWith({
@@ -85,6 +98,8 @@ class ContractSummaryView extends Equatable {
     int? totalSetsInProgress,
     int? slaHealthBps,
     int? financialCeilingCents,
+    String? previousHash,
+    String? currentHash,
   }) {
     return ContractSummaryView(
       id: id ?? this.id,
@@ -101,6 +116,8 @@ class ContractSummaryView extends Equatable {
       slaHealthBps: slaHealthBps ?? this.slaHealthBps,
       financialCeilingCents:
           financialCeilingCents ?? this.financialCeilingCents,
+      previousHash: previousHash ?? this.previousHash,
+      currentHash: currentHash ?? this.currentHash,
     );
   }
 }
