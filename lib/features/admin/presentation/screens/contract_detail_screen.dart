@@ -288,6 +288,15 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           ),
           const SizedBox(height: 16),
 
+          // ── Forensic Seal (INV-34) ───────────────────────────
+          if (s.previousHash != null || s.currentHash != null)
+            _ForensicSealSection(
+              previousHash: s.previousHash,
+              currentHash: s.currentHash,
+            ),
+          if (s.previousHash != null || s.currentHash != null)
+            const SizedBox(height: 16),
+
           // ── No-plan guidance banner ───────────────────────────
           if (noPlan)
             Container(
@@ -613,6 +622,121 @@ class _CountCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Forensic Seal widget (INV-34) ─────────────────────────────────────────────
+
+class _ForensicSealSection extends StatelessWidget {
+  final String? previousHash;
+  final String? currentHash;
+
+  const _ForensicSealSection({
+    required this.previousHash,
+    required this.currentHash,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.verified_outlined,
+                size: 13,
+                color: VeraProbColors.textSecondary,
+              ),
+              SizedBox(width: 6),
+              Text(
+                'Selo Forense (INV-34)',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: VeraProbColors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (previousHash != null)
+            _HashRow(label: 'Hash anterior', hash: previousHash!),
+          if (previousHash != null && currentHash != null)
+            const SizedBox(height: 4),
+          if (currentHash != null)
+            _HashRow(label: 'Hash atual', hash: currentHash!),
+        ],
+      ),
+    );
+  }
+}
+
+class _HashRow extends StatelessWidget {
+  final String label;
+  final String hash;
+
+  const _HashRow({required this.label, required this.hash});
+
+  String get _truncated =>
+      hash.length > 20 ? '${hash.substring(0, 20)}…' : hash;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 90,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: VeraProbColors.textDisabled,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            _truncated,
+            style: const TextStyle(
+              fontSize: 11,
+              fontFamily: 'monospace',
+              color: VeraProbColors.textSecondary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 4),
+        InkWell(
+          borderRadius: BorderRadius.circular(4),
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: hash));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$label copiado'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          },
+          child: const Padding(
+            padding: EdgeInsets.all(4),
+            child: Icon(
+              Icons.copy_outlined,
+              size: 13,
+              color: VeraProbColors.textDisabled,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

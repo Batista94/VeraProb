@@ -153,6 +153,8 @@ class ContractQueryServiceInMemory implements ContractQueryService {
       totalSetsInProgress: totalSetsInProgress,
       slaHealthBps: slaHealthBps,
       financialCeilingCents: contract.financialCeiling?.cents,
+      previousHash: contract.previousHash,
+      currentHash: contract.currentHash,
     );
   }
 
