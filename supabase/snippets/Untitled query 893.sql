@@ -1,5 +1,4 @@
--- Verificar se o gatilho cinemático disparou no ledger
-SELECT event_type, metadata->>'anomaly_type' as anomaly, financial_impact_cents 
-FROM public.audit_ledger 
-WHERE event_type = 'KINEMATIC_ANOMALY' 
-ORDER BY created_at DESC LIMIT 5;
+UPDATE contracts 
+SET status = 'active', version = 2 
+WHERE id = '4db71084-9533-4fc9-ac16-b67fc9059b3c' 
+RETURNING id, previous_hash, current_hash;
