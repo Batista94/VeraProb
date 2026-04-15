@@ -31,6 +31,14 @@ class TenantValidationService {
     required String payloadOrgId,
     required String sessionId,
   }) async {
+    // Fail-closed: empty org_id is structurally invalid — reject before any I/O
+    if (payloadOrgId.isEmpty) {
+      throw SovereigntyViolationException(
+        payloadOrgId: payloadOrgId,
+        jwtOrgId: 'none',
+      );
+    }
+
     final user = await _authRepository.getUserBySessionId(sessionId);
 
     // No active session or user lacks org_id → sovereignty violation

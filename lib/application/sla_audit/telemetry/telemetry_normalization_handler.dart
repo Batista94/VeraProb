@@ -1,4 +1,6 @@
 import 'package:veraprob/application/intelligence/telemetry_normalizer.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/entities/raw_telemetry_ping.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/canonical_fact.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/raw_telemetry_batch.dart';
@@ -9,14 +11,25 @@ class TelemetryNormalizationHandler {
   final TelemetryNormalizer normalizer;
   final SlaLedgerRepository ledgerRepository;
   final FactQueue factQueue;
+  final IDateTimeProvider _clock;
+  final TenantValidationService _tenantValidator;
 
   TelemetryNormalizationHandler({
     required this.normalizer,
     required this.ledgerRepository,
     required this.factQueue,
-  });
+    required IDateTimeProvider clock,
+    required TenantValidationService tenantValidator,
+  }) : _clock = clock,
+       _tenantValidator = tenantValidator;
 
   Future<void> normalize(RawTelemetryBatch batch) async {
+    // INV-1: Identity Sovereignty — fail-fast tenant check
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: batch.organizationId,
+      sessionId: '',
+    );
+
     final pings = batch.coordinates
         .map(
           (coord) => RawTelemetryPing(
@@ -56,7 +69,7 @@ class TelemetryNormalizationHandler {
           type: 'SPOOFING_DETECTED',
           contractId: 'FRAUD_DETECTION',
           planVersion: 1,
-          occurredAtUtc: DateTime.now().toUtc(),
+          occurredAtUtc: _clock.now(),
           payload: {
             'callerUserId': batch.callerUserId,
             'deviceId': e.deviceId,
