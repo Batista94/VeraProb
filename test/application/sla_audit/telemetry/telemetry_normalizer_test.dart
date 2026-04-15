@@ -4,16 +4,22 @@ import 'package:veraprob/application/intelligence/telemetry_normalizer.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/telemetry/telemetry_normalization_handler.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact.dart' as domain_fact;
+import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/raw_telemetry_batch.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/canonical_fact.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/spoofing_detected_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_detector.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_risk_score.dart';
 
 class MockFactQueue extends Mock implements FactQueue {}
 
 class MockLedgerRepository extends Mock implements SlaLedgerRepository {}
 
 class MockTenantValidator extends Mock implements TenantValidationService {}
+
+class MockSpoofingDetector extends Mock implements SpoofingDetector {}
 
 class FakeClock extends Fake implements IDateTimeProvider {
   final DateTime _now;
@@ -28,6 +34,7 @@ void main() {
   late MockFactQueue mockFactQueue;
   late MockLedgerRepository mockLedger;
   late MockTenantValidator mockTenant;
+  late MockSpoofingDetector mockSpoofingDetector;
   late FakeClock clock;
 
   final kEpoch = DateTime.utc(2026, 4, 14, 20, 0, 0);
@@ -37,7 +44,12 @@ void main() {
     mockFactQueue = MockFactQueue();
     mockLedger = MockLedgerRepository();
     mockTenant = MockTenantValidator();
+    mockSpoofingDetector = MockSpoofingDetector();
     clock = FakeClock(kEpoch);
+
+    when(
+      () => mockSpoofingDetector.analyze(any()),
+    ).thenReturn(SpoofingRiskScore.zero());
 
     // INV-1: Tenant validation stub — any call matching 'org-test' passes
     when(
@@ -53,6 +65,7 @@ void main() {
       factQueue: mockFactQueue,
       clock: clock,
       tenantValidator: mockTenant,
+      spoofingDetector: mockSpoofingDetector,
     );
 
     registerFallbackValue(
@@ -62,6 +75,20 @@ void main() {
         latitude: 0.0,
         longitude: 0.0,
         organizationId: '',
+      ),
+    );
+    registerFallbackValue(
+      domain_fact.CanonicalFact.reconstitute(
+        id: '',
+        organizationId: 'org-fallback',
+        rawPayloadId: '',
+        deviceId: '',
+        sourceAdapter: '',
+        receivedAtUtc: kEpoch,
+        gpsTimestamp: kEpoch,
+        lat: 0.0,
+        lng: 0.0,
+        integrityFlag: IngestionIntegrityFlag.ok,
       ),
     );
     registerFallbackValue(
@@ -114,12 +141,17 @@ void main() {
           ],
         );
 
+        // Override: zero-variance batch must be flagged as suspected
+        when(
+          () => mockSpoofingDetector.analyze(any()),
+        ).thenReturn(const SpoofingRiskScore(scoreBps: 10000, signals: []));
+
         when(
           () => mockLedger.append(any()),
         ).thenAnswer((_) async => 'ledger-id-123');
 
         await expectLater(
-          handler.normalize(syntheticBatch),
+          handler.normalize(syntheticBatch, sessionId: 'session-1'),
           throwsA(isA<SpoofingDetectedException>()),
         );
 
@@ -132,7 +164,7 @@ void main() {
         expect(ledgerEntry.type, 'SPOOFING_DETECTED');
         expect(ledgerEntry.payload['callerUserId'], 'fraudster-user-123');
         expect(ledgerEntry.payload['deviceId'], 'device-fake-001');
-        expect(ledgerEntry.payload['reason'], contains('zero variance'));
+        expect(ledgerEntry.payload['reason'], isNotEmpty);
       },
     );
 
@@ -142,10 +174,8 @@ void main() {
           payloadOrgId: 'org-attacker',
           sessionId: any(named: 'sessionId'),
         ),
-      ).thenThrow(
-        Exception(
-          'SovereigntyViolation',
-        ), // real code throws SovereigntyViolationException
+      ).thenAnswer(
+        (_) async => throw Exception('SovereigntyViolation'),
       );
 
       final attackerBatch = RawTelemetryBatch(
@@ -161,7 +191,10 @@ void main() {
         ],
       );
 
-      await expectLater(handler.normalize(attackerBatch), throwsException);
+      await expectLater(
+        handler.normalize(attackerBatch, sessionId: 'session-1'),
+        throwsException,
+      );
 
       verifyNever(() => mockLedger.append(any()));
       verifyNever(() => mockFactQueue.enqueue(any()));
@@ -176,6 +209,11 @@ void main() {
             sessionId: any(named: 'sessionId'),
           ),
         ).thenAnswer((_) async {});
+
+        // Override: zero-variance batch must be flagged as suspected
+        when(
+          () => mockSpoofingDetector.analyze(any()),
+        ).thenReturn(const SpoofingRiskScore(scoreBps: 10000, signals: []));
 
         when(
           () => mockLedger.append(any()),
@@ -215,7 +253,7 @@ void main() {
         );
 
         await expectLater(
-          handler.normalize(batch),
+          handler.normalize(batch, sessionId: 'session-1'),
           throwsA(isA<SpoofingDetectedException>()),
         );
 

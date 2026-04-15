@@ -41,6 +41,25 @@ class SpoofingDetector {
       totalWeightedScoreBps += 3000; // 0.3 -> 30%
     }
 
+    // 4. Impossible Position Jump (Teleport Guard — INV-18)
+    if (_checkImpossiblePositionJump(facts)) {
+      detectedSignals.add(SpoofingSignal.impossiblePositionJump);
+      totalWeightedScoreBps += 8000; // 0.8 -> 80% — strongest single indicator
+    }
+
+    // 5. Temporal Anomaly (Chronological Integrity — INV-18)
+    if (_checkTemporalAnomaly(facts)) {
+      detectedSignals.add(SpoofingSignal.temporalAnomaly);
+      totalWeightedScoreBps +=
+          7000; // 0.7 -> 70% — replay / clock attack indicator
+    }
+
+    // 6. Excessive Temporal Gap (Tunnel/Bunker Attack — INV-18)
+    if (_checkExcessiveTemporalGap(facts)) {
+      detectedSignals.add(SpoofingSignal.excessiveTemporalGap);
+      totalWeightedScoreBps += 8000; // 0.8 -> 80% — device tampering indicator
+    }
+
     return SpoofingRiskScore(
       // Max score is 10,000 bps (100%)
       scoreBps: totalWeightedScoreBps.clamp(0, 10000),
@@ -65,6 +84,7 @@ class SpoofingDetector {
 
     // Check distance between any two points in the window
     double maxDistanceM = 0; // Physical Metric - Double Required
+    final List<double> allDistances = []; // Physical Metric - Double Required
     for (int i = 0; i < movingFacts.length; i++) {
       for (int j = i + 1; j < movingFacts.length; j++) {
         final d = GeoMath.haversineMeters(
@@ -73,8 +93,21 @@ class SpoofingDetector {
           movingFacts[j].lat,
           movingFacts[j].lng,
         );
+        allDistances.add(d);
         if (d > maxDistanceM) maxDistanceM = d;
       }
+    }
+
+    // Jiggle attack detection: calculate standard deviation
+    if (allDistances.isNotEmpty) {
+      final mean = allDistances.reduce((a, b) => a + b) / allDistances.length;
+      final variance =
+          allDistances.map((d) => pow(d - mean, 2)).reduce((a, b) => a + b) /
+          allDistances.length;
+      final stdDev = sqrt(variance);
+
+      // Jiggle signature: low mean but high stdDev indicates artificial outlier
+      if (mean < 1.0 && stdDev > 0.5) return true;
     }
 
     // If never moved more than 2 meters during "motion", it's spoofing.
@@ -120,5 +153,68 @@ class SpoofingDetector {
 
     // Moving vehicle with exactly identical heading in 15+ pings
     return stdDev < 0.1;
+  }
+
+  /// Heuristic 4: [impossiblePositionJump]
+  ///
+  /// Detects teleportation: any consecutive pair of pings that implies a
+  /// speed exceeding 4,167 cm/s (150 km/h — commercial vehicle hard limit).
+  /// Strongest GPS-relay / teleport attack indicator (INV-18).
+  bool _checkImpossiblePositionJump(List<CanonicalFact> facts) {
+    const int maxCommercialSpeedCms =
+        4167; // 150 km/h — Physical Metric - Double Required
+    for (int i = 0; i < facts.length - 1; i++) {
+      final a = facts[i];
+      final b = facts[i + 1];
+      final elapsedSeconds = b.gpsTimestamp
+          .difference(a.gpsTimestamp)
+          .inSeconds;
+      final implied = GeoMath.impliedSpeedCms(
+        a.lat,
+        a.lng,
+        b.lat,
+        b.lng,
+        elapsedSeconds,
+      );
+      if (implied != null && implied > maxCommercialSpeedCms) return true;
+    }
+    return false;
+  }
+
+  /// Heuristic 5: [temporalAnomaly]
+  ///
+  /// GPS timestamps must be strictly ascending. Any non-ascending pair
+  /// indicates device clock manipulation, log replay, or timestamp injection
+  /// (INV-18 Zero-Trust Telemetry / INV-6 UTC Mandatory).
+  bool _checkTemporalAnomaly(List<CanonicalFact> facts) {
+    for (int i = 0; i < facts.length - 1; i++) {
+      if (!facts[i + 1].gpsTimestamp.isAfter(facts[i].gpsTimestamp)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Heuristic 6: [excessiveTemporalGap]
+  ///
+  /// Detects GPS blackout followed by impossible repositioning.
+  /// Gap > 15 min + distance > 50 km indicates device tampering or relay attack.
+  bool _checkExcessiveTemporalGap(List<CanonicalFact> facts) {
+    const int maxGapMinutes = 15;
+    const double maxDistanceKm = 50.0; // Physical Metric - Double Required
+
+    for (int i = 0; i < facts.length - 1; i++) {
+      final gap = facts[i + 1].gpsTimestamp.difference(facts[i].gpsTimestamp);
+      if (gap.inMinutes > maxGapMinutes) {
+        final distM = GeoMath.haversineMeters(
+          facts[i].lat,
+          facts[i].lng,
+          facts[i + 1].lat,
+          facts[i + 1].lng,
+        );
+        if (distM / 1000 > maxDistanceKm) return true;
+      }
+    }
+    return false;
   }
 }

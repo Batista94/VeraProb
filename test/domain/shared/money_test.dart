@@ -3,6 +3,133 @@ import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
   // ---------------------------------------------------------------------------
+  // FORENSIC AUDIT SUITE — INV-4 / INV-5 / INV-19
+  //
+  // Zero-tolerance proofs for:
+  //   · IMMUTABILITY  — operator+, operator*, multiplyByBps never mutate source
+  //   · MATH-BPS STRESS — 1.234.567,89 BRL × 17 BPS = 209.877 cents (exact)
+  //   · HASHCODE      — Equatable contract: equal values → equal hashes
+  //   · NO-DOUBLE     — All financial asserts use only int (cents)
+  // ---------------------------------------------------------------------------
+  group('FORENSIC: Immutability (INV-4)', () {
+    test('IMMUT-01: operator+ returns new instance — source unchanged', () {
+      const m1 = Money(1000);
+      const m2 = Money(500);
+      final result = m1 + m2;
+
+      expect(result.cents, equals(1500));
+      expect(
+        identical(result, m1),
+        isFalse,
+        reason: 'operator+ MUST return a NEW instance',
+      );
+      expect(
+        m1.cents,
+        equals(1000),
+        reason: 'source instance must remain immutable',
+      );
+    });
+
+    test('IMMUT-02: operator* returns new instance — source unchanged', () {
+      const m1 = Money(2000);
+      final result = m1 * 1.5; // Bridge Conversion - Double Required
+      expect(result.cents, equals(3000));
+      expect(
+        identical(result, m1),
+        isFalse,
+        reason: 'operator* MUST return a NEW instance',
+      );
+      expect(
+        m1.cents,
+        equals(2000),
+        reason: 'source instance must remain immutable',
+      );
+    });
+
+    test('IMMUT-03: multiplyByBps returns new instance — source unchanged', () {
+      const m1 = Money(10000);
+      final result = m1.multiplyByBps(10000);
+      expect(result.cents, equals(10000));
+      expect(
+        identical(result, m1),
+        isFalse,
+        reason: 'multiplyByBps MUST return a NEW instance',
+      );
+      expect(
+        m1.cents,
+        equals(10000),
+        reason: 'source instance must remain immutable',
+      );
+    });
+  });
+
+  group('FORENSIC: MATH-BPS Stress (INV-5 / INV-19)', () {
+    test(
+      'MATH-BPS: Multiplicação de 1.234.567,89 por 17 BPS = 209.877 cents',
+      () {
+        // R$ 1.234.567,89 = 123_456_789 centavos
+        // Fórmula: (123_456_789 * 17 + 5000) ~/ 10000
+        //        = (2_098_765_413 + 5000) ~/ 10000
+        //        = 2_098_770_413 ~/ 10000
+        //        = 209_877 cents  ← zero drift, pure BigInt integer math
+        const amount = Money(123456789);
+        final result = amount.multiplyByBps(17);
+
+        // Assert uses only int — NO double
+        expect(
+          result.cents,
+          equals(209877),
+          reason:
+              'MATH-BPS: R\$ 1.234.567,89 × 17 BPS must equal exactly '
+              '209.877 cents with no floating-point drift',
+        );
+      },
+    );
+  });
+
+  group('FORENSIC: Equality & hashCode contract (INV-7)', () {
+    test('EQ-HC-01: hashCode consistent for equal values', () {
+      const a = Money(100);
+      const b = Money(100);
+      expect(
+        a.hashCode,
+        equals(b.hashCode),
+        reason: 'equal Money instances must produce equal hashCodes',
+      );
+    });
+
+    test('EQ-HC-02: hashCode differs for distinct values', () {
+      const a = Money(100);
+      const b = Money(200);
+      expect(a.hashCode, isNot(equals(b.hashCode)));
+    });
+
+    test('EQ-HC-03: Money(0) equals Money(0) with consistent hashCode', () {
+      const a = Money(0);
+      const b = Money(0);
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    });
+  });
+
+  group('FORENSIC: No-double asserts (INV-4)', () {
+    test('ND-01: cents field is always int — never double', () {
+      const m = Money(123456);
+      expect(m.cents, isA<int>());
+      expect(m.cents, isNot(isA<double>()));
+    });
+
+    test('ND-02: chained BPS operations yield exact int results', () {
+      const base = Money(10000); // R$ 100,00
+      final half = base.multiplyByBps(5000); // 50% → 5000 cents
+      final full = half.multiplyByBps(20000); // 200% → 10000 cents
+      // All asserts: int only
+      expect(half.cents, equals(5000));
+      expect(full.cents, equals(10000));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // IEEE-754 Precision Guard
   //
   // Validates that the VO entry point (fromDouble) absorbs IEEE-754 drift so

@@ -16,4 +16,17 @@ enum SpoofingSignal {
 
   /// Variação de velocidade excede o limite físico sem frenagem.
   impossibleAcceleration,
+
+  /// Position jump between consecutive pings implies a physically impossible
+  /// speed for commercial vehicles (> 150 km/h = 4,167 cm/s).
+  /// Strongest teleport / GPS-relay attack indicator.
+  impossiblePositionJump,
+
+  /// GPS timestamps in the batch are not in strictly ascending order.
+  /// Indicates device clock manipulation, log replay, or timestamp injection.
+  temporalAnomaly,
+
+  /// GPS blackout > 15 min followed by > 50 km repositioning.
+  /// Indicates device tampering, tunnel relay, or bunker attack.
+  excessiveTemporalGap,
 }

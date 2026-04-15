@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+
 /// Value object representing an idempotency key entry.
 ///
 /// Idempotency keys ensure that duplicate requests (double-clicks, network
@@ -86,6 +90,49 @@ class IdempotencyKey {
       status: 'processing',
       createdAtUtc: nowUtc,
       staleThresholdMinutes: staleThresholdMinutes,
+    );
+  }
+
+  /// Creates a new idempotency key whose [id] is a SHA-256 hex digest of the
+  /// canonical content: `userId|commandPath|organizationId|sortedJsonPayload`.
+  ///
+  /// **INV-11 — Content-Based Addressing:** The [id] is deterministic and
+  /// derived purely from the payload. [nowUtc] is metadata only — it does NOT
+  /// influence the hash.
+  factory IdempotencyKey.fromPayload({
+    required String userId,
+    required String commandPath,
+    required String organizationId,
+    required Map<String, dynamic> payload,
+    required DateTime nowUtc,
+    int staleThresholdMinutes = 5,
+  }) {
+    final canonical =
+        '$userId|$commandPath|$organizationId|${jsonEncode(_sortedMap(payload))}';
+    final id = sha256.convert(utf8.encode(canonical)).toString();
+    return IdempotencyKey.processing(
+      id: id,
+      userId: userId,
+      commandPath: commandPath,
+      organizationId: organizationId,
+      nowUtc: nowUtc,
+      staleThresholdMinutes: staleThresholdMinutes,
+    );
+  }
+
+  /// Recursively sorts map keys so that `jsonEncode` output is canonical
+  /// regardless of insertion order.
+  static Map<String, dynamic> _sortedMap(Map<String, dynamic> map) {
+    final sorted = map.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    return Map.fromEntries(
+      sorted.map(
+        (e) => MapEntry(
+          e.key,
+          e.value is Map<String, dynamic>
+              ? _sortedMap(e.value as Map<String, dynamic>)
+              : e.value,
+        ),
+      ),
     );
   }
 
