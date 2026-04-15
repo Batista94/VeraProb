@@ -160,6 +160,13 @@ void main() async {
     setUpAll(() async {
       client = await PostgresTestConfig.createClient();
       repo = _TestContractRepository(client);
+      // Bump test org quota to 9999 so vehicle insert tests never hit the
+      // hard-quota trigger regardless of accumulated vehicles from other runs.
+      await client
+          .from('organizations')
+          .update({'max_vehicles': 9999})
+          .eq('id', PostgresTestConfig.testOrgId)
+          .catchError((_) {});
     });
 
     setUp(() async {

@@ -1,3 +1,4 @@
+import '../concurrency_exception.dart';
 import 'justification_audit_log.dart';
 import 'justification_status.dart';
 import 'sla_justification.dart';
@@ -40,9 +41,46 @@ abstract class SLAJustificationRepository {
 
   /// Returns all PENDING justifications older than [cutoffUtc].
   /// Used by the batch expiration job (CX05-INV-22).
+  ///
+  /// **Deprecated in favour of [findExpiredPendingPaged].** Kept for backwards
+  /// compatibility with existing test fixtures that have not yet been migrated.
   Future<List<SLAJustification>> findExpiredPending({
     required DateTime cutoffUtc,
     required String organizationId,
+  });
+
+  /// Returns a page of PENDING justifications older than [cutoffUtc].
+  ///
+  /// Uses cursor-based pagination to prevent OOM on large datasets.
+  /// Pass [afterId] (the last `id` from the previous page) to advance.
+  /// [limit] controls page size — default 500 records per page.
+  /// Returns an empty list when no more records remain.
+  Future<List<SLAJustification>> findExpiredPendingPaged({
+    required DateTime cutoffUtc,
+    required String organizationId,
+    required int limit,
+    String? afterId,
+  });
+
+  /// Atomically updates [id]'s status from [expectedCurrentStatus] to
+  /// [newStatus] using a `WHERE status = <expected>` clause.
+  ///
+  /// Returns the number of rows affected:
+  /// - `1` — success, status was as expected and updated.
+  /// - `0` — concurrent modification detected: another process already changed
+  ///   the status before this call arrived. Callers must throw
+  ///   [ConcurrencyException] when they receive `0`.
+  ///
+  /// This prevents the TOCTOU race condition where two concurrent approvals
+  /// both read `status = PENDING` and both succeed.
+  Future<int> updateStatusAtomic({
+    required String id,
+    required String organizationId,
+    required JustificationStatus expectedCurrentStatus,
+    required JustificationStatus newStatus,
+    required String? reviewerId,
+    required String? resolutionNotes,
+    required DateTime reviewedAtUtc,
   });
 
   // ── Audit Trail ────────────────────────────────────────────────────────────

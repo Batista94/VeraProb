@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
+import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/sla_justification_manager.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_sla_justification_command.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -8,12 +10,15 @@ import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/shared/authorization_exception.dart';
+import 'package:veraprob/domain/sla_audit/concurrency_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_audit_log.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_category.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_repository.dart';
+
+// ── Mock classes ─────────────────────────────────────────────────────────────
 
 class MockTenantValidator extends Mock implements TenantValidationService {}
 
@@ -22,9 +27,16 @@ class MockSLAJustificationRepo extends Mock
 
 class MockClock extends Mock implements IDateTimeProvider {}
 
+class MockEvidenceIntegrityVerifier extends Mock
+    implements EvidenceIntegrityVerifier {}
+
+class MockEvidenceLinkChecker extends Mock implements EvidenceLinkChecker {}
+
 class FakeSLAJustification extends Fake implements SLAJustification {}
 
 class FakeAuditLog extends Fake implements JustificationAuditLog {}
+
+// ── Test suite ────────────────────────────────────────────────────────────────
 
 void main() {
   setUpAll(() {
@@ -38,6 +50,7 @@ void main() {
   late MockTenantValidator mockTenant;
   late MockSLAJustificationRepo mockRepo;
   late MockClock mockClock;
+  late MockEvidenceIntegrityVerifier mockEvidenceVerifier;
   late RbacService rbac;
   late SLAJustificationManager manager;
 
@@ -89,6 +102,15 @@ void main() {
     );
   }
 
+  /// Stubs for happy-path submit flows.
+  ///
+  /// Adds stubs for:
+  /// - clock → [now]
+  /// - tenant validation → no-op
+  /// - repo.create → echo entity back
+  /// - repo.appendAuditLog → no-op
+  /// - repo.findByVehicleAndEvent → null (no existing duplicate)
+  /// - evidenceVerifier.verifyAll → [] (all hashes match)
   void setupDefaultStubs({required DateTime now}) {
     when(() => mockClock.nowUtc()).thenReturn(now);
     when(
@@ -101,8 +123,26 @@ void main() {
       return invocation.positionalArguments[0] as SLAJustification;
     });
     when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
+    when(
+      () => mockRepo.findByVehicleAndEvent(
+        vehicleId: any(named: 'vehicleId'),
+        eventTimestamp: any(named: 'eventTimestamp'),
+        organizationId: any(named: 'organizationId'),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockEvidenceVerifier.verifyAll(
+        evidenceUrls: any(named: 'evidenceUrls'),
+        declaredHashes: any(named: 'declaredHashes'),
+      ),
+    ).thenAnswer((_) async => []);
   }
 
+  /// Stubs for review (approve/reject) flows.
+  ///
+  /// Uses `updateStatusAtomic` (returns 1 = success) followed by `findById`
+  /// (returns the post-update approved entity). This mirrors the new atomic
+  /// update pattern replacing the old optimistic-lock-free `_loadPending`.
   void setupReviewStubs({
     required DateTime now,
     required SLAJustification pending,
@@ -110,20 +150,22 @@ void main() {
     when(() => mockClock.nowUtc()).thenReturn(now);
 
     when(
-      () => mockRepo.findById(
+      () => mockRepo.updateStatusAtomic(
         id: any(named: 'id'),
         organizationId: any(named: 'organizationId'),
-      ),
-    ).thenAnswer((_) async => pending);
-
-    when(
-      () => mockRepo.updateStatus(
-        id: any(named: 'id'),
-        organizationId: any(named: 'organizationId'),
-        status: any(named: 'status'),
+        expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+        newStatus: any(named: 'newStatus'),
         reviewerId: any(named: 'reviewerId'),
         resolutionNotes: any(named: 'resolutionNotes'),
         reviewedAtUtc: any(named: 'reviewedAtUtc'),
+      ),
+    ).thenAnswer((_) async => 1);
+
+    // findById is called AFTER the atomic update to load the fresh entity.
+    when(
+      () => mockRepo.findById(
+        id: any(named: 'id'),
+        organizationId: any(named: 'organizationId'),
       ),
     ).thenAnswer(
       (_) async => pending.copyWith(
@@ -139,6 +181,7 @@ void main() {
     mockTenant = MockTenantValidator();
     mockRepo = MockSLAJustificationRepo();
     mockClock = MockClock();
+    mockEvidenceVerifier = MockEvidenceIntegrityVerifier();
     rbac = RbacService();
 
     manager = SLAJustificationManager(
@@ -146,6 +189,7 @@ void main() {
       repository: mockRepo,
       rbac: rbac,
       clock: mockClock,
+      evidenceVerifier: mockEvidenceVerifier,
       eventExistsChecker:
           ({
             required String vehicleId,
@@ -185,10 +229,11 @@ void main() {
 
       // ZERO writes: no status update, no audit log
       verifyNever(
-        () => mockRepo.updateStatus(
+        () => mockRepo.updateStatusAtomic(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
-          status: any(named: 'status'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
@@ -229,10 +274,11 @@ void main() {
       );
 
       verifyNever(
-        () => mockRepo.updateStatus(
+        () => mockRepo.updateStatusAtomic(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
-          status: any(named: 'status'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
@@ -401,6 +447,7 @@ void main() {
         repository: mockRepo,
         rbac: rbac,
         clock: mockClock,
+        evidenceVerifier: mockEvidenceVerifier,
         eventExistsChecker:
             ({
               required String vehicleId,
@@ -426,25 +473,25 @@ void main() {
       final staleJustification = buildPendingJustification(id: 'stale-1');
 
       when(
-        () => mockRepo.findExpiredPending(
+        () => mockRepo.findExpiredPendingPaged(
           cutoffUtc: any(named: 'cutoffUtc'),
           organizationId: any(named: 'organizationId'),
+          limit: any(named: 'limit'),
+          afterId: any(named: 'afterId'),
         ),
       ).thenAnswer((_) async => [staleJustification]);
 
       when(
-        () => mockRepo.updateStatus(
+        () => mockRepo.updateStatusAtomic(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
-          status: any(named: 'status'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
         ),
-      ).thenAnswer(
-        (_) async =>
-            staleJustification.copyWith(status: JustificationStatus.expired),
-      );
+      ).thenAnswer((_) async => 1);
       when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
 
       final count = await manager.expireStaleJustifications(
@@ -454,10 +501,11 @@ void main() {
       expect(count, 1);
 
       final statusCapture = verify(
-        () => mockRepo.updateStatus(
+        () => mockRepo.updateStatusAtomic(
           id: 'stale-1',
           organizationId: 'org-1',
-          status: captureAny(named: 'status'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: captureAny(named: 'newStatus'),
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
@@ -492,6 +540,7 @@ void main() {
           repository: mockRepo,
           rbac: rbac,
           clock: mockClock,
+          evidenceVerifier: mockEvidenceVerifier,
           eventExistsChecker:
               ({
                 required String vehicleId,
@@ -530,6 +579,79 @@ void main() {
       expect(result.vehicleId, 'vehicle-42');
       expect(result.eventTimestamp, eventTime);
       verify(() => mockRepo.create(any())).called(1);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Anti-Double Dipping — Duplicate Vehicle+Event Guard
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('Anti-Double Dipping', () {
+    test('REJECTS duplicate submission when justification already exists for '
+        'same vehicle+event anchor', () async {
+      final now = eventTime.add(const Duration(hours: 2));
+      setupDefaultStubs(now: now);
+
+      final existingJustification = buildPendingJustification(id: 'j-existing');
+
+      // Override: findByVehicleAndEvent returns an existing record
+      when(
+        () => mockRepo.findByVehicleAndEvent(
+          vehicleId: any(named: 'vehicleId'),
+          eventTimestamp: any(named: 'eventTimestamp'),
+          organizationId: any(named: 'organizationId'),
+        ),
+      ).thenAnswer((_) async => existingJustification);
+
+      final command = buildCommand();
+
+      expect(
+        () => manager.submitJustification(command),
+        throwsA(
+          isA<DomainException>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('already exists'), contains('j-existing')),
+          ),
+        ),
+      );
+
+      // create() must NEVER be called — the duplicate check fires first
+      verifyNever(() => mockRepo.create(any()));
+      verifyNever(() => mockRepo.appendAuditLog(any()));
+    });
+
+    test('ACCEPTS first submission when no duplicate exists '
+        '(findByVehicleAndEvent returns null)', () async {
+      final now = eventTime.add(const Duration(hours: 2));
+      setupDefaultStubs(now: now); // stubs findByVehicleAndEvent → null
+
+      final command = buildCommand();
+      final result = await manager.submitJustification(command);
+
+      expect(result.status, JustificationStatus.pending);
+      verify(() => mockRepo.create(any())).called(1);
+    });
+
+    test('REJECTS after duplicate check regardless of event existence — '
+        'duplicate check runs after event check', () async {
+      final now = eventTime.add(const Duration(hours: 2));
+      setupDefaultStubs(now: now);
+
+      final existing = buildPendingJustification(id: 'j-dupe');
+
+      when(
+        () => mockRepo.findByVehicleAndEvent(
+          vehicleId: any(named: 'vehicleId'),
+          eventTimestamp: any(named: 'eventTimestamp'),
+          organizationId: any(named: 'organizationId'),
+        ),
+      ).thenAnswer((_) async => existing);
+
+      expect(
+        () => manager.submitJustification(buildCommand()),
+        throwsA(isA<DomainException>()),
+      );
     });
   });
 
@@ -633,6 +755,633 @@ void main() {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // Hash Tampering Detection — Server-Side Re-Verification (CX05-INV-23)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('Hash Tampering Detection — Server-Side Re-Verification', () {
+    test(
+      'auto-rejects and throws DomainException when server-side hash diverges '
+      '(evidence index 0 mismatch)',
+      () async {
+        final now = eventTime.add(const Duration(hours: 2));
+        setupDefaultStubs(now: now);
+
+        // Override: verifier reports mismatch at index 0
+        when(
+          () => mockEvidenceVerifier.verifyAll(
+            evidenceUrls: any(named: 'evidenceUrls'),
+            declaredHashes: any(named: 'declaredHashes'),
+          ),
+        ).thenAnswer((_) async => [0]);
+
+        when(
+          () => mockRepo.updateStatusAtomic(
+            id: any(named: 'id'),
+            organizationId: any(named: 'organizationId'),
+            expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+            newStatus: any(named: 'newStatus'),
+            reviewerId: any(named: 'reviewerId'),
+            resolutionNotes: any(named: 'resolutionNotes'),
+            reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          ),
+        ).thenAnswer((_) async => 1);
+
+        final command = buildCommand();
+
+        await expectLater(
+          () => manager.submitJustification(command),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              allOf(
+                contains('integrity check failed'),
+                contains('CX05-INV-23'),
+              ),
+            ),
+          ),
+        );
+
+        // Auto-reject must have been written with status = REJECTED
+        final captured = verify(
+          () => mockRepo.updateStatusAtomic(
+            id: any(named: 'id'),
+            organizationId: any(named: 'organizationId'),
+            expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+            newStatus: captureAny(named: 'newStatus'),
+            reviewerId: any(named: 'reviewerId'),
+            resolutionNotes: any(named: 'resolutionNotes'),
+            reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          ),
+        ).captured;
+        expect(captured.first, JustificationStatus.rejected);
+
+        // Audit log must NOT be appended — we throw before step 10
+        verifyNever(() => mockRepo.appendAuditLog(any()));
+      },
+    );
+
+    test('auto-rejects when multiple evidence files are tampered '
+        '(mismatches at index 0 and 2)', () async {
+      final now = eventTime.add(const Duration(hours: 2));
+      setupDefaultStubs(now: now);
+
+      final twoHashes = [validHash, validHash, validHash];
+      final twoUrls = [
+        'https://storage.supabase.co/a.jpg',
+        'https://storage.supabase.co/b.jpg',
+        'https://storage.supabase.co/c.jpg',
+      ];
+
+      when(
+        () => mockEvidenceVerifier.verifyAll(
+          evidenceUrls: any(named: 'evidenceUrls'),
+          declaredHashes: any(named: 'declaredHashes'),
+        ),
+      ).thenAnswer((_) async => [0, 2]);
+
+      when(
+        () => mockRepo.updateStatusAtomic(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        ),
+      ).thenAnswer((_) async => 1);
+
+      final command = buildCommand(
+        evidenceUrls: twoUrls,
+        evidenceHashes: twoHashes,
+      );
+
+      await expectLater(
+        () => manager.submitJustification(command),
+        throwsA(isA<DomainException>()),
+      );
+
+      verify(
+        () => mockRepo.updateStatusAtomic(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: JustificationStatus.rejected,
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        ),
+      ).called(1);
+    });
+
+    test(
+      'ACCEPTS submission when all hashes match (verifyAll returns empty list)',
+      () async {
+        final now = eventTime.add(const Duration(hours: 2));
+        setupDefaultStubs(now: now); // verifyAll → [] by default
+
+        final command = buildCommand();
+        final result = await manager.submitJustification(command);
+
+        expect(result.status, JustificationStatus.pending);
+        // updateStatusAtomic must NOT be called for non-tampered evidence
+        verifyNever(
+          () => mockRepo.updateStatusAtomic(
+            id: any(named: 'id'),
+            organizationId: any(named: 'organizationId'),
+            expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+            newStatus: any(named: 'newStatus'),
+            reviewerId: any(named: 'reviewerId'),
+            resolutionNotes: any(named: 'resolutionNotes'),
+            reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          ),
+        );
+      },
+    );
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Race Condition — Concurrent Modifications (ConcurrencyException)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('Race Condition — Concurrent Modifications', () {
+    test('approveJustification throws ConcurrencyException when atomic update '
+        'returns 0 rows (concurrent modification detected)', () async {
+      final now = DateTime.utc(2026, 4, 14, 16, 0);
+      when(() => mockClock.nowUtc()).thenReturn(now);
+
+      when(
+        () => mockRepo.updateStatusAtomic(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        ),
+      ).thenAnswer((_) async => 0); // 0 rows = concurrent modification
+
+      await expectLater(
+        () => manager.approveJustification(
+          justificationId: 'j-1',
+          organizationId: 'org-1',
+          reviewerId: 'gestor-1',
+          callerRole: UserRole.admin,
+          resolutionNotes: null,
+        ),
+        throwsA(
+          isA<ConcurrencyException>().having(
+            (e) => e.message,
+            'message',
+            contains('concurrent operation'),
+          ),
+        ),
+      );
+
+      // No audit log written — optimistic lock failed before log step
+      verifyNever(() => mockRepo.appendAuditLog(any()));
+    });
+
+    test('rejectJustification throws ConcurrencyException when atomic update '
+        'returns 0 rows (concurrent modification detected)', () async {
+      final now = DateTime.utc(2026, 4, 14, 16, 0);
+      when(() => mockClock.nowUtc()).thenReturn(now);
+
+      when(
+        () => mockRepo.updateStatusAtomic(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        ),
+      ).thenAnswer((_) async => 0);
+
+      await expectLater(
+        () => manager.rejectJustification(
+          justificationId: 'j-1',
+          organizationId: 'org-1',
+          reviewerId: 'gestor-1',
+          callerRole: UserRole.admin,
+          resolutionNotes: 'Foto não comprova parada forçada',
+        ),
+        throwsA(isA<ConcurrencyException>()),
+      );
+
+      verifyNever(() => mockRepo.appendAuditLog(any()));
+    });
+
+    test('race condition scenario: second concurrent approve throws '
+        'ConcurrencyException (already modified justification)', () async {
+      // Simulates: gestor-1 and gestor-2 both read the same PENDING record.
+      // gestor-1 approves first (atomic update succeeds → 1 row).
+      // gestor-2 tries to approve the same record (atomic update → 0 rows
+      // because status is now APPROVED, not PENDING).
+
+      final now = DateTime.utc(2026, 4, 14, 16, 0);
+      when(() => mockClock.nowUtc()).thenReturn(now);
+      when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
+
+      var callCount = 0;
+      when(
+        () => mockRepo.updateStatusAtomic(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        ),
+      ).thenAnswer((_) async {
+        callCount++;
+        return callCount == 1 ? 1 : 0; // First wins, second loses
+      });
+
+      final pending = buildPendingJustification();
+      when(
+        () => mockRepo.findById(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+        ),
+      ).thenAnswer(
+        (_) async => pending.copyWith(
+          status: JustificationStatus.approved,
+          reviewerId: 'gestor-1',
+        ),
+      );
+
+      // gestor-1 wins the race
+      await manager.approveJustification(
+        justificationId: 'j-1',
+        organizationId: 'org-1',
+        reviewerId: 'gestor-1',
+        callerRole: UserRole.admin,
+        resolutionNotes: null,
+      );
+
+      // gestor-2 loses the race
+      await expectLater(
+        () => manager.approveJustification(
+          justificationId: 'j-1',
+          organizationId: 'org-1',
+          reviewerId: 'gestor-2',
+          callerRole: UserRole.admin,
+          resolutionNotes: null,
+        ),
+        throwsA(isA<ConcurrencyException>()),
+      );
+
+      // Only one successful approval audit log
+      verify(() => mockRepo.appendAuditLog(any())).called(1);
+    });
+
+    test('approveJustification uses PENDING as expectedCurrentStatus in atomic '
+        'update — correct optimistic lock predicate', () async {
+      final now = DateTime.utc(2026, 4, 14, 16, 0);
+      final pending = buildPendingJustification();
+      setupReviewStubs(now: now, pending: pending);
+
+      await manager.approveJustification(
+        justificationId: 'j-1',
+        organizationId: 'org-1',
+        reviewerId: 'gestor-1',
+        callerRole: UserRole.admin,
+        resolutionNotes: null,
+      );
+
+      final captured = verify(
+        () => mockRepo.updateStatusAtomic(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: captureAny(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        ),
+      ).captured;
+
+      expect(captured.first, JustificationStatus.pending);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // OOM Prevention — Cursor-Based Pagination
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('OOM Prevention — Cursor-Based Pagination', () {
+    test('processes 1000 expired records across two full pages of 500 '
+        'and one empty terminator page', () async {
+      final now = DateTime.utc(2026, 4, 16, 12, 0);
+      when(() => mockClock.nowUtc()).thenReturn(now);
+
+      // Page 1: exactly 500 records (ids j-1 to j-500)
+      final page1 = List.generate(
+        500,
+        (i) => buildPendingJustification(id: 'j-${i + 1}'),
+      );
+      // Page 2: exactly 500 records (ids j-501 to j-1000)
+      final page2 = List.generate(
+        500,
+        (i) => buildPendingJustification(id: 'j-${i + 501}'),
+      );
+
+      when(
+        () => mockRepo.findExpiredPendingPaged(
+          cutoffUtc: any(named: 'cutoffUtc'),
+          organizationId: any(named: 'organizationId'),
+          limit: any(named: 'limit'),
+          afterId: null,
+        ),
+      ).thenAnswer((_) async => page1);
+
+      when(
+        () => mockRepo.findExpiredPendingPaged(
+          cutoffUtc: any(named: 'cutoffUtc'),
+          organizationId: any(named: 'organizationId'),
+          limit: any(named: 'limit'),
+          afterId: 'j-500',
+        ),
+      ).thenAnswer((_) async => page2);
+
+      when(
+        () => mockRepo.findExpiredPendingPaged(
+          cutoffUtc: any(named: 'cutoffUtc'),
+          organizationId: any(named: 'organizationId'),
+          limit: any(named: 'limit'),
+          afterId: 'j-1000',
+        ),
+      ).thenAnswer((_) async => []);
+
+      when(
+        () => mockRepo.updateStatusAtomic(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        ),
+      ).thenAnswer((_) async => 1);
+      when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
+
+      final count = await manager.expireStaleJustifications(
+        organizationId: 'org-1',
+      );
+
+      expect(count, 1000);
+
+      // Verify cursor advanced to second page
+      verify(
+        () => mockRepo.findExpiredPendingPaged(
+          cutoffUtc: any(named: 'cutoffUtc'),
+          organizationId: any(named: 'organizationId'),
+          limit: any(named: 'limit'),
+          afterId: 'j-500',
+        ),
+      ).called(1);
+
+      // Verify cursor advanced to empty terminator
+      verify(
+        () => mockRepo.findExpiredPendingPaged(
+          cutoffUtc: any(named: 'cutoffUtc'),
+          organizationId: any(named: 'organizationId'),
+          limit: any(named: 'limit'),
+          afterId: 'j-1000',
+        ),
+      ).called(1);
+    });
+
+    test('terminates after first page when page size is smaller than limit '
+        '(no cursor advance needed)', () async {
+      final now = DateTime.utc(2026, 4, 16, 12, 0);
+      when(() => mockClock.nowUtc()).thenReturn(now);
+
+      // Only 3 stale records — far below page size of 500
+      final staleRecords = [
+        buildPendingJustification(id: 'stale-1'),
+        buildPendingJustification(id: 'stale-2'),
+        buildPendingJustification(id: 'stale-3'),
+      ];
+
+      when(
+        () => mockRepo.findExpiredPendingPaged(
+          cutoffUtc: any(named: 'cutoffUtc'),
+          organizationId: any(named: 'organizationId'),
+          limit: any(named: 'limit'),
+          afterId: any(named: 'afterId'),
+        ),
+      ).thenAnswer((_) async => staleRecords);
+
+      when(
+        () => mockRepo.updateStatusAtomic(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        ),
+      ).thenAnswer((_) async => 1);
+      when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
+
+      final count = await manager.expireStaleJustifications(
+        organizationId: 'org-1',
+      );
+
+      expect(count, 3);
+
+      // findExpiredPendingPaged called exactly once — no second page
+      verify(
+        () => mockRepo.findExpiredPendingPaged(
+          cutoffUtc: any(named: 'cutoffUtc'),
+          organizationId: any(named: 'organizationId'),
+          limit: any(named: 'limit'),
+          afterId: any(named: 'afterId'),
+        ),
+      ).called(1);
+    });
+
+    test(
+      'concurrently-modified records are silently skipped during batch '
+      '(updateStatusAtomic returns 0 → no audit log, count not incremented)',
+      () async {
+        final now = DateTime.utc(2026, 4, 16, 12, 0);
+        when(() => mockClock.nowUtc()).thenReturn(now);
+
+        final staleRecords = [
+          buildPendingJustification(id: 'stale-1'),
+          buildPendingJustification(id: 'stale-2'), // concurrently approved
+          buildPendingJustification(id: 'stale-3'),
+        ];
+
+        when(
+          () => mockRepo.findExpiredPendingPaged(
+            cutoffUtc: any(named: 'cutoffUtc'),
+            organizationId: any(named: 'organizationId'),
+            limit: any(named: 'limit'),
+            afterId: any(named: 'afterId'),
+          ),
+        ).thenAnswer((_) async => staleRecords);
+
+        var atomicCallCount = 0;
+        when(
+          () => mockRepo.updateStatusAtomic(
+            id: any(named: 'id'),
+            organizationId: any(named: 'organizationId'),
+            expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+            newStatus: any(named: 'newStatus'),
+            reviewerId: any(named: 'reviewerId'),
+            resolutionNotes: any(named: 'resolutionNotes'),
+            reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          ),
+        ).thenAnswer((_) async {
+          atomicCallCount++;
+          return atomicCallCount == 2
+              ? 0
+              : 1; // stale-2 was concurrently modified
+        });
+        when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
+
+        final count = await manager.expireStaleJustifications(
+          organizationId: 'org-1',
+        );
+
+        // stale-2 was skipped — only 2 records actually expired
+        expect(count, 2);
+        // Audit log written only for the 2 successful expirations
+        verify(() => mockRepo.appendAuditLog(any())).called(2);
+      },
+    );
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Cursor Safety — Pagination Cursor Integrity
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('Cursor Safety — Pagination Cursor Integrity', () {
+    test(
+      'initial findExpiredPendingPaged call uses afterId: null (no cursor)',
+      () async {
+        final now = DateTime.utc(2026, 4, 16, 12, 0);
+        when(() => mockClock.nowUtc()).thenReturn(now);
+
+        when(
+          () => mockRepo.findExpiredPendingPaged(
+            cutoffUtc: any(named: 'cutoffUtc'),
+            organizationId: any(named: 'organizationId'),
+            limit: any(named: 'limit'),
+            afterId: any(named: 'afterId'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await manager.expireStaleJustifications(organizationId: 'org-1');
+
+        final captured = verify(
+          () => mockRepo.findExpiredPendingPaged(
+            cutoffUtc: any(named: 'cutoffUtc'),
+            organizationId: any(named: 'organizationId'),
+            limit: any(named: 'limit'),
+            afterId: captureAny(named: 'afterId'),
+          ),
+        ).captured;
+
+        expect(captured.first, isNull);
+      },
+    );
+
+    test('cursor advances to last record id from previous page', () async {
+      final now = DateTime.utc(2026, 4, 16, 12, 0);
+      when(() => mockClock.nowUtc()).thenReturn(now);
+
+      final fullPage = List.generate(
+        500,
+        (i) => buildPendingJustification(id: 'cursor-${i + 1}'),
+      );
+
+      var callNumber = 0;
+      when(
+        () => mockRepo.findExpiredPendingPaged(
+          cutoffUtc: any(named: 'cutoffUtc'),
+          organizationId: any(named: 'organizationId'),
+          limit: any(named: 'limit'),
+          afterId: any(named: 'afterId'),
+        ),
+      ).thenAnswer((_) async {
+        callNumber++;
+        return callNumber == 1 ? fullPage : [];
+      });
+
+      when(
+        () => mockRepo.updateStatusAtomic(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        ),
+      ).thenAnswer((_) async => 1);
+      when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
+
+      await manager.expireStaleJustifications(organizationId: 'org-1');
+
+      final allAfterIds = verify(
+        () => mockRepo.findExpiredPendingPaged(
+          cutoffUtc: any(named: 'cutoffUtc'),
+          organizationId: any(named: 'organizationId'),
+          limit: any(named: 'limit'),
+          afterId: captureAny(named: 'afterId'),
+        ),
+      ).captured;
+
+      // First call: no cursor
+      expect(allAfterIds[0], isNull);
+      // Second call: cursor = last id of first page
+      expect(allAfterIds[1], 'cursor-500');
+    });
+
+    test(
+      'stops when empty page is returned and total expired count is correct',
+      () async {
+        final now = DateTime.utc(2026, 4, 16, 12, 0);
+        when(() => mockClock.nowUtc()).thenReturn(now);
+
+        when(
+          () => mockRepo.findExpiredPendingPaged(
+            cutoffUtc: any(named: 'cutoffUtc'),
+            organizationId: any(named: 'organizationId'),
+            limit: any(named: 'limit'),
+            afterId: any(named: 'afterId'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final count = await manager.expireStaleJustifications(
+          organizationId: 'org-1',
+        );
+
+        expect(count, 0);
+        verify(
+          () => mockRepo.findExpiredPendingPaged(
+            cutoffUtc: any(named: 'cutoffUtc'),
+            organizationId: any(named: 'organizationId'),
+            limit: any(named: 'limit'),
+            afterId: any(named: 'afterId'),
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // Audit Trail — Status Transitions
   // ═══════════════════════════════════════════════════════════════════════════
 
@@ -678,20 +1427,23 @@ void main() {
         );
 
         when(() => mockClock.nowUtc()).thenReturn(now);
+
+        when(
+          () => mockRepo.updateStatusAtomic(
+            id: any(named: 'id'),
+            organizationId: any(named: 'organizationId'),
+            expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+            newStatus: any(named: 'newStatus'),
+            reviewerId: any(named: 'reviewerId'),
+            resolutionNotes: any(named: 'resolutionNotes'),
+            reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          ),
+        ).thenAnswer((_) async => 1);
+
         when(
           () => mockRepo.findById(
             id: any(named: 'id'),
             organizationId: any(named: 'organizationId'),
-          ),
-        ).thenAnswer((_) async => pending);
-        when(
-          () => mockRepo.updateStatus(
-            id: any(named: 'id'),
-            organizationId: any(named: 'organizationId'),
-            status: any(named: 'status'),
-            reviewerId: any(named: 'reviewerId'),
-            resolutionNotes: any(named: 'resolutionNotes'),
-            reviewedAtUtc: any(named: 'reviewedAtUtc'),
           ),
         ).thenAnswer(
           (_) async => pending.copyWith(
@@ -741,52 +1493,36 @@ void main() {
       );
     });
 
-    test(
-      'approve already-approved justification throws DomainException',
-      () async {
-        final now = DateTime.utc(2026, 4, 14, 16, 0);
-        when(() => mockClock.nowUtc()).thenReturn(now);
+    test('approve already-modified justification throws ConcurrencyException '
+        '(atomic update returns 0 rows)', () async {
+      final now = DateTime.utc(2026, 4, 14, 16, 0);
+      when(() => mockClock.nowUtc()).thenReturn(now);
 
-        final approved = SLAJustification(
-          id: 'j-4',
+      // Simulate: the record was already approved by a concurrent operation —
+      // WHERE status='PENDING' matches 0 rows.
+      when(
+        () => mockRepo.updateStatusAtomic(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        ),
+      ).thenAnswer((_) async => 0);
+
+      await expectLater(
+        () => manager.approveJustification(
+          justificationId: 'j-4',
           organizationId: 'org-1',
-          vehicleId: 'vehicle-42',
-          eventTimestamp: eventTime,
-          category: SLAJustificationCategory.bloqueioPolicial,
-          description: 'Bloqueio policial',
-          evidenceUrls: ['https://example.com/photo.jpg'],
-          evidenceHashes: [validHash],
-          status: JustificationStatus.approved,
-          createdAt: eventTime.add(const Duration(hours: 1)),
-          reviewerId: 'gestor-1',
-          resolutionNotes: 'OK',
-        );
-
-        when(
-          () => mockRepo.findById(
-            id: any(named: 'id'),
-            organizationId: any(named: 'organizationId'),
-          ),
-        ).thenAnswer((_) async => approved);
-
-        expect(
-          () => manager.approveJustification(
-            justificationId: 'j-4',
-            organizationId: 'org-1',
-            reviewerId: 'gestor-2',
-            callerRole: UserRole.admin,
-            resolutionNotes: null,
-          ),
-          throwsA(
-            isA<DomainException>().having(
-              (e) => e.message,
-              'message',
-              contains('already APPROVED'),
-            ),
-          ),
-        );
-      },
-    );
+          reviewerId: 'gestor-2',
+          callerRole: UserRole.admin,
+          resolutionNotes: null,
+        ),
+        throwsA(isA<ConcurrencyException>()),
+      );
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -845,5 +1581,125 @@ void main() {
         ),
       );
     });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Evidence Link Validation — EvidenceValidationService (standalone)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('EvidenceValidationService — Evidence Link Validation', () {
+    late MockEvidenceLinkChecker mockChecker;
+    late EvidenceValidationService validationService;
+
+    setUp(() {
+      mockChecker = MockEvidenceLinkChecker();
+      validationService = EvidenceValidationService(mockChecker);
+    });
+
+    test('returns available status for reachable URL', () async {
+      when(() => mockChecker.checkLink(any())).thenAnswer(
+        (invocation) async => EvidenceValidationResult(
+          url: invocation.positionalArguments[0] as String,
+          status: EvidenceLinkStatus.available,
+          httpStatusCode: 200,
+        ),
+      );
+
+      final results = await validationService.validateLinks([
+        'https://storage.supabase.co/evidence/photo1.jpg',
+      ]);
+
+      expect(results, hasLength(1));
+      expect(results.first.status, EvidenceLinkStatus.available);
+      expect(results.first.httpStatusCode, 200);
+    });
+
+    test('returns missing status for 404 URL', () async {
+      when(() => mockChecker.checkLink(any())).thenAnswer(
+        (_) async => const EvidenceValidationResult(
+          url: 'https://storage.supabase.co/evidence/deleted.jpg',
+          status: EvidenceLinkStatus.missing,
+          httpStatusCode: 404,
+        ),
+      );
+
+      final results = await validationService.validateLinks([
+        'https://storage.supabase.co/evidence/deleted.jpg',
+      ]);
+
+      expect(results.first.status, EvidenceLinkStatus.missing);
+    });
+
+    test('returns forbidden status for 403 URL', () async {
+      when(() => mockChecker.checkLink(any())).thenAnswer(
+        (_) async => const EvidenceValidationResult(
+          url: 'https://storage.supabase.co/evidence/restricted.jpg',
+          status: EvidenceLinkStatus.forbidden,
+          httpStatusCode: 403,
+        ),
+      );
+
+      final results = await validationService.validateLinks([
+        'https://storage.supabase.co/evidence/restricted.jpg',
+      ]);
+
+      expect(results.first.status, EvidenceLinkStatus.forbidden);
+    });
+
+    test('validates all URLs in parallel and preserves order', () async {
+      final urls = [
+        'https://storage.supabase.co/evidence/a.jpg',
+        'https://storage.supabase.co/evidence/b.jpg',
+        'https://storage.supabase.co/evidence/c.jpg',
+      ];
+
+      var callIndex = 0;
+      final statuses = [
+        EvidenceLinkStatus.available,
+        EvidenceLinkStatus.missing,
+        EvidenceLinkStatus.forbidden,
+      ];
+
+      when(() => mockChecker.checkLink(any())).thenAnswer((invocation) async {
+        final idx = callIndex++;
+        return EvidenceValidationResult(
+          url: invocation.positionalArguments[0] as String,
+          status: statuses[idx],
+        );
+      });
+
+      final results = await validationService.validateLinks(urls);
+
+      expect(results, hasLength(3));
+      expect(results[0].status, EvidenceLinkStatus.available);
+      expect(results[1].status, EvidenceLinkStatus.missing);
+      expect(results[2].status, EvidenceLinkStatus.forbidden);
+    });
+
+    test('returns empty list for empty URL input', () async {
+      final results = await validationService.validateLinks([]);
+      expect(results, isEmpty);
+      verifyNever(() => mockChecker.checkLink(any()));
+    });
+
+    test(
+      'returns error status when checker encounters network failure',
+      () async {
+        when(() => mockChecker.checkLink(any())).thenAnswer(
+          (_) async => const EvidenceValidationResult(
+            url: 'https://storage.supabase.co/evidence/unreachable.jpg',
+            status: EvidenceLinkStatus.error,
+            httpStatusCode: null,
+          ),
+        );
+
+        final results = await validationService.validateLinks([
+          'https://storage.supabase.co/evidence/unreachable.jpg',
+        ]);
+
+        expect(results.first.status, EvidenceLinkStatus.error);
+        expect(results.first.httpStatusCode, isNull);
+      },
+    );
   });
 }

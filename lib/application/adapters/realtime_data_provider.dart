@@ -173,6 +173,8 @@ class RealtimeDataProvider implements IOperationalDataProvider {
 
   @visibleForTesting
   void onPayloadReceived(PostgresChangePayload payload) {
+    if (_controller.isClosed) return;
+
     final record = payload.newRecord;
     if (record.isEmpty) return;
 
@@ -241,7 +243,7 @@ class RealtimeDataProvider implements IOperationalDataProvider {
   }
 
   void _flushPendingPositions() {
-    if (_pendingPositions.isEmpty) return;
+    if (_pendingPositions.isEmpty || _controller.isClosed) return;
 
     // 1. Mover posições pendentes para buffer principal
     _positionBuffer.addAll(_pendingPositions);
@@ -261,7 +263,9 @@ class RealtimeDataProvider implements IOperationalDataProvider {
     if (snapshot.length != _lastEmittedSnapshot.length ||
         !listEquals(snapshot, _lastEmittedSnapshot)) {
       _lastEmittedSnapshot = snapshot;
-      _controller.add(snapshot);
+      if (!_controller.isClosed) {
+        _controller.add(snapshot);
+      }
     }
   }
 
