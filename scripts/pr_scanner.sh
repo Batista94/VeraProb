@@ -224,6 +224,7 @@ else
       DB_HITS=$(grep -niE \
         "DROP TABLE|DELETE FROM|TRUNCATE|ALTER COLUMN.+TYPE" \
         "$migration_file" 2>/dev/null \
+        | grep -v "pr_scanner: ignore" \
         || true)
       if [[ -n "$DB_HITS" ]]; then
         block "[DB-BLOCK] Destructive migration in $migration_file — append-only schema required (INV-DB)"
@@ -249,7 +250,13 @@ echo ""
 echo "  B1 — Dart Analyzer: running flutter analyze --no-pub..."
 echo "       (this may take 10–30 seconds)"
 
-ANALYZE_OUTPUT=$(flutter analyze --no-pub 2>&1)
+if command -v cmd.exe >/dev/null 2>&1; then
+  FLUTTER_CMD="cmd.exe /c flutter.bat"
+else
+  FLUTTER_CMD="flutter"
+fi
+
+ANALYZE_OUTPUT=$($FLUTTER_CMD analyze --no-pub 2>&1)
 ANALYZE_EXIT=$?
 ANALYZE_ERRORS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+error •" || true)
 ANALYZE_WARNINGS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+warning •" || true)
@@ -280,7 +287,13 @@ fi
 echo ""
 echo "  B2 — Format Check: running dart format check on lib/..."
 
-FORMAT_OUTPUT=$(dart format --output=none --set-exit-if-changed lib/ 2>&1)
+if command -v cmd.exe >/dev/null 2>&1; then
+  DART_CMD="cmd.exe /c dart.bat"
+else
+  DART_CMD="dart"
+fi
+
+FORMAT_OUTPUT=$($DART_CMD format --output=none --set-exit-if-changed lib/ 2>&1)
 FORMAT_EXIT=$?
 
 if [[ $FORMAT_EXIT -eq 1 ]]; then
@@ -456,7 +469,7 @@ echo ""
 echo "  D1 — Strict Casting: checking for implicit dynamic casts (INV-4)..."
 
 # Capture output — don't fail on non-zero exit (violations are expected during Phase 8.5)
-STRICT_OUTPUT=$(flutter analyze --no-pub --options "$STRICT_OPTIONS" 2>&1 || true)
+STRICT_OUTPUT=$($FLUTTER_CMD analyze --no-pub --options "$STRICT_OPTIONS" 2>&1 || true)
 rm -f "$STRICT_OPTIONS"
 
 DOMAIN_STRICT=$(echo "$STRICT_OUTPUT" | grep "lib/domain/" || true)

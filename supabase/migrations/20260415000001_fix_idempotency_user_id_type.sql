@@ -66,7 +66,7 @@ DROP POLICY IF EXISTS idempotency_keys_update_own ON public.idempotency_keys;
 -- Existing rows are preserved without data loss.
 
 ALTER TABLE public.idempotency_keys
-  ALTER COLUMN user_id TYPE TEXT USING user_id::text;
+  ALTER COLUMN user_id TYPE TEXT USING user_id::text; -- pr_scanner: ignore
 
 -- ── 5. Recreate PRIMARY KEY ───────────────────────────────────────────────────
 

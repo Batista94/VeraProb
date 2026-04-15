@@ -45,6 +45,9 @@ class OperationalStateNormalizer {
   /// Timestamp of last emitted state per vehicle (debounce guard).
   final Map<String, DateTime> _lastEmittedAt = {};
 
+  /// Last processed event timestamp per vehicle (temporal guard).
+  final Map<String, DateTime> _lastProcessedTimestamp = {};
+
   final IDateTimeProvider _clock;
 
   OperationalStateNormalizer({
@@ -93,6 +96,17 @@ class OperationalStateNormalizer {
     for (final ping in pings) {
       final vehicleId = _resolveVehicleId(ping);
       final buffer = _rawBuffers.putIfAbsent(vehicleId, () => Queue());
+
+      // Temporal guard: skip if event is stale (event time <= last processed)
+      // Replays cached state to maintain stream frequency without corrupting integrity.
+      final lastProcessed = _lastProcessedTimestamp[vehicleId];
+      if (lastProcessed != null &&
+          (ping.timestamp.isBefore(lastProcessed) ||
+              ping.timestamp.isAtSameMomentAs(lastProcessed))) {
+        final cached = _cache[vehicleId];
+        if (cached != null) results.add(cached);
+        continue;
+      }
 
       // Debounce: skip if within debounce window
       final cached = _cache[vehicleId];
@@ -200,6 +214,7 @@ class OperationalStateNormalizer {
 
       _cache[vehicleId] = state;
       _lastEmittedAt[vehicleId] = effectiveNow;
+      _lastProcessedTimestamp[vehicleId] = ping.timestamp;
       results.add(state);
     }
 

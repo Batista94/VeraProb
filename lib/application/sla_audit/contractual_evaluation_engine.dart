@@ -24,6 +24,7 @@ import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/sla_audit/late_arrival_window_policy.dart';
 import 'package:veraprob/domain/sla_audit/asset_status.dart';
 import 'package:veraprob/domain/sla_audit/asset_status_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_evaluation_exception.dart';
 import 'alert_derivation_service.dart';
 
 /// Application Service: Reactive evaluation engine for contractual
@@ -98,6 +99,10 @@ class ContractualEvaluationEngine {
     DateTime? receivedAtUtc,
     required String organizationId,
   }) async {
+    // INV-18: Input validation — reject corrupted telemetry before any processing.
+    if (vehicleState.vehicleId.isEmpty) {
+      throw const SlaEvaluationException('vehicleId is required');
+    }
     // INV-12: Strictly use Event Time (gps_timestamp) for evaluation.
     // Falls back to processing time only if override [nowUtc] is provided.
     final now = nowUtc ?? vehicleState.lastRawPingAt;
@@ -229,6 +234,18 @@ class ContractualEvaluationEngine {
               confidenceScore: 98,
             );
 
+            // INV-11: Idempotency guard — skip if identical evidence_hash already in ledger.
+            final existingEntries = await _ledgerRepo.getEntriesBySetId(
+              state.setId,
+              organizationId: state.organizationId,
+            );
+            final alreadyRecorded = existingEntries.any((e) {
+              if (e.type != 'SANCTION_RECOMMENDED') return false;
+              final ev = e.payload['verdict_evidence'] as Map<String, dynamic>?;
+              return ev?['evidence_hash'] == verdictEvidence.evidenceHash;
+            });
+            if (alreadyRecorded) continue;
+
             final recommendedEvent = SanctionRecommendedEvent(
               organizationId: state.organizationId,
               occurredAtUtc: now,
@@ -263,14 +280,15 @@ class ContractualEvaluationEngine {
               rule.config['penalty_per_minute_cents'] as int? ?? 0;
           final maxCapCents = rule.config['max_penalty_cap_cents'] as int?;
 
-          final delayMinutes = now.difference(state.windowStartUtc).inMinutes;
-          if (delayMinutes <= 0) continue;
+          final toleranceSeconds = toleranceMinutes * 60;
+          final delay = now.difference(state.windowStartUtc);
+          if (delay.inSeconds <= toleranceSeconds) continue;
 
-          final billableMinutes = (delayMinutes - toleranceMinutes).clamp(
-            0,
-            delayMinutes,
-          );
-          if (billableMinutes == 0) continue;
+          final billableMinutes = ((delay.inSeconds - toleranceSeconds) / 60)
+              .ceil();
+          if (billableMinutes <= 0) continue;
+
+          final delayMinutes = delay.inMinutes;
 
           final grossCents = billableMinutes * penaltyPerMinuteCents;
           final finalCents = maxCapCents != null
