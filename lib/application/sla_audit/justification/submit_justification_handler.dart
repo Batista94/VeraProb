@@ -139,6 +139,7 @@ class SubmitJustificationHandler {
       contractId: command.contractId,
       planVersion: command.planVersion,
       actorUserId: actorUserId,
+      evidenceHashes: command.evidenceHashes,
     );
 
     // 7. Append JUSTIFICATION_SUBMITTED to immutable ledger (INV-7)

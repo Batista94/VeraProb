@@ -1,6 +1,7 @@
 import 'dart:math' show cos, sqrt, asin;
 import 'package:veraprob/domain/entities/raw_telemetry_ping.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
+import 'package:veraprob/domain/sla_audit/telemetry/spoofing_detected_exception.dart';
 
 /// The Purgatory Filter.
 /// Responsible for receiving dirty RawTelemetryPings and filtering out noise,
@@ -99,5 +100,22 @@ class TelemetryNormalizer {
   /// Clears internal state (useful for tests or hard resets)
   void clearState() {
     _lastValidPings.clear();
+  }
+
+  /// Validates a batch of coordinates for zero-variance spoofing.
+  /// Throws SpoofingDetectedException if synthetic pattern detected.
+  void validateBatch(List<RawTelemetryPing> pings, String deviceId) {
+    if (pings.length < 5) return;
+
+    final latitudes = pings.map((p) => p.latitude).toSet();
+    final longitudes = pings.map((p) => p.longitude).toSet();
+
+    if (latitudes.length == 1 && longitudes.length == 1) {
+      throw SpoofingDetectedException(
+        deviceId: deviceId,
+        reason:
+            'zero variance detected in batch of ${pings.length} coordinates',
+      );
+    }
   }
 }

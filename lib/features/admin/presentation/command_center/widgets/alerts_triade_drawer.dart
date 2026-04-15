@@ -293,9 +293,7 @@ class _AlertCard extends ConsumerWidget {
                   onPressed: () async {
                     final facade = ref.read(operationalControlFacadeProvider);
                     try {
-                      await facade.resolveAlert(
-                        tripId: trip.id,
-                      );
+                      await facade.resolveAlert(tripId: trip.id);
                       // No triggerUIRefresh needed here — trip status propagates
                       // via FleetSimulationService._emitCurrentState() stream.
                       // (triggerUIRefresh is only needed in VehicleDetailDrawer

@@ -286,6 +286,9 @@ class SlaLedgerMapper {
         payload: {
           'justification_id': event.justificationId,
           'actor_id': event.actorUserId,
+          'set_id': event.setId,
+          'caller_user_id': event.actorUserId,
+          'evidence_hashes': event.evidenceHashes,
         },
       );
     }

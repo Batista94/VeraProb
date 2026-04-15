@@ -227,6 +227,7 @@ class JustificationSubmittedEvent extends DomainEvent {
   final String contractId;
   final int planVersion;
   final String actorUserId;
+  final List<String> evidenceHashes;
 
   const JustificationSubmittedEvent({
     required super.organizationId,
@@ -236,6 +237,7 @@ class JustificationSubmittedEvent extends DomainEvent {
     required this.contractId,
     required this.planVersion,
     required this.actorUserId,
+    required this.evidenceHashes,
   });
 }
 

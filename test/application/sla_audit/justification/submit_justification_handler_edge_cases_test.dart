@@ -240,8 +240,9 @@ void main() {
         expect(payload['caller_user_id'], equals(command.callerUserId));
 
         // Binary Shield: validate evidence hashes via listEquals (INV-33).
-        final payloadHashes =
-            List<String>.from(payload['evidence_hashes'] ?? []);
+        final payloadHashes = List<String>.from(
+          payload['evidence_hashes'] ?? [],
+        );
         expect(listEquals(payloadHashes, command.evidenceHashes), isTrue);
       },
     );
