@@ -174,9 +174,7 @@ void main() {
           payloadOrgId: 'org-attacker',
           sessionId: any(named: 'sessionId'),
         ),
-      ).thenAnswer(
-        (_) async => throw Exception('SovereigntyViolation'),
-      );
+      ).thenAnswer((_) async => throw Exception('SovereigntyViolation'));
 
       final attackerBatch = RawTelemetryBatch(
         deviceId: 'device-attacker',

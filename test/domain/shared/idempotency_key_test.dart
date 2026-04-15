@@ -266,24 +266,35 @@ void main() {
   // ZR — Zero Randomness
   // ─────────────────────────────────────────────────────────────────────────
   group('FORENSIC: Zero Randomness (INV-11)', () {
-    test('ZR-01 (Static Analysis): source contains no Date' 'Time' '.now() or Ran' 'dom(', () {
+    test('ZR-01 (Static Analysis): source contains no Date'
+        'Time'
+        '.now() or Ran'
+        'dom(', () {
       final source = File(
         'lib/domain/shared/idempotency_key.dart',
       ).readAsStringSync();
       // Scanner bypass: concatenate strings to avoid false positive
-      const forbiddenDateTimeCall = 'Date' 'Time' '.now()';
-      const forbiddenRandomCall = 'Ran' 'dom(';
+      const forbiddenDateTimeCall =
+          'Date'
+          'Time'
+          '.now()';
+      const forbiddenRandomCall =
+          'Ran'
+          'dom(';
       expect(
         source.contains(forbiddenDateTimeCall),
         isFalse,
         reason:
-            'ZR-01: Date' 'Time' '.now() in domain source violates INV-6 + INV-11',
+            'ZR-01: Date'
+            'Time'
+            '.now() in domain source violates INV-6 + INV-11',
       );
       expect(
         source.contains(forbiddenRandomCall),
         isFalse,
         reason:
-            'ZR-01: Ran' 'dom( in domain source violates INV-11 content-based addressing',
+            'ZR-01: Ran'
+            'dom( in domain source violates INV-11 content-based addressing',
       );
     });
 
