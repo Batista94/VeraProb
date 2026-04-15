@@ -28,6 +28,9 @@ class JustificationStatusBadge extends StatelessWidget {
       case JustificationStatus.rejected:
         color = VeraProbColors.error;
         label = 'REJEITADA';
+      case JustificationStatus.expired:
+        color = VeraProbColors.textSecondary;
+        label = 'EXPIRADA';
     }
 
     return Container(

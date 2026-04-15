@@ -283,3 +283,42 @@ class JustificationRejectedEvent extends DomainEvent {
     required this.actorEmail,
   });
 }
+
+// ── SLA Justification Events (CX-05 — Vehicle-Event Level) ──────────────────
+
+/// Emitted when a driver submits a justification for a vehicle infraction occurrence.
+///
+/// Forensic anchor: [vehicleId] + [eventTimestamp] link back to the original
+/// `VehicleOperationalState.stateChangedAt` from the Normalizer (CX-04).
+class SLAJustificationSubmittedEvent extends DomainEvent {
+  final String justificationId;
+  final String vehicleId;
+  final DateTime eventTimestamp;
+  final String actorUserId;
+  final List<String> evidenceHashes;
+
+  const SLAJustificationSubmittedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.justificationId,
+    required this.vehicleId,
+    required this.eventTimestamp,
+    required this.actorUserId,
+    required this.evidenceHashes,
+  });
+}
+
+/// Emitted when a pending SLA justification is auto-expired (CX05-INV-22).
+class SLAJustificationExpiredEvent extends DomainEvent {
+  final String justificationId;
+  final String vehicleId;
+  final DateTime eventTimestamp;
+
+  const SLAJustificationExpiredEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.justificationId,
+    required this.vehicleId,
+    required this.eventTimestamp,
+  });
+}

@@ -4,13 +4,15 @@
 enum JustificationStatus {
   pending,
   approved,
-  rejected;
+  rejected,
+  expired;
 
   /// DB column value stored in `contractor_justifications.status`.
   String get dbValue => switch (this) {
     JustificationStatus.pending => 'PENDING',
     JustificationStatus.approved => 'APPROVED',
     JustificationStatus.rejected => 'REJECTED',
+    JustificationStatus.expired => 'EXPIRED',
   };
 
   /// Reconstructs from a DB value. Throws [ArgumentError] on unknown input.
@@ -19,6 +21,7 @@ enum JustificationStatus {
       'PENDING' => JustificationStatus.pending,
       'APPROVED' => JustificationStatus.approved,
       'REJECTED' => JustificationStatus.rejected,
+      'EXPIRED' => JustificationStatus.expired,
       _ => throw ArgumentError('Unknown JustificationStatus db value: $value'),
     };
   }

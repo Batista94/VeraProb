@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -49,7 +49,7 @@ class SimulationControlService implements OperationalControlService {
             entityId: tripId,
             oldValue: oldStatus?.name,
             newValue: newStatus.name,
-            reason: reason ?? 'MudanÃ§a de status via painel',
+            reason: reason ?? 'Mudança de status via painel',
           )
           .catchError((e) {
             // In production, log to crashlytics/sentry
@@ -174,7 +174,7 @@ class SimulationControlService implements OperationalControlService {
             entityId: contractId,
             oldValue: 'unknown',
             newValue: newValueCents.toString(),
-            reason: 'AtualizaÃ§Ã£o de contrato via barramento autorizado',
+            reason: 'Atualização de contrato via barramento autorizado',
           )
           .catchError((e) {
             debugPrint('Failed to log audit action: $e');

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/shared/money.dart';
@@ -38,7 +38,7 @@ class SanctionSimulationService {
       final contracts = await _contracts.findByOrganization(organizationId);
       if (contracts.isEmpty) {
         throw const DomainException(
-          'Nenhum contrato encontrado para esta organizaÃ§Ã£o. Crie um contrato primeiro.',
+          'Nenhum contrato encontrado para esta organização. Crie um contrato primeiro.',
         );
       }
       final contractId = contracts.first.id;

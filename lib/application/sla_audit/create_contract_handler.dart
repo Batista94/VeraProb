@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
@@ -108,7 +108,7 @@ class CreateContractHandler {
       return ContractFormResult.success(contract.id);
     } on SovereigntyViolationException {
       // INV-26: Generic message â€” no forensic details leaked to the UI.
-      return const ContractFormResult.failure('Contrato nÃ£o encontrado.');
+      return const ContractFormResult.failure('Contrato não encontrado.');
     } on DomainException catch (e) {
       return ContractFormResult.failure(e.message);
     } catch (_) {

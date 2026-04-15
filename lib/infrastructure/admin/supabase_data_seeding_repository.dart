@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -16,7 +16,7 @@ class SupabaseDataSeedingRepository
   @override
   Future<void> seedDrivers(String organizationId) async {
     final drivers = [
-      {'full_name': 'JoÃ£o Silva', 'license_number': '11122233344'},
+      {'full_name': 'João Silva', 'license_number': '11122233344'},
       {'full_name': 'Maria Oliveira', 'license_number': '55566677788'},
       {'full_name': 'Carlos Santos', 'license_number': '99988877766'},
     ];

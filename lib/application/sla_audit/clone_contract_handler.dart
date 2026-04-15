@@ -1,4 +1,4 @@
-﻿import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -57,7 +57,7 @@ class CloneContractHandler {
     );
     if (source == null) {
       throw const DomainException(
-        'Contrato de origem nÃ£o encontrado ou nÃ£o pertence Ã  sua organizaÃ§Ã£o.',
+        'Contrato de origem não encontrado ou não pertence à sua organização.',
       );
     }
 

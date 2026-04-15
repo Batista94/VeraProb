@@ -4,9 +4,9 @@
 # =============================================================================
 #
 # PILLAR A: Forensic Binary Rules
-#   A1 — Wasm-Ready:       Blocks dart:html / dart:js imports (INV-4)
-#   A2 — Financial Prec.:  Blocks double/float near financial terms (INV-2)
-#   A3 — UTC Determinism:  Blocks DateTime.now() without .toUtc() (INV-3)
+#   A1 — Wasm-Ready:       Blocks dart:html / dart:js imports (INV-17)
+#   A2 — Financial Prec.:  Blocks double/float near financial terms (INV-4)
+#   A3 — UTC Determinism:  Blocks DateTime.now() without .toUtc() (INV-6)
 #   A4 — Zero-Downtime DB: Blocks destructive migration operations (INV-DB)
 #
 # PILLAR B: Static Quality
@@ -119,7 +119,7 @@ WASM_HITS=$(grep -rn --include="*.dart" \
   || true)
 
 if [[ -n "$WASM_HITS" ]]; then
-  block "[WASM-BLOCK] dart:html/dart:js forbidden — use dart:js_interop (INV-4)"
+  block "[WASM-BLOCK] dart:html/dart:js forbidden — use dart:js_interop (INV-17)"
   echo "$WASM_HITS" | print_hits 5
 else
   pass "No forbidden dart:html/dart:js imports"
@@ -138,7 +138,7 @@ FIN_HITS=$(grep -rn --include="*.dart" \
   || true)
 
 if [[ -n "$FIN_HITS" ]]; then
-  block "[FIN-BLOCK] double/float storing monetary value in domain/application — use BIGINT cents (INV-2)"
+  block "[FIN-BLOCK] double/float storing monetary value in domain/application — use BIGINT cents (INV-4)"
   echo "         (Checked: lib/domain/ + lib/application/ | Excluded: multipliers, rates, toDouble())"
   echo "$FIN_HITS" | print_hits 5
 else
@@ -164,7 +164,7 @@ STRICT_DT_HITS=$(grep -rn --include="*.dart" \
   || true)
 
 if [[ -n "$STRICT_DT_HITS" ]]; then
-  block "[UTC-BLOCK] Raw DateTime.now() detected in core layers — use IDateTimeProvider.now() instead (INV-3)"
+  block "[UTC-BLOCK] Raw DateTime.now() detected in core layers — use IDateTimeProvider.nowUtc() instead (INV-6)"
   echo "$STRICT_DT_HITS" | print_hits 5
 else
   pass "No raw DateTime.now() in domain/application/infrastructure layers"
@@ -191,7 +191,7 @@ UTC_HITS=$(grep -rn --include="*.dart" \
   || true)
 
 if [[ -n "$UTC_HITS" ]]; then
-  block "[UTC-BLOCK] DateTime.now() without .toUtc() — all timestamps must be UTC (INV-3)"
+  block "[UTC-BLOCK] DateTime.now() without .toUtc() — all timestamps must be UTC (INV-6)"
   echo "$UTC_HITS" | print_hits 5
 else
   pass "All DateTime.now() calls use .toUtc()"

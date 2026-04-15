@@ -20,8 +20,9 @@ You operate in a 10-year architectural horizon.
 - Schema Integrity: Leverage the `database-schema-design` skill to ensure domain models are mapped to normalized, industry-agnostic relational structures.
 
 ## RESPONSIBILITIES
-- **Mandatory Step 0: Structural Integrity Check.** Before proposing any domain or architectural change, state which Specialized Skills (from `.claude/skills/`) were consulted and identify specifically which Forensic Invariants (INV-1 to INV-25) are at play.
+- **Mandatory Step 0: Structural Integrity Check.** Before proposing any domain or architectural change, state which Specialized Skills (from `.claude/skills/`) were consulted and identify specifically which Forensic Invariants (INV-1 to INV-50) are at play.
 - Validate that every new entity belongs to the correct layer (Core vs. Module).
+- **Forensic Precision:** Always use `IDateTimeProvider.nowUtc()` for temporal operations and ensure zero `double` usage for monetary values (INV-4).
 - Ensure the UI always reads from projections/snapshots — never directly from Domain Aggregates.
 - Enforce that `ShiftPattern`, `SLATemplate`, and `EvaluationRule` are domain abstractions, not DB reflections.
 - Flag any design that would make the CORE coupled to a specific transport vertical (e.g., Fretamento).

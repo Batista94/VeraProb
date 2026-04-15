@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/detectors/stopped_vehicle_detector.dart';
@@ -110,6 +110,7 @@ void main() {
         createPing(center, offset: Duration.zero),
       ], now: currentNow);
       currentNow = currentNow.add(const Duration(minutes: 10));
+      when(() => mockDateTime.nowUtc()).thenReturn(currentNow);
 
       // Call with empty pings to trigger degraded/replay state
       final replayResults = normalizer.normalize([], now: currentNow);

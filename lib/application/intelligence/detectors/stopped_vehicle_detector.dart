@@ -30,9 +30,8 @@ class StoppedVehicleDetector extends SituationDetector {
   ) {
     // 1. Check real operational state from the Normalization Layer
     if (state != null && state.motionState == MotionState.stopped) {
-      final minutesStopped = state.lastRawPingAt
-          .difference(state.stateChangedAt)
-          .inMinutes;
+      final nowUtc = dateTimeProvider.nowUtc();
+      final minutesStopped = nowUtc.difference(state.stateChangedAt).inMinutes;
       // Only warn if stopped for a significant time based on business logic
       // (The normalizer already requires 15s to classify as stopped, but for a severe warning we might want more like 2-3 mins)
       if (minutesStopped >= 2) {

@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -189,7 +189,7 @@ class ShiftProjectionService {
               'timezone': pattern.timezone,
               'message':
                   'Dia $dateLabel sem viagens programadas detectadas. '
-                  'VerificaÃ§Ã£o manual necessÃ¡ria.',
+                  'Verificação manual necessária.',
             },
           ),
         );
@@ -254,13 +254,13 @@ class ShiftProjectionService {
     // operator configures its coordinates via the Advanced Geofence panel.
     if (originZone.geofence == null) {
       throw DomainException(
-        'Zona "${originZone.name}" nÃ£o possui geofence configurado. '
+        'Zona "${originZone.name}" não possui geofence configurado. '
         'Configure as coordenadas antes de projetar viagens.',
       );
     }
     if (destZone.geofence == null) {
       throw DomainException(
-        'Zona "${destZone.name}" nÃ£o possui geofence configurado. '
+        'Zona "${destZone.name}" não possui geofence configurado. '
         'Configure as coordenadas antes de projetar viagens.',
       );
     }

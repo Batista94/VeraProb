@@ -327,6 +327,44 @@ class SlaLedgerMapper {
       );
     }
 
+    // ── CX-05: Vehicle-Event Level SLA Justification Events ──────────────
+
+    if (event is SLAJustificationSubmittedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'SLA_JUSTIFICATION_SUBMITTED',
+        operatorId: event.actorUserId,
+        setId: null,
+        contractId: 'N/A',
+        planVersion: 0,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'justification_id': event.justificationId,
+          'vehicle_id': event.vehicleId,
+          'event_timestamp': event.eventTimestamp.toIso8601String(),
+          'actor_user_id': event.actorUserId,
+          'evidence_hashes': event.evidenceHashes,
+        },
+      );
+    }
+
+    if (event is SLAJustificationExpiredEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'SLA_JUSTIFICATION_EXPIRED',
+        operatorId: 'SYSTEM',
+        setId: null,
+        contractId: 'N/A',
+        planVersion: 0,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'justification_id': event.justificationId,
+          'vehicle_id': event.vehicleId,
+          'event_timestamp': event.eventTimestamp.toIso8601String(),
+        },
+      );
+    }
+
     // Generic fallback for unknown events
     return SlaLedgerEntry(
       organizationId: event.organizationId,

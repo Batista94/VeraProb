@@ -220,7 +220,7 @@ void main() {
 
       await Future.delayed(const Duration(milliseconds: 100));
 
-      final processingTime = DateTime.now().difference(startTime);
+      final processingTime = DateTime.now().toUtc().difference(startTime);
 
       // Processamento deve ser rápido mesmo com buffer grande
       expect(processingTime.inMilliseconds, lessThan(200));
