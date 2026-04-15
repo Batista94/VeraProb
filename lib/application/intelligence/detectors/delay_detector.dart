@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/entities/operational_trip.dart';
+﻿import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/entities/operational_warning.dart';
 import 'package:veraprob/domain/entities/trip_event.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
@@ -32,9 +32,9 @@ class DelayDetector extends SituationDetector {
       return OperationalWarning(
         id: 'warn_delay_critical_${trip.id}',
         type: 'delay_critical',
-        message: 'Atraso Crítico: $delayMinutes min',
+        message: 'Atraso CrÃ­tico: $delayMinutes min',
         severityScore: 40,
-        detectedAt: dateTimeProvider.now(),
+        detectedAt: dateTimeProvider.nowUtc(),
         metadata: {'delay_minutes': delayMinutes},
       );
     }
@@ -45,7 +45,7 @@ class DelayDetector extends SituationDetector {
         type: 'delay_risk',
         message: 'Risco de Atraso: $delayMinutes min',
         severityScore: 20,
-        detectedAt: dateTimeProvider.now(),
+        detectedAt: dateTimeProvider.nowUtc(),
         metadata: {'delay_minutes': delayMinutes},
       );
     }

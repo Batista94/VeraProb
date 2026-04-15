@@ -1,4 +1,4 @@
-import 'package:uuid/uuid.dart';
+﻿import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -36,25 +36,25 @@ class GenerateJustificationTokenHandler {
   Future<JustificationSubmissionToken> handle(
     GenerateJustificationTokenCommand command,
   ) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. RBAC — only admin/operator may generate links
+    // 2. RBAC â€” only admin/operator may generate links
     if (!_rbac.can(command.callerRole, UserPermission.canSubmitJustification)) {
       throw const DomainException('Unauthorized.');
     }
 
-    // 2. Expiry validation (PO-6: configurable 1–72 h)
+    // 2. Expiry validation (PO-6: configurable 1â€“72 h)
     if (command.expiresInHours < 1 || command.expiresInHours > 72) {
       throw const DomainException(
         'Token expiry must be between 1 and 72 hours.',
       );
     }
 
-    final now = _dateTimeProvider.now();
+    final now = _dateTimeProvider.nowUtc();
     final token = JustificationSubmissionToken(
       id: const Uuid().v4(),
       organizationId: command.organizationId,

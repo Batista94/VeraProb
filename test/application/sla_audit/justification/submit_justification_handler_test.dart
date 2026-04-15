@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_justification_command.dart';
@@ -76,7 +76,7 @@ void main() {
         clock: mockClock,
       );
 
-      when(() => mockClock.now()).thenReturn(now);
+      when(() => mockClock.nowUtc()).thenReturn(now);
       when(
         () => mockTenant.assertTenantMatches(
           payloadOrgId: any(named: 'payloadOrgId'),

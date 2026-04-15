@@ -1,4 +1,4 @@
-import 'package:veraprob/core/utils/date_time_provider.dart';
+﻿import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/canonical_fact_repository.dart';
 import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 import 'package:veraprob/domain/sla_audit/shadow_mode_repository.dart';
@@ -9,13 +9,13 @@ import 'reporting_service.dart';
 /// Orchestrates [ShadowModeSimulation] computation and persistence.
 ///
 /// Shadow Mode answers: "What financial losses would have occurred without
-/// veraprob's automated SLA enforcement?" — the key ROI proof for sales.
+/// veraprob's automated SLA enforcement?" â€” the key ROI proof for sales.
 ///
 /// **Evidence quality attribution (PO directive 2026-03-17):**
 /// When [evidenceQualityRate] is low, [ShadowModeSimulation.evidenceQualityAttribution]
 /// explicitly attributes this to contractor hardware quality.
 /// This service computes [evidenceQualityRate] from the actual canonical_facts
-/// integrity flags — it is an objective measurement, not an estimate.
+/// integrity flags â€” it is an objective measurement, not an estimate.
 class ShadowModeService {
   final ShadowModeRepository _simulationRepo;
   final ReportingService _reportingService;
@@ -34,9 +34,9 @@ class ShadowModeService {
 
   /// Computes and persists a Shadow Mode ROI simulation for the given period.
   ///
-  /// [baselineDisputeRate]: percentage (0–100) of no-show penalties that would
+  /// [baselineDisputeRate]: percentage (0â€“100) of no-show penalties that would
   ///   have been successfully disputed by the contractor without automated evidence.
-  ///   A reasonable estimate for fretamento contracts is 40–70%.
+  ///   A reasonable estimate for fretamento contracts is 40â€“70%.
   ///
   /// [manualEnforcementCostPerIncident]: estimated labor cost in cents to manually
   ///   track and enforce a single SLA incident.
@@ -61,7 +61,7 @@ class ShadowModeService {
     );
 
     // 2. Compute evidence quality rate from canonical_facts integrity flags
-    //    This is objective measurement — not an estimate.
+    //    This is objective measurement â€” not an estimate.
     final flagCounts = await _canonicalFactRepo.countByIntegrityFlag(
       organizationId: organizationId,
       fromUtc: periodStartUtc,
@@ -89,7 +89,7 @@ class ShadowModeService {
       manualEnforcementCostPerIncident: Money(manualEnforcementCostPerIncident),
       incidentCount: incidentCount,
       platformSubscriptionCost: Money(platformSubscriptionCost),
-      generatedAtUtc: _dateTimeProvider.now(),
+      generatedAtUtc: _dateTimeProvider.nowUtc(),
       generatedByUserId: generatedByUserId,
       simulationParameters: {
         'baseline_dispute_rate_bps': baselineDisputeRateBps,

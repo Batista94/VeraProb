@@ -76,6 +76,7 @@ void main() {
 
         // 2. Execute via Engine
         final vehicle = VehicleOperationalState(
+          rawSpeed: 0.0,
           vehicleId: 'v-100',
           tripId: 'set-consistent',
           latitude: -23.5,

@@ -1,4 +1,4 @@
-import 'package:uuid/uuid.dart';
+﻿import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/operational_control_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/authority/commands/contracts/update_contract_command.dart';
@@ -59,7 +59,7 @@ class AuthorizingCommandBus implements OperationalCommandBus {
         result: DecisionResult.denied,
         reason:
             'CROSS-TENANT VETO: User ${context.tenantId} attempted action on ${command.targetOrganizationId}',
-        occurredAt: _dateTimeProvider.now(),
+        occurredAt: _dateTimeProvider.nowUtc(),
         contextSnapshot: context.toJson(),
       );
 
@@ -75,7 +75,7 @@ class AuthorizingCommandBus implements OperationalCommandBus {
       actionType: actionType,
       context: context,
       targetRef: command.targetRef,
-      nowUtc: _dateTimeProvider.now(),
+      nowUtc: _dateTimeProvider.nowUtc(),
     );
 
     // 5. Forensically Persist BEFORE execution (Ensures auditability)

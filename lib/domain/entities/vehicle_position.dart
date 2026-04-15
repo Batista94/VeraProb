@@ -8,6 +8,7 @@ class VehiclePosition extends Equatable {
   final double longitude; // Physical Metric - Double Required
   final double? speed; // Physical Metric - Double Required
   final double? heading; // Physical Metric - Double Required
+  final double? accuracyMeters; // Physical Metric - Double Required
   final DateTime timestamp;
   final String source; // 'api_public' or 'driver_app_gps'
 
@@ -22,6 +23,7 @@ class VehiclePosition extends Equatable {
     required this.longitude,
     this.speed,
     this.heading,
+    this.accuracyMeters,
     required this.timestamp,
     required this.source,
     this.routeName,
@@ -44,6 +46,7 @@ class VehiclePosition extends Equatable {
       longitude: (json['longitude'] as num).toDouble(),
       speed: (json['speed'] as num?)?.toDouble(),
       heading: (json['heading'] as num?)?.toDouble(),
+      accuracyMeters: (json['accuracy_meters'] as num?)?.toDouble(),
       timestamp: DateTime.parse(json['timestamp'] as String),
       source: json['source'] as String,
       routeName: json['route_name'] as String?,
@@ -58,6 +61,7 @@ class VehiclePosition extends Equatable {
       'longitude': longitude,
       'speed': speed,
       'heading': heading,
+      'accuracy_meters': accuracyMeters,
       'timestamp': timestamp.toIso8601String(),
       'source': source,
     };
@@ -71,6 +75,7 @@ class VehiclePosition extends Equatable {
     longitude,
     speed,
     heading,
+    accuracyMeters,
     timestamp,
     source,
   ];

@@ -1,4 +1,4 @@
-import 'dart:convert' show utf8, jsonEncode;
+﻿import 'dart:convert' show utf8, jsonEncode;
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
@@ -75,7 +75,7 @@ class SpoofingAuditEntry extends Equatable {
     required List<String> factIds,
   }) {
     final now =
-        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
+        StaticDateTimeProvider.instance?.nowUtc() ?? DateTime.now().toUtc();
     final id = const Uuid().v4();
 
     // Deterministic payload for hashing

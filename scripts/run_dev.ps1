@@ -19,9 +19,14 @@ Write-Host "🔧 [DEV] Iniciando veraprob com credenciais de desenvolvimento..."
 Write-Host "   Credenciais lidas de: .env" -ForegroundColor DarkGray
 
 # 1. Garante que o Supabase local está rodando e reseta o banco.
-#    Usar 'db reset' em vez de 'start' porque o schema muda com frequência.
-Write-Host "🐘 Iniciando e resetando banco local (supabase start && supabase db reset)..." -ForegroundColor Green
+Write-Host "🐘 Iniciando serviços Supabase (supabase start)..." -ForegroundColor Green
 supabase start
+
+# Pequena pausa para garantir que o proxy está aceitando conexões antes do reset
+Write-Host "⏳ Aguardando serviços estabilizarem..." -ForegroundColor DarkGray
+Start-Sleep -Seconds 2
+
+Write-Host "🔄 Resetando banco local (supabase db reset)..." -ForegroundColor Green
 supabase db reset
 
 # 2. Seed the DB with test data.
@@ -29,7 +34,6 @@ Write-Host "🌱 Populando banco com dados de teste..." -ForegroundColor Green
 node scripts/bootstrap_dev.mjs
 
 # 3. Start Edge Functions in a background job.
-#    Required for super-admin-proxy (TenantHealthSnapshot, AuditLog) to resolve locally.
 Write-Host "⚡ Iniciando Edge Functions localmente (super-admin-proxy)..." -ForegroundColor Yellow
 $efJob = Start-Job -ScriptBlock {
     Set-Location $using:PWD
@@ -37,15 +41,20 @@ $efJob = Start-Job -ScriptBlock {
 }
 Write-Host "   Edge Functions job ID: $($efJob.Id)" -ForegroundColor DarkGray
 
-# 3. Clean and get dependencies to ensure UI structural changes are reflected.
-Write-Host "🧹 Limpando cache e baixando dependências (flutter clean && flutter pub get)..." -ForegroundColor Cyan
+# 4. Clean and get dependencies.
+Write-Host "🧹 Limpando cache e baixando dependências..." -ForegroundColor Cyan
 flutter clean
 flutter pub get
 
-# 4. Run on Chrome (Flutter Web). .env is read automatically by flutter_dotenv.
-flutter run -d chrome --dart-define=ENV=dev
+# 5. Run on Chrome (Flutter Web). 
+# Note: --dart-define=SKIP_MFA_DEV=true can be added to bypass 2FA locally.
+Write-Host "🚀 Iniciando Flutter Web..." -ForegroundColor Cyan
+flutter run -d chrome `
+    --dart-define=ENV=dev `
+    --dart-define=SKIP_MFA_DEV=true
 
 # Cleanup Edge Function job when Flutter exits
+Write-Host "🛑 Encerrando serviços de fundo..." -ForegroundColor DarkGray
 Stop-Job $efJob -ErrorAction SilentlyContinue
 Remove-Job $efJob -ErrorAction SilentlyContinue
-Write-Host "✅ Edge Functions encerradas." -ForegroundColor DarkGray
+Write-Host "✅ Ambiente encerrado." -ForegroundColor DarkGray

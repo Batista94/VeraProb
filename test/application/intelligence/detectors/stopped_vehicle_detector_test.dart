@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/detectors/stopped_vehicle_detector.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -14,7 +14,7 @@ void main() {
 
     setUp(() {
       mockDateTime = MockDateTimeProvider();
-      when(() => mockDateTime.now()).thenReturn(DateTime.now().toUtc());
+      when(() => mockDateTime.nowUtc()).thenReturn(DateTime.now().toUtc());
       detector = StoppedVehicleDetector(mockDateTime);
     });
 

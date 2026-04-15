@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/entities/operational_trip.dart';
+﻿import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/entities/operational_warning.dart';
 import 'package:veraprob/domain/entities/trip_event.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -34,7 +34,7 @@ class OffRouteDetector extends SituationDetector {
         type: 'off_route',
         message: 'Desvio de Rota Detectado',
         severityScore: 30, // Moderate severity
-        detectedAt: dateTimeProvider.now(),
+        detectedAt: dateTimeProvider.nowUtc(),
         metadata: {'distance_to_route': state.distanceToRoute},
       );
     }

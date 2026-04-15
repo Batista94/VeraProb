@@ -1,4 +1,4 @@
-import 'package:mocktail/mocktail.dart';
+﻿import 'package:mocktail/mocktail.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/intelligence/detectors/off_route_detector.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -16,6 +16,7 @@ void main() {
 
   VehicleOperationalState makeState(RouteAdherence adherence) =>
       VehicleOperationalState(
+        rawSpeed: 0.0,
         vehicleId: 'v1',
         tripId: 'trip-1',
         latitude: -23.5,
@@ -45,7 +46,7 @@ void main() {
 
     setUp(() {
       mockDateTime = MockDateTimeProvider();
-      when(() => mockDateTime.now()).thenReturn(DateTime.now().toUtc());
+      when(() => mockDateTime.nowUtc()).thenReturn(DateTime.now().toUtc());
       detector = OffRouteDetector(mockDateTime);
     });
 

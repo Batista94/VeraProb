@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/authority/authorizing_command_bus.dart';
 import 'package:veraprob/application/authority/operational_command_bus.dart';
@@ -30,7 +30,7 @@ final mockAuthorizationContextProvider = StateProvider<AuthorizationContext>((
   return AuthorizationContext(
     actorId: const ActorId('mock_operator_id_123'),
     roleId: const RoleId('supervisor'),
-    capturedAt: dateTimeProvider.now(),
+    capturedAt: dateTimeProvider.nowUtc(),
   );
 });
 

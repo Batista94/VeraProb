@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/shared/i_trip_repository.dart';
+﻿import 'package:veraprob/domain/shared/i_trip_repository.dart';
 import 'package:veraprob/domain/entities/trip.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 
@@ -13,10 +13,10 @@ class TripRepositoryMock implements ITripRepository {
   Future<Trip> startTrip(String driverId, String routeId) async {
     await Future.delayed(const Duration(milliseconds: 500));
     final trip = Trip(
-      id: _dateTimeProvider.now().millisecondsSinceEpoch.toString(),
+      id: _dateTimeProvider.nowUtc().millisecondsSinceEpoch.toString(),
       driverId: driverId,
       routeId: routeId,
-      startTime: _dateTimeProvider.now(),
+      startTime: _dateTimeProvider.nowUtc(),
       status: 'active',
     );
     _trips.add(trip);
@@ -29,7 +29,7 @@ class TripRepositoryMock implements ITripRepository {
     final index = _trips.indexWhere((t) => t.id == tripId);
     if (index != -1) {
       _trips[index] = _trips[index].copyWith(
-        endTime: _dateTimeProvider.now(),
+        endTime: _dateTimeProvider.nowUtc(),
         status: 'completed',
       );
     }

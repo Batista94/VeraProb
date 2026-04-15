@@ -290,6 +290,7 @@ class TelemetryIngestionPipeline {
       longitude: fact.lng,
       heading: fact.headingDegrees?.toDouble(),
       smoothedSpeed: speedKmh,
+      rawSpeed: speedKmh, // Physical Metric - Double Required
       motionState: speedKmh > 1.0 ? MotionState.moving : MotionState.stopped,
       connectivityState: ConnectivityState.healthy,
       lastRawPingAt: fact.gpsTimestamp,

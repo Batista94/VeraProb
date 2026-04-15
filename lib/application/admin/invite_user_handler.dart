@@ -1,4 +1,4 @@
-import 'package:uuid/uuid.dart';
+﻿import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
@@ -11,7 +11,7 @@ import 'invite_user_command.dart';
 ///
 /// RBAC: Requires [UserPermission.canInviteUsers] (admin only).
 ///
-/// Token and invitation ID are generated in Dart — never in SQL — to
+/// Token and invitation ID are generated in Dart â€” never in SQL â€” to
 /// satisfy Invariant 7 (Deterministic Replay). Returns the one-time
 /// token so the UI can display the invitation link for copying.
 class InviteUserHandler {
@@ -38,13 +38,13 @@ class InviteUserHandler {
   /// - [callerRole] does not have [UserPermission.canInviteUsers]
   /// - [email] is blank or missing '@'
   Future<String> handle(InviteUserCommand command) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. RBAC check — before any I/O
+    // 2. RBAC check â€” before any I/O
     if (!_rbac.can(command.callerRole, UserPermission.canInviteUsers)) {
       throw const DomainException('Unauthorized: canInviteUsers required.');
     }
@@ -59,11 +59,11 @@ class InviteUserHandler {
     const uuid = Uuid();
     final invitationId = uuid.v4();
     final token = uuid.v4();
-    final expiresAtUtc = _dateTimeProvider.now().add(
+    final expiresAtUtc = _dateTimeProvider.nowUtc().add(
       const Duration(days: _ttlDays),
     );
 
-    // 4. Delegate — RPC atomically revokes any existing pending invite + inserts new one
+    // 4. Delegate â€” RPC atomically revokes any existing pending invite + inserts new one
     await _commandService.inviteUser(
       email: email,
       role: command.roleToAssign,

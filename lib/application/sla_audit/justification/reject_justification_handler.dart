@@ -1,4 +1,4 @@
-import 'package:veraprob/application/shared/tenant_validation_service.dart';
+﻿import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -34,7 +34,7 @@ class RejectJustificationHandler {
        _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   Future<void> handle(RejectJustificationCommand command) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
@@ -74,7 +74,7 @@ class RejectJustificationHandler {
       );
     }
 
-    final now = _dateTimeProvider.now();
+    final now = _dateTimeProvider.nowUtc();
 
     // 5. Build domain event (INV-22: actor_id + actor_email in payload)
     final event = JustificationRejectedEvent(

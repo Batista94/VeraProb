@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 
 import 'package:veraprob/state/providers/fleet_providers.dart';
@@ -22,7 +22,7 @@ class FeedHealthProjection {
       case FeedHealthStatus.online:
         return 'Online ($currentDelayMs ms)';
       case FeedHealthStatus.degraded:
-        return 'Latência Alta ($currentDelayMs ms)';
+        return 'LatÃªncia Alta ($currentDelayMs ms)';
       case FeedHealthStatus.offline:
         return 'Offline';
     }
@@ -71,7 +71,7 @@ final feedHealthProjectionProvider = Provider<FeedHealthProjection>((ref) {
 
   final delayMs = ref
       .read(dateTimeProviderProvider)
-      .now()
+      .nowUtc()
       .difference(latestPing)
       .inMilliseconds;
   final boundedDelay = delayMs < 0 ? 0 : delayMs;

@@ -1,4 +1,4 @@
-import 'package:veraprob/application/shared/tenant_validation_service.dart';
+﻿import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/sla_template.dart';
 import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
@@ -37,7 +37,7 @@ class SaveSlaTemplateHandler {
     String? existingId,
     DateTime? existingCreatedAt,
   }) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: organizationId,
       sessionId: sessionId,
@@ -52,7 +52,7 @@ class SaveSlaTemplateHandler {
             description: description,
             vertical: vertical,
             penalties: domainPenalties,
-            createdAt: existingCreatedAt ?? _clock.now(),
+            createdAt: existingCreatedAt ?? _clock.nowUtc(),
           )
         : SlaTemplate.create(
             organizationId: organizationId,

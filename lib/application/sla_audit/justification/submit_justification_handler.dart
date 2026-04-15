@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:uuid/uuid.dart';
@@ -26,7 +26,7 @@ import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 /// Two authorisation paths:
 /// - **Operator/Admin path**: [callerRole] must have [UserPermission.canSubmitJustification].
 /// - **Token path**: [callerRole] is null and [submittedByTokenId] is non-null
-///   (driver self-service via tokenised link — PO-1).
+///   (driver self-service via tokenised link â€” PO-1).
 ///
 /// Idempotency (INV-11): deterministic [PendingFact.factId] derived from
 /// contractId + setId + actorUserId prevents duplicate enqueue on retry.
@@ -55,13 +55,13 @@ class SubmitJustificationHandler {
   Future<ContractorJustification> handle(
     SubmitJustificationCommand command,
   ) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. RBAC — token path (null role) bypasses permission check (PO-1)
+    // 2. RBAC â€” token path (null role) bypasses permission check (PO-1)
     final isTokenPath =
         command.callerRole == null && command.submittedByTokenId != null;
     final role = command.callerRole;
@@ -71,7 +71,7 @@ class SubmitJustificationHandler {
       throw const DomainException('Unauthorized.');
     }
 
-    // 2. Validate category — throws ArgumentError converted to DomainException
+    // 2. Validate category â€” throws ArgumentError converted to DomainException
     final JustificationCategory category;
     try {
       category = JustificationCategory.fromDb(command.category);
@@ -95,7 +95,7 @@ class SubmitJustificationHandler {
       );
     }
 
-    final now = _clock.now();
+    final now = _clock.nowUtc();
     final id = const Uuid().v4();
     final actorUserId = command.callerUserId ?? 'TOKEN';
 

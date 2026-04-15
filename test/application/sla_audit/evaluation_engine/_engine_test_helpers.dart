@@ -305,6 +305,7 @@ VehicleOperationalState makeVehicleState({
   double? accuracyMeters,
 }) {
   return VehicleOperationalState(
+    rawSpeed: 0.0,
     vehicleId: vehicleId,
     tripId: 'trip-1',
     latitude: latitude,
@@ -406,6 +407,7 @@ VehicleOperationalState makeVehicleAtPreciseCoord({
   );
 
   return VehicleOperationalState(
+    rawSpeed: 0.0,
     vehicleId: vehicleId,
     tripId: 'trip-1',
     latitude: lat,
@@ -431,6 +433,7 @@ VehicleOperationalState makeVehicleAtTime({
   double? accuracyMeters,
 }) {
   return VehicleOperationalState(
+    rawSpeed: 0.0,
     vehicleId: vehicleId,
     tripId: 'trip-1',
     latitude: latitude,
@@ -457,6 +460,7 @@ VehicleOperationalState makeVehicleWithQuality({
   double? accuracyMeters,
 }) {
   return VehicleOperationalState(
+    rawSpeed: 0.0,
     vehicleId: vehicleId,
     tripId: 'trip-1',
     latitude: latitude,

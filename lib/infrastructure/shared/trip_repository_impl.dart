@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/shared/i_trip_repository.dart';
 import 'package:veraprob/domain/entities/trip.dart';
 import 'package:veraprob/infrastructure/shared/mappers/trip_mapper.dart';
@@ -100,7 +100,7 @@ class TripRepositoryImpl
       await _supabase
           .from('trips_audit')
           .update({
-            'end_time': _dateTimeProvider.now().toIso8601String(),
+            'end_time': _dateTimeProvider.nowUtc().toIso8601String(),
             'status': 'completed',
           })
           .eq('id', tripId);

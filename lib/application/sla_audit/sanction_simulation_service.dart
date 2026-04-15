@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/shared/money.dart';
@@ -31,14 +31,14 @@ class SanctionSimulationService {
     double limit = 80.0, // Physical Metric - Double Required
   }) async {
     try {
-      final now = _clock.now();
+      final now = _clock.nowUtc();
       final setId = 'sim-set-${const Uuid().v4().substring(0, 8)}';
 
       // 0. Find a valid contract
       final contracts = await _contracts.findByOrganization(organizationId);
       if (contracts.isEmpty) {
         throw const DomainException(
-          'Nenhum contrato encontrado para esta organização. Crie um contrato primeiro.',
+          'Nenhum contrato encontrado para esta organizaÃ§Ã£o. Crie um contrato primeiro.',
         );
       }
       final contractId = contracts.first.id;
@@ -47,8 +47,8 @@ class SanctionSimulationService {
         clauseRef: 'VEL-01',
         ruleId: 'rule-speed-v1',
         ruleVersion: 1,
-        primaryEvidenceLat: -23.5505 + (_clock.now().millisecond / 100000),
-        primaryEvidenceLng: -46.6333 + (_clock.now().millisecond / 100000),
+        primaryEvidenceLat: -23.5505 + (_clock.nowUtc().millisecond / 100000),
+        primaryEvidenceLng: -46.6333 + (_clock.nowUtc().millisecond / 100000),
         primaryEvidenceTimestampUtc: now,
         deltaValue: speed - limit,
         thresholdValue: limit,

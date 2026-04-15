@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'vehicle_repository.dart';
@@ -41,7 +41,7 @@ class GtfsRealtimeService implements IVehiclePositionService {
         longitude: -46.633308 + (random.nextDouble() * 0.01 - 0.005),
         speed: random.nextDouble() * 60,
         heading: random.nextDouble() * 360,
-        timestamp: _dateTimeProvider.now(),
+        timestamp: _dateTimeProvider.nowUtc(),
         source: 'api_public',
         routeName: dest,
       );

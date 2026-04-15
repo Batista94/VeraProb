@@ -39,7 +39,7 @@ class UserManagementScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Gestão de Usuários',
+                  'GestÃ£o de UsuÃ¡rios',
                   style: VeraProbTypography.sectionTitle,
                 ),
                 const Spacer(),
@@ -52,7 +52,7 @@ class UserManagementScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Gerencie os membros da sua organização e suas permissões de acesso.',
+              'Gerencie os membros da sua organizaÃ§Ã£o e suas permissÃµes de acesso.',
               style: VeraProbTypography.bodyMedium.copyWith(
                 color: VeraProbColors.textSecondary,
               ),
@@ -61,7 +61,7 @@ class UserManagementScreen extends ConsumerWidget {
             Expanded(
               child: ListView(
                 children: [
-                  // ── Active members ───────────────────────────────────────
+                  // â”€â”€ Active members â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   membersAsync.when(
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
@@ -150,7 +150,7 @@ class UserManagementScreen extends ConsumerWidget {
                                           ),
                                         ),
                                         child: const Text(
-                                          'Você (Admin)',
+                                          'VocÃª (Admin)',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12,
@@ -180,12 +180,14 @@ class UserManagementScreen extends ConsumerWidget {
                           ),
                   ),
 
-                  // ── Pending invitations ──────────────────────────────────
+                  // â”€â”€ Pending invitations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   invitationsAsync.when(
                     loading: () => const SizedBox.shrink(),
                     error: (err, st) => const SizedBox.shrink(),
                     data: (invitations) {
-                      final nowUtc = ref.read(dateTimeProviderProvider).now();
+                      final nowUtc = ref
+                          .read(dateTimeProviderProvider)
+                          .nowUtc();
                       final pending = invitations
                           .where((i) => i.isActiveAt(nowUtc))
                           .toList();
@@ -271,7 +273,7 @@ class UserManagementScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Permissão atualizada.'),
+            content: Text('PermissÃ£o atualizada.'),
             backgroundColor: VeraProbColors.success,
           ),
         );
@@ -299,7 +301,7 @@ class UserManagementScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Remover Membro'),
         content: Text(
-          'Deseja realmente remover o usuário $email da organização? Esta ação removerá todo o acesso dele.',
+          'Deseja realmente remover o usuÃ¡rio $email da organizaÃ§Ã£o? Esta aÃ§Ã£o removerÃ¡ todo o acesso dele.',
         ),
         actions: [
           TextButton(
@@ -370,7 +372,7 @@ class UserManagementScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Revogar Convite'),
         content: Text(
-          'Deseja revogar o convite enviado para ${invitation.email}? O link ficará inválido imediatamente.',
+          'Deseja revogar o convite enviado para ${invitation.email}? O link ficarÃ¡ invÃ¡lido imediatamente.',
         ),
         actions: [
           TextButton(
@@ -432,7 +434,7 @@ class UserManagementScreen extends ConsumerWidget {
   }
 }
 
-// ── Pending invitation tile ──────────────────────────────────────────────────
+// â”€â”€ Pending invitation tile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _PendingInvitationTile extends StatelessWidget {
   final Invitation invitation;
@@ -472,7 +474,7 @@ class _PendingInvitationTile extends StatelessWidget {
         maxLines: 1,
       ),
       subtitle: Text(
-        '$roleLabel · Expira em: $expiryStr',
+        '$roleLabel Â· Expira em: $expiryStr',
         style: VeraProbTypography.caption,
       ),
       trailing: IconButton(
@@ -488,7 +490,7 @@ class _PendingInvitationTile extends StatelessWidget {
   }
 }
 
-// ── Invite user dialog ───────────────────────────────────────────────────────
+// â”€â”€ Invite user dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _InviteUserDialog extends ConsumerStatefulWidget {
   final WidgetRef parentRef;
@@ -522,7 +524,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
 
   Widget _buildFormDialog(BuildContext context) {
     return AlertDialog(
-      title: const Text('Convidar Usuário'),
+      title: const Text('Convidar UsuÃ¡rio'),
       content: SizedBox(
         width: 400,
         child: Form(
@@ -539,7 +541,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Informe o e-mail.';
-                  if (!v.contains('@')) return 'E-mail inválido.';
+                  if (!v.contains('@')) return 'E-mail invÃ¡lido.';
                   return null;
                 },
               ),
@@ -599,7 +601,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Compartilhe o link abaixo com o usuário convidado:'),
+            const Text('Compartilhe o link abaixo com o usuÃ¡rio convidado:'),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -667,7 +669,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
 
       widget.parentRef.invalidate(orgInvitationsProvider);
 
-      // Fire invitation email — silent failure (link in dialog is the fallback)
+      // Fire invitation email â€” silent failure (link in dialog is the fallback)
       try {
         final email = _emailController.text;
         final inviteUrl = '${Uri.base.origin}/accept-invite?token=$token';

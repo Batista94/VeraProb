@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/entities/operational_trip.dart';
+﻿import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/entities/operational_warning.dart';
 import 'package:veraprob/domain/entities/trip_event.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -29,7 +29,7 @@ class SignalLossDetector extends SituationDetector {
 
     if (state.connectivityState == ConnectivityState.signalLost) {
       final secondsSincePing = dateTimeProvider
-          .now()
+          .nowUtc()
           .difference(state.lastRawPingAt)
           .inSeconds;
 
@@ -38,7 +38,7 @@ class SignalLossDetector extends SituationDetector {
         type: 'signal_lost',
         message: 'Perda de Sinal GPS: >${secondsSincePing}s',
         severityScore: 40, // High severity
-        detectedAt: dateTimeProvider.now(),
+        detectedAt: dateTimeProvider.nowUtc(),
         metadata: {
           'last_ping_at': state.lastRawPingAt.toIso8601String(),
           'seconds_offline': secondsSincePing,

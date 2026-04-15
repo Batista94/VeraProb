@@ -105,6 +105,7 @@ void main() {
 
   VehicleOperationalState makeVehicleState(DateTime pingAt) {
     return VehicleOperationalState(
+      rawSpeed: 0.0,
       vehicleId: 'v-audit',
       tripId: 't-audit',
       latitude: geoLat,

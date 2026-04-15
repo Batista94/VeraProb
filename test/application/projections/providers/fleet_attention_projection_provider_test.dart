@@ -30,6 +30,7 @@ VehicleOperationalState makeState({
 }) {
   final now = DateTime.now().toUtc();
   return VehicleOperationalState(
+    rawSpeed: 0.0,
     vehicleId: vehicleId,
     tripId: tripId,
     latitude: -20.0, // Physical Metric - Double Required

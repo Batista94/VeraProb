@@ -29,10 +29,16 @@ class VehicleOperationalState extends Equatable {
   /// Speed in km/h, averaged over the last 3 raw readings.
   final double smoothedSpeed; // Physical Metric - Double Required
 
+  /// Raw speed in km/h as reported by the device (before smoothing).
+  /// Preserved for forensic evidence (INV-9 Evidence Sealing).
+  /// NOT included in equality comparison to prevent UI flicker from GPS noise.
+  final double rawSpeed; // Physical Metric - Double Required
+
   // ── Operational classifications ────────────────────────
   final MotionState motionState;
   final ConnectivityState connectivityState;
   final RouteAdherence routeAdherence;
+  final bool accuracyGatekeeperActive; // Physical Metric - Boolean Required.
 
   // ── Metadata ───────────────────────────────────────────
 
@@ -71,9 +77,12 @@ class VehicleOperationalState extends Equatable {
     required this.longitude,
     this.heading,
     required this.smoothedSpeed,
+    required this.rawSpeed,
+
     required this.motionState,
     required this.connectivityState,
     this.routeAdherence = RouteAdherence.onRoute,
+    this.accuracyGatekeeperActive = false,
     required this.lastRawPingAt,
     required this.stateChangedAt,
     this.nearestStopId,
@@ -98,10 +107,13 @@ class VehicleOperationalState extends Equatable {
     double? latitude, // Physical Metric - Double Required
     double? longitude, // Physical Metric - Double Required
     double? heading, // Physical Metric - Double Required
+    double? rawSpeed, // Physical Metric - Double Required
+
     double? smoothedSpeed, // Physical Metric - Double Required
     MotionState? motionState,
     ConnectivityState? connectivityState,
     RouteAdherence? routeAdherence,
+    bool? accuracyGatekeeperActive,
     DateTime? lastRawPingAt,
     DateTime? stateChangedAt,
     String? nearestStopId,
@@ -117,12 +129,16 @@ class VehicleOperationalState extends Equatable {
       vehicleId: vehicleId ?? this.vehicleId,
       tripId: tripId ?? this.tripId,
       latitude: latitude ?? this.latitude,
+      rawSpeed: rawSpeed ?? this.rawSpeed,
+
       longitude: longitude ?? this.longitude,
       heading: heading ?? this.heading,
       smoothedSpeed: smoothedSpeed ?? this.smoothedSpeed,
       motionState: motionState ?? this.motionState,
       connectivityState: connectivityState ?? this.connectivityState,
       routeAdherence: routeAdherence ?? this.routeAdherence,
+      accuracyGatekeeperActive:
+          accuracyGatekeeperActive ?? this.accuracyGatekeeperActive,
       lastRawPingAt: lastRawPingAt ?? this.lastRawPingAt,
       stateChangedAt: stateChangedAt ?? this.stateChangedAt,
       nearestStopId: nearestStopId ?? this.nearestStopId,
@@ -148,10 +164,10 @@ class VehicleOperationalState extends Equatable {
     connectivityState,
     routeAdherence,
     lastRawPingAt,
-    stateChangedAt,
     nearestStopId,
     distanceToRoute,
     confidence,
     accuracyMeters,
+    accuracyGatekeeperActive,
   ];
 }

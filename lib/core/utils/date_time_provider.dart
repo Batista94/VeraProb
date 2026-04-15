@@ -14,7 +14,7 @@ import 'package:veraprob/core/time/brazil_time.dart';
 ///   Brazilian local time (e.g., "no trips after 22h BRT").
 abstract class IDateTimeProvider {
   /// Returns current UTC time.
-  DateTime now();
+  DateTime nowUtc();
 
   /// Returns current time in America/Sao_Paulo as a plain DateTime
   /// with `isUtc: false` and wall-clock values already adjusted.
@@ -41,7 +41,7 @@ class StaticDateTimeProvider {
 /// Production implementation using system clock.
 class BrazilDateTimeProvider implements IDateTimeProvider {
   @override
-  DateTime now() => DateTime.now().toUtc();
+  DateTime nowUtc() => DateTime.now().toUtc();
 
   @override
   DateTime nowBrazil() {
@@ -66,7 +66,7 @@ class BrazilDateTimeProvider implements IDateTimeProvider {
 /// Returns system clock in UTC, without any local time helpers.
 class UtcDateTimeProvider implements IDateTimeProvider {
   @override
-  DateTime now() => DateTime.now().toUtc();
+  DateTime nowUtc() => DateTime.now().toUtc();
 
   @override
   DateTime nowBrazil() {

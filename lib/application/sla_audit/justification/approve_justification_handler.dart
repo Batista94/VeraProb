@@ -1,4 +1,4 @@
-import 'package:veraprob/application/shared/tenant_validation_service.dart';
+﻿import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -38,13 +38,13 @@ class ApproveJustificationHandler {
        _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   Future<void> handle(ApproveJustificationCommand command) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. RBAC — only admin/operator may approve (INV-22)
+    // 2. RBAC â€” only admin/operator may approve (INV-22)
     if (!_rbac.can(
       command.callerRole,
       UserPermission.canReviewJustifications,
@@ -63,7 +63,7 @@ class ApproveJustificationHandler {
       );
     }
 
-    // 3. Idempotency guard — only pending can be approved
+    // 3. Idempotency guard â€” only pending can be approved
     if (!justification.isPending) {
       throw DomainException(
         'Justification "${command.justificationId}" is already '
@@ -71,7 +71,7 @@ class ApproveJustificationHandler {
       );
     }
 
-    final now = _dateTimeProvider.now();
+    final now = _dateTimeProvider.nowUtc();
 
     // 4. Build domain event (INV-22: actor_id + actor_email in payload)
     final event = JustificationApprovedEvent(
@@ -88,7 +88,7 @@ class ApproveJustificationHandler {
     // 5. Append JUSTIFICATION_APPROVED to the immutable ledger (INV-7)
     await _ledger.append(SlaLedgerMapper.mapToEntry(event));
 
-    // 6. Update status — DB trigger handles INHIBITED transition (INV-15)
+    // 6. Update status â€” DB trigger handles INHIBITED transition (INV-15)
     await _justificationRepo.updateStatus(
       id: command.justificationId,
       organizationId: command.organizationId,

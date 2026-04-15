@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/authority/authorizing_command_bus.dart';
@@ -30,7 +30,7 @@ void main() {
 
         final testFixTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
         final mockDateTime = MockDateTimeProvider();
-        when(() => mockDateTime.now()).thenReturn(testFixTime.toUtc());
+        when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());
 
         AuthorizationContext mockSession() => AuthorizationContext(
           actorId: const ActorId('stress-actor'),

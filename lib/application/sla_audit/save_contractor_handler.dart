@@ -1,4 +1,4 @@
-import 'package:uuid/uuid.dart';
+﻿import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
@@ -27,7 +27,7 @@ class SaveContractorHandler {
        _clock = clock;
 
   Future<Contractor> handle(SaveContractorCommand command) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
@@ -65,7 +65,7 @@ class SaveContractorHandler {
         taxId: command.taxId,
         primaryEmail: command.primaryEmail,
         contactName: command.contactName,
-        createdAtUtc: _clock.now(),
+        createdAtUtc: _clock.nowUtc(),
       );
     }
 

@@ -622,6 +622,7 @@ void main() {
           );
 
           final vehicle = VehicleOperationalState(
+            rawSpeed: 0.0,
             vehicleId: 'smoke-vehicle-001',
             tripId: 'smoke-trip-$runId',
             latitude: -23.5505, // centro exato da geofence

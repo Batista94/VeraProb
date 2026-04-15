@@ -60,6 +60,7 @@ void main() {
     double lng = geoLng,
   }) {
     return VehicleOperationalState(
+      rawSpeed: 0.0,
       vehicleId: vehicleId,
       tripId: 'trip-1',
       latitude: lat,

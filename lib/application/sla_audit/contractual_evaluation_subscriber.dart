@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
@@ -73,13 +73,13 @@ class ContractualEvaluationSubscriber {
     _sweepTimer = null;
   }
 
-  // ── Internal Handlers ─────────────────────────────────────
+  // â”€â”€ Internal Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Processes each vehicle state sequentially within a batch.
   ///
   /// Sequential processing is required because the engine maintains
   /// internal dwell-time state that assumes single-threaded access.
-  /// Errors from the engine are caught and logged — they never
+  /// Errors from the engine are caught and logged â€” they never
   /// cancel the subscription.
   void _onVehicleData(List<VehicleOperationalState> states) async {
     for (final state in states) {
@@ -104,7 +104,7 @@ class ContractualEvaluationSubscriber {
   void _onSweepTick() async {
     try {
       await _engine.sweepExpiredObligations(
-        nowUtc: _dateTimeProvider.now(),
+        nowUtc: _dateTimeProvider.nowUtc(),
         organizationId: organizationId,
       );
     } catch (e) {

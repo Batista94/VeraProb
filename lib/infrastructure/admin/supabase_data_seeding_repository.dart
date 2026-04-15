@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -16,7 +16,7 @@ class SupabaseDataSeedingRepository
   @override
   Future<void> seedDrivers(String organizationId) async {
     final drivers = [
-      {'full_name': 'João Silva', 'license_number': '11122233344'},
+      {'full_name': 'JoÃ£o Silva', 'license_number': '11122233344'},
       {'full_name': 'Maria Oliveira', 'license_number': '55566677788'},
       {'full_name': 'Carlos Santos', 'license_number': '99988877766'},
     ];
@@ -47,25 +47,25 @@ class SupabaseDataSeedingRepository
       {
         'gtfs_route_id': '809U-10',
         'short_name': '809U',
-        'long_name': 'Cidade Universitária / Metrô Barra Funda',
+        'long_name': 'Cidade UniversitÃ¡ria / MetrÃ´ Barra Funda',
         'agency_id': 'SPTRANS',
       },
       {
         'gtfs_route_id': '875C-10',
         'short_name': '875C',
-        'long_name': 'Term. Lapa / Metrô Santa Cruz',
+        'long_name': 'Term. Lapa / MetrÃ´ Santa Cruz',
         'agency_id': 'SPTRANS',
       },
       {
         'gtfs_route_id': '917H-10',
         'short_name': '917H',
-        'long_name': 'Term. Pirituba / Metrô Vila Mariana',
+        'long_name': 'Term. Pirituba / MetrÃ´ Vila Mariana',
         'agency_id': 'SPTRANS',
       },
       {
         'gtfs_route_id': '701U-10',
         'short_name': '701U',
-        'long_name': 'Cidade Universitária / Metrô Santana',
+        'long_name': 'Cidade UniversitÃ¡ria / MetrÃ´ Santana',
         'agency_id': 'SPTRANS',
       },
     ];
@@ -122,14 +122,14 @@ class SupabaseDataSeedingRepository
             .from('contracts')
             .insert({
               'organization_id': organizationId,
-              'name': 'Contrato de Teste Histórico',
+              'name': 'Contrato de Teste HistÃ³rico',
               'contractor_name': contractor?['name'] ?? 'Empresa Beta',
               'valid_from_utc': _dateTimeProvider
-                  .now()
+                  .nowUtc()
                   .subtract(const Duration(days: 30))
                   .toIso8601String(),
               'valid_until_utc': _dateTimeProvider
-                  .now()
+                  .nowUtc()
                   .add(const Duration(days: 30))
                   .toIso8601String(),
               'status': 'active',
@@ -225,7 +225,7 @@ class SupabaseDataSeedingRepository
         'contract_id': contract['id'],
         'operational_date_utc': yesterday.toIso8601String().split('T').first,
         'operational_timezone': 'America/Sao_Paulo',
-        'closed_at_utc': _dateTimeProvider.now().toIso8601String(),
+        'closed_at_utc': _dateTimeProvider.nowUtc().toIso8601String(),
         'total_contracted_revenue_cents': 40000,
         'protected_revenue_cents': 20000,
         'revenue_at_risk_cents': 0,
@@ -282,7 +282,7 @@ class SupabaseDataSeedingRepository
       throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
     }
 
-    final now = _dateTimeProvider.now();
+    final now = _dateTimeProvider.nowUtc();
     final rawId = const Uuid().v4();
 
     try {
@@ -344,7 +344,7 @@ class SupabaseDataSeedingRepository
 
     if (contract == null) return;
 
-    final now = _dateTimeProvider.now();
+    final now = _dateTimeProvider.nowUtc();
     final setId = 'sim-set-${now.millisecondsSinceEpoch}';
 
     try {
@@ -387,7 +387,7 @@ class SupabaseDataSeedingRepository
 
   Future<void> _seedSmartCnpjContractors(String organizationId) async {
     final contractors = [
-      {'name': 'Logística Águia S/A', 'cnpj': '61219049000196'},
+      {'name': 'LogÃ­stica Ãguia S/A', 'cnpj': '61219049000196'},
       {'name': 'Transportes Veloz', 'cnpj': '11444777000161'},
     ];
 
@@ -452,7 +452,7 @@ class SupabaseDataSeedingRepository
 
     final vehicleId = vehicle['id'];
     final deviceId = "DEV-${vehicle['plate']}";
-    final now = _dateTimeProvider.now();
+    final now = _dateTimeProvider.nowUtc();
 
     for (var fact in [
       {

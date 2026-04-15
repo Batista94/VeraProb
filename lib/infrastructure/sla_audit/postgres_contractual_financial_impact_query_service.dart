@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -32,7 +32,7 @@ class ContractualFinancialImpactQueryServicePostgres
       query = query.isFilter('contract_id', null);
     }
 
-    // Application layer provides the temporal window — infrastructure only maps it to Postgres.
+    // Application layer provides the temporal window â€” infrastructure only maps it to Postgres.
     if (startUtc != null) {
       query = query.gte(
         'operational_date_utc',
@@ -55,7 +55,7 @@ class ContractualFinancialImpactQueryServicePostgres
     if (rows.isEmpty) {
       return ContractualFinancialImpact(
         contractId: contractId,
-        generatedAtUtc: _dateTimeProvider.now(),
+        generatedAtUtc: _dateTimeProvider.nowUtc(),
         totalContractedRevenue: 0,
         protectedRevenue: 0,
         revenueAtRisk: 0,

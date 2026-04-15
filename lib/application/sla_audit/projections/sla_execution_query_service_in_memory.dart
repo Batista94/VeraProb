@@ -1,4 +1,4 @@
-import 'package:veraprob/core/utils/date_time_provider.dart';
+﻿import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
@@ -70,7 +70,7 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
       totalExecuted: executed,
       totalNoShow: noShow,
       totalEvidenceGap: evidenceGap,
-      generatedAtUtc: _clock.now(),
+      generatedAtUtc: _clock.nowUtc(),
       protectedRevenue: protectedRevenue.cents,
       revenueAtRisk: revenueAtRisk.cents,
       lostRevenue: lostRevenue.cents,
@@ -129,7 +129,7 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
     return match != null ? _toItemView(match) : null;
   }
 
-  // ── Mapper ──────────────────────────────────────────────
+  // â”€â”€ Mapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static SlaExecutionItemView _toItemView(ContractualExecutionState s) {
     return SlaExecutionItemView(

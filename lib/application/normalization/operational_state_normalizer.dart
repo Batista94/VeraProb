@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'package:flutter/foundation.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/core/utils/geo_math.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
@@ -53,12 +54,12 @@ class OperationalStateNormalizer {
   OperationalStateNormalizer({
     this.debounceDuration = const Duration(seconds: 5),
     this.jumpThresholdMeters = 500.0,
-    this.degradedThreshold = const Duration(seconds: 30),
-    this.signalLostThreshold = const Duration(seconds: 90),
-    this.stopRadiusMeters = 50.0,
-    this.movingSpeedThreshold = 8.0,
-    this.slowTrafficThreshold = 2.0,
-    this.stoppedMinDuration = const Duration(seconds: 15),
+    this.degradedThreshold = const Duration(seconds: 120),
+    this.signalLostThreshold = const Duration(seconds: 300),
+    this.stopRadiusMeters = 100.0,
+    this.movingSpeedThreshold = 2.0,
+    this.slowTrafficThreshold = 0.5,
+    this.stoppedMinDuration = const Duration(seconds: 30),
     this.slowTrafficMinDuration = const Duration(seconds: 15),
     MotionClassifier? motionClassifier,
     IDateTimeProvider? clock,
@@ -76,7 +77,7 @@ class OperationalStateNormalizer {
     List<Stop> knownStops = const [],
     DateTime? now,
   }) {
-    final effectiveNow = now ?? _clock.now();
+    final effectiveNow = now ?? _clock.nowUtc();
 
     _ensureClassifier();
 
@@ -103,6 +104,10 @@ class OperationalStateNormalizer {
       if (lastProcessed != null &&
           (ping.timestamp.isBefore(lastProcessed) ||
               ping.timestamp.isAtSameMomentAs(lastProcessed))) {
+        debugPrint(
+          'REJECTED_STALE_EVENT: vehicleId=$vehicleId, '
+          'eventTs=${ping.timestamp}, lastProcessed=$lastProcessed',
+        );
         final cached = _cache[vehicleId];
         if (cached != null) results.add(cached);
         continue;
@@ -113,6 +118,10 @@ class OperationalStateNormalizer {
       final lastEmit = _lastEmittedAt[vehicleId];
       if (lastEmit != null &&
           effectiveNow.difference(lastEmit) < debounceDuration) {
+        debugPrint(
+          'REJECTED_DEBOUNCE: vehicleId=$vehicleId, '
+          'speed=${ping.speed}, duration=${effectiveNow.difference(lastEmit)}',
+        );
         if (cached != null) results.add(cached);
         continue;
       }
@@ -129,6 +138,10 @@ class OperationalStateNormalizer {
           ping.longitude,
         );
         if (distance > jumpThresholdMeters) {
+          debugPrint(
+            'REJECTED_JUMP: vehicleId=$vehicleId, '
+            'distance=${distance.toStringAsFixed(1)}, velocity_check=FAILED',
+          );
           // Reject the jump; replay cached degraded state
           results.add(
             _replayDegradedState(vehicleId, effectiveNow, knownStops),
@@ -147,13 +160,38 @@ class OperationalStateNormalizer {
       final avgSpeed = _smoother.smoothSpeed(buffer);
 
       // Motion classification
+      final isFirstPing = !_cache.containsKey(vehicleId);
       final motion = _motionClassifier!.classifyMotion(
         vehicleId,
         avgSpeed,
         (lat, lng),
         knownStops,
         effectiveNow,
+        previousPosition: cached != null
+            ? (cached.latitude, cached.longitude)
+            : null,
+        previousTimestamp: cached?.lastRawPingAt,
+        isFirstPing: isFirstPing,
       );
+
+      // Route adherence optimization - skip expensive calculation for stopped vehicles
+      final RouteAdherence routeAdherence;
+      final bool accuracyGatekeeperActive;
+      if (motion == MotionState.stopped) {
+        // Stopped vehicles reuse cached route adherence (no movement = no route change)
+        routeAdherence = cached?.routeAdherence ?? RouteAdherence.onRoute;
+        accuracyGatekeeperActive = cached?.accuracyGatekeeperActive ?? false;
+      } else {
+        // Only calculate for moving/slowTraffic/dwellingAtStop states
+        final adherenceResult = _evaluateRouteAdherence(
+          lat,
+          lng,
+          knownStops,
+          ping.accuracyMeters,
+        );
+        routeAdherence = adherenceResult.$1;
+        accuracyGatekeeperActive = adherenceResult.$2;
+      }
 
       // Connectivity analysis — pass previousLastRawPingAt for gap-recovery detection.
       // The resulting state stores ping.timestamp as lastRawPingAt, so the next ping
@@ -187,8 +225,12 @@ class OperationalStateNormalizer {
         }
       }
 
-      // Route adherence (requires knownStops)
-      final routeAdherence = _evaluateRouteAdherence(lat, lng, knownStops);
+      // stateChangedAt uses event time (ping.timestamp) and only advances
+      // when motionState transitions — preserving forensic immutability.
+      final prevMotion = cached?.motionState;
+      final newStateChangedAt = (prevMotion == null || prevMotion != motion)
+          ? ping.timestamp
+          : cached!.stateChangedAt;
 
       final state = VehicleOperationalState(
         vehicleId: vehicleId,
@@ -197,11 +239,14 @@ class OperationalStateNormalizer {
         longitude: lng,
         heading: ping.heading,
         smoothedSpeed: avgSpeed,
+        rawSpeed: ping.speed ?? 0.0, // Physical Metric - Double Required
+
         motionState: motion,
         connectivityState: conn,
         routeAdherence: routeAdherence,
+        accuracyGatekeeperActive: accuracyGatekeeperActive,
         lastRawPingAt: ping.timestamp,
-        stateChangedAt: effectiveNow,
+        stateChangedAt: newStateChangedAt,
         nearestStopId: nearestStopId,
         nearestStopName: nearestStopName,
         distanceToRoute: distanceToRoute,
@@ -262,19 +307,20 @@ class OperationalStateNormalizer {
       (previous.latitude, previous.longitude),
       knownStops,
       now,
+      previousPosition: (previous.latitude, previous.longitude),
+      previousTimestamp: previous.lastRawPingAt,
+      isFirstPing: false, // Replay is never first ping
     );
 
-    // stateChangedAt ONLY advances when motionState or connectivityState
-    // actually changes — replays of identical states preserve the original
-    // transition timestamp (immutability invariant for forensic audit trail).
-    final hasStateChanged =
-        previous.motionState != motion || previous.connectivityState != conn;
+    // stateChangedAt ONLY advances when motionState actually changes —
+    // connectivity changes must NOT contaminate movement duration evidence.
+    final hasMotionChanged = previous.motionState != motion;
 
     return previous.copyWith(
       connectivityState: conn,
       motionState: motion,
       confidence: conn.confidence,
-      stateChangedAt: hasStateChanged ? now : previous.stateChangedAt,
+      stateChangedAt: hasMotionChanged ? now : previous.stateChangedAt,
     );
   }
 
@@ -286,8 +332,11 @@ class OperationalStateNormalizer {
       latitude: 0,
       longitude: 0,
       smoothedSpeed: 0,
+      rawSpeed: 0, // Physical Metric - Double Required
       motionState: MotionState.moving,
       connectivityState: conn,
+      routeAdherence: RouteAdherence.onRoute,
+      accuracyGatekeeperActive: false,
       lastRawPingAt: now,
       stateChangedAt: now,
       confidence: conn.confidence,
@@ -295,12 +344,21 @@ class OperationalStateNormalizer {
     );
   }
 
-  RouteAdherence _evaluateRouteAdherence(
+  (RouteAdherence, bool) _evaluateRouteAdherence(
     double lat,
     double lng,
     List<Stop> knownStops, // Physical Metric - Double Required
+    double? accuracyMeters, // Physical Metric - Double Required
   ) {
-    if (knownStops.isEmpty) return RouteAdherence.onRoute;
+    // Accuracy gatekeeper - prevent false penalties from low-quality GPS
+    if (accuracyMeters != null && accuracyMeters > 100) {
+      return (
+        RouteAdherence.onRoute,
+        true,
+      ); // Benefit of doubt for degraded GPS
+    }
+
+    if (knownStops.isEmpty) return (RouteAdherence.onRoute, false);
 
     double minDist = double.infinity; // Physical Metric - Double Required
     for (final stop in knownStops) {
@@ -313,9 +371,9 @@ class OperationalStateNormalizer {
       if (d < minDist) minDist = d;
     }
 
-    if (minDist > 200) return RouteAdherence.offRoute;
-    if (minDist > 80) return RouteAdherence.minorDeviation;
-    return RouteAdherence.onRoute;
+    if (minDist > 100) return (RouteAdherence.offRoute, false);
+    if (minDist > 80) return (RouteAdherence.minorDeviation, false);
+    return (RouteAdherence.onRoute, false);
   }
 
   void _ensureClassifier() {
@@ -340,6 +398,7 @@ class OperationalStateNormalizer {
       _rawBuffers.remove(key);
       _cache.remove(key);
       _lastEmittedAt.remove(key);
+      _lastProcessedTimestamp.remove(key);
       _motionClassifier?.removeKey(key);
     }
   }

@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/audit/audit_service.dart';
 import 'package:veraprob/domain/entities/audit_log.dart';
@@ -32,7 +32,7 @@ class PostgresAuditService implements AuditService {
       oldValue: oldValue,
       newValue: newValue,
       reason: reason,
-      timestamp: _dateTimeProvider.now(),
+      timestamp: _dateTimeProvider.nowUtc(),
     );
 
     // Append-only persistence (fire and forget / await)

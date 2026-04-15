@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -24,7 +24,7 @@ import 'package:veraprob/domain/shared/money.dart';
 /// evaluates those SETs against telemetry, as before.
 ///
 /// **Projection guarantees:**
-/// - Deterministic: same [ShiftPattern] + same [operationalDate] → same [setId].
+/// - Deterministic: same [ShiftPattern] + same [operationalDate] â†’ same [setId].
 /// - Idempotent: the DB unique constraint
 ///   `(plan_declaration_id, shift_pattern_index, operational_date)` prevents
 ///   duplicate inserts. This service uses `upsert` semantics at the repo level.
@@ -54,7 +54,7 @@ class ShiftProjectionService {
        _alertRepo = alertRepo,
        _dateTimeProvider = dateTimeProvider;
 
-  // ── Public API ────────────────────────────────────────────
+  // â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Projects SETs for [plan] from [from] for [days] days.
   ///
@@ -89,7 +89,7 @@ class ShiftProjectionService {
         if (pattern.weekCycle != WeekCycle.everyWeek) {
           final anchor = plan.cycleAnchorDateUtc;
           if (anchor == null) {
-            continue; // guard — should not happen after validation
+            continue; // guard â€” should not happen after validation
           }
           final daysDiff = dateOnly.difference(anchor).inDays;
           final weekIndex = ((daysDiff ~/ 7) % 4 + 4) % 4;
@@ -112,7 +112,7 @@ class ShiftProjectionService {
   /// Ensures all active shift-based plans for [organizationId] have SETs
   /// projected for the next [days] days.
   ///
-  /// Called on operator login (boot check — B1 decision).
+  /// Called on operator login (boot check â€” B1 decision).
   /// Silently skips dates that already have projected SETs (idempotent).
   /// For past dates with missing SETs, calls [detectAndAlertGaps].
   ///
@@ -127,7 +127,7 @@ class ShiftProjectionService {
     final plans = await _planRepo.findByOrganization(organizationId);
     final shiftPlans = plans.where((p) => p.isShiftBased);
 
-    final now = _dateTimeProvider.now();
+    final now = _dateTimeProvider.nowUtc();
 
     for (final plan in shiftPlans) {
       // Project future days
@@ -147,7 +147,7 @@ class ShiftProjectionService {
   /// pattern schedule) but have none recorded, and raises PROJECTION_GAP
   /// CRITICAL alerts for each missing day.
   ///
-  /// **B4 decision:** gaps are permanent — no retroactive projection.
+  /// **B4 decision:** gaps are permanent â€” no retroactive projection.
   Future<void> detectAndAlertGaps(
     PlanDeclaration plan, {
     required DateTime asOf,
@@ -181,7 +181,7 @@ class ShiftProjectionService {
             contractId: plan.contractId,
             alertType: 'PROJECTION_GAP',
             severity: 'CRITICAL',
-            triggeredAtUtc: _dateTimeProvider.now(),
+            triggeredAtUtc: _dateTimeProvider.nowUtc(),
             context: {
               'operationalDate': dateLabel,
               'planDeclarationId': plan.id,
@@ -189,7 +189,7 @@ class ShiftProjectionService {
               'timezone': pattern.timezone,
               'message':
                   'Dia $dateLabel sem viagens programadas detectadas. '
-                  'Verificação manual necessária.',
+                  'VerificaÃ§Ã£o manual necessÃ¡ria.',
             },
           ),
         );
@@ -197,7 +197,7 @@ class ShiftProjectionService {
     }
   }
 
-  // ── Private helpers ───────────────────────────────────────
+  // â”€â”€ Private helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<ContractualServiceExecution?> _projectOneSet({
     required PlanDeclaration plan,
@@ -254,13 +254,13 @@ class ShiftProjectionService {
     // operator configures its coordinates via the Advanced Geofence panel.
     if (originZone.geofence == null) {
       throw DomainException(
-        'Zona "${originZone.name}" não possui geofence configurado. '
+        'Zona "${originZone.name}" nÃ£o possui geofence configurado. '
         'Configure as coordenadas antes de projetar viagens.',
       );
     }
     if (destZone.geofence == null) {
       throw DomainException(
-        'Zona "${destZone.name}" não possui geofence configurado. '
+        'Zona "${destZone.name}" nÃ£o possui geofence configurado. '
         'Configure as coordenadas antes de projetar viagens.',
       );
     }
@@ -281,7 +281,7 @@ class ShiftProjectionService {
       endLatitude: destZone.geofence!.latitude,
       endLongitude: destZone.geofence!.longitude,
       endRadiusMeters: destZone.geofence!.radiusMeters,
-      // Financial — provided by caller from contract rule snapshot
+      // Financial â€” provided by caller from contract rule snapshot
       contractualValue: contractualValue,
       noShowPenaltyBps: pattern.penalties.noShowPenaltyBps,
       delayToleranceMinutes: pattern.penalties.delayToleranceMinutes,

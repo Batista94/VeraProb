@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/shared/idempotency_key.dart';
+﻿import 'package:veraprob/domain/shared/idempotency_key.dart';
 import 'package:veraprob/domain/shared/idempotency_registration_result.dart';
 import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -26,7 +26,7 @@ class InMemoryIdempotencyStore implements IIdempotencyStore {
     // [Atomic Simulation] Logic to determine if we acquire or hit
     if (existing.isError ||
         (existing.isProcessing &&
-            _clock.now().difference(existing.createdAtUtc).inMinutes >=
+            _clock.nowUtc().difference(existing.createdAtUtc).inMinutes >=
                 staleThresholdMinutes)) {
       // Re-acquire stale or error key
       _keys[key.id] = key;
@@ -90,7 +90,7 @@ class InMemoryIdempotencyStore implements IIdempotencyStore {
 
   @override
   Future<int> cleanupExpired({int daysThreshold = 30}) async {
-    final now = _clock.now();
+    final now = _clock.nowUtc();
     final toRemove = _keys.entries
         .where((e) {
           final age = now.difference(e.value.createdAtUtc).inDays;

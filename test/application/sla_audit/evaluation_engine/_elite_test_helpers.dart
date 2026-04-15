@@ -118,6 +118,7 @@ VehicleOperationalState makeVehicleAtTime({
   double? accuracyMeters,
 }) {
   return VehicleOperationalState(
+    rawSpeed: 0.0,
     vehicleId: vehicleId,
     tripId: 'trip-1',
     latitude: latitude,
@@ -249,6 +250,7 @@ VehicleOperationalState makeVehicleStateMissingTimestamp({
   String vehicleId = 'v-1',
 }) {
   return VehicleOperationalState(
+    rawSpeed: 0.0,
     vehicleId: vehicleId,
     tripId: 'trip-1',
     latitude: geoLat,
@@ -267,6 +269,7 @@ VehicleOperationalState makeVehicleStateMissingTimestamp({
 /// Creates a vehicle state with missing vehicleId (for resilience testing)
 VehicleOperationalState makeVehicleStateMissingId({String vehicleId = ''}) {
   return VehicleOperationalState(
+    rawSpeed: 0.0,
     vehicleId: vehicleId,
     tripId: 'trip-1',
     latitude: geoLat,

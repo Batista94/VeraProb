@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/authority/authorizing_command_bus.dart';
@@ -48,7 +48,7 @@ void main() {
       ledger = InMemoryForensicRepository();
       mutator = MockMutatorService();
       mockDateTime = MockDateTimeProvider();
-      when(() => mockDateTime.now()).thenReturn(testFixTime.toUtc());
+      when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());
     });
 
     test(
@@ -224,7 +224,7 @@ void main() {
   });
 
   // ============================================================================
-  // AUTHORIZATION REJECTION SCENARIOS (Foco: Linhas 95-99 — execution block)
+  // AUTHORIZATION REJECTION SCENARIOS (Foco: Linhas 95-99 â€” execution block)
   // ============================================================================
   group('Authorization Rejection Scenarios', () {
     late InMemoryForensicRepository ledger;
@@ -237,11 +237,11 @@ void main() {
       ledger = InMemoryForensicRepository();
       mutator = MockMutatorService();
       mockDateTime = MockDateTimeProvider();
-      when(() => mockDateTime.now()).thenReturn(testFixTime.toUtc());
+      when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());
     });
 
     test(
-      '1.1 Driver attempting to resolve alert (insufficient role) — must throw UnauthorizedActionException',
+      '1.1 Driver attempting to resolve alert (insufficient role) â€” must throw UnauthorizedActionException',
       () async {
         // Arrange: Driver role has NO permission to resolve alerts
         final evaluator = StrictMockPolicyEvaluator({
@@ -293,7 +293,7 @@ void main() {
     );
 
     test(
-      '1.2 Operador attempting to update contract (insufficient role) — must throw',
+      '1.2 Operador attempting to update contract (insufficient role) â€” must throw',
       () async {
         // Arrange: Operador cannot update financial contracts
         final evaluator = StrictMockPolicyEvaluator({
@@ -337,8 +337,8 @@ void main() {
       },
     );
 
-    test('1.3 Unknown role attempting any action — must throw', () async {
-      // Arrange: Unknown role — explicit deny for the action being attempted
+    test('1.3 Unknown role attempting any action â€” must throw', () async {
+      // Arrange: Unknown role â€” explicit deny for the action being attempted
       final evaluator = StrictMockPolicyEvaluator({
         OperationalActionType.createTripEvent: DecisionResult.denied,
       });
@@ -379,7 +379,7 @@ void main() {
     });
 
     test(
-      '1.4 CreateTripEventCommand approved — covers CreateTripEvent execution branch (lines 95-99)',
+      '1.4 CreateTripEventCommand approved â€” covers CreateTripEvent execution branch (lines 95-99)',
       () async {
         // Arrange
         final evaluator = StrictMockPolicyEvaluator({
@@ -435,11 +435,11 @@ void main() {
       ledger = InMemoryForensicRepository();
       mutator = MockMutatorService();
       mockDateTime = MockDateTimeProvider();
-      when(() => mockDateTime.now()).thenReturn(testFixTime.toUtc());
+      when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());
     });
 
     test(
-      '2.1 Admin from Org_A attempting command on Org_B — CROSS-TENANT VETO',
+      '2.1 Admin from Org_A attempting command on Org_B â€” CROSS-TENANT VETO',
       () async {
         // Arrange: Admin with full permissions, but targeting wrong tenant
         final evaluator = StrictMockPolicyEvaluator({
@@ -519,9 +519,9 @@ void main() {
     );
 
     test(
-      '2.2 Command without targetOrganizationId — proceeds to evaluator',
+      '2.2 Command without targetOrganizationId â€” proceeds to evaluator',
       () async {
-        // Arrange: Command does not specify tenant — should not trigger cross-tenant check
+        // Arrange: Command does not specify tenant â€” should not trigger cross-tenant check
         final evaluator = StrictMockPolicyEvaluator({
           OperationalActionType.resolveAlert: DecisionResult.approved,
         });
@@ -541,7 +541,7 @@ void main() {
           mockDateTime,
         );
         const command = ResolveAlertCommand(tripId: 'trip-123');
-        // No targetOrganizationId — defaults to null
+        // No targetOrganizationId â€” defaults to null
 
         // Act
         await bus.dispatch(command);
@@ -559,9 +559,9 @@ void main() {
     );
 
     test(
-      '2.3 Admin from Org_A attempting command on Org_A (same tenant) — proceeds',
+      '2.3 Admin from Org_A attempting command on Org_A (same tenant) â€” proceeds',
       () async {
-        // Arrange: Command targets same tenant — should pass cross-tenant check
+        // Arrange: Command targets same tenant â€” should pass cross-tenant check
         final evaluator = StrictMockPolicyEvaluator({
           OperationalActionType.updateContract: DecisionResult.approved,
         });
@@ -616,11 +616,11 @@ void main() {
       ledger = InMemoryForensicRepository();
       mutator = MockMutatorService();
       mockDateTime = MockDateTimeProvider();
-      when(() => mockDateTime.now()).thenReturn(testFixTime.toUtc());
+      when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());
     });
 
     test(
-      '3.1 UpdateContract without super_admin scope — denied by policy',
+      '3.1 UpdateContract without super_admin scope â€” denied by policy',
       () async {
         // Arrange: Evaluator simulates policy that requires super_admin for contracts
         final evaluator = StrictMockPolicyEvaluator({
@@ -670,7 +670,7 @@ void main() {
       },
     );
 
-    test('3.2 UpdateContract WITH super_admin scope — approved', () async {
+    test('3.2 UpdateContract WITH super_admin scope â€” approved', () async {
       // Arrange: Evaluator approves because user has super_admin scope
       final evaluator = StrictMockPolicyEvaluator({
         OperationalActionType.updateContract: DecisionResult.approved,
@@ -732,7 +732,7 @@ void main() {
       ledger = InMemoryForensicRepository();
       mutator = MockMutatorService();
       mockDateTime = MockDateTimeProvider();
-      when(() => mockDateTime.now()).thenReturn(testFixTime.toUtc());
+      when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());
     });
 
     test(
@@ -772,7 +772,7 @@ void main() {
         expect(ledger.ledgerCount, 1);
         final decision = ledger.testLedgerArray.first;
 
-        // Braço NUNCA se move em cenário de negação
+        // BraÃ§o NUNCA se move em cenÃ¡rio de negaÃ§Ã£o
         expect(
           mutator.callCount,
           0,
@@ -854,7 +854,7 @@ void main() {
         final decision = ledger.testLedgerArray.first;
         expect(decision.result, DecisionResult.denied);
 
-        // Braço NUNCA se move em cenário de cross-tenant veto
+        // BraÃ§o NUNCA se move em cenÃ¡rio de cross-tenant veto
         expect(
           mutator.callCount,
           0,
@@ -873,7 +873,7 @@ void main() {
     );
 
     test(
-      '4.3 occurredAt uses deterministic UTC (INV-9) — no DateTime . now() without toUtc() enforced',
+      '4.3 occurredAt uses deterministic UTC (INV-9) â€” no DateTime . now() without toUtc() enforced',
       () async {
         // Arrange
         final evaluator = StrictMockPolicyEvaluator({
@@ -904,7 +904,7 @@ void main() {
 
         await Future.delayed(Duration.zero);
 
-        // Braço NUNCA se move em cenário de negação
+        // BraÃ§o NUNCA se move em cenÃ¡rio de negaÃ§Ã£o
         expect(
           mutator.callCount,
           0,

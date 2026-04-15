@@ -16,6 +16,7 @@ void main() {
     ConnectivityState connectivityState, {
     DateTime? lastPingAt,
   }) => VehicleOperationalState(
+    rawSpeed: 0.0,
     vehicleId: 'v1',
     tripId: 'trip-1',
     latitude: -23.5,

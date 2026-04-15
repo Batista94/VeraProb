@@ -1,4 +1,4 @@
-import 'package:veraprob/application/shared/tenant_validation_service.dart';
+﻿import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -43,13 +43,13 @@ class RejectSanctionHandler {
   /// - Entry is not in [SanctionReviewStatus.pending] (idempotency guard, INV-24)
   /// - [rejectionReason] is shorter than 10 characters after trimming
   Future<void> handle(RejectSanctionCommand command) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. RBAC check — before any I/O (prevents oracle attacks)
+    // 2. RBAC check â€” before any I/O (prevents oracle attacks)
     if (!_rbac.can(command.callerRole, UserPermission.canRejectSanctions)) {
       throw const DomainException('Unauthorized.');
     }
@@ -61,7 +61,7 @@ class RejectSanctionHandler {
       );
     }
 
-    // 3. Load queue entry — scoped to organizationId (tenant isolation, INV-6)
+    // 3. Load queue entry â€” scoped to organizationId (tenant isolation, INV-6)
     final entry = await _queueRepo.findById(
       command.queueEntryId,
       organizationId: command.organizationId,
@@ -79,7 +79,7 @@ class RejectSanctionHandler {
       );
     }
 
-    final now = _clock.now();
+    final now = _clock.nowUtc();
 
     // 5. Build domain event carrying VerdictEvidence and reason forward
     final event = SanctionRejectedEvent(

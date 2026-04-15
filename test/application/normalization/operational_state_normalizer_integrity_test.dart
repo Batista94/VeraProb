@@ -2,17 +2,17 @@
 // =============================================================================
 // test/application/normalization/operational_state_normalizer_integrity_test.dart
 //
-// Plano de Testes de Integridade — OperationalStateNormalizer
+// Plano de Testes de Integridade â€” OperationalStateNormalizer
 //
-// Suítes:
+// SuÃ­tes:
 //   1. Outlier Filter       (Kinematic Guard [INV-17])
-//   2. State Machine         (Transições Legais)
+//   2. State Machine         (TransiÃ§Ãµes Legais)
 //   3. Chronological Determinism [INV-9/10]
-//   4. Idempotent Ingest     [INV-11] + stateChangedAt Imutável
+//   4. Idempotent Ingest     [INV-11] + stateChangedAt ImutÃ¡vel
 //   5. Data-Driven Stability (100+ pings, Blackout V4)
 //   6. V4 Interpolation Compatibility
 //
-// Semente determinística universal: Random(42)
+// Semente determinÃ­stica universal: Random(42)
 // =============================================================================
 
 import 'dart:math';
@@ -28,24 +28,24 @@ import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 import '../../mocks/fake_date_time_provider.dart';
 
-// ── Coordinate constants (São Paulo – Paraíso area) ─────────────────────────
+// â”€â”€ Coordinate constants (SÃ£o Paulo â€“ ParaÃ­so area) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const double kBaseLat = -23.5612;
 const double kBaseLng = -46.6560;
 const double kLatPerMeter = 1.0 / 111320.0;
 const double kLngPerMeter = 1.0 / 101650.0;
 
-// ── Stop fixture ──────────────────────────────────────────────────────────────
+// â”€â”€ Stop fixture â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const Stop kStopA = Stop(
   id: 'stop-a',
-  name: 'Ponto Paraíso',
+  name: 'Ponto ParaÃ­so',
   latitude: kBaseLat,
   longitude: kBaseLng,
 );
 
-// ── Universal deterministic seed ─────────────────────────────────────────────
+// â”€â”€ Universal deterministic seed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const int kDeterministicSeed = 42;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Generates a deterministic batch of GPS pings with realistic kinematic
 /// profiles. Uses [seed] (default [kDeterministicSeed]) for all randomness.
@@ -71,7 +71,7 @@ List<VehiclePosition> generateTelemetryBatch({
       for (int i = 0; i < count; i++) {
         clock.advance(const Duration(seconds: 15));
 
-        // Realistic speed profile: accelerate → cruise → decelerate → stop
+        // Realistic speed profile: accelerate â†’ cruise â†’ decelerate â†’ stop
         final phase = (i / count);
         if (phase < 0.2) {
           currentSpeed += rng.nextDouble() * 5 + 10; // 10-15 km/h
@@ -84,8 +84,8 @@ List<VehiclePosition> generateTelemetryBatch({
         }
         currentSpeed = currentSpeed.clamp(0, 60);
 
-        // Movement proportional to speed — keep within jump threshold
-        // At 60km/h for 15s = 250m — well within 500m threshold
+        // Movement proportional to speed â€” keep within jump threshold
+        // At 60km/h for 15s = 250m â€” well within 500m threshold
         final metersPerTick = (currentSpeed / 3.6) * 15;
         // Consistent direction (north-bound route)
         currentLat += metersPerTick * kLatPerMeter * 0.5;
@@ -103,7 +103,7 @@ List<VehiclePosition> generateTelemetryBatch({
             latitude: currentLat + jitterLat,
             longitude: currentLng + jitterLng,
             speed: currentSpeed,
-            timestamp: clock.now(),
+            timestamp: clock.nowUtc(),
             source: 'test',
             vehiclePlate: vehiclePlate,
           ),
@@ -128,7 +128,7 @@ List<VehiclePosition> generateTelemetryBatch({
             latitude: currentLat + rng.nextDouble() * 10 * kLatPerMeter,
             longitude: currentLng + rng.nextDouble() * 10 * kLngPerMeter,
             speed: currentSpeed,
-            timestamp: clock.now(),
+            timestamp: clock.nowUtc(),
             source: 'test',
             vehiclePlate: vehiclePlate,
           ),
@@ -164,7 +164,7 @@ List<VehiclePosition> generateTelemetryBatch({
             latitude: vLat,
             longitude: vLng,
             speed: vSpeed,
-            timestamp: clock.now(),
+            timestamp: clock.nowUtc(),
             source: 'test',
             vehiclePlate: vehicle,
           ),
@@ -179,7 +179,7 @@ List<VehiclePosition> generateTelemetryBatch({
           latitude: startLat,
           longitude: startLng,
           speed: 0,
-          timestamp: clock.now(),
+          timestamp: clock.nowUtc(),
           source: 'test',
           vehiclePlate: vehiclePlate,
         ),
@@ -192,7 +192,7 @@ List<VehiclePosition> generateTelemetryBatch({
           latitude: startLat + 0.001,
           longitude: startLng + 0.001,
           speed: 300,
-          timestamp: clock.now(),
+          timestamp: clock.nowUtc(),
           source: 'test',
           vehiclePlate: vehiclePlate,
         ),
@@ -207,7 +207,7 @@ List<VehiclePosition> generateTelemetryBatch({
             latitude: startLat + i * 0.0001,
             longitude: startLng + i * 0.0001,
             speed: currentSpeed,
-            timestamp: clock.now(),
+            timestamp: clock.nowUtc(),
             source: 'test',
             vehiclePlate: vehiclePlate,
           ),
@@ -222,21 +222,21 @@ List<VehiclePosition> generateTelemetryBatch({
           latitude: startLat,
           longitude: startLng,
           speed: 20,
-          timestamp: clock.now(),
+          timestamp: clock.nowUtc(),
           source: 'test',
           vehiclePlate: vehiclePlate,
         ),
       );
-      // Gap of 5 minutes — no pings
+      // Gap of 5 minutes â€” no pings
       clock.advance(const Duration(minutes: 5));
-      // Ping B at T+5min — different position
+      // Ping B at T+5min â€” different position
       pings.add(
         VehiclePosition(
           tripId: tripId,
           latitude: startLat + 0.001, // ~111m away
           longitude: startLng + 0.001,
           speed: 20,
-          timestamp: clock.now(),
+          timestamp: clock.nowUtc(),
           source: 'test',
           vehiclePlate: vehiclePlate,
         ),
@@ -249,7 +249,7 @@ List<VehiclePosition> generateTelemetryBatch({
           latitude: startLat + 0.0015,
           longitude: startLng + 0.0015,
           speed: 20,
-          timestamp: clock.now(),
+          timestamp: clock.nowUtc(),
           source: 'test',
           vehiclePlate: vehiclePlate,
         ),
@@ -275,7 +275,7 @@ VehiclePosition buildPing({
   latitude: lat,
   longitude: lng,
   speed: speed,
-  timestamp: clock.now(),
+  timestamp: clock.nowUtc(),
   source: 'test',
   vehiclePlate: vehiclePlate,
 );
@@ -324,12 +324,12 @@ OperationalStateNormalizer makeNormalizer({
   clock: clock,
 );
 
-// ── SUÍTE 1: OUTLIER FILTER (Kinematic Guard [INV-17]) ──────────────────────
+// â”€â”€ SUÃTE 1: OUTLIER FILTER (Kinematic Guard [INV-17]) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 void main() {
   final kEpoch = DateTime.utc(2026, 4, 7, 12, 0, 0);
 
-  group('SUÍTE 1: Outlier Filter (Kinematic Guard [INV-17])', () {
-    test('1.1: Impossible speed spike (0→300km/h in 2s) is smoothed out', () {
+  group('SUÃTE 1: Outlier Filter (Kinematic Guard [INV-17])', () {
+    test('1.1: Impossible speed spike (0â†’300km/h in 2s) is smoothed out', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(clock: clock);
 
@@ -339,7 +339,7 @@ void main() {
         clock: clock,
       );
 
-      final results = normalizer.normalize(batch, now: clock.now());
+      final results = normalizer.normalize(batch, now: clock.nowUtc());
       expect(results, isNotEmpty);
 
       // The second ping has speed=300, but smoothing should dampen it
@@ -357,7 +357,7 @@ void main() {
       // Seed position
       normalizer.normalize([
         buildPing(clock: clock, lat: kBaseLat, lng: kBaseLng, speed: 20),
-      ], now: clock.now());
+      ], now: clock.nowUtc());
 
       clock.advance(const Duration(seconds: 6));
 
@@ -369,7 +369,7 @@ void main() {
           lng: kBaseLng,
           speed: 20,
         ),
-      ], now: clock.now());
+      ], now: clock.nowUtc());
 
       expect(results, hasLength(1));
       // Must replay cached position, NOT the teleport target
@@ -377,7 +377,7 @@ void main() {
       expect(results.first.motionState, MotionState.moving);
     });
 
-    test('1.3: Sinusoidal velocity noise — smoothedSpeed remains stable', () {
+    test('1.3: Sinusoidal velocity noise â€” smoothedSpeed remains stable', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(clock: clock);
 
@@ -389,7 +389,7 @@ void main() {
         pings.add(buildPing(clock: clock, speed: speed.toDouble()));
       }
 
-      final results = normalizer.normalize(pings, now: clock.now());
+      final results = normalizer.normalize(pings, now: clock.nowUtc());
       expect(results, isNotEmpty);
 
       // Last smoothed speed should be reasonable, not oscillating wildly
@@ -398,7 +398,7 @@ void main() {
     });
 
     test(
-      '1.4: Spoofing pattern (5 pings, Δd/Δt > 200km/h) → jump distance detected',
+      '1.4: Spoofing pattern (5 pings, Î”d/Î”t > 200km/h) â†’ jump distance detected',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -406,9 +406,9 @@ void main() {
         // Seed
         normalizer.normalize([
           buildPing(clock: clock, speed: 0),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
 
-        // 5 pings with impossible displacement — each ~55m apart
+        // 5 pings with impossible displacement â€” each ~55m apart
         // Within 500m threshold so they pass jump filter but reduce confidence
         double lastLat = kBaseLat;
         for (int i = 0; i < 5; i++) {
@@ -416,8 +416,8 @@ void main() {
           final newLat = lastLat + 0.0005; // ~55m per ping
           final results = normalizer.normalize([
             buildPing(clock: clock, lat: newLat, lng: kBaseLng, speed: 200),
-          ], now: clock.now());
-          // Jump distance ~55m, threshold 500m: confidence = 1 * (1 - 55/500) ≈ 0.89
+          ], now: clock.nowUtc());
+          // Jump distance ~55m, threshold 500m: confidence = 1 * (1 - 55/500) â‰ˆ 0.89
           // Should be < 1.0 (anomaly detected)
           if (i == 0) {
             expect(results.last.confidence, lessThan(1.0));
@@ -427,12 +427,129 @@ void main() {
         }
       },
     );
+
+    test(
+      '1.5: Guincho scenario â€” speed=0, coordinates moving 400m in 2min â†’ MotionState.moving',
+      () {
+        final clock = FakeDateTimeProvider(kEpoch);
+        final normalizer = makeNormalizer(clock: clock);
+
+        // First ping: vehicle stationary, speed=0
+        normalizer.normalize([
+          buildPing(clock: clock, lat: kBaseLat, lng: kBaseLng, speed: 0),
+        ], now: clock.nowUtc());
+
+        // Wait 2 minutes and move 400m (under jump threshold of 500m)
+        clock.advance(const Duration(minutes: 2));
+        final results = normalizer.normalize([
+          buildPing(
+            clock: clock,
+            lat: kBaseLat + 0.0036, // ~400m north (0.0036Â° â‰ˆ 400m)
+            lng: kBaseLng,
+            speed: 0, // Device reports no movement
+          ),
+        ], now: clock.nowUtc());
+
+        final state = results.first;
+
+        expect(state.rawSpeed, 0.0); // Device truth preserved
+        // Geographic speed: 400m / 120s * 3.6 = 12 km/h > movingSpeedThreshold (8.0)
+        expect(
+          state.motionState,
+          MotionState.moving,
+          reason:
+              'Geographic speed detection should override device speed=0 when coordinates show movement',
+        );
+      },
+    );
+
+    test(
+      '1.6: GPS Ruim scenario â€” accuracy=500m prevents false route violation',
+      () {
+        final clock = FakeDateTimeProvider(kEpoch);
+        final normalizer = makeNormalizer(clock: clock);
+
+        // Create a known stop for route adherence testing
+        const knownStops = [
+          Stop(
+            id: 'stop-1',
+            name: 'Test Stop',
+            latitude: kBaseLat,
+            longitude: kBaseLng,
+          ),
+        ];
+
+        // Test 1: Low accuracy GPS (500m) - should trigger accuracy gatekeeper
+        final lowAccuracyPing = VehiclePosition(
+          tripId: 'trip-1',
+          latitude:
+              kBaseLat + 0.0014, // ~150m from stop (would normally be offRoute)
+          longitude: kBaseLng,
+          speed: 20,
+          accuracyMeters: 500, // Poor GPS accuracy
+          timestamp: clock.nowUtc(),
+          source: 'test',
+        );
+
+        final results1 = normalizer.normalize(
+          [lowAccuracyPing],
+          knownStops: knownStops,
+          now: clock.nowUtc(),
+        );
+
+        expect(
+          results1.first.routeAdherence,
+          RouteAdherence.onRoute,
+          reason:
+              'Accuracy gatekeeper should return onRoute for GPS accuracy > 100m',
+        );
+        expect(
+          results1.first.accuracyGatekeeperActive,
+          isTrue,
+          reason:
+              'accuracyGatekeeperActive should be true when accuracy > 100m',
+        );
+
+        // Wait past debounce
+        clock.advance(const Duration(seconds: 6));
+
+        // Test 2: High accuracy GPS (50m) - should evaluate normally
+        final highAccuracyPing = VehiclePosition(
+          tripId: 'trip-1',
+          latitude: kBaseLat + 0.0014, // Same position, ~150m from stop
+          longitude: kBaseLng,
+          speed: 20,
+          accuracyMeters: 50, // Good GPS accuracy
+          timestamp: clock.nowUtc(),
+          source: 'test',
+        );
+
+        final results2 = normalizer.normalize(
+          [highAccuracyPing],
+          knownStops: knownStops,
+          now: clock.nowUtc(),
+        );
+
+        // With good accuracy, 150m from stop should be evaluated as offRoute
+        expect(
+          results2.first.routeAdherence,
+          RouteAdherence.offRoute,
+          reason: 'High accuracy GPS should evaluate distance normally',
+        );
+        expect(
+          results2.first.accuracyGatekeeperActive,
+          isFalse,
+          reason:
+              'accuracyGatekeeperActive should be false when accuracy <= 100m',
+        );
+      },
+    );
   });
 
-  // ── SUÍTE 2: STATE MACHINE (Transições Legais) ──────────────────────────
-  group('SUÍTE 2: State Machine (Transições Legais)', () {
+  // â”€â”€ SUÃTE 2: STATE MACHINE (TransiÃ§Ãµes Legais) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  group('SUÃTE 2: State Machine (TransiÃ§Ãµes Legais)', () {
     test(
-      '2.1: Valid sequence — moving transitions when speed drops and timer',
+      '2.1: Valid sequence â€” moving transitions when speed drops and timer',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -440,30 +557,30 @@ void main() {
         // Moving at high speed
         final movingResults = normalizer.normalize([
           buildPing(clock: clock, speed: 30),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
         expect(movingResults.first.motionState, MotionState.moving);
 
         // Drop to speed=0 and wait past stoppedMinDuration
         clock.advance(const Duration(seconds: 6));
         normalizer.normalize([
           buildPing(clock: clock, speed: 0),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
 
-        // Before timer met — motion should NOT be stopped
+        // Before timer met â€” motion should NOT be stopped
         clock.advance(const Duration(seconds: 5));
-        final earlyResult = normalizer.normalize([], now: clock.now()).first;
+        final earlyResult = normalizer.normalize([], now: clock.nowUtc()).first;
         expect(earlyResult.motionState, isNot(MotionState.stopped));
 
-        // After timer met — motion reflects the low-speed state
+        // After timer met â€” motion reflects the low-speed state
         clock.advance(const Duration(seconds: 10));
-        final laterResult = normalizer.normalize([], now: clock.now()).first;
+        final laterResult = normalizer.normalize([], now: clock.nowUtc()).first;
         // Smoothed speed should reflect the 0 km/h input (spatial smoother)
         expect(laterResult.smoothedSpeed, lessThan(10));
       },
     );
 
     test(
-      '2.2: Illegal jump blocked — low-speed timer gates stopped transition',
+      '2.2: Illegal jump blocked â€” low-speed timer gates stopped transition',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -471,55 +588,57 @@ void main() {
         // Moving at speed
         normalizer.normalize([
           buildPing(clock: clock, speed: 30),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
 
-        // Drop to low speed — timer starts
+        // Drop to low speed â€” timer starts
         clock.advance(const Duration(seconds: 6));
         normalizer.normalize([
           buildPing(clock: clock, speed: 1),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
 
         // Before stoppedMinDuration: NOT stopped
         clock.advance(const Duration(seconds: 5));
-        final earlyResult = normalizer.normalize([], now: clock.now()).first;
+        final earlyResult = normalizer.normalize([], now: clock.nowUtc()).first;
         expect(earlyResult.motionState, isNot(MotionState.stopped));
       },
     );
 
-    test('2.3: Recovery — stopped → moving transitions immediately', () {
+    test('2.3: Recovery â€” stopped â†’ moving transitions immediately', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(clock: clock);
 
       // Establish stopped state
       normalizer.normalize([
         buildPing(clock: clock, speed: 0),
-      ], now: clock.now());
+      ], now: clock.nowUtc());
       clock.advance(const Duration(seconds: 20)); // past stoppedMinDuration
-      final stoppedResult = normalizer.normalize([], now: clock.now()).first;
+      final stoppedResult = normalizer.normalize([], now: clock.nowUtc()).first;
       expect(stoppedResult.motionState, MotionState.stopped);
 
       // Resume moving
       clock.advance(const Duration(seconds: 6));
       final movingResult = normalizer.normalize([
         buildPing(clock: clock, speed: 20),
-      ], now: clock.now()).first;
+      ], now: clock.nowUtc()).first;
       expect(movingResult.motionState, MotionState.moving);
     });
 
-    test('2.4: DwellingAtStop → Stopped when vehicle exits stop radius', () {
+    test('2.4: DwellingAtStop â†’ Stopped when vehicle exits stop radius', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(clock: clock);
 
       // Establish dwelling at stop (speed=0 at stop location)
       normalizer.normalize(
         [buildPing(clock: clock, lat: kBaseLat, lng: kBaseLng, speed: 0)],
-        now: clock.now(),
+        now: clock.nowUtc(),
         knownStops: const [kStopA],
       );
 
       // Wait for stoppedMinDuration (15s)
       clock.advance(const Duration(seconds: 16));
-      final dwellingResult = normalizer.normalize([], now: clock.now()).first;
+      final dwellingResult = normalizer
+          .normalize([], now: clock.nowUtc())
+          .first;
       // Accept dwellingAtStop or stopped (timer-based stationary classification)
       expect(
         dwellingResult.motionState.isStationary,
@@ -527,26 +646,26 @@ void main() {
         reason: 'Should be stationary after 16s at speed=0',
       );
 
-      // Move 100m away from stop
-      clock.advance(const Duration(seconds: 6));
+      // Move 60m away from stop (slow movement that won't trigger geographic speed detection)
+      clock.advance(const Duration(seconds: 30));
       final movedResult = normalizer.normalize([
         buildPing(
           clock: clock,
-          lat: kBaseLat + 0.001, // ~111m away
+          lat: kBaseLat + 0.0005, // ~55m away
           lng: kBaseLng,
           speed: 0,
         ),
-      ], now: clock.now()).first;
+      ], now: clock.nowUtc()).first;
       // Still stationary (low-speed timer continues), but no longer near stop
       expect(movedResult.motionState.isStationary, isTrue);
       expect(movedResult.nearestStopId, isNull);
     });
   });
 
-  // ── SUÍTE 3: CHRONOLOGICAL DETERMINISM [INV-9/10] ──────────────────────
-  group('SUÍTE 3: Chronological Determinism [INV-9/10]', () {
+  // â”€â”€ SUÃTE 3: CHRONOLOGICAL DETERMINISM [INV-9/10] â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  group('SUÃTE 3: Chronological Determinism [INV-9/10]', () {
     test(
-      '3.1: Determinism — same batch processed twice yields identical output',
+      '3.1: Determinism â€” same batch processed twice yields identical output',
       () {
         // Build a batch with fixed timestamps
         final pings = <VehiclePosition>[];
@@ -647,8 +766,8 @@ void main() {
       // Establish current state
       normalizer.normalize([
         buildPing(clock: clock, speed: 20),
-      ], now: clock.now());
-      final currentState = normalizer.normalize([], now: clock.now()).first;
+      ], now: clock.nowUtc());
+      final currentState = normalizer.normalize([], now: clock.nowUtc()).first;
       final originalStateChangedAt = currentState.stateChangedAt;
 
       // Inject a late arrival ping from 24h ago
@@ -662,9 +781,9 @@ void main() {
       );
 
       clock.advance(const Duration(seconds: 6));
-      final afterLate = normalizer.normalize([latePing], now: clock.now());
+      final afterLate = normalizer.normalize([latePing], now: clock.nowUtc());
 
-      // State should not be corrupted — stateChangedAt should not regress
+      // State should not be corrupted â€” stateChangedAt should not regress
       expect(afterLate, isNotEmpty);
       expect(
         afterLate.first.stateChangedAt.microsecondsSinceEpoch,
@@ -674,8 +793,8 @@ void main() {
     });
   });
 
-  // ── SUÍTE 4: IDEMPOTENT INGEST [INV-11] + stateChangedAt IMUTABLE ──────
-  group('SUÍTE 4: Idempotent Ingest [INV-11] + stateChangedAt Imutável', () {
+  // â”€â”€ SUÃTE 4: IDEMPOTENT INGEST [INV-11] + stateChangedAt IMUTABLE â”€â”€â”€â”€â”€â”€
+  group('SUÃTE 4: Idempotent Ingest [INV-11] + stateChangedAt ImutÃ¡vel', () {
     test('4.1: Exact duplicate batch produces identical states', () {
       final clock = FakeDateTimeProvider(kEpoch);
 
@@ -686,7 +805,7 @@ void main() {
         profile: 'urban_trip',
         clock: clock,
       );
-      final resultsA = normalizerA.normalize(batch, now: clock.now());
+      final resultsA = normalizerA.normalize(batch, now: clock.nowUtc());
 
       // Run B (fresh normalizer, same data)
       final clockB = FakeDateTimeProvider(kEpoch);
@@ -696,7 +815,7 @@ void main() {
         profile: 'urban_trip',
         clock: clockB,
       );
-      final resultsB = normalizerB.normalize(batchB, now: clockB.now());
+      final resultsB = normalizerB.normalize(batchB, now: clockB.nowUtc());
 
       // Same number of results
       expect(resultsA.length, resultsB.length);
@@ -712,7 +831,7 @@ void main() {
     });
 
     test(
-      '4.2: Replay within debounce — 1 state emitted, stateChangedAt intact',
+      '4.2: Replay within debounce â€” 1 state emitted, stateChangedAt intact',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -720,7 +839,7 @@ void main() {
         // First ping
         final firstResults = normalizer.normalize([
           buildPing(clock: clock, speed: 20),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
         expect(firstResults, hasLength(1));
         final firstState = firstResults.first;
         final originalStateChangedAt = firstState.stateChangedAt;
@@ -729,7 +848,7 @@ void main() {
         clock.advance(const Duration(seconds: 2));
         final secondResults = normalizer.normalize([
           buildPing(clock: clock, speed: 20),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
         expect(secondResults, hasLength(1));
 
         // stateChangedAt MUST NOT have changed
@@ -742,7 +861,7 @@ void main() {
     );
 
     test(
-      '4.3: Idempotency post-gap — replay does not generate extra events',
+      '4.3: Idempotency post-gap â€” replay does not generate extra events',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -750,32 +869,32 @@ void main() {
         // Batch A
         normalizer.normalize([
           buildPing(clock: clock, speed: 20),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
 
         // Gap
         clock.advance(const Duration(seconds: 95));
-        normalizer.normalize([], now: clock.now());
+        normalizer.normalize([], now: clock.nowUtc());
 
         // Batch B
         clock.advance(const Duration(seconds: 6));
         final resultsB = normalizer.normalize([
           buildPing(clock: clock, speed: 20),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
         expect(resultsB, hasLength(1));
 
         // Replay Batch B (same data)
         clock.advance(const Duration(seconds: 6));
         final resultsReplay = normalizer.normalize([
           buildPing(clock: clock, speed: 20),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
         expect(resultsReplay, hasLength(1));
 
-        // No extra events — just 1 state per batch
+        // No extra events â€” just 1 state per batch
       },
     );
 
     test(
-      '4.4: stateChangedAt IMMUTABLE — debounce + jump-reject must not advance',
+      '4.4: stateChangedAt IMMUTABLE â€” debounce + jump-reject must not advance',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -783,22 +902,22 @@ void main() {
         // Seed state
         final seedResults = normalizer.normalize([
           buildPing(clock: clock, lat: kBaseLat, lng: kBaseLng, speed: 20),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
         expect(seedResults, hasLength(1));
         final originalStateChangedAt = seedResults.first.stateChangedAt;
 
-        // Test A: debounce replay — must not advance stateChangedAt
+        // Test A: debounce replay â€” must not advance stateChangedAt
         clock.advance(const Duration(seconds: 2));
         final debounceResults = normalizer.normalize([
           buildPing(clock: clock, lat: kBaseLat, lng: kBaseLng, speed: 20),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
         expect(
           debounceResults.first.stateChangedAt,
           originalStateChangedAt,
           reason: 'stateChangedAt must NOT advance on debounce replay',
         );
 
-        // Test B: jump rejection — must not advance stateChangedAt
+        // Test B: jump rejection â€” must not advance stateChangedAt
         clock.advance(const Duration(seconds: 6));
         final jumpResults = normalizer.normalize([
           buildPing(
@@ -807,7 +926,7 @@ void main() {
             lng: kBaseLng,
             speed: 20,
           ),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
         expect(
           jumpResults.first.stateChangedAt,
           originalStateChangedAt,
@@ -817,10 +936,10 @@ void main() {
     );
   });
 
-  // ── SUÍTE 5: DATA-DRIVEN STABILITY + BLACKOUT ──────────────────────────
-  group('SUÍTE 5: Data-Driven Stability + Blackout', () {
+  // â”€â”€ SUÃTE 5: DATA-DRIVEN STABILITY + BLACKOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  group('SUÃTE 5: Data-Driven Stability + Blackout', () {
     test(
-      '5.1: Urban trip (120 pings, 30min) — zero crashes, confidence > 0.7',
+      '5.1: Urban trip (120 pings, 30min) â€” zero crashes, confidence > 0.7',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -832,7 +951,7 @@ void main() {
         );
         expect(batch, hasLength(120));
 
-        final results = normalizer.normalize(batch, now: clock.now());
+        final results = normalizer.normalize(batch, now: clock.nowUtc());
         expect(results, isNotEmpty);
 
         // All results should be present (debounced pings return cached state)
@@ -843,25 +962,28 @@ void main() {
       },
     );
 
-    test('5.2: Progressive degradation — healthy → degraded → signalLost', () {
-      final clock = FakeDateTimeProvider(kEpoch);
-      final normalizer = makeNormalizer(clock: clock);
+    test(
+      '5.2: Progressive degradation â€” healthy â†’ degraded â†’ signalLost',
+      () {
+        final clock = FakeDateTimeProvider(kEpoch);
+        final normalizer = makeNormalizer(clock: clock);
 
-      final batch = generateTelemetryBatch(
-        count: 100,
-        profile: 'signal_degradation',
-        clock: clock,
-      );
-      expect(batch, hasLength(100));
+        final batch = generateTelemetryBatch(
+          count: 100,
+          profile: 'signal_degradation',
+          clock: clock,
+        );
+        expect(batch, hasLength(100));
 
-      final results = normalizer.normalize(batch, now: clock.now());
-      expect(results, isNotEmpty);
+        final results = normalizer.normalize(batch, now: clock.nowUtc());
+        expect(results, isNotEmpty);
 
-      // Last state should be signalLost (intervals grew past 90s)
-      expect(results.last.connectivityState, ConnectivityState.signalLost);
-    });
+        // Last state should be signalLost (intervals grew past 90s)
+        expect(results.last.connectivityState, ConnectivityState.signalLost);
+      },
+    );
 
-    test('5.3: Multi-vehicle (5 vehicles, 200 pings) — total isolation', () {
+    test('5.3: Multi-vehicle (5 vehicles, 200 pings) â€” total isolation', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(clock: clock);
 
@@ -872,7 +994,7 @@ void main() {
       );
       expect(batch, hasLength(200));
 
-      final results = normalizer.normalize(batch, now: clock.now());
+      final results = normalizer.normalize(batch, now: clock.nowUtc());
 
       // Group by vehicleId
       final byVehicle = <String, List<VehicleOperationalState>>{};
@@ -892,7 +1014,7 @@ void main() {
     });
 
     test(
-      '5.4: Performance — 500 sequential pings processed in < 100ms (release)',
+      '5.4: Performance â€” 500 sequential pings processed in < 100ms (release)',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -904,7 +1026,7 @@ void main() {
         );
 
         final sw = Stopwatch()..start();
-        final results = normalizer.normalize(batch, now: clock.now());
+        final results = normalizer.normalize(batch, now: clock.nowUtc());
         sw.stop();
 
         expect(results, isNotEmpty);
@@ -918,12 +1040,12 @@ void main() {
 
         // Verify no buffer growth
         normalizer.reset();
-        expect(normalizer.normalize([], now: clock.now()), isEmpty);
+        expect(normalizer.normalize([], now: clock.nowUtc()), isEmpty);
       },
     );
 
     test(
-      '5.5: Blackout Integrity — V4 interpolation receives coherent from/to',
+      '5.5: Blackout Integrity â€” V4 interpolation receives coherent from/to',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -931,18 +1053,18 @@ void main() {
         // Ping A at T+0
         normalizer.normalize([
           buildPing(clock: clock, speed: 20),
-        ], now: clock.now());
-        final resultA = normalizer.normalize([], now: clock.now()).first;
+        ], now: clock.nowUtc());
+        final resultA = normalizer.normalize([], now: clock.nowUtc()).first;
         expect(resultA.connectivityState, ConnectivityState.healthy);
         expect(resultA.motionState, MotionState.moving);
         final pingATimestamp = resultA.lastRawPingAt;
 
-        // 5min gap — no pings, replay degraded state
+        // 5min gap â€” no pings, replay degraded state
         clock.advance(const Duration(minutes: 5));
-        final gapResult = normalizer.normalize([], now: clock.now()).first;
+        final gapResult = normalizer.normalize([], now: clock.nowUtc()).first;
         expect(gapResult.connectivityState, ConnectivityState.signalLost);
 
-        // Ping B at T+5min — gap-recovery detection, slightly different position
+        // Ping B at T+5min â€” gap-recovery detection, slightly different position
         clock.advance(const Duration(seconds: 6));
         final resultB = normalizer.normalize([
           buildPing(
@@ -951,7 +1073,7 @@ void main() {
             lng: kBaseLng,
             speed: 20,
           ),
-        ], now: clock.now()).first;
+        ], now: clock.nowUtc()).first;
         // First ping after long gap is flagged signalLost
         expect(resultB.connectivityState, ConnectivityState.signalLost);
         // lastRawPingAt MUST be from Ping B (not corrupted by gap)
@@ -960,7 +1082,7 @@ void main() {
           greaterThan(pingATimestamp.microsecondsSinceEpoch),
         );
 
-        // Ping C at T+5min+12s — recovery (gap from B = 6s < 30s → healthy)
+        // Ping C at T+5min+12s â€” recovery (gap from B = 6s < 30s â†’ healthy)
         clock.advance(const Duration(seconds: 6));
         final resultC = normalizer.normalize([
           buildPing(
@@ -969,14 +1091,14 @@ void main() {
             lng: kBaseLng,
             speed: 20,
           ),
-        ], now: clock.now()).first;
+        ], now: clock.nowUtc()).first;
         expect(resultC.connectivityState, ConnectivityState.healthy);
         expect(
           resultC.lastRawPingAt.microsecondsSinceEpoch,
           greaterThan(resultB.lastRawPingAt.microsecondsSinceEpoch),
         );
 
-        // Positions are coherent — spatial smoothing blends A and B
+        // Positions are coherent â€” spatial smoothing blends A and B
         // B's position should be between A and the raw B target
         expect(resultB.latitude, closeTo(kBaseLat + 0.0005, 0.001));
         expect(resultC.latitude, closeTo(kBaseLat + 0.0015, 0.001));
@@ -984,10 +1106,10 @@ void main() {
     );
   });
 
-  // ── SUÍTE 6: V4 INTERPOLATION COMPATIBILITY ────────────────────────────
-  group('SUÍTE 6: V4 Interpolation Compatibility', () {
+  // â”€â”€ SUÃTE 6: V4 INTERPOLATION COMPATIBILITY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  group('SUÃTE 6: V4 Interpolation Compatibility', () {
     test(
-      '6.1: Trajectory interpolable post-blackout — connectivity restores',
+      '6.1: Trajectory interpolable post-blackout â€” connectivity restores',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -995,17 +1117,17 @@ void main() {
         // Ping A
         normalizer.normalize([
           buildPing(clock: clock, speed: 20),
-        ], now: clock.now());
+        ], now: clock.nowUtc());
 
         // 5min gap
         clock.advance(const Duration(minutes: 5));
-        normalizer.normalize([], now: clock.now());
+        normalizer.normalize([], now: clock.nowUtc());
 
         // Ping B
         clock.advance(const Duration(seconds: 6));
         final resultB = normalizer.normalize([
           buildPing(clock: clock, speed: 20),
-        ], now: clock.now()).first;
+        ], now: clock.nowUtc()).first;
 
         // After gap, first ping is still signalLost (gap-recovery)
         expect(resultB.connectivityState, ConnectivityState.signalLost);
@@ -1014,13 +1136,13 @@ void main() {
         clock.advance(const Duration(seconds: 6));
         final resultC = normalizer.normalize([
           buildPing(clock: clock, speed: 20),
-        ], now: clock.now()).first;
+        ], now: clock.nowUtc()).first;
         expect(resultC.connectivityState, ConnectivityState.healthy);
       },
     );
 
     test(
-      '6.2: Geofence phantom — normalizer delivers clean states, V4 detects',
+      '6.2: Geofence phantom â€” normalizer delivers clean states, V4 detects',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -1035,13 +1157,13 @@ void main() {
               speed: 20,
             ),
           ],
-          now: clock.now(),
+          now: clock.nowUtc(),
           knownStops: const [kStopA],
         );
 
         // 3min gap
         clock.advance(const Duration(minutes: 3));
-        normalizer.normalize([], now: clock.now());
+        normalizer.normalize([], now: clock.nowUtc());
 
         // Ping B outside geofence (different side)
         clock.advance(const Duration(seconds: 6));
@@ -1055,53 +1177,56 @@ void main() {
                   speed: 20,
                 ),
               ],
-              now: clock.now(),
+              now: clock.nowUtc(),
               knownStops: const [kStopA],
             )
             .first;
 
-        // Normalizer delivers clean states — it's V4's job to detect passage
+        // Normalizer delivers clean states â€” it's V4's job to detect passage
         expect(resultB.motionState, MotionState.moving);
         expect(resultB.routeAdherence, RouteAdherence.offRoute);
       },
     );
 
-    test('6.3: Sequential gap-fill — A → gap → B → C, no spurious replay', () {
-      final clock = FakeDateTimeProvider(kEpoch);
-      final normalizer = makeNormalizer(clock: clock);
+    test(
+      '6.3: Sequential gap-fill â€” A â†’ gap â†’ B â†’ C, no spurious replay',
+      () {
+        final clock = FakeDateTimeProvider(kEpoch);
+        final normalizer = makeNormalizer(clock: clock);
 
-      // Ping A
-      normalizer.normalize([
-        buildPing(clock: clock, speed: 20),
-      ], now: clock.now());
+        // Ping A
+        normalizer.normalize([
+          buildPing(clock: clock, speed: 20),
+        ], now: clock.nowUtc());
 
-      // Gap 2min (120s > 90s signalLost)
-      clock.advance(const Duration(minutes: 2));
-      final replayResult = normalizer.normalize([], now: clock.now());
-      expect(replayResult, hasLength(1));
-      expect(
-        replayResult.first.connectivityState,
-        ConnectivityState.signalLost,
-      );
+        // Gap 2min (120s > 90s signalLost)
+        clock.advance(const Duration(minutes: 2));
+        final replayResult = normalizer.normalize([], now: clock.nowUtc());
+        expect(replayResult, hasLength(1));
+        expect(
+          replayResult.first.connectivityState,
+          ConnectivityState.signalLost,
+        );
 
-      // Ping B (recovery) — gap from A = 2min > 90s → signalLost
-      clock.advance(const Duration(seconds: 6));
-      final resultB = normalizer.normalize([
-        buildPing(clock: clock, speed: 20),
-      ], now: clock.now());
-      expect(resultB, hasLength(1));
-      expect(resultB.first.connectivityState, ConnectivityState.signalLost);
+        // Ping B (recovery) â€” gap from A = 2min > 90s â†’ signalLost
+        clock.advance(const Duration(seconds: 6));
+        final resultB = normalizer.normalize([
+          buildPing(clock: clock, speed: 20),
+        ], now: clock.nowUtc());
+        expect(resultB, hasLength(1));
+        expect(resultB.first.connectivityState, ConnectivityState.signalLost);
 
-      // Ping C (sequential, gap from B = 6s < 30s → healthy)
-      clock.advance(const Duration(seconds: 6));
-      final resultC = normalizer.normalize([
-        buildPing(clock: clock, speed: 20),
-      ], now: clock.now());
-      expect(resultC, hasLength(1));
+        // Ping C (sequential, gap from B = 6s < 30s â†’ healthy)
+        clock.advance(const Duration(seconds: 6));
+        final resultC = normalizer.normalize([
+          buildPing(clock: clock, speed: 20),
+        ], now: clock.nowUtc());
+        expect(resultC, hasLength(1));
 
-      // B is signalLost (gap-recovery), C is healthy (normal gap)
-      expect(resultB.first.connectivityState, ConnectivityState.signalLost);
-      expect(resultC.first.connectivityState, ConnectivityState.healthy);
-    });
+        // B is signalLost (gap-recovery), C is healthy (normal gap)
+        expect(resultB.first.connectivityState, ConnectivityState.signalLost);
+        expect(resultC.first.connectivityState, ConnectivityState.healthy);
+      },
+    );
   });
 }

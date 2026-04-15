@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/adapters/realtime_data_provider.dart';
@@ -17,7 +17,7 @@ void main() {
     setUp(() {
       mockDateTime = MockDateTimeProvider();
       mockClient = MockSupabaseClient();
-      when(() => mockDateTime.now()).thenReturn(DateTime.now().toUtc());
+      when(() => mockDateTime.nowUtc()).thenReturn(DateTime.now().toUtc());
       provider = RealtimeDataProvider(mockDateTime, mockClient);
     });
 
@@ -67,7 +67,7 @@ void main() {
       // StreamController.broadcast() delivers events asynchronously via the
       // microtask queue. Awaiting here lets the event loop process the queued
       // emission before the assertion runs.
-      await Future.delayed(Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 60));
       expect(emitCount, 1);
     });
 
@@ -115,12 +115,12 @@ void main() {
 
       // First emission
       provider.onPayloadReceived(payload);
-      await Future.delayed(Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 60));
       expect(emitCount, 1);
 
       // Second emission with same data
       provider.onPayloadReceived(payload);
-      await Future.delayed(Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 60));
       expect(emitCount, 1, reason: 'Should not emit duplicate snapshot');
     });
 
@@ -169,13 +169,13 @@ void main() {
 
       // Add fresh one
       provider.onPayloadReceived(firstPayload);
-      await Future.delayed(Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 60));
       expect(emissions.last, hasLength(1));
 
       // Add another fresh one but with a stale timestamp internally
       // In the real world, this would be an update or another trip that is actually old data.
       provider.onPayloadReceived(stalePayload);
-      await Future.delayed(Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 60));
 
       // Since stalePayload is 5 mins old, it should be evicted immediately after being added to buffer.
       // So the snapshot will still only have trip-fresh.
@@ -199,7 +199,7 @@ void main() {
       );
 
       provider.onPayloadReceived(secondFreshPayload);
-      await Future.delayed(Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 60));
       expect(emissions.last, hasLength(2));
       expect(emissions.last.map((p) => p.tripId), contains('trip-fresh-2'));
     });

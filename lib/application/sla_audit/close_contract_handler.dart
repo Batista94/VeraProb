@@ -1,4 +1,4 @@
-import 'package:veraprob/application/shared/tenant_validation_service.dart';
+﻿import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/shared/idempotent_handler_mixin.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -94,7 +94,7 @@ class CloseContractHandler with IdempotentHandlerMixin {
     final closed = existing.close(
       closedByUserId: command.closedByUserId,
       reason: command.reason,
-      nowUtc: _clock.now(),
+      nowUtc: _clock.nowUtc(),
     );
 
     // 5. Persist (Optimistic Locking INV-32)

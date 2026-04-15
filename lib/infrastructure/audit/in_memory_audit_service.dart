@@ -1,4 +1,4 @@
-import 'package:veraprob/application/audit/audit_service.dart';
+﻿import 'package:veraprob/application/audit/audit_service.dart';
 import 'package:veraprob/core/services/logger_service.dart';
 import 'package:veraprob/domain/entities/audit_log.dart';
 import 'package:uuid/uuid.dart';
@@ -33,7 +33,7 @@ class InMemoryAuditService implements AuditService {
       oldValue: oldValue,
       newValue: newValue,
       reason: reason,
-      timestamp: _dateTimeProvider.now(), // INV-9: UTC Mandatory
+      timestamp: _dateTimeProvider.nowUtc(), // INV-9: UTC Mandatory
     );
 
     _logs.add(log);

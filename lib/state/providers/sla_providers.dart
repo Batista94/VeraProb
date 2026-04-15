@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_subscriber.dart';
@@ -26,7 +26,7 @@ import 'package:veraprob/application/normalization/models/vehicle_operational_st
 import 'fleet_providers.dart';
 import 'shared_providers.dart';
 
-// ── Re-exports from sla_persistence_provider ────────────────────────────────
+// â”€â”€ Re-exports from sla_persistence_provider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Kept here so all provider consumers import one canonical file.
 export 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart'
     show
@@ -39,7 +39,7 @@ export 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart'
         justificationRepositoryProvider,
         vehicleInfractionRecurrenceRepositoryProvider;
 
-// ── Operational Alert Repository ─────────────────────────────────────────────
+// â”€â”€ Operational Alert Repository â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 final operationalAlertRepositoryProvider = Provider<OperationalAlertRepository>(
   (ref) {
@@ -52,7 +52,7 @@ final operationalAlertRepositoryProvider = Provider<OperationalAlertRepository>(
   },
 );
 
-// ── Evaluation Trace Repository ──────────────────────────────────────────────
+// â”€â”€ Evaluation Trace Repository â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 final evaluationTraceRepositoryProvider = Provider<EvaluationTraceRepository>((
   ref,
@@ -65,7 +65,7 @@ final evaluationTraceRepositoryProvider = Provider<EvaluationTraceRepository>((
   };
 });
 
-// ── SLA Execution Query Service ──────────────────────────────────────────────
+// â”€â”€ SLA Execution Query Service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 final slaExecutionQueryServiceProvider = Provider<SlaExecutionQueryService>((
   ref,
@@ -82,7 +82,7 @@ final slaExecutionQueryServiceProvider = Provider<SlaExecutionQueryService>((
   };
 });
 
-// ── Contractual Financial Closing Service ────────────────────────────────────
+// â”€â”€ Contractual Financial Closing Service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 final contractualFinancialClosingServiceProvider =
     Provider<ContractualFinancialClosingService>((ref) {
@@ -98,7 +98,7 @@ final contractualFinancialClosingServiceProvider =
       );
     });
 
-// ── Sanction Simulation Service ──────────────────────────────────────────────
+// â”€â”€ Sanction Simulation Service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 final sanctionSimulationServiceProvider = Provider<SanctionSimulationService>((
   ref,
@@ -110,7 +110,7 @@ final sanctionSimulationServiceProvider = Provider<SanctionSimulationService>((
   );
 });
 
-// ── Contractual Evaluation Subscriber ───────────────────────────────────────
+// â”€â”€ Contractual Evaluation Subscriber â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Returns null when no organizationId is available (unauthenticated state).
 final contractualEvaluationSubscriberProvider =
@@ -145,14 +145,14 @@ final contractualEvaluationSubscriberProvider =
       );
     });
 
-// ── UI Read Models ───────────────────────────────────────────────────────────
+// â”€â”€ UI Read Models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Global SLA execution summary for the current session's organization.
 final slaSummaryProvider = FutureProvider<SlaExecutionSummary>((ref) async {
   final organizationId = ref.watch(currentOrganizationIdProvider);
   if (organizationId == null) {
     return SlaExecutionSummary.empty(
-      generatedAtUtc: ref.watch(dateTimeProviderProvider).now(),
+      generatedAtUtc: ref.watch(dateTimeProviderProvider).nowUtc(),
     );
   }
 

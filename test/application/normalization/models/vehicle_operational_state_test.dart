@@ -13,6 +13,7 @@ void main() {
         latitude: -23.0,
         longitude: -46.0,
         smoothedSpeed: 10.0,
+        rawSpeed: 10.0, // Physical Metric - Double Required
         motionState: MotionState.moving,
         connectivityState: ConnectivityState.healthy,
         lastRawPingAt: DateTime.utc(2026, 3, 1),
@@ -41,6 +42,7 @@ void main() {
         latitude: -23.0,
         longitude: -46.0,
         smoothedSpeed: 10.0,
+        rawSpeed: 10.0, // Physical Metric - Double Required
         motionState: MotionState.moving,
         connectivityState: ConnectivityState.healthy,
         routeAdherence: RouteAdherence.onRoute,
@@ -69,6 +71,7 @@ void main() {
         latitude: -23.0,
         longitude: -46.0,
         smoothedSpeed: 10.0,
+        rawSpeed: 10.0, // Physical Metric - Double Required
         motionState: MotionState.moving,
         connectivityState: ConnectivityState.healthy,
         routeAdherence: RouteAdherence.onRoute,
@@ -84,6 +87,7 @@ void main() {
         latitude: -23.0,
         longitude: -46.0,
         smoothedSpeed: 10.0,
+        rawSpeed: 10.0, // Physical Metric - Double Required
         motionState: MotionState.moving,
         connectivityState: ConnectivityState.healthy,
         routeAdherence: RouteAdherence.onRoute,

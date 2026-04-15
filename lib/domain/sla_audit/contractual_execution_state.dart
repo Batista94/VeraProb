@@ -1,4 +1,4 @@
-import 'dart:collection';
+﻿import 'dart:collection';
 
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -12,7 +12,7 @@ import 'execution_status.dart';
 /// Aggregate Root tracking the lifecycle and judgment of a single
 /// contractual service execution obligation.
 ///
-/// Unlike [PlanDeclaration] (immutable), this aggregate is **mutable** —
+/// Unlike [PlanDeclaration] (immutable), this aggregate is **mutable** â€”
 /// it transitions through states as the evaluation engine processes
 /// telemetry evidence.
 ///
@@ -24,47 +24,47 @@ import 'execution_status.dart';
 ///
 /// **State machine**:
 /// ```
-/// pending → executed   (via bindExecution)
-/// pending → noShow     (via markNoShow, only after window expires)
-/// pending → evidenceGap (via markEvidenceGap)
-/// noShow → executed    (via bindExecution — INV-12: Late Arrival Re-evaluation)
+/// pending â†’ executed   (via bindExecution)
+/// pending â†’ noShow     (via markNoShow, only after window expires)
+/// pending â†’ evidenceGap (via markEvidenceGap)
+/// noShow â†’ executed    (via bindExecution â€” INV-12: Late Arrival Re-evaluation)
 /// ```
 /// Transitions to 'executed' are final. Transitions to 'noShow' or 'evidenceGap'
 /// can be re-evaluated if older facts arrive (INV-12).
 class ContractualExecutionState {
-  // ── Identity ──────────────────────────────────────────────
+  // â”€â”€ Identity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   final String id;
   final String organizationId;
   final String setId;
   final String contractId;
   final int planVersion;
 
-  // ── Geofence (denormalized from ContractualServiceExecution) ───
+  // â”€â”€ Geofence (denormalized from ContractualServiceExecution) â”€â”€â”€
   /// Start geofence center latitude. Immutable after creation.
   final double startLatitude; // Physical Metric - Double Required
   final double startLongitude; // Physical Metric - Double Required
   final int startRadiusMeters;
 
-  // ── Vehicle Planning ──────────────────────────────────────────
+  // â”€â”€ Vehicle Planning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   /// Planned vehicle for this obligation. Null means any vehicle can fulfill it.
   final String? plannedVehicleId;
 
-  // ── Financial ─────────────────────────────────────────────
+  // â”€â”€ Financial â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   /// Contractual value of this service obligation.
   final Money contractualValue;
 
   /// Multiplier applied to contractualValue on NoShow. In bps (e.g. 15000 = 1.5x).
   final int noShowPenaltyBps;
 
-  // ── Time Window ───────────────────────────────────────────
+  // â”€â”€ Time Window â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   final DateTime windowStartUtc;
   final DateTime windowEndUtc;
 
-  // ── Status ────────────────────────────────────────────────
+  // â”€â”€ Status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ExecutionStatus _status;
   ExecutionStatus get status => _status;
 
-  // ── Binding Evidence (only when executed) ─────────────────
+  // â”€â”€ Binding Evidence (only when executed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   String? _boundVehicleId;
   DateTime? _bindingTimestampUtc;
   double? _bindingLatitude; // Physical Metric - Double Required
@@ -77,7 +77,7 @@ class ContractualExecutionState {
   double? get bindingLongitude =>
       _bindingLongitude; // Physical Metric - Double Required
 
-  // ── Lifecycle Timestamps ──────────────────────────────────
+  // â”€â”€ Lifecycle Timestamps â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   final DateTime createdAtUtc;
   DateTime _lastEvaluatedAtUtc;
   DateTime _statusLastUpdatedAtUtc;
@@ -87,11 +87,11 @@ class ContractualExecutionState {
   DateTime get statusLastUpdatedAtUtc => _statusLastUpdatedAtUtc;
   DateTime? get finalizedAtUtc => _finalizedAtUtc;
 
-  // ── Domain Events ─────────────────────────────────────────
+  // â”€â”€ Domain Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   final List<DomainEvent> _domainEvents = [];
   List<DomainEvent> get domainEvents => UnmodifiableListView(_domainEvents);
 
-  // ── Private Constructor ───────────────────────────────────
+  // â”€â”€ Private Constructor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ContractualExecutionState._({
     required this.id,
     required this.organizationId,
@@ -114,7 +114,7 @@ class ContractualExecutionState {
        _lastEvaluatedAtUtc = lastEvaluatedAtUtc,
        _statusLastUpdatedAtUtc = statusLastUpdatedAtUtc;
 
-  // ── Factory ───────────────────────────────────────────────
+  // â”€â”€ Factory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   /// Creates a new [ContractualExecutionState] in [ExecutionStatus.pending].
   ///
   /// Validates the time window invariant.
@@ -151,7 +151,7 @@ class ContractualExecutionState {
     }
 
     final now =
-        StaticDateTimeProvider.instance?.now() ?? DateTime.now().toUtc();
+        StaticDateTimeProvider.instance?.nowUtc() ?? DateTime.now().toUtc();
 
     return ContractualExecutionState._(
       id: const Uuid().v4(),
@@ -174,7 +174,7 @@ class ContractualExecutionState {
     );
   }
 
-  // ── State Transitions ─────────────────────────────────────
+  // â”€â”€ State Transitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Binds a vehicle to this obligation, marking it as [ExecutionStatus.executed].
   ///
@@ -283,7 +283,7 @@ class ContractualExecutionState {
     _lastEvaluatedAtUtc = nowUtc;
   }
 
-  // ── Guards ────────────────────────────────────────────────
+  // â”€â”€ Guards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _assertPending(String method) {
     if (_status != ExecutionStatus.pending) {
@@ -351,7 +351,7 @@ class ContractualExecutionState {
     return state;
   }
 
-  // ── Identity Equality ─────────────────────────────────────
+  // â”€â”€ Identity Equality â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   @override
   bool operator ==(Object other) =>

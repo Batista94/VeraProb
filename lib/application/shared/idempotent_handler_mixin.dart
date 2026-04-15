@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/shared/idempotency_key.dart';
+﻿import 'package:veraprob/domain/shared/idempotency_key.dart';
 import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/conflict_exception.dart';
@@ -38,7 +38,7 @@ mixin IdempotentHandlerMixin {
       userId: userId,
       commandPath: commandPath,
       organizationId: organizationId,
-      nowUtc: clock.now(),
+      nowUtc: clock.nowUtc(),
       staleThresholdMinutes: staleThresholdMinutes,
     );
 
@@ -47,7 +47,7 @@ mixin IdempotentHandlerMixin {
       staleThresholdMinutes: staleThresholdMinutes,
     );
 
-    // ── ACQUIRED = TRUE: Execute Business Logic ─────────────────────────────
+    // â”€â”€ ACQUIRED = TRUE: Execute Business Logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (result.acquired) {
       try {
         final entity = await businessLogic();
@@ -58,7 +58,7 @@ mixin IdempotentHandlerMixin {
           userId: userId,
           responseCode: 200,
           responseBody: dto,
-          nowUtc: clock.now(),
+          nowUtc: clock.nowUtc(),
         );
 
         return entity;
@@ -69,7 +69,7 @@ mixin IdempotentHandlerMixin {
           id: idempotencyKey,
           userId: userId,
           responseCode: 409, // Conflict
-          nowUtc: clock.now(),
+          nowUtc: clock.nowUtc(),
         );
         rethrow;
       } on DomainException catch (e) {
@@ -83,7 +83,7 @@ mixin IdempotentHandlerMixin {
               userId: userId,
               responseCode: 200,
               responseBody: dto,
-              nowUtc: clock.now(),
+              nowUtc: clock.nowUtc(),
             );
             return recovered;
           }
@@ -95,7 +95,7 @@ mixin IdempotentHandlerMixin {
           userId: userId,
           responseCode: 400,
           responseBody: {'errorMessage': e.message},
-          nowUtc: clock.now(),
+          nowUtc: clock.nowUtc(),
         );
         rethrow;
       } catch (e) {
@@ -105,13 +105,13 @@ mixin IdempotentHandlerMixin {
           id: idempotencyKey,
           userId: userId,
           responseCode: 500,
-          nowUtc: clock.now(),
+          nowUtc: clock.nowUtc(),
         );
         rethrow;
       }
     }
 
-    // ── ACQUIRED = FALSE: Handle Cache Hit (Replay) ─────────────────────────
+    // â”€â”€ ACQUIRED = FALSE: Handle Cache Hit (Replay) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     final cached = result.key;
 
     if (cached.isCompleted) {

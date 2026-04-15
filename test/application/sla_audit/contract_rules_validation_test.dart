@@ -102,6 +102,7 @@ void main() {
 
     VehicleOperationalState createPing(DateTime time) {
       return VehicleOperationalState(
+        rawSpeed: 0.0,
         vehicleId: 'bus-1',
         tripId: 'trip-1',
         latitude: geoLat,

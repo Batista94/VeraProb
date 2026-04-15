@@ -1,7 +1,7 @@
-// INV-1: Identity Sovereignty — fail-fast tenant check
-// INV-7: Null Safety — strict types, no dynamic
-// INV-8: Repo Isolation — org_id enforced on all pipeline stages
-// INV-18: Zero-Trust — spoofed batches quarantined before queue
+﻿// INV-1: Identity Sovereignty â€” fail-fast tenant check
+// INV-7: Null Safety â€” strict types, no dynamic
+// INV-8: Repo Isolation â€” org_id enforced on all pipeline stages
+// INV-18: Zero-Trust â€” spoofed batches quarantined before queue
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/telemetry_normalizer.dart';
@@ -19,7 +19,7 @@ import 'package:veraprob/domain/sla_audit/spoofing_risk_score.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/raw_telemetry_batch.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/spoofing_detected_exception.dart';
 
-// ── Mocktail stubs ────────────────────────────────────────────────────────────
+// â”€â”€ Mocktail stubs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class MockAuthRepository extends Mock implements IAuthRepository {}
 
 class MockFactQueue extends Mock implements FactQueue {}
@@ -30,7 +30,7 @@ class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 class MockSpoofingDetector extends Mock implements SpoofingDetector {}
 
-// ── Constants — ZERO `any()` on identity fields ───────────────────────────────
+// â”€â”€ Constants â€” ZERO `any()` on identity fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const _orgId = 'org-123';
 const _sessionId = 'sess-999';
 const kDeviceId = 'device-gps-007';
@@ -38,14 +38,14 @@ const kCallerUserId = 'user-driver-42';
 
 final kFrozenUtc = DateTime.utc(2026, 4, 14, 12, 0, 0);
 
-// ── Fixture builders ──────────────────────────────────────────────────────────
+// â”€â”€ Fixture builders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 RawTelemetryBatch _validBatch({int count = 1}) {
   final base = DateTime.utc(2026, 4, 14, 8, 0, 0);
   return RawTelemetryBatch(
     deviceId: kDeviceId,
     organizationId: _orgId,
     callerUserId: kCallerUserId,
-    // Varied coordinates: ~1.1 km apart, 5-min gaps → implied speed ≈13 km/h
+    // Varied coordinates: ~1.1 km apart, 5-min gaps â†’ implied speed â‰ˆ13 km/h
     coordinates: List.generate(
       count,
       (i) => TelemetryCoordinate(
@@ -57,7 +57,7 @@ RawTelemetryBatch _validBatch({int count = 1}) {
   );
 }
 
-/// 5 identical coordinates → triggers zero-variance spoofing check (≥5 required)
+/// 5 identical coordinates â†’ triggers zero-variance spoofing check (â‰¥5 required)
 RawTelemetryBatch _spoofedBatch() {
   final ts = DateTime.utc(2026, 4, 14, 8, 0, 0);
   return RawTelemetryBatch(
@@ -129,20 +129,20 @@ void main() {
       spoofingDetector: mockSpoofingDetector,
     );
 
-    when(() => mockClock.now()).thenReturn(kFrozenUtc);
+    when(() => mockClock.nowUtc()).thenReturn(kFrozenUtc);
     when(
       () => mockLedgerRepo.append(any()),
     ).thenAnswer((_) async => 'ledger-id-001');
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GROUP 1: GUARDIÃO DE TENANT (INV-1)
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // GROUP 1: GUARDIÃƒO DE TENANT (INV-1)
   // Proves that assertTenantMatches() is the first instruction and that any
   // sovereignty violation hard-stops the pipeline before any I/O occurs.
-  // ─────────────────────────────────────────────────────────────────────────────
-  group('INV-1 — Guardião de Tenant: fail-fast sovereignty check', () {
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  group('INV-1 â€” GuardiÃ£o de Tenant: fail-fast sovereignty check', () {
     setUp(() {
-      // JWT claims a different org → mismatch with batch.organizationId
+      // JWT claims a different org â†’ mismatch with batch.organizationId
       when(() => mockAuthRepo.getUserBySessionId(_sessionId)).thenAnswer(
         (_) async => const domain.AuthUser(
           id: 'user-attacker',
@@ -153,7 +153,7 @@ void main() {
     });
 
     test(
-      'lança SovereigntyViolationException quando org_id do payload diverge do JWT',
+      'lanÃ§a SovereigntyViolationException quando org_id do payload diverge do JWT',
       () async {
         await expectLater(
           handler.normalize(_validBatch(), sessionId: _sessionId),
@@ -163,7 +163,7 @@ void main() {
     );
 
     test(
-      'factQueue.enqueue NUNCA chamado após falha de tenant — pipeline interrompido',
+      'factQueue.enqueue NUNCA chamado apÃ³s falha de tenant â€” pipeline interrompido',
       () async {
         try {
           await handler.normalize(_validBatch(), sessionId: _sessionId);
@@ -174,7 +174,7 @@ void main() {
     );
 
     test(
-      'ledgerRepository.append NUNCA chamado após falha de tenant — sem efeitos colaterais',
+      'ledgerRepository.append NUNCA chamado apÃ³s falha de tenant â€” sem efeitos colaterais',
       () async {
         try {
           await handler.normalize(_validBatch(), sessionId: _sessionId);
@@ -206,15 +206,15 @@ void main() {
     );
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // GROUP 2: BLOQUEIO DE SPOOFING (INV-8 / INV-18)
   // Proves that synthetic/zero-variance telemetry is quarantined:
   //   - factQueue.enqueue is NEVER called
   //   - ledgerRepository.append IS called with SPOOFING_DETECTED forensic record
-  // ─────────────────────────────────────────────────────────────────────────────
-  group('INV-8 — Bloqueio de Spoofing: zero-variance batch quarentenado', () {
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  group('INV-8 â€” Bloqueio de Spoofing: zero-variance batch quarentenado', () {
     setUp(() {
-      // Valid tenant — spoofing is about data forgery, not identity theft
+      // Valid tenant â€” spoofing is about data forgery, not identity theft
       when(() => mockAuthRepo.getUserBySessionId(_sessionId)).thenAnswer(
         (_) async => const domain.AuthUser(
           id: 'user-driver-42',
@@ -225,7 +225,7 @@ void main() {
     });
 
     test(
-      'lança SpoofingDetectedException ao detectar zero-variance em batch de 5 coords idênticas',
+      'lanÃ§a SpoofingDetectedException ao detectar zero-variance em batch de 5 coords idÃªnticas',
       () async {
         when(
           () => mockSpoofingDetector.analyze(any()),
@@ -239,7 +239,7 @@ void main() {
     );
 
     test(
-      'factQueue.enqueue NUNCA chamado quando spoofing é detectado — dado sintético bloqueado',
+      'factQueue.enqueue NUNCA chamado quando spoofing Ã© detectado â€” dado sintÃ©tico bloqueado',
       () async {
         when(
           () => mockSpoofingDetector.analyze(any()),
@@ -276,7 +276,7 @@ void main() {
     );
 
     test(
-      'registro forense de spoofing inclui deviceId e razão no payload',
+      'registro forense de spoofing inclui deviceId e razÃ£o no payload',
       () async {
         when(
           () => mockSpoofingDetector.analyze(any()),
@@ -298,7 +298,7 @@ void main() {
     );
 
     test(
-      'registro forense usa timestamp do clock injetado (INV-6: UTC determinístico)',
+      'registro forense usa timestamp do clock injetado (INV-6: UTC determinÃ­stico)',
       () async {
         when(
           () => mockSpoofingDetector.analyze(any()),
@@ -319,12 +319,12 @@ void main() {
     );
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GROUP 3: SUCESSO E NORMALIZAÇÃO
-  // Proves the golden path: valid tenant + clean telemetry → CanonicalFact
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // GROUP 3: SUCESSO E NORMALIZAÃ‡ÃƒO
+  // Proves the golden path: valid tenant + clean telemetry â†’ CanonicalFact
   // enqueued with correct orgId (INV-8 repo isolation assertion).
-  // ─────────────────────────────────────────────────────────────────────────────
-  group('Sucesso e Normalização: pipeline limpo com tenant e dados válidos', () {
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  group('Sucesso e NormalizaÃ§Ã£o: pipeline limpo com tenant e dados vÃ¡lidos', () {
     setUp(() {
       when(() => mockAuthRepo.getUserBySessionId(_sessionId)).thenAnswer(
         (_) async => const domain.AuthUser(
@@ -340,7 +340,7 @@ void main() {
       when(() => mockFactQueue.enqueue(any())).thenReturn(null);
     });
 
-    test('enfileira um CanonicalFact para um único ping válido', () async {
+    test('enfileira um CanonicalFact para um Ãºnico ping vÃ¡lido', () async {
       await handler.normalize(_validBatch(count: 1), sessionId: _sessionId);
 
       final captured = verify(
@@ -351,7 +351,7 @@ void main() {
     });
 
     test(
-      'CanonicalFact carrega organizationId=_orgId — INV-8 isolation confirmada',
+      'CanonicalFact carrega organizationId=_orgId â€” INV-8 isolation confirmada',
       () async {
         await handler.normalize(_validBatch(count: 1), sessionId: _sessionId);
 
@@ -388,7 +388,7 @@ void main() {
     });
 
     test(
-      'enfileira N CanonicalFacts para N pings válidos — um por coordenada',
+      'enfileira N CanonicalFacts para N pings vÃ¡lidos â€” um por coordenada',
       () async {
         await handler.normalize(_validBatch(count: 3), sessionId: _sessionId);
 
@@ -405,7 +405,7 @@ void main() {
     );
 
     test(
-      'ledgerRepository.append NUNCA chamado em pipeline limpo — sem registros forenses indevidos',
+      'ledgerRepository.append NUNCA chamado em pipeline limpo â€” sem registros forenses indevidos',
       () async {
         await handler.normalize(_validBatch(count: 1), sessionId: _sessionId);
 

@@ -1,4 +1,4 @@
-import 'package:veraprob/application/intelligence/telemetry_normalizer.dart';
+﻿import 'package:veraprob/application/intelligence/telemetry_normalizer.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/entities/raw_telemetry_ping.dart';
@@ -32,7 +32,7 @@ class TelemetryNormalizationHandler {
     RawTelemetryBatch batch, {
     required String sessionId,
   }) async {
-    // INV-1: Identity Sovereignty — fail-fast tenant check
+    // INV-1: Identity Sovereignty â€” fail-fast tenant check
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: batch.organizationId,
       sessionId: sessionId,
@@ -67,7 +67,7 @@ class TelemetryNormalizationHandler {
               rawPayloadId: '',
               deviceId: batch.deviceId,
               sourceAdapter: 'telemetry_normalizer',
-              receivedAtUtc: _clock.now(),
+              receivedAtUtc: _clock.nowUtc(),
               gpsTimestamp: ping.timestamp,
               lat: ping.latitude,
               lng: ping.longitude,
@@ -97,7 +97,7 @@ class TelemetryNormalizationHandler {
               type: 'SPOOFING_DETECTED',
               contractId: 'FRAUD_DETECTION',
               planVersion: 1,
-              occurredAtUtc: _clock.now(),
+              occurredAtUtc: _clock.nowUtc(),
               payload: {
                 'callerUserId': batch.callerUserId,
                 'deviceId': batch.deviceId,
@@ -124,7 +124,7 @@ class TelemetryNormalizationHandler {
           type: 'SPOOFING_DETECTED',
           contractId: 'FRAUD_DETECTION',
           planVersion: 1,
-          occurredAtUtc: _clock.now(),
+          occurredAtUtc: _clock.nowUtc(),
           payload: {
             'callerUserId': batch.callerUserId,
             'deviceId': e.deviceId,

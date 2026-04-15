@@ -15,7 +15,7 @@ import 'situation_detector.dart';
 /// - We still keep the fallback for interrupted trips from Phase 0.
 class StoppedVehicleDetector extends SituationDetector {
   StoppedVehicleDetector(super.dateTimeProvider)
-    : super(id: 'stopped_vehicle', name: 'Detector de Veículo Parado');
+    : super(id: 'stopped_vehicle', name: 'Detector de VeÃ­culo Parado');
 
   @override
   bool canDetect(OperationalTrip trip) {
@@ -30,8 +30,8 @@ class StoppedVehicleDetector extends SituationDetector {
   ) {
     // 1. Check real operational state from the Normalization Layer
     if (state != null && state.motionState == MotionState.stopped) {
-      final minutesStopped = state.stateChangedAt
-          .difference(state.lastRawPingAt)
+      final minutesStopped = state.lastRawPingAt
+          .difference(state.stateChangedAt)
           .inMinutes;
       // Only warn if stopped for a significant time based on business logic
       // (The normalizer already requires 15s to classify as stopped, but for a severe warning we might want more like 2-3 mins)
@@ -39,7 +39,7 @@ class StoppedVehicleDetector extends SituationDetector {
         return OperationalWarning(
           id: 'warn_stopped_operational_${trip.id}',
           type: 'vehicle_stopped',
-          message: 'Veículo Parado na Via: $minutesStopped min',
+          message: 'VeÃ­culo Parado na Via: $minutesStopped min',
           severityScore: 40,
           detectedAt: state.lastRawPingAt,
         );
@@ -51,9 +51,9 @@ class StoppedVehicleDetector extends SituationDetector {
       return OperationalWarning(
         id: 'warn_stopped_interrupted_${trip.id}',
         type: 'vehicle_stopped',
-        message: 'Veículo Interrompido',
+        message: 'VeÃ­culo Interrompido',
         severityScore: 50,
-        detectedAt: state?.lastRawPingAt ?? dateTimeProvider.now(),
+        detectedAt: state?.lastRawPingAt ?? dateTimeProvider.nowUtc(),
       );
     }
 

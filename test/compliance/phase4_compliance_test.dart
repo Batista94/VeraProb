@@ -50,6 +50,7 @@ void main() {
 
   VehicleOperationalState makeVehicle() {
     return VehicleOperationalState(
+      rawSpeed: 0.0,
       vehicleId: 'v-1',
       tripId: 'trip-1',
       latitude: geoLat,

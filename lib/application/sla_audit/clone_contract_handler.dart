@@ -1,4 +1,4 @@
-import 'package:veraprob/application/shared/tenant_validation_service.dart';
+﻿import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -14,7 +14,7 @@ import 'sla_ledger_mapper.dart';
 /// them separately via the UI).
 ///
 /// **Invariants enforced:**
-/// - Source contract must exist within [organizationId] — cross-tenant
+/// - Source contract must exist within [organizationId] â€” cross-tenant
 ///   cloning is rejected with [DomainException].
 /// - [organizationId] comes from the JWT, never from the source record.
 /// - The clone receives a new UUID and a new [ContractCreatedEvent].
@@ -44,7 +44,7 @@ class CloneContractHandler {
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
   }) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
@@ -57,7 +57,7 @@ class CloneContractHandler {
     );
     if (source == null) {
       throw const DomainException(
-        'Contrato de origem não encontrado ou não pertence à sua organização.',
+        'Contrato de origem nÃ£o encontrado ou nÃ£o pertence Ã  sua organizaÃ§Ã£o.',
       );
     }
 
@@ -70,7 +70,7 @@ class CloneContractHandler {
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
       clonedFromContractId: command.sourceContractId,
-      nowUtc: _clock.now(),
+      nowUtc: _clock.nowUtc(),
     );
 
     // 3. Persist

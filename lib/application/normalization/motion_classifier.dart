@@ -34,13 +34,42 @@ class MotionClassifier {
   /// [position]      — (lat, lng) from [SpatialSmoother.applySmoothing].
   /// [stops]         — known transit stops for geofencing.
   /// [now]           — injectable clock (UTC).
+  /// [previousPosition] — previous (lat, lng) for geographic speed calculation.
+  /// [previousTimestamp] — previous timestamp for geographic speed calculation.
+  /// [isFirstPing] — true if this is the first ping from this vehicle (cold start bypass).
   MotionState classifyMotion(
     String vehicleId,
     double smoothedSpeed, // Physical Metric - Double Required
     (double, double) position, // Physical Metric - Double Required
     List<Stop> stops,
-    DateTime now,
-  ) {
+    DateTime now, {
+    (double, double)? previousPosition, // Physical Metric - Double Required
+    DateTime? previousTimestamp,
+    bool isFirstPing = false,
+  }) {
+    // Geographic speed detection (anti-ghost movement)
+    // If device reports speed=0 but coordinates show movement, override to moving
+    if (smoothedSpeed <= slowTrafficThreshold &&
+        previousPosition != null &&
+        previousTimestamp != null) {
+      final distance = GeoMath.haversineMeters(
+        previousPosition.$1,
+        previousPosition.$2,
+        position.$1,
+        position.$2,
+      );
+      final elapsedSeconds =
+          now.difference(previousTimestamp).inMilliseconds / 1000.0;
+      if (elapsedSeconds > 0) {
+        final geographicSpeed =
+            (distance / elapsedSeconds) * 3.6; // m/s to km/h
+        if (geographicSpeed >= movingSpeedThreshold) {
+          _lowSpeedSince.remove(vehicleId);
+          return MotionState.moving; // Geographic override
+        }
+      }
+    }
+
     if (smoothedSpeed > movingSpeedThreshold) {
       _lowSpeedSince.remove(vehicleId);
       return MotionState.moving;
@@ -50,7 +79,13 @@ class MotionClassifier {
     final lowSpeedDuration = now.difference(_lowSpeedSince[vehicleId]!);
 
     if (smoothedSpeed <= slowTrafficThreshold) {
-      return _classifyStationary(vehicleId, position, stops, lowSpeedDuration);
+      return _classifyStationary(
+        vehicleId,
+        position,
+        stops,
+        lowSpeedDuration,
+        isFirstPing,
+      );
     }
 
     // Between slowTrafficThreshold and movingSpeedThreshold
@@ -73,8 +108,10 @@ class MotionClassifier {
     (double, double) position, // Physical Metric - Double Required
     List<Stop> stops,
     Duration lowSpeedDuration,
+    bool isFirstPing,
   ) {
-    if (lowSpeedDuration < stoppedMinDuration) {
+    // Cold start bypass - skip timer check for first ping
+    if (!isFirstPing && lowSpeedDuration < stoppedMinDuration) {
       return MotionState.moving;
     }
     final nearStop = _findNearestStop(position.$1, position.$2, stops);

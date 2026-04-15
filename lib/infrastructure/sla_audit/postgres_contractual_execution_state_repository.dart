@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
@@ -259,7 +259,7 @@ class PostgresContractualExecutionStateRepository
     }
   }
 
-  // ── Helpers ───────────────────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<void> _recordTransition(
     ContractualExecutionState state,
@@ -271,7 +271,7 @@ class PostgresContractualExecutionStateRepository
       'organization_id': state.organizationId,
       'previous_status': previousStatus?.name,
       'new_status': state.status.name,
-      'transitioned_at_utc': _dateTimeProvider.now().toIso8601String(),
+      'transitioned_at_utc': _dateTimeProvider.nowUtc().toIso8601String(),
       'reason': reason,
       'metadata': {
         'last_evaluated_at_utc': state.lastEvaluatedAtUtc.toIso8601String(),

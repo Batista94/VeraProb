@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:veraprob/domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart';
@@ -10,7 +10,7 @@ import 'package:veraprob/core/utils/date_time_provider.dart';
 /// Used exclusively in tests and as a fallback in non-WASM environments.
 /// Enforces idempotency via factId uniqueness (INV-11).
 ///
-/// **INV-18:** Pure Dart — zero Flutter / Supabase dependencies.
+/// **INV-18:** Pure Dart â€” zero Flutter / Supabase dependencies.
 class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
   final List<PendingFact> _facts = [];
   final StreamController<int> _countController =
@@ -19,7 +19,7 @@ class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
 
   InMemoryLocalFactQueueRepository(this._dateTimeProvider);
 
-  // ── LocalFactQueueRepository ─────────────────────────────────────────────
+  // â”€â”€ LocalFactQueueRepository â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   @override
   Future<void> enqueue(PendingFact fact) async {
@@ -77,7 +77,7 @@ class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
   Future<void> clearAcknowledged({
     Duration olderThan = const Duration(hours: 48),
   }) async {
-    final cutoff = _dateTimeProvider.now().subtract(olderThan);
+    final cutoff = _dateTimeProvider.nowUtc().subtract(olderThan);
     final before = _facts.length;
     _facts.removeWhere(
       (f) =>
@@ -87,7 +87,7 @@ class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
     if (_facts.length != before) _emitCount();
   }
 
-  // ── Private helpers ──────────────────────────────────────────────────────
+  // â”€â”€ Private helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _update(String factId, PendingFact Function(PendingFact) transform) {
     final idx = _facts.indexWhere((f) => f.factId == factId);

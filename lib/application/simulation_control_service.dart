@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -49,7 +49,7 @@ class SimulationControlService implements OperationalControlService {
             entityId: tripId,
             oldValue: oldStatus?.name,
             newValue: newStatus.name,
-            reason: reason ?? 'Mudança de status via painel',
+            reason: reason ?? 'MudanÃ§a de status via painel',
           )
           .catchError((e) {
             // In production, log to crashlytics/sentry
@@ -66,12 +66,12 @@ class SimulationControlService implements OperationalControlService {
         // ignore: use_null_aware_elements
         if (reason != null) 'reason': reason,
         'source': 'operator_manual',
-        'timestamp': _dateTimeProvider.now().toIso8601String(),
+        'timestamp': _dateTimeProvider.nowUtc().toIso8601String(),
       },
     );
 
-    // ── Dispatch forensic evidence to the SLA ledger via the module port ──
-    final nowUtc = _dateTimeProvider.now();
+    // â”€â”€ Dispatch forensic evidence to the SLA ledger via the module port â”€â”€
+    final nowUtc = _dateTimeProvider.nowUtc();
     final trip = _simulation.getTripById(tripId);
 
     if (newStatus == TripStatus.interrupted) {
@@ -134,11 +134,11 @@ class SimulationControlService implements OperationalControlService {
         // ignore: use_null_aware_elements
         if (notes != null) 'notes': notes,
         'source': 'operator_manual',
-        'timestamp': _dateTimeProvider.now().toIso8601String(),
+        'timestamp': _dateTimeProvider.nowUtc().toIso8601String(),
       },
     );
 
-    // ── Dispatch forensic evidence to the SLA ledger via the module port ──
+    // â”€â”€ Dispatch forensic evidence to the SLA ledger via the module port â”€â”€
     await _contractualEvents.dispatchOccurrenceRegistered(
       organizationId: _getOrganizationId(),
       tripId: tripId,
@@ -147,7 +147,7 @@ class SimulationControlService implements OperationalControlService {
       occurrenceType: eventType.name,
       notes: notes,
       metadata: metadata ?? const {},
-      occurredAtUtc: _dateTimeProvider.now(),
+      occurredAtUtc: _dateTimeProvider.nowUtc(),
     );
 
     return event;
@@ -174,7 +174,7 @@ class SimulationControlService implements OperationalControlService {
             entityId: contractId,
             oldValue: 'unknown',
             newValue: newValueCents.toString(),
-            reason: 'Atualização de contrato via barramento autorizado',
+            reason: 'AtualizaÃ§Ã£o de contrato via barramento autorizado',
           )
           .catchError((e) {
             debugPrint('Failed to log audit action: $e');

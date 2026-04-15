@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
@@ -19,13 +19,13 @@ import 'sla_ledger_mapper.dart';
 ///
 /// **Security (INV-1):** Step 1 validates that the [organizationId] in the
 /// command matches the authenticated user's JWT claim. This is a Fail-Fast
-/// check — if it fails, [SovereigntyViolationException] is thrown before
+/// check â€” if it fails, [SovereigntyViolationException] is thrown before
 /// any domain factory, repository, or ledger operation is invoked.
 ///
-/// Contains NO domain logic — all validation is delegated to
+/// Contains NO domain logic â€” all validation is delegated to
 /// [Contract.create()].
 ///
-/// Throws [DomainException] if any invariant is violated —
+/// Throws [DomainException] if any invariant is violated â€”
 /// in which case nothing is persisted and the ledger remains untouched.
 class CreateContractHandler {
   final TenantValidationService _tenantValidator;
@@ -49,10 +49,10 @@ class CreateContractHandler {
   /// Returns the created [Contract] aggregate.
   ///
   /// **INV-1 Fail-Fast:** Throws [SovereigntyViolationException] if the
-  /// command's [organizationId] does not match the JWT claim — before any
+  /// command's [organizationId] does not match the JWT claim â€” before any
   /// repository or domain factory is invoked.
   Future<Contract> handle(CreateContractCommand command) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Validate that the org_id in the command matches the authenticated
     // user's JWT claim. Throws SovereigntyViolationException on mismatch.
     await _tenantValidator.assertTenantMatches(
@@ -60,7 +60,7 @@ class CreateContractHandler {
       sessionId: command.sessionId,
     );
 
-    // ── Step 2: Create aggregate via domain factory ──────────────────────
+    // â”€â”€ Step 2: Create aggregate via domain factory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     final contract = Contract.create(
       organizationId: command.organizationId,
       name: command.name,
@@ -71,10 +71,10 @@ class CreateContractHandler {
       financialCeiling: command.financialCeilingCents != null
           ? Money(command.financialCeilingCents!)
           : null,
-      nowUtc: _clock.now(),
+      nowUtc: _clock.nowUtc(),
     );
 
-    // ── Step 3: Persist aggregate ────────────────────────────────────────
+    // â”€â”€ Step 3: Persist aggregate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     try {
       await _contractRepository.save(contract);
     } on PostgrestException catch (e) {
@@ -82,13 +82,13 @@ class CreateContractHandler {
       rethrow;
     }
 
-    // ── Step 4: Append domain events to the immutable ledger ─────────────
+    // â”€â”€ Step 4: Append domain events to the immutable ledger â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     for (final event in contract.domainEvents) {
       final entry = SlaLedgerMapper.mapToEntry(event);
       await _ledger.append(entry);
     }
 
-    // ── Step 5: Return aggregate ─────────────────────────────────────────
+    // â”€â”€ Step 5: Return aggregate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     return contract;
   }
 
@@ -99,16 +99,16 @@ class CreateContractHandler {
   /// domain-layer exceptions (INV-4 / INV-13).
   ///
   /// **Mapping:**
-  /// - [SovereigntyViolationException] → `ContractFormResult.failure` (INV-26: generic message)
-  /// - [DomainException] → `ContractFormResult.failure` (user-facing message)
-  /// - Other exceptions → `ContractFormResult.unknownError()`
+  /// - [SovereigntyViolationException] â†’ `ContractFormResult.failure` (INV-26: generic message)
+  /// - [DomainException] â†’ `ContractFormResult.failure` (user-facing message)
+  /// - Other exceptions â†’ `ContractFormResult.unknownError()`
   Future<ContractFormResult> submitForm(CreateContractCommand command) async {
     try {
       final contract = await handle(command);
       return ContractFormResult.success(contract.id);
     } on SovereigntyViolationException {
-      // INV-26: Generic message — no forensic details leaked to the UI.
-      return const ContractFormResult.failure('Contrato não encontrado.');
+      // INV-26: Generic message â€” no forensic details leaked to the UI.
+      return const ContractFormResult.failure('Contrato nÃ£o encontrado.');
     } on DomainException catch (e) {
       return ContractFormResult.failure(e.message);
     } catch (_) {

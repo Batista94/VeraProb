@@ -13,7 +13,7 @@ class FakeDateTimeProvider implements IDateTimeProvider {
     : _fixedTime = isUtc ? fixedTime.toUtc() : fixedTime;
 
   @override
-  DateTime now() => _fixedTime.toUtc();
+  DateTime nowUtc() => _fixedTime.toUtc();
 
   @override
   DateTime nowBrazil() => DateTime(

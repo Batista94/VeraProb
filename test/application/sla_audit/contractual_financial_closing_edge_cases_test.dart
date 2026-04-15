@@ -92,7 +92,7 @@ class _FakeClock implements IDateTimeProvider {
   _FakeClock(this._now);
 
   @override
-  DateTime now() => _now;
+  DateTime nowUtc() => _now;
 
   @override
   DateTime nowBrazil() => _now;

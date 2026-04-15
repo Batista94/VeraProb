@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+﻿import 'package:drift/drift.dart';
 
 import 'package:veraprob/domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart'
@@ -12,7 +12,7 @@ import 'package:veraprob/core/utils/date_time_provider.dart';
 /// Uses `edge_ledger_v1.db` (WasmDatabase on Flutter Web, native SQLite
 /// on other platforms).
 ///
-/// **INV-11:** `insertOnConflictUpdate` — idempotent by (factId, contentHash UNIQUE).
+/// **INV-11:** `insertOnConflictUpdate` â€” idempotent by (factId, contentHash UNIQUE).
 /// **INV-12:** `clearAcknowledged` deletes records older than 48 h.
 class DriftLocalFactQueueRepository implements LocalFactQueueRepository {
   final LocalFactDatabase _db;
@@ -86,7 +86,7 @@ class DriftLocalFactQueueRepository implements LocalFactQueueRepository {
   Future<void> clearAcknowledged({
     Duration olderThan = const Duration(hours: 48),
   }) async {
-    final cutoff = _dateTimeProvider.now().subtract(olderThan);
+    final cutoff = _dateTimeProvider.nowUtc().subtract(olderThan);
     await (_db.delete(_db.pendingFacts)..where(
           (t) =>
               t.syncStatus.equals(SyncStatus.acknowledged.name) &
@@ -95,7 +95,7 @@ class DriftLocalFactQueueRepository implements LocalFactQueueRepository {
         .go();
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<int> _currentRetryCount(String factId) async {
     final row =

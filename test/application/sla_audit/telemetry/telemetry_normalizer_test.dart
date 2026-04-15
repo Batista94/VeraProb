@@ -25,7 +25,7 @@ class FakeClock extends Fake implements IDateTimeProvider {
   final DateTime _now;
   FakeClock(this._now);
   @override
-  DateTime now() => _now;
+  DateTime nowUtc() => _now;
 }
 
 void main() {

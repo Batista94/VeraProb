@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/detectors/stopped_vehicle_detector.dart';
@@ -26,7 +26,7 @@ void main() {
 
     setUp(() {
       mockDateTime = MockDateTimeProvider();
-      when(() => mockDateTime.now()).thenReturn(DateTime.now().toUtc());
+      when(() => mockDateTime.nowUtc()).thenReturn(DateTime.now().toUtc());
       detector = StoppedVehicleDetector(mockDateTime);
       normalizer = OperationalStateNormalizer(
         debounceDuration: Duration.zero,
@@ -126,7 +126,7 @@ void main() {
 
       final warning = detector.evaluate(trip, replayResults.first, []);
       expect(warning, isNotNull);
-      expect(warning!.message, contains('Veículo Parado na Via: 10 min'));
+      expect(warning!.message, contains('VeÃ­culo Parado na Via: 10 min'));
     });
 
     test('Dwell Time Transition - Moving to Stopped state transition', () {

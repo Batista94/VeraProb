@@ -1,4 +1,4 @@
-import 'package:collection/collection.dart';
+﻿import 'package:collection/collection.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/shared/idempotent_handler_mixin.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
@@ -133,7 +133,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
             declaredAtUtc: command.declaredAtUtc,
             ruleSnapshot: const RuleSnapshot([]), // Simplified for MVP
             shiftPatterns: command.shiftPatterns,
-            nowUtc: _clock.now(),
+            nowUtc: _clock.nowUtc(),
           )
         : PlanDeclaration.create(
             organizationId: command.organizationId,
@@ -160,7 +160,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
                   ),
                 )
                 .toList(),
-            nowUtc: _clock.now(),
+            nowUtc: _clock.nowUtc(),
           );
 
     // 3. Persist
@@ -168,7 +168,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
 
     // 4. Activate contract on first plan declaration (INV-18 happy path)
     if (command.planVersion == 1) {
-      final now = _clock.now();
+      final now = _clock.nowUtc();
       final activatedContract = contract.activate(nowUtc: now);
       await _contractRepository.save(activatedContract);
     }
@@ -180,7 +180,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
 
       // If this is the version 1, also emit CONTRACT_ACTIVATED to the ledger
       if (command.planVersion == 1) {
-        final now = _clock.now();
+        final now = _clock.nowUtc();
         final activationEvent = ContractActivatedEvent(
           organizationId: command.organizationId,
           contractId: command.contractId,
