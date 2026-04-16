@@ -1,10 +1,13 @@
+// ignore_for_file: deprecated_member_use_from_same_package
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/application/sla_audit/justification/evidence_binary_validator.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/sla_justification_manager.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_sla_justification_command.dart';
+import 'package:veraprob/application/sla_audit/justification/xss_input_sanitizer.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
@@ -29,6 +32,11 @@ class MockClock extends Mock implements IDateTimeProvider {}
 
 class MockEvidenceIntegrityVerifier extends Mock
     implements EvidenceIntegrityVerifier {}
+
+class MockXssInputSanitizer extends Mock implements XssInputSanitizer {}
+
+class MockEvidenceBinaryValidator extends Mock
+    implements EvidenceBinaryValidator {}
 
 class MockEvidenceLinkChecker extends Mock implements EvidenceLinkChecker {}
 
@@ -140,17 +148,28 @@ void main() {
 
   /// Stubs for review (approve/reject) flows.
   ///
-  /// Uses `updateStatusAtomic` (returns 1 = success) followed by `findById`
-  /// (returns the post-update approved entity). This mirrors the new atomic
-  /// update pattern replacing the old optimistic-lock-free `_loadPending`.
+  /// The Manager now uses `updateStatusWithAuditLog` (atomic RPC that handles
+  /// status + audit log + deletion queue in a single transaction) followed by
+  /// `findById` to reload the fresh entity.
+  ///
+  /// Red Team v2.1 — ID 2 (Atomicity): `appendAuditLog` is NO LONGER called
+  /// separately; it is handled by the RPC.
   void setupReviewStubs({
     required DateTime now,
     required SLAJustification pending,
   }) {
     when(() => mockClock.nowUtc()).thenReturn(now);
 
+    // Pre-load: findById called before updateStatusWithAuditLog to get evidence URLs.
     when(
-      () => mockRepo.updateStatusAtomic(
+      () => mockRepo.findById(
+        id: any(named: 'id'),
+        organizationId: any(named: 'organizationId'),
+      ),
+    ).thenAnswer((_) async => pending);
+
+    when(
+      () => mockRepo.updateStatusWithAuditLog(
         id: any(named: 'id'),
         organizationId: any(named: 'organizationId'),
         expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
@@ -158,23 +177,28 @@ void main() {
         reviewerId: any(named: 'reviewerId'),
         resolutionNotes: any(named: 'resolutionNotes'),
         reviewedAtUtc: any(named: 'reviewedAtUtc'),
+        callerRole: any(named: 'callerRole'),
+        evidenceUrls: any(named: 'evidenceUrls'),
       ),
     ).thenAnswer((_) async => 1);
 
-    // findById is called AFTER the atomic update to load the fresh entity.
+    // Second findById call AFTER the atomic update to reload the fresh entity.
+    // We override to return the approved/rejected entity after the RPC.
+    // The first call (pre-load) returns `pending`; the second returns `approved`.
+    var findByIdCallCount = 0;
     when(
       () => mockRepo.findById(
         id: any(named: 'id'),
         organizationId: any(named: 'organizationId'),
       ),
-    ).thenAnswer(
-      (_) async => pending.copyWith(
+    ).thenAnswer((_) async {
+      findByIdCallCount++;
+      if (findByIdCallCount == 1) return pending;
+      return pending.copyWith(
         status: JustificationStatus.approved,
         reviewerId: 'gestor-1',
-      ),
-    );
-
-    when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
+      );
+    });
   }
 
   setUp(() {
@@ -184,12 +208,38 @@ void main() {
     mockEvidenceVerifier = MockEvidenceIntegrityVerifier();
     rbac = RbacService();
 
+    // Create mock instances for new dependencies
+    final mockSanitizer = MockXssInputSanitizer();
+    final mockFileInspector = MockEvidenceBinaryValidator();
+
+    // Configure mocks
+    when(() => mockSanitizer.sanitizeText(any())).thenAnswer((inv) {
+      final input = inv.positionalArguments[0] as String;
+      return input
+          .replaceAll(
+            RegExp(
+              r'<script[^>]*>.*?</script>',
+              caseSensitive: false,
+              dotAll: true,
+            ),
+            '',
+          )
+          .replaceAll(RegExp(r'<[^>]*>'), '')
+          .trim();
+    });
+
+    when(
+      () => mockFileInspector.validateEvidence(any()),
+    ).thenAnswer((_) async => Future.value());
+
     manager = SLAJustificationManager(
       tenantValidator: mockTenant,
       repository: mockRepo,
       rbac: rbac,
       clock: mockClock,
       evidenceVerifier: mockEvidenceVerifier,
+      sanitizer: mockSanitizer,
+      fileInspector: mockFileInspector,
       eventExistsChecker:
           ({
             required String vehicleId,
@@ -227,9 +277,9 @@ void main() {
         ),
       );
 
-      // ZERO writes: no status update, no audit log
+      // ZERO writes: RBAC fires before any I/O — no status update, no audit log
       verifyNever(
-        () => mockRepo.updateStatusAtomic(
+        () => mockRepo.updateStatusWithAuditLog(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
           expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
@@ -237,9 +287,10 @@ void main() {
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
         ),
       );
-      verifyNever(() => mockRepo.appendAuditLog(any()));
 
       // Also verify NO findById was called — RBAC fires BEFORE any I/O
       verifyNever(
@@ -274,7 +325,7 @@ void main() {
       );
 
       verifyNever(
-        () => mockRepo.updateStatusAtomic(
+        () => mockRepo.updateStatusWithAuditLog(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
           expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
@@ -282,13 +333,14 @@ void main() {
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
         ),
       );
-      verifyNever(() => mockRepo.appendAuditLog(any()));
     });
 
     test(
-      'ACCEPTS approve from admin role — audit log seals callerRole "admin"',
+      'ACCEPTS approve from admin role — updateStatusWithAuditLog called with callerRole "admin"',
       () async {
         final now = DateTime.utc(2026, 4, 14, 16, 0);
         final pending = buildPendingJustification();
@@ -302,20 +354,27 @@ void main() {
           resolutionNotes: 'Evidência comprovada',
         );
 
+        // Verify the RPC was called with the correct callerRole
         final captured = verify(
-          () => mockRepo.appendAuditLog(captureAny()),
+          () => mockRepo.updateStatusWithAuditLog(
+            id: any(named: 'id'),
+            organizationId: any(named: 'organizationId'),
+            expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+            newStatus: any(named: 'newStatus'),
+            reviewerId: any(named: 'reviewerId'),
+            resolutionNotes: any(named: 'resolutionNotes'),
+            reviewedAtUtc: any(named: 'reviewedAtUtc'),
+            callerRole: captureAny(named: 'callerRole'),
+            evidenceUrls: any(named: 'evidenceUrls'),
+          ),
         ).captured;
 
-        expect(captured, hasLength(1));
-        final log = captured.first as JustificationAuditLog;
-        expect(log.callerRole, 'admin');
-        expect(log.userId, 'admin-user-1');
-        expect(log.newStatus, JustificationStatus.approved);
+        expect(captured.first, 'admin');
       },
     );
 
     test(
-      'ACCEPTS approve from operator role — audit log seals callerRole "operator"',
+      'ACCEPTS approve from operator role — updateStatusWithAuditLog called with callerRole "operator"',
       () async {
         final now = DateTime.utc(2026, 4, 14, 16, 0);
         final pending = buildPendingJustification();
@@ -330,11 +389,20 @@ void main() {
         );
 
         final captured = verify(
-          () => mockRepo.appendAuditLog(captureAny()),
+          () => mockRepo.updateStatusWithAuditLog(
+            id: any(named: 'id'),
+            organizationId: any(named: 'organizationId'),
+            expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+            newStatus: any(named: 'newStatus'),
+            reviewerId: any(named: 'reviewerId'),
+            resolutionNotes: any(named: 'resolutionNotes'),
+            reviewedAtUtc: any(named: 'reviewedAtUtc'),
+            callerRole: captureAny(named: 'callerRole'),
+            evidenceUrls: any(named: 'evidenceUrls'),
+          ),
         ).captured;
 
-        final log = captured.first as JustificationAuditLog;
-        expect(log.callerRole, 'operator');
+        expect(captured.first, 'operator');
       },
     );
 
@@ -442,12 +510,23 @@ void main() {
     );
 
     test('respects custom expiration window (48h)', () async {
+      final mockSanitizer = MockXssInputSanitizer();
+      final mockFileInspector = MockEvidenceBinaryValidator();
+      when(
+        () => mockSanitizer.sanitizeText(any()),
+      ).thenAnswer((inv) => inv.positionalArguments[0] as String);
+      when(
+        () => mockFileInspector.validateEvidence(any()),
+      ).thenAnswer((_) async {});
+
       manager = SLAJustificationManager(
         tenantValidator: mockTenant,
         repository: mockRepo,
         rbac: rbac,
         clock: mockClock,
         evidenceVerifier: mockEvidenceVerifier,
+        sanitizer: mockSanitizer,
+        fileInspector: mockFileInspector,
         eventExistsChecker:
             ({
               required String vehicleId,
@@ -535,12 +614,23 @@ void main() {
         final now = eventTime.add(const Duration(hours: 2));
         setupDefaultStubs(now: now);
 
+        final mockSanitizer = MockXssInputSanitizer();
+        final mockFileInspector = MockEvidenceBinaryValidator();
+        when(
+          () => mockSanitizer.sanitizeText(any()),
+        ).thenReturn('sanitized_text_valid');
+        when(
+          () => mockFileInspector.validateEvidence(any()),
+        ).thenAnswer((_) async {});
+
         manager = SLAJustificationManager(
           tenantValidator: mockTenant,
           repository: mockRepo,
           rbac: rbac,
           clock: mockClock,
           evidenceVerifier: mockEvidenceVerifier,
+          sanitizer: mockSanitizer,
+          fileInspector: mockFileInspector,
           eventExistsChecker:
               ({
                 required String vehicleId,
@@ -911,8 +1001,17 @@ void main() {
       final now = DateTime.utc(2026, 4, 14, 16, 0);
       when(() => mockClock.nowUtc()).thenReturn(now);
 
+      final pending = buildPendingJustification();
+      // Pre-load findById returns the justification.
       when(
-        () => mockRepo.updateStatusAtomic(
+        () => mockRepo.findById(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+        ),
+      ).thenAnswer((_) async => pending);
+
+      when(
+        () => mockRepo.updateStatusWithAuditLog(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
           expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
@@ -920,6 +1019,8 @@ void main() {
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
         ),
       ).thenAnswer((_) async => 0); // 0 rows = concurrent modification
 
@@ -939,9 +1040,6 @@ void main() {
           ),
         ),
       );
-
-      // No audit log written — optimistic lock failed before log step
-      verifyNever(() => mockRepo.appendAuditLog(any()));
     });
 
     test('rejectJustification throws ConcurrencyException when atomic update '
@@ -949,8 +1047,16 @@ void main() {
       final now = DateTime.utc(2026, 4, 14, 16, 0);
       when(() => mockClock.nowUtc()).thenReturn(now);
 
+      final pending = buildPendingJustification();
       when(
-        () => mockRepo.updateStatusAtomic(
+        () => mockRepo.findById(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+        ),
+      ).thenAnswer((_) async => pending);
+
+      when(
+        () => mockRepo.updateStatusWithAuditLog(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
           expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
@@ -958,6 +1064,8 @@ void main() {
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
         ),
       ).thenAnswer((_) async => 0);
 
@@ -971,24 +1079,23 @@ void main() {
         ),
         throwsA(isA<ConcurrencyException>()),
       );
-
-      verifyNever(() => mockRepo.appendAuditLog(any()));
     });
 
     test('race condition scenario: second concurrent approve throws '
         'ConcurrencyException (already modified justification)', () async {
       // Simulates: gestor-1 and gestor-2 both read the same PENDING record.
-      // gestor-1 approves first (atomic update succeeds → 1 row).
-      // gestor-2 tries to approve the same record (atomic update → 0 rows
+      // gestor-1 approves first (atomic RPC succeeds → 1 row).
+      // gestor-2 tries to approve the same record (RPC → 0 rows,
       // because status is now APPROVED, not PENDING).
 
       final now = DateTime.utc(2026, 4, 14, 16, 0);
       when(() => mockClock.nowUtc()).thenReturn(now);
-      when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
 
-      var callCount = 0;
+      final pending = buildPendingJustification();
+      var rpcCallCount = 0;
+
       when(
-        () => mockRepo.updateStatusAtomic(
+        () => mockRepo.updateStatusWithAuditLog(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
           expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
@@ -996,24 +1103,29 @@ void main() {
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
         ),
       ).thenAnswer((_) async {
-        callCount++;
-        return callCount == 1 ? 1 : 0; // First wins, second loses
+        rpcCallCount++;
+        return rpcCallCount == 1 ? 1 : 0; // First wins, second loses
       });
 
-      final pending = buildPendingJustification();
+      var findByIdCallCount = 0;
       when(
         () => mockRepo.findById(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
         ),
-      ).thenAnswer(
-        (_) async => pending.copyWith(
+      ).thenAnswer((_) async {
+        findByIdCallCount++;
+        // Odd calls = pre-load; even calls = post-update reload
+        if (findByIdCallCount % 2 == 1) return pending;
+        return pending.copyWith(
           status: JustificationStatus.approved,
           reviewerId: 'gestor-1',
-        ),
-      );
+        );
+      });
 
       // gestor-1 wins the race
       await manager.approveJustification(
@@ -1036,12 +1148,24 @@ void main() {
         throwsA(isA<ConcurrencyException>()),
       );
 
-      // Only one successful approval audit log
-      verify(() => mockRepo.appendAuditLog(any())).called(1);
+      // RPC was called twice (once per attempt), second returned 0
+      verify(
+        () => mockRepo.updateStatusWithAuditLog(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
+        ),
+      ).called(2);
     });
 
     test('approveJustification uses PENDING as expectedCurrentStatus in atomic '
-        'update — correct optimistic lock predicate', () async {
+        'RPC — correct optimistic lock predicate', () async {
       final now = DateTime.utc(2026, 4, 14, 16, 0);
       final pending = buildPendingJustification();
       setupReviewStubs(now: now, pending: pending);
@@ -1055,7 +1179,7 @@ void main() {
       );
 
       final captured = verify(
-        () => mockRepo.updateStatusAtomic(
+        () => mockRepo.updateStatusWithAuditLog(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
           expectedCurrentStatus: captureAny(named: 'expectedCurrentStatus'),
@@ -1063,6 +1187,8 @@ void main() {
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
         ),
       ).captured;
 
@@ -1386,38 +1512,39 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   group('Audit Trail — Status Transitions', () {
-    test(
-      'approve generates audit log with PENDING → APPROVED and callerRole',
-      () async {
-        final now = DateTime.utc(2026, 4, 14, 16, 0);
-        final pending = buildPendingJustification();
-        setupReviewStubs(now: now, pending: pending);
+    test('approve: updateStatusWithAuditLog called with correct parameters '
+        '(PENDING → APPROVED, callerRole="admin")', () async {
+      final now = DateTime.utc(2026, 4, 14, 16, 0);
+      final pending = buildPendingJustification();
+      setupReviewStubs(now: now, pending: pending);
 
-        await manager.approveJustification(
-          justificationId: 'j-1',
+      await manager.approveJustification(
+        justificationId: 'j-1',
+        organizationId: 'org-1',
+        reviewerId: 'gestor-1',
+        callerRole: UserRole.admin,
+        resolutionNotes: 'Evidência comprovada',
+      );
+
+      // Verify the RPC (which handles audit log internally) was called with
+      // the correct status transition and caller attribution.
+      verify(
+        () => mockRepo.updateStatusWithAuditLog(
+          id: 'j-1',
           organizationId: 'org-1',
+          expectedCurrentStatus: JustificationStatus.pending,
+          newStatus: JustificationStatus.approved,
           reviewerId: 'gestor-1',
-          callerRole: UserRole.admin,
-          resolutionNotes: 'Evidência comprovada',
-        );
-
-        final captured = verify(
-          () => mockRepo.appendAuditLog(captureAny()),
-        ).captured;
-
-        expect(captured, hasLength(1));
-        final log = captured.first as JustificationAuditLog;
-        expect(log.justificationId, 'j-1');
-        expect(log.userId, 'gestor-1');
-        expect(log.callerRole, 'admin');
-        expect(log.previousStatus, JustificationStatus.pending);
-        expect(log.newStatus, JustificationStatus.approved);
-        expect(log.timestamp, now);
-      },
-    );
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: 'admin',
+          evidenceUrls: any(named: 'evidenceUrls'),
+        ),
+      ).called(1);
+    });
 
     test(
-      'reject generates audit log with PENDING → REJECTED and callerRole',
+      'reject: updateStatusWithAuditLog called with PENDING → REJECTED and callerRole="operator"',
       () async {
         final now = DateTime.utc(2026, 4, 14, 16, 0);
         final pending = buildPendingJustification(
@@ -1428,8 +1555,24 @@ void main() {
 
         when(() => mockClock.nowUtc()).thenReturn(now);
 
+        // Pre-load findById returns the justification.
+        var findByIdCallCount = 0;
         when(
-          () => mockRepo.updateStatusAtomic(
+          () => mockRepo.findById(
+            id: any(named: 'id'),
+            organizationId: any(named: 'organizationId'),
+          ),
+        ).thenAnswer((_) async {
+          findByIdCallCount++;
+          if (findByIdCallCount == 1) return pending;
+          return pending.copyWith(
+            status: JustificationStatus.rejected,
+            reviewerId: 'gestor-1',
+          );
+        });
+
+        when(
+          () => mockRepo.updateStatusWithAuditLog(
             id: any(named: 'id'),
             organizationId: any(named: 'organizationId'),
             expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
@@ -1437,21 +1580,10 @@ void main() {
             reviewerId: any(named: 'reviewerId'),
             resolutionNotes: any(named: 'resolutionNotes'),
             reviewedAtUtc: any(named: 'reviewedAtUtc'),
+            callerRole: any(named: 'callerRole'),
+            evidenceUrls: any(named: 'evidenceUrls'),
           ),
         ).thenAnswer((_) async => 1);
-
-        when(
-          () => mockRepo.findById(
-            id: any(named: 'id'),
-            organizationId: any(named: 'organizationId'),
-          ),
-        ).thenAnswer(
-          (_) async => pending.copyWith(
-            status: JustificationStatus.rejected,
-            reviewerId: 'gestor-1',
-          ),
-        );
-        when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
 
         await manager.rejectJustification(
           justificationId: 'j-2',
@@ -1461,16 +1593,21 @@ void main() {
           resolutionNotes: 'Foto não comprova parada forçada',
         );
 
-        final captured = verify(
-          () => mockRepo.appendAuditLog(captureAny()),
-        ).captured;
-
-        expect(captured, hasLength(1));
-        final log = captured.first as JustificationAuditLog;
-        expect(log.previousStatus, JustificationStatus.pending);
-        expect(log.newStatus, JustificationStatus.rejected);
-        expect(log.userId, 'gestor-1');
-        expect(log.callerRole, 'operator');
+        // Verify the RPC (which handles audit log internally) was called with
+        // the correct status transition.
+        verify(
+          () => mockRepo.updateStatusWithAuditLog(
+            id: 'j-2',
+            organizationId: 'org-1',
+            expectedCurrentStatus: JustificationStatus.pending,
+            newStatus: JustificationStatus.rejected,
+            reviewerId: 'gestor-1',
+            resolutionNotes: any(named: 'resolutionNotes'),
+            reviewedAtUtc: any(named: 'reviewedAtUtc'),
+            callerRole: 'operator',
+            evidenceUrls: any(named: 'evidenceUrls'),
+          ),
+        ).called(1);
       },
     );
 
@@ -1494,14 +1631,23 @@ void main() {
     });
 
     test('approve already-modified justification throws ConcurrencyException '
-        '(atomic update returns 0 rows)', () async {
+        '(atomic RPC returns 0 rows)', () async {
       final now = DateTime.utc(2026, 4, 14, 16, 0);
       when(() => mockClock.nowUtc()).thenReturn(now);
+
+      final pending = buildPendingJustification(id: 'j-4');
+      // Pre-load findById.
+      when(
+        () => mockRepo.findById(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+        ),
+      ).thenAnswer((_) async => pending);
 
       // Simulate: the record was already approved by a concurrent operation —
       // WHERE status='PENDING' matches 0 rows.
       when(
-        () => mockRepo.updateStatusAtomic(
+        () => mockRepo.updateStatusWithAuditLog(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
           expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
@@ -1509,6 +1655,8 @@ void main() {
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
         ),
       ).thenAnswer((_) async => 0);
 

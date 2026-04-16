@@ -135,6 +135,38 @@ class PostgresJustificationRepository extends BasePostgresRepository
     }
   }
 
+  @override
+  Future<int> updateStatusWithAuditLog({
+    required String id,
+    required String organizationId,
+    required JustificationStatus expectedCurrentStatus,
+    required JustificationStatus newStatus,
+    required String? reviewerId,
+    required String? resolutionNotes,
+    required DateTime reviewedAtUtc,
+    required String callerRole,
+    required List<String> evidenceUrls,
+  }) async {
+    try {
+      final result = await client.rpc(
+        'update_justification_status_with_audit',
+        params: {
+          'p_justification_id': id,
+          'p_org_id': organizationId,
+          'p_expected_status': expectedCurrentStatus.dbValue,
+          'p_new_status': newStatus.dbValue,
+          'p_reviewer_id': reviewerId,
+          'p_resolution_notes': resolutionNotes,
+          'p_caller_role': callerRole,
+          'p_evidence_urls': evidenceUrls,
+        },
+      );
+      return result as int;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'justification');
+    }
+  }
+
   // ── Evidence ──────────────────────────────────────────────────────────────
 
   @override

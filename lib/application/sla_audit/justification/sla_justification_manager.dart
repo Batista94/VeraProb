@@ -1,5 +1,10 @@
 import 'package:uuid/uuid.dart';
 
+// ignore_for_file: deprecated_member_use_from_same_package
+// Rationale: `expireStaleJustifications` still uses `updateStatusAtomic` +
+// `appendAuditLog` for batch expiration. Migration to a dedicated
+// `expireJustificationsWithAuditLog` RPC is tracked as a post-v2.1 task.
+
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
@@ -13,8 +18,10 @@ import 'package:veraprob/domain/sla_audit/justification/justification_status.dar
 import 'package:veraprob/domain/sla_audit/justification/sla_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_category.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_repository.dart';
+import 'evidence_binary_validator.dart';
 import 'evidence_integrity_verifier.dart';
 import 'submit_sla_justification_command.dart';
+import 'xss_input_sanitizer.dart';
 
 /// Central orchestrator for the SLA Justification Layer (CX-05).
 ///
@@ -53,6 +60,8 @@ class SLAJustificationManager {
   final RbacService _rbac;
   final IDateTimeProvider _clock;
   final EvidenceIntegrityVerifier _evidenceVerifier;
+  final XssInputSanitizer _sanitizer;
+  final EvidenceBinaryValidator _fileInspector;
 
   /// Configurable expiration window. Default: 24 hours after the event.
   final Duration expirationWindow;
@@ -81,13 +90,17 @@ class SLAJustificationManager {
     required RbacService rbac,
     required IDateTimeProvider clock,
     required EvidenceIntegrityVerifier evidenceVerifier,
+    required XssInputSanitizer sanitizer,
+    required EvidenceBinaryValidator fileInspector,
     required this.eventExistsChecker,
     this.expirationWindow = const Duration(hours: 24),
   }) : _tenantValidator = tenantValidator,
        _repository = repository,
        _rbac = rbac,
        _clock = clock,
-       _evidenceVerifier = evidenceVerifier;
+       _evidenceVerifier = evidenceVerifier,
+       _sanitizer = sanitizer,
+       _fileInspector = fileInspector;
 
   /// Submits a new SLA justification for a vehicle infraction event.
   ///
@@ -120,14 +133,17 @@ class SLAJustificationManager {
       );
     }
 
-    // ── Step 3: Description validation (min 10 chars) ────────────────────
-    if (command.description.trim().length < 10) {
+    // ── Step 3: XSS Protection (Red Team ID 4) ───────────────────────────
+    final sanitizedDescription = _sanitizer.sanitizeText(command.description);
+
+    // ── Step 4: Description validation (min 10 chars) ────────────────────
+    if (sanitizedDescription.trim().length < 10) {
       throw const DomainException(
         'Description must be at least 10 characters.',
       );
     }
 
-    // ── Step 4: CX05-INV-23 (Evidence Sealing — format validation) ───────
+    // ── Step 5: CX05-INV-23 (Evidence Sealing — format validation) ───────
     if (command.evidenceHashes.isEmpty) {
       throw const DomainException(
         'Evidence required: at least one SHA-256 hash must be provided.',
@@ -146,9 +162,12 @@ class SLAJustificationManager {
       }
     }
 
+    // ── Step 6: Magic Bytes Validation (Red Team ID 3) ───────────────────
+    await _fileInspector.validateEvidence(command.evidenceUrls);
+
     final now = _clock.nowUtc();
 
-    // ── Step 5: CX05-INV-22 (Expiration Window) ─────────────────────────
+    // ── Step 7: CX05-INV-22 (Expiration Window) ─────────────────────────
     final elapsed = now.difference(command.eventTimestamp);
     if (elapsed > expirationWindow) {
       throw DomainException(
@@ -158,7 +177,7 @@ class SLAJustificationManager {
       );
     }
 
-    // ── Step 6: CX05-INV-20 (Linkage Integrity) ─────────────────────────
+    // ── Step 8: CX05-INV-20 (Linkage Integrity) ─────────────────────────
     final eventExists = await eventExistsChecker(
       vehicleId: command.vehicleId,
       eventTimestamp: command.eventTimestamp,
@@ -171,7 +190,7 @@ class SLAJustificationManager {
       );
     }
 
-    // ── Step 7: Anti-Double Dipping ──────────────────────────────────────
+    // ── Step 9: Anti-Double Dipping ──────────────────────────────────────
     final existing = await _repository.findByVehicleAndEvent(
       vehicleId: command.vehicleId,
       eventTimestamp: command.eventTimestamp,
@@ -184,7 +203,7 @@ class SLAJustificationManager {
       );
     }
 
-    // ── Step 8: Create justification ─────────────────────────────────────
+    // ── Step 10: Create justification ────────────────────────────────────
     final id = const Uuid().v4();
     final justification = SLAJustification(
       id: id,
@@ -192,7 +211,7 @@ class SLAJustificationManager {
       vehicleId: command.vehicleId,
       eventTimestamp: command.eventTimestamp,
       category: category,
-      description: command.description,
+      description: sanitizedDescription, // Use sanitized version
       evidenceUrls: List.unmodifiable(command.evidenceUrls),
       evidenceHashes: List.unmodifiable(command.evidenceHashes),
       status: JustificationStatus.pending,
@@ -202,7 +221,7 @@ class SLAJustificationManager {
     );
     await _repository.create(justification);
 
-    // ── Step 9: CX05-INV-23 (Server-side hash re-verification) ───────────
+    // ── Step 11: CX05-INV-23 (Server-side hash re-verification) ──────────
     // Re-compute SHA-256 from raw bytes after persistence to detect any
     // tampering between client upload and DB record creation.
     final mismatches = await _evidenceVerifier.verifyAll(
@@ -211,7 +230,9 @@ class SLAJustificationManager {
     );
     if (mismatches.isNotEmpty) {
       // Auto-reject: evidence tampered post-submission.
-      await _repository.updateStatusAtomic(
+      // Uses updateStatusWithAuditLog (atomic RPC) to atomically update status,
+      // append the system audit log, and schedule evidence deletion.
+      await _repository.updateStatusWithAuditLog(
         id: id,
         organizationId: command.organizationId,
         expectedCurrentStatus: JustificationStatus.pending,
@@ -221,6 +242,8 @@ class SLAJustificationManager {
             'Auto-rejected: server-side hash re-verification failed for '
             'evidence index(es) $mismatches (CX05-INV-23).',
         reviewedAtUtc: now,
+        callerRole: 'SYSTEM',
+        evidenceUrls: command.evidenceUrls,
       );
       throw DomainException(
         'Evidence integrity check failed: hashes do not match for '
@@ -228,7 +251,7 @@ class SLAJustificationManager {
       );
     }
 
-    // ── Step 10: Audit Trail — initial PENDING log ────────────────────────
+    // ── Step 12: Audit Trail — initial PENDING log ───────────────────────
     await _repository.appendAuditLog(
       JustificationAuditLog(
         id: const Uuid().v4(),
@@ -250,10 +273,14 @@ class SLAJustificationManager {
   /// [RbacService.can] with [UserPermission.canReviewJustifications].
   /// Does NOT trust external caller validation.
   ///
-  /// **Race Condition Guard:** Uses [updateStatusAtomic] with
-  /// `expectedCurrentStatus = PENDING`. If 0 rows are affected, throws
-  /// [ConcurrencyException] — another concurrent process already acted on
-  /// this justification.
+  /// **Race Condition Guard:** Uses [updateStatusWithAuditLog] with atomic
+  /// transaction. If 0 is returned, throws [ConcurrencyException] — another
+  /// concurrent process already acted on this justification.
+  ///
+  /// **Red Team ID 2 (Atomicity):** Status update + audit log + deletion queue
+  /// in a single transaction. No "ghost deletions" possible.
+  ///
+  /// **Red Team ID 4 (XSS):** Sanitizes resolutionNotes before persistence.
   ///
   /// CX05-INV-21: This NEVER modifies `VehicleOperationalState`.
   /// The caller (SLA engine) reads the justification status to toggle
@@ -270,14 +297,31 @@ class SLAJustificationManager {
 
     final now = _clock.nowUtc();
 
-    final rowsAffected = await _repository.updateStatusAtomic(
+    // ── XSS Protection (Red Team ID 4) ───────────────────────────────────
+    final sanitizedNotes = resolutionNotes != null
+        ? _sanitizer.sanitizeText(resolutionNotes)
+        : null;
+
+    // ── Atomic Transaction (Red Team ID 2) ───────────────────────────────
+    // Fetch evidence URLs for deletion queue
+    final justification = await _repository.findById(
+      id: justificationId,
+      organizationId: organizationId,
+    );
+    if (justification == null) {
+      throw DomainException('Justification "$justificationId" not found.');
+    }
+
+    final rowsAffected = await _repository.updateStatusWithAuditLog(
       id: justificationId,
       organizationId: organizationId,
       expectedCurrentStatus: JustificationStatus.pending,
       newStatus: JustificationStatus.approved,
       reviewerId: reviewerId,
-      resolutionNotes: resolutionNotes,
+      resolutionNotes: sanitizedNotes,
       reviewedAtUtc: now,
+      callerRole: callerRole.name,
+      evidenceUrls: justification.evidenceUrls,
     );
 
     if (rowsAffected == 0) {
@@ -287,7 +331,7 @@ class SLAJustificationManager {
       );
     }
 
-    // Reload to get the post-update entity for audit log and return value.
+    // Reload to get the post-update entity
     final updated = await _repository.findById(
       id: justificationId,
       organizationId: organizationId,
@@ -297,18 +341,6 @@ class SLAJustificationManager {
         'Justification "$justificationId" not found after atomic update.',
       );
     }
-
-    await _repository.appendAuditLog(
-      JustificationAuditLog(
-        id: const Uuid().v4(),
-        justificationId: justificationId,
-        userId: reviewerId,
-        callerRole: callerRole.name,
-        previousStatus: JustificationStatus.pending,
-        newStatus: JustificationStatus.approved,
-        timestamp: now,
-      ),
-    );
 
     return updated;
   }
@@ -319,9 +351,16 @@ class SLAJustificationManager {
   /// [RbacService.can] with [UserPermission.canReviewJustifications].
   /// Does NOT trust external caller validation.
   ///
-  /// **Race Condition Guard:** Uses [updateStatusAtomic] with
-  /// `expectedCurrentStatus = PENDING`. If 0 rows are affected, throws
-  /// [ConcurrencyException].
+  /// **Race Condition Guard:** Uses [updateStatusWithAuditLog] with atomic
+  /// transaction. If 0 is returned, throws [ConcurrencyException].
+  ///
+  /// **Red Team ID 2 (Atomicity):** Status update + audit log + deletion queue
+  /// in a single transaction. Evidence scheduled for removal after 7-day grace.
+  ///
+  /// **Red Team ID 4 (XSS):** Sanitizes resolutionNotes before persistence.
+  ///
+  /// **Red Team ID 6 (Storage Leak):** Rejected justifications schedule evidence
+  /// for deletion via `evidence_deletion_queue`.
   Future<SLAJustification> rejectJustification({
     required String justificationId,
     required String organizationId,
@@ -332,7 +371,10 @@ class SLAJustificationManager {
     // ── RBAC Guard — Authority Sovereignty ────────────────────────────────
     _assertReviewAuthority(callerRole);
 
-    if (resolutionNotes.trim().length < 10) {
+    // ── XSS Protection (Red Team ID 4) ───────────────────────────────────
+    final sanitizedNotes = _sanitizer.sanitizeText(resolutionNotes);
+
+    if (sanitizedNotes.trim().length < 10) {
       throw const DomainException(
         'Resolution notes must be at least 10 characters.',
       );
@@ -340,14 +382,26 @@ class SLAJustificationManager {
 
     final now = _clock.nowUtc();
 
-    final rowsAffected = await _repository.updateStatusAtomic(
+    // ── Atomic Transaction (Red Team ID 2 + ID 6) ────────────────────────
+    // Fetch evidence URLs for deletion queue
+    final justification = await _repository.findById(
+      id: justificationId,
+      organizationId: organizationId,
+    );
+    if (justification == null) {
+      throw DomainException('Justification "$justificationId" not found.');
+    }
+
+    final rowsAffected = await _repository.updateStatusWithAuditLog(
       id: justificationId,
       organizationId: organizationId,
       expectedCurrentStatus: JustificationStatus.pending,
       newStatus: JustificationStatus.rejected,
       reviewerId: reviewerId,
-      resolutionNotes: resolutionNotes,
+      resolutionNotes: sanitizedNotes,
       reviewedAtUtc: now,
+      callerRole: callerRole.name,
+      evidenceUrls: justification.evidenceUrls,
     );
 
     if (rowsAffected == 0) {
@@ -357,7 +411,7 @@ class SLAJustificationManager {
       );
     }
 
-    // Reload to get the post-update entity for audit log and return value.
+    // Reload to get the post-update entity
     final updated = await _repository.findById(
       id: justificationId,
       organizationId: organizationId,
@@ -367,18 +421,6 @@ class SLAJustificationManager {
         'Justification "$justificationId" not found after atomic update.',
       );
     }
-
-    await _repository.appendAuditLog(
-      JustificationAuditLog(
-        id: const Uuid().v4(),
-        justificationId: justificationId,
-        userId: reviewerId,
-        callerRole: callerRole.name,
-        previousStatus: JustificationStatus.pending,
-        newStatus: JustificationStatus.rejected,
-        timestamp: now,
-      ),
-    );
 
     return updated;
   }

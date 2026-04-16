@@ -73,6 +73,10 @@ abstract class SLAJustificationRepository {
   ///
   /// This prevents the TOCTOU race condition where two concurrent approvals
   /// both read `status = PENDING` and both succeed.
+  @Deprecated(
+    'Use updateStatusWithAuditLog for atomic operations. '
+    'Separate calls create race conditions (Red Team ID 2).',
+  )
   Future<int> updateStatusAtomic({
     required String id,
     required String organizationId,
@@ -87,5 +91,38 @@ abstract class SLAJustificationRepository {
 
   /// Appends an immutable audit log entry for a status transition.
   /// Append-only — no update or delete (INV-3).
+  @Deprecated(
+    'Use updateStatusWithAuditLog for atomic operations. '
+    'Separate calls create race conditions (Red Team ID 2).',
+  )
   Future<void> appendAuditLog(JustificationAuditLog log);
+
+  // ── Atomic Operations (Red Team v2.1) ──────────────────────────────────────
+
+  /// Atomically updates status + appends audit log + schedules evidence deletion.
+  ///
+  /// **Red Team v2.1 Remediation (ID 2):** Replaces separate `updateStatusAtomic`
+  /// + `appendAuditLog` calls with a single transactional RPC.
+  ///
+  /// Returns the number of rows affected:
+  /// - `1` — success (status updated, audit logged, deletion scheduled if needed)
+  /// - `0` — concurrency conflict (entire transaction rolled back, no partial state)
+  ///
+  /// **Forensic Guarantee:** If this method returns 0, NO audit log entry exists
+  /// and NO deletion queue entry was created. The justification status is unchanged.
+  ///
+  /// **Evidence Lifecycle:** If [newStatus] is REJECTED or EXPIRED, all URLs in
+  /// [evidenceUrls] are scheduled for deletion after 7 days. If the status update
+  /// fails due to concurrency, no deletion is scheduled (prevents "ghost deletions").
+  Future<int> updateStatusWithAuditLog({
+    required String id,
+    required String organizationId,
+    required JustificationStatus expectedCurrentStatus,
+    required JustificationStatus newStatus,
+    required String? reviewerId,
+    required String? resolutionNotes,
+    required DateTime reviewedAtUtc,
+    required String callerRole,
+    required List<String> evidenceUrls,
+  });
 }

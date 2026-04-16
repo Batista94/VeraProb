@@ -39,6 +39,22 @@ abstract class JustificationRepository {
     required DateTime reviewedAtUtc,
   });
 
+  /// Atomically updates status + appends audit log + schedules evidence deletion
+  /// in a single Postgres RPC transaction (Red Team ID 2 — Atomicity).
+  ///
+  /// Returns the number of rows affected (1 = success, 0 = concurrency conflict).
+  Future<int> updateStatusWithAuditLog({
+    required String id,
+    required String organizationId,
+    required JustificationStatus expectedCurrentStatus,
+    required JustificationStatus newStatus,
+    required String? reviewerId,
+    required String? resolutionNotes,
+    required DateTime reviewedAtUtc,
+    required String callerRole,
+    required List<String> evidenceUrls,
+  });
+
   // ── Evidence ──────────────────────────────────────────────────────────────
 
   /// Appends an evidence record to an existing justification (INV-7/INV-8).

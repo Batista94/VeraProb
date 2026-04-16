@@ -41,6 +41,9 @@ dependencies:
   # ── 9.8.H Edge Ledger (LocalFactQueue) ──────────────────────────────────
   drift: ^2.22.0
   drift_flutter: ^0.2.4
+  # ── Red Team v2.1: XSS Protection (ID 4) ────────────
+  sanitize_html: ^2.1.0
+
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.1
@@ -49,6 +52,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   mocktail: ^1.0.3
+  mockito: ^5.4.4
   flutter_lints: ^6.0.0
   build_runner: ^2.4.0
   drift_dev: ^2.22.0

@@ -82,6 +82,36 @@ class InMemoryJustificationRepository implements JustificationRepository {
     return updated;
   }
 
+  @override
+  Future<int> updateStatusWithAuditLog({
+    required String id,
+    required String organizationId,
+    required JustificationStatus expectedCurrentStatus,
+    required JustificationStatus newStatus,
+    required String? reviewerId,
+    required String? resolutionNotes,
+    required DateTime reviewedAtUtc,
+    required String callerRole,
+    required List<String> evidenceUrls,
+  }) async {
+    final index = _justifications.indexWhere(
+      (j) => j.id == id && j.organizationId == organizationId,
+    );
+    if (index == -1) return 0; // Not found
+
+    final current = _justifications[index];
+    if (current.status != expectedCurrentStatus)
+      return 0; // Concurrency conflict
+
+    final updated = current.copyWith(
+      status: newStatus,
+      reviewedByUserId: reviewerId,
+      reviewedAtUtc: reviewedAtUtc,
+    );
+    _justifications[index] = updated;
+    return 1; // Success
+  }
+
   // ── Evidence ──────────────────────────────────────────────────────────────
 
   @override
