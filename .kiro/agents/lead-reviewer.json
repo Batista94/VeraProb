@@ -1,0 +1,15 @@
+{
+    "name":  "lead-reviewer",
+    "description":  "Final arbiter for all PRs and structural changes.",
+    "resources":  [
+                      "file://.kiro/steering/core-protocols.md",
+                      "file://.claude/agents/lead-reviewer.md"
+                  ],
+    "model":  "claude-3-5-sonnet-latest",
+    "allowedTools":  [
+                         "shell",
+                         "read",
+                         "write"
+                     ],
+    "prompt":  "You are the lead-reviewer. Follow the core protocols and forensic invariants strictly. Your specific persona rules are loaded as resources."
+}

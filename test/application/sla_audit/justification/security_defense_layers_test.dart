@@ -4,6 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_binary_validator.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
+import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/sla_justification_manager.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_sla_justification_command.dart';
 import 'package:veraprob/application/sla_audit/justification/xss_input_sanitizer.dart';
@@ -26,6 +27,7 @@ import 'security_defense_layers_test.mocks.dart';
   XssInputSanitizer,
   EvidenceBinaryValidator,
   SLAJustificationRepository,
+  EvidenceLinkChecker,
 ])
 void main() {
   late MockTenantValidationService mockTenantValidation;
@@ -34,6 +36,7 @@ void main() {
   late MockEvidenceIntegrityVerifier mockEvidenceVerifier;
   late MockXssInputSanitizer mockSanitizer;
   late MockEvidenceBinaryValidator mockFileInspector;
+  late MockEvidenceLinkChecker mockLinkChecker;
   late MockSLAJustificationRepository repository;
   late SLAJustificationManager manager;
 
@@ -44,6 +47,7 @@ void main() {
     mockEvidenceVerifier = MockEvidenceIntegrityVerifier();
     mockSanitizer = MockXssInputSanitizer();
     mockFileInspector = MockEvidenceBinaryValidator();
+    mockLinkChecker = MockEvidenceLinkChecker();
     repository = MockSLAJustificationRepository();
 
     manager = SLAJustificationManager(
@@ -54,6 +58,7 @@ void main() {
       sanitizer: mockSanitizer,
       fileInspector: mockFileInspector,
       repository: repository,
+      linkChecker: mockLinkChecker,
       eventExistsChecker:
           ({
             required String vehicleId,
@@ -97,6 +102,13 @@ void main() {
         declaredHashes: anyNamed('declaredHashes'),
       ),
     ).thenAnswer((_) async => []);
+
+    when(mockLinkChecker.checkLink(any)).thenAnswer(
+      (_) async => const EvidenceValidationResult(
+        url: '',
+        status: EvidenceLinkStatus.available,
+      ),
+    );
 
     when(mockRbac.can(any, any)).thenReturn(true);
 

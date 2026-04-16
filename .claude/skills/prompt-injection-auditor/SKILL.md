@@ -1,12 +1,6 @@
 ---
 name: "prompt-injection-auditor"
-trigger: "/audit-prompt"
 description: "🔍 Auditoria completa de prompt injection, jailbreaks e segurança"
-priority: 2000
-categories: ["security","safety","auditor"]
-disable-model-invocation: false
-signature: PF-SEC-8505A6F4BDF00F9E
-security_audit_signature: "Audited by QA Security - Score: 100/100"
 ---
 
 # 🔍 Prompt Injection Auditor v2.0 (Agnostic Version)

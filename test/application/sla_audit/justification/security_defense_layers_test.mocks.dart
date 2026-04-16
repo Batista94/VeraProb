@@ -3,30 +3,32 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i4;
+import 'dart:async' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i11;
+import 'package:mockito/src/dummies.dart' as _i12;
 import 'package:veraprob/application/shared/tenant_validation_service.dart'
-    as _i3;
+    as _i4;
 import 'package:veraprob/application/sla_audit/justification/evidence_binary_validator.dart'
-    as _i12;
+    as _i13;
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart'
-    as _i9;
-import 'package:veraprob/application/sla_audit/justification/xss_input_sanitizer.dart'
     as _i10;
-import 'package:veraprob/core/utils/date_time_provider.dart' as _i8;
-import 'package:veraprob/domain/enums/user_permissions.dart' as _i7;
-import 'package:veraprob/domain/enums/user_role.dart' as _i6;
-import 'package:veraprob/domain/services/rbac_service.dart' as _i5;
+import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart'
+    as _i3;
+import 'package:veraprob/application/sla_audit/justification/xss_input_sanitizer.dart'
+    as _i11;
+import 'package:veraprob/core/utils/date_time_provider.dart' as _i9;
+import 'package:veraprob/domain/enums/user_permissions.dart' as _i8;
+import 'package:veraprob/domain/enums/user_role.dart' as _i7;
+import 'package:veraprob/domain/services/rbac_service.dart' as _i6;
 import 'package:veraprob/domain/sla_audit/justification/justification_audit_log.dart'
-    as _i15;
+    as _i16;
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart'
-    as _i14;
+    as _i15;
 import 'package:veraprob/domain/sla_audit/justification/sla_justification.dart'
     as _i2;
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_repository.dart'
-    as _i13;
+    as _i14;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -54,17 +56,23 @@ class _FakeSLAJustification_1 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
+class _FakeEvidenceValidationResult_2 extends _i1.SmartFake
+    implements _i3.EvidenceValidationResult {
+  _FakeEvidenceValidationResult_2(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [TenantValidationService].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockTenantValidationService extends _i1.Mock
-    implements _i3.TenantValidationService {
+    implements _i4.TenantValidationService {
   MockTenantValidationService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<void> assertTenantMatches({
+  _i5.Future<void> assertTenantMatches({
     required String? payloadOrgId,
     required String? sessionId,
   }) =>
@@ -73,10 +81,10 @@ class MockTenantValidationService extends _i1.Mock
               #payloadOrgId: payloadOrgId,
               #sessionId: sessionId,
             }),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
   void verifySourceOwnership({
@@ -98,13 +106,13 @@ class MockTenantValidationService extends _i1.Mock
 /// A class which mocks [RbacService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockRbacService extends _i1.Mock implements _i5.RbacService {
+class MockRbacService extends _i1.Mock implements _i6.RbacService {
   MockRbacService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  bool can(_i6.UserRole? role, _i7.UserPermission? permission) =>
+  bool can(_i7.UserRole? role, _i8.UserPermission? permission) =>
       (super.noSuchMethod(
             Invocation.method(#can, [role, permission]),
             returnValue: false,
@@ -112,7 +120,7 @@ class MockRbacService extends _i1.Mock implements _i5.RbacService {
           as bool);
 
   @override
-  bool hasMinimumRole(_i6.UserRole? role, _i6.UserRole? minimumRole) =>
+  bool hasMinimumRole(_i7.UserRole? role, _i7.UserRole? minimumRole) =>
       (super.noSuchMethod(
             Invocation.method(#hasMinimumRole, [role, minimumRole]),
             returnValue: false,
@@ -123,7 +131,7 @@ class MockRbacService extends _i1.Mock implements _i5.RbacService {
 /// A class which mocks [IDateTimeProvider].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockIDateTimeProvider extends _i1.Mock implements _i8.IDateTimeProvider {
+class MockIDateTimeProvider extends _i1.Mock implements _i9.IDateTimeProvider {
   MockIDateTimeProvider() {
     _i1.throwOnMissingStub(this);
   }
@@ -152,13 +160,13 @@ class MockIDateTimeProvider extends _i1.Mock implements _i8.IDateTimeProvider {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockEvidenceIntegrityVerifier extends _i1.Mock
-    implements _i9.EvidenceIntegrityVerifier {
+    implements _i10.EvidenceIntegrityVerifier {
   MockEvidenceIntegrityVerifier() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<List<int>> verifyAll({
+  _i5.Future<List<int>> verifyAll({
     required List<String>? evidenceUrls,
     required List<String>? declaredHashes,
   }) =>
@@ -167,15 +175,15 @@ class MockEvidenceIntegrityVerifier extends _i1.Mock
               #evidenceUrls: evidenceUrls,
               #declaredHashes: declaredHashes,
             }),
-            returnValue: _i4.Future<List<int>>.value(<int>[]),
+            returnValue: _i5.Future<List<int>>.value(<int>[]),
           )
-          as _i4.Future<List<int>>);
+          as _i5.Future<List<int>>);
 }
 
 /// A class which mocks [XssInputSanitizer].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockXssInputSanitizer extends _i1.Mock implements _i10.XssInputSanitizer {
+class MockXssInputSanitizer extends _i1.Mock implements _i11.XssInputSanitizer {
   MockXssInputSanitizer() {
     _i1.throwOnMissingStub(this);
   }
@@ -184,7 +192,7 @@ class MockXssInputSanitizer extends _i1.Mock implements _i10.XssInputSanitizer {
   String sanitizeText(String? input) =>
       (super.noSuchMethod(
             Invocation.method(#sanitizeText, [input]),
-            returnValue: _i11.dummyValue<String>(
+            returnValue: _i12.dummyValue<String>(
               this,
               Invocation.method(#sanitizeText, [input]),
             ),
@@ -196,55 +204,55 @@ class MockXssInputSanitizer extends _i1.Mock implements _i10.XssInputSanitizer {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockEvidenceBinaryValidator extends _i1.Mock
-    implements _i12.EvidenceBinaryValidator {
+    implements _i13.EvidenceBinaryValidator {
   MockEvidenceBinaryValidator() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<void> validateEvidence(List<String>? urls) =>
+  _i5.Future<void> validateEvidence(List<String>? urls) =>
       (super.noSuchMethod(
             Invocation.method(#validateEvidence, [urls]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i4.Future<String?> detectMimeType(String? url) =>
+  _i5.Future<String?> detectMimeType(String? url) =>
       (super.noSuchMethod(
             Invocation.method(#detectMimeType, [url]),
-            returnValue: _i4.Future<String?>.value(),
+            returnValue: _i5.Future<String?>.value(),
           )
-          as _i4.Future<String?>);
+          as _i5.Future<String?>);
 }
 
 /// A class which mocks [SLAJustificationRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockSLAJustificationRepository extends _i1.Mock
-    implements _i13.SLAJustificationRepository {
+    implements _i14.SLAJustificationRepository {
   MockSLAJustificationRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<_i2.SLAJustification> create(
+  _i5.Future<_i2.SLAJustification> create(
     _i2.SLAJustification? justification,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#create, [justification]),
-            returnValue: _i4.Future<_i2.SLAJustification>.value(
+            returnValue: _i5.Future<_i2.SLAJustification>.value(
               _FakeSLAJustification_1(
                 this,
                 Invocation.method(#create, [justification]),
               ),
             ),
           )
-          as _i4.Future<_i2.SLAJustification>);
+          as _i5.Future<_i2.SLAJustification>);
 
   @override
-  _i4.Future<_i2.SLAJustification?> findById({
+  _i5.Future<_i2.SLAJustification?> findById({
     required String? id,
     required String? organizationId,
   }) =>
@@ -253,12 +261,12 @@ class MockSLAJustificationRepository extends _i1.Mock
               #id: id,
               #organizationId: organizationId,
             }),
-            returnValue: _i4.Future<_i2.SLAJustification?>.value(),
+            returnValue: _i5.Future<_i2.SLAJustification?>.value(),
           )
-          as _i4.Future<_i2.SLAJustification?>);
+          as _i5.Future<_i2.SLAJustification?>);
 
   @override
-  _i4.Future<_i2.SLAJustification?> findByVehicleAndEvent({
+  _i5.Future<_i2.SLAJustification?> findByVehicleAndEvent({
     required String? vehicleId,
     required DateTime? eventTimestamp,
     required String? organizationId,
@@ -269,15 +277,15 @@ class MockSLAJustificationRepository extends _i1.Mock
               #eventTimestamp: eventTimestamp,
               #organizationId: organizationId,
             }),
-            returnValue: _i4.Future<_i2.SLAJustification?>.value(),
+            returnValue: _i5.Future<_i2.SLAJustification?>.value(),
           )
-          as _i4.Future<_i2.SLAJustification?>);
+          as _i5.Future<_i2.SLAJustification?>);
 
   @override
-  _i4.Future<_i2.SLAJustification> updateStatus({
+  _i5.Future<_i2.SLAJustification> updateStatus({
     required String? id,
     required String? organizationId,
-    required _i14.JustificationStatus? status,
+    required _i15.JustificationStatus? status,
     required String? reviewerId,
     required String? resolutionNotes,
     required DateTime? reviewedAtUtc,
@@ -291,7 +299,7 @@ class MockSLAJustificationRepository extends _i1.Mock
               #resolutionNotes: resolutionNotes,
               #reviewedAtUtc: reviewedAtUtc,
             }),
-            returnValue: _i4.Future<_i2.SLAJustification>.value(
+            returnValue: _i5.Future<_i2.SLAJustification>.value(
               _FakeSLAJustification_1(
                 this,
                 Invocation.method(#updateStatus, [], {
@@ -305,10 +313,10 @@ class MockSLAJustificationRepository extends _i1.Mock
               ),
             ),
           )
-          as _i4.Future<_i2.SLAJustification>);
+          as _i5.Future<_i2.SLAJustification>);
 
   @override
-  _i4.Future<List<_i2.SLAJustification>> findExpiredPending({
+  _i5.Future<List<_i2.SLAJustification>> findExpiredPending({
     required DateTime? cutoffUtc,
     required String? organizationId,
   }) =>
@@ -317,14 +325,14 @@ class MockSLAJustificationRepository extends _i1.Mock
               #cutoffUtc: cutoffUtc,
               #organizationId: organizationId,
             }),
-            returnValue: _i4.Future<List<_i2.SLAJustification>>.value(
+            returnValue: _i5.Future<List<_i2.SLAJustification>>.value(
               <_i2.SLAJustification>[],
             ),
           )
-          as _i4.Future<List<_i2.SLAJustification>>);
+          as _i5.Future<List<_i2.SLAJustification>>);
 
   @override
-  _i4.Future<List<_i2.SLAJustification>> findExpiredPendingPaged({
+  _i5.Future<List<_i2.SLAJustification>> findExpiredPendingPaged({
     required DateTime? cutoffUtc,
     required String? organizationId,
     required int? limit,
@@ -337,18 +345,18 @@ class MockSLAJustificationRepository extends _i1.Mock
               #limit: limit,
               #afterId: afterId,
             }),
-            returnValue: _i4.Future<List<_i2.SLAJustification>>.value(
+            returnValue: _i5.Future<List<_i2.SLAJustification>>.value(
               <_i2.SLAJustification>[],
             ),
           )
-          as _i4.Future<List<_i2.SLAJustification>>);
+          as _i5.Future<List<_i2.SLAJustification>>);
 
   @override
-  _i4.Future<int> updateStatusAtomic({
+  _i5.Future<int> updateStatusAtomic({
     required String? id,
     required String? organizationId,
-    required _i14.JustificationStatus? expectedCurrentStatus,
-    required _i14.JustificationStatus? newStatus,
+    required _i15.JustificationStatus? expectedCurrentStatus,
+    required _i15.JustificationStatus? newStatus,
     required String? reviewerId,
     required String? resolutionNotes,
     required DateTime? reviewedAtUtc,
@@ -363,25 +371,25 @@ class MockSLAJustificationRepository extends _i1.Mock
               #resolutionNotes: resolutionNotes,
               #reviewedAtUtc: reviewedAtUtc,
             }),
-            returnValue: _i4.Future<int>.value(0),
+            returnValue: _i5.Future<int>.value(0),
           )
-          as _i4.Future<int>);
+          as _i5.Future<int>);
 
   @override
-  _i4.Future<void> appendAuditLog(_i15.JustificationAuditLog? log) =>
+  _i5.Future<void> appendAuditLog(_i16.JustificationAuditLog? log) =>
       (super.noSuchMethod(
             Invocation.method(#appendAuditLog, [log]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i4.Future<int> updateStatusWithAuditLog({
+  _i5.Future<int> updateStatusWithAuditLog({
     required String? id,
     required String? organizationId,
-    required _i14.JustificationStatus? expectedCurrentStatus,
-    required _i14.JustificationStatus? newStatus,
+    required _i15.JustificationStatus? expectedCurrentStatus,
+    required _i15.JustificationStatus? newStatus,
     required String? reviewerId,
     required String? resolutionNotes,
     required DateTime? reviewedAtUtc,
@@ -400,7 +408,30 @@ class MockSLAJustificationRepository extends _i1.Mock
               #callerRole: callerRole,
               #evidenceUrls: evidenceUrls,
             }),
-            returnValue: _i4.Future<int>.value(0),
+            returnValue: _i5.Future<int>.value(0),
           )
-          as _i4.Future<int>);
+          as _i5.Future<int>);
+}
+
+/// A class which mocks [EvidenceLinkChecker].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockEvidenceLinkChecker extends _i1.Mock
+    implements _i3.EvidenceLinkChecker {
+  MockEvidenceLinkChecker() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i5.Future<_i3.EvidenceValidationResult> checkLink(String? url) =>
+      (super.noSuchMethod(
+            Invocation.method(#checkLink, [url]),
+            returnValue: _i5.Future<_i3.EvidenceValidationResult>.value(
+              _FakeEvidenceValidationResult_2(
+                this,
+                Invocation.method(#checkLink, [url]),
+              ),
+            ),
+          )
+          as _i5.Future<_i3.EvidenceValidationResult>);
 }

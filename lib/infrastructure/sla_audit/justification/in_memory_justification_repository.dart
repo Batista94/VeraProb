@@ -100,8 +100,9 @@ class InMemoryJustificationRepository implements JustificationRepository {
     if (index == -1) return 0; // Not found
 
     final current = _justifications[index];
-    if (current.status != expectedCurrentStatus)
+    if (current.status != expectedCurrentStatus) {
       return 0; // Concurrency conflict
+    }
 
     final updated = current.copyWith(
       status: newStatus,

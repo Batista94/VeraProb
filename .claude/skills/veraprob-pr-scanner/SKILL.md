@@ -1,8 +1,6 @@
 ---
 name: veraprob-pr-scanner
 description: VeraProb forensic PR scanner — invoke this skill BEFORE any code review starts, without waiting to be asked. Executes the static scanner script first (WASM/Financial/UTC/DB/Linter binary checks), then performs neural Clean Code audit (SRP violations, Leaky Abstractions, DDD nomenclature drift, CQRS layer separation). Use whenever the Lead Reviewer persona is active, a PR diff is being reviewed, or changes touch lib/, supabase/migrations/, or any domain/application layer code. Do NOT proceed with reading PR files until this skill's Step 0 script has run.
-signature: VP-SEC-7985BB94FF750C34
-security_audit_signature: "Audited by QA Security - Score: 97/100 | OWASP LLM Top10 + NIST AI RMF | SHA-256: 7985bb94ff750c345a791a21d794afee13c6648396e548186c53265c81d55495 | 2026-03-21"
 ---
 
 # VeraProb PR Scanner — Deterministic First-Line Defense

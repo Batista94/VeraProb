@@ -20,6 +20,7 @@ import 'package:veraprob/domain/sla_audit/justification/sla_justification_catego
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_repository.dart';
 import 'evidence_binary_validator.dart';
 import 'evidence_integrity_verifier.dart';
+import 'evidence_validation_service.dart';
 import 'submit_sla_justification_command.dart';
 import 'xss_input_sanitizer.dart';
 
@@ -62,6 +63,7 @@ class SLAJustificationManager {
   final EvidenceIntegrityVerifier _evidenceVerifier;
   final XssInputSanitizer _sanitizer;
   final EvidenceBinaryValidator _fileInspector;
+  final EvidenceLinkChecker _linkChecker;
 
   /// Configurable expiration window. Default: 24 hours after the event.
   final Duration expirationWindow;
@@ -92,6 +94,7 @@ class SLAJustificationManager {
     required EvidenceIntegrityVerifier evidenceVerifier,
     required XssInputSanitizer sanitizer,
     required EvidenceBinaryValidator fileInspector,
+    required EvidenceLinkChecker linkChecker,
     required this.eventExistsChecker,
     this.expirationWindow = const Duration(hours: 24),
   }) : _tenantValidator = tenantValidator,
@@ -100,7 +103,8 @@ class SLAJustificationManager {
        _clock = clock,
        _evidenceVerifier = evidenceVerifier,
        _sanitizer = sanitizer,
-       _fileInspector = fileInspector;
+       _fileInspector = fileInspector,
+       _linkChecker = linkChecker;
 
   /// Submits a new SLA justification for a vehicle infraction event.
   ///
@@ -312,6 +316,9 @@ class SLAJustificationManager {
       throw DomainException('Justification "$justificationId" not found.');
     }
 
+    // Fix 5: Evidence Availability Gate — cannot seal verdict over missing files
+    await _assertEvidenceAvailable(justification.evidenceUrls);
+
     final rowsAffected = await _repository.updateStatusWithAuditLog(
       id: justificationId,
       organizationId: organizationId,
@@ -391,6 +398,9 @@ class SLAJustificationManager {
     if (justification == null) {
       throw DomainException('Justification "$justificationId" not found.');
     }
+
+    // Fix 5: Evidence Availability Gate — cannot seal verdict over missing files
+    await _assertEvidenceAvailable(justification.evidenceUrls);
 
     final rowsAffected = await _repository.updateStatusWithAuditLog(
       id: justificationId,
@@ -515,5 +525,26 @@ class SLAJustificationManager {
   /// Validates that a string contains only hexadecimal characters.
   static bool _isHexString(String s) {
     return RegExp(r'^[0-9a-fA-F]+$').hasMatch(s);
+  }
+
+  /// Checks all evidence URLs in parallel (not sequentially).
+  ///
+  /// **Performance:** 10 photos → 1 round-trip latency, not 10× sequential.
+  /// All HEAD requests fly concurrently via [Future.wait]; we only block once
+  /// for the slowest response, not for the sum of all responses.
+  Future<void> _assertEvidenceAvailable(List<String> evidenceUrls) async {
+    final results = await Future.wait(evidenceUrls.map(_linkChecker.checkLink));
+
+    final missing = [
+      for (var i = 0; i < results.length; i++)
+        if (results[i].status == EvidenceLinkStatus.missing) evidenceUrls[i],
+    ];
+
+    if (missing.isNotEmpty) {
+      throw DomainException(
+        'Cannot seal verdict: Evidence missing from storage '
+        '(${missing.length} URL(s) unreachable). CX05-Fix-5.',
+      );
+    }
   }
 }

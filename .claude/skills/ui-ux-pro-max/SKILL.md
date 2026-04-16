@@ -1,8 +1,6 @@
 ---
 name: ui-ux-pro-max
 description: "UI/UX design intelligence for web and mobile. Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, and check UI/UX code. Focus: accessibility, touch, performance, style, layout, typography, animation, forms, navigation. Reference the internal manual at .claude/skills/ui-ux-pro-max/REFERENCE.md for detailed checklists and search commands."
-signature: PF-SEC-46BBB675BA40211D
-security_audit_signature: "Audited by QA Security - Score: 100/100"
 ---
 
 # UI/UX Pro Max - Design Intelligence

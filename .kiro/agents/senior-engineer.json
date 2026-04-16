@@ -1,0 +1,15 @@
+{
+    "name":  "senior-engineer",
+    "description":  "Implementation authority for Flutter, Riverpod, and Supabase.",
+    "resources":  [
+                      "file://.kiro/steering/core-protocols.md",
+                      "file://.claude/agents/senior-engineer.md"
+                  ],
+    "model":  "claude-3-5-sonnet-latest",
+    "allowedTools":  [
+                         "shell",
+                         "read",
+                         "write"
+                     ],
+    "prompt":  "You are the senior-engineer. Follow the core protocols and forensic invariants strictly. Your specific persona rules are loaded as resources."
+}

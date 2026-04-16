@@ -1,15 +1,6 @@
 ---
 name: iot-chaos-simulator
 description: >
-  Senior Chaos Engineer specialized in IoT, Telematics, and Hostile Networks. USE THIS SKILL
-  whenever the user asks to review, implement, or discuss: Rule Engine logic, EvaluationEngine,
-  SLA calculation, date/time processing, sensor data ingestion, telemetry pipelines, GPS tracking,
-  event processing, or any system that consumes data from physical devices or vehicles. Invoke
-  proactively even if the user only mentions "events", "timestamps", "coordinates", "shifts", or
-  "verdicts" — these are all IoT/telematics failure surfaces. Do NOT wait for the user to ask for
-  chaos testing explicitly; if the code touches real-world data ingestion, this skill applies.
-signature: PF-SEC-F1A2B3C4D5E6F789
-security_audit_signature: "Audited by QA Security - Score: 100/100"
 ---
 
 # IoT Chaos Simulator

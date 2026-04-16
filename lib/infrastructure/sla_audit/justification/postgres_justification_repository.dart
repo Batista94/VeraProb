@@ -155,9 +155,7 @@ class PostgresJustificationRepository extends BasePostgresRepository
           'p_org_id': organizationId,
           'p_expected_status': expectedCurrentStatus.dbValue,
           'p_new_status': newStatus.dbValue,
-          'p_reviewer_id': reviewerId,
           'p_resolution_notes': resolutionNotes,
-          'p_caller_role': callerRole,
           'p_evidence_urls': evidenceUrls,
         },
       );

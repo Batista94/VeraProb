@@ -59,6 +59,7 @@ void main() {
   late MockSLAJustificationRepo mockRepo;
   late MockClock mockClock;
   late MockEvidenceIntegrityVerifier mockEvidenceVerifier;
+  late MockEvidenceLinkChecker mockLinkChecker;
   late RbacService rbac;
   late SLAJustificationManager manager;
 
@@ -211,6 +212,7 @@ void main() {
     // Create mock instances for new dependencies
     final mockSanitizer = MockXssInputSanitizer();
     final mockFileInspector = MockEvidenceBinaryValidator();
+    mockLinkChecker = MockEvidenceLinkChecker();
 
     // Configure mocks
     when(() => mockSanitizer.sanitizeText(any())).thenAnswer((inv) {
@@ -232,6 +234,13 @@ void main() {
       () => mockFileInspector.validateEvidence(any()),
     ).thenAnswer((_) async => Future.value());
 
+    when(() => mockLinkChecker.checkLink(any())).thenAnswer(
+      (_) async => const EvidenceValidationResult(
+        url: '',
+        status: EvidenceLinkStatus.available,
+      ),
+    );
+
     manager = SLAJustificationManager(
       tenantValidator: mockTenant,
       repository: mockRepo,
@@ -240,6 +249,7 @@ void main() {
       evidenceVerifier: mockEvidenceVerifier,
       sanitizer: mockSanitizer,
       fileInspector: mockFileInspector,
+      linkChecker: mockLinkChecker,
       eventExistsChecker:
           ({
             required String vehicleId,
@@ -527,6 +537,7 @@ void main() {
         evidenceVerifier: mockEvidenceVerifier,
         sanitizer: mockSanitizer,
         fileInspector: mockFileInspector,
+        linkChecker: mockLinkChecker,
         eventExistsChecker:
             ({
               required String vehicleId,
@@ -631,6 +642,7 @@ void main() {
           evidenceVerifier: mockEvidenceVerifier,
           sanitizer: mockSanitizer,
           fileInspector: mockFileInspector,
+          linkChecker: mockLinkChecker,
           eventExistsChecker:
               ({
                 required String vehicleId,
@@ -849,67 +861,65 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   group('Hash Tampering Detection — Server-Side Re-Verification', () {
-    test(
-      'auto-rejects and throws DomainException when server-side hash diverges '
-      '(evidence index 0 mismatch)',
-      () async {
-        final now = eventTime.add(const Duration(hours: 2));
-        setupDefaultStubs(now: now);
+    test('auto-rejects and throws DomainException when server-side hash diverges '
+        '(evidence index 0 mismatch)', () async {
+      final now = eventTime.add(const Duration(hours: 2));
+      setupDefaultStubs(now: now);
 
-        // Override: verifier reports mismatch at index 0
-        when(
-          () => mockEvidenceVerifier.verifyAll(
-            evidenceUrls: any(named: 'evidenceUrls'),
-            declaredHashes: any(named: 'declaredHashes'),
+      // Override: verifier reports mismatch at index 0
+      when(
+        () => mockEvidenceVerifier.verifyAll(
+          evidenceUrls: any(named: 'evidenceUrls'),
+          declaredHashes: any(named: 'declaredHashes'),
+        ),
+      ).thenAnswer((_) async => [0]);
+
+      when(
+        () => mockRepo.updateStatusWithAuditLog(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: any(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
+        ),
+      ).thenAnswer((_) async => 1);
+
+      final command = buildCommand();
+
+      await expectLater(
+        () => manager.submitJustification(command),
+        throwsA(
+          isA<DomainException>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('integrity check failed'), contains('CX05-INV-23')),
           ),
-        ).thenAnswer((_) async => [0]);
+        ),
+      );
 
-        when(
-          () => mockRepo.updateStatusAtomic(
-            id: any(named: 'id'),
-            organizationId: any(named: 'organizationId'),
-            expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
-            newStatus: any(named: 'newStatus'),
-            reviewerId: any(named: 'reviewerId'),
-            resolutionNotes: any(named: 'resolutionNotes'),
-            reviewedAtUtc: any(named: 'reviewedAtUtc'),
-          ),
-        ).thenAnswer((_) async => 1);
+      // Auto-reject must have been written atomically (RPC) with status = REJECTED
+      final captured = verify(
+        () => mockRepo.updateStatusWithAuditLog(
+          id: any(named: 'id'),
+          organizationId: any(named: 'organizationId'),
+          expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
+          newStatus: captureAny(named: 'newStatus'),
+          reviewerId: any(named: 'reviewerId'),
+          resolutionNotes: any(named: 'resolutionNotes'),
+          reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
+        ),
+      ).captured;
+      expect(captured.first, JustificationStatus.rejected);
 
-        final command = buildCommand();
-
-        await expectLater(
-          () => manager.submitJustification(command),
-          throwsA(
-            isA<DomainException>().having(
-              (e) => e.message,
-              'message',
-              allOf(
-                contains('integrity check failed'),
-                contains('CX05-INV-23'),
-              ),
-            ),
-          ),
-        );
-
-        // Auto-reject must have been written with status = REJECTED
-        final captured = verify(
-          () => mockRepo.updateStatusAtomic(
-            id: any(named: 'id'),
-            organizationId: any(named: 'organizationId'),
-            expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
-            newStatus: captureAny(named: 'newStatus'),
-            reviewerId: any(named: 'reviewerId'),
-            resolutionNotes: any(named: 'resolutionNotes'),
-            reviewedAtUtc: any(named: 'reviewedAtUtc'),
-          ),
-        ).captured;
-        expect(captured.first, JustificationStatus.rejected);
-
-        // Audit log must NOT be appended — we throw before step 10
-        verifyNever(() => mockRepo.appendAuditLog(any()));
-      },
-    );
+      // appendAuditLog must NOT be called — RPC handles it atomically
+      verifyNever(() => mockRepo.appendAuditLog(any()));
+    });
 
     test('auto-rejects when multiple evidence files are tampered '
         '(mismatches at index 0 and 2)', () async {
@@ -931,7 +941,7 @@ void main() {
       ).thenAnswer((_) async => [0, 2]);
 
       when(
-        () => mockRepo.updateStatusAtomic(
+        () => mockRepo.updateStatusWithAuditLog(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
           expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
@@ -939,6 +949,8 @@ void main() {
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
         ),
       ).thenAnswer((_) async => 1);
 
@@ -953,7 +965,7 @@ void main() {
       );
 
       verify(
-        () => mockRepo.updateStatusAtomic(
+        () => mockRepo.updateStatusWithAuditLog(
           id: any(named: 'id'),
           organizationId: any(named: 'organizationId'),
           expectedCurrentStatus: any(named: 'expectedCurrentStatus'),
@@ -961,6 +973,8 @@ void main() {
           reviewerId: any(named: 'reviewerId'),
           resolutionNotes: any(named: 'resolutionNotes'),
           reviewedAtUtc: any(named: 'reviewedAtUtc'),
+          callerRole: any(named: 'callerRole'),
+          evidenceUrls: any(named: 'evidenceUrls'),
         ),
       ).called(1);
     });

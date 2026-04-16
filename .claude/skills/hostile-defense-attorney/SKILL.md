@@ -1,16 +1,6 @@
 ---
 name: hostile-defense-attorney
 description: >
-  Corporate Defense Attorney and Digital Forensics Expert. USE THIS SKILL — without waiting to be
-  asked — whenever the user is: modifying the database schema (PostgreSQL/Supabase), writing or
-  changing RLS policies, generating evidence reports or audit exports, touching the contract
-  approval workflow, modifying ledger or financial tables, or reviewing any migration that affects
-  Money (BIGINT cents) fields. Also trigger on: "immutable ledger", "audit trail", "chain of
-  custody", "financial verdict", "evidence", "approval workflow", "tenant isolation", "RLS",
-  "organization_id". NEVER approve a financial PR without this analysis running first — the absence
-  of a defense attorney review is itself a legal vulnerability.
-signature: PF-SEC-E6A1B2C3D4E5F678
-security_audit_signature: "Audited by QA Security - Score: 100/100"
 ---
 
 # Hostile Defense Attorney

@@ -1,0 +1,45 @@
+# Claude Code ignore file
+# Prevents indexing of large/non-code directories to save tokens
+
+node_modules/
+build/
+.dart_tool/
+.git/
+coverage/
+*.log
+tmp/
+*.exe
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+QWEN.MD
+.qwen/
+
+# Platform specific folders (Noise for most tasks)
+android/
+ios/
+windows/
+macos/
+web/
+linux/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# Backups
+.claude_backup_*/
+*.bak
+
+# Kiro
+.kiro/
+
+# Noise
+scanner_output.txt
+pubspec.lock
+.flutter-plugins*
+test-output/
+.env*

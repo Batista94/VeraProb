@@ -1,18 +1,6 @@
 ---
 name: ingestion-streaming-architect
 description: >
-  High-Throughput Data Architect specialized in Event-Driven ingestion pipelines, Supabase Edge
-  Functions, and PostgreSQL protection under load. USE THIS SKILL — without waiting to be asked —
-  whenever the user is: designing API routes that receive telemetry or sensor data, writing Supabase
-  Edge Functions, designing webhooks, planning batch inserts, discussing queue systems, or touching
-  any code that writes events into the database. Also trigger on: "ingestão", "ingestion", "edge
-  function", "webhook", "batch insert", "idempotência", "idempotency", "backpressure", "queue",
-  "DLQ", "dead letter", "payload", "rate limit", "telemetry endpoint", "event pipeline", or any
-  mention of receiving data from external devices or third-party systems. Raw events must NEVER
-  reach the Ledger without passing through this architecture gate — if the user is about to bypass
-  it, block the PR and invoke this skill immediately.
-signature: PF-SEC-D5E6F7A8B9C1D2E3
-security_audit_signature: "Audited by QA Security - Score: 100/100"
 ---
 
 # Ingestion Streaming Architect

@@ -16,6 +16,7 @@ library;
 
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/forensic_violation_exception.dart';
 
 /// Validates file types by reading Magic Bytes (Red Team ID 3).
 ///
@@ -37,10 +38,12 @@ class EvidenceBinaryValidator {
 
   EvidenceBinaryValidator(this._reader);
 
-  /// Validates all [urls] against the MIME whitelist.
+  /// Validates all [urls] against the MIME whitelist and scans for script payloads.
   ///
-  /// Throws [DomainException] if any file fails validation.
-  /// Returns silently if all files pass.
+  /// Throws [DomainException] if any file fails MIME validation.
+  /// Throws [ForensicViolationException] if any file contains a script payload
+  /// detected via random-chunk sampling (Fix 4 — Binary Sampling Gap).
+  /// Returns silently if all files pass both checks.
   Future<void> validateEvidence(List<String> urls) async {
     for (var i = 0; i < urls.length; i++) {
       final mimeType = await detectMimeType(urls[i]);
@@ -50,6 +53,8 @@ class EvidenceBinaryValidator {
           '${mimeType ?? 'unknown'}. Allowed types: ${_allowedMimeTypes.join(', ')}',
         );
       }
+      // Fix 4: scan beyond Magic Bytes header for embedded script payloads
+      await _scanForScriptPayloads(urls[i]);
     }
   }
 
@@ -154,5 +159,74 @@ class EvidenceBinaryValidator {
       if (buffer.length >= 512) break;
     }
     return buffer.take(512).toList();
+  }
+
+  /// Scans for script signatures using a memory-safe streaming strategy (Fix 4).
+  ///
+  /// **OOM Prevention (mobile-safe):** Never buffers the full file.
+  /// Uses a 1 MB hard cap via three probes:
+  ///   - Probe 1: first 512 bytes (from the first chunk).
+  ///   - Probe 2: 1 KB near the ~512 KB mark (mid-file approximation).
+  ///   - Probe 3: last 1 KB (circular rolling window — only the most recent
+  ///     1 KB is kept in memory at any time).
+  ///
+  /// For 5 evidence files at 1 MB cap each, peak memory ≈ 5 × 3 KB ≈ 15 KB
+  /// of probe data — safe on low-end Android devices (256 MB heap).
+  ///
+  /// Throws [ForensicViolationException] if `<?php`, `<script`, or `eval(`
+  /// is found in any probe.
+  Future<void> _scanForScriptPayloads(String url) async {
+    const hardCapBytes = 1 * 1024 * 1024; // 1 MB total read cap
+    const probeSize = 1024; // 1 KB per probe
+    const midTarget = hardCapBytes ~/ 2; // ~512 KB mark
+
+    List<int>? probe1; // first 512 bytes
+    List<int>? probe2; // 1 KB near midpoint
+    final tailWindow = <int>[]; // rolling last-1KB buffer
+    var bytesRead = 0;
+
+    await for (final chunk in _reader.streamBytes(url: url)) {
+      // Probe 1: capture only once from the first bytes
+      probe1 ??= chunk.take(512).toList();
+
+      // Probe 2: capture 1 KB window around the ~512 KB mark
+      if (probe2 == null &&
+          bytesRead < midTarget &&
+          bytesRead + chunk.length >= midTarget) {
+        probe2 = chunk.take(probeSize).toList();
+      }
+
+      // Probe 3: rolling tail — keep only the last 1 KB
+      tailWindow.addAll(chunk);
+      if (tailWindow.length > probeSize) {
+        tailWindow.removeRange(0, tailWindow.length - probeSize);
+      }
+
+      bytesRead += chunk.length;
+      if (bytesRead >= hardCapBytes) break;
+    }
+
+    // If file is smaller than midTarget, probe2 will be null — skip it
+    final probes = [
+      ?probe1,
+      ?probe2,
+      if (tailWindow.isNotEmpty) List<int>.from(tailWindow),
+    ];
+
+    const signatures = ['<?php', '<script', 'eval('];
+
+    for (final probe in probes) {
+      final text = String.fromCharCodes(probe).toLowerCase();
+      for (final sig in signatures) {
+        if (text.contains(sig)) {
+          throw ForensicViolationException(
+            message:
+                'Binary evidence contains forbidden script payload '
+                '"$sig". Forensic integrity violation — CX05-Fix-4.',
+            evidenceUrl: url,
+          );
+        }
+      }
+    }
   }
 }

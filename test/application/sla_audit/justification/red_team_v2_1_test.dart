@@ -24,6 +24,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_binary_validator.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
+import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/sla_justification_manager.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_sla_justification_command.dart';
 import 'package:veraprob/application/sla_audit/justification/xss_input_sanitizer.dart';
@@ -55,6 +56,8 @@ class MockXssInputSanitizer extends Mock implements XssInputSanitizer {}
 
 class MockEvidenceBinaryValidator extends Mock
     implements EvidenceBinaryValidator {}
+
+class MockEvidenceLinkChecker extends Mock implements EvidenceLinkChecker {}
 
 class FakeSLAJustification extends Fake implements SLAJustification {}
 
@@ -88,6 +91,7 @@ void main() {
   late MockEvidenceIntegrityVerifier mockEvidenceVerifier;
   late MockXssInputSanitizer mockSanitizer;
   late MockEvidenceBinaryValidator mockFileInspector;
+  late MockEvidenceLinkChecker mockLinkChecker;
   late SLAJustificationManager manager;
 
   SLAJustification buildPendingJustification({
@@ -117,6 +121,7 @@ void main() {
     mockEvidenceVerifier = MockEvidenceIntegrityVerifier();
     mockSanitizer = MockXssInputSanitizer();
     mockFileInspector = MockEvidenceBinaryValidator();
+    mockLinkChecker = MockEvidenceLinkChecker();
 
     // Real RbacService: admin has canReviewJustifications.
     final rbac = RbacService();
@@ -160,6 +165,14 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
+    // Default stub: evidence link check is available
+    when(() => mockLinkChecker.checkLink(any())).thenAnswer(
+      (_) async => const EvidenceValidationResult(
+        url: '',
+        status: EvidenceLinkStatus.available,
+      ),
+    );
+
     // Default clock.
     when(() => mockClock.nowUtc()).thenReturn(reviewTime);
 
@@ -171,6 +184,7 @@ void main() {
       evidenceVerifier: mockEvidenceVerifier,
       sanitizer: mockSanitizer,
       fileInspector: mockFileInspector,
+      linkChecker: mockLinkChecker,
       eventExistsChecker:
           ({
             required String vehicleId,
