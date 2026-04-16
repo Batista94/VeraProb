@@ -112,13 +112,15 @@ CREATE TABLE IF NOT EXISTS public.evidence_deletion_queue (
   evidence_url      TEXT        NOT NULL,
   marked_at_utc     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   delete_after_utc  TIMESTAMPTZ NOT NULL,
+  deleted_at        TIMESTAMPTZ, -- Set when the Janitor successfully deletes the file
   organization_id   UUID        NOT NULL
 );
 
 -- ── Indexes ───────────────────────────────────────────────────────────────────
-CREATE INDEX IF NOT EXISTS idx_edq_delete_after
-  ON public.evidence_deletion_queue (delete_after_utc)
-  WHERE delete_after_utc <= NOW();
+DROP INDEX IF EXISTS public.idx_edq_delete_after; -- Removed problematic volatil index
+CREATE INDEX IF NOT EXISTS idx_edq_active_cleanup 
+    ON public.evidence_deletion_queue (delete_after_utc) 
+    WHERE (deleted_at IS NULL);
 
 CREATE INDEX IF NOT EXISTS idx_edq_justification_id
   ON public.evidence_deletion_queue (justification_id);

@@ -53,6 +53,7 @@ class EvidenceCleanupService {
           .from('evidence_deletion_queue')
           .select('id, evidence_url')
           .eq('organization_id', organizationId)
+          .isFilter('deleted_at', null)
           .lte('delete_after_utc', _clock.nowUtc().toIso8601String())
           .limit(100); // Process in batches to avoid timeout
 
@@ -73,10 +74,10 @@ class EvidenceCleanupService {
             // Delete from Supabase Storage
             await _serviceRoleClient.storage.from(bucket).remove([filePath]);
 
-            // Remove from deletion queue after successful delete
+            // Mark as deleted in the queue instead of physical removal
             await _serviceRoleClient
                 .from('evidence_deletion_queue')
-                .delete()
+                .update({'deleted_at': _clock.nowUtc().toIso8601String()})
                 .eq('id', queueId);
 
             deletedCount++;
