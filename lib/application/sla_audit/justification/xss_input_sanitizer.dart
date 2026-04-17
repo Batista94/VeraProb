@@ -51,14 +51,10 @@ class XssInputSanitizer {
     // Layer 1: strip null bytes and non-printable control characters
     final stripped = input.replaceAll(_controlChars, '');
 
-    // Layer 2: UTF-8 round-trip — eliminates overlong/invalid sequences
-    final String normalized;
-    try {
-      normalized = utf8.decode(utf8.encode(stripped), allowMalformed: false);
-    } on FormatException {
-      // Malformed UTF-8: strip everything outside printable ASCII as fallback
-      return sanitizeHtml(stripped.replaceAll(RegExp(r'[^\x20-\x7E]'), ''));
-    }
+    // Layer 2: UTF-8 round-trip — eliminates overlong/invalid sequences.
+    // allowMalformed: true ensures surrogate pairs and binary blobs never
+    // raise FormatException, keeping the pipeline alive for all inputs.
+    final normalized = utf8.decode(utf8.encode(stripped), allowMalformed: true);
 
     // Layer 3: HTML sanitization
     return sanitizeHtml(normalized);

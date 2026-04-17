@@ -21,10 +21,18 @@ class EvidenceValidationResult {
   /// Raw HTTP status code if the server responded; null on network error.
   final int? httpStatusCode;
 
+  /// File size in bytes (from Content-Length header).
+  final int? contentLength;
+
+  /// Whether the server supports Range requests (from Accept-Ranges header).
+  final bool acceptRanges;
+
   const EvidenceValidationResult({
     required this.url,
     required this.status,
     this.httpStatusCode,
+    this.contentLength,
+    this.acceptRanges = false,
   });
 }
 
@@ -55,6 +63,8 @@ class EvidenceValidationService {
 
   /// Returns one [EvidenceValidationResult] per URL in [evidenceUrls].
   /// Results are in the same order as the input list.
+  ///
+  /// **Integrity Gate:** Captures `contentLength` via HTTP HEAD for Jump Sampling.
   Future<List<EvidenceValidationResult>> validateLinks(
     List<String> evidenceUrls,
   ) async {

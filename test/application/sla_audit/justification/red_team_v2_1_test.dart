@@ -22,7 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/application/sla_audit/justification/evidence_binary_validator.dart';
+import 'package:veraprob/application/sla_audit/justification/evidence_binary_jump_sampling_validator.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/sla_justification_manager.dart';
@@ -54,8 +54,8 @@ class MockEvidenceIntegrityVerifier extends Mock
 
 class MockXssInputSanitizer extends Mock implements XssInputSanitizer {}
 
-class MockEvidenceBinaryValidator extends Mock
-    implements EvidenceBinaryValidator {}
+class MockEvidenceBinaryJumpSamplingValidator extends Mock
+    implements EvidenceBinaryJumpSamplingValidator {}
 
 class MockEvidenceLinkChecker extends Mock implements EvidenceLinkChecker {}
 
@@ -90,7 +90,7 @@ void main() {
   late MockClock mockClock;
   late MockEvidenceIntegrityVerifier mockEvidenceVerifier;
   late MockXssInputSanitizer mockSanitizer;
-  late MockEvidenceBinaryValidator mockFileInspector;
+  late MockEvidenceBinaryJumpSamplingValidator mockFileInspector;
   late MockEvidenceLinkChecker mockLinkChecker;
   late SLAJustificationManager manager;
 
@@ -120,7 +120,7 @@ void main() {
     mockClock = MockClock();
     mockEvidenceVerifier = MockEvidenceIntegrityVerifier();
     mockSanitizer = MockXssInputSanitizer();
-    mockFileInspector = MockEvidenceBinaryValidator();
+    mockFileInspector = MockEvidenceBinaryJumpSamplingValidator();
     mockLinkChecker = MockEvidenceLinkChecker();
 
     // Real RbacService: admin has canReviewJustifications.

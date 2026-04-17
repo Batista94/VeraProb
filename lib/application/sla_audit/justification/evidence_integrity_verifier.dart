@@ -13,6 +13,22 @@ abstract class EvidenceStorageReader {
   /// Implementations should use ~32 KB chunks to keep memory usage constant
   /// regardless of file size.
   Stream<List<int>> streamBytes({required String url});
+
+  /// Reads a specific [length] range of bytes from [url] starting at [start] offset.
+  ///
+  /// Implementations MUST use HTTP Range requests and enforce a 206 response.
+  /// Any non-206 status code MUST throw an exception — no fallback (Zero-Trust, INV-24).
+  Future<List<int>> readRange({
+    required String url,
+    required int start,
+    required int length,
+  });
+
+  /// Returns the exact byte count for [url] via an authenticated HTTP HEAD request.
+  ///
+  /// Zero-Trust Metadata (INV-18): the application layer MUST call this method
+  /// instead of trusting any client-supplied file size.
+  Future<int> getContentLength({required String url});
 }
 
 /// Verifies that evidence files were not tampered with after submission
