@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 /// Infrastructure implementation of [EvidenceStorageReader] for Supabase Storage (INV-13).
 ///
@@ -33,7 +34,7 @@ class SupabaseEvidenceStorageReader implements EvidenceStorageReader {
 
     if (streamedResponse.statusCode != 200) {
       await streamedResponse.stream.drain<void>();
-      throw Exception(
+      throw DomainException(
         'Failed to stream evidence: ${streamedResponse.statusCode} (URL: $url)',
       );
     }
@@ -56,7 +57,7 @@ class SupabaseEvidenceStorageReader implements EvidenceStorageReader {
 
     if (streamedResponse.statusCode != 206) {
       await streamedResponse.stream.drain<void>();
-      throw Exception(
+      throw DomainException(
         'Range request not honored: expected 206 Partial Content but got '
         '${streamedResponse.statusCode}. Server does not support Range requests — '
         'binary inspection aborted (CX-05 Zero-Trust, URL: $url).',
@@ -78,21 +79,21 @@ class SupabaseEvidenceStorageReader implements EvidenceStorageReader {
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
+      throw DomainException(
         'HEAD request failed: ${response.statusCode} (URL: $url)',
       );
     }
 
     final raw = response.headers['content-length'];
     if (raw == null) {
-      throw Exception(
+      throw DomainException(
         'Server did not return Content-Length header (URL: $url)',
       );
     }
 
     final length = int.tryParse(raw);
     if (length == null) {
-      throw Exception('Invalid Content-Length "$raw" (URL: $url)');
+      throw DomainException('Invalid Content-Length "$raw" (URL: $url)');
     }
 
     return length;
