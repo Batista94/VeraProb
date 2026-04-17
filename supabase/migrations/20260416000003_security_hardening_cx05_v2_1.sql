@@ -81,8 +81,8 @@ BEGIN
   END IF;
 
   IF v_caller_role NOT IN ('TENANT_ADMIN', 'OPERATOR') THEN
-    RAISE EXCEPTION 'insufficient_privilege'
-      USING DETAIL = 'Role % cannot review justifications.', v_caller_role;
+    RAISE EXCEPTION 'Role % cannot review justifications.', v_caller_role
+      USING ERRCODE = 'insufficient_privilege';
   END IF;
 
   -- ── Atomic optimistic-lock update (INV-15) ──────────────────────────────

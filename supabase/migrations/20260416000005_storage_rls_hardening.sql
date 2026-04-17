@@ -16,7 +16,13 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 2. RLS must be enabled on storage.objects (Supabase enables it by default;
 --    this explicit call is a safety net for self-hosted deployments).
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE 'Skipping RLS enablement on storage.objects: %', SQLERRM;
+END $$;
 
 -- 3. Drop existing policies for this bucket before re-creating (idempotency)
 DROP POLICY IF EXISTS "justification_evidence_select" ON storage.objects;

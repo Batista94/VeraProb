@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:veraprob/application/sla_audit/justification/evidence_binary_jump_sampling_validator.dart';
+import 'package:veraprob/application/sla_audit/justification/adaptive_forensic_binary_scanner.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
 import 'package:veraprob/domain/sla_audit/forensic_violation_exception.dart';
 
@@ -18,7 +18,7 @@ class _FixedRandom extends Fake implements Random {
 }
 
 void main() {
-  group('EvidenceBinaryJumpSamplingValidator — N=7 Jump Sampling', () {
+  group('AdaptiveForensicBinaryScanner — N=7 Jump Sampling', () {
     late MockEvidenceStorageReader mockReader;
 
     setUp(() {
@@ -36,7 +36,7 @@ void main() {
       const payloadOffset = (fileSize * 27) ~/ 100; // 2831155
       const relativeOffset = payloadOffset - quintilSize; // 734003
 
-      final validator = EvidenceBinaryJumpSamplingValidator(
+      final validator = AdaptiveForensicBinaryScanner(
         mockReader,
         random: _FixedRandom(relativeOffset),
       );
@@ -70,9 +70,10 @@ void main() {
             (e) => e.message,
             'message',
             allOf(
-              contains('[Probe: Quintil2]'),
+              contains('[Scanner: Adaptive]'),
+              contains('Dynamic Probe 2'),
               contains('Signature "<?php"'),
-              contains('at offset $payloadOffset'),
+              contains('Offset: $payloadOffset'),
             ),
           ),
         ),
@@ -87,7 +88,7 @@ void main() {
         const fileSize = 500 * 1024 * 1024; // 500 MB
         final pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
-        final validator = EvidenceBinaryJumpSamplingValidator(mockReader);
+        final validator = AdaptiveForensicBinaryScanner(mockReader);
 
         when(
           () => mockReader.streamBytes(url: url),
@@ -123,18 +124,15 @@ void main() {
     );
 
     // ── Naming: self-describing class name ────────────────────────────────
-    test(
-      'naming: EvidenceBinaryJumpSamplingValidator has self-describing name',
-      () {
-        final validator = EvidenceBinaryJumpSamplingValidator(mockReader);
-        expect(
-          validator,
-          isA<EvidenceBinaryJumpSamplingValidator>(),
-          reason:
-              'Class name must reflect its purpose: binary, jump-sampling, validator',
-        );
-      },
-    );
+    test('naming: AdaptiveForensicBinaryScanner has self-describing name', () {
+      final validator = AdaptiveForensicBinaryScanner(mockReader);
+      expect(
+        validator,
+        isA<AdaptiveForensicBinaryScanner>(),
+        reason:
+            'Class name must reflect its purpose: adaptive, forensic, binary, scanner',
+      );
+    });
 
     // ── Existing: PHP at middle ───────────────────────────────────────────
     test('detects <?php payload at 50% (Quintil3) of a 10MB file', () async {
@@ -148,7 +146,7 @@ void main() {
       const bandStart = 2 * quintilSize; // 4194304
       const probeOffset = bandStart; // _FixedRandom(0) → offset = bandStart+0
 
-      final validator = EvidenceBinaryJumpSamplingValidator(
+      final validator = AdaptiveForensicBinaryScanner(
         mockReader,
         random: _FixedRandom(0),
       );
@@ -181,9 +179,10 @@ void main() {
             (e) => e.message,
             'message',
             allOf(
-              contains('[Probe: Quintil3]'),
+              contains('[Scanner: Adaptive]'),
+              contains('Dynamic Probe 3'),
               contains('Signature "<?php"'),
-              contains('at offset $probeOffset'),
+              contains('Offset: $probeOffset'),
             ),
           ),
         ),
@@ -195,7 +194,7 @@ void main() {
       const url = 'https://storage.example.com/unknown-size.png';
       final pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
-      final validator = EvidenceBinaryJumpSamplingValidator(mockReader);
+      final validator = AdaptiveForensicBinaryScanner(mockReader);
 
       when(
         () => mockReader.getContentLength(url: url),
@@ -211,7 +210,7 @@ void main() {
           isA<ForensicViolationException>().having(
             (e) => e.message,
             'message',
-            contains('[Probe: Linear]'),
+            contains('Linear'),
           ),
         ),
       );
@@ -223,7 +222,7 @@ void main() {
       const fileSize = 2 * 1024 * 1024;
       final pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
-      final validator = EvidenceBinaryJumpSamplingValidator(mockReader);
+      final validator = AdaptiveForensicBinaryScanner(mockReader);
 
       when(
         () => mockReader.streamBytes(url: url),

@@ -9,6 +9,7 @@ import 'package:web/web.dart' as web;
 import 'package:veraprob/application/sla_audit/justification/submit_justification_command.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/presentation/shared/widgets/evidence_validation_checklist_widget.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/justification_providers.dart';
 
@@ -52,6 +53,40 @@ class _JustificationSubmissionFormState
   final List<({String name, Uint8List bytes, String hash})> _files = [];
   bool _submitting = false;
   String? _error;
+  final List<EvidenceValidationStep> _validationSteps = [];
+
+  void _initValidationSteps() {
+    _validationSteps
+      ..clear()
+      ..addAll(const [
+        EvidenceValidationStep(
+          kind: EvidenceValidationStepKind.transfer,
+          status: EvidenceValidationStatus.pending,
+        ),
+        EvidenceValidationStep(
+          kind: EvidenceValidationStepKind.digitalIdentity,
+          status: EvidenceValidationStatus.pending,
+        ),
+        EvidenceValidationStep(
+          kind: EvidenceValidationStepKind.probabilisticAudit,
+          status: EvidenceValidationStatus.pending,
+        ),
+      ]);
+  }
+
+  void _updateStep(
+    EvidenceValidationStepKind kind,
+    EvidenceValidationStatus status, {
+    Object? error,
+  }) {
+    final idx = _validationSteps.indexWhere((s) => s.kind == kind);
+    if (idx == -1) return;
+    _validationSteps[idx] = EvidenceValidationStep(
+      kind: kind,
+      status: status,
+      error: error,
+    );
+  }
 
   static const _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
@@ -174,6 +209,12 @@ class _JustificationSubmissionFormState
                         onPickFiles: _pickFiles,
                         onRemove: (i) => setState(() => _files.removeAt(i)),
                       ),
+                      if (_validationSteps.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        EvidenceValidationChecklistWidget(
+                          steps: _validationSteps,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -254,9 +295,20 @@ class _JustificationSubmissionFormState
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final hasFiles = _files.isNotEmpty;
+
     setState(() {
       _submitting = true;
       _error = null;
+      if (hasFiles) {
+        _initValidationSteps();
+        _updateStep(
+          EvidenceValidationStepKind.digitalIdentity,
+          EvidenceValidationStatus.completed,
+        );
+      } else {
+        _validationSteps.clear();
+      }
     });
 
     try {
@@ -279,50 +331,112 @@ class _JustificationSubmissionFormState
 
       // Upload evidence files and collect hashes
       final hashes = <String>[];
-      if (_files.isNotEmpty) {
+      if (hasFiles) {
+        setState(
+          () => _updateStep(
+            EvidenceValidationStepKind.transfer,
+            EvidenceValidationStatus.running,
+          ),
+        );
         final storage = ref.read(justificationStorageServiceProvider);
-        for (final f in _files) {
-          if (widget.token != null) {
-            // Driver path: get signed URL
-            final result = await storage.getSignedUploadUrl(
-              justificationToken: widget.token!.token,
-              fileName: f.name,
-            );
-            // POST bytes directly using fetch (WASM-safe)
-            final uploadOk = await _uploadViaSignedUrl(result.url, f.bytes);
-            if (!uploadOk) return; // Error already set in state
-            // Operator path: direct authenticated upload
-          } else {
-            // Operator path: direct authenticated upload
-            await storage.uploadAuthenticated(
-              organizationId: orgId,
-              justificationId: 'pending',
-              fileName: f.name,
-              bytes: f.bytes,
+        try {
+          for (final f in _files) {
+            if (widget.token != null) {
+              final result = await storage.getSignedUploadUrl(
+                justificationToken: widget.token!.token,
+                fileName: f.name,
+              );
+              final uploadOk = await _uploadViaSignedUrl(result.url, f.bytes);
+              if (!uploadOk) {
+                if (mounted) {
+                  setState(
+                    () => _updateStep(
+                      EvidenceValidationStepKind.transfer,
+                      EvidenceValidationStatus.failed,
+                      error: _error ?? 'Falha no upload.',
+                    ),
+                  );
+                }
+                return;
+              }
+            } else {
+              await storage.uploadAuthenticated(
+                organizationId: orgId,
+                justificationId: 'pending',
+                fileName: f.name,
+                bytes: f.bytes,
+              );
+            }
+            hashes.add(f.hash);
+          }
+          if (mounted) {
+            setState(
+              () => _updateStep(
+                EvidenceValidationStepKind.transfer,
+                EvidenceValidationStatus.completed,
+              ),
             );
           }
-          hashes.add(f.hash);
+        } catch (e) {
+          if (mounted) {
+            setState(
+              () => _updateStep(
+                EvidenceValidationStepKind.transfer,
+                EvidenceValidationStatus.failed,
+                error: e,
+              ),
+            );
+          }
+          rethrow;
         }
+
+        setState(
+          () => _updateStep(
+            EvidenceValidationStepKind.probabilisticAudit,
+            EvidenceValidationStatus.running,
+          ),
+        );
       }
 
-      await ref
-          .read(submitJustificationHandlerProvider)
-          .handle(
-            SubmitJustificationCommand(
-              organizationId: orgId,
-              contractId: contractId,
-              setId: setId,
-              planVersion: 0,
-              category: _category.dbValue,
-              description: _descriptionCtrl.text.trim(),
-              callerRole: widget.token != null ? null : role,
-              callerUserId: widget.token != null ? null : userId,
-              callerEmail: widget.token != null ? null : email,
-              submittedByTokenId: tokenId,
-              evidenceHashes: hashes,
-              sessionId: sessionId,
+      try {
+        await ref
+            .read(submitJustificationHandlerProvider)
+            .handle(
+              SubmitJustificationCommand(
+                organizationId: orgId,
+                contractId: contractId,
+                setId: setId,
+                planVersion: 0,
+                category: _category.dbValue,
+                description: _descriptionCtrl.text.trim(),
+                callerRole: widget.token != null ? null : role,
+                callerUserId: widget.token != null ? null : userId,
+                callerEmail: widget.token != null ? null : email,
+                submittedByTokenId: tokenId,
+                evidenceHashes: hashes,
+                sessionId: sessionId,
+              ),
+            );
+        if (hasFiles && mounted) {
+          setState(
+            () => _updateStep(
+              EvidenceValidationStepKind.probabilisticAudit,
+              EvidenceValidationStatus.completed,
             ),
           );
+        }
+      } catch (e) {
+        if (hasFiles && mounted) {
+          setState(
+            () => _updateStep(
+              EvidenceValidationStepKind.probabilisticAudit,
+              EvidenceValidationStatus.failed,
+              error: e,
+            ),
+          );
+        }
+        rethrow;
+      }
 
       if (mounted) {
         Navigator.pop(context);

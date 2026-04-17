@@ -2,7 +2,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/application/sla_audit/justification/evidence_binary_jump_sampling_validator.dart';
+import 'package:veraprob/application/sla_audit/justification/adaptive_forensic_binary_scanner.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/sla_justification_manager.dart';
@@ -35,8 +35,8 @@ class MockEvidenceIntegrityVerifier extends Mock
 
 class MockXssInputSanitizer extends Mock implements XssInputSanitizer {}
 
-class MockEvidenceBinaryJumpSamplingValidator extends Mock
-    implements EvidenceBinaryJumpSamplingValidator {}
+class MockAdaptiveForensicBinaryScanner extends Mock
+    implements AdaptiveForensicBinaryScanner {}
 
 class MockEvidenceLinkChecker extends Mock implements EvidenceLinkChecker {}
 
@@ -211,7 +211,7 @@ void main() {
 
     // Create mock instances for new dependencies
     final mockSanitizer = MockXssInputSanitizer();
-    final mockFileInspector = MockEvidenceBinaryJumpSamplingValidator();
+    final mockFileInspector = MockAdaptiveForensicBinaryScanner();
     mockLinkChecker = MockEvidenceLinkChecker();
 
     // Configure mocks
@@ -521,7 +521,7 @@ void main() {
 
     test('respects custom expiration window (48h)', () async {
       final mockSanitizer = MockXssInputSanitizer();
-      final mockFileInspector = MockEvidenceBinaryJumpSamplingValidator();
+      final mockFileInspector = MockAdaptiveForensicBinaryScanner();
       when(
         () => mockSanitizer.sanitizeText(any()),
       ).thenAnswer((inv) => inv.positionalArguments[0] as String);
@@ -626,7 +626,7 @@ void main() {
         setupDefaultStubs(now: now);
 
         final mockSanitizer = MockXssInputSanitizer();
-        final mockFileInspector = MockEvidenceBinaryJumpSamplingValidator();
+        final mockFileInspector = MockAdaptiveForensicBinaryScanner();
         when(
           () => mockSanitizer.sanitizeText(any()),
         ).thenReturn('sanitized_text_valid');

@@ -16,7 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/application/sla_audit/justification/evidence_binary_jump_sampling_validator.dart';
+import 'package:veraprob/application/sla_audit/justification/adaptive_forensic_binary_scanner.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/sla_justification_manager.dart';
@@ -124,9 +124,9 @@ void main() {
   }
 
   /// Builds a [SLAJustificationManager] wired with REAL security components
-  /// (XssInputSanitizer, EvidenceBinaryJumpSamplingValidator) and the supplied mocks.
+  /// (XssInputSanitizer, AdaptiveForensicBinaryScanner) and the supplied mocks.
   SLAJustificationManager buildManager({
-    required EvidenceBinaryJumpSamplingValidator fileInspector,
+    required AdaptiveForensicBinaryScanner fileInspector,
     required XssInputSanitizer sanitizer,
   }) {
     return SLAJustificationManager(
@@ -230,7 +230,7 @@ void main() {
         () => mockReader.streamBytes(url: any(named: 'url')),
       ).thenAnswer((_) => _buildPolyglotPngStream());
 
-      final validator = EvidenceBinaryJumpSamplingValidator(mockReader);
+      final validator = AdaptiveForensicBinaryScanner(mockReader);
       const polyglotUrl = 'https://example.com/polyglot.png';
 
       // Act + Assert
@@ -276,7 +276,7 @@ void main() {
 
         final manager = buildManager(
           sanitizer: XssInputSanitizer(),
-          fileInspector: EvidenceBinaryJumpSamplingValidator(
+          fileInspector: AdaptiveForensicBinaryScanner(
             MockEvidenceStorageReader(),
           ),
         );
@@ -339,7 +339,7 @@ void main() {
 
         final manager = buildManager(
           sanitizer: XssInputSanitizer(),
-          fileInspector: EvidenceBinaryJumpSamplingValidator(
+          fileInspector: AdaptiveForensicBinaryScanner(
             MockEvidenceStorageReader(),
           ),
         );
@@ -412,7 +412,7 @@ void main() {
 
       final manager = buildManager(
         sanitizer: XssInputSanitizer(),
-        fileInspector: EvidenceBinaryJumpSamplingValidator(
+        fileInspector: AdaptiveForensicBinaryScanner(
           MockEvidenceStorageReader(),
         ),
       );

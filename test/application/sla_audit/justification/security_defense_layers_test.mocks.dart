@@ -9,7 +9,7 @@ import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i12;
 import 'package:veraprob/application/shared/tenant_validation_service.dart'
     as _i4;
-import 'package:veraprob/application/sla_audit/justification/evidence_binary_jump_sampling_validator.dart'
+import 'package:veraprob/application/sla_audit/justification/adaptive_forensic_binary_scanner.dart'
     as _i13;
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart'
     as _i10;
@@ -200,12 +200,12 @@ class MockXssInputSanitizer extends _i1.Mock implements _i11.XssInputSanitizer {
           as String);
 }
 
-/// A class which mocks [EvidenceBinaryJumpSamplingValidator].
+/// A class which mocks [AdaptiveForensicBinaryScanner].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockEvidenceBinaryJumpSamplingValidator extends _i1.Mock
-    implements _i13.EvidenceBinaryJumpSamplingValidator {
-  MockEvidenceBinaryJumpSamplingValidator() {
+class MockAdaptiveForensicBinaryScanner extends _i1.Mock
+    implements _i13.AdaptiveForensicBinaryScanner {
+  MockAdaptiveForensicBinaryScanner() {
     _i1.throwOnMissingStub(this);
   }
 

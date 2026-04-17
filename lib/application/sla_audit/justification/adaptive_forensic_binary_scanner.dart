@@ -1,17 +1,18 @@
-/// Forensic Audit Signature: CX-05-v2.2
-/// Remediation: Red Team ID 3 (Binary Inspection Gap) — Fix 4 & 5
+/// Forensic Audit Signature: CX-05-v2.3 / FIX-4
 /// Security Guard: INV-24 Compliance Verified
 /// Authorized By: VeraProb Senior Engineer
 ///
-/// N=7 forensic file inspector: validates MIME type via Magic Bytes and scans
-/// for embedded script payloads using Jump Sampling with random quintil offsets.
+/// N=7 adaptive forensic inspector: validates MIME via Magic Bytes and scans
+/// for embedded script payloads using 128KB probe windows with random quintil
+/// offsets (AdaptiveSamplingStrategy).
+///
+/// **Coverage math:**
+///   7 probes × 128 KB = ~896 KB
+///   On 50 MB file: coverage ≈ 1.8% per scan.
+///   P(≥1 detection in 100 scans) = 1 − (1−0.018)^100 ≈ 83.7% > 70% threshold.
 ///
 /// **Zero-Trust Metadata (INV-18):** file size is always fetched from the server
 /// via authenticated HEAD — client-supplied sizes are never accepted.
-///
-/// **Probe Strategy:**
-///   Fixed:   Start (offset 0) + End (offset fileSize−1024)
-///   Dynamic: 5 probes, one per 20%-wide quintil, random within each band
 ///
 /// **Concurrency:** up to 10 simultaneous range requests via inline [_Semaphore].
 library;
@@ -19,16 +20,17 @@ library;
 import 'dart:async';
 import 'dart:math';
 
+import 'package:veraprob/application/sla_audit/justification/adaptive_sampling_strategy.dart';
+import 'package:veraprob/application/sla_audit/justification/binary_signature_registry.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/forensic_violation_exception.dart';
 
-/// Validates evidence files with N=7 Jump Sampling and regex payload detection.
-class EvidenceBinaryJumpSamplingValidator {
+/// Validates evidence files with N=7 adaptive jump sampling and 128KB probe windows.
+class AdaptiveForensicBinaryScanner {
   final EvidenceStorageReader _reader;
-  final Random _random;
+  final AdaptiveSamplingStrategy _strategy;
 
-  static const int _probeLength = 1024;
   static const int _concurrentProbeLimit = 10;
   static const int _largeSizeThreshold = 1024 * 1024; // 1 MB
 
@@ -41,18 +43,11 @@ class EvidenceBinaryJumpSamplingValidator {
     'image/webp',
   ];
 
-  // Case-insensitive, whitespace-tolerant forensic payload pattern (CX-05-Fix-3).
-  static final RegExp _payloadPattern = RegExp(
-    r'<\?php|eval\s*\(|base64_decode\s*\(',
-    caseSensitive: false,
-  );
-
-  EvidenceBinaryJumpSamplingValidator(this._reader, {Random? random})
-    : _random = random ?? Random();
+  AdaptiveForensicBinaryScanner(this._reader, {Random? random})
+    : _strategy = AdaptiveSamplingStrategy(random: random);
 
   /// Validates all [urls] against the MIME whitelist and scans for script payloads.
   ///
-  /// File size is always retrieved via authenticated HEAD (Zero-Trust, INV-18).
   /// Throws [DomainException] on MIME mismatch.
   /// Throws [ForensicViolationException] on script payload detection.
   Future<void> validateEvidence(List<String> urls) async {
@@ -169,7 +164,7 @@ class EvidenceBinaryJumpSamplingValidator {
       return;
     }
 
-    final probes = _buildProbeOffsets(fileSize);
+    final probes = _strategy.buildProbes(fileSize);
     final semaphore = _Semaphore(_concurrentProbeLimit);
 
     await Future.wait(
@@ -177,22 +172,6 @@ class EvidenceBinaryJumpSamplingValidator {
         (probe) => _runProbe(url: url, probe: probe, semaphore: semaphore),
       ),
     );
-  }
-
-  List<({String name, int offset})> _buildProbeOffsets(int fileSize) {
-    final quintilSize = fileSize ~/ 5;
-    final probes = <({String name, int offset})>[(name: 'Start', offset: 0)];
-
-    for (var i = 0; i < 5; i++) {
-      final bandStart = i * quintilSize;
-      final bandEnd = (i + 1) * quintilSize - _probeLength;
-      final range = (bandEnd - bandStart).clamp(1, 1 << 30);
-      final offset = bandStart + _random.nextInt(range);
-      probes.add((name: 'Quintil${i + 1}', offset: offset));
-    }
-
-    probes.add((name: 'End', offset: fileSize - _probeLength));
-    return probes;
   }
 
   Future<void> _runProbe({
@@ -205,7 +184,7 @@ class EvidenceBinaryJumpSamplingValidator {
       final bytes = await _reader.readRange(
         url: url,
         start: probe.offset,
-        length: _probeLength,
+        length: AdaptiveSamplingStrategy.windowSize,
       );
       _checkForPayload(
         bytes: bytes,
@@ -239,12 +218,13 @@ class EvidenceBinaryJumpSamplingValidator {
     required int offset,
   }) {
     final text = String.fromCharCodes(bytes);
-    final match = _payloadPattern.firstMatch(text);
+    final match = BinarySignatureRegistry.pattern.firstMatch(text);
     if (match != null) {
       throw ForensicViolationException(
         message:
-            '[Probe: $probeName] Signature "${match.group(0)}" found '
-            'at offset $offset. Forensic integrity violation — CX05-Fix-4/5.',
+            '[Scanner: Adaptive] Signature "${match.group(0)}" found in '
+            '$probeName (Offset: $offset, Window: 128KB). '
+            'Forensic integrity violation — CX05-Fix-4.',
         evidenceUrl: url,
       );
     }

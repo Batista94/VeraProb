@@ -3,24 +3,30 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/infrastructure/sla_audit/justification/authenticated_range_stream_controller.dart';
 
 /// Infrastructure implementation of [EvidenceStorageReader] for Supabase Storage (INV-13).
 ///
 /// **Streaming-First:** all byte reads use [http.StreamedResponse] so that binary
 /// data is never fully buffered in memory — OOM-safe for arbitrarily large files.
 ///
-/// **206 Enforcement (Zero-Trust):** [readRange] aborts with an exception on any
-/// non-206 HTTP status. There is NO linear-scan fallback — partial-content support
-/// is a prerequisite for safe binary inspection (CX-05-v2.2).
+/// **206 Enforcement (Zero-Trust):** [readRange] delegates to [AuthenticatedRangeStreamController]
+/// which calls [http.Client.close()] on any non-206 — TCP abort, zero bytes buffered.
+/// PROHIBITED: stream.drain(), stream.toList() (CX-05-v2.3 / FIX-3).
 ///
 /// **Authenticated HEAD:** [getContentLength] issues a JWT-authenticated HEAD
 /// request so file sizes are always server-authoritative (INV-18).
 class SupabaseEvidenceStorageReader implements EvidenceStorageReader {
   final SupabaseClient _client;
   final http.Client _httpClient;
+  late final AuthenticatedRangeStreamController _streamController;
 
   SupabaseEvidenceStorageReader(this._client, {http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client() {
+    _streamController = AuthenticatedRangeStreamController(
+      bearerTokenFactory: () => _bearerToken,
+    );
+  }
 
   String get _bearerToken =>
       'Bearer ${_client.auth.currentSession?.accessToken ?? ''}';
@@ -33,7 +39,6 @@ class SupabaseEvidenceStorageReader implements EvidenceStorageReader {
     final streamedResponse = await _httpClient.send(request);
 
     if (streamedResponse.statusCode != 200) {
-      await streamedResponse.stream.drain<void>();
       throw DomainException(
         'Failed to stream evidence: ${streamedResponse.statusCode} (URL: $url)',
       );
@@ -48,27 +53,7 @@ class SupabaseEvidenceStorageReader implements EvidenceStorageReader {
     required int start,
     required int length,
   }) async {
-    final end = start + length - 1;
-    final request = http.Request('GET', Uri.parse(url))
-      ..headers['Authorization'] = _bearerToken
-      ..headers['Range'] = 'bytes=$start-$end';
-
-    final streamedResponse = await _httpClient.send(request);
-
-    if (streamedResponse.statusCode != 206) {
-      await streamedResponse.stream.drain<void>();
-      throw DomainException(
-        'Range request not honored: expected 206 Partial Content but got '
-        '${streamedResponse.statusCode}. Server does not support Range requests — '
-        'binary inspection aborted (CX-05 Zero-Trust, URL: $url).',
-      );
-    }
-
-    final bytes = <int>[];
-    await for (final chunk in streamedResponse.stream) {
-      bytes.addAll(chunk);
-    }
-    return bytes;
+    return _streamController.fetchRange(url: url, start: start, length: length);
   }
 
   @override

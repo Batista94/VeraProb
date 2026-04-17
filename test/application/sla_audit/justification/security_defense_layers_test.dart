@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/application/sla_audit/justification/evidence_binary_jump_sampling_validator.dart';
+import 'package:veraprob/application/sla_audit/justification/adaptive_forensic_binary_scanner.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/sla_justification_manager.dart';
@@ -25,7 +25,7 @@ import 'security_defense_layers_test.mocks.dart';
   IDateTimeProvider,
   EvidenceIntegrityVerifier,
   XssInputSanitizer,
-  EvidenceBinaryJumpSamplingValidator,
+  AdaptiveForensicBinaryScanner,
   SLAJustificationRepository,
   EvidenceLinkChecker,
 ])
@@ -35,7 +35,7 @@ void main() {
   late MockIDateTimeProvider mockDateTime;
   late MockEvidenceIntegrityVerifier mockEvidenceVerifier;
   late MockXssInputSanitizer mockSanitizer;
-  late MockEvidenceBinaryJumpSamplingValidator mockFileInspector;
+  late MockAdaptiveForensicBinaryScanner mockFileInspector;
   late MockEvidenceLinkChecker mockLinkChecker;
   late MockSLAJustificationRepository repository;
   late SLAJustificationManager manager;
@@ -46,7 +46,7 @@ void main() {
     mockDateTime = MockIDateTimeProvider();
     mockEvidenceVerifier = MockEvidenceIntegrityVerifier();
     mockSanitizer = MockXssInputSanitizer();
-    mockFileInspector = MockEvidenceBinaryJumpSamplingValidator();
+    mockFileInspector = MockAdaptiveForensicBinaryScanner();
     mockLinkChecker = MockEvidenceLinkChecker();
     repository = MockSLAJustificationRepository();
 
