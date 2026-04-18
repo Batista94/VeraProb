@@ -50,7 +50,11 @@ class ContextualSignatureAnalyzer {
 
   /// Minimum structural (printable-ASCII) ratio to confirm a match as
   /// malicious. 0.60 sits cleanly above JPG/PNG entropy baseline (~0.38).
-  static const double _highConfidenceThreshold = 0.60;
+  /// Represented as an integer ratio (scaled by 10,000) to avoid double math.
+  static const int _highConfidenceThreshold = 6000;
+
+  /// Scale used for fixed-point ratio calculations.
+  static const int _ratioScale = 10000;
 
   static const List<String> _allowedMimeTypes = [
     'image/jpeg',
@@ -262,7 +266,7 @@ class ContextualSignatureAnalyzer {
               '[Scanner: Contextual] Confirmed Malicious Signature "$matchText" '
               'found at Offset $absoluteOffset (Confidence: High). '
               'Window: 128KB. Probe: $probeName. '
-              'Adjacent printable ratio: ${ratio.toStringAsFixed(2)}.',
+              'Adjacent printable ratio: ${(ratio / _ratioScale).toStringAsFixed(2)}.',
           evidenceUrl: url,
           confidence: ForensicConfidence.high,
         );
@@ -271,8 +275,8 @@ class ContextualSignatureAnalyzer {
       developer.log(
         '[Scanner: Contextual] Low-confidence match "$matchText" at offset '
         '$absoluteOffset suppressed '
-        '(printable_ratio=${ratio.toStringAsFixed(2)} < '
-        '${_highConfidenceThreshold.toStringAsFixed(2)}). Binary noise.',
+        '(printable_ratio=${(ratio / _ratioScale).toStringAsFixed(2)} < '
+        '${(_highConfidenceThreshold / _ratioScale).toStringAsFixed(2)}). Binary noise.',
         name: 'ContextualSignatureAnalyzer',
         level: 500, // FINE
       );
@@ -285,7 +289,7 @@ class ContextualSignatureAnalyzer {
   ///
   /// Printable set: `\t`, `\n`, `\r`, and `0x20..0x7E` (standard ASCII
   /// printable range). Everything else (binary) counts as non-printable.
-  double _computeAdjacentPrintableRatio({
+  int _computeAdjacentPrintableRatio({
     required List<int> bytes,
     required int matchStart,
     required int matchEnd,
@@ -300,7 +304,7 @@ class ContextualSignatureAnalyzer {
 
     final windowSize = (beforeEnd - beforeStart) + (afterEnd - afterStart);
     if (windowSize == 0) {
-      return 1.0;
+      return _ratioScale;
     }
 
     var printable = 0;
@@ -311,7 +315,7 @@ class ContextualSignatureAnalyzer {
       if (_isPrintable(bytes[i])) printable++;
     }
 
-    return printable / windowSize;
+    return (printable * _ratioScale) ~/ windowSize;
   }
 
   static bool _isPrintable(int byte) {
