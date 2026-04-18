@@ -18,7 +18,7 @@ import 'package:veraprob/domain/sla_audit/justification/justification_status.dar
 import 'package:veraprob/domain/sla_audit/justification/sla_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_category.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_repository.dart';
-import 'adaptive_forensic_binary_scanner.dart';
+import 'contextual_signature_analyzer.dart';
 import 'evidence_integrity_verifier.dart';
 import 'evidence_validation_service.dart';
 import 'submit_sla_justification_command.dart';
@@ -62,7 +62,7 @@ class SLAJustificationManager {
   final IDateTimeProvider _clock;
   final EvidenceIntegrityVerifier _evidenceVerifier;
   final XssInputSanitizer _sanitizer;
-  final AdaptiveForensicBinaryScanner _fileInspector;
+  final ContextualSignatureAnalyzer _fileInspector;
   final EvidenceLinkChecker _linkChecker;
 
   /// Configurable expiration window. Default: 24 hours after the event.
@@ -93,7 +93,7 @@ class SLAJustificationManager {
     required IDateTimeProvider clock,
     required EvidenceIntegrityVerifier evidenceVerifier,
     required XssInputSanitizer sanitizer,
-    required AdaptiveForensicBinaryScanner fileInspector,
+    required ContextualSignatureAnalyzer fileInspector,
     required EvidenceLinkChecker linkChecker,
     required this.eventExistsChecker,
     this.expirationWindow = const Duration(hours: 24),

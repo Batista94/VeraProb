@@ -4,12 +4,15 @@ import 'package:crypto/crypto.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/application/sla_audit/justification/contextual_signature_analyzer.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/execution_events.dart';
+import 'package:veraprob/domain/sla_audit/forensic_violation_exception.dart';
 import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
+import 'package:veraprob/domain/sla_audit/justification/forensic_throttle_gateway.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_category.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_evidence.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_repository.dart';
@@ -37,6 +40,8 @@ class SubmitJustificationHandler {
   final LocalFactQueueRepository _factQueue;
   final RbacService _rbac;
   final IDateTimeProvider _clock;
+  final ContextualSignatureAnalyzer _analyzer;
+  final ForensicThrottleGateway _throttle;
 
   SubmitJustificationHandler({
     required TenantValidationService tenantValidator,
@@ -45,12 +50,16 @@ class SubmitJustificationHandler {
     required LocalFactQueueRepository factQueue,
     required RbacService rbac,
     required IDateTimeProvider clock,
+    required ContextualSignatureAnalyzer analyzer,
+    required ForensicThrottleGateway throttle,
   }) : _tenantValidator = tenantValidator,
        _justificationRepo = justificationRepo,
        _ledger = ledger,
        _factQueue = factQueue,
        _rbac = rbac,
-       _clock = clock;
+       _clock = clock,
+       _analyzer = analyzer,
+       _throttle = throttle;
 
   Future<ContractorJustification> handle(
     SubmitJustificationCommand command,
@@ -94,6 +103,22 @@ class SubmitJustificationHandler {
         'Evidence required: At least one cryptographic hash must be provided.',
       );
     }
+
+    // 4.1 Server-authoritative forensic throttle (INV-16, INV-18).
+    // A modified client cannot bypass the backoff horizon — the RPC enforces
+    // JWT-claim tenancy and persists state under RLS.
+    await _throttle.assertAllowed(organizationId: command.organizationId);
+
+    // 4.2 Two-pass contextual scan of uploaded evidence (INV-9, INV-13).
+    // Failure surface: increment server-side throttle, then rethrow so the UI
+    // can render the precise ForensicViolationException verdict.
+    try {
+      await _analyzer.validateEvidence(command.evidenceUrls);
+    } on ForensicViolationException {
+      await _throttle.recordFailure(organizationId: command.organizationId);
+      rethrow;
+    }
+    await _throttle.recordSuccess(organizationId: command.organizationId);
 
     final now = _clock.nowUtc();
     final id = const Uuid().v4();

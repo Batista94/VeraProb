@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
+import 'package:veraprob/application/concurrency/smart_concurrency_governor.dart';
+
 /// Application-layer port: provides streaming access to raw evidence bytes.
 ///
 /// Infrastructure implementations connect to Supabase Storage (production)
@@ -45,11 +47,13 @@ abstract class EvidenceStorageReader {
 /// An empty list means all hashes match (all evidence intact).
 class EvidenceIntegrityVerifier {
   final EvidenceStorageReader _reader;
+  final SmartConcurrencyGovernor? _governor;
 
   static const int maxRetries = 3;
   static const Duration baseDelay = Duration(milliseconds: 500);
 
-  EvidenceIntegrityVerifier(this._reader);
+  EvidenceIntegrityVerifier(this._reader, {SmartConcurrencyGovernor? governor})
+    : _governor = governor;
 
   /// Verifies all [evidenceUrls] against [declaredHashes].
   ///
@@ -81,6 +85,10 @@ class EvidenceIntegrityVerifier {
   Future<String?> _computeHashWithRetry(String url) async {
     for (var attempt = 0; attempt < maxRetries; attempt++) {
       try {
+        final governor = _governor;
+        if (governor != null) {
+          return await governor.run(() => _computeStreamingSha256(url));
+        }
         return await _computeStreamingSha256(url);
       } catch (_) {
         if (attempt < maxRetries - 1) {

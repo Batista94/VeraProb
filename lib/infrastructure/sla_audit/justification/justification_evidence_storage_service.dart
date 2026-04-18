@@ -65,4 +65,12 @@ class JustificationEvidenceStorageService {
       storagePath: data['storagePath'] as String,
     );
   }
+
+  /// Returns a short-lived signed read URL for the forensic analyzer. The
+  /// 60-second TTL is enough for [ContextualSignatureAnalyzer] to stream the
+  /// first 128 KB during handler-side validation, yet narrow enough that a
+  /// leaked URL becomes inert well before persistence (INV-9, INV-18).
+  Future<String> getScanUrl(String storagePath) async {
+    return client.storage.from(_bucket).createSignedUrl(storagePath, 60);
+  }
 }

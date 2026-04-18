@@ -1,15 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/justification/approve_justification_handler.dart';
+import 'package:veraprob/application/sla_audit/justification/contextual_signature_analyzer.dart';
 import 'package:veraprob/application/sla_audit/justification/generate_justification_token_handler.dart';
 import 'package:veraprob/application/sla_audit/justification/review_justification_command.dart';
 import 'package:veraprob/application/sla_audit/justification/reject_justification_handler.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_justification_handler.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/justification/forensic_throttle_gateway.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/justification/justification_evidence_storage_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/justification/supabase_evidence_storage_reader.dart';
+import 'package:veraprob/infrastructure/sla_audit/justification/supabase_forensic_throttle_gateway.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'contract_providers.dart';
 import 'local_fact_queue_providers.dart';
@@ -21,6 +25,30 @@ export 'package:veraprob/infrastructure/sla_audit/justification/justification_ev
 
 // ── Handler providers (not cached) ───────────────────────────────────────────
 
+/// Evidence storage reader bound to the signed-in Supabase session; shared
+/// by the analyzer (forensic scan) and integrity verifier (hash recompute).
+final evidenceStorageReaderProvider = Provider<SupabaseEvidenceStorageReader>((
+  ref,
+) {
+  return SupabaseEvidenceStorageReader(ref.watch(supabaseClientProvider));
+});
+
+/// Two-pass contextual forensic analyzer — runs in the handler, never the UI.
+final contextualSignatureAnalyzerProvider =
+    Provider<ContextualSignatureAnalyzer>((ref) {
+      return ContextualSignatureAnalyzer(
+        ref.watch(evidenceStorageReaderProvider),
+      );
+    });
+
+/// Server-authoritative forensic throttle gateway (INV-16, INV-18). The RPC
+/// enforces JWT-claim tenancy and persisted backoff state under RLS.
+final forensicThrottleGatewayProvider = Provider<ForensicThrottleGateway>((
+  ref,
+) {
+  return SupabaseForensicThrottleGateway(ref.watch(supabaseClientProvider));
+});
+
 /// Provides a fresh [SubmitJustificationHandler] per read.
 final submitJustificationHandlerProvider =
     Provider.autoDispose<SubmitJustificationHandler>((ref) {
@@ -31,6 +59,8 @@ final submitJustificationHandlerProvider =
         factQueue: ref.watch(localFactQueueRepositoryProvider),
         rbac: RbacService(),
         clock: ref.watch(dateTimeProviderProvider),
+        analyzer: ref.watch(contextualSignatureAnalyzerProvider),
+        throttle: ref.watch(forensicThrottleGatewayProvider),
       );
     });
 

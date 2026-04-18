@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/application/sla_audit/justification/contextual_signature_analyzer.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_justification_command.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_justification_handler.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -12,6 +13,7 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
+import 'package:veraprob/domain/sla_audit/justification/forensic_throttle_gateway.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_category.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
@@ -28,6 +30,10 @@ class MockLedgerRepo extends Mock implements SlaAuditLedgerRepository {}
 class MockFactQueue extends Mock implements LocalFactQueueRepository {}
 
 class MockRbac extends Mock implements RbacService {}
+
+class MockAnalyzer extends Mock implements ContextualSignatureAnalyzer {}
+
+class MockThrottle extends Mock implements ForensicThrottleGateway {}
 
 class FakeClock extends Fake implements IDateTimeProvider {
   final DateTime _now;
@@ -71,6 +77,8 @@ void main() {
     late MockLedgerRepo mockLedger;
     late MockFactQueue mockQueue;
     late MockRbac mockRbac;
+    late MockAnalyzer mockAnalyzer;
+    late MockThrottle mockThrottle;
     late FakeClock clock;
     late SubmitJustificationHandler handler;
 
@@ -82,6 +90,8 @@ void main() {
       mockLedger = MockLedgerRepo();
       mockQueue = MockFactQueue();
       mockRbac = MockRbac();
+      mockAnalyzer = MockAnalyzer();
+      mockThrottle = MockThrottle();
       clock = FakeClock(kEpoch);
 
       // INV-1: Secure Baseline. Nada de 'any()'.
@@ -96,6 +106,23 @@ void main() {
       when(() => mockLedger.append(any())).thenAnswer((_) async => 'entry-id');
       when(() => mockQueue.enqueue(any())).thenAnswer((_) async {});
 
+      when(
+        () => mockThrottle.assertAllowed(
+          organizationId: any(named: 'organizationId'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockThrottle.recordFailure(
+          organizationId: any(named: 'organizationId'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockThrottle.recordSuccess(
+          organizationId: any(named: 'organizationId'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => mockAnalyzer.validateEvidence(any())).thenAnswer((_) async {});
+
       handler = SubmitJustificationHandler(
         tenantValidator: mockTenant,
         justificationRepo: realJustRepo,
@@ -103,6 +130,8 @@ void main() {
         factQueue: mockQueue,
         rbac: mockRbac,
         clock: clock,
+        analyzer: mockAnalyzer,
+        throttle: mockThrottle,
       );
     });
 
@@ -123,6 +152,7 @@ void main() {
           category: 'OTHER',
           description: 'Valid description with at least 20 characters',
           evidenceHashes: [],
+          evidenceUrls: [],
           sessionId: 'session-1',
           callerUserId: 'user-1',
           callerEmail: 'user@test.com',
@@ -168,6 +198,10 @@ void main() {
           category: 'OTHER',
           description: 'Valid description with at least 20 characters',
           evidenceHashes: ['hash-1', 'hash-2'],
+          evidenceUrls: [
+            'https://signed.example/e1',
+            'https://signed.example/e2',
+          ],
           sessionId: 'session-1',
           callerUserId: 'user-1',
           callerEmail: 'user@test.com',
@@ -264,6 +298,7 @@ void main() {
           category: 'OTHER',
           description: 'Valid description with at least 20 characters',
           evidenceHashes: ['hash-1'],
+          evidenceUrls: ['https://signed.example/evidence-1'],
           sessionId: 'session-1',
           callerUserId: 'user-1',
           callerEmail: 'user@test.com',
@@ -297,6 +332,7 @@ void main() {
         category: 'OTHER',
         description: 'Valid description with at least 20 characters',
         evidenceHashes: ['hash-1'],
+        evidenceUrls: ['https://signed.example/evidence-1'],
         sessionId: 'session-1',
         callerUserId: 'user-1',
         callerEmail: 'auditor@test.com',
@@ -331,6 +367,7 @@ void main() {
         category: 'OTHER',
         description: 'Valid description with at least 20 characters',
         evidenceHashes: ['hash-1'],
+        evidenceUrls: ['https://signed.example/evidence-1'],
         sessionId: 'session-1',
         callerUserId: null,
         callerEmail: null,
@@ -370,6 +407,7 @@ void main() {
         category: 'OTHER',
         description: 'Valid description with at least 20 characters',
         evidenceHashes: ['hash-1'],
+        evidenceUrls: ['https://signed.example/evidence-1'],
         sessionId: 'session-attacker',
         callerUserId: 'attacker-user',
         callerEmail: 'attacker@evil.com',

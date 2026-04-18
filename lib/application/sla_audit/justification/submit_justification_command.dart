@@ -17,6 +17,11 @@ class SubmitJustificationCommand {
   final String? submittedByTokenId;
   final List<String> evidenceHashes;
 
+  /// Signed URLs (or storage paths) for each uploaded evidence file. Used by
+  /// the server-orchestrated [ContextualSignatureAnalyzer] in the handler to
+  /// perform the two-pass forensic scan before persistence (INV-13, INV-18).
+  final List<String> evidenceUrls;
+
   /// Session ID for tenant validation.
   final String sessionId;
 
@@ -32,6 +37,7 @@ class SubmitJustificationCommand {
     required this.callerEmail,
     required this.submittedByTokenId,
     required this.evidenceHashes,
+    required this.evidenceUrls,
     required this.sessionId,
   });
 }

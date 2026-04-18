@@ -16,7 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/application/sla_audit/justification/adaptive_forensic_binary_scanner.dart';
+import 'package:veraprob/application/sla_audit/justification/contextual_signature_analyzer.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/sla_justification_manager.dart';
@@ -86,8 +86,12 @@ Stream<List<int>> _buildPolyglotPngStream() async* {
     emitted += chunkSize;
   }
 
-  // Malicious PHP payload — triggers the mid-file probe.
-  yield '<?php system(\$_GET["cmd"]); ?>'.codeUnits;
+  // Malicious PHP payload with realistic PNG tEXt-chunk prelude so the
+  // adjacent ±32B printable-ASCII ratio clears the contextual threshold
+  // (Pass 2). Pure zero-padding before <?php would register as binary
+  // noise — real polyglots splice payloads into ASCII metadata chunks.
+  yield 'tEXtComment: image metadata;\n<?php system(\$_GET["cmd"]); ?>'
+      .codeUnits;
 }
 
 // ── Main test suite ───────────────────────────────────────────────────────────
@@ -124,9 +128,9 @@ void main() {
   }
 
   /// Builds a [SLAJustificationManager] wired with REAL security components
-  /// (XssInputSanitizer, AdaptiveForensicBinaryScanner) and the supplied mocks.
+  /// (XssInputSanitizer, ContextualSignatureAnalyzer) and the supplied mocks.
   SLAJustificationManager buildManager({
-    required AdaptiveForensicBinaryScanner fileInspector,
+    required ContextualSignatureAnalyzer fileInspector,
     required XssInputSanitizer sanitizer,
   }) {
     return SLAJustificationManager(
@@ -230,7 +234,7 @@ void main() {
         () => mockReader.streamBytes(url: any(named: 'url')),
       ).thenAnswer((_) => _buildPolyglotPngStream());
 
-      final validator = AdaptiveForensicBinaryScanner(mockReader);
+      final validator = ContextualSignatureAnalyzer(mockReader);
       const polyglotUrl = 'https://example.com/polyglot.png';
 
       // Act + Assert
@@ -276,7 +280,7 @@ void main() {
 
         final manager = buildManager(
           sanitizer: XssInputSanitizer(),
-          fileInspector: AdaptiveForensicBinaryScanner(
+          fileInspector: ContextualSignatureAnalyzer(
             MockEvidenceStorageReader(),
           ),
         );
@@ -339,7 +343,7 @@ void main() {
 
         final manager = buildManager(
           sanitizer: XssInputSanitizer(),
-          fileInspector: AdaptiveForensicBinaryScanner(
+          fileInspector: ContextualSignatureAnalyzer(
             MockEvidenceStorageReader(),
           ),
         );
@@ -412,9 +416,7 @@ void main() {
 
       final manager = buildManager(
         sanitizer: XssInputSanitizer(),
-        fileInspector: AdaptiveForensicBinaryScanner(
-          MockEvidenceStorageReader(),
-        ),
+        fileInspector: ContextualSignatureAnalyzer(MockEvidenceStorageReader()),
       );
 
       // Act

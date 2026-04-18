@@ -329,8 +329,9 @@ class _JustificationSubmissionFormState
       final setId = widget.token?.setId ?? _setIdCtrl.text.trim();
       final tokenId = widget.token?.id;
 
-      // Upload evidence files and collect hashes
+      // Upload evidence files and collect hashes + scan URLs.
       final hashes = <String>[];
+      final evidenceUrls = <String>[];
       if (hasFiles) {
         setState(
           () => _updateStep(
@@ -341,6 +342,7 @@ class _JustificationSubmissionFormState
         final storage = ref.read(justificationStorageServiceProvider);
         try {
           for (final f in _files) {
+            final String storagePath;
             if (widget.token != null) {
               final result = await storage.getSignedUploadUrl(
                 justificationToken: widget.token!.token,
@@ -359,8 +361,9 @@ class _JustificationSubmissionFormState
                 }
                 return;
               }
+              storagePath = result.storagePath;
             } else {
-              await storage.uploadAuthenticated(
+              storagePath = await storage.uploadAuthenticated(
                 organizationId: orgId,
                 justificationId: 'pending',
                 fileName: f.name,
@@ -368,6 +371,7 @@ class _JustificationSubmissionFormState
               );
             }
             hashes.add(f.hash);
+            evidenceUrls.add(await storage.getScanUrl(storagePath));
           }
           if (mounted) {
             setState(
@@ -414,6 +418,7 @@ class _JustificationSubmissionFormState
                 callerEmail: widget.token != null ? null : email,
                 submittedByTokenId: tokenId,
                 evidenceHashes: hashes,
+                evidenceUrls: evidenceUrls,
                 sessionId: sessionId,
               ),
             );
