@@ -1,21 +1,24 @@
 # VeraProb - MASTER ORCHESTRATOR
+
 Automated SLA Compliance & Financial Protection Platform.
 
 ## CORE PROTOCOLS
+
 1. TEST-DRIVEN DEVELOPMENT (TDD): Mandatory for all logic. Write a failing test for the requirement (using IntegrityException if applicable) BEFORE implementing code.
 2. PREMIUM DESIGN AESTHETIC: All UI must be "State of the Art":
-   - Theme: Industrial High-End Dark Mode (Industrial Deep palette). 
+   - Theme: Industrial High-End Dark Mode (Industrial Deep palette).
    - Details: Rich micro-animations, glassmorphism, 8pt spatial system, and bold modern typography (Inter/Outfit).
    - Vibe: "Forensic, Precise, Unrivaled." NO generic white/purple AI aesthetics.
-3. COUNCIL ORCHESTRATION: 
+3. COUNCIL ORCHESTRATION:
    - Systemic Thinking: For any non-trivial task, orchestrate relevant personas from .claude/agents/.
    - Integrity Guard: Architectural changes MUST involve UX/Ops if they impact how evidence is displayed or high-stakes decisions are made.
    - Cross-Functional Alignment: Ensure the Senior Engineer and QA sign off on core logic.
-4. DYNAMIC RESPONSE: 
+4. DYNAMIC RESPONSE:
    - Structural/Logic Changes: Provide a brief "Forensic Insight" referencing relevant INV-X.
    - UI/Trivial Fixes: Direct implementation. No boilerplate needed.
 
 ## THE 27 FORENSIC INVARIANTS (INV-1 to INV-27)
+
 Full details in .claude/rules/forensic-standards.md. Summary for active context:
 
 | ID | Category | Rule |
@@ -51,6 +54,7 @@ Full details in .claude/rules/forensic-standards.md. Summary for active context:
 ---
 
 ## COMMANDS & PERSONAS
+
 - /audit -> bash scripts/pr_full_scanner.sh + forensic check.
 - /tdd -> Start a Test-Driven Development flow.
 - /init -> Sync all rules.
