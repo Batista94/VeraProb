@@ -262,8 +262,8 @@ ANALYZE_ERRORS=$(echo "$ANALYZE_OUTPUT" | grep -iE "^\s*error\b" || true)
 ANALYZE_WARNINGS=$(echo "$ANALYZE_OUTPUT" | grep -iE "^\s*warning\b" || true)
 ANALYZE_INFOS=$(echo "$ANALYZE_OUTPUT" | grep -iE "^\s*info\b" || true)
 
-if [[ $ANALYZE_EXIT -ne 0 && -z "$ANALYZE_ERRORS" ]]; then
-  block "[ANALYZE-BLOCK] flutter analyze failed to execute. Check environment/shebangs."
+if [[ $ANALYZE_EXIT -ne 0 && -z "$ANALYZE_ERRORS" && -z "$ANALYZE_WARNINGS" ]]; then
+  block "[ANALYZE-BLOCK] flutter analyze failed to execute (binary error). Check environment."
   echo -e "         ${RED}Output:${NC}"
   echo "$ANALYZE_OUTPUT" | grep -v "^\s*$" | head -n 5 | while read -r line; do
     echo -e "         ${RED}→ $line${NC}"
