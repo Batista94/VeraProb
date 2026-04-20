@@ -258,9 +258,9 @@ fi
 
 ANALYZE_OUTPUT=$($FLUTTER_CMD analyze --no-pub 2>&1)
 ANALYZE_EXIT=$?
-ANALYZE_ERRORS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+error •" || true)
-ANALYZE_WARNINGS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+warning •" || true)
-ANALYZE_INFOS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+info •" || true)
+ANALYZE_ERRORS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+error\s+[•-]" || true)
+ANALYZE_WARNINGS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+warning\s+[•-]" || true)
+ANALYZE_INFOS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+info\s+[•-]" || true)
 
 if [[ $ANALYZE_EXIT -ne 0 && -z "$ANALYZE_ERRORS" ]]; then
   block "[ANALYZE-BLOCK] flutter analyze failed to execute. Check environment/shebangs."
