@@ -258,13 +258,16 @@ fi
 
 ANALYZE_OUTPUT=$($FLUTTER_CMD analyze --no-pub 2>&1)
 ANALYZE_EXIT=$?
-ANALYZE_ERRORS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+error\s+[•-]" || true)
-ANALYZE_WARNINGS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+warning\s+[•-]" || true)
-ANALYZE_INFOS=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s+info\s+[•-]" || true)
+ANALYZE_ERRORS=$(echo "$ANALYZE_OUTPUT" | grep -iE "^\s*error\b" || true)
+ANALYZE_WARNINGS=$(echo "$ANALYZE_OUTPUT" | grep -iE "^\s*warning\b" || true)
+ANALYZE_INFOS=$(echo "$ANALYZE_OUTPUT" | grep -iE "^\s*info\b" || true)
 
 if [[ $ANALYZE_EXIT -ne 0 && -z "$ANALYZE_ERRORS" ]]; then
   block "[ANALYZE-BLOCK] flutter analyze failed to execute. Check environment/shebangs."
-  echo -e "         ${RED}Output: $(echo "$ANALYZE_OUTPUT" | head -n 2)${NC}"
+  echo -e "         ${RED}Output:${NC}"
+  echo "$ANALYZE_OUTPUT" | grep -v "^\s*$" | head -n 5 | while read -r line; do
+    echo -e "         ${RED}→ $line${NC}"
+  done
 fi
 
 if [[ $ANALYZE_EXIT -ne 0 && -n "$ANALYZE_ERRORS" ]]; then
