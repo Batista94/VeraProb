@@ -20,23 +20,22 @@ void main() {
     int executed = 8,
     int noShow = 2,
     int totalObligations = 10,
-  }) =>
-      ContractualFinancialDailySnapshot.create(
-        organizationId: orgId,
-        contractId: contractId,
-        operationalDateUtc: DateTime.utc(2026, 3, 1),
-        operationalTimezone: 'America/Sao_Paulo',
-        closedAtUtc: DateTime.utc(2026, 3, 2),
-        totalContractedRevenue: const Money(10000),
-        protectedRevenue: const Money(8000),
-        revenueAtRisk: const Money(1000),
-        lostRevenue: const Money(1000),
-        totalObligations: totalObligations,
-        executedCount: executed,
-        noShowCount: noShow,
-        evidenceGapCount: 0,
-        lastLedgerEntryId: lastLedgerEntryId,
-      );
+  }) => ContractualFinancialDailySnapshot.create(
+    organizationId: orgId,
+    contractId: contractId,
+    operationalDateUtc: DateTime.utc(2026, 3, 1),
+    operationalTimezone: 'America/Sao_Paulo',
+    closedAtUtc: DateTime.utc(2026, 3, 2),
+    totalContractedRevenue: const Money(10000),
+    protectedRevenue: const Money(8000),
+    revenueAtRisk: const Money(1000),
+    lostRevenue: const Money(1000),
+    totalObligations: totalObligations,
+    executedCount: executed,
+    noShowCount: noShow,
+    evidenceGapCount: 0,
+    lastLedgerEntryId: lastLedgerEntryId,
+  );
 
   BillingCycleReport makeReport({
     String orgId = 'org-abc',
@@ -69,19 +68,18 @@ void main() {
   AuditPackage makeDraft({
     String orgId = 'org-abc',
     String? reportLedgerBoundary = '100',
-  }) =>
-      AuditPackage.createDraft(
-        organizationId: orgId,
-        contractId: 'contract-1',
-        contractorName: 'Contratante S.A.',
-        periodStartUtc: periodStart,
-        periodEndUtc: periodEnd,
-        report: makeReport(orgId: orgId),
-        reportLedgerBoundary: reportLedgerBoundary,
-        engineVersionAtGeneration: '1.0.0',
-        generatedByUserId: 'user-manager-1',
-        attestationHeader: makeAttestation(),
-      );
+  }) => AuditPackage.createDraft(
+    organizationId: orgId,
+    contractId: 'contract-1',
+    contractorName: 'Contratante S.A.',
+    periodStartUtc: periodStart,
+    periodEndUtc: periodEnd,
+    report: makeReport(orgId: orgId),
+    reportLedgerBoundary: reportLedgerBoundary,
+    engineVersionAtGeneration: '1.0.0',
+    generatedByUserId: 'user-manager-1',
+    attestationHeader: makeAttestation(),
+  );
 
   // ── AuditPackage.createDraft ───────────────────────────────────────────────
   group('AuditPackage.createDraft', () {
@@ -130,14 +128,11 @@ void main() {
       expect(draft.totalContractedRevenue, report.totalContractedRevenue);
       expect(draft.protectedRevenue, report.protectedRevenue);
       expect(draft.lostRevenue, report.lostRevenue);
-      expect(draft.complianceRate, report.complianceRate);
+      expect(draft.complianceRateBps, report.complianceRateBps);
     });
 
     test('throws if organizationId is empty', () {
-      expect(
-        () => makeDraft(orgId: ''),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeDraft(orgId: ''), throwsA(isA<DomainException>()));
     });
 
     test('throws if periodEnd is before periodStart', () {
@@ -270,7 +265,7 @@ void main() {
         executedCount: sealed.executedCount,
         noShowCount: sealed.noShowCount,
         evidenceGapCount: sealed.evidenceGapCount,
-        complianceRate: sealed.complianceRate,
+        complianceRateBps: sealed.complianceRateBps,
         packageHash: sealed.packageHash, // old hash
         hashAlgorithm: sealed.hashAlgorithm,
         schemaVersion: sealed.schemaVersion,

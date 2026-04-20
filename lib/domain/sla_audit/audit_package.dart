@@ -4,7 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'attestation_header.dart';
 import 'audit_package_status.dart';
 import 'billing_cycle_report.dart';
@@ -14,7 +14,7 @@ import 'domain_exception.dart';
 ///
 /// An [AuditPackage] is the exportable artifact that a tenant (operator)
 /// delivers to their contractor or presents in a legal dispute.
-/// It aggregates [BillingCycleReport] data with cryptographic provenance.
+/// It aggregates [BillingCycleReport] information with cryptographic provenance.
 ///
 /// **Lifecycle (D1-Canonical — two-row strategy, INV-1 compliant):**
 ///   1. [AuditPackage.createDraft] → [AuditPackageStatus.draft] — persisted as row A.
@@ -69,7 +69,7 @@ class AuditPackage extends Equatable {
   final int executedCount;
   final int noShowCount;
   final int evidenceGapCount;
-  final double complianceRate;
+  final int complianceRateBps;
 
   // ── Cryptographic seal (INV-18) ────────────────────────────────────────────
   /// SHA-256 of the canonical package content JSON.
@@ -114,7 +114,7 @@ class AuditPackage extends Equatable {
     required this.executedCount,
     required this.noShowCount,
     required this.evidenceGapCount,
-    required this.complianceRate,
+    required this.complianceRateBps,
     required this.packageHash,
     required this.hashAlgorithm,
     required this.schemaVersion,
@@ -173,7 +173,7 @@ class AuditPackage extends Equatable {
       executedCount: report.executedCount,
       noShowCount: report.noShowCount,
       evidenceGapCount: report.evidenceGapCount,
-      complianceRate: report.complianceRate,
+      complianceRateBps: report.complianceRateBps,
       packageHash: null,
       hashAlgorithm: 'SHA-256',
       schemaVersion: kSchemaVersion,
@@ -222,7 +222,7 @@ class AuditPackage extends Equatable {
       executedCount: executedCount,
       noShowCount: noShowCount,
       evidenceGapCount: evidenceGapCount,
-      complianceRate: complianceRate,
+      complianceRateBps: complianceRateBps,
       packageHash: hash,
       hashAlgorithm: 'SHA-256',
       schemaVersion: kSchemaVersion,
@@ -271,7 +271,7 @@ class AuditPackage extends Equatable {
       executedCount: executedCount,
       noShowCount: noShowCount,
       evidenceGapCount: evidenceGapCount,
-      complianceRate: complianceRate,
+      complianceRateBps: complianceRateBps,
       packageHash: packageHash,
       hashAlgorithm: hashAlgorithm,
       schemaVersion: schemaVersion,
@@ -314,7 +314,7 @@ class AuditPackage extends Equatable {
     required int executedCount,
     required int noShowCount,
     required int evidenceGapCount,
-    required double complianceRate,
+    required int complianceRateBps,
     required String? packageHash,
     required String hashAlgorithm,
     required String schemaVersion,
@@ -344,7 +344,7 @@ class AuditPackage extends Equatable {
       executedCount: executedCount,
       noShowCount: noShowCount,
       evidenceGapCount: evidenceGapCount,
-      complianceRate: complianceRate,
+      complianceRateBps: complianceRateBps,
       packageHash: packageHash,
       hashAlgorithm: hashAlgorithm,
       schemaVersion: schemaVersion,
@@ -364,7 +364,7 @@ class AuditPackage extends Equatable {
   ///
   /// Field order is fixed — do not change without incrementing [kSchemaVersion].
   /// [generatedAtUtc] is intentionally excluded: it is a provenance timestamp,
-  /// not content. Same financial data regenerated at a different time must
+  /// not content. Same financial information regenerated at a different time must
   /// produce the SAME hash.
   String _computePackageHash() {
     final sortedSnapshotIds = List<String>.from(snapshotIds)..sort();
@@ -386,7 +386,7 @@ class AuditPackage extends Equatable {
       'executed_count': executedCount,
       'no_show_count': noShowCount,
       'evidence_gap_count': evidenceGapCount,
-      'compliance_rate': complianceRate,
+      'compliance_rate_bps': complianceRateBps,
       'engine_version_at_generation': engineVersionAtGeneration,
     };
 

@@ -1,5 +1,5 @@
-import '../core/authority_types.dart';
-import '../decision/authorization_decision.dart'; // O context estava dentro do arquivo de decision
+import 'package:veraprob/domain/authority/core/authority_types.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart'; // O context estava dentro do arquivo de decision
 
 /// Domain Port: Evaluates an Operational Action against a Context to yield a Decision.
 ///
@@ -10,9 +10,11 @@ abstract class AuthorityPolicyEvaluator {
   ///
   /// The [targetRef] helps advanced policies check entity-level metadata
   /// (e.g., checking if the specific Trip is already resolved).
+  /// [nowUtc] is the authoritative evaluation timestamp (INV-9).
   Future<AuthorizationDecision> evaluate({
     required OperationalActionType actionType,
     required AuthorizationContext context,
     required TargetRef targetRef,
+    required DateTime nowUtc,
   });
 }

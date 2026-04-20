@@ -1,4 +1,4 @@
-import '../../domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'accept_invitation_command.dart';
 import 'invitation_command_service.dart';
 
@@ -8,7 +8,7 @@ import 'invitation_command_service.dart';
 /// Authority is granted solely by possession of the one-time token.
 ///
 /// The [InvitationCommandService.acceptInvitation] RPC performs server-side:
-/// - Row-level lock (FOR UPDATE) to prevent double-acceptance
+/// - Row-level lock (FOR UPDATE) to prevent duplicate-acceptance
 /// - Token validity check (not expired, not revoked, not accepted)
 /// - accepted_at_utc stamped atomically
 /// - user_roles INSERT ON CONFLICT DO NOTHING

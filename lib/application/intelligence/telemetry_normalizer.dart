@@ -1,13 +1,14 @@
 import 'dart:math' show cos, sqrt, asin;
 import 'package:veraprob/domain/entities/raw_telemetry_ping.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
+import 'package:veraprob/domain/sla_audit/telemetry/spoofing_detected_exception.dart';
 
 /// The Purgatory Filter.
 /// Responsible for receiving dirty RawTelemetryPings and filtering out noise,
 /// impossible jumps, and converting valid pings into VehiclePositions for the State.
 class TelemetryNormalizer {
-  final double maxAccuracyMeters;
-  final double maxImpliedSpeedKmh;
+  final double maxAccuracyMeters; // Physical Metric - Double Required
+  final double maxImpliedSpeedKmh; // Physical Metric - Double Required
 
   // State to remember the last valid ping per vehicle to calculate jumps
   final Map<String, RawTelemetryPing> _lastValidPings = {};
@@ -24,9 +25,15 @@ class TelemetryNormalizer {
       return null;
     }
 
+    // 2. INV-18: Spoofing Detection - Reject unrealistic precision (emulator signature)
+    // Real GPS devices have stdDev >= 0.001 due to atmospheric noise
+    if (ping.accuracy < 0.001) {
+      return null; // Emulator or spoofed data
+    }
+
     final lastPing = _lastValidPings[ping.vehicleId];
 
-    // 2. Implied Speed Filter (Haversine Jump Check)
+    // 3. Implied Speed Filter (Haversine Jump Check)
     if (lastPing != null) {
       final distanceMeters = _calculateDistance(
         lastPing.latitude,
@@ -74,13 +81,15 @@ class TelemetryNormalizer {
   /// Calculates the great-circle distance between two points on the Earth surface using the Haversine formula.
   /// Returns distance in meters.
   double _calculateDistance(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
+    // Physical Metric - Double Required
+    double lat1, // Physical Metric - Double Required
+    double lon1, // Physical Metric - Double Required
+    double lat2, // Physical Metric - Double Required
+    double lon2, // Physical Metric - Double Required
   ) {
-    const double p = 0.017453292519943295; // Math.PI / 180
-    final double a =
+    const double p = // Physical Metric - Double Required
+        0.017453292519943295; // Math.PI / 180 // Physical Metric - Double Required
+    final double a = // Physical Metric - Double Required
         0.5 -
         cos((lat2 - lat1) * p) / 2 +
         cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
@@ -91,5 +100,22 @@ class TelemetryNormalizer {
   /// Clears internal state (useful for tests or hard resets)
   void clearState() {
     _lastValidPings.clear();
+  }
+
+  /// Validates a batch of coordinates for zero-variance spoofing.
+  /// Throws SpoofingDetectedException if synthetic pattern detected.
+  void validateBatch(List<RawTelemetryPing> pings, String deviceId) {
+    if (pings.length < 5) return;
+
+    final latitudes = pings.map((p) => p.latitude).toSet();
+    final longitudes = pings.map((p) => p.longitude).toSet();
+
+    if (latitudes.length == 1 && longitudes.length == 1) {
+      throw SpoofingDetectedException(
+        deviceId: deviceId,
+        reason:
+            'zero variance detected in batch of ${pings.length} coordinates',
+      );
+    }
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:collection';
 
-import '../../domain/sla_audit/sla_template.dart';
-import '../../domain/sla_audit/sla_template_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_template.dart';
+import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
 
 /// In-memory implementation of [SlaTemplateRepository].
 ///
@@ -20,6 +20,18 @@ class InMemorySlaTemplateRepository implements SlaTemplateRepository {
         _store.values.where((t) => t.organizationId == organizationId).toList()
           ..sort((a, b) => a.name.compareTo(b.name));
     return UnmodifiableListView(results);
+  }
+
+  @override
+  Future<SlaTemplate?> findById(
+    String id, {
+    required String organizationId,
+  }) async {
+    final template = _store[id];
+    if (template != null && template.organizationId == organizationId) {
+      return template;
+    }
+    return null;
   }
 
   @override

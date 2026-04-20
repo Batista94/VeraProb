@@ -2,12 +2,12 @@
 ///
 /// Domain events are identity-based, not value-based.
 /// They represent facts that occurred within the domain.
-/// They do NOT use Equatable — each event instance is unique.
+/// They do NOT use Equatable — each factEvent instance is unique.
 abstract class DomainEvent {
-  /// The Tenant / Organization ID where this event occurred.
+  /// The Tenant / Organization ID where this factEvent occurred.
   final String organizationId;
 
-  /// The UTC timestamp when this event occurred.
+  /// The UTC timestamp when this factEvent occurred.
   final DateTime occurredAtUtc;
 
   const DomainEvent({

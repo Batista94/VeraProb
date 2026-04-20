@@ -1,6 +1,6 @@
 import 'package:uuid/uuid.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
-import '../../domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 
 /// In-memory implementation of [SlaAuditLedgerRepository].
 ///
@@ -28,17 +28,35 @@ class InMemorySlaAuditLedgerRepository implements SlaAuditLedgerRepository {
   }
 
   @override
-  Future<String?> getLastEntryId() async {
-    if (_entries.isEmpty) return null;
-    return _entries.last.eventId;
+  Future<String?> getLastEntryId({
+    String? organizationId,
+    String? contractId,
+  }) async {
+    var scope = organizationId != null
+        ? _entries.where((e) => e.organizationId == organizationId).toList()
+        : List<SlaLedgerEntry>.from(_entries);
+    if (contractId != null) {
+      scope = scope.where((e) => e.contractId == contractId).toList();
+    }
+    if (scope.isEmpty) return null;
+    return scope.last.eventId;
   }
 
   /// Returns a copy of the recorded entries for testing/verification.
   List<SlaLedgerEntry> get entries => List.unmodifiable(_entries);
 
   @override
-  Future<List<SlaLedgerEntry>> getEntriesBySetId(String setId) async {
-    return _entries.where((e) => e.setId == setId).toList()
+  Future<List<SlaLedgerEntry>> getEntriesBySetId(
+    String setId, {
+    String? organizationId,
+  }) async {
+    return _entries
+        .where(
+          (e) =>
+              e.setId == setId &&
+              (organizationId == null || e.organizationId == organizationId),
+        )
+        .toList()
       ..sort((a, b) => a.occurredAtUtc.compareTo(b.occurredAtUtc));
   }
 }

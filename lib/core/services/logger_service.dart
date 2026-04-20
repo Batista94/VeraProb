@@ -12,14 +12,14 @@ class LoggerService {
       // For MVP, we might suppress or log only critical errors
       return;
     }
-    final timestamp = DateTime.now().toIso8601String();
+    final timestamp = DateTime.now().toUtc().toIso8601String();
     final prefix = component != null ? '[$component]' : '[App]';
     debugPrint('$timestamp $prefix $message');
   }
 
   void error(String message, {Object? error, StackTrace? stackTrace}) {
     // Critical errors should always be logged or reported
-    final timestamp = DateTime.now().toIso8601String();
+    final timestamp = DateTime.now().toUtc().toIso8601String();
     debugPrint('🔴 $timestamp [ERROR] $message');
     if (error != null) debugPrint('Error: $error');
     if (stackTrace != null) debugPrint('StackTrace: $stackTrace');
@@ -41,7 +41,7 @@ class LoggerService {
 
   void security(String event) {
     // Specific stream for security events (A09: Security Logging)
-    final timestamp = DateTime.now().toIso8601String();
+    final timestamp = DateTime.now().toUtc().toIso8601String();
     debugPrint('🔒 $timestamp [SECURITY] $event');
     // Ideally persist this to specific audit table in Supabase
   }

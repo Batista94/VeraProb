@@ -16,9 +16,15 @@ void main() {
   group('OperationalZone.create', () {
     test('gera UUID v4', () {
       final z1 = OperationalZone.create(
-          organizationId: 'org-1', name: 'Zona A', type: ZoneType.garagem);
+        organizationId: 'org-1',
+        name: 'Zona A',
+        type: ZoneType.garagem,
+      );
       final z2 = OperationalZone.create(
-          organizationId: 'org-1', name: 'Zona B', type: ZoneType.garagem);
+        organizationId: 'org-1',
+        name: 'Zona B',
+        type: ZoneType.garagem,
+      );
 
       expect(z1.id, isNotEmpty);
       expect(z2.id, isNotEmpty);
@@ -64,7 +70,10 @@ void main() {
     test('lança DomainException se name vazio', () {
       expect(
         () => OperationalZone.create(
-            organizationId: 'org-1', name: '', type: ZoneType.garagem),
+          organizationId: 'org-1',
+          name: '',
+          type: ZoneType.garagem,
+        ),
         throwsA(isA<DomainException>()),
       );
     });
@@ -72,7 +81,10 @@ void main() {
     test('lança DomainException se name > 100 chars', () {
       expect(
         () => OperationalZone.create(
-            organizationId: 'org-1', name: 'x' * 101, type: ZoneType.garagem),
+          organizationId: 'org-1',
+          name: 'x' * 101,
+          type: ZoneType.garagem,
+        ),
         throwsA(isA<DomainException>()),
       );
     });
@@ -84,7 +96,10 @@ void main() {
           name: 'Zona',
           type: ZoneType.garagem,
           geofence: const GeofenceConfiguration(
-              latitude: 91, longitude: 0, radiusMeters: 200),
+            latitude: 91,
+            longitude: 0,
+            radiusMeters: 200,
+          ),
         ),
         throwsA(isA<DomainException>()),
       );
@@ -94,7 +109,10 @@ void main() {
           name: 'Zona',
           type: ZoneType.garagem,
           geofence: const GeofenceConfiguration(
-              latitude: -91, longitude: 0, radiusMeters: 200),
+            latitude: -91,
+            longitude: 0,
+            radiusMeters: 200,
+          ),
         ),
         throwsA(isA<DomainException>()),
       );
@@ -107,7 +125,10 @@ void main() {
           name: 'Zona',
           type: ZoneType.garagem,
           geofence: const GeofenceConfiguration(
-              latitude: 0, longitude: 181, radiusMeters: 200),
+            latitude: 0,
+            longitude: 181,
+            radiusMeters: 200,
+          ),
         ),
         throwsA(isA<DomainException>()),
       );
@@ -120,7 +141,10 @@ void main() {
           name: 'Zona',
           type: ZoneType.garagem,
           geofence: const GeofenceConfiguration(
-              latitude: 0, longitude: 0, radiusMeters: 0),
+            latitude: 0,
+            longitude: 0,
+            radiusMeters: 0,
+          ),
         ),
         throwsA(isA<DomainException>()),
       );
@@ -130,7 +154,10 @@ void main() {
           name: 'Zona',
           type: ZoneType.garagem,
           geofence: const GeofenceConfiguration(
-              latitude: 0, longitude: 0, radiusMeters: 50001),
+            latitude: 0,
+            longitude: 0,
+            radiusMeters: 50001,
+          ),
         ),
         throwsA(isA<DomainException>()),
       );

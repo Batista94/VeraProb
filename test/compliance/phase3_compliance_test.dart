@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
-import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
-import 'package:veraprob/domain/enums/motion_state.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
@@ -14,6 +14,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_executio
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/evidence_payload.dart';
 
 /// Phase 3 Compliance Review — Validation Scenarios
 ///
@@ -24,6 +25,7 @@ void main() {
   const geoLat = -23.5505;
   const geoLng = -46.6333;
   const geoRadius = 100;
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
 
   late InMemoryContractualExecutionStateRepository repo;
   late InMemoryPlanDeclarationRepository planRepo;
@@ -45,8 +47,8 @@ void main() {
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
-      contractualValue: Money.fromDouble(150.0),
-      noShowPenaltyMultiplier: 1.5,
+      contractualValue: const Money(15000),
+      noShowPenaltyBps: 15000,
       windowStartUtc: windowStart ?? DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0),
     );
@@ -58,6 +60,7 @@ void main() {
     double lng = geoLng,
   }) {
     return VehicleOperationalState(
+      rawSpeed: 0.0,
       vehicleId: vehicleId,
       tripId: 'trip-1',
       latitude: lat,
@@ -91,11 +94,12 @@ void main() {
           endLatitude: -23.5600,
           endLongitude: -46.6400,
           endRadiusMeters: geoRadius,
-          contractualValue: Money.fromDouble(150.0),
-          noShowPenaltyMultiplier: 1.5,
+          contractualValue: const Money(15000),
+          noShowPenaltyBps: 15000,
         ),
       ],
       ruleSnapshot: const RuleSnapshot([]),
+      nowUtc: nowUtc,
     );
     await planRepo.save(declaration);
   }
@@ -130,12 +134,12 @@ void main() {
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30),
         organizationId: 'org-1',
-);
+      );
       await engine.processVehicleState(
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30, 31),
         organizationId: 'org-1',
-);
+      );
 
       final afterBinding = await repo.findBySetId('set-1');
       expect(afterBinding!.status, ExecutionStatus.executed);
@@ -156,7 +160,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final afterSweep = await repo.findBySetId('set-1');
       expect(afterSweep!.status, ExecutionStatus.noShow);
@@ -182,12 +186,12 @@ void main() {
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30),
         organizationId: 'org-1',
-);
+      );
       await engine.processVehicleState(
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30, 31),
         organizationId: 'org-1',
-);
+      );
 
       final traces = await traceRepo.findByEntityId('set-1');
       final entries = ledger.entries;
@@ -246,17 +250,21 @@ void main() {
                 endLatitude: -23.56,
                 endLongitude: -46.64,
                 endRadiusMeters: geoRadius,
-                contractualValue: Money.fromDouble(150.0),
-                noShowPenaltyMultiplier: 1.5,
+                contractualValue: const Money(15000),
+                noShowPenaltyBps: 15000,
               ),
             ],
             ruleSnapshot: const RuleSnapshot([]),
+            nowUtc: nowUtc,
           ),
         );
 
         await r.save(makeState());
 
-        await e.sweepExpiredObligations(nowUtc: DateTime.utc(2026, 3, 1, 8, 0), organizationId: 'org-1');
+        await e.sweepExpiredObligations(
+          nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
+          organizationId: 'org-1',
+        );
         results.add(await t.findByEntityId('set-1'));
       }
 
@@ -288,7 +296,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final traces = await traceRepo.findByEntityId('set-1');
       for (final trace in traces) {
@@ -296,7 +304,7 @@ void main() {
           trace.engineVersion,
           equals(ContractualEvaluationEngine.currentEngineVersion),
         );
-        expect(trace.engineVersion, equals('veraprob-core_v3'));
+        expect(trace.engineVersion, equals('veraprob-core_v4'));
       }
     });
 
@@ -311,7 +319,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final traces = await traceRepo.findByEntityId('set-1');
       expect(traces, isNotEmpty);
@@ -323,7 +331,8 @@ void main() {
           expect(d.ruleVersion, isA<int>());
           expect(d.rulePriority, isA<int>());
           expect(d.outcome, isNotEmpty);
-          expect(d.evidence, isA<Map<String, dynamic>>());
+          expect(d.evidence, isA<EvidencePayload>());
+          expect(d.evidence.toJson(), isA<Map<String, dynamic>>());
         }
       }
     });
@@ -340,7 +349,7 @@ void main() {
         entityId: 'set-001',
         triggeringEventId: 'event-uuid',
         evaluatedAtUtc: DateTime.utc(2026, 3, 1, 7, 0),
-        engineVersion: 'veraprob-core_v3',
+        engineVersion: 'veraprob-core_v4',
         decisions: const [],
       );
       expect(trace.organizationId, equals('org-1'));
@@ -352,7 +361,7 @@ void main() {
         ruleVersion: 1,
         rulePriority: 1,
         outcome: 'PASS',
-        evidence: {'threshold': 60, 'actual': 120},
+        evidence: GenericEvidencePayload({'threshold': 60, 'actual': 120}),
       );
       final json = decision.toJson();
       final restored = EvaluationDecision.fromJson(json);

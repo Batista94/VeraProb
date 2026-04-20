@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widgets/admin_layout.dart';
 
 import 'dashboard_screen.dart';
@@ -13,76 +14,117 @@ import 'screens/billing_cycle_reports_screen.dart';
 import 'screens/org_settings_screen.dart';
 import 'screens/user_management_screen.dart';
 import 'screens/contractor_management_screen.dart';
+import 'screens/auditor_queue_screen.dart';
+import 'screens/defense_portal_screen.dart';
+import 'screens/sla_template_library_screen.dart';
+import 'package:veraprob/state/providers/auditor_queue_providers.dart';
+import 'package:veraprob/state/providers/justification_providers.dart';
 
-class AdminHome extends StatelessWidget {
+class AdminHome extends ConsumerWidget {
   const AdminHome({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const AdminLayout(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pendingCount = ref.watch(pendingSanctionsCountProvider);
+    final pendingJustificationCount = ref.watch(
+      pendingJustificationsCountProvider,
+    );
+
+    return AdminLayout(
       destinations: [
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard),
           label: Text('Visão Geral'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.people_outlined),
           selectedIcon: Icon(Icons.people),
           label: Text('Motoristas'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.access_time_outlined),
           selectedIcon: Icon(Icons.access_time_filled),
           label: Text('Ponto Eletrônico'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.history_outlined),
           selectedIcon: Icon(Icons.history),
           label: Text('Auditoria OCC'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.description_outlined),
           selectedIcon: Icon(Icons.description),
           label: Text('Contratos'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.verified_user_outlined),
           selectedIcon: Icon(Icons.verified_user),
           label: Text('Auditoria de SLA'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.account_balance_outlined),
           selectedIcon: Icon(Icons.account_balance),
           label: Text('Impacto Financeiro'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.place_outlined),
           selectedIcon: Icon(Icons.place),
           label: Text('Zonas Operacionais'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.summarize_outlined),
           selectedIcon: Icon(Icons.summarize),
           label: Text('Relatórios'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.business_outlined),
           selectedIcon: Icon(Icons.business),
           label: Text('Organização'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.manage_accounts_outlined),
           selectedIcon: Icon(Icons.manage_accounts),
           label: Text('Usuários'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.handshake_outlined),
           selectedIcon: Icon(Icons.handshake),
           label: Text('Contratantes'),
         ),
+        const NavigationRailDestination(
+          icon: Icon(Icons.library_books_outlined),
+          selectedIcon: Icon(Icons.library_books),
+          label: Text('Modelos SLA'),
+        ),
+        NavigationRailDestination(
+          icon: Badge(
+            isLabelVisible: pendingCount > 0,
+            label: Text('$pendingCount'),
+            child: const Icon(Icons.approval_outlined),
+          ),
+          selectedIcon: Badge(
+            isLabelVisible: pendingCount > 0,
+            label: Text('$pendingCount'),
+            child: const Icon(Icons.approval),
+          ),
+          label: const Text('Fila Auditora'),
+        ),
+        NavigationRailDestination(
+          icon: Badge(
+            isLabelVisible: pendingJustificationCount > 0,
+            label: Text('$pendingJustificationCount'),
+            child: const Icon(Icons.shield_outlined),
+          ),
+          selectedIcon: Badge(
+            isLabelVisible: pendingJustificationCount > 0,
+            label: Text('$pendingJustificationCount'),
+            child: const Icon(Icons.shield),
+          ),
+          label: const Text('Portal Defesa'),
+        ),
       ],
-      children: [
+      children: const [
         DashboardScreen(),
         DriversScreen(),
         TimecardReportsScreen(),
@@ -95,6 +137,9 @@ class AdminHome extends StatelessWidget {
         OrgSettingsScreen(),
         UserManagementScreen(),
         ContractorManagementScreen(),
+        SlaTemplateLibraryScreen(),
+        AuditorQueueScreen(),
+        DefensePortalScreen(),
       ],
     );
   }

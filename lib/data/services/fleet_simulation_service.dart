@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math';
-import '../../application/adapters/stress_scenario_config.dart';
-import '../../domain/entities/operational_trip.dart';
-import '../../domain/entities/trip_event.dart';
-import '../../domain/entities/vehicle_position.dart';
-import '../../domain/enums/event_type.dart';
-import '../../domain/enums/trip_status.dart';
+import 'package:veraprob/application/adapters/stress_scenario_config.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
 
 /// Simulates a realistic GTFS Realtime feed for São Paulo.
 ///
@@ -130,6 +130,9 @@ class FleetSimulationService {
   bool _initialized = false;
   int _tickCount = 0;
   int _eventCounter = 0;
+
+  /// Map of tripId -> remaining ticks to force high speed (for testing)
+  final Map<String, int> _forcedSpeedTicks = {};
 
   /// Initialize all simulated trips
   void _initializeTrips() {
@@ -283,10 +286,24 @@ class FleetSimulationService {
     return _trips[index].toOperationalTrip();
   }
 
+  /// Manually force a speed violation for a specific trip (for testing).
+  void triggerSpeedViolation(String tripId, {int durationTicks = 4}) {
+    _forcedSpeedTicks[tripId] = durationTicks;
+    _emitCurrentState();
+  }
+
   /// Push current state to stream listeners.
   void _emitCurrentState() {
     _tripChangeController.add(currentTrips);
     _positionChangeController.add(currentPositions);
+  }
+
+  /// Cancels the simulation timer and closes stream controllers.
+  void dispose() {
+    _simTimer?.cancel();
+    _simTimer = null;
+    _tripChangeController.close();
+    _positionChangeController.close();
   }
 
   /// Advance simulation by one tick
@@ -301,10 +318,20 @@ class FleetSimulationService {
         if (newProgress >= 1.0) {
           newProgress = 0.05; // Loop back
         }
-        trip = trip.copyWith(
-          progress: newProgress,
-          speed: 15 + _random.nextDouble() * 35,
-        );
+        var speed = 15 + _random.nextDouble() * 35;
+
+        // Apply forced speed if active
+        if (_forcedSpeedTicks.containsKey(trip.id)) {
+          final remaining = _forcedSpeedTicks[trip.id]!;
+          if (remaining > 0) {
+            speed = 85.0 + _random.nextDouble() * 5.0; // 85-90 km/h
+            _forcedSpeedTicks[trip.id] = remaining - 1;
+          } else {
+            _forcedSpeedTicks.remove(trip.id);
+          }
+        }
+
+        trip = trip.copyWith(progress: newProgress, speed: speed);
       }
 
       // Occasionally change states
@@ -324,8 +351,8 @@ class FleetSimulationService {
 
   _SimulatedTrip _evolveState(_SimulatedTrip trip, int index) {
     final roll = _random.nextDouble();
-    final incidentProb = config?.incidentProbability ?? 0.05;
-    final signalLossProb = config?.signalLossProbability ?? 0.05;
+    final incidentProb = (config?.incidentProbability ?? 500) / 10000.0;
+    final signalLossProb = (config?.signalLossProbability ?? 500) / 10000.0;
 
     // Signal loss toggle
     if (roll < signalLossProb) {
@@ -468,17 +495,19 @@ class _SimulatedTrip {
       id: id,
       routeId: routeId,
       status: status,
-      scheduledStart: DateTime.now().subtract(
+      scheduledStart: DateTime.now().toUtc().subtract(
         Duration(minutes: (progress * 60).toInt()),
       ),
-      scheduledEnd: DateTime.now().add(
+      scheduledEnd: DateTime.now().toUtc().add(
         Duration(minutes: ((1.0 - progress) * 60).toInt()),
       ),
       actualStart: status.isActive || status.isTerminal
-          ? DateTime.now().subtract(Duration(minutes: (progress * 60).toInt()))
+          ? DateTime.now().toUtc().subtract(
+              Duration(minutes: (progress * 60).toInt()),
+            )
           : null,
       delaySeconds: delaySeconds,
-      completionPct: progress * 100,
+      completionBps: (progress * 10000).toInt(),
       sourceType: 'gtfs_realtime',
       driverName: driverName,
       vehiclePlate: vehiclePlate,

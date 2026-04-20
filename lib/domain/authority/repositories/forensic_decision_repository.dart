@@ -1,4 +1,4 @@
-import '../decision/authorization_decision.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 
 /// Domain Port: Immutable append-only storage for Forensic Decisions.
 ///

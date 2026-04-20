@@ -31,6 +31,14 @@ abstract class ContractualExecutionStateRepository {
     required String organizationId,
   });
 
+  /// Retrieves all execution states whose time window contains [nowUtc]
+  /// and are in a state that can be re-evaluated (pending, noShow, evidenceGap).
+  /// Required for INV-12 Re-evaluation Protocol.
+  Future<List<ContractualExecutionState>> findActiveInWindow(
+    DateTime nowUtc, {
+    required String organizationId,
+  });
+
   /// Retrieves all pending execution states whose time window
   /// has expired (windowEndUtc < [nowUtc]), scoped to [organizationId].
   ///

@@ -1,21 +1,23 @@
-import 'package:equatable/equatable.dart';
+﻿import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 import 'domain_exception.dart';
 import 'sla_penalties.dart';
+import 'transport_vertical.dart';
 
-/// Application-layer entity representing a named preset of [SLAPenalties].
+/// Core Domain Entity representing a named preset of [SLAPenalties].
 ///
 /// SLA Templates allow operators to configure penalty parameters once and
-/// reuse them across multiple plan declarations — eliminating repetitive
+/// reuse them across multiple plan declarations â€” eliminating repetitive
 /// manual entry in the Wizard Step 3.
 ///
-/// **Classification:** Application/Infrastructure layer entity.
+/// **Classification:** Core Domain Entity.
 /// [SLAPenalties] remains a pure domain Value Object with no knowledge of
 /// templates. A template is purely a named JSONB preset.
 ///
 /// **Immutability:** All fields are final. Editing a template creates a new
-/// record (not enforced here — left to the UI/handler layer).
+/// record (not enforced here â€” left to the UI/handler layer).
 ///
 /// Equality is based exclusively on [id].
 class SlaTemplate extends Equatable {
@@ -23,6 +25,7 @@ class SlaTemplate extends Equatable {
   final String organizationId;
   final String name;
   final String? description;
+  final TransportVertical? vertical;
   final SLAPenalties penalties;
   final DateTime createdAt;
 
@@ -31,6 +34,7 @@ class SlaTemplate extends Equatable {
     required this.organizationId,
     required this.name,
     this.description,
+    this.vertical,
     required this.penalties,
     required this.createdAt,
   });
@@ -42,6 +46,7 @@ class SlaTemplate extends Equatable {
     required String organizationId,
     required String name,
     String? description,
+    TransportVertical? vertical,
     required SLAPenalties penalties,
   }) {
     if (organizationId.isEmpty) {
@@ -61,8 +66,10 @@ class SlaTemplate extends Equatable {
       organizationId: organizationId,
       name: name,
       description: description,
+      vertical: vertical,
       penalties: penalties,
-      createdAt: DateTime.now().toUtc(),
+      createdAt:
+          StaticDateTimeProvider.instance?.nowUtc() ?? DateTime.now().toUtc(),
     );
   }
 
@@ -72,6 +79,7 @@ class SlaTemplate extends Equatable {
     required String organizationId,
     required String name,
     String? description,
+    TransportVertical? vertical,
     required SLAPenalties penalties,
     required DateTime createdAt,
   }) {
@@ -80,6 +88,7 @@ class SlaTemplate extends Equatable {
       organizationId: organizationId,
       name: name,
       description: description,
+      vertical: vertical,
       penalties: penalties,
       createdAt: createdAt,
     );

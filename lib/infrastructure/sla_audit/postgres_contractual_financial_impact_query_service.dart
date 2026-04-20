@@ -1,20 +1,26 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/shared/money.dart';
-import '../../application/sla_audit/projections/contractual_financial_impact.dart';
-import '../../application/sla_audit/projections/contractual_financial_impact_query_service.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// Postgres implementation for [ContractualFinancialImpactQueryService].
 /// Extracts financial impact projection directly from `contractual_financial_snapshot`.
 class ContractualFinancialImpactQueryServicePostgres
     implements ContractualFinancialImpactQueryService {
   final SupabaseClient _client;
+  final IDateTimeProvider _dateTimeProvider;
 
-  ContractualFinancialImpactQueryServicePostgres(this._client);
+  ContractualFinancialImpactQueryServicePostgres(
+    this._client,
+    this._dateTimeProvider,
+  );
 
   @override
   Future<ContractualFinancialImpact> getImpact({
     required String organizationId,
     String? contractId,
+    DateTime? startUtc,
+    DateTime? endUtc,
   }) async {
     var query = _client.from('contractual_financial_snapshot').select();
 
@@ -26,6 +32,20 @@ class ContractualFinancialImpactQueryServicePostgres
       query = query.isFilter('contract_id', null);
     }
 
+    // Application layer provides the temporal window â€” infrastructure only maps it to Postgres.
+    if (startUtc != null) {
+      query = query.gte(
+        'operational_date_utc',
+        startUtc.toUtc().toIso8601String(),
+      );
+    }
+    if (endUtc != null) {
+      query = query.lte(
+        'operational_date_utc',
+        endUtc.toUtc().toIso8601String(),
+      );
+    }
+
     // Fetch the latest snapshots. Limit to 31 to avoid loading the full snapshot history.
     // Assuming the most recent active snapshot is within the last month of reprocessing.
     final rows = await query
@@ -35,13 +55,13 @@ class ContractualFinancialImpactQueryServicePostgres
     if (rows.isEmpty) {
       return ContractualFinancialImpact(
         contractId: contractId,
-        generatedAtUtc: DateTime.now().toUtc(),
-        totalContractedRevenue: const Money(0),
-        protectedRevenue: const Money(0),
-        revenueAtRisk: const Money(0),
-        lostRevenue: const Money(0),
-        riskPercentage: 0.0,
-        lossPercentage: 0.0,
+        generatedAtUtc: _dateTimeProvider.nowUtc(),
+        totalContractedRevenue: 0,
+        protectedRevenue: 0,
+        revenueAtRisk: 0,
+        lostRevenue: 0,
+        riskPercentageBps: 0,
+        lossPercentageBps: 0,
       );
     }
 
@@ -72,24 +92,21 @@ class ContractualFinancialImpactQueryServicePostgres
     final latest = activeRows.first;
 
     final lostRevenueCents = (latest['lost_revenue_cents'] as num).toInt();
-    final marginErosionPercent = (ceilingCents != null && ceilingCents > 0)
-        ? lostRevenueCents / ceilingCents * 100.0
+    final marginErosionBps = (ceilingCents != null && ceilingCents > 0)
+        ? (lostRevenueCents * 10000 ~/ ceilingCents)
         : null;
 
     return ContractualFinancialImpact(
       contractId: contractId,
       generatedAtUtc: DateTime.parse(latest['closed_at_utc'] as String).toUtc(),
-      totalContractedRevenue: Money(
-        (latest['total_contracted_revenue_cents'] as num).toInt(),
-      ),
-      protectedRevenue: Money(
-        (latest['protected_revenue_cents'] as num).toInt(),
-      ),
-      revenueAtRisk: Money((latest['revenue_at_risk_cents'] as num).toInt()),
-      lostRevenue: Money(lostRevenueCents),
-      riskPercentage: (latest['risk_percentage'] as num).toDouble(),
-      lossPercentage: (latest['loss_percentage'] as num).toDouble(),
-      marginErosionPercent: marginErosionPercent,
+      totalContractedRevenue: (latest['total_contracted_revenue_cents'] as num)
+          .toInt(),
+      protectedRevenue: (latest['protected_revenue_cents'] as num).toInt(),
+      revenueAtRisk: (latest['revenue_at_risk_cents'] as num).toInt(),
+      lostRevenue: lostRevenueCents,
+      riskPercentageBps: (latest['risk_percentage'] as num).toInt(),
+      lossPercentageBps: (latest['loss_percentage'] as num).toInt(),
+      marginErosionBps: marginErosionBps,
     );
   }
 }

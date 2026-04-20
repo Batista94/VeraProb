@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/sla_audit/contractor.dart';
-import '../../../../application/sla_audit/save_contractor_command.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../state/providers/contractor_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/core/utils/cnpj_input_formatter.dart';
+import 'package:veraprob/core/utils/cnpj_validator.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
+import 'package:veraprob/application/sla_audit/save_contractor_command.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/contractor_providers.dart';
 
-Future<Contractor?> showContractorFormDialog(
+Future<ContractorView?> showContractorFormDialog(
   BuildContext context, {
-  Contractor? existing,
+  ContractorView? existing,
   String? initialName,
 }) {
-  return showDialog<Contractor>(
+  return showDialog<ContractorView>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => ContractorFormDialog(
-      existing: existing,
-      initialName: initialName,
-    ),
+    builder: (context) =>
+        ContractorFormDialog(existing: existing, initialName: initialName),
   );
 }
 
 class ContractorFormDialog extends ConsumerStatefulWidget {
-  final Contractor? existing;
+  final ContractorView? existing;
   final String? initialName;
 
   const ContractorFormDialog({super.key, this.existing, this.initialName});
@@ -75,7 +75,12 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 500),
+        constraints: BoxConstraints(
+          maxWidth: (MediaQuery.sizeOf(context).width * 0.92).clamp(
+            300.0,
+            540.0,
+          ),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Form(
@@ -105,6 +110,14 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
                     labelText: 'CNPJ / Tax ID',
                     hintText: '00.000.000/0001-00',
                   ),
+                  inputFormatters: [CnpjInputFormatter()],
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    final digits = v.replaceAll(RegExp(r'\D'), '');
+                    if (digits.length != 14) return 'CNPJ incompleto';
+                    if (!CnpjValidator.isValid(digits)) return 'CNPJ inválido';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -166,6 +179,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final callerRole = ref.read(currentUserRoleProvider);
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
       final newContractor = await ref
           .read(saveContractorHandlerProvider)
@@ -180,6 +194,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
                   : _taxIdController.text.trim(),
               primaryEmail: _emailController.text.trim(),
               contactName: _contactController.text.trim(),
+              sessionId: sessionId,
             ),
           );
 

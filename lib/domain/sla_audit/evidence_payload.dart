@@ -1,0 +1,288 @@
+/// Typed evidence hierarchy for [EvaluationDecision].
+///
+/// Replaces `Map<String, dynamic>` for the forensic evidence field, enforcing
+/// compile-time safety on evidence shapes emitted by the EvaluationEngine.
+///
+/// Serialization contract:
+/// - [toJson] always emits a `_type` discriminator key for future deserialization.
+/// - [fromJson] falls back to [GenericEvidencePayload] when `_type` is absent
+///   (existing DB records written before this sealed class was introduced).
+sealed class EvidencePayload {
+  const EvidencePayload();
+
+  Map<String, dynamic> toJson();
+
+  factory EvidencePayload.fromJson(Map<String, dynamic> json) {
+    final type = json['_type'] as String?;
+    return switch (type) {
+      'delay_penalty' => DelayPenaltyEvidence.fromJson(json),
+      'maintenance_inhibition' => MaintenanceInhibitionEvidence.fromJson(json),
+      'dwell_requirement' => DwellRequirementEvidence.fromJson(json),
+      'speed_violation' => SpeedViolationEvidence.fromJson(json),
+      'geofence_binding' => GeofenceBindingEvidence.fromJson(json),
+      'penalty_assessed' => PenaltyAssessedEvidence.fromJson(json),
+      'expiration_sweep' => ExpirationSweepEvidence.fromJson(json),
+      'interpolated_passage' => InterpolatedPassageEvidence.fromJson(json),
+      _ => GenericEvidencePayload(json),
+    };
+  }
+}
+
+/// Evidence produced when the engine inhibits evaluation due to maintenance/offDuty.
+///
+/// INV-15: Defense-in-depth — engine confirms what pipeline already checked.
+/// INV-7: Written as append-only MAINTENANCE_INHIBITED ledger entry.
+/// vehicleStatusAtEvaluation uses AssetStatus.name (string) for human readability.
+final class MaintenanceInhibitionEvidence extends EvidencePayload {
+  final String vehicleStatusAtEvaluation;
+  final String inhibitionReason;
+
+  const MaintenanceInhibitionEvidence({
+    required this.vehicleStatusAtEvaluation,
+    required this.inhibitionReason,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'maintenance_inhibition',
+    'vehicle_status_at_evaluation': vehicleStatusAtEvaluation,
+    'inhibition_reason': inhibitionReason,
+  };
+
+  factory MaintenanceInhibitionEvidence.fromJson(Map<String, dynamic> json) =>
+      MaintenanceInhibitionEvidence(
+        vehicleStatusAtEvaluation:
+            json['vehicle_status_at_evaluation'] as String,
+        inhibitionReason: json['inhibition_reason'] as String,
+      );
+}
+
+/// Evidence for a delay penalty with tolerance and capping logic.
+///
+/// INV-19: All monetary values as int (cents).
+/// Formula: grossPenaltyCents = billableMinutes × penaltyPerMinuteCents
+/// finalPenaltyCents = max(0, min(grossPenaltyCents, maxPenaltyCapCents))
+final class DelayPenaltyEvidence extends EvidencePayload {
+  final int delayMinutes;
+  final int toleranceMinutes;
+  final int billableMinutes;
+  final int grossPenaltyCents;
+  final int finalPenaltyCents;
+  final bool capApplied;
+
+  const DelayPenaltyEvidence({
+    required this.delayMinutes,
+    required this.toleranceMinutes,
+    required this.billableMinutes,
+    required this.grossPenaltyCents,
+    required this.finalPenaltyCents,
+    required this.capApplied,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'delay_penalty',
+    'delay_minutes': delayMinutes,
+    'tolerance_minutes': toleranceMinutes,
+    'billable_minutes': billableMinutes,
+    'gross_penalty_cents': grossPenaltyCents,
+    'final_penalty_cents': finalPenaltyCents,
+    'cap_applied': capApplied,
+  };
+
+  factory DelayPenaltyEvidence.fromJson(Map<String, dynamic> json) =>
+      DelayPenaltyEvidence(
+        delayMinutes: json['delay_minutes'] as int,
+        toleranceMinutes: json['tolerance_minutes'] as int,
+        billableMinutes: json['billable_minutes'] as int,
+        grossPenaltyCents: json['gross_penalty_cents'] as int,
+        finalPenaltyCents: json['final_penalty_cents'] as int,
+        capApplied: json['cap_applied'] as bool,
+      );
+}
+
+/// Evidence that a dwell-time rule parameter was read from rule config.
+final class DwellRequirementEvidence extends EvidencePayload {
+  final int requiredDwellSeconds;
+  final String parameterSource;
+
+  const DwellRequirementEvidence({
+    required this.requiredDwellSeconds,
+    required this.parameterSource,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'dwell_requirement',
+    'required_dwell_seconds': requiredDwellSeconds,
+    'parameter_source': parameterSource,
+  };
+
+  factory DwellRequirementEvidence.fromJson(Map<String, dynamic> json) =>
+      DwellRequirementEvidence(
+        requiredDwellSeconds: json['required_dwell_seconds'] as int,
+        parameterSource: json['parameter_source'] as String,
+      );
+}
+
+/// Evidence for a speed violation sanction (INV-23).
+final class SpeedViolationEvidence extends EvidencePayload {
+  final double actualSpeedKmh; // Physical Metric - Double Required
+  final double limitSpeedKmh; // Physical Metric - Double Required
+
+  const SpeedViolationEvidence({
+    required this.actualSpeedKmh,
+    required this.limitSpeedKmh,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'speed_violation',
+    'actual_speed_kmh': actualSpeedKmh,
+    'limit_speed_kmh': limitSpeedKmh,
+  };
+
+  factory SpeedViolationEvidence.fromJson(Map<String, dynamic> json) =>
+      SpeedViolationEvidence(
+        actualSpeedKmh: (json['actual_speed_kmh'] as num).toDouble(),
+        limitSpeedKmh: (json['limit_speed_kmh'] as num).toDouble(),
+      );
+}
+
+/// Evidence produced when a vehicle successfully binds to a geofence.
+final class GeofenceBindingEvidence extends EvidencePayload {
+  final double distanceMeters; // Physical Metric - Double Required
+  final int allowedRadiusMeters;
+  final int actualDwellSeconds;
+  final int requiredDwellSeconds;
+
+  const GeofenceBindingEvidence({
+    required this.distanceMeters,
+    required this.allowedRadiusMeters,
+    required this.actualDwellSeconds,
+    required this.requiredDwellSeconds,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'geofence_binding',
+    'distance_meters': distanceMeters,
+    'allowed_radius_meters': allowedRadiusMeters,
+    'actual_dwell_seconds': actualDwellSeconds,
+    'required_dwell_seconds': requiredDwellSeconds,
+  };
+
+  factory GeofenceBindingEvidence.fromJson(Map<String, dynamic> json) =>
+      GeofenceBindingEvidence(
+        distanceMeters: (json['distance_meters'] as num).toDouble(),
+        allowedRadiusMeters: json['allowed_radius_meters'] as int,
+        actualDwellSeconds: json['actual_dwell_seconds'] as int,
+        requiredDwellSeconds: json['required_dwell_seconds'] as int,
+      );
+}
+
+/// Evidence for a no-show penalty assessment.
+final class PenaltyAssessedEvidence extends EvidencePayload {
+  final int? penaltyAmountCents;
+
+  const PenaltyAssessedEvidence({this.penaltyAmountCents});
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'penalty_assessed',
+    'penalty_amount_cents': penaltyAmountCents,
+  };
+
+  factory PenaltyAssessedEvidence.fromJson(Map<String, dynamic> json) =>
+      PenaltyAssessedEvidence(
+        penaltyAmountCents: json['penalty_amount_cents'] as int?,
+      );
+}
+
+/// Evidence emitted when the engine sweeps an expired obligation.
+final class ExpirationSweepEvidence extends EvidencePayload {
+  final String scheduledWindowEndUtc;
+  final String evaluatedAtUtc;
+  final int expiredBySeconds;
+
+  const ExpirationSweepEvidence({
+    required this.scheduledWindowEndUtc,
+    required this.evaluatedAtUtc,
+    required this.expiredBySeconds,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'expiration_sweep',
+    'scheduled_window_end_utc': scheduledWindowEndUtc,
+    'evaluated_at_utc': evaluatedAtUtc,
+    'expired_by_seconds': expiredBySeconds,
+  };
+
+  factory ExpirationSweepEvidence.fromJson(Map<String, dynamic> json) =>
+      ExpirationSweepEvidence(
+        scheduledWindowEndUtc: json['scheduled_window_end_utc'] as String,
+        evaluatedAtUtc: json['evaluated_at_utc'] as String,
+        expiredBySeconds: json['expired_by_seconds'] as int,
+      );
+}
+
+/// Evidence that a vehicle's path between two pings intersected a geofence,
+/// even though neither endpoint was individually inside the radius.
+final class InterpolatedPassageEvidence extends EvidencePayload {
+  final double fromLat; // Physical Metric - Double Required
+  final double fromLng; // Physical Metric - Double Required
+  final double toLat, toLng; // Physical Metric - Double Required
+  final double geofenceCenterLat; // Physical Metric - Double Required
+  final double geofenceCenterLng; // Physical Metric - Double Required
+  final double geofenceRadiusMeters; // Physical Metric - Double Required
+
+  const InterpolatedPassageEvidence({
+    required this.fromLat,
+    required this.fromLng,
+    required this.toLat,
+    required this.toLng,
+    required this.geofenceCenterLat,
+    required this.geofenceCenterLng,
+    required this.geofenceRadiusMeters,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    '_type': 'interpolated_passage',
+    'from_lat': fromLat,
+    'from_lng': fromLng,
+    'to_lat': toLat,
+    'to_lng': toLng,
+    'geofence_center_lat': geofenceCenterLat,
+    'geofence_center_lng': geofenceCenterLng,
+    'geofence_radius_meters': geofenceRadiusMeters,
+  };
+
+  factory InterpolatedPassageEvidence.fromJson(Map<String, dynamic> json) =>
+      InterpolatedPassageEvidence(
+        fromLat: (json['from_lat'] as num).toDouble(),
+        fromLng: (json['from_lng'] as num).toDouble(),
+        toLat: (json['to_lat'] as num).toDouble(),
+        toLng: (json['to_lng'] as num).toDouble(),
+        geofenceCenterLat: (json['geofence_center_lat'] as num).toDouble(),
+        geofenceCenterLng: (json['geofence_center_lng'] as num).toDouble(),
+        geofenceRadiusMeters: (json['geofence_radius_meters'] as num)
+            .toDouble(),
+      );
+}
+
+/// Fallback for legacy evidence records stored without a `_type` discriminator,
+/// or for engine subtypes not yet migrated to this sealed hierarchy.
+///
+/// // architectural-note: This class exists solely for backwards compatibility
+/// with JSONB rows written before the EvidencePayload sealed class was
+/// introduced. New evidence shapes MUST use a typed subclass above.
+final class GenericEvidencePayload extends EvidencePayload {
+  final Map<String, dynamic> rawData;
+
+  const GenericEvidencePayload(this.rawData);
+
+  @override
+  Map<String, dynamic> toJson() => rawData;
+}

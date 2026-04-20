@@ -2,6 +2,9 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/state/providers/sla_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// Core metrics repository for the Stress Mode (Dev Only).
 class PerformanceMetrics {
@@ -157,52 +160,129 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
     return Positioned(
       top: 60,
       right: 16,
-      child: IgnorePointer(
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Colors.greenAccent.withValues(alpha: 0.5),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        width: 240,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 10,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 10,
-              ),
-            ],
+          ],
+        ),
+        child: DefaultTextStyle(
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 12,
+            color: Colors.greenAccent,
           ),
-          child: DefaultTextStyle(
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 12,
-              color: Colors.greenAccent,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  '🚀 OPERATIONAL STRESS MODE',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '🚀 OPERATIONAL STRESS MODE',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('FPS:        ${_currentFps.toStringAsFixed(1)}'),
+              Text('Latency:    ${metrics.lastLatencyMs} ms'),
+              const Divider(color: Colors.white24, height: 16),
+              const Text(
+                'TEST TOOLS (PHASE 9):',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
+                    foregroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    textStyle: const TextStyle(
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                    ),
                   ),
+                  onPressed: () async {
+                    final organizationId = ref.read(
+                      currentOrganizationIdProvider,
+                    );
+                    if (organizationId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Erro: Organization ID não encontrado.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    final simulation = ref.read(fleetSimulationProvider);
+                    final simulationService = ref.read(
+                      sanctionSimulationServiceProvider,
+                    );
+
+                    final trips = simulation.currentTrips;
+                    final plate = trips.isNotEmpty
+                        ? (trips.first.vehiclePlate ?? 'ABC-1234')
+                        : 'ABC-1234';
+
+                    try {
+                      await simulationService.simulateSpeedViolation(
+                        organizationId: organizationId,
+                        vehiclePlate: plate,
+                      );
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Injetando VEL-01 para $plate na Fila Auditora...',
+                            ),
+                          ),
+                        );
+                      }
+                    } catch (_) {
+                      // INV-26: No internal details leaked
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Falha na simulação. Verifique contratos ativos.',
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('TRIGGER VEL-01 (SPEED)'),
                 ),
-                const SizedBox(height: 8),
-                Text('FPS:        ${_currentFps.toStringAsFixed(1)}'),
-                Text('Latency:    ${metrics.lastLatencyMs} ms'),
-                const Divider(color: Colors.white24, height: 16),
-                const Text(
-                  'REBUILDS (Cumulative):',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                Text('FleetMap:   ${metrics.rebuildsFleetMap}'),
-                Text('KpiBar:     ${metrics.rebuildsKpiBar}'),
-                Text('Sidebar:    ${metrics.rebuildsSidebar}'),
-              ],
-            ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'INFO: Use a Fila Auditora para ver os resultados do Engine em < 1 min.',
+                style: TextStyle(fontSize: 9, color: Colors.white38),
+              ),
+              const Divider(color: Colors.white24, height: 16),
+              const Text('REBUILDS:', style: TextStyle(color: Colors.white70)),
+              Text(
+                'Map: ${metrics.rebuildsFleetMap} | KPI: ${metrics.rebuildsKpiBar}',
+              ),
+              Text('Sidebar: ${metrics.rebuildsSidebar}'),
+            ],
           ),
         ),
       ),

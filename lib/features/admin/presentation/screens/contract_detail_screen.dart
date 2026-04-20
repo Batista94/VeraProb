@@ -6,9 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/submit_contract_for_approval_command.dart';
-import 'package:veraprob/domain/sla_audit/contract_status.dart';
-import 'package:veraprob/domain/sla_audit/execution_status.dart';
-import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/presentation/shared/widgets/veraprob_header.dart';
@@ -45,7 +44,7 @@ class ContractDetailScreen extends ConsumerWidget {
       error: (e, _) => Center(
         child: Text(
           'Erro ao carregar contrato: $e',
-          style: const TextStyle(color: Colors.red),
+          style: const TextStyle(color: VeraProbColors.error),
         ),
       ),
     );
@@ -96,9 +95,16 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       final orgId = ref.read(currentOrganizationIdProvider);
       final userId = ref.read(currentOperatorIdProvider);
       final role = ref.read(currentUserRoleProvider);
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
       if (orgId == null || userId == null) {
-        throw Exception('Sessão inválida. Faça login novamente.');
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sessão inválida. Faça login novamente.'),
+          ),
+        );
+        return;
       }
 
       final token = await ref
@@ -109,6 +115,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               contractId: s.id,
               callerUserId: userId,
               callerRole: role,
+              sessionId: sessionId,
             ),
           );
 
@@ -139,9 +146,9 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: VeraProbColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: VeraProbColors.border),
                 ),
                 child: SelectableText(
                   reviewLink,
@@ -178,7 +185,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           : raw.replaceAll('Exception: ', '');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: Colors.red),
+        SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -189,14 +196,15 @@ class _DetailViewState extends ConsumerState<_DetailView> {
   Widget build(BuildContext context) {
     final s = widget.detail.summary;
     final canDeclarePlan =
-        s.status != ContractStatus.closed &&
-        s.status != ContractStatus.awaitingContractorAcceptance;
-    final noPlan = s.status == ContractStatus.draft && s.activePlanVersion == 0;
+        s.status != ContractStatusView.closed &&
+        s.status != ContractStatusView.awaitingContractorAcceptance;
+    final noPlan =
+        s.status == ContractStatusView.draft && s.activePlanVersion == 0;
     final canSubmitForApproval =
-        s.status == ContractStatus.draft && s.activePlanVersion > 0;
+        s.status == ContractStatusView.draft && s.activePlanVersion > 0;
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(VeraProbSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -269,7 +277,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               ),
               _MetaItem(
                 label: 'SLA health',
-                value: '${s.slaHealthPercentage.toStringAsFixed(1)}%',
+                value: '${(s.slaHealthBps / 100).toStringAsFixed(1)}%',
               ),
               if (s.activatedAtUtc != null)
                 _MetaItem(
@@ -280,24 +288,42 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           ),
           const SizedBox(height: 16),
 
+          // ── Forensic Seal (INV-34) ───────────────────────────
+          if (s.previousHash != null || s.currentHash != null)
+            _ForensicSealSection(
+              previousHash: s.previousHash,
+              currentHash: s.currentHash,
+            ),
+          if (s.previousHash != null || s.currentHash != null)
+            const SizedBox(height: 16),
+
           // ── No-plan guidance banner ───────────────────────────
           if (noPlan)
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.08),
+                color: VeraProbColors.warning.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: VeraProbColors.warning.withValues(alpha: 0.4),
+                ),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.amber, size: 18),
+                  Icon(
+                    Icons.info_outline,
+                    color: VeraProbColors.warning,
+                    size: 18,
+                  ),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Nenhum Plano Operacional declarado. Declare um plano antes de enviar para aprovação.',
-                      style: TextStyle(fontSize: 13, color: Colors.amber),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: VeraProbColors.warning,
+                      ),
                     ),
                   ),
                 ],
@@ -352,24 +378,27 @@ class _ExecutionsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (executions.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.directions_bus_outlined,
               size: 48,
-              color: Colors.grey.shade400,
+              color: VeraProbColors.textDisabled,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               'Nenhuma viagem projetada.',
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: VeraProbColors.textSecondary),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               'Declare um plano operacional para começar o monitoramento.',
-              style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+              style: TextStyle(
+                color: VeraProbColors.textDisabled,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -378,20 +407,26 @@ class _ExecutionsTab extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
-      child: SingleChildScrollView(
-        child: DataTable(
-          columnSpacing: 14,
-          headingTextStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            child: DataTable(
+              columnSpacing: 14,
+              headingTextStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+              columns: const [
+                DataColumn(label: Text('Status')),
+                DataColumn(label: Text('Janela')),
+                DataColumn(label: Text('Veículo')),
+                DataColumn(label: Text('Valor'), numeric: true),
+              ],
+              rows: executions.map(_buildRow).toList(),
+            ),
           ),
-          columns: const [
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Janela')),
-            DataColumn(label: Text('Veículo')),
-            DataColumn(label: Text('Valor'), numeric: true),
-          ],
-          rows: executions.map(_buildRow).toList(),
         ),
       ),
     );
@@ -410,14 +445,14 @@ class _ExecutionsTab extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               color: (e.boundVehicleId == null && e.plannedVehicleId == null)
-                  ? Colors.grey.shade400
+                  ? VeraProbColors.textDisabled
                   : null,
             ),
           ),
         ),
         DataCell(
           Text(
-            _currencyFormat.format(e.contractualValue.toDouble()),
+            _currencyFormat.format(e.contractualValue / 100.0),
             style: const TextStyle(fontSize: 12),
           ),
         ),
@@ -474,7 +509,7 @@ class _FinancialTab extends StatelessWidget {
 
 class _KpiCard extends StatelessWidget {
   final String label;
-  final Money value;
+  final int value;
   final Color color;
   final IconData icon;
 
@@ -511,7 +546,7 @@ class _KpiCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                _currencyFormat.format(value.toDouble()),
+                _currencyFormat.format(value / 100.0),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
@@ -591,10 +626,125 @@ class _CountCard extends StatelessWidget {
   }
 }
 
+// ── Forensic Seal widget (INV-34) ─────────────────────────────────────────────
+
+class _ForensicSealSection extends StatelessWidget {
+  final String? previousHash;
+  final String? currentHash;
+
+  const _ForensicSealSection({
+    required this.previousHash,
+    required this.currentHash,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.verified_outlined,
+                size: 13,
+                color: VeraProbColors.textSecondary,
+              ),
+              SizedBox(width: 6),
+              Text(
+                'Selo Forense (INV-34)',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: VeraProbColors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (previousHash != null)
+            _HashRow(label: 'Hash anterior', hash: previousHash!),
+          if (previousHash != null && currentHash != null)
+            const SizedBox(height: 4),
+          if (currentHash != null)
+            _HashRow(label: 'Hash atual', hash: currentHash!),
+        ],
+      ),
+    );
+  }
+}
+
+class _HashRow extends StatelessWidget {
+  final String label;
+  final String hash;
+
+  const _HashRow({required this.label, required this.hash});
+
+  String get _truncated =>
+      hash.length > 20 ? '${hash.substring(0, 20)}…' : hash;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 90,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: VeraProbColors.textDisabled,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            _truncated,
+            style: const TextStyle(
+              fontSize: 11,
+              fontFamily: 'monospace',
+              color: VeraProbColors.textSecondary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 4),
+        InkWell(
+          borderRadius: BorderRadius.circular(4),
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: hash));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$label copiado'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          },
+          child: const Padding(
+            padding: EdgeInsets.all(4),
+            child: Icon(
+              Icons.copy_outlined,
+              size: 13,
+              color: VeraProbColors.textDisabled,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ── Shared widgets ────────────────────────────────────────────────────────────
 
 class _StatusChip extends StatelessWidget {
-  final ContractStatus status;
+  final ContractStatusView status;
 
   const _StatusChip({required this.status});
 
@@ -602,16 +752,16 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return VeraProbChip(
       label: switch (status) {
-        ContractStatus.draft => 'Rascunho',
-        ContractStatus.awaitingContractorAcceptance => 'Aguardando Aceite',
-        ContractStatus.active => 'Ativo',
-        ContractStatus.closed => 'Encerrado',
+        ContractStatusView.draft => 'Rascunho',
+        ContractStatusView.awaitingContractorAcceptance => 'Aguardando Aceite',
+        ContractStatusView.active => 'Ativo',
+        ContractStatusView.closed => 'Encerrado',
       },
       color: switch (status) {
-        ContractStatus.draft => VeraProbColors.neutral,
-        ContractStatus.awaitingContractorAcceptance => VeraProbColors.info,
-        ContractStatus.active => VeraProbColors.success,
-        ContractStatus.closed => VeraProbColors.error,
+        ContractStatusView.draft => VeraProbColors.neutral,
+        ContractStatusView.awaitingContractorAcceptance => VeraProbColors.info,
+        ContractStatusView.active => VeraProbColors.success,
+        ContractStatusView.closed => VeraProbColors.error,
       },
     );
   }
@@ -625,10 +775,11 @@ class _ExecutionStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      ExecutionStatus.pending => ('Pendente', Colors.blue),
-      ExecutionStatus.executed => ('Executado', Colors.green),
-      ExecutionStatus.noShow => ('No-show', Colors.red),
-      ExecutionStatus.evidenceGap => ('Gap', Colors.orange),
+      ExecutionStatus.pending => ('Pendente', VeraProbColors.info),
+      ExecutionStatus.executed => ('Executado', VeraProbColors.success),
+      ExecutionStatus.noShow => ('No-show', VeraProbColors.error),
+      ExecutionStatus.evidenceGap => ('Gap', VeraProbColors.warning),
+      ExecutionStatus.inhibited => ('Inibido', VeraProbColors.textSecondary),
     };
 
     return Container(
@@ -662,11 +813,16 @@ class _MetaItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+          style: const TextStyle(
+            fontSize: 10,
+            color: VeraProbColors.textSecondary,
+          ),
         ),
         Text(
           value,
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
         ),
       ],
     );

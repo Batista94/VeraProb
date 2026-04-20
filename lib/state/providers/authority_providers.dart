@@ -1,19 +1,21 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/authority/authorizing_command_bus.dart';
-import '../../application/authority/operational_command_bus.dart';
-import '../../application/operational_control/operational_control_facade.dart';
-import '../../domain/authority/core/authority_types.dart';
-import '../../domain/authority/decision/authorization_decision.dart';
-import '../../domain/authority/policies/authority_policy_evaluator.dart';
-import '../../domain/authority/policies/in_memory_policy_evaluator.dart';
-import '../../domain/authority/repositories/forensic_decision_repository.dart';
-import '../../domain/authority/repositories/in_memory_forensic_repository.dart';
-import '../../infrastructure/authority/postgres_forensic_repository.dart';
-import '../../infrastructure/persistence/persistence_mode.dart';
-import '../../infrastructure/persistence/persistence_provider.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../../state/providers/fleet_providers.dart';
+import 'package:veraprob/application/authority/authorizing_command_bus.dart';
+import 'package:veraprob/application/authority/operational_command_bus.dart';
+import 'package:veraprob/application/operational_control/operational_control_facade.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
+import 'package:veraprob/domain/authority/policies/authority_policy_evaluator.dart';
+import 'package:veraprob/domain/authority/policies/in_memory_policy_evaluator.dart';
+import 'package:veraprob/domain/authority/repositories/forensic_decision_repository.dart';
+import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
+import 'package:veraprob/infrastructure/authority/postgres_forensic_repository.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// ---------------------------------------------------------
 /// FASE 4: MOCK AUTH SESSION
@@ -23,11 +25,12 @@ import '../../state/providers/fleet_providers.dart';
 final mockAuthorizationContextProvider = StateProvider<AuthorizationContext>((
   ref,
 ) {
+  final dateTimeProvider = ref.watch(dateTimeProviderProvider);
   // Starts with an approved role by default for initial map loads
   return AuthorizationContext(
     actorId: const ActorId('mock_operator_id_123'),
     roleId: const RoleId('supervisor'),
-    capturedAt: DateTime.now().toUtc(),
+    capturedAt: dateTimeProvider.nowUtc(),
   );
 });
 
@@ -67,6 +70,7 @@ final operationalCommandBusProvider = Provider<OperationalCommandBus>((ref) {
     repo,
     () => ref.read(mockAuthorizationContextProvider),
     controlService,
+    ref.watch(dateTimeProviderProvider),
   );
 });
 
@@ -78,5 +82,7 @@ final operationalControlFacadeProvider = Provider<OperationalControlFacade>((
   ref,
 ) {
   final bus = ref.watch(operationalCommandBusProvider);
-  return OperationalControlFacade(bus);
+  final authRepo = ref.watch(authRepositoryProvider);
+
+  return OperationalControlFacade(bus, authRepo);
 });

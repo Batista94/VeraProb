@@ -1,5 +1,5 @@
-import '../enums/user_permissions.dart';
-import '../enums/user_role.dart';
+import 'package:veraprob/domain/enums/user_permissions.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// Pure logic service for Role-Based Access Control.
 class RbacService {

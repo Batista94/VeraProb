@@ -4,13 +4,13 @@ import 'package:uuid/uuid.dart';
 import 'domain_exception.dart';
 import 'ingestion_integrity_flag.dart';
 
-/// The normalized, provider-agnostic telemetry event — the veraprobEvent.
+/// The normalized, provider-agnostic telemetry factEvent — the veraprobEvent.
 ///
 /// A [CanonicalFact] is produced by an Edge Function Adapter (Sascar, Omnitracs)
 /// after it has:
 ///   1. Sealed the raw payload with SHA-256 in `raw_telemetry_payloads`.
 ///   2. Validated and mapped provider-specific fields to this canonical shape.
-///   3. Classified the event with an [IngestionIntegrityFlag].
+///   3. Classified the factEvent with an [IngestionIntegrityFlag].
 ///
 /// The Core Domain (EvaluationEngine) consumes only [CanonicalFact] — it never
 /// sees raw provider JSON. This enforces INV-14 (Adapter Isolation).
@@ -58,8 +58,8 @@ class CanonicalFact extends Equatable {
   final DateTime gpsTimestamp;
 
   // ── Geospatial ────────────────────────────────────────────────────────────
-  final double lat;
-  final double lng;
+  final double lat; // Physical Metric - Double Required
+  final double lng; // Physical Metric - Double Required
 
   /// Speed in centimetres per second. Null if unavailable from provider.
   /// INV-2: integer cm/s — no floating-point precision loss.
@@ -69,7 +69,7 @@ class CanonicalFact extends Equatable {
   final int? headingDegrees;
 
   /// GPS accuracy radius in metres. Null if not reported.
-  final double? accuracyMeters;
+  final double? accuracyMeters; // Physical Metric - Double Required
 
   // ── Quality ───────────────────────────────────────────────────────────────
   /// Classification assigned by the Adapter at normalization time.
@@ -90,7 +90,7 @@ class CanonicalFact extends Equatable {
     required this.lng,
     this.speedCms,
     this.headingDegrees,
-    this.accuracyMeters,
+    this.accuracyMeters, // Physical Metric - Double Required
     required this.integrityFlag,
   });
 
@@ -108,11 +108,11 @@ class CanonicalFact extends Equatable {
     required String sourceAdapter,
     required DateTime receivedAtUtc,
     required DateTime gpsTimestamp,
-    required double lat,
-    required double lng,
+    required double lat, // Physical Metric - Double Required
+    required double lng, // Physical Metric - Double Required
     int? speedCms,
     int? headingDegrees,
-    double? accuracyMeters,
+    double? accuracyMeters, // Physical Metric - Double Required
     required IngestionIntegrityFlag integrityFlag,
   }) {
     if (organizationId.isEmpty) {
@@ -175,7 +175,7 @@ class CanonicalFact extends Equatable {
   }
 
   /// Reconstitutes a [CanonicalFact] from persistence.
-  /// Does NOT validate invariants — trusts that stored data was valid on insert.
+  /// Does NOT validate invariants — trusts that stored information was valid on insert.
   factory CanonicalFact.reconstitute({
     required String id,
     required String organizationId,
@@ -185,11 +185,11 @@ class CanonicalFact extends Equatable {
     required String sourceAdapter,
     required DateTime receivedAtUtc,
     required DateTime gpsTimestamp,
-    required double lat,
-    required double lng,
+    required double lat, // Physical Metric - Double Required
+    required double lng, // Physical Metric - Double Required
     int? speedCms,
     int? headingDegrees,
-    double? accuracyMeters,
+    double? accuracyMeters, // Physical Metric - Double Required
     required IngestionIntegrityFlag integrityFlag,
   }) {
     return CanonicalFact._(

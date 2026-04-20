@@ -50,7 +50,7 @@ ALTER TABLE contract_rule_versions ADD CONSTRAINT rule_config_schema_check CHECK
 
 -- RLS for rule versions
 ALTER TABLE contract_rule_versions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenants can manage their own rule versions based on set ownership"
+CREATE POLICY "Tenants manage own rule versions"
     ON contract_rule_versions
     FOR ALL
     USING (

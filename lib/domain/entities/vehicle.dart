@@ -1,9 +1,14 @@
 import 'package:equatable/equatable.dart';
-import '../enums/vehicle_status.dart';
+import 'package:veraprob/domain/enums/vehicle_status.dart';
 
 /// A vehicle (bus) in the fleet.
 class Vehicle extends Equatable {
   final String id;
+
+  /// Optimistic locking version counter. Auto-incremented on each UPDATE.
+  /// Used to detect concurrent modifications (Lost Update prevention).
+  final int version;
+
   final String organizationId;
   final String plate;
   final String? model;
@@ -17,6 +22,7 @@ class Vehicle extends Equatable {
 
   const Vehicle({
     required this.id,
+    this.version = 1,
     required this.organizationId,
     required this.plate,
     this.model,
@@ -34,6 +40,7 @@ class Vehicle extends Equatable {
 
   Vehicle copyWith({
     String? id,
+    int? version,
     String? organizationId,
     String? plate,
     String? model,
@@ -45,6 +52,7 @@ class Vehicle extends Equatable {
   }) {
     return Vehicle(
       id: id ?? this.id,
+      version: version ?? this.version,
       organizationId: organizationId ?? this.organizationId,
       plate: plate ?? this.plate,
       model: model ?? this.model,
@@ -60,6 +68,7 @@ class Vehicle extends Equatable {
   factory Vehicle.fromJson(Map<String, dynamic> json) {
     return Vehicle(
       id: json['id'] as String,
+      version: json['version'] as int? ?? 1,
       organizationId: json['organization_id'] as String,
       plate: json['plate'] as String,
       model: json['model'] as String?,
@@ -75,6 +84,8 @@ class Vehicle extends Equatable {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
+      'version': version,
       'organization_id': organizationId,
       'plate': plate,
       'model': model,
@@ -86,6 +97,7 @@ class Vehicle extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    version,
     organizationId,
     plate,
     model,

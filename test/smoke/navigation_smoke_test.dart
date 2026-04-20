@@ -30,36 +30,41 @@ void main() {
   });
 
   List<Override> baseOverrides({String? selectedId}) => [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        persistenceModeProvider.overrideWithValue(PersistenceMode.inMemory),
-        currentOrganizationIdProvider.overrideWith((ref) => 'org-smoke'),
-        currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
-        contractStatusFilterProvider.overrideWith((ref) => null),
-        contractListProvider.overrideWith((ref) async => <ContractSummaryView>[]),
-        if (selectedId != null)
-          selectedContractIdProvider.overrideWith((ref) => selectedId),
-      ];
+    sharedPreferencesProvider.overrideWithValue(prefs),
+    persistenceModeProvider.overrideWithValue(PersistenceMode.inMemory),
+    currentOrganizationIdProvider.overrideWith((ref) => 'org-smoke'),
+    currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
+    contractStatusFilterProvider.overrideWith((ref) => null),
+    contractListProvider.overrideWith((ref) async => <ContractSummaryView>[]),
+    if (selectedId != null)
+      selectedContractIdProvider.overrideWith((ref) => selectedId),
+  ];
 
   group('Smoke 4: Regressão de Navegação (Cenário 14.11)', () {
-    testWidgets(
-      '4.1 — selectedId=null: exibe lista de contratos',
-      (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1400, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: baseOverrides(),
-            child: const MaterialApp(home: Scaffold(body: ContractsScreen())),
-          ),
-        );
-        await tester.pump();
+    testWidgets('4.1 — selectedId=null: exibe lista de contratos', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: baseOverrides(),
+          child: const MaterialApp(home: Scaffold(body: ContractsScreen())),
+        ),
+      );
+      await tester.pump();
 
-        expect(find.text('Gestão de Contratos'), findsOneWidget,
-            reason: 'Cabeçalho da lista deve aparecer quando selectedId é null');
-        expect(find.byType(ContractDetailScreen), findsNothing,
-            reason: 'Tela de detalhe NÃO deve aparecer sem seleção');
-      },
-    );
+      expect(
+        find.text('Gestão de Contratos'),
+        findsOneWidget,
+        reason: 'Cabeçalho da lista deve aparecer quando selectedId é null',
+      );
+      expect(
+        find.byType(ContractDetailScreen),
+        findsNothing,
+        reason: 'Tela de detalhe NÃO deve aparecer sem seleção',
+      );
+    });
 
     testWidgets(
       '4.2 — selectedId≠null: redireciona imediatamente para ContractDetailScreen',
@@ -74,11 +79,17 @@ void main() {
         );
         await tester.pump(); // primeiro frame: routing síncrono
 
-        expect(find.byType(ContractDetailScreen), findsOneWidget,
-            reason:
-                'Cenário 14.11 — ContractDetailScreen deve aparecer imediatamente após seleção');
-        expect(find.text('Gestão de Contratos'), findsNothing,
-            reason: 'Lista NÃO deve coexistir com a tela de detalhe');
+        expect(
+          find.byType(ContractDetailScreen),
+          findsOneWidget,
+          reason:
+              'Cenário 14.11 — ContractDetailScreen deve aparecer imediatamente após seleção',
+        );
+        expect(
+          find.text('Gestão de Contratos'),
+          findsNothing,
+          reason: 'Lista NÃO deve coexistir com a tela de detalhe',
+        );
       },
     );
 
@@ -105,9 +116,12 @@ void main() {
             'contract-after-creation';
         await tester.pump();
 
-        expect(find.byType(ContractDetailScreen), findsOneWidget,
-            reason:
-                'ContractDetailScreen deve aparecer após definir selectedId via notifier');
+        expect(
+          find.byType(ContractDetailScreen),
+          findsOneWidget,
+          reason:
+              'ContractDetailScreen deve aparecer após definir selectedId via notifier',
+        );
       },
     );
   });

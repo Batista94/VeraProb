@@ -10,7 +10,7 @@ void main() {
         id: 'ev_1',
         tripId: 't_1',
         eventType: EventType.statusChange,
-        createdAt: DateTime.now(),
+        createdAt: DateTime.now().toUtc(),
         fromStatus: TripStatus.scheduled,
         toStatus: TripStatus.enRoute,
       );
@@ -23,7 +23,7 @@ void main() {
         id: 'ev_2',
         tripId: 't_2',
         eventType: EventType.delayDetected,
-        createdAt: DateTime.now(),
+        createdAt: DateTime.now().toUtc(),
         metadata: {'delay_seconds': 600},
       );
 
@@ -35,14 +35,14 @@ void main() {
         id: 'ev_3',
         tripId: 't_3',
         eventType: EventType.manualOverride,
-        createdAt: DateTime.now(),
+        createdAt: DateTime.now().toUtc(),
       );
 
       expect(event.summary, 'Alteração manual: N/A');
     });
 
     test('TripEvent retains immutability properties', () {
-      final now = DateTime.now();
+      final now = DateTime.now().toUtc();
       final event = TripEvent(
         id: 'ev_1',
         tripId: 't_1',

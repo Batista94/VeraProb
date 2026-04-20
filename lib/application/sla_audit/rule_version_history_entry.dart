@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../../domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 
 /// Read-only projection of a single rule version for the history panel.
 ///

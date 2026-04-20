@@ -1,10 +1,12 @@
-import 'package:uuid/uuid.dart';
+﻿import 'package:uuid/uuid.dart';
 
-import '../../domain/enums/user_permissions.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/contract_repository.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/enums/user_permissions.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'contract_approval_command_service.dart';
 import 'sla_ledger_mapper.dart';
 import 'submit_contract_for_approval_command.dart';
@@ -23,22 +25,28 @@ import 'submit_contract_for_approval_command.dart';
 ///   6. Append [ContractSubmittedForApprovalEvent] to ledger
 ///   7. Return raw token string (UI builds the sharable link)
 class SubmitContractForApprovalHandler {
+  final TenantValidationService _tenantValidator;
   final ContractRepository _contractRepository;
   final ContractApprovalCommandService _approvalService;
   final SlaAuditLedgerRepository _ledger;
   final RbacService _rbac;
+  final IDateTimeProvider _clock;
 
   static const _tokenTtl = Duration(days: 30);
 
   SubmitContractForApprovalHandler({
+    required TenantValidationService tenantValidator,
     required ContractRepository contractRepository,
     required ContractApprovalCommandService approvalService,
     required SlaAuditLedgerRepository ledger,
     required RbacService rbac,
-  }) : _contractRepository = contractRepository,
+    required IDateTimeProvider clock,
+  }) : _tenantValidator = tenantValidator,
+       _contractRepository = contractRepository,
        _approvalService = approvalService,
        _ledger = ledger,
-       _rbac = rbac;
+       _rbac = rbac,
+       _clock = clock;
 
   /// Returns the raw [token] string on success.
   /// The UI is responsible for constructing the full review URL.
@@ -48,7 +56,13 @@ class SubmitContractForApprovalHandler {
   /// - Contract not found for the given [organizationId]
   /// - Contract is not in [draft] status
   Future<String> handle(SubmitContractForApprovalCommand command) async {
-    // 1. RBAC — before any I/O
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC â€” before any I/O
     if (!_rbac.can(
       command.callerRole,
       UserPermission.canApproveContractAcceptance,
@@ -58,7 +72,7 @@ class SubmitContractForApprovalHandler {
       );
     }
 
-    // 2. Load aggregate — scoped to organizationId (tenant isolation)
+    // 2. Load aggregate â€” scoped to organizationId (tenant isolation)
     final existing = await _contractRepository.findById(
       command.contractId,
       organizationId: command.organizationId,
@@ -74,18 +88,22 @@ class SubmitContractForApprovalHandler {
     const uuid = Uuid();
     final tokenId = uuid.v4();
     final token = uuid.v4();
-    final expiresAtUtc = DateTime.now().toUtc().add(_tokenTtl);
+    final expiresAtUtc = _clock.nowUtc().add(_tokenTtl);
 
-    // 4. Domain guard — [Contract.submitForApproval] validates status
-    final submitted = existing.submitForApproval(reviewToken: token);
+    // 4. Domain guard â€” [Contract.submitForApproval] validates status
+    final submitted = existing.submitForApproval(
+      reviewToken: token,
+      nowUtc: _clock.nowUtc(),
+    );
 
-    // 5. Atomic RPC: transitions contract + inserts token row
+    // 5. Atomic RPC: transitions contract + inserts token row (INV-32: version check)
     await _approvalService.submitForApproval(
       contractId: command.contractId,
       organizationId: command.organizationId,
       tokenId: tokenId,
       token: token,
       expiresAtUtc: expiresAtUtc,
+      expectedVersion: existing.version,
     );
 
     // 6. Append domain event to immutable ledger

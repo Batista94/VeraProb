@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../domain/sla_audit/operational_zone.dart';
-import '../../domain/sla_audit/operational_zone_repository.dart';
-import '../../infrastructure/persistence/persistence_mode.dart';
-import '../../infrastructure/persistence/persistence_provider.dart';
-import '../../infrastructure/providers/supabase_provider.dart';
-import '../../infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
-import '../../infrastructure/sla_audit/postgres_operational_zone_repository.dart';
+import 'package:veraprob/application/admin/operational_zone_view.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
+import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_operational_zone_repository.dart';
+import 'package:veraprob/domain/sla_audit/geocoding_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/http_geocoding_repository.dart';
 import 'auth_providers.dart';
 
 // ── Repository ───────────────────────────────────────────────
@@ -24,20 +25,37 @@ final operationalZoneRepositoryProvider = Provider<OperationalZoneRepository>((
 
 // ── Zone list ────────────────────────────────────────────────
 
-/// All [OperationalZone]s for the current organization.
-final operationalZonesProvider = FutureProvider<List<OperationalZone>>((
+/// All [OperationalZoneView]s for the current organization.
+final operationalZonesProvider = FutureProvider<List<OperationalZoneView>>((
   ref,
 ) async {
   final orgId = ref.watch(currentOrganizationIdProvider);
-  if (orgId == null) return const [];
+  if (orgId == null) return <OperationalZoneView>[];
 
-  return ref.watch(operationalZoneRepositoryProvider).findByOrganization(orgId);
+  final zones = await ref
+      .watch(operationalZoneRepositoryProvider)
+      .findByOrganization(orgId);
+  return zones.map(OperationalZoneView.fromDomain).toList();
 });
 
 // ── Create zone ──────────────────────────────────────────────
 
 /// Saves a zone and invalidates the list cache.
-Future<void> saveZone(OperationalZone zone, WidgetRef ref) async {
-  await ref.read(operationalZoneRepositoryProvider).save(zone);
+Future<void> saveZone(OperationalZoneView zone, WidgetRef ref) async {
+  await ref.read(operationalZoneRepositoryProvider).save(zone.toDomain());
   ref.invalidate(operationalZonesProvider);
 }
+
+// ── Geocoding ────────────────────────────────────────────────
+
+final geocodingRepositoryProvider = Provider<GeocodingRepository>((ref) {
+  return HttpGeocodingRepository();
+});
+
+/// Performs a geocoding search for the given query.
+final geocodingSearchProvider =
+    FutureProvider.family<List<PlaceSuggestion>, String>((ref, query) async {
+      if (query.length < 4) return <PlaceSuggestion>[];
+      // Artificial delay to mimic debouncing is handled by Riverpod's cache
+      return ref.watch(geocodingRepositoryProvider).search(query);
+    });

@@ -1,11 +1,12 @@
+import 'package:veraprob/domain/authority/commands/contracts/update_contract_command.dart';
 import 'authority_types.dart';
-import '../commands/operational_command.dart';
-import '../commands/trips/resolve_alert_command.dart';
-import '../commands/trips/update_trip_status_command.dart';
-import '../commands/trips/override_route_deviation_command.dart';
-import '../commands/trips/acknowledge_alert_command.dart';
-import '../commands/trips/create_trip_event_command.dart';
-import '../commands/vehicles/reassign_vehicle_command.dart';
+import 'package:veraprob/domain/authority/commands/operational_command.dart';
+import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
+import 'package:veraprob/domain/authority/commands/trips/update_trip_status_command.dart';
+import 'package:veraprob/domain/authority/commands/trips/override_route_deviation_command.dart';
+import 'package:veraprob/domain/authority/commands/trips/acknowledge_alert_command.dart';
+import 'package:veraprob/domain/authority/commands/trips/create_trip_event_command.dart';
+import 'package:veraprob/domain/authority/commands/vehicles/reassign_vehicle_command.dart';
 
 /// Centralized router linking concrete Command intentions to Abstract ActionTypes.
 ///
@@ -39,6 +40,10 @@ class OperationalActionMapper {
 
     if (command is OverrideRouteDeviationCommand) {
       return OperationalActionType.overrideRouteDeviation;
+    }
+
+    if (command is UpdateContractCommand) {
+      return OperationalActionType.updateContract;
     }
 
     // Fallback or explicit Unknown. In production we might throw Exception

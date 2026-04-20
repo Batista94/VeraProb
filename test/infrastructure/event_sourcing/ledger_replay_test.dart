@@ -13,15 +13,16 @@ void main() {
       final execRepo = InMemoryContractualExecutionStateRepository();
 
       // 1. Initial State
-      final originalState = ContractualExecutionState.create(organizationId: 'org-1', 
+      final originalState = ContractualExecutionState.create(
+        organizationId: 'org-1',
         setId: 'set-1',
         contractId: 'c-1',
         planVersion: 1,
         startLatitude: -23.5,
         startLongitude: -46.6,
         startRadiusMeters: 100,
-        contractualValue: Money.fromDouble(150.0),
-        noShowPenaltyMultiplier: 1.5,
+        contractualValue: const Money(15000),
+        noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
       );
@@ -46,15 +47,16 @@ void main() {
       final reconstructedExecRepo =
           InMemoryContractualExecutionStateRepository();
 
-      final baseState = ContractualExecutionState.create(organizationId: 'org-1', 
+      final baseState = ContractualExecutionState.create(
+        organizationId: 'org-1',
         setId: 'set-1',
         contractId: 'c-1',
         planVersion: 1,
         startLatitude: -23.5,
         startLongitude: -46.6,
         startRadiusMeters: 100,
-        contractualValue: Money.fromDouble(150.0),
-        noShowPenaltyMultiplier: 1.5,
+        contractualValue: const Money(15000),
+        noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
       );
@@ -65,7 +67,8 @@ void main() {
 
       for (final entry in allEntries) {
         if (entry.type == 'EXECUTION_BOUND') {
-          rebuiltState = ContractualExecutionState.reconstitute(organizationId: 'org-1', 
+          rebuiltState = ContractualExecutionState.reconstitute(
+            organizationId: 'org-1',
             id: rebuiltState.id,
             setId: rebuiltState.setId,
             contractId: rebuiltState.contractId,
@@ -75,7 +78,7 @@ void main() {
             startRadiusMeters: rebuiltState.startRadiusMeters,
             plannedVehicleId: rebuiltState.plannedVehicleId,
             contractualValue: rebuiltState.contractualValue,
-            noShowPenaltyMultiplier: rebuiltState.noShowPenaltyMultiplier,
+            noShowPenaltyBps: rebuiltState.noShowPenaltyBps,
             windowStartUtc: rebuiltState.windowStartUtc,
             windowEndUtc: rebuiltState.windowEndUtc,
             status: ExecutionStatus.executed, // Updated
@@ -91,7 +94,8 @@ void main() {
             bindingLongitude: entry.payload['longitude'] as double?,
           );
         } else if (entry.type == 'NO_SHOW_DECLARED') {
-          rebuiltState = ContractualExecutionState.reconstitute(organizationId: 'org-1', 
+          rebuiltState = ContractualExecutionState.reconstitute(
+            organizationId: 'org-1',
             id: rebuiltState.id,
             setId: rebuiltState.setId,
             contractId: rebuiltState.contractId,
@@ -101,7 +105,7 @@ void main() {
             startRadiusMeters: rebuiltState.startRadiusMeters,
             plannedVehicleId: rebuiltState.plannedVehicleId,
             contractualValue: rebuiltState.contractualValue,
-            noShowPenaltyMultiplier: rebuiltState.noShowPenaltyMultiplier,
+            noShowPenaltyBps: rebuiltState.noShowPenaltyBps,
             windowStartUtc: rebuiltState.windowStartUtc,
             windowEndUtc: rebuiltState.windowEndUtc,
             status: ExecutionStatus.noShow, // Updated
@@ -132,15 +136,16 @@ void main() {
         final execRepo = InMemoryContractualExecutionStateRepository();
 
         // 1. Initial State
-        final originalState = ContractualExecutionState.create(organizationId: 'org-1', 
+        final originalState = ContractualExecutionState.create(
+          organizationId: 'org-1',
           setId: 'set-noshow',
           contractId: 'c-1',
           planVersion: 1,
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 100,
-          contractualValue: Money.fromDouble(150.0),
-          noShowPenaltyMultiplier: 1.5,
+          contractualValue: const Money(15000),
+          noShowPenaltyBps: 15000,
           windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
           windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
         );
@@ -160,15 +165,16 @@ void main() {
             InMemoryContractualExecutionStateRepository();
 
         // Mock Base fetch
-        final baseState = ContractualExecutionState.create(organizationId: 'org-1', 
+        final baseState = ContractualExecutionState.create(
+          organizationId: 'org-1',
           setId: 'set-noshow',
           contractId: 'c-1',
           planVersion: 1,
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 100,
-          contractualValue: Money.fromDouble(150.0),
-          noShowPenaltyMultiplier: 1.5,
+          contractualValue: const Money(15000),
+          noShowPenaltyBps: 15000,
           windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
           windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
         );
@@ -179,7 +185,8 @@ void main() {
 
         for (final entry in allEntries) {
           if (entry.type == 'NO_SHOW_DECLARED') {
-            rebuiltState = ContractualExecutionState.reconstitute(organizationId: 'org-1', 
+            rebuiltState = ContractualExecutionState.reconstitute(
+              organizationId: 'org-1',
               id: rebuiltState.id,
               setId: rebuiltState.setId,
               contractId: rebuiltState.contractId,
@@ -189,7 +196,7 @@ void main() {
               startRadiusMeters: rebuiltState.startRadiusMeters,
               plannedVehicleId: rebuiltState.plannedVehicleId,
               contractualValue: rebuiltState.contractualValue,
-              noShowPenaltyMultiplier: rebuiltState.noShowPenaltyMultiplier,
+              noShowPenaltyBps: rebuiltState.noShowPenaltyBps,
               windowStartUtc: rebuiltState.windowStartUtc,
               windowEndUtc: rebuiltState.windowEndUtc,
               status: ExecutionStatus.noShow,

@@ -22,8 +22,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ── 1. drivers ───────────────────────────────────────────────
-ALTER TABLE public.drivers
-    ADD COLUMN IF NOT EXISTS organization_id UUID;
+-- organization_id already added in 20260310190000_fix_rls_recovery_tables.sql
 
 -- Backfill dev data (assigns all orphaned rows to the first org found)
 UPDATE public.drivers

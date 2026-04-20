@@ -1,13 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/accept_by_contractor_command.dart';
 import 'package:veraprob/application/sla_audit/accept_by_contractor_handler.dart';
 import 'package:veraprob/application/sla_audit/contract_approval_command_service.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
+
+class MockAuthRepository extends Mock implements IAuthRepository {}
 
 class MockSlaAuditLedgerRepository extends Mock
     implements SlaAuditLedgerRepository {}
@@ -27,6 +33,7 @@ class _FakeApprovalService extends Fake
     required String tokenId,
     required String token,
     required DateTime expiresAtUtc,
+    int? expectedVersion,
   }) async {}
 
   @override
@@ -45,6 +52,8 @@ class _FakeApprovalService extends Fake
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 void main() {
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
   late _FakeApprovalService approvalService;
   late MockSlaAuditLedgerRepository ledger;
   late AcceptByContractorHandler handler;
@@ -56,21 +65,32 @@ void main() {
         type: 'TEST',
         contractId: 'contract-1',
         planVersion: 0,
-        occurredAtUtc: DateTime.now(),
+        occurredAtUtc: DateTime.now().toUtc(),
         payload: {},
       ),
     );
   });
 
   setUp(() {
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     approvalService = _FakeApprovalService();
     ledger = MockSlaAuditLedgerRepository();
     handler = AcceptByContractorHandler(
+      tenantValidator: tenantValidator,
       approvalService: approvalService,
       ledger: ledger,
+      clock: FakeDateTimeProvider(DateTime.utc(2026, 1, 1)),
     );
 
     when(() => ledger.append(any())).thenAnswer((_) async => 'entry-id');
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: 'org-1',
+      ),
+    );
   });
 
   group('AcceptByContractorHandler', () {

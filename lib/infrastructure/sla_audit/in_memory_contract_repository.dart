@@ -1,8 +1,8 @@
 import 'dart:collection';
 
-import '../../domain/sla_audit/contract.dart';
-import '../../domain/sla_audit/contract_repository.dart';
-import '../../domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/sla_audit/contract.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
 
 /// In-memory implementation of [ContractRepository].
 ///
@@ -12,8 +12,9 @@ class InMemoryContractRepository implements ContractRepository {
   final Map<String, Contract> _store = {};
 
   @override
-  Future<void> save(Contract contract) async {
+  Future<Contract> save(Contract contract) async {
     _store[contract.id] = contract;
+    return contract;
   }
 
   @override

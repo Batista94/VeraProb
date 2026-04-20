@@ -5,8 +5,8 @@ class Stop extends Equatable {
   final String id;
   final String? gtfsStopId;
   final String name;
-  final double latitude;
-  final double longitude;
+  final double latitude; // Physical Metric - Double Required
+  final double longitude; // Physical Metric - Double Required
 
   const Stop({
     required this.id,

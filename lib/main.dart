@@ -12,12 +12,14 @@ import 'features/shared/providers.dart';
 import 'features/shared/widgets/error_boundary.dart';
 import 'features/admin/presentation/lock_screen.dart';
 import 'features/admin/presentation/screens/accept_invite_screen.dart';
+import 'features/admin/presentation/screens/driver_justification_page.dart';
 import 'features/admin/presentation/screens/review_contract_screen.dart';
 import 'core/config/supabase_client.dart';
 import 'infrastructure/persistence/persistence_mode.dart';
 import 'infrastructure/persistence/persistence_provider.dart';
 import 'infrastructure/observability/sentry_observer.dart';
 import 'infrastructure/observability/analytics_service.dart';
+import 'infrastructure/providers/supabase_provider.dart';
 import 'state/providers/sla_providers.dart';
 import 'state/providers/auth_providers.dart';
 
@@ -34,7 +36,9 @@ void main() async {
 
   // Security Log (Debug only)
   if (kDebugMode) {
-    print('[veraprob] Mode: ${EnvironmentConfig.label} | Endpoint: ${EnvironmentConfig.supabaseUrl}');
+    print(
+      '[veraprob] Mode: ${EnvironmentConfig.label} | Endpoint: ${EnvironmentConfig.supabaseUrl}',
+    );
   }
 
   // FASE 0 - Passively initialize Supabase. No overrides or dependencies created.
@@ -57,18 +61,24 @@ void main() async {
           uri.path.contains('accept-invite') && queryToken != null;
       final isReviewContractRoute =
           uri.path.contains('review-contract') && queryToken != null;
+      final isJustifyRoute = uri.path.contains('justify') && queryToken != null;
 
       runApp(
         ProviderScope(
           observers: const [SentryRiverpodObserver()],
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
+            // INV-30: Single bridge — Supabase client injected via Riverpod.
+            // All repositories must read from supabaseClientProvider, never
+            // access Supabase.instance.client directly.
+            supabaseClientProvider.overrideWithValue(supabase),
             // FASE 6 — Atomic Switch: runtime now operates on Postgres.
             persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
           ],
           child: VeraProbAdminApp(
             inviteToken: isInviteRoute ? queryToken : null,
             reviewContractToken: isReviewContractRoute ? queryToken : null,
+            justifyToken: isJustifyRoute ? queryToken : null,
           ),
         ),
       );
@@ -79,11 +89,13 @@ void main() async {
 class VeraProbAdminApp extends ConsumerStatefulWidget {
   final String? inviteToken;
   final String? reviewContractToken;
+  final String? justifyToken;
 
   const VeraProbAdminApp({
     super.key,
     this.inviteToken,
     this.reviewContractToken,
+    this.justifyToken,
   });
 
   @override
@@ -102,7 +114,6 @@ class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
       }
     });
 
-
     return MaterialApp(
       title: 'veraprob — Control Center',
       theme: AppTheme.darkTheme,
@@ -116,7 +127,9 @@ class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
       ],
       supportedLocales: const [Locale('pt', 'BR')],
       locale: const Locale('pt', 'BR'),
-      home: widget.reviewContractToken != null
+      home: widget.justifyToken != null
+          ? DriverJustificationPage(token: widget.justifyToken!)
+          : widget.reviewContractToken != null
           ? ReviewContractScreen(token: widget.reviewContractToken!)
           : widget.inviteToken != null
           ? AcceptInviteScreen(token: widget.inviteToken!)

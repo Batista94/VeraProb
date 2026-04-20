@@ -4,10 +4,11 @@ import 'package:equatable/equatable.dart';
 class VehiclePosition extends Equatable {
   final String? id;
   final String tripId;
-  final double latitude;
-  final double longitude;
-  final double? speed;
-  final double? heading;
+  final double latitude; // Physical Metric - Double Required
+  final double longitude; // Physical Metric - Double Required
+  final double? speed; // Physical Metric - Double Required
+  final double? heading; // Physical Metric - Double Required
+  final double? accuracyMeters; // Physical Metric - Double Required
   final DateTime timestamp;
   final String source; // 'api_public' or 'driver_app_gps'
 
@@ -22,6 +23,7 @@ class VehiclePosition extends Equatable {
     required this.longitude,
     this.speed,
     this.heading,
+    this.accuracyMeters,
     required this.timestamp,
     required this.source,
     this.routeName,
@@ -29,8 +31,11 @@ class VehiclePosition extends Equatable {
   });
 
   /// Whether this position is considered stale (older than threshold)
-  bool isStale({Duration threshold = const Duration(minutes: 2)}) {
-    return DateTime.now().toUtc().difference(timestamp) > threshold;
+  bool isStale({
+    required DateTime nowUtc,
+    Duration threshold = const Duration(minutes: 2),
+  }) {
+    return nowUtc.difference(timestamp) > threshold;
   }
 
   factory VehiclePosition.fromJson(Map<String, dynamic> json) {
@@ -41,6 +46,7 @@ class VehiclePosition extends Equatable {
       longitude: (json['longitude'] as num).toDouble(),
       speed: (json['speed'] as num?)?.toDouble(),
       heading: (json['heading'] as num?)?.toDouble(),
+      accuracyMeters: (json['accuracy_meters'] as num?)?.toDouble(),
       timestamp: DateTime.parse(json['timestamp'] as String),
       source: json['source'] as String,
       routeName: json['route_name'] as String?,
@@ -55,6 +61,7 @@ class VehiclePosition extends Equatable {
       'longitude': longitude,
       'speed': speed,
       'heading': heading,
+      'accuracy_meters': accuracyMeters,
       'timestamp': timestamp.toIso8601String(),
       'source': source,
     };
@@ -68,6 +75,7 @@ class VehiclePosition extends Equatable {
     longitude,
     speed,
     heading,
+    accuracyMeters,
     timestamp,
     source,
   ];

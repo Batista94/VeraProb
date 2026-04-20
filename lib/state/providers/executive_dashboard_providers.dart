@@ -1,15 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/projections/executive_dashboard_view.dart';
-import '../../application/sla_audit/reporting_service.dart';
-import '../../application/sla_audit/shadow_mode_service.dart';
-import '../../domain/sla_audit/canonical_fact_repository.dart';
-import '../../domain/sla_audit/shadow_mode_simulation.dart';
-import '../../infrastructure/sla_audit/in_memory_canonical_fact_repository.dart';
-import '../../infrastructure/sla_audit/in_memory_shadow_mode_repository.dart';
-import '../providers/auth_providers.dart';
+import 'package:veraprob/application/sla_audit/projections/executive_dashboard_view.dart';
+import 'package:veraprob/application/sla_audit/reporting_service.dart';
+import 'package:veraprob/application/sla_audit/shadow_mode_service.dart';
+import 'package:veraprob/domain/sla_audit/canonical_fact_repository.dart';
+import 'package:veraprob/domain/sla_audit/shadow_mode_simulation.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_canonical_fact_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_shadow_mode_repository.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 import 'audit_package_providers.dart';
 import 'sla_financial_providers.dart';
+import 'shared_providers.dart';
 
 // ── Canonical Fact Repository ────────────────────────────────────────────────
 
@@ -31,10 +32,12 @@ final shadowModeServiceProvider = Provider<ShadowModeService>((ref) {
   final shadowRepo = ref.watch(_shadowModeRepositoryProvider);
   final snapshotRepo = ref.watch(financialSnapshotRepositoryProvider);
   final canonicalFactRepo = ref.watch(canonicalFactRepositoryProvider);
+  final dateTimeProvider = ref.watch(dateTimeProviderProvider);
   return ShadowModeService(
     simulationRepo: shadowRepo,
     reportingService: ReportingService(snapshotRepo: snapshotRepo),
     canonicalFactRepo: canonicalFactRepo,
+    dateTimeProvider: dateTimeProvider,
   );
 });
 
@@ -87,10 +90,10 @@ final executiveDashboardProvider = FutureProvider<ExecutiveDashboardView>((
     organizationId: organizationId,
     periodStartUtc: periodStart,
     periodEndUtc: periodEnd,
-    protectedRevenue: report.protectedRevenue,
-    totalContractedRevenue: report.totalContractedRevenue,
-    revenueAtRisk: report.revenueAtRisk,
-    lostRevenue: report.lostRevenue,
+    protectedRevenue: report.protectedRevenue.cents,
+    totalContractedRevenue: report.totalContractedRevenue.cents,
+    revenueAtRisk: report.revenueAtRisk.cents,
+    lostRevenue: report.lostRevenue.cents,
     totalObligations: report.totalObligations,
     executedCount: report.executedCount,
     noShowCount: report.noShowCount,
@@ -107,5 +110,5 @@ final executiveDashboardProvider = FutureProvider<ExecutiveDashboardView>((
 /// FPS sub-score extracted for widgets that only need the gauge value.
 final financialProtectionScoreProvider = Provider<double>((ref) {
   final dashboard = ref.watch(executiveDashboardProvider).valueOrNull;
-  return dashboard?.financialProtectionScore ?? 0.0;
+  return (dashboard?.financialProtectionScore ?? 0) / 100.0;
 });

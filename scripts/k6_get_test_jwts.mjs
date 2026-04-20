@@ -30,6 +30,14 @@ const ROOT = join(__dirname, '..');
 // ── Usuários de teste ──────────────────────────────────────────────────────────
 const TEST_USERS = [
   {
+    id:          '00000000-0000-0000-0000-ffffffffffff',
+    email:       'master@veraprob.dev',
+    password:    'veraprob123!',
+    label:       'SuperAdmin',
+    isSuper:     true,
+    jwtEnv:      'SUPER_ADMIN_JWT',
+  },
+  {
     id:          '09d00994-6b32-4df3-b08f-3d722f28f4d0',
     email:       'admin-a@veraprob.dev',
     password:    'veraprob123!',
@@ -217,6 +225,24 @@ async function ensureUserRole(supabaseUrl, serviceKey, userId, orgId) {
   );
 }
 
+// ── Inserção de super_admin via REST (service_role bypassa RLS) ────────────────
+async function ensureSuperRole(supabaseUrl, serviceKey, userId, email) {
+  const res = await apiCall(
+    'POST',
+    `${supabaseUrl}/rest/v1/super_admin_users`,
+    {
+      'apikey':        serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+      'Prefer':        'resolution=ignore-duplicates,return=minimal',
+    },
+    { user_id: userId, email: email }
+  );
+  if (res.status === 200 || res.status === 201 || res.status === 204) return;
+  throw new Error(
+    `Falha ao inserir super_admin_role (user=${userId}): HTTP ${res.status} — ${JSON.stringify(res.data)}`
+  );
+}
+
 // ── Sign-in ────────────────────────────────────────────────────────────────────
 async function signIn(supabaseUrl, anonKey, email, password) {
   const res = await apiCall(
@@ -288,15 +314,19 @@ async function main() {
       process.exit(1);
     }
 
-    // ── Passo 2: garantir user_role
-    process.stderr.write(`  [2/3] User role ${user.label}... `);
+    // ── Passo 2: garantir role (Tenant Admin ou SuperAdmin)
+    process.stderr.write(`  [2/3] ${user.isSuper ? 'Super role' : 'User role'} ${user.label}... `);
     try {
-      await ensureUserRole(url, serviceKey, user.id, user.org_id);
+      if (user.isSuper) {
+        await ensureSuperRole(url, serviceKey, user.id, user.email);
+      } else {
+        await ensureUserRole(url, serviceKey, user.id, user.org_id);
+      }
       console.error('ok');
     } catch (err) {
       console.error('FALHOU');
       console.error(`\n  ERRO: ${err.message}`);
-      console.error('  Verifique se `supabase db reset` foi executado (orgs devem existir).\n');
+      console.error('  Verifique se `supabase db reset` foi executado.\n');
       process.exit(1);
     }
 
@@ -322,8 +352,8 @@ async function main() {
     `export SUPABASE_ANON_KEY="${anonKey}"`,
   ];
   for (const { user, token } of tokens)  lines.push(`export ${user.jwtEnv}="${token}"`);
-  for (const user of TEST_USERS)         lines.push(`export ${user.orgEnv}="${user.org_id}"`);
-  for (const user of TEST_USERS)         lines.push(`export ${user.contractEnv}="${user.contractId}"`);
+  for (const user of TEST_USERS)         if (user.orgEnv) lines.push(`export ${user.orgEnv}="${user.org_id}"`);
+  for (const user of TEST_USERS)         if (user.contractEnv) lines.push(`export ${user.contractEnv}="${user.contractId}"`);
   lines.push('');
   lines.push('# Depois de exportar, rode:');
   lines.push('k6 run scripts/load_test/k6_multi_tenant_isolation.js');

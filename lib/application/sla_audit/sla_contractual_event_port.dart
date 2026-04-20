@@ -1,6 +1,6 @@
-import '../ports/contractual_event_port.dart';
-import '../../domain/sla_audit/execution_events.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/application/ports/contractual_event_port.dart';
+import 'package:veraprob/domain/sla_audit/execution_events.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'sla_ledger_mapper.dart';
 
 /// Transport module implementation of [ContractualEventPort].

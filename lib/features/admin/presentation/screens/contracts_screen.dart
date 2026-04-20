@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/sla_audit/clone_contract_command.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
-import 'package:veraprob/domain/sla_audit/contract_status.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
@@ -30,16 +30,35 @@ class ContractsScreen extends ConsumerWidget {
   }
 }
 
-class _ContractListView extends ConsumerWidget {
+class _ContractListView extends ConsumerStatefulWidget {
   const _ContractListView();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ContractListView> createState() => _ContractListViewState();
+}
+
+class _ContractListViewState extends ConsumerState<_ContractListView> {
+  String _searchQuery = '';
+
+  List<ContractSummaryView> _filterContracts(List<ContractSummaryView> list) {
+    if (_searchQuery.isEmpty) return list;
+    final q = _searchQuery.toLowerCase();
+    return list
+        .where(
+          (c) =>
+              c.name.toLowerCase().contains(q) ||
+              c.contractorName.toLowerCase().contains(q),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final contractsAsync = ref.watch(contractListProvider);
     final activeFilter = ref.watch(contractStatusFilterProvider);
 
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(VeraProbSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -88,7 +107,22 @@ class _ContractListView extends ConsumerWidget {
 
           Wrap(
             spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              SizedBox(
+                width: 260,
+                child: TextField(
+                  key: const Key('contract_search_field'),
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.search, size: 20),
+                    hintText: 'Buscar por nome ou contratante',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                ),
+              ),
               _FilterChip(
                 label: 'Todos',
                 selected: activeFilter == null,
@@ -99,35 +133,36 @@ class _ContractListView extends ConsumerWidget {
               _FilterChip(
                 label: 'Rascunhos',
                 color: VeraProbColors.neutral,
-                selected: activeFilter == ContractStatus.draft,
+                selected: activeFilter == ContractStatusView.draft,
                 onSelected: (_) =>
                     ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatus.draft,
+                        ContractStatusView.draft,
               ),
               _FilterChip(
                 label: 'Aguardando Aceite',
-                color: Colors.blue,
+                color: VeraProbColors.info,
                 selected:
-                    activeFilter == ContractStatus.awaitingContractorAcceptance,
+                    activeFilter ==
+                    ContractStatusView.awaitingContractorAcceptance,
                 onSelected: (_) =>
                     ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatus.awaitingContractorAcceptance,
+                        ContractStatusView.awaitingContractorAcceptance,
               ),
               _FilterChip(
                 label: 'Ativos',
                 color: VeraProbColors.success,
-                selected: activeFilter == ContractStatus.active,
+                selected: activeFilter == ContractStatusView.active,
                 onSelected: (_) =>
                     ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatus.active,
+                        ContractStatusView.active,
               ),
               _FilterChip(
                 label: 'Encerrados',
                 color: VeraProbColors.error,
-                selected: activeFilter == ContractStatus.closed,
+                selected: activeFilter == ContractStatusView.closed,
                 onSelected: (_) =>
                     ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatus.closed,
+                        ContractStatusView.closed,
               ),
             ],
           ),
@@ -135,9 +170,11 @@ class _ContractListView extends ConsumerWidget {
 
           Expanded(
             child: contractsAsync.when(
-              data: (contracts) => contracts.isEmpty
-                  ? const _EmptyState()
-                  : _ContractTable(contracts: contracts),
+              data: (all) {
+                final contracts = _filterContracts(all);
+                if (contracts.isEmpty) return const _EmptyState();
+                return _ContractTable(contracts: contracts);
+              },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Text(
@@ -162,30 +199,33 @@ class _ContractTable extends ConsumerWidget {
     return Card(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: SingleChildScrollView(
-          child: SingleChildScrollView(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: DataTable(
-              columnSpacing: 24,
-              headingRowColor: WidgetStateProperty.all(
-                VeraProbColors.surfaceElevated,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: DataTable(
+                columnSpacing: 24,
+                headingRowColor: WidgetStateProperty.all(
+                  VeraProbColors.surfaceElevated,
+                ),
+                headingTextStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: VeraProbColors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+                dataRowMaxHeight: 64,
+                rows: contracts.map((c) => _buildRow(context, ref, c)).toList(),
+                columns: const [
+                  DataColumn(label: Text('CONTRATO')),
+                  DataColumn(label: Text('CONTRATANTE')),
+                  DataColumn(label: Text('VIGÊNCIA')),
+                  DataColumn(label: Text('STATUS')),
+                  DataColumn(label: Text('SAÚDE SLA')),
+                  DataColumn(label: Text('')),
+                ],
               ),
-              headingTextStyle: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: VeraProbColors.textSecondary,
-                letterSpacing: 0.5,
-              ),
-              dataRowMaxHeight: 64,
-              rows: contracts.map((c) => _buildRow(context, ref, c)).toList(),
-              columns: const [
-                DataColumn(label: Text('CONTRATO')),
-                DataColumn(label: Text('CONTRATANTE')),
-                DataColumn(label: Text('VIGÊNCIA')),
-                DataColumn(label: Text('STATUS')),
-                DataColumn(label: Text('SAÚDE SLA')),
-                DataColumn(label: Text('')),
-              ],
             ),
           ),
         ),
@@ -214,6 +254,8 @@ class _ContractTable extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                   color: VeraProbColors.textPrimary,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
               if (c.activePlanVersion > 0)
                 Text(
@@ -230,6 +272,8 @@ class _ContractTable extends ConsumerWidget {
           Text(
             c.contractorName,
             style: const TextStyle(color: VeraProbColors.textPrimary),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
         DataCell(
@@ -242,7 +286,7 @@ class _ContractTable extends ConsumerWidget {
           ),
         ),
         DataCell(_StatusChip(status: c.status)),
-        DataCell(_SlaHealthBar(percentage: c.slaHealthPercentage)),
+        DataCell(_SlaHealthBar(bps: c.slaHealthBps)),
         DataCell(
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -252,18 +296,12 @@ class _ContractTable extends ConsumerWidget {
                 tooltip: 'Clonar contrato',
                 onPressed: () => _showCloneDialog(context, ref, c),
               ),
-              TextButton(
+              OutlinedButton.icon(
                 onPressed: () {
                   ref.read(selectedContractIdProvider.notifier).state = c.id;
                 },
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Gerenciar'),
-                    SizedBox(width: 4),
-                    Icon(Icons.chevron_right, size: 16),
-                  ],
-                ),
+                icon: const Icon(Icons.chevron_right, size: 16),
+                label: const Text('Gerenciar'),
               ),
             ],
           ),
@@ -291,7 +329,7 @@ class _ContractTable extends ConsumerWidget {
           Future<void> pickDate({required bool isFrom}) async {
             final picked = await showDatePicker(
               context: ctx,
-              initialDate: DateTime.now(),
+              initialDate: DateTime.now().toUtc(),
               firstDate: DateTime(2020),
               lastDate: DateTime(2035),
             );
@@ -411,8 +449,11 @@ class _ContractTable extends ConsumerWidget {
                               'Sessão expirada. Faça login novamente.',
                             );
                           }
+                          final sessionId =
+                              ref.read(currentSessionIdProvider) ?? '';
                           final cmd = CloneContractCommand(
                             organizationId: orgId,
+                            sessionId: sessionId,
                             sourceContractId: c.id,
                             name: nameController.text.trim(),
                             contractorName: c.contractorName,
@@ -496,19 +537,19 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  final ContractStatus status;
+  final ContractStatusView status;
   const _StatusChip({required this.status});
 
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      ContractStatus.draft => ('RASCUNHO', VeraProbColors.neutral),
-      ContractStatus.awaitingContractorAcceptance => (
+      ContractStatusView.draft => ('RASCUNHO', VeraProbColors.neutral),
+      ContractStatusView.awaitingContractorAcceptance => (
         'AGUARDANDO ACEITE',
-        Colors.blue,
+        VeraProbColors.info,
       ),
-      ContractStatus.active => ('ATIVO', VeraProbColors.success),
-      ContractStatus.closed => ('ENCERRADO', VeraProbColors.error),
+      ContractStatusView.active => ('ATIVO', VeraProbColors.success),
+      ContractStatusView.closed => ('ENCERRADO', VeraProbColors.error),
     };
 
     return Container(
@@ -532,12 +573,12 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _SlaHealthBar extends StatelessWidget {
-  final double percentage;
-  const _SlaHealthBar({required this.percentage});
+  final int bps;
+  const _SlaHealthBar({required this.bps});
 
   @override
   Widget build(BuildContext context) {
-    final pct = percentage.clamp(0.0, 100.0);
+    final pct = (bps / 100).toDouble().clamp(0.0, 100.0);
     final color = pct >= 90
         ? VeraProbColors.success
         : pct >= 70

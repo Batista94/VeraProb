@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../domain/enums/trip_status.dart';
-import '../../domain/enums/event_type.dart';
-import '../../domain/entities/operational_suggestion.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/application/normalization/models/trip_status_view.dart';
+import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/domain/entities/operational_suggestion.dart';
 
 /// Presentation-layer UI mappings for [TripStatus].
 ///
@@ -109,6 +110,54 @@ extension SuggestionActionUi on SuggestionAction {
         return Icons.pause_circle_outline;
       case SuggestionAction.regularizeTrip:
         return Icons.check_circle_outline;
+    }
+  }
+}
+
+extension TripStatusViewUi on TripStatusView {
+  Color get color {
+    switch (this) {
+      case TripStatusView.scheduled:
+        return const Color(0xFF448AFF);
+      case TripStatusView.enRoute:
+        return const Color(0xFF00C853);
+      case TripStatusView.atStop:
+        return const Color(0xFF00C853);
+      case TripStatusView.delayed:
+        return const Color(0xFFFF9100);
+      case TripStatusView.interrupted:
+        return const Color(0xFFFF1744);
+      case TripStatusView.completed:
+        return const Color(0xFF78909C);
+      case TripStatusView.cancelled:
+        return const Color(0xFF37474F);
+      case TripStatusView.noShow:
+        return const Color(0xFFB71C1C);
+      case TripStatusView.maintenance:
+        return const Color(0xFF212121);
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case TripStatusView.scheduled:
+        return Icons.schedule;
+      case TripStatusView.enRoute:
+        return Icons.directions_bus;
+      case TripStatusView.atStop:
+        return Icons.hail;
+      case TripStatusView.delayed:
+        return Icons.warning_amber_rounded;
+      case TripStatusView.interrupted:
+        return Icons.error;
+      case TripStatusView.completed:
+        return Icons.check_circle;
+      case TripStatusView.cancelled:
+        return Icons.cancel;
+      case TripStatusView.noShow:
+        return Icons.remove_circle;
+      case TripStatusView.maintenance:
+        return Icons.build;
     }
   }
 }

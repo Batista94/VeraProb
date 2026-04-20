@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../providers/admin_navigation_provider.dart';
-import '../../../../application/projections/providers/feed_health_projection_provider.dart';
-import '../../../../dev/performance_metrics.dart';
-import '../../../../state/providers/fleet_providers.dart';
-import '../../../../state/providers/contract_providers.dart';
-import '../../../../application/adapters/stress_scenario_config.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../lock_screen.dart';
-import '../../../../presentation/shell/widgets/onboarding_progress_banner.dart';
+
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
+import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
+import 'package:veraprob/dev/performance_metrics.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/application/adapters/stress_scenario_config.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/lock_screen.dart';
+import 'package:veraprob/presentation/shell/widgets/onboarding_progress_banner.dart';
 
 class AdminLayout extends ConsumerWidget {
   final List<Widget> children;
@@ -111,7 +112,9 @@ class AdminLayout extends ConsumerWidget {
                   minExtendedWidth: 220,
                   selectedIndex: selectedIndex,
                   onDestinationSelected: (index) {
-                    if (index == selectedIndex) return; // stay on current screen
+                    if (index == selectedIndex) {
+                      return; // stay on current screen
+                    }
                     ref.read(adminIndexProvider.notifier).state = index;
                     ref.read(selectedContractIdProvider.notifier).state = null;
                   },
@@ -120,32 +123,46 @@ class AdminLayout extends ConsumerWidget {
                 ),
               ),
               Expanded(
-                child: Container(
-                  color: VeraProbColors.background,
-                  child: Column(
-                    children: [
-                      OnboardingProgressBanner(
-                        // Translating destination labels to actual index in AdminHome
-                        onNavigate: (destIdx) {
-                          ref.read(adminIndexProvider.notifier).state = destIdx;
-                          ref.read(selectedContractIdProvider.notifier).state = null;
-                        },
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1600),
+                    child: Container(
+                      color: VeraProbColors.background,
+                      child: Column(
+                        children: [
+                          OnboardingProgressBanner(
+                            // Translating destination labels to actual index in AdminHome
+                            onNavigate: (destIdx) {
+                              ref.read(adminIndexProvider.notifier).state =
+                                  destIdx;
+                              ref
+                                      .read(selectedContractIdProvider.notifier)
+                                      .state =
+                                  null;
+                            },
+                          ),
+                          if (ref.watch(selectedContractIdProvider) != null)
+                            _InternalBackButton(
+                              onBack: () =>
+                                  ref
+                                          .read(
+                                            selectedContractIdProvider.notifier,
+                                          )
+                                          .state =
+                                      null,
+                            ),
+                          Expanded(
+                            child: IndexedStack(
+                              index: selectedIndex,
+                              children: children
+                                  .map((child) => _AnimatedPage(child: child))
+                                  .toList(),
+                            ),
+                          ),
+                        ],
                       ),
-                      if (ref.watch(selectedContractIdProvider) != null)
-                        _InternalBackButton(
-                          onBack: () => ref
-                              .read(selectedContractIdProvider.notifier)
-                              .state = null,
-                        ),
-                      Expanded(
-                        child: IndexedStack(
-                          index: selectedIndex,
-                          children: children
-                              .map((child) => _AnimatedPage(child: child))
-                              .toList(),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -228,17 +245,17 @@ class _StressModeToggle extends ConsumerWidget {
   }
 }
 
-class _LogoutButton extends StatelessWidget {
+class _LogoutButton extends ConsumerWidget {
   const _LogoutButton();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return IconButton(
       icon: const Icon(Icons.logout_rounded),
       tooltip: 'Sair',
       color: VeraProbColors.textDisabled,
       onPressed: () async {
-        await Supabase.instance.client.auth.signOut();
+        await ref.read(authRepositoryProvider).signOut();
         if (context.mounted) {
           await Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const AdminLockScreen()),

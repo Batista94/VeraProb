@@ -34,8 +34,7 @@ class EnvironmentConfig {
   static const _envName = String.fromEnvironment('ENV', defaultValue: 'dev');
 
   /// The currently active environment.
-  static AppEnvironment get environment =>
-      AppEnvironment.fromString(_envName);
+  static AppEnvironment get environment => AppEnvironment.fromString(_envName);
 
   static bool get isDev => environment == AppEnvironment.dev;
   static bool get isStaging => environment == AppEnvironment.staging;
@@ -78,6 +77,35 @@ class EnvironmentConfig {
     'MAPTILER_KEY',
     defaultValue: 'get_your_own_key',
   );
+
+  // ── Engine Version ───────────────────────────────────
+  /// WASM build version stamp for the EvaluationEngine.
+  ///
+  /// Injected at build time via `--dart-define=ENGINE_VERSION=...`.
+  /// Used in [ShadowVerdict] as the immutable [engineVersion] field so that
+  /// every shadow execution is traceable to the exact binary that produced it.
+  ///
+  /// CI/CD must pass this value explicitly. The default guards local dev only.
+  static const engineVersion = String.fromEnvironment(
+    'ENGINE_VERSION',
+    defaultValue: 'veraprob-core_v4',
+  );
+
+  // ── Security Flags ──────────────────────────────────
+  static const _skipMfaDev = bool.fromEnvironment(
+    'SKIP_MFA_DEV',
+    defaultValue: false,
+  );
+
+  /// Bypasses MFA for SuperAdmin in local development only.
+  ///
+  /// Requires BOTH conditions to be true simultaneously:
+  ///   1. `ENV=dev` (staging and production are never affected — hard guard)
+  ///   2. `--dart-define=SKIP_MFA_DEV=true` (explicit opt-in, never a default)
+  ///
+  /// Usage: `flutter run --dart-define=SKIP_MFA_DEV=true`
+  /// CI/CD: never pass this flag — pipelines do not set `SKIP_MFA_DEV`.
+  static bool get skipMfaForSuperAdmin => isDev && _skipMfaDev;
 
   // ── Validation ───────────────────────────────────────
   /// Returns true if the minimum required credentials are present.

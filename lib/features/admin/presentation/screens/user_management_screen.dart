@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/admin_providers.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../domain/admin/invitation.dart';
-import '../../../../domain/enums/user_role.dart';
-import '../../../../application/admin/change_user_role_command.dart';
-import '../../../../application/admin/remove_member_command.dart';
-import '../../../../application/admin/invite_user_command.dart';
-import '../../../../application/admin/revoke_invitation_command.dart';
+
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/admin_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/admin/change_user_role_command.dart';
+import 'package:veraprob/application/admin/remove_member_command.dart';
+import 'package:veraprob/application/admin/invite_user_command.dart';
+import 'package:veraprob/application/admin/revoke_invitation_command.dart';
 
 /// Screen for managing organization members and their roles.
 /// Also shows pending invitations and allows sending new invites.
@@ -60,7 +61,7 @@ class UserManagementScreen extends ConsumerWidget {
             Expanded(
               child: ListView(
                 children: [
-                  // ── Active members ───────────────────────────────────────
+                  // â”€â”€ Active members â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   membersAsync.when(
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
@@ -70,113 +71,125 @@ class UserManagementScreen extends ConsumerWidget {
                         style: const TextStyle(color: VeraProbColors.error),
                       ),
                     ),
-                    data: (members) => Column(
-                      children: List.generate(members.length * 2 - 1, (i) {
-                        if (i.isOdd) {
-                          return const Divider(color: VeraProbColors.border);
-                        }
-                        final member = members[i ~/ 2];
-                        final isSelf = member.userId == currentUserId;
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: VeraProbColors.primary.withValues(
-                              alpha: 0.1,
-                            ),
-                            child: Text(
-                              member.email[0].toUpperCase(),
-                              style: const TextStyle(
-                                color: VeraProbColors.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          title: Text(
-                            member.email,
-                            style: VeraProbTypography.kpiLabel,
-                          ),
-                          subtitle: Text(
-                            'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
-                            style: VeraProbTypography.caption,
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (!isSelf)
-                                DropdownButton<String>(
-                                  value: member.role,
-                                  underline: const SizedBox(),
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: 'TENANT_ADMIN',
-                                      child: Text('Administrador'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'OPERATOR',
-                                      child: Text('Operador'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'AUDITOR',
-                                      child: Text('Auditor'),
-                                    ),
-                                  ],
-                                  onChanged: (newRole) => _changeRole(
-                                    context,
-                                    ref,
-                                    member.userId,
-                                    newRole!,
-                                  ),
-                                )
-                              else
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: VeraProbColors.surface,
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color: VeraProbColors.border,
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Você (Admin)',
-                                    style: TextStyle(
+                    data: (members) => members.isEmpty
+                        ? const SizedBox.shrink()
+                        : Column(
+                            children: List.generate(members.length * 2 - 1, (
+                              i,
+                            ) {
+                              if (i.isOdd) {
+                                return const Divider(
+                                  color: VeraProbColors.border,
+                                );
+                              }
+                              final member = members[i ~/ 2];
+                              final isSelf = member.userId == currentUserId;
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: VeraProbColors.primary
+                                      .withValues(alpha: 0.1),
+                                  child: Text(
+                                    member.email[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      color: VeraProbColors.primary,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
-                              const SizedBox(width: 16),
-                              if (!isSelf)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.person_remove_outlined,
-                                    color: VeraProbColors.error,
-                                    size: 20,
-                                  ),
-                                  tooltip: 'Remover membro',
-                                  onPressed: () => _confirmRemove(
-                                    context,
-                                    ref,
-                                    member.userId,
-                                    member.email,
-                                  ),
+                                title: Text(
+                                  member.email,
+                                  style: VeraProbTypography.kpiLabel,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
-                            ],
+                                subtitle: Text(
+                                  'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
+                                  style: VeraProbTypography.caption,
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (!isSelf)
+                                      DropdownButton<UserRole>(
+                                        value: member.role,
+                                        underline: const SizedBox(),
+                                        items: const [
+                                          DropdownMenuItem(
+                                            value: UserRole.admin,
+                                            child: Text('Administrador'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: UserRole.operator,
+                                            child: Text('Operador'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: UserRole.auditor,
+                                            child: Text('Auditor'),
+                                          ),
+                                        ],
+                                        onChanged: (newRole) => _changeRole(
+                                          context,
+                                          ref,
+                                          member.userId,
+                                          newRole!,
+                                        ),
+                                      )
+                                    else
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: VeraProbColors.surface,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                          border: Border.all(
+                                            color: VeraProbColors.border,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Você (Admin)',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    const SizedBox(width: 16),
+                                    if (!isSelf)
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.person_remove_outlined,
+                                          color: VeraProbColors.error,
+                                          size: 20,
+                                        ),
+                                        tooltip: 'Remover membro',
+                                        onPressed: () => _confirmRemove(
+                                          context,
+                                          ref,
+                                          member.userId,
+                                          member.email,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            }),
                           ),
-                        );
-                      }),
-                    ),
                   ),
 
-                  // ── Pending invitations ──────────────────────────────────
+                  // â”€â”€ Pending invitations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   invitationsAsync.when(
                     loading: () => const SizedBox.shrink(),
                     error: (err, st) => const SizedBox.shrink(),
                     data: (invitations) {
+                      final nowUtc = ref
+                          .read(dateTimeProviderProvider)
+                          .nowUtc();
                       final pending = invitations
-                          .where((i) => i.isActive)
+                          .where((i) => i.isActiveAt(nowUtc))
                           .toList();
                       if (pending.isEmpty) return const SizedBox.shrink();
                       return Column(
@@ -231,29 +244,28 @@ class UserManagementScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String userId,
-    String newRoleString,
+    UserRole newRole,
   ) async {
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final callerRole = ref.read(currentUserRoleProvider);
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
-      UserRole newRole;
-      if (newRoleString == 'TENANT_ADMIN') {
-        newRole = UserRole.admin;
-      } else if (newRoleString == 'OPERATOR') {
-        newRole = UserRole.operator;
-      } else {
-        newRole = UserRole.auditor;
+      if (orgId == null) {
+        throw StateError(
+          'Organization context unavailable for role: $callerRole',
+        );
       }
 
       await ref
           .read(changeUserRoleHandlerProvider)
           .handle(
             ChangeUserRoleCommand(
-              organizationId: orgId!,
+              organizationId: orgId,
               callerRole: callerRole,
               targetUserId: userId,
               newRole: newRole,
+              sessionId: sessionId,
             ),
           );
       ref.invalidate(orgMembersProvider);
@@ -309,14 +321,22 @@ class UserManagementScreen extends ConsumerWidget {
       try {
         final orgId = ref.read(currentOrganizationIdProvider);
         final callerRole = ref.read(currentUserRoleProvider);
+        final sessionId = ref.read(currentSessionIdProvider) ?? '';
+
+        if (orgId == null) {
+          throw StateError(
+            'Organization context unavailable for role: $callerRole',
+          );
+        }
 
         await ref
             .read(removeMemberHandlerProvider)
             .handle(
               RemoveMemberCommand(
-                organizationId: orgId!,
+                organizationId: orgId,
                 callerRole: callerRole,
                 targetUserId: userId,
+                sessionId: sessionId,
               ),
             );
         ref.invalidate(orgMembersProvider);
@@ -372,14 +392,22 @@ class UserManagementScreen extends ConsumerWidget {
       try {
         final orgId = ref.read(currentOrganizationIdProvider);
         final callerRole = ref.read(currentUserRoleProvider);
+        final sessionId = ref.read(currentSessionIdProvider) ?? '';
+
+        if (orgId == null) {
+          throw StateError(
+            'Organization context unavailable for role: $callerRole',
+          );
+        }
 
         await ref
             .read(revokeInvitationHandlerProvider)
             .handle(
               RevokeInvitationCommand(
-                organizationId: orgId!,
+                organizationId: orgId,
                 callerRole: callerRole,
                 invitationId: invitation.id,
+                sessionId: sessionId,
               ),
             );
         ref.invalidate(orgInvitationsProvider);
@@ -406,7 +434,7 @@ class UserManagementScreen extends ConsumerWidget {
   }
 }
 
-// ── Pending invitation tile ──────────────────────────────────────────────────
+// â”€â”€ Pending invitation tile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _PendingInvitationTile extends StatelessWidget {
   final Invitation invitation;
@@ -424,6 +452,7 @@ class _PendingInvitationTile extends StatelessWidget {
       UserRole.operator => 'Operador',
       UserRole.auditor => 'Auditor',
       UserRole.contractorViewer => 'Visualizador Contratante',
+      UserRole.superAdmin => 'Super Administrador',
     };
     final expiryStr = invitation.expiresAtUtc.toLocal().toString().split(
       '.',
@@ -438,9 +467,14 @@ class _PendingInvitationTile extends StatelessWidget {
           size: 18,
         ),
       ),
-      title: Text(invitation.email, style: VeraProbTypography.kpiLabel),
+      title: Text(
+        invitation.email,
+        style: VeraProbTypography.kpiLabel,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+      ),
       subtitle: Text(
-        '$roleLabel · Expira em: $expiryStr',
+        '$roleLabel Â· Expira em: $expiryStr',
         style: VeraProbTypography.caption,
       ),
       trailing: IconButton(
@@ -456,7 +490,7 @@ class _PendingInvitationTile extends StatelessWidget {
   }
 }
 
-// ── Invite user dialog ───────────────────────────────────────────────────────
+// â”€â”€ Invite user dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _InviteUserDialog extends ConsumerStatefulWidget {
   final WidgetRef parentRef;
@@ -618,6 +652,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
       final orgId = widget.parentRef.read(currentOrganizationIdProvider);
       final callerRole = widget.parentRef.read(currentUserRoleProvider);
       final userId = widget.parentRef.read(currentOperatorIdProvider);
+      final sessionId = widget.parentRef.read(currentSessionIdProvider) ?? '';
 
       final token = await ref
           .read(inviteUserHandlerProvider)
@@ -628,10 +663,24 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
               invitedByUserId: userId ?? '',
               email: _emailController.text,
               roleToAssign: _selectedRole,
+              sessionId: sessionId,
             ),
           );
 
       widget.parentRef.invalidate(orgInvitationsProvider);
+
+      // Fire invitation email â€” silent failure (link in dialog is the fallback)
+      try {
+        final email = _emailController.text;
+        final inviteUrl = '${Uri.base.origin}/accept-invite?token=$token';
+        final orgName =
+            (await widget.parentRef.read(orgSettingsProvider.future))?.name ??
+            '';
+        await ref
+            .read(adminNotificationRepositoryProvider)
+            .notifyInvite(email: email, inviteUrl: inviteUrl, orgName: orgName);
+      } catch (_) {}
+
       setState(() {
         _generatedToken = token;
         _loading = false;

@@ -1,23 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_providers.dart';
-import '../../application/intelligence/situation_engine.dart';
-import '../../application/operational_control_service.dart';
-import '../../application/simulation_control_service.dart';
-import '../../application/sla_audit/sla_contractual_event_port.dart';
-import '../../data/services/fleet_simulation_service.dart';
-import '../../domain/entities/operational_trip.dart';
-import '../../domain/sla_audit/sla_ledger_entry.dart';
-import '../../domain/entities/vehicle_position.dart';
-import '../../domain/entities/vehicle_operational_state.dart';
-import '../../application/audit/audit_service.dart';
-import '../../application/normalization/operational_state_normalizer.dart';
-import '../../application/adapters/operational_data_provider.dart';
-import '../../application/adapters/realtime_data_provider.dart';
-import '../../application/adapters/stress_scenario_config.dart';
-import '../../domain/enums/trip_status.dart';
-import '../../application/projections/providers/command_center_filter_provider.dart';
-import '../../application/projections/providers/fleet_attention_projection_provider.dart';
-import '../../application/projections/models/attention_state.dart';
+import 'package:veraprob/application/adapters/simulation_data_provider.dart';
+import 'package:veraprob/application/intelligence/situation_engine.dart';
+import 'package:veraprob/application/operational_control_service.dart';
+import 'package:veraprob/application/simulation_control_service.dart';
+import 'package:veraprob/application/sla_audit/sla_contractual_event_port.dart';
+import 'package:veraprob/data/services/fleet_simulation_service.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/state/providers/audit_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
+import 'package:veraprob/application/normalization/operational_state_normalizer.dart';
+import 'package:veraprob/application/adapters/operational_data_provider.dart';
+import 'package:veraprob/application/adapters/realtime_data_provider.dart';
+import 'package:veraprob/application/adapters/stress_scenario_config.dart';
+import 'package:veraprob/application/projections/providers/command_center_filter_provider.dart';
+import 'package:veraprob/application/projections/providers/fleet_attention_projection_provider.dart';
+import 'package:veraprob/application/projections/models/attention_state.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'sla_providers.dart';
 
 // ── Core Services ──────────────────────────────────────
@@ -60,7 +61,7 @@ final operationalControlProvider = Provider<OperationalControlService>((ref) {
 
 // Sprint 3: The Intelligence Engine
 final situationEngineProvider = Provider<SituationEngine>((ref) {
-  return SituationEngine();
+  return SituationEngine(ref.watch(dateTimeProviderProvider));
 });
 
 // ── UI Refresh Counter ─────────────────────────────────
@@ -119,9 +120,16 @@ final activeTripsProvider = Provider<List<OperationalTrip>>((ref) {
 // ── Data Adapter ─────────────────────────────────────────
 
 /// The operational data adapter.
-/// FASE 10: Simulation removed. Only real telemetry via Supabase Realtime.
+/// FASE 10: Switched dynamically between Realtime and Simulation.
 final operationalDataProvider = Provider<IOperationalDataProvider>((ref) {
-  return RealtimeDataProvider();
+  final stressConfig = ref.watch(stressScenarioProvider);
+  if (stressConfig != null) {
+    return SimulationDataProvider(ref.watch(fleetSimulationProvider));
+  }
+  return RealtimeDataProvider(
+    ref.watch(dateTimeProviderProvider),
+    ref.watch(supabaseClientProvider),
+  );
 });
 
 // ── Position Stream ────────────────────────────────────
@@ -140,7 +148,9 @@ final positionStreamProvider = StreamProvider<List<VehiclePosition>>((ref) {
 /// Singleton instance of the operational state normalizer.
 final operationalStateNormalizerProvider = Provider<OperationalStateNormalizer>(
   (ref) {
-    return OperationalStateNormalizer();
+    return OperationalStateNormalizer(
+      clock: ref.watch(dateTimeProviderProvider),
+    );
   },
 );
 
@@ -193,8 +203,13 @@ final forensicLedgerProjectionProvider = FutureProvider<List<SlaLedgerEntry>>((
   // Re-fetch when UI triggers an update
   ref.watch(uiRefreshTrigger);
 
+  final organizationId = ref.watch(currentOrganizationIdProvider);
+  if (organizationId == null) return [];
   final ledgerRepo = ref.read(slaAuditLedgerRepositoryProvider);
-  final entries = await ledgerRepo.getEntriesBySetId(selectedId);
+  final entries = await ledgerRepo.getEntriesBySetId(
+    selectedId,
+    organizationId: organizationId,
+  );
 
   // Sort descending (newest first) for UI timeline
   return entries.reversed.toList();
@@ -293,6 +308,8 @@ final filteredTripsProvider = Provider<List<OperationalTrip>>((ref) {
 
         case FleetStatusFilter.atStop:
           return t.status == TripStatus.atStop;
+        case FleetStatusFilter.kinematicAnomaly:
+          return t.requiresAttention;
         case FleetStatusFilter.all:
           return true;
       }

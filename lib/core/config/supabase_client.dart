@@ -12,13 +12,13 @@ final supabase = Supabase.instance.client;
 ///  3. Silent skip (in-memory test mode, no Supabase required)
 class SupabaseConfig {
   static Future<void> initialize() async {
-    // Priority: 
+    // Priority:
     // 1. EnvironmentConfig (via --dart-define)
     // 2. dotenv (via .env file)
-    final url = EnvironmentConfig.supabaseUrl.isNotEmpty 
-        ? EnvironmentConfig.supabaseUrl 
+    final url = EnvironmentConfig.supabaseUrl.isNotEmpty
+        ? EnvironmentConfig.supabaseUrl
         : (dotenv.env['SUPABASE_URL'] ?? '');
-        
+
     final anonKey = EnvironmentConfig.supabaseAnonKey.isNotEmpty
         ? EnvironmentConfig.supabaseAnonKey
         : (dotenv.env['SUPABASE_KEY'] ?? '');

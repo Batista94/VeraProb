@@ -1,4 +1,4 @@
-import '../../domain/enums/user_role.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// Immutable command DTO for submitting a draft [Contract] for contractor approval.
 ///
@@ -18,10 +18,14 @@ class SubmitContractForApprovalCommand {
   /// Role of the user — sourced from JWT claim, never from user input.
   final UserRole callerRole;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const SubmitContractForApprovalCommand({
     required this.organizationId,
     required this.contractId,
     required this.callerUserId,
     required this.callerRole,
+    required this.sessionId,
   });
 }

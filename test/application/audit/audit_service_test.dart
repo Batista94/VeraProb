@@ -1,12 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/application/audit/audit_service.dart';
+import 'package:veraprob/infrastructure/audit/in_memory_audit_service.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 void main() {
   group('InMemoryAuditService', () {
     late InMemoryAuditService auditService;
+    late FakeDateTimeProvider fakeClock;
 
     setUp(() {
-      auditService = InMemoryAuditService();
+      fakeClock = FakeDateTimeProvider(DateTime(2026, 4, 8, 10, 0, 0));
+      auditService = InMemoryAuditService(fakeClock);
     });
 
     test('logAction records securely and chronologically', () async {
@@ -39,7 +42,9 @@ void main() {
         actionType: 'A1',
         entityId: 'e1',
       );
-      await Future.delayed(const Duration(milliseconds: 10)); // Force time gap
+      fakeClock.advance(
+        const Duration(minutes: 1),
+      ); // Force deterministic time gap
       await auditService.logAction(
         organizationId: 'org1',
         operatorId: 'op1',

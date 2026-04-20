@@ -1,5 +1,5 @@
-import '../../domain/sla_audit/telemetry_evidence.dart';
-import '../../domain/sla_audit/telemetry_evidence_repository.dart';
+import 'package:veraprob/domain/sla_audit/telemetry_evidence.dart';
+import 'package:veraprob/domain/sla_audit/telemetry_evidence_repository.dart';
 
 /// In-memory implementation of [TelemetryEvidenceRepository].
 ///

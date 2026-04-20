@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
-import '../../domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/dto/sla_ledger_entry_dto.dart';
 
 /// Postgres implementation of [SlaAuditLedgerRepository].
 ///
@@ -11,63 +14,139 @@ import '../../domain/sla_audit/sla_ledger_entry.dart';
 /// 2. **Monotonic Ordering**: Uses Postgres `bigserial` (ID) as the primary ordering criterion.
 /// 3. **Idempotency**: Prevents duplicate entries via causal linkage checks or cautious inserts.
 /// 4. **Structured Mapping**: Persists structured [SlaLedgerEntry] instead of raw events.
-class PostgresSlaAuditLedgerRepository implements SlaAuditLedgerRepository {
-  final SupabaseClient _client;
+class PostgresSlaAuditLedgerRepository extends BasePostgresRepository
+    implements SlaAuditLedgerRepository {
+  PostgresSlaAuditLedgerRepository(super.client);
 
-  PostgresSlaAuditLedgerRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+  static const _requiredFields = [
+    'organization_id',
+    'type',
+    'occurred_at_utc',
+    'contract_id',
+    'plan_version',
+  ];
+
+  /// Validates that all required columns are present in a DB row before mapping.
+  /// Throws [IntegrityException] on any absent or null field. (INV-18)
+  @visibleForTesting
+  void assertFields(Map<String, dynamic> row) {
+    for (final field in _requiredFields) {
+      if (!row.containsKey(field) || row[field] == null) {
+        throw IntegrityException(
+          'Required field "$field" absent or null in sla_audit_ledger_v2',
+          field: field,
+        );
+      }
+    }
+  }
+
+  /// Parses a raw DB timestamp value to a UTC [DateTime]. (INV-9)
+  ///
+  /// Postgres may return naive timestamps without a 'Z' suffix; this helper
+  /// normalizes them before parsing to prevent local-time drift.
+  /// Throws [IntegrityException] if [raw] is null or not a [String].
+  @visibleForTesting
+  DateTime parseUtc(dynamic raw, String fieldName) {
+    if (raw == null) {
+      throw IntegrityException(
+        'Timestamp "$fieldName" is null',
+        field: fieldName,
+      );
+    }
+    if (raw is! String) {
+      throw IntegrityException(
+        'Timestamp "$fieldName" has unexpected type ${raw.runtimeType}, expected String',
+        field: fieldName,
+      );
+    }
+    final normalized = (raw.endsWith('Z') || raw.contains('+'))
+        ? raw
+        : '${raw}Z';
+    return DateTime.parse(normalized);
+  }
 
   @override
   Future<String> append(SlaLedgerEntry entry) async {
-    final response = await _client
-        .from('sla_audit_ledger_v2')
-        .insert({
-          'organization_id': entry.organizationId,
-          'type': entry.type,
-          'set_id': entry.setId,
-          'contract_id': entry.contractId,
-          'plan_version': entry.planVersion,
-          'payload': entry.payload,
-          'occurred_at_utc': entry.occurredAtUtc.toIso8601String(),
-        })
-        .select('id')
-        .single();
+    try {
+      final dto = SlaLedgerEntryDto.fromDomain(entry);
 
-    return response['id'] as String;
-  }
+      final response = await client
+          .from('sla_audit_ledger_v2')
+          .insert(dto.toJson())
+          .select('id')
+          .single();
 
-  @override
-  Future<String?> getLastEntryId() async {
-    final response = await _client
-        .from('sla_audit_ledger_v2')
-        .select('id')
-        .order('occurred_at_utc', ascending: false)
-        .limit(1)
-        .maybeSingle();
-
-    if (response == null) return null;
-    return response['id'] as String;
-  }
-
-  @override
-  Future<List<SlaLedgerEntry>> getEntriesBySetId(String setId) async {
-    final response = await _client
-        .from('sla_audit_ledger_v2')
-        .select()
-        .eq('set_id', setId)
-        .order('occurred_at_utc', ascending: true);
-
-    return (response as List).map((row) {
-      return SlaLedgerEntry(
-        eventId: row['id'] as String,
-        organizationId: row['organization_id'] as String,
-        type: row['type'] as String,
-        setId: row['set_id'] as String?,
-        contractId: row['contract_id'] as String,
-        planVersion: row['plan_version'] as int,
-        occurredAtUtc: DateTime.parse(row['occurred_at_utc'] as String),
-        payload: row['payload'] as Map<String, dynamic>? ?? const {},
+      return response['id'] as String;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'sla_audit_ledger',
+        resourceId: entry.id?.toString(),
       );
-    }).toList();
+    }
+  }
+
+  @override
+  Future<String?> getLastEntryId({
+    String? organizationId,
+    String? contractId,
+  }) async {
+    try {
+      var query = client.from('sla_audit_ledger_v2').select('id');
+      if (organizationId != null) {
+        query = query.eq('organization_id', organizationId);
+      }
+      if (contractId != null) {
+        query = query.eq('contract_id', contractId);
+      }
+      final response = await query
+          .order('occurred_at_utc', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (response == null) return null;
+      return response['id'] as String;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'sla_audit_ledger',
+        resourceId: contractId ?? organizationId,
+      );
+    }
+  }
+
+  @override
+  Future<List<SlaLedgerEntry>> getEntriesBySetId(
+    String setId, {
+    String? organizationId,
+  }) async {
+    try {
+      var query = client
+          .from('sla_audit_ledger_v2')
+          .select()
+          .eq('set_id', setId);
+      if (organizationId != null) {
+        query = query.eq('organization_id', organizationId);
+      }
+      final response = await query.order('occurred_at_utc', ascending: true);
+
+      return (response as List).map((row) {
+        final typedRow = row as Map<String, dynamic>;
+        assertFields(typedRow);
+        final normalizedRow = Map<String, dynamic>.from(typedRow);
+        normalizedRow['occurred_at_utc'] = parseUtc(
+          typedRow['occurred_at_utc'],
+          'occurred_at_utc',
+        ).toIso8601String();
+        final dto = SlaLedgerEntryDto.fromJson(normalizedRow);
+        return dto.toDomain(typedRow['id'] as String);
+      }).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'sla_audit_ledger',
+        resourceId: setId,
+      );
+    }
   }
 }

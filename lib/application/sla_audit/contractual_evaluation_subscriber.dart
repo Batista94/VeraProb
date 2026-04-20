@@ -1,8 +1,9 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../../domain/entities/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'contractual_evaluation_engine.dart';
 import 'contractual_financial_closing_service.dart';
 
@@ -27,6 +28,7 @@ class ContractualEvaluationSubscriber {
   final Duration _sweepInterval;
   final String organizationId;
   final ContractualFinancialClosingService? _closingService;
+  final IDateTimeProvider _dateTimeProvider;
 
   StreamSubscription<List<VehicleOperationalState>>? _subscription;
   Timer? _sweepTimer;
@@ -37,10 +39,12 @@ class ContractualEvaluationSubscriber {
     required Duration sweepInterval,
     required this.organizationId,
     ContractualFinancialClosingService? closingService,
+    IDateTimeProvider? dateTimeProvider,
   }) : _engine = engine,
        _vehicleStream = vehicleStream,
        _sweepInterval = sweepInterval,
-       _closingService = closingService;
+       _closingService = closingService,
+       _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   /// Whether the subscriber is actively listening.
   bool get isActive => _subscription != null;
@@ -69,13 +73,13 @@ class ContractualEvaluationSubscriber {
     _sweepTimer = null;
   }
 
-  // ── Internal Handlers ─────────────────────────────────────
+  // â”€â”€ Internal Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Processes each vehicle state sequentially within a batch.
   ///
   /// Sequential processing is required because the engine maintains
   /// internal dwell-time state that assumes single-threaded access.
-  /// Errors from the engine are caught and logged — they never
+  /// Errors from the engine are caught and logged â€” they never
   /// cancel the subscription.
   void _onVehicleData(List<VehicleOperationalState> states) async {
     for (final state in states) {
@@ -100,7 +104,7 @@ class ContractualEvaluationSubscriber {
   void _onSweepTick() async {
     try {
       await _engine.sweepExpiredObligations(
-        nowUtc: DateTime.now().toUtc(),
+        nowUtc: _dateTimeProvider.nowUtc(),
         organizationId: organizationId,
       );
     } catch (e) {

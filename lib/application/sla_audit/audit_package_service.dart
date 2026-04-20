@@ -1,8 +1,8 @@
-import '../../domain/sla_audit/attestation_header.dart';
-import '../../domain/sla_audit/audit_package.dart';
-import '../../domain/sla_audit/audit_package_repository.dart';
-import '../../domain/sla_audit/audit_package_status.dart';
-import '../../domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/attestation_header.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
+import 'package:veraprob/domain/sla_audit/audit_package_repository.dart';
+import 'package:veraprob/domain/sla_audit/audit_package_status.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'reporting_service.dart';
 
 /// Orchestrates the [AuditPackage] lifecycle: draft creation, sealing,

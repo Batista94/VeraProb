@@ -28,7 +28,21 @@ class ContractDetailView extends Equatable {
   String get id => summary.id;
   String get name => summary.name;
   String get contractorName => summary.contractorName;
+  String? get previousHash => summary.previousHash;
+  String? get currentHash => summary.currentHash;
 
   @override
   List<Object?> get props => [summary, recentExecutions, financialSummary];
+
+  ContractDetailView copyWith({
+    ContractSummaryView? summary,
+    List<SlaExecutionItemView>? recentExecutions,
+    SlaExecutionSummary? financialSummary,
+  }) {
+    return ContractDetailView(
+      summary: summary ?? this.summary,
+      recentExecutions: recentExecutions ?? this.recentExecutions,
+      financialSummary: financialSummary ?? this.financialSummary,
+    );
+  }
 }

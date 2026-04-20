@@ -9,14 +9,28 @@ import 'sla_ledger_entry.dart';
 /// Implementations must guarantee append-only semantics and monotonic ordering.
 abstract class SlaAuditLedgerRepository {
   /// Appends a forensic entry to the ledger.
-  /// Returns the generated event UUID for causal linkage.
+  /// Returns the generated factEvent UUID for causal linkage.
   Future<String> append(SlaLedgerEntry entry);
 
   /// Retrieves the sequence ID of the most recent entry in the ledger.
   /// Used to deterministically capture the causal boundary of a financial closure.
-  Future<String?> getLastEntryId();
+  ///
+  /// [organizationId] provides explicit tenant scoping as defense-in-depth
+  /// alongside RLS. Callers with an available org ID MUST pass it (INV-6).
+  ///
+  /// [contractId] further narrows the scope to a single contract when provided.
+  /// Prefer passing [contractId] in any context where the query is already
+  /// contract-scoped (e.g. E2E tests, snapshot generation for a specific contract)
+  /// to avoid non-determinism when multiple test runs share the same org ID.
+  Future<String?> getLastEntryId({String? organizationId, String? contractId});
 
   /// Retrieves all forensic entries related to a specific contractual or operational set (e.g. trip).
   /// Ordered chronologically.
-  Future<List<SlaLedgerEntry>> getEntriesBySetId(String setId);
+  ///
+  /// [organizationId] provides explicit tenant scoping as defense-in-depth
+  /// alongside RLS. Callers with an available org ID MUST pass it (INV-6).
+  Future<List<SlaLedgerEntry>> getEntriesBySetId(
+    String setId, {
+    String? organizationId,
+  });
 }

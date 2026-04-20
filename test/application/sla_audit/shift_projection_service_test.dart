@@ -13,8 +13,10 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
   setUpAll(() {
     tz_data.initializeTimeZones();
   });
@@ -47,7 +49,7 @@ void main() {
 
   SLAPenalties makePenalties() {
     return SLAPenalties.create(
-      noShowPenaltyMultiplier: 1.5,
+      noShowPenaltyBps: 15000,
       delayToleranceMinutes: 10,
       delayPenaltyPerMinute: const Money(100),
       downgradePenaltyFlat: const Money(5000),
@@ -103,6 +105,7 @@ void main() {
       originalFileHash: 'abc123',
       ruleSnapshot: const RuleSnapshot([]),
       shiftPatterns: [pattern],
+      nowUtc: nowUtc,
     );
 
     final planRepo = InMemoryPlanDeclarationRepository();
@@ -114,6 +117,7 @@ void main() {
       planRepo: planRepo,
       zoneRepo: zoneRepo,
       alertRepo: alertRepo,
+      dateTimeProvider: BrazilDateTimeProvider(),
     );
 
     return (plan, origin, dest, service, planRepo);
@@ -145,15 +149,17 @@ void main() {
               endLongitude: -46.64,
               endRadiusMeters: 200,
               contractualValue: const Money(15000),
-              noShowPenaltyMultiplier: 1.5,
+              noShowPenaltyBps: 15000,
             ),
           ],
+          nowUtc: nowUtc,
         );
 
         final service = ShiftProjectionService(
           planRepo: InMemoryPlanDeclarationRepository(),
           zoneRepo: InMemoryOperationalZoneRepository(),
           alertRepo: InMemoryOperationalAlertRepository(),
+          dateTimeProvider: BrazilDateTimeProvider(),
         );
 
         final sets = await service.projectDays(
@@ -226,7 +232,11 @@ void main() {
         );
 
         await planRepo.saveProjectedSets(plan.id, sets, organizationId: orgId);
-        await planRepo.saveProjectedSets(plan.id, sets, organizationId: orgId); // second save
+        await planRepo.saveProjectedSets(
+          plan.id,
+          sets,
+          organizationId: orgId,
+        ); // second save
 
         final stored = planRepo.projectedSetsFor(plan.id);
         expect(stored.length, 1); // no duplicates
@@ -263,12 +273,14 @@ void main() {
           originalFileHash: 'abc456',
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         final service = ShiftProjectionService(
           planRepo: InMemoryPlanDeclarationRepository(),
           zoneRepo: zoneRepo,
           alertRepo: InMemoryOperationalAlertRepository(),
+          dateTimeProvider: BrazilDateTimeProvider(),
         );
 
         final sets = await service.projectDays(
@@ -316,7 +328,7 @@ void main() {
       expect(set.delayToleranceMinutes, equals(10));
       expect(set.delayPenaltyPerMinute?.cents, equals(100));
       expect(set.downgradePenaltyFlat?.cents, equals(5000));
-      expect(set.noShowPenaltyMultiplier, equals(1.5));
+      expect(set.noShowPenaltyBps, equals(15000));
     });
 
     test(
@@ -349,6 +361,7 @@ void main() {
           originalFileHash: 'gaphash',
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         final alertRepo = InMemoryOperationalAlertRepository();
@@ -357,6 +370,7 @@ void main() {
           planRepo: InMemoryPlanDeclarationRepository(),
           zoneRepo: zoneRepo,
           alertRepo: alertRepo,
+          dateTimeProvider: BrazilDateTimeProvider(),
         );
 
         // asOf = Wednesday 2026-03-11 — last Monday was 2026-03-09 (yesterday)
@@ -385,6 +399,7 @@ void main() {
         planRepo: InMemoryPlanDeclarationRepository(),
         zoneRepo: InMemoryOperationalZoneRepository(),
         alertRepo: alertRepo,
+        dateTimeProvider: BrazilDateTimeProvider(),
       );
 
       // Need zones in the repo for gap detection (only needs setId — no zone lookup)
@@ -420,6 +435,7 @@ void main() {
           originalFileHash: 'notfoundhash',
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         final service = ShiftProjectionService(
@@ -427,6 +443,7 @@ void main() {
           zoneRepo:
               InMemoryOperationalZoneRepository(), // empty — zones not found
           alertRepo: InMemoryOperationalAlertRepository(),
+          dateTimeProvider: BrazilDateTimeProvider(),
         );
 
         final sets = await service.projectDays(
@@ -498,7 +515,7 @@ void main() {
       () {
         // Backward compat: existing call sites without new fields still work
         final penalties = SLAPenalties.create(
-          noShowPenaltyMultiplier: 1.5,
+          noShowPenaltyBps: 15000,
           delayToleranceMinutes: 10,
           delayPenaltyPerMinute: const Money(100),
           downgradePenaltyFlat: const Money(5000),
@@ -520,7 +537,7 @@ void main() {
 
         // fromJson backward compat: old JSON without new fields falls back to defaults
         final oldJson = {
-          'noShowPenaltyMultiplier': 1.5,
+          'noShowPenaltyBps': 15000,
           'delayToleranceMinutes': 10,
           'delayPenaltyPerMinuteCents': 100,
           'downgradePenaltyFlatCents': 5000,
@@ -533,7 +550,7 @@ void main() {
 
         // Custom values are stored and restored correctly
         final custom = SLAPenalties.create(
-          noShowPenaltyMultiplier: 2.0,
+          noShowPenaltyBps: 20000,
           delayToleranceMinutes: 15,
           delayPenaltyPerMinute: const Money(200),
           downgradePenaltyFlat: const Money(10000),
@@ -579,12 +596,14 @@ void main() {
         originalFileHash: 'overnight-hash',
         ruleSnapshot: const RuleSnapshot([]),
         shiftPatterns: [overnightPattern],
+        nowUtc: nowUtc,
       );
 
       final service = ShiftProjectionService(
         planRepo: InMemoryPlanDeclarationRepository(),
         zoneRepo: zoneRepo,
         alertRepo: InMemoryOperationalAlertRepository(),
+        dateTimeProvider: BrazilDateTimeProvider(),
       );
 
       // Monday 2026-03-09

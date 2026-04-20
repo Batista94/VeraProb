@@ -1,14 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/projections/contract_detail_view.dart';
-import '../../application/sla_audit/projections/contract_query_service.dart';
-import '../../application/sla_audit/projections/contract_summary_view.dart';
-import '../../application/sla_audit/projections/sla_execution_item_view.dart';
-import '../../application/sla_audit/projections/sla_execution_query_service.dart';
-import '../../core/config/supabase_client.dart';
-import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/contract_status.dart';
-import '../../domain/sla_audit/execution_status.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Postgres implementation of [ContractQueryService].
 ///
@@ -16,21 +15,20 @@ import '../../domain/sla_audit/execution_status.dart';
 /// `execution_states` tables using targeted queries.
 /// Purely read-only — never mutates state.
 class PostgresContractQueryService implements ContractQueryService {
-  final SupabaseClient _client;
+  final SupabaseClient client;
   final SlaExecutionQueryService _slaExecutionQueryService;
 
   PostgresContractQueryService({
-    SupabaseClient? client,
+    required this.client,
     required SlaExecutionQueryService slaExecutionQueryService,
-  }) : _client = client ?? supabase,
-       _slaExecutionQueryService = slaExecutionQueryService;
+  }) : _slaExecutionQueryService = slaExecutionQueryService;
 
   @override
   Future<List<ContractSummaryView>> listContracts({
     required String organizationId,
-    ContractStatus? status,
+    ContractStatusView? status,
   }) async {
-    var query = _client
+    var query = client
         .from('contracts')
         .select()
         .eq('organization_id', organizationId);
@@ -58,7 +56,7 @@ class PostgresContractQueryService implements ContractQueryService {
     required String organizationId,
     required String contractId,
   }) async {
-    final row = await _client
+    final row = await client
         .from('contracts')
         .select()
         .eq('organization_id', organizationId)
@@ -70,7 +68,7 @@ class PostgresContractQueryService implements ContractQueryService {
     final summary = await _buildSummary(contractId, organizationId, row);
 
     // Recent executions — all SETs for this contract, ordered by windowStart desc
-    final List<dynamic> stateRows = await _client
+    final List<dynamic> stateRows = await client
         .from('execution_states')
         .select()
         .eq('organization_id', organizationId)
@@ -83,7 +81,11 @@ class PostgresContractQueryService implements ContractQueryService {
       return SlaExecutionItemView(
         setId: s['set_id'] as String,
         contractId: s['contract_id'] as String,
-        status: ExecutionStatus.values.byName(statusStr),
+        status: IntegrityException.shield(
+          ExecutionStatus.values,
+          statusStr,
+          'status',
+        ),
         windowStartUtc: DateTime.parse(s['window_start_utc'] as String).toUtc(),
         windowEndUtc: DateTime.parse(s['window_end_utc'] as String).toUtc(),
         plannedVehicleId: s['planned_vehicle_id'] as String?,
@@ -94,16 +96,15 @@ class PostgresContractQueryService implements ContractQueryService {
         startLatitude: (s['start_latitude'] as num).toDouble(),
         startLongitude: (s['start_longitude'] as num).toDouble(),
         startRadiusMeters: (s['start_radius_meters'] as num).toInt(),
-        contractualValue: Money((s['contractual_value_cents'] as num).toInt()),
-        noShowPenaltyMultiplier: (s['no_show_penalty_multiplier'] as num)
-            .toDouble(),
+        contractualValue: (s['contractual_value_cents'] as num).toInt(),
+        noShowPenaltyBps: (s['no_show_penalty_multiplier'] as num).toInt(),
       );
     }).toList();
 
     // Merge projected SETs from contractual_service_executions.
     // These are visible immediately after plan declaration, before any telemetry
     // arrives. SETs already present in execution_states are skipped (already merged).
-    final List<dynamic> planIdRows = await _client
+    final List<dynamic> planIdRows = await client
         .from('plan_declarations')
         .select('id')
         .eq('organization_id', organizationId)
@@ -114,7 +115,7 @@ class PostgresContractQueryService implements ContractQueryService {
     if (planIds.isNotEmpty) {
       final evaluatedSetIds = recentExecutions.map((e) => e.setId).toSet();
 
-      final List<dynamic> projectedRows = await _client
+      final List<dynamic> projectedRows = await client
           .from('contractual_service_executions')
           .select()
           .inFilter('plan_declaration_id', planIds)
@@ -140,11 +141,9 @@ class PostgresContractQueryService implements ContractQueryService {
               startLatitude: (s['start_latitude'] as num).toDouble(),
               startLongitude: (s['start_longitude'] as num).toDouble(),
               startRadiusMeters: (s['start_radius_meters'] as num).toInt(),
-              contractualValue: Money(
-                (s['contractual_value_cents'] as num).toInt(),
-              ),
-              noShowPenaltyMultiplier: (s['no_show_penalty_multiplier'] as num)
-                  .toDouble(),
+              contractualValue: (s['contractual_value_cents'] as num).toInt(),
+              noShowPenaltyBps: (s['no_show_penalty_multiplier'] as num)
+                  .toInt(),
             ),
           )
           .toList();
@@ -177,7 +176,7 @@ class PostgresContractQueryService implements ContractQueryService {
     Map<String, dynamic> row,
   ) async {
     // Plan counters
-    final List<dynamic> planRows = await _client
+    final List<dynamic> planRows = await client
         .from('plan_declarations')
         .select('plan_version')
         .eq('organization_id', organizationId)
@@ -190,7 +189,7 @@ class PostgresContractQueryService implements ContractQueryService {
         : (planRows.first['plan_version'] as int);
 
     // Execution state counters (single query — aggregate in Dart to avoid RPC)
-    final List<dynamic> stateRows = await _client
+    final List<dynamic> stateRows = await client
         .from('execution_states')
         .select('status')
         .eq('organization_id', organizationId)
@@ -206,15 +205,19 @@ class PostgresContractQueryService implements ContractQueryService {
       if (st == ExecutionStatus.executed.name) executedCount++;
     }
 
-    final slaHealthPercentage = totalSets == 0
-        ? 0.0
-        : (executedCount / totalSets) * 100.0;
+    final slaHealthBps = totalSets == 0
+        ? 0
+        : (executedCount * 10000 ~/ totalSets);
 
     return ContractSummaryView(
       id: row['id'] as String,
       name: row['name'] as String,
       contractorName: row['contractor_name'] as String,
-      status: ContractStatus.values.byName(row['status'] as String),
+      status: IntegrityException.shield(
+        ContractStatusView.values,
+        row['status'] as String,
+        'status',
+      ),
       validFromUtc: DateTime.parse(row['valid_from_utc'] as String).toUtc(),
       validUntilUtc: DateTime.parse(row['valid_until_utc'] as String).toUtc(),
       createdAtUtc: DateTime.parse(row['created_at_utc'] as String).toUtc(),
@@ -224,8 +227,10 @@ class PostgresContractQueryService implements ContractQueryService {
       planCount: planCount,
       activePlanVersion: activePlanVersion,
       totalSetsInProgress: pendingCount,
-      slaHealthPercentage: slaHealthPercentage,
+      slaHealthBps: slaHealthBps,
       financialCeilingCents: (row['financial_ceiling_cents'] as num?)?.toInt(),
+      previousHash: row['previous_hash'] as String?,
+      currentHash: row['current_hash'] as String?,
     );
   }
 }

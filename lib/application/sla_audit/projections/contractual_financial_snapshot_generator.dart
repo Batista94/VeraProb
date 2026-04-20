@@ -1,17 +1,18 @@
-import '../../../core/time/brazil_time.dart';
-import '../../../domain/shared/money.dart';
-import '../../../domain/sla_audit/contractual_execution_state_repository.dart';
-import '../../../domain/sla_audit/contractual_financial_daily_snapshot.dart';
-import '../../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
-import '../../../domain/sla_audit/execution_status.dart';
-import '../../../domain/sla_audit/sla_audit_ledger_repository.dart';
+﻿import 'package:veraprob/core/time/brazil_time.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 
 /// Generates immutable daily financial snapshots from execution states.
 ///
 /// Snapshots are derived by:
 /// 1. Filtering execution states whose `windowStartUtc` falls on the
 ///    given operational day (converted to BRT timezone)
-/// 2. Accumulating monetary values using [Money] (no double intermediaries)
+/// 2. Accumulating monetary values using [Money] (no floating-point intermediaries)
 /// 3. Persisting the resulting snapshot
 ///
 /// The generation is idempotent: if a snapshot already exists for the
@@ -20,14 +21,17 @@ class ContractualFinancialSnapshotGenerator {
   final ContractualExecutionStateRepository _executionRepo;
   final ContractualFinancialSnapshotRepository _snapshotRepo;
   final SlaAuditLedgerRepository _ledgerRepo;
+  final IDateTimeProvider _clock;
 
   ContractualFinancialSnapshotGenerator({
     required ContractualExecutionStateRepository executionRepo,
     required ContractualFinancialSnapshotRepository snapshotRepo,
     required SlaAuditLedgerRepository ledgerRepo,
+    required IDateTimeProvider clock,
   }) : _executionRepo = executionRepo,
        _snapshotRepo = snapshotRepo,
-       _ledgerRepo = ledgerRepo;
+       _ledgerRepo = ledgerRepo,
+       _clock = clock;
 
   /// Generates a daily financial snapshot for the given operational date.
   ///
@@ -37,6 +41,7 @@ class ContractualFinancialSnapshotGenerator {
     String organizationId,
     DateTime operationalDateUtc, {
     String? contractId,
+    DateTime? closedAtUtc,
   }) async {
     final normalizedDate = DateTime.utc(
       operationalDateUtc.year,
@@ -65,6 +70,12 @@ class ContractualFinancialSnapshotGenerator {
       return BrazilTime.isSameOperationalDay(s.windowStartUtc, normalizedDate);
     }).toList();
 
+    // Guard: when a contractId is scoped, zero states means either the contract
+    // belongs to another org or has no obligations that day â€” do not persist an
+    // empty cross-tenant snapshot (INV-6). Org-level snapshots (no contractId)
+    // may legitimately be zero and are still persisted.
+    if (contractId != null && dayStates.isEmpty) return;
+
     // Accumulate metrics
     Money totalContractedRevenue = const Money(0);
     Money protectedRevenue = const Money(0);
@@ -89,12 +100,17 @@ class ContractualFinancialSnapshotGenerator {
           executedCount++;
           break;
         case ExecutionStatus.noShow:
-          lostRevenue = lostRevenue + (value * s.noShowPenaltyMultiplier);
+          lostRevenue = lostRevenue + value.multiplyByBps(s.noShowPenaltyBps);
           noShowCount++;
           break;
         case ExecutionStatus.evidenceGap:
           revenueAtRisk = revenueAtRisk + value;
           evidenceGapCount++;
+          break;
+        case ExecutionStatus.inhibited:
+          // Penalty suppressed â€” counts as protected revenue for reconciliation
+          protectedRevenue = protectedRevenue + value;
+          executedCount++;
           break;
       }
     }
@@ -105,7 +121,7 @@ class ContractualFinancialSnapshotGenerator {
       contractId: contractId,
       operationalDateUtc: normalizedDate,
       operationalTimezone: BrazilTime.operationalTimezone,
-      closedAtUtc: DateTime.now().toUtc(),
+      closedAtUtc: closedAtUtc ?? _clock.nowUtc(),
       totalContractedRevenue: totalContractedRevenue,
       protectedRevenue: protectedRevenue,
       revenueAtRisk: revenueAtRisk,
@@ -114,7 +130,10 @@ class ContractualFinancialSnapshotGenerator {
       executedCount: executedCount,
       noShowCount: noShowCount,
       evidenceGapCount: evidenceGapCount,
-      lastLedgerEntryId: await _ledgerRepo.getLastEntryId(),
+      lastLedgerEntryId: await _ledgerRepo.getLastEntryId(
+        organizationId: organizationId,
+        contractId: contractId,
+      ),
     );
 
     await _snapshotRepo.save(snapshot);
@@ -129,6 +148,7 @@ class ContractualFinancialSnapshotGenerator {
     required String reprocessingReason,
     required String authorUserId,
     String? contractId,
+    DateTime? closedAtUtc,
   }) async {
     final normalizedDate = DateTime.utc(
       operationalDateUtc.year,
@@ -170,12 +190,16 @@ class ContractualFinancialSnapshotGenerator {
           executedCount++;
           break;
         case ExecutionStatus.noShow:
-          lostRevenue = lostRevenue + (value * s.noShowPenaltyMultiplier);
+          lostRevenue = lostRevenue + value.multiplyByBps(s.noShowPenaltyBps);
           noShowCount++;
           break;
         case ExecutionStatus.evidenceGap:
           revenueAtRisk = revenueAtRisk + value;
           evidenceGapCount++;
+          break;
+        case ExecutionStatus.inhibited:
+          protectedRevenue = protectedRevenue + value;
+          executedCount++;
           break;
       }
     }
@@ -185,7 +209,7 @@ class ContractualFinancialSnapshotGenerator {
       contractId: contractId,
       operationalDateUtc: normalizedDate,
       operationalTimezone: BrazilTime.operationalTimezone,
-      closedAtUtc: DateTime.now().toUtc(),
+      closedAtUtc: closedAtUtc ?? _clock.nowUtc(),
       totalContractedRevenue: totalContractedRevenue,
       protectedRevenue: protectedRevenue,
       revenueAtRisk: revenueAtRisk,
@@ -194,7 +218,10 @@ class ContractualFinancialSnapshotGenerator {
       executedCount: executedCount,
       noShowCount: noShowCount,
       evidenceGapCount: evidenceGapCount,
-      lastLedgerEntryId: await _ledgerRepo.getLastEntryId(),
+      lastLedgerEntryId: await _ledgerRepo.getLastEntryId(
+        organizationId: organizationId,
+        contractId: contractId,
+      ),
       previousSnapshotId: previousSnapshotId,
       reprocessingReason: reprocessingReason,
       authorUserId: authorUserId,

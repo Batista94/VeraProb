@@ -47,6 +47,18 @@ class PlanDeclaration extends Equatable {
   /// Must be UTC (INV-3). Null for standard weekly plans.
   final DateTime? cycleAnchorDateUtc;
 
+  // ── Forensic sealing (INV-34) ─────────────────────────────
+  /// SHA-256 hash of the previous row state. 'GENESIS' on first insert.
+  /// Null for rows that pre-date migration 20260415000000. Read-only —
+  /// computed by the DB trigger `seal_plan_declarations_forensic`. NEVER
+  /// sent in INSERT payloads.
+  final String? previousHash;
+
+  /// SHA-256(id|plan_version|organization_id|original_file_hash|previous_hash) in hex.
+  /// Computed by the DB trigger. Null for pre-migration rows. Read-only —
+  /// NEVER sent in INSERT payloads.
+  final String? currentHash;
+
   // ── Internal collections ──────────────────────────────────
   final List<ContractualServiceExecution> _services;
   final List<ShiftPattern> _shiftPatterns;
@@ -64,6 +76,8 @@ class PlanDeclaration extends Equatable {
     required this.originalFileHash,
     required this.ruleSnapshot,
     this.cycleAnchorDateUtc,
+    this.previousHash,
+    this.currentHash,
     required List<ContractualServiceExecution> services,
     required List<ShiftPattern> shiftPatterns,
     required List<DomainEvent> domainEvents,
@@ -105,12 +119,14 @@ class PlanDeclaration extends Equatable {
     required String originalFileHash,
     required RuleSnapshot ruleSnapshot,
     required List<ContractualServiceExecution> services,
+    required DateTime nowUtc,
   }) {
     _validateCommon(
       contractId,
       declaredByUserId,
       originalFileHash,
       declaredAtUtc,
+      nowUtc,
     );
     if (services.isEmpty) {
       throw const DomainException('services must not be empty');
@@ -126,7 +142,7 @@ class PlanDeclaration extends Equatable {
     }
 
     final id = const Uuid().v4();
-    final event = _buildEvent(
+    final domainEvent = _buildEvent(
       organizationId: organizationId,
       id: id,
       contractId: contractId,
@@ -134,6 +150,7 @@ class PlanDeclaration extends Equatable {
       declaredByUserId: declaredByUserId,
       planVersion: planVersion,
       totalServicesDeclared: services.length,
+      nowUtc: nowUtc,
     );
 
     return PlanDeclaration._(
@@ -147,7 +164,7 @@ class PlanDeclaration extends Equatable {
       ruleSnapshot: ruleSnapshot,
       services: List.unmodifiable(services),
       shiftPatterns: const [],
-      domainEvents: [event],
+      domainEvents: [domainEvent],
     );
   }
 
@@ -169,12 +186,14 @@ class PlanDeclaration extends Equatable {
     required RuleSnapshot ruleSnapshot,
     required List<ShiftPattern> shiftPatterns,
     DateTime? cycleAnchorDateUtc,
+    required DateTime nowUtc,
   }) {
     _validateCommon(
       contractId,
       declaredByUserId,
       originalFileHash,
       declaredAtUtc,
+      nowUtc,
     );
     if (shiftPatterns.isEmpty) {
       throw const DomainException('shiftPatterns must not be empty');
@@ -204,7 +223,7 @@ class PlanDeclaration extends Equatable {
     }
 
     final id = const Uuid().v4();
-    final event = _buildEvent(
+    final domainEvent = _buildEvent(
       organizationId: organizationId,
       id: id,
       contractId: contractId,
@@ -212,6 +231,7 @@ class PlanDeclaration extends Equatable {
       declaredByUserId: declaredByUserId,
       planVersion: planVersion,
       totalServicesDeclared: 0, // SETs projected post-creation
+      nowUtc: nowUtc,
     );
 
     return PlanDeclaration._(
@@ -226,7 +246,7 @@ class PlanDeclaration extends Equatable {
       cycleAnchorDateUtc: cycleAnchorDateUtc,
       services: const [],
       shiftPatterns: List.unmodifiable(shiftPatterns),
-      domainEvents: [event],
+      domainEvents: [domainEvent],
     );
   }
 
@@ -246,6 +266,8 @@ class PlanDeclaration extends Equatable {
     required List<ContractualServiceExecution> services,
     List<ShiftPattern> shiftPatterns = const [],
     DateTime? cycleAnchorDateUtc,
+    String? previousHash,
+    String? currentHash,
   }) {
     return PlanDeclaration._(
       id: id,
@@ -257,8 +279,44 @@ class PlanDeclaration extends Equatable {
       originalFileHash: originalFileHash,
       ruleSnapshot: ruleSnapshot,
       cycleAnchorDateUtc: cycleAnchorDateUtc,
+      previousHash: previousHash,
+      currentHash: currentHash,
       services: List.unmodifiable(services),
       shiftPatterns: List.unmodifiable(shiftPatterns),
+      domainEvents: const [],
+    );
+  }
+
+  // ── copyWith ──────────────────────────────────────────────
+  PlanDeclaration copyWith({
+    String? id,
+    String? organizationId,
+    String? contractId,
+    DateTime? declaredAtUtc,
+    String? declaredByUserId,
+    int? planVersion,
+    String? originalFileHash,
+    RuleSnapshot? ruleSnapshot,
+    List<ContractualServiceExecution>? services,
+    List<ShiftPattern>? shiftPatterns,
+    DateTime? cycleAnchorDateUtc,
+    String? previousHash,
+    String? currentHash,
+  }) {
+    return PlanDeclaration._(
+      id: id ?? this.id,
+      organizationId: organizationId ?? this.organizationId,
+      contractId: contractId ?? this.contractId,
+      declaredAtUtc: declaredAtUtc ?? this.declaredAtUtc,
+      declaredByUserId: declaredByUserId ?? this.declaredByUserId,
+      planVersion: planVersion ?? this.planVersion,
+      originalFileHash: originalFileHash ?? this.originalFileHash,
+      ruleSnapshot: ruleSnapshot ?? this.ruleSnapshot,
+      cycleAnchorDateUtc: cycleAnchorDateUtc ?? this.cycleAnchorDateUtc,
+      previousHash: previousHash ?? this.previousHash,
+      currentHash: currentHash ?? this.currentHash,
+      services: List.unmodifiable(services ?? _services),
+      shiftPatterns: List.unmodifiable(shiftPatterns ?? _shiftPatterns),
       domainEvents: const [],
     );
   }
@@ -270,6 +328,7 @@ class PlanDeclaration extends Equatable {
     String declaredByUserId,
     String originalFileHash,
     DateTime declaredAtUtc,
+    DateTime nowUtc,
   ) {
     if (contractId.isEmpty) {
       throw const DomainException('contractId must not be empty');
@@ -280,7 +339,7 @@ class PlanDeclaration extends Equatable {
     if (originalFileHash.isEmpty) {
       throw const DomainException('originalFileHash must not be empty');
     }
-    if (declaredAtUtc.isAfter(DateTime.now().toUtc())) {
+    if (declaredAtUtc.isAfter(nowUtc)) {
       throw const DomainException('declaredAtUtc must not be in the future');
     }
   }
@@ -293,10 +352,11 @@ class PlanDeclaration extends Equatable {
     required String declaredByUserId,
     required int planVersion,
     required int totalServicesDeclared,
+    required DateTime nowUtc,
   }) {
     return ContractualPlanDeclaredEvent(
       organizationId: organizationId,
-      occurredAtUtc: DateTime.now().toUtc(),
+      occurredAtUtc: nowUtc,
       planDeclarationId: id,
       contractId: contractId,
       declaredAtUtc: declaredAtUtc,
@@ -317,6 +377,8 @@ class PlanDeclaration extends Equatable {
     originalFileHash,
     ruleSnapshot,
     cycleAnchorDateUtc,
+    previousHash,
+    currentHash,
     _services,
     _shiftPatterns,
   ];

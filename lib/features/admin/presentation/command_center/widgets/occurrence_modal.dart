@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/enums/event_type.dart';
+import 'package:veraprob/application/operational_control/operational_control_facade.dart'
+    show EventType, EventSeverity;
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
 import 'package:veraprob/state/providers/authority_providers.dart';
@@ -65,172 +66,172 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            // Header
-            Row(
-              children: [
-                const Icon(
-                  Icons.report_problem_outlined,
-                  color: VeraProbColors.delayed,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Registrar Ocorrência',
-                    style: VeraProbTypography.sectionTitle,
+              // Header
+              Row(
+                children: [
+                  const Icon(
+                    Icons.report_problem_outlined,
+                    color: VeraProbColors.delayed,
+                    size: 20,
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () => Navigator.pop(context, false),
-                  color: VeraProbColors.textSecondary,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(widget.tripLabel, style: VeraProbTypography.caption),
-            const Divider(color: VeraProbColors.border, height: 20),
-
-            // Event Type
-            Text('Tipo de Evento', style: VeraProbTypography.caption),
-            const SizedBox(height: 6),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: VeraProbColors.border),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<EventType>(
-                  value: _selectedType,
-                  isExpanded: true,
-                  dropdownColor: VeraProbColors.surface,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  style: VeraProbTypography.bodyMedium,
-                  items: EventType.values.map((type) {
-                    return DropdownMenuItem(
-                      value: type,
-                      child: Row(
-                        children: [
-                          Icon(
-                            type.icon,
-                            size: 16,
-                            color: _severityColor(type),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(type.label),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) setState(() => _selectedType = value);
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Severity
-            Text('Severidade', style: VeraProbTypography.caption),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                _SeverityChip(
-                  label: 'Baixa',
-                  color: VeraProbColors.onTime,
-                  isSelected: _severity == 'low',
-                  onTap: () => setState(() => _severity = 'low'),
-                ),
-                const SizedBox(width: 6),
-                _SeverityChip(
-                  label: 'Média',
-                  color: VeraProbColors.delayed,
-                  isSelected: _severity == 'medium',
-                  onTap: () => setState(() => _severity = 'medium'),
-                ),
-                const SizedBox(width: 6),
-                _SeverityChip(
-                  label: 'Alta',
-                  color: VeraProbColors.critical,
-                  isSelected: _severity == 'high',
-                  onTap: () => setState(() => _severity = 'high'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Notes
-            Text('Observação', style: VeraProbTypography.caption),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _notesController,
-              maxLines: 3,
-              style: VeraProbTypography.bodyMedium,
-              decoration: InputDecoration(
-                hintText: 'Descreva a ocorrência...',
-                hintStyle: VeraProbTypography.caption,
-                filled: true,
-                fillColor: VeraProbColors.background,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: VeraProbColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: VeraProbColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: VeraProbColors.primary),
-                ),
-                contentPadding: const EdgeInsets.all(10),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Actions
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: VeraProbColors.textSecondary),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton.icon(
-                  onPressed: _isSubmitting ? null : _submit,
-                  icon: _isSubmitting
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.check, size: 16),
-                  label: const Text('Confirmar'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: VeraProbColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Registrar Ocorrência',
+                      style: VeraProbTypography.sectionTitle,
                     ),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    onPressed: () => Navigator.pop(context, false),
+                    color: VeraProbColors.textSecondary,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(widget.tripLabel, style: VeraProbTypography.caption),
+              const Divider(color: VeraProbColors.border, height: 20),
+
+              // Event Type
+              Text('Tipo de Evento', style: VeraProbTypography.caption),
+              const SizedBox(height: 6),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: VeraProbColors.border),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-              ],
-            ),
-          ],
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<EventType>(
+                    value: _selectedType,
+                    isExpanded: true,
+                    dropdownColor: VeraProbColors.surface,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    style: VeraProbTypography.bodyMedium,
+                    items: EventType.values.map((type) {
+                      return DropdownMenuItem(
+                        value: type,
+                        child: Row(
+                          children: [
+                            Icon(
+                              type.icon,
+                              size: 16,
+                              color: _severityColor(type),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(type.label),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) setState(() => _selectedType = value);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Severity
+              Text('Severidade', style: VeraProbTypography.caption),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  _SeverityChip(
+                    label: 'Baixa',
+                    color: VeraProbColors.onTime,
+                    isSelected: _severity == 'low',
+                    onTap: () => setState(() => _severity = 'low'),
+                  ),
+                  const SizedBox(width: 6),
+                  _SeverityChip(
+                    label: 'Média',
+                    color: VeraProbColors.delayed,
+                    isSelected: _severity == 'medium',
+                    onTap: () => setState(() => _severity = 'medium'),
+                  ),
+                  const SizedBox(width: 6),
+                  _SeverityChip(
+                    label: 'Alta',
+                    color: VeraProbColors.critical,
+                    isSelected: _severity == 'high',
+                    onTap: () => setState(() => _severity = 'high'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Notes
+              Text('Observação', style: VeraProbTypography.caption),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _notesController,
+                maxLines: 3,
+                style: VeraProbTypography.bodyMedium,
+                decoration: InputDecoration(
+                  hintText: 'Descreva a ocorrência...',
+                  hintStyle: VeraProbTypography.caption,
+                  filled: true,
+                  fillColor: VeraProbColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: const BorderSide(color: VeraProbColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: const BorderSide(color: VeraProbColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: const BorderSide(color: VeraProbColors.primary),
+                  ),
+                  contentPadding: const EdgeInsets.all(10),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Actions
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(color: VeraProbColors.textSecondary),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: _isSubmitting ? null : _submit,
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check, size: 16),
+                    label: const Text('Confirmar'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: VeraProbColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   Future<void> _submit() async {

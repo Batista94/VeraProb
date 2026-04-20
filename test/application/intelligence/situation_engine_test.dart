@@ -2,20 +2,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/situation_engine.dart';
 import 'package:veraprob/application/operational_control_service.dart';
-import 'package:veraprob/domain/entities/operational_trip.dart';
-import 'package:veraprob/domain/entities/trip_event.dart';
-import 'package:veraprob/domain/enums/trip_status.dart';
+import '../../mocks/fake_date_time_provider.dart';
 
 class MockOperationalControlService extends Mock
     implements OperationalControlService {}
 
 void main() {
+  final now = DateTime.utc(2026, 4, 7, 20, 0, 0);
+
   group('SituationEngine (The Brain) Rules', () {
     late SituationEngine engine;
     late MockOperationalControlService mockControl;
+    late FakeDateTimeProvider fakeTimeProvider;
 
     setUp(() {
-      engine = SituationEngine();
+      fakeTimeProvider = FakeDateTimeProvider(now);
+      engine = SituationEngine(fakeTimeProvider);
       mockControl = MockOperationalControlService();
 
       // Ensure getEventsForTrip returns empty list by default
@@ -30,7 +32,7 @@ void main() {
         status:
             TripStatus.interrupted, // Severity 50 from StoppedVehicleDetector
         delaySeconds: 1500, // 25 min -> Severity 40 from DelayDetector
-        scheduledStart: DateTime.now(),
+        scheduledStart: now,
       );
 
       final enrichedTrips = engine.analyze([trip], {}, mockControl);
@@ -51,7 +53,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.interrupted, // Severity 50
         delaySeconds: 5000,
-        scheduledStart: DateTime.now(),
+        scheduledStart: now,
       );
 
       final enrichedTrips = engine.analyze([trip], {}, mockControl);
@@ -65,7 +67,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 0,
-        scheduledStart: DateTime.now(),
+        scheduledStart: now,
       );
 
       final enrichedTrips = engine.analyze([trip], {}, mockControl);
@@ -82,7 +84,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 1200, // Critical delay
-        scheduledStart: DateTime.now(),
+        scheduledStart: now,
       );
 
       final enrichedBad = engine.analyze([badTrip], {}, mockControl).first;
@@ -95,7 +97,7 @@ void main() {
         vehicleId: 'v1',
         status: TripStatus.enRoute,
         delaySeconds: 0, // Delay removed
-        scheduledStart: DateTime.now(),
+        scheduledStart: now,
       );
 
       final enrichedFixed = engine.analyze([fixedTrip], {}, mockControl).first;

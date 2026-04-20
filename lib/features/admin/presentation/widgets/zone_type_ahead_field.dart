@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
-import '../screens/operational_zones_screen.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/_zone_form_dialog.dart';
 
 // ── Filter helper (top-level for testability) ─────────────────
 
@@ -13,8 +13,8 @@ import '../screens/operational_zones_screen.dart';
 ///
 /// Then applies a case-insensitive substring match on [query] (when non-empty).
 /// Preserves the input order — sorting is the caller's responsibility.
-List<OperationalZone> filterZones(
-  List<OperationalZone> zones,
+List<OperationalZoneView> filterZones(
+  List<OperationalZoneView> zones,
   String query,
   String currentContractor,
 ) {
@@ -38,7 +38,7 @@ List<OperationalZone> filterZones(
 // ── Widget ────────────────────────────────────────────────────
 
 /// A type-ahead (autocomplete) field for selecting or Just-in-Time creating an
-/// [OperationalZone].
+/// [OperationalZoneView].
 ///
 /// Displays existing zones as autocomplete suggestions, scoped by
 /// [contractorName] — zones belonging to a different contractor are hidden.
@@ -58,10 +58,10 @@ class ZoneTypeAheadField extends StatefulWidget {
   final IconData prefixIcon;
 
   /// Pre-sorted list from the parent. Contractor zones should appear first.
-  final List<OperationalZone> zones;
+  final List<OperationalZoneView> zones;
 
   /// The currently selected zone (can be null when nothing is selected yet).
-  final OperationalZone? selectedZone;
+  final OperationalZoneView? selectedZone;
 
   /// Contract's contractor name — used to filter visible zones and to
   /// auto-apply as [contractorLabel] on newly-created zones.
@@ -71,11 +71,11 @@ class ZoneTypeAheadField extends StatefulWidget {
   final Future<void> Function() onInvalidateZones;
 
   /// Called when the user selects an existing zone or after zone creation.
-  final ValueChanged<OperationalZone?> onChanged;
+  final ValueChanged<OperationalZoneView?> onChanged;
 
   /// Called after the operator configures a geofence via [showZoneFormDialog]
   /// with the updated zone object.
-  final ValueChanged<OperationalZone>? onGeofenceConfigured;
+  final ValueChanged<OperationalZoneView>? onGeofenceConfigured;
 
   const ZoneTypeAheadField({
     super.key,
@@ -165,14 +165,17 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
   }
 
   Widget _buildAutocomplete() {
-    return Autocomplete<OperationalZone>(
+    return Autocomplete<OperationalZoneView>(
       initialValue: TextEditingValue(text: widget.selectedZone?.name ?? ''),
       optionsBuilder: (textEditingValue) {
-        return filterZones(
-          widget.zones,
-          textEditingValue.text,
-          widget.contractorName,
-        );
+        // When the field text equals the selected zone name, show all available
+        // zones instead of filtering — allows the user to change the selection
+        // without first clearing the field manually.
+        final selectedName = widget.selectedZone?.name ?? '';
+        final query = textEditingValue.text == selectedName
+            ? ''
+            : textEditingValue.text;
+        return filterZones(widget.zones, query, widget.contractorName);
       },
       displayStringForOption: (zone) => zone.name,
       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
@@ -221,7 +224,13 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
             elevation: 4,
             borderRadius: BorderRadius.circular(8),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 280, maxWidth: 480),
+              constraints: BoxConstraints(
+                maxHeight: 280,
+                maxWidth: (MediaQuery.sizeOf(context).width * 0.9).clamp(
+                  240.0,
+                  480.0,
+                ),
+              ),
               child: ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
@@ -241,7 +250,11 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
                           ? VeraProbColors.onTime
                           : VeraProbColors.warning,
                     ),
-                    title: Text(zone.name),
+                    title: Text(
+                      zone.name,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                     trailing: isContractor
                         ? Container(
                             padding: const EdgeInsets.symmetric(

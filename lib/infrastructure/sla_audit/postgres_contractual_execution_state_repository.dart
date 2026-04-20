@@ -1,10 +1,12 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/contractual_execution_state.dart';
-import '../../domain/sla_audit/contractual_execution_state_repository.dart';
-import '../../domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Postgres implementation of [ContractualExecutionStateRepository].
 ///
@@ -16,85 +18,116 @@ import '../../domain/sla_audit/execution_status.dart';
 /// **Audit Trail**: Every relevant transition (status changes, finalized data)
 /// is recorded in `execution_state_transitions`.
 class PostgresContractualExecutionStateRepository
+    with PostgresErrorInterceptor
     implements ContractualExecutionStateRepository {
   final SupabaseClient _client;
+  final IDateTimeProvider _dateTimeProvider;
 
-  PostgresContractualExecutionStateRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+  PostgresContractualExecutionStateRepository(
+    this._client,
+    this._dateTimeProvider,
+  );
 
   @override
   Future<void> save(ContractualExecutionState state) async {
     // 1. Ensure Causal Linkage (SET must exist AND belong to same tenant)
-    final setExists = await _client
-        .from('contractual_service_executions')
-        .select('set_id')
-        .eq('set_id', state.setId)
-        .eq('organization_id', state.organizationId)
-        .maybeSingle();
+    try {
+      final setExists = await _client
+          .from('contractual_service_executions')
+          .select('set_id')
+          .eq('set_id', state.setId)
+          .eq('organization_id', state.organizationId)
+          .maybeSingle();
 
-    if (setExists == null) {
-      throw Exception(
-        'Cannot create execution state: SET ${state.setId} does not exist in plan declarations.',
+      if (setExists == null) {
+        throw ResourceNotFoundException(
+          resourceType: 'execution_state',
+          resourceId: state.setId,
+        );
+      }
+    } on ResourceNotFoundException {
+      rethrow;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'execution_state',
+        resourceId: state.setId,
       );
     }
 
     // 2. Resolve existing state if any
-    final existingData = await _client
-        .from('execution_states')
-        .select()
-        .eq('id', state.id)
-        .maybeSingle();
+    try {
+      final existingData = await _client
+          .from('execution_states')
+          .select()
+          .eq('id', state.id)
+          .maybeSingle();
 
-    if (existingData == null) {
-      // 3a. New Aggregate: Insert Current State and Initial Transition
-      await _client.from('execution_states').insert(_mapToDb(state));
-      await _recordTransition(state, null, 'Initial Creation');
-    } else {
-      // 3b. Existing Aggregate: Update and record transition if needed
-      final previousStatus = _parseStatus(existingData['status']);
-      final hasStatusChanged = previousStatus != state.status;
-
-      // We also consider finalized timestamps or evaluation dates as relevant for audit
-      final hasDataChanged =
-          hasStatusChanged ||
-          existingData['bound_vehicle_id'] != state.boundVehicleId ||
-          existingData['finalized_at_utc'] !=
-              state.finalizedAtUtc?.toIso8601String();
-
-      if (hasDataChanged) {
-        await _client
-            .from('execution_states')
-            .update(_mapToDb(state))
-            .eq('id', state.id);
-
-        await _recordTransition(
-          state,
-          previousStatus,
-          hasStatusChanged ? 'Status Change' : 'Data Update',
-        );
+      if (existingData == null) {
+        // 3a. New Aggregate: Insert Current State and Initial Transition
+        await _client.from('execution_states').insert(_mapToDb(state));
+        await _recordTransition(state, null, 'Initial Creation');
       } else {
-        // Just update evaluation timestamp (non-auditable operational data)
-        await _client
-            .from('execution_states')
-            .update({
-              'last_evaluated_at_utc': state.lastEvaluatedAtUtc
-                  .toIso8601String(),
-            })
-            .eq('id', state.id);
+        // 3b. Existing Aggregate: Update and record transition if needed
+        final previousStatus = _parseStatus(existingData['status']);
+        final hasStatusChanged = previousStatus != state.status;
+
+        // We also consider finalized timestamps or evaluation dates as relevant for audit
+        final hasDataChanged =
+            hasStatusChanged ||
+            existingData['bound_vehicle_id'] != state.boundVehicleId ||
+            existingData['finalized_at_utc'] !=
+                state.finalizedAtUtc?.toIso8601String();
+
+        if (hasDataChanged) {
+          await _client
+              .from('execution_states')
+              .update(_mapToDb(state))
+              .eq('id', state.id);
+
+          await _recordTransition(
+            state,
+            previousStatus,
+            hasStatusChanged ? 'Status Change' : 'Data Update',
+          );
+        } else {
+          // Just update evaluation timestamp (non-auditable operational data)
+          await _client
+              .from('execution_states')
+              .update({
+                'last_evaluated_at_utc': state.lastEvaluatedAtUtc
+                    .toIso8601String(),
+              })
+              .eq('id', state.id);
+        }
       }
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'execution_state',
+        resourceId: state.id,
+      );
     }
   }
 
   @override
   Future<ContractualExecutionState?> findBySetId(String setId) async {
-    final data = await _client
-        .from('execution_states')
-        .select()
-        .eq('set_id', setId)
-        .maybeSingle();
+    try {
+      final data = await _client
+          .from('execution_states')
+          .select()
+          .eq('set_id', setId)
+          .maybeSingle();
 
-    if (data == null) return null;
-    return _mapToEntity(data);
+      if (data == null) return null;
+      return _mapToEntity(data);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'execution_state',
+        resourceId: setId,
+      );
+    }
   }
 
   @override
@@ -103,17 +136,25 @@ class PostgresContractualExecutionStateRepository
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final now = nowUtc.toIso8601String();
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('contract_id', contractId)
-        .eq('status', ExecutionStatus.pending.name)
-        .lte('window_start_utc', now)
-        .gte('window_end_utc', now);
+    try {
+      final now = nowUtc.toIso8601String();
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('contract_id', contractId)
+          .eq('status', ExecutionStatus.pending.name)
+          .lte('window_start_utc', now)
+          .gte('window_end_utc', now);
 
-    return data.map((d) => _mapToEntity(d)).toList();
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'execution_state',
+        resourceId: contractId,
+      );
+    }
   }
 
   @override
@@ -121,16 +162,45 @@ class PostgresContractualExecutionStateRepository
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final now = nowUtc.toIso8601String();
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('status', ExecutionStatus.pending.name)
-        .lte('window_start_utc', now)
-        .gte('window_end_utc', now);
+    try {
+      final now = nowUtc.toIso8601String();
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('status', ExecutionStatus.pending.name)
+          .lte('window_start_utc', now)
+          .gte('window_end_utc', now);
 
-    return data.map((d) => _mapToEntity(d)).toList();
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'execution_state');
+    }
+  }
+
+  @override
+  Future<List<ContractualExecutionState>> findActiveInWindow(
+    DateTime nowUtc, {
+    required String organizationId,
+  }) async {
+    try {
+      final now = nowUtc.toIso8601String();
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId)
+          .filter(
+            'status',
+            'in',
+            '(${ExecutionStatus.pending.name},${ExecutionStatus.noShow.name},${ExecutionStatus.evidenceGap.name})',
+          )
+          .lte('window_start_utc', now)
+          .gte('window_end_utc', now);
+
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'execution_state');
+    }
   }
 
   @override
@@ -138,26 +208,34 @@ class PostgresContractualExecutionStateRepository
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final now = nowUtc.toIso8601String();
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('status', ExecutionStatus.pending.name)
-        .lt('window_end_utc', now);
+    try {
+      final now = nowUtc.toIso8601String();
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('status', ExecutionStatus.pending.name)
+          .lt('window_end_utc', now);
 
-    return data.map((d) => _mapToEntity(d)).toList();
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'execution_state');
+    }
   }
 
   @override
   Future<List<ContractualExecutionState>> findAll({
     required String organizationId,
   }) async {
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId);
-    return data.map((d) => _mapToEntity(d)).toList();
+    try {
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId);
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'execution_state');
+    }
   }
 
   @override
@@ -165,15 +243,23 @@ class PostgresContractualExecutionStateRepository
     String contractId, {
     required String organizationId,
   }) async {
-    final List<dynamic> data = await _client
-        .from('execution_states')
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('contract_id', contractId);
-    return data.map((d) => _mapToEntity(d)).toList();
+    try {
+      final List<dynamic> data = await _client
+          .from('execution_states')
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('contract_id', contractId);
+      return data.map((d) => _mapToEntity(d)).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'execution_state',
+        resourceId: contractId,
+      );
+    }
   }
 
-  // ── Helpers ───────────────────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<void> _recordTransition(
     ContractualExecutionState state,
@@ -182,9 +268,10 @@ class PostgresContractualExecutionStateRepository
   ) async {
     await _client.from('execution_state_transitions').insert({
       'execution_state_id': state.id,
+      'organization_id': state.organizationId,
       'previous_status': previousStatus?.name,
       'new_status': state.status.name,
-      'transitioned_at_utc': DateTime.now().toUtc().toIso8601String(),
+      'transitioned_at_utc': _dateTimeProvider.nowUtc().toIso8601String(),
       'reason': reason,
       'metadata': {
         'last_evaluated_at_utc': state.lastEvaluatedAtUtc.toIso8601String(),
@@ -206,7 +293,7 @@ class PostgresContractualExecutionStateRepository
       'start_radius_meters': state.startRadiusMeters,
       'planned_vehicle_id': state.plannedVehicleId,
       'contractual_value_cents': state.contractualValue.cents,
-      'no_show_penalty_multiplier': state.noShowPenaltyMultiplier,
+      'no_show_penalty_multiplier': state.noShowPenaltyBps,
       'window_start_utc': state.windowStartUtc.toIso8601String(),
       'window_end_utc': state.windowEndUtc.toIso8601String(),
       'status': state.status.name,
@@ -224,32 +311,33 @@ class PostgresContractualExecutionStateRepository
 
   ContractualExecutionState _mapToEntity(Map<String, dynamic> data) {
     return ContractualExecutionState.reconstitute(
-      id: data['id'],
-      organizationId: data['organization_id'],
-      setId: data['set_id'],
-      contractId: data['contract_id'],
+      id: data['id'] as String,
+      organizationId: data['organization_id'] as String,
+      setId: data['set_id'] as String,
+      contractId: data['contract_id'] as String,
       planVersion: data['plan_version'] as int,
       startLatitude: (data['start_latitude'] as num).toDouble(),
       startLongitude: (data['start_longitude'] as num).toDouble(),
       startRadiusMeters: data['start_radius_meters'] as int,
-      plannedVehicleId: data['planned_vehicle_id'],
+      plannedVehicleId: data['planned_vehicle_id'] as String?,
       contractualValue: Money((data['contractual_value_cents'] as num).toInt()),
-      noShowPenaltyMultiplier: (data['no_show_penalty_multiplier'] as num)
-          .toDouble(),
-      windowStartUtc: DateTime.parse(data['window_start_utc']),
-      windowEndUtc: DateTime.parse(data['window_end_utc']),
-      status: _parseStatus(data['status']),
-      createdAtUtc: DateTime.parse(data['created_at_utc']),
-      lastEvaluatedAtUtc: DateTime.parse(data['last_evaluated_at_utc']),
+      noShowPenaltyBps: (data['no_show_penalty_multiplier'] as num).toInt(),
+      windowStartUtc: DateTime.parse(data['window_start_utc'] as String),
+      windowEndUtc: DateTime.parse(data['window_end_utc'] as String),
+      status: _parseStatus(data['status'] as String),
+      createdAtUtc: DateTime.parse(data['created_at_utc'] as String),
+      lastEvaluatedAtUtc: DateTime.parse(
+        data['last_evaluated_at_utc'] as String,
+      ),
       statusLastUpdatedAtUtc: DateTime.parse(
-        data['status_last_updated_at_utc'],
+        data['status_last_updated_at_utc'] as String,
       ),
       finalizedAtUtc: data['finalized_at_utc'] != null
-          ? DateTime.parse(data['finalized_at_utc'])
+          ? DateTime.parse(data['finalized_at_utc'] as String)
           : null,
-      boundVehicleId: data['bound_vehicle_id'],
+      boundVehicleId: data['bound_vehicle_id'] as String?,
       bindingTimestampUtc: data['binding_timestamp_utc'] != null
-          ? DateTime.parse(data['binding_timestamp_utc'])
+          ? DateTime.parse(data['binding_timestamp_utc'] as String)
           : null,
       bindingLatitude: (data['binding_latitude'] as num?)?.toDouble(),
       bindingLongitude: (data['binding_longitude'] as num?)?.toDouble(),

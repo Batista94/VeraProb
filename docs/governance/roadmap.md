@@ -1,89 +1,188 @@
-# VeraProb — Roadmap Estratégico
+# VeraProb — Active Strategic Roadmap
+
+**Revision:** 2026-04-01
+**Current Status:** Phase 10.4 — OCC UX Polish · [NEXT: 10.5 - First Pilot]
+**Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
 
-## Estado do Codebase (referência para novas sessões)
+## Codebase Status
 
-| Aspecto | Estado |
-|---------|--------|
-| Testes | 568 passing · 0 falhas ✅ |
-| Análise estática | 0 erros · 11 infos |
-| Precisão financeira | `Money` (centavos BIGINT) — Enforced ✅ |
-| Sprint 5.11 - 5.13 | **CONCLUÍDAS** — JIT Master Data, RLS, Teto Financeiro. ✅ |
-| Phase 6 & 6.5 | **CONCLUÍDAS** — Admin, RBAC, Operational Resilience. ✅ |
-| Phase 7 & 7.5 | **CONCLUÍDAS** — Audit Exports, Financial Defense. ✅ |
-| Bloco 8.1 - 8.7 | **CONCLUÍDOS** — UX, CI/CD, Env, Obs, Hardening, Performance, Disaster Recovery. ✅ |
-| Banco de dev | Todas as migrations aplicadas — `20260325...` |
-
----
-
-## Fases Pendentes (Próximas Etapas)
-
-### [x] Phase 8 — Operational Hardening ✅
-
-**Objetivo:** Preparar o fluxo sistêmico e a infraestrutura para produção real.
-
-#### [x] 8.2 — CI/CD Pipeline ✅
-- **Artefatos:** `.github/workflows/ci.yml` · `.github/workflows/deploy_staging.yml` · `.github/workflows/deploy_prod.yml`
-- Automação de `flutter analyze`, `flutter test` e deploy para Staging/Prod com gate humano em prod.
-
-#### [x] 8.4 — Observabilidade ✅
-- Integração Sentry (Flutter + Edge Functions) e PostHog.
-- Logging estruturado e alertas de performance/erro.
-
-#### [x] 8.5 — Segurança (Hardening Final) ✅
-- `strict-casts: true` e correção de tipos `dynamic`.
-- Field-level masking para PII e remoção de políticas Public Read remanescentes.
-
-#### [x] 8.6 — Performance & Escala ✅
-- Load testing (1.000 veículos) e benchmark do Evaluation Engine.
-- Revisão de índices e avaliação de read replicas.
-
-#### [x] 8.7 — Disaster Recovery ✅
-- Runbook de restore e testes de backup (Supabase PITR).
-
-#### [x] 8.8 — Auditoria de Integridade de Telemetria (Anti-Spoofing) ✅
-- Detecção de Fake GPS e anomalias cinemáticas. (CONCLUÍDA 2026-03-19)
+| Aspect | Status |
+| :--- | :--- |
+| Tests | 1571 passing · 18 skipped · 0 failures ✅ |
+| Migrations | 77 applied (schema lock v1 + shadow mode v1) ✅ |
+| Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
+| Phase 9.8 | **COMPLETED** — Resilience & Operational Hub ✅ |
+| Phase 10.1 | **COMPLETED** — Schema Lock ✅ |
+| Phase 10.2 | **COMPLETED** — WASM Build Validation ✅ |
+| Phase 10.3 | **COMPLETED** — Shadow Mode ✅ |
 
 ---
 
-### [ ] Phase 9 — Technical Review & Refinement
+## Milestone Gate: READY FOR FIRST TENANT
 
-**Objetivo:** Revisão profunda do código e ajustes finos antes da exposição externa.
+**Status:** EM ANDAMENTO — 8/19 itens de Readiness concluídos.
+Verificar checklists detalhados de readiness e testes manuais em [roadmap_archive.md](roadmap_archive.md#milestone-gate-ready-for-first-tenant).
 
-#### [ ] 9.1 — Code Review Geral
-- Auditoria de possíveis débitos técnicos acumulados nas Fases 6 a 8.
-- Validação de tipagem e null-safety em Edge Functions.
+### Checklist "READY FOR FIRST TENANT"
 
-#### [ ] 9.2 — UX Refactorings
-- Polimento visual baseado nos feedbacks da Phase 8.1.
-- Revisão de fluxos de erro e estados vazios (Empty States).
-
-#### [ ] 9.3 — Business Rule Fine-tuning
-- Ajustes finais no Evaluation Engine para casos de borda identificados no Load Testing.
+- [ ] **Relatório PDF em nível 'Executive Grade'** com Sumário de ROI.
+- [x] **Validação rigorosa de CNPJ** (Máscara + Unicidade) em todo o sistema.
+- [ ] **Função de Reenviar Convite e Arquivamento de Tenants** ativa.
+- [ ] **Importador de contratos via CSV** com validador de dados.
+- [ ] **Importador Universal de CSV** funcional com mapeamento persistente por tenant.
+- [ ] **Relatório PDF em formato de 'Certificado'** com Sumário Executivo.
+- [ ] **Bot de evidências (Telegram)** integrado à Fila Auditora.
+- [ ] **Histórico de Meta-Auditoria** ativo para alteração de regras SLA.
+- [x] **RLS validada** e testada contra vazamento de dados entre tenants.
+- [ ] **Fluxo de convite e ativação de conta** para novos administradores funcional.
+- [x] **Banco de dados preparado com organization_id** em todas as tabelas transacionais.
+- [x] **Tooltips de interface** — `InfoTooltip` global widget criado; campos No-Show e geofence migrados ✅ *(cobertura 100% dos campos complexos pendente de auditoria final)*
+- [x] MFA and Edge Proxy active (Total removal of `service_role`) — Edge Proxy ✅ done (9.6.A.1), MFA ✅ done (9.6.A.2).
+  - *NOTE: Local MFA validation is currently bypassed in Dev mode when server support is absent. Full end-to-end validation with TOTP enrollment MUST be confirmed in Staging/HMG before production release (INV-6).*
+- [x] **Entity Alias Mapping:** Search by Name/CNPJ in `ContractsScreen` and `ContractorManagementScreen` ✅ *(cobertura 100% das telas listadas em 9.8.F — auditoria de telas adicionais pendente)*
+- [ ] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations.
+- [ ] **Reverse Geocoding:** Functional addresses and zone names instead of raw coordinates in 100% of lists.
+- [ ] **Custom RBAC:** Support for basic view isolation between Legal and Financial roles.
+- [ ] **Audit Log:** Registration of critical changes in SLA models for governance.
+- [ ] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
+- [x] **Sidebar Refactor:** Simplified sidebar (<8 items) with centralized Admin Hub.
+- [ ] **Industrial Deep Forms:** Dark theme (Industrial Deep) applied to 100% of form and drawer components.
+- [ ] **SLA Sandbox:** Functional 'Sandbox' system for basic SLA model simulation.
+- [x] **UI Stability:** Refactored SLA modal free of layout bugs and overflow errors.
+- [ ] **Financial Guard:** 'Stop-Loss' logic available in contract and penalty setup.
+- [ ] **Evidence Snapshot:** Operational rules snapshot integrated into the Evidence Ledger for forensic immutability.
+- [ ] ROI Dashboard with Bento Grid and 'Savings BRL' visible.
+- [ ] Terms of Use and Privacy Policy (LGPD) integrated into Onboarding.
+- [ ] **Invite UX:** Professional invite modal with technical URL masking and "Copy to Clipboard" button.
+- [ ] **Self-Service Onboarding:** Tenant creation flow with automated limit configuration.
+- [ ] **Evidence Proof:** Functional "Generate Forensic Evidence" button in each verdict.
+- [ ] **Legal Gate:** System access block pending specific telemetry LGPD acceptance.
+- [ ] **Login Localization:** Login screen 100% in PT-BR and free of technical IDs in the visual preview.
 
 ---
 
-## Fases Concluídas (Histórico Resumido)
+## Phase 10 — CI/CD & Launch Preparation
 
-- **Phase 8.8 — Auditoria de Integridade (Anti-Spoofing)** ✅: Detecção de Fake GPS e anomalias cinemáticas (INV-21).
-- **Phase 8.7 — Disaster Recovery** ✅: Runbook de restore e PITR configurado.
-- **Phase 8.6 — Performance & Escala** ✅: Benchmark de 1.000 VUs, scripts k6 de caos/estresse e otimização de índices.
-- **Phase 8.2 — CI/CD Pipeline** ✅: Workflows GitHub Actions (`ci.yml`, `deploy_staging.yml`, `deploy_prod.yml`) com gate humano em prod.
-- **Phase 8.5 — Segurança (Hardening Final)** ✅: `strict-casts: true`, correção de `dynamic` e PII masking em SQL.
-- **Phase 8.4 — Observabilidade** ✅: Integração Sentry e PostHog configurada para todos os ambientes.
-- **Phase 8.3 — Separação de Ambientes** ✅: Suporte multi-env configurado (`--dart-define` + `.env`).
-- **Phase 8.1 — Systemic UX & Hard Gates** ✅: Invariantes INV-18/19/20 e refatoração visual.
-- **Phase 7.5 — Financial Defense** ✅: Shadow Mode e Blindagem Forense PostgreSQL.
-- **Phase 7 — Evidence & Audit Exports** ✅: Relatórios imutáveis e Portal de Transparência.
-- **Phase 6.5 — Operational Resilience** ✅: Anti-Corruption Edge e Chaos Tolerance.
-- **Phase 6 — Administration** ✅: RBAC, Convites e Workflow de Aprovação.
-- **Phase 5 — B2B Foundation** ✅: JIT Master Data e RLS Tenant Isolation.
+### [x] Phase 10.2 — WASM Build Validation
+
+- **Status:** COMPLETED ✅
+- **Build:** `flutter build web --wasm` succeeded (193s). `main.dart.wasm` (5.5MB) produced.
+- **Dependencies:** All core libs (file_saver, posthog_flutter, drift_flutter, fl_chart, flutter_map) compile cleanly under dart2wasm.
+- **CI/CD:**
+  - `ci.yml`: Added `wasm-build` job (parallel to test). Artifacts stored for 3 days.
+  - `deploy_staging.yml` / `deploy_prod.yml`: Migrated to `--wasm` (timeout 30m).
+- **Optimization Note:** Drift OPFS performs best with COOP/COEP headers. Documentation updated for hosting config.
+- **Performance:** EvaluationEngine (Pure Dart) benefits directly from near-native arithmetic performance.
+
+### [x] Phase 10.3 — Shadow Mode
+
+- **Status:** COMPLETED ✅
+- **Engine:** Parallel `ShadowComparisonService` implemented to validate asynchronous verdicts without blocking the main flow.
+- **Deliverables:**
+  - `shadow_verdicts` table and Persistence (Postgres & In-Memory).
+  - Domain models and repositories for `ShadowVerdict`.
+  - Service for automated comparison between simulation and shadow results.
+- **Validation:**
+  - Comprehensive test suite (1510+ tests total) covering Domain, Application, and Infrastructure layers.
+  - **ShadowComparisonServicePostgresTest** added to verify divergence and inhibited logic against real database.
+  - Test infrastructure consolidated via `PostgresTestConfig` singleton/cache patterns.
+  - SQL Schema migration applied (`20260601000001_shadow_verdicts.sql`).
+- **Technical Results:** Comparison logic successfully identifies discrepancies between Evaluation Engine results and persisted state for forensic audit. 80% Critical Divergence threshold validated under actual stress.
+- **CI/CD Alignment:** Integration suite enforced in PRs with explicit `services: postgres` support.
+
+### [ ] Phase 10.4 — OCC UX Polish (Differential Refinement)
+
+- **Status:** EM ANDAMENTO — WS-1, WS-2, WS-3, WS-5, WS-6 Concluídos ✅
+- **Deliverables:**
+  - [x] **WS-1: Forensic Authority Language & Sealed Verdict Lock** (Verbs forensicized, 🔒 locked state implemented, Pillar C audit trail active).
+  - [x] **WS-2: Predictive SLA Breach Alerts** (Dynamic Risk Buffer + Risk Thermometer visual).
+  - [x] **WS-3: Ingestion Health & Confidence Score** (Signal Integrity monitor + Double confirmation logic).
+  - [ ] **WS-4: Telegram Evidence Bot** (Deno Edge Function + Hot-linking to Verdict Cards).
+  - [x] **WS-5: Telemetry Map-Sync** (Reactive repositioning on click) ✅.
+  - [x] **WS-6: Recurrence & Contractual Context** (Infringement history on cards).
+  - [ ] **WS-7: Operational Macros** (1-Click standard justifications).
+  - [ ] **WS-8: UX Polish Bundle** (Invitations, empty states, sparklines).
+
+- Cognitive load audit · Verdict traceable in ≤1 click · WCAG 2.2 AA.
+- [x] **[UX] Forensic Audit Context:** Enriquecer o card da Fila Auditora com Histórico de Recorrência (ex: '3ª infração deste veículo/motorista no mês') e visualização comparativa direta entre o dado observado e o limite contratual.
+- [x] **[UX] Actionable Verdicts:** Alterar linguagem passiva ('Validar/Rejeitar') para linguagem de autoridade ('Selar Veredito' / 'Recusar Veredito' / 'Solicitar Prova Forense').
+- **[BIZ] Telegram Evidence Bot Integration:** Gateway gratuito para motoristas enviarem fotos/provas preventivas diretamente para o card de auditoria via Telegram API (Custo R$ 0).
+- **[UX] Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz Policial', 'Parada Autorizada') que preenchem justificativa e anexam regras de tolerância automaticamente.
+- **[UX] Ingestion Health Monitor:** Widget de integridade que sinaliza 'Gaps' de sinal ou falhas de hardware antes da geração do relatório final.
+- **[UX] Invite Link UX Masking:** Replace tokenized raw URLs with a professional invite modal featuring "Copy to Clipboard" and "Access Credential" visual.
+- **[BIZ] Contextual Legal Acceptance:** Block first access until Tenant Admin accepts Terms of Use and Privacy Policy (Telemetry-specific).
+- **[UX] Predictive SLA Breach Alerts:** Monitoring interface for imminent risk (ETA vs SLA calculation) to allow manager action before contract violation.
+- [x] **[UX] Evidence Pan/Zoom Sync:** Implement reactive linking between the telemetry list and the map; clicking an event row must automatically reposition and zoom into the exact point on the map ✅.
+- **[UX] Financial Sparklines:** Mini-trend charts (sparklines) in Financial Impact cards for daily volatility visualization.
+- **[UX] Data Integrity Drill-down:** Functional links from 'Incomplete Report' alerts to the telemetry Health Dashboard.
+- **[UX] Empty State Shortcuts:** Replace "No records" placeholders with quick action cards and contextual onboarding guides.
+
+### [ ] Phase 10.5 — First Pilot Tenant Onboarding
+
+- Provision tenant · End-to-end validation · PO sign-off.
+
+### [ ] Phase 10.6 — Professional Service & Compliance Finish
+
+*This phase separates simple SaaS clones from a hardened forensic auditing tool.*
+
+- **[BIZ] Executive-Grade 'Audit Certificate' PDF:** Motor de PDF (Dart pdf package) para gerar dossiês com Sumário de ROI, Selo de Autenticidade e Hash SHA-256 (INV-23) em destaque. Refatoração total do exportador de relatórios com Branding do Tenant (Logo/Cores) e remoção de IDs técnicos.
+- **[BIZ] Evidence Package (One-Click Dossier):** Função de exportação consolidada contendo Telemetria + Provas Fotográficas + Snapshot do Contrato assinado.
+- **[BIZ] Tenant Lifecycle Management:** Funções de 'Reenviar Convite', 'Editar Dados' e 'Arquivar Tenant' (Soft Delete para preservar a Cadeia de Custódia de dados passados).
+- **Automated Billing Provisioning (Stripe/Stax):** Integration/placeholder for billing account provisioning at Org creation.
+- **Support Impersonation Security:** "Grant Support Access" button with mandatory audit log and auto-expiry.
+- **Tenant Heartbeat Dashboard:** SuperAdmin view of "Signal Health" (GPS success rate vs hardware failures).
+- **[BIZ] Webhooks & API-First Integration:** Anticipated from Phase 11. Implement 'Sealed Verdict' Webhooks (JSON) for immediate SAP/Oracle/ERP integration.
+- **[BIZ] Data Lifecycle Management (LGPD):** Automatic retention engine (5 years for evidence, 1 year for raw telemetry) for legal compliance.
+
+### [ ] Phase 10.7 — Operational Intelligence & Decision
+
+*Hardening the product against real-world operational challenges and financial disputes.*
+
+- **[BIZ] Bulk Contract Importer (CSV):** Implementar motor de carga em massa para contratos com etapa de Pre-flight Validation (exibe erros de formatação antes de gravar no banco).
+- **[BIZ] Human Verdict Affirmation:** Add 'Affirm Violation' (Seals Hash) or 'Inhibit Violation' (Mandatory comment) action buttons directly on the audit detail screen.
+- **[BIZ] Progressive Penalty Engine (INV-28):** Support for time-scaled fines that increase based on infringement duration.
+- **[BIZ] Penalty Stop-Loss Cap:** Maximum penalty limit field per event for legal and financial risk protection.
+- **[BIZ] Immutable Rule Snapshot:** Linking the 'exact version' of SLA rules to the verdict at the time of infringement to shield evidence.
+- **[BIZ] SLA Sandbox (ROI Simulator):** Lógica em SQL/Edge Functions para simular 'E se...' (What-if analysis) rodando novos modelos de SLA contra dados históricos para provar economia financeira.
+- **[BIZ] Carrier Performance Ranking:** Dashboard de 'Leaderboard' que classifica transportadores por índice de violações e conformidade contratual.
+- **[BIZ] Ingestion Health Monitor:** Real-time data integrity dashboard to detect telemetry gaps and hardware failures.
+- **[BIZ] Digital Audit Acknowledgement:** Carrier/driver fine acceptance workflow to accelerate billing cycles.
+- **[BIZ] One-Click Evidence Package:** Instant forensic dossier generator (Map + Telemetry + Hash + Contract) in PDF for defense against undue fines.
+- **[BIZ] Partner Billing Reconciliation:** Invoice crossing tool (CSV Upload) against the immutable Ledger for identifying billing discrepancies.
+- **[BIZ] Forensic Dispute Portal:** Limited external interface for carriers/drivers to view evidence snapshots and submit digital counter-proofs.
+- **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance.
 
 ---
 
-## Visão Geral de Execução
+### [ ] Phase 10.8 — High-Stakes Governance & Performance
 
-─────────────────────────────────────────────────────
-[x] Phase 5, 6, 6.5, 7, 7.5, 8.1 - 8.8 COMPLETE ✅
-─────────────────────────────────────────────────────
+*Advanced features for large-scale operations and high-precision auditing.*
+
+- **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows.
+- **[UX] Auditor Productivity Dashboard:** Transform the 'Auditee Queue' into a performance center with metrics for response time, verdict accuracy, and daily throughput.
+
+---
+
+### [ ] Phase 10.9 — Enterprise Governance & Anti-Fraud
+
+*Hardening the platform for multi-national corporations and high-stakes auditing integrity.*
+
+- **[BIZ] Multi-Level Org Hierarchy:** Sub-tenant structure for large corporations (HQ > Branch > Cost Center) with rule inheritance and data isolation.
+- **[BIZ] Immutable Admin Log (Meta-Audit):** Implementar tabela de auditoria de sistema (Meta-Audit) para registrar quem alterou regras de SLA e configurações críticas, blindando o sistema contra fraude interna.
+- **[BIZ] Configuration Audit Log:** Immutable meta-audit of changes to SLA models, contracts, and permissions (Who changed the rule and when?).
+- **[BIZ] Rule-Version Snapshot:** Mecanismo que vincula a 'fotografia' exata da regra de SLA ao veredito no momento da infração, garantindo proteção jurídica retroativa.
+- **[BIZ] Systemic Fraud Detection:** Automatic behavioral alerts for operator deviations (e.g., excessive inhibitions for specific carriers).
+
+---
+
+## Technical Debt & Maintenance
+
+- **[TECH] Batch RPC Schema Sync:** `batch_update_vehicles` e `batch_update_contracts` (migration `20260412000004`) são funções hardcoded. Ao adicionar colunas atualizáveis a `vehicles` ou `contracts`, adicionar a linha `COALESCE` correspondente nas funções. Backlog: substituir por script de geração estática em CI/CD (evita risco de PL/pgSQL dinâmico e conflitos de placeholders `format()` vs `RAISE`).
+
+---
+
+## Phase 11+ — VeraProb Enterprise: Scale & Integrations
+
+API/Webhooks (SAP/Oracle), Passive Capture (OCR/SDK), JIT Signature.

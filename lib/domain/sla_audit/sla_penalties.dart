@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'domain_exception.dart';
 
 /// Value object representing the SLA margin offenders for a shift pattern.
@@ -9,7 +9,7 @@ import 'domain_exception.dart';
 /// Non-financial fields use appropriate primitives.
 ///
 /// **Fields:**
-/// - [noShowPenaltyMultiplier] — multiplier applied to contractual value on no-show (≥ 1.0)
+/// - [noShowPenaltyBps] — multiplier applied to contractual value on no-show in bps (≥ 10000)
 /// - [delayToleranceMinutes] — minutes of lateness before the penalty clock starts (≥ 0)
 /// - [delayPenaltyPerMinute] — financial penalty per minute of delay beyond tolerance
 /// - [downgradePenaltyFlat] — flat financial penalty when a lower vehicle category is deployed
@@ -18,9 +18,8 @@ import 'domain_exception.dart';
 /// - [dwellTimeMinutes] — minimum minutes inside geofence to validate the trip (≥ 0). Default: 3
 /// - [gracePeriodMinutes] — buffer window (minutes) after scheduled start before engine starts checking infractions (≥ 0). Default: 0
 class SLAPenalties extends Equatable {
-  /// Multiplier applied to contractual value on no-show. Must be ≥ 1.0.
-  /// Stored as double because it is a ratio, not a monetary amount.
-  final double noShowPenaltyMultiplier;
+  /// Multiplier applied to contractual value on no-show. In bps (e.g. 15000 = 1.5x).
+  final int noShowPenaltyBps;
 
   /// Grace period before delay penalty starts. Must be ≥ 0.
   final int delayToleranceMinutes;
@@ -60,7 +59,7 @@ class SLAPenalties extends Equatable {
   final Money baseTripValue;
 
   const SLAPenalties._({
-    required this.noShowPenaltyMultiplier,
+    required this.noShowPenaltyBps,
     required this.delayToleranceMinutes,
     required this.delayPenaltyPerMinute,
     required this.downgradePenaltyFlat,
@@ -75,7 +74,7 @@ class SLAPenalties extends Equatable {
   ///
   /// Throws [DomainException] if any invariant is violated.
   factory SLAPenalties.create({
-    required double noShowPenaltyMultiplier,
+    required int noShowPenaltyBps,
     required int delayToleranceMinutes,
     required Money delayPenaltyPerMinute,
     required Money downgradePenaltyFlat,
@@ -85,8 +84,8 @@ class SLAPenalties extends Equatable {
     int gracePeriodMinutes = 0,
     Money baseTripValue = const Money(0),
   }) {
-    if (noShowPenaltyMultiplier < 1.0) {
-      throw const DomainException('noShowPenaltyMultiplier must be >= 1.0');
+    if (noShowPenaltyBps < 10000) {
+      throw const DomainException('noShowPenaltyBps must be >= 10000 (1.0x)');
     }
     if (delayToleranceMinutes < 0) {
       throw const DomainException('delayToleranceMinutes must be >= 0');
@@ -118,7 +117,7 @@ class SLAPenalties extends Equatable {
     }
 
     return SLAPenalties._(
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
       delayToleranceMinutes: delayToleranceMinutes,
       delayPenaltyPerMinute: delayPenaltyPerMinute,
       downgradePenaltyFlat: downgradePenaltyFlat,
@@ -132,7 +131,7 @@ class SLAPenalties extends Equatable {
 
   /// Reconstitutes from persistence without re-validating invariants.
   factory SLAPenalties.reconstitute({
-    required double noShowPenaltyMultiplier,
+    required int noShowPenaltyBps,
     required int delayToleranceMinutes,
     required Money delayPenaltyPerMinute,
     required Money downgradePenaltyFlat,
@@ -143,7 +142,7 @@ class SLAPenalties extends Equatable {
     Money baseTripValue = const Money(0),
   }) {
     return SLAPenalties._(
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
       delayToleranceMinutes: delayToleranceMinutes,
       delayPenaltyPerMinute: delayPenaltyPerMinute,
       downgradePenaltyFlat: downgradePenaltyFlat,
@@ -157,7 +156,7 @@ class SLAPenalties extends Equatable {
 
   /// Serializes to JSON for JSONB storage inside [ShiftPattern] payload.
   Map<String, dynamic> toJson() => {
-    'noShowPenaltyMultiplier': noShowPenaltyMultiplier,
+    'noShowPenaltyBps': noShowPenaltyBps,
     'delayToleranceMinutes': delayToleranceMinutes,
     'delayPenaltyPerMinuteCents': delayPenaltyPerMinute.cents,
     'downgradePenaltyFlatCents': downgradePenaltyFlat.cents,
@@ -172,8 +171,9 @@ class SLAPenalties extends Equatable {
   /// New fields use `?? default` for backward compatibility with existing plans.
   factory SLAPenalties.fromJson(Map<String, dynamic> json) {
     return SLAPenalties._(
-      noShowPenaltyMultiplier: (json['noShowPenaltyMultiplier'] as num)
-          .toDouble(),
+      noShowPenaltyBps:
+          json['noShowPenaltyBps'] as int? ??
+          ((json['noShowPenaltyMultiplier'] as num).toDouble() * 10000).round(),
       delayToleranceMinutes: json['delayToleranceMinutes'] as int,
       delayPenaltyPerMinute: Money(
         (json['delayPenaltyPerMinuteCents'] as num).toInt(),
@@ -193,7 +193,7 @@ class SLAPenalties extends Equatable {
 
   @override
   List<Object?> get props => [
-    noShowPenaltyMultiplier,
+    noShowPenaltyBps,
     delayToleranceMinutes,
     delayPenaltyPerMinute,
     downgradePenaltyFlat,

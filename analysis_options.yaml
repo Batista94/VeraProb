@@ -56,5 +56,25 @@ linter:
     # when a new enum value is added later.
     exhaustive_cases: true
 
+    # ── SRP & Architecture Enforcement (feeds Pillar B1 + C4 of pr_scanner.sh) ──
+    #
+    # These rules offload basic SRP and presentation-layer hygiene to the static
+    # analyzer, so the LLM neural review (Step 1) can focus on deeper reasoning.
+
+    # NOTE: "methods that return Widget" (SRP violation) cannot be enforced by the
+    # static analyzer — it is caught by the LLM neural review (Step 1, Lens 1).
+
+    # Prevents logic in StatefulWidget.createState() — enforces SRP boundary
+    # between Widget construction and business logic.
+    no_logic_in_create_state: true
+
+    # Catches BuildContext usage across async gaps — prevents silent UI bugs
+    # caused by context being disposed between await calls.
+    use_build_context_synchronously: true
+
+    # Flags unnecessary Container wrappers that obscure layer intent and add
+    # visual noise without semantic value.
+    avoid_unnecessary_containers: true
+
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

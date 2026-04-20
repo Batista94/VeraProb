@@ -1,11 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widgets/charts_section.dart';
 import 'widgets/contractual_risk_radar.dart';
-import '../../../core/config/supabase_client.dart';
-import '../../../core/utils/data_seeder.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../state/providers/auth_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/admin_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -14,10 +14,12 @@ class DashboardScreen extends ConsumerWidget {
     final organizationId = ref.read(currentOrganizationIdProvider);
     if (organizationId == null) return;
     try {
-      final seeder = DataSeeder(supabase, organizationId: organizationId);
-      await seeder.seedDrivers();
-      await seeder.seedRoutes();
-      await seeder.seedHistoricalData();
+      final repository = ref.read(dataSeedingRepositoryProvider);
+      await repository.seedDrivers(organizationId);
+      await repository.seedRoutes(organizationId);
+      await repository.seedHistoricalData(organizationId);
+      await repository.seedActiveSanctions(organizationId);
+      await repository.seedPhase9(organizationId);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -109,17 +111,18 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                ElevatedButton.icon(
-                  onPressed: () => _seedData(context, ref),
-                  icon: const Icon(Icons.bolt_rounded, size: 18),
-                  label: const Text('SIMULAR OPERAÇÃO'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber.shade900,
-                    foregroundColor: Colors.white,
-                    elevation: 4,
-                    shadowColor: Colors.amber.shade900.withValues(alpha: 0.3),
+                if (kDebugMode)
+                  ElevatedButton.icon(
+                    onPressed: () => _seedData(context, ref),
+                    icon: const Icon(Icons.bolt_rounded, size: 18),
+                    label: const Text('SIMULAR OPERAÇÃO'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade900,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shadowColor: Colors.amber.shade900.withValues(alpha: 0.3),
+                    ),
                   ),
-                ),
               ],
             );
           },

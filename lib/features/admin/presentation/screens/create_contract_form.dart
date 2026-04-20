@@ -4,13 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/sla_audit/create_contract_command.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
-import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import '../widgets/contractor_type_ahead_field.dart';
+import 'package:veraprob/features/admin/presentation/widgets/contractor_type_ahead_field.dart';
 
 class CreateContractForm extends ConsumerStatefulWidget {
   const CreateContractForm({super.key});
@@ -33,7 +32,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
   final _descriptionController = TextEditingController();
   final _financialCeilingController = TextEditingController();
 
-  Contractor? _selectedContractor;
+  ContractorView? _selectedContractor;
   DateTime? _validFrom;
   DateTime? _validUntil;
   bool _isSubmitting = false;
@@ -63,8 +62,8 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
   Future<void> _pickDate({required bool isStart}) async {
     final initial = isStart
-        ? (_validFrom ?? DateTime.now())
-        : (_validUntil ?? DateTime.now());
+        ? (_validFrom ?? DateTime.now().toUtc())
+        : (_validUntil ?? DateTime.now().toUtc());
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -136,12 +135,15 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
     try {
       final handler = ref.read(createContractHandlerProvider);
+      final sessionId = ref.read(currentSessionIdProvider);
       final rawCeiling = _financialCeilingController.text.trim();
-      
-      final cleanValue = rawCeiling.replaceAll('.', '').replaceAll(',', '');
-      final financialCeilingCents = cleanValue.isEmpty ? null : int.tryParse(cleanValue);
 
-      final contract = await handler.handle(
+      final cleanValue = rawCeiling.replaceAll('.', '').replaceAll(',', '');
+      final financialCeilingCents = cleanValue.isEmpty
+          ? null
+          : int.tryParse(cleanValue);
+
+      final result = await handler.submitForm(
         CreateContractCommand(
           organizationId: organizationId,
           name: _nameController.text.trim(),
@@ -152,12 +154,15 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
           validFromUtc: _validFrom!,
           validUntilUtc: _validUntil!,
           financialCeilingCents: financialCeilingCents,
+          sessionId: sessionId ?? '',
         ),
       );
 
-      if (mounted) Navigator.of(context).pop(contract.id);
-    } on DomainException catch (e) {
-      setState(() => _errorMessage = e.message);
+      if (result.isSuccess) {
+        if (mounted) Navigator.of(context).pop(result.contractId);
+      } else {
+        setState(() => _errorMessage = result.errorMessage);
+      }
     } catch (e) {
       setState(() => _errorMessage = 'Erro inesperado: $e');
     } finally {
@@ -309,9 +314,11 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
                   Consumer(
                     builder: (context, ref, child) {
-                      final contractorsAsync = ref.watch(contractorListProvider);
+                      final contractorsAsync = ref.watch(
+                        contractorListProvider,
+                      );
                       final contractors = contractorsAsync.valueOrNull ?? [];
-                      
+
                       return ContractorTypeAheadField(
                         label: 'Entidade Contratante (Auditor) *',
                         prefixIcon: Icons.handshake_outlined,
@@ -473,10 +480,19 @@ class _DatePickerField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           floatingLabelBehavior: FloatingLabelBehavior.always,
-          labelStyle: VeraProbTypography.bodyMedium.copyWith(color: VeraProbColors.textSecondary),
+          labelStyle: VeraProbTypography.bodyMedium.copyWith(
+            color: VeraProbColors.textSecondary,
+          ),
           border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          suffixIcon: const Icon(Icons.calendar_month_rounded, color: VeraProbColors.primary, size: 20),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          suffixIcon: const Icon(
+            Icons.calendar_month_rounded,
+            color: VeraProbColors.primary,
+            size: 20,
+          ),
         ),
         isEmpty: false,
         child: Text(
@@ -484,7 +500,9 @@ class _DatePickerField extends StatelessWidget {
               ? '${value!.day.toString().padLeft(2, '0')}/${value!.month.toString().padLeft(2, '0')}/${value!.year}'
               : 'Selecionar $label...',
           style: VeraProbTypography.bodyMedium.copyWith(
-            color: value != null ? VeraProbColors.textPrimary : VeraProbColors.textSecondary,
+            color: value != null
+                ? VeraProbColors.textPrimary
+                : VeraProbColors.textSecondary,
             fontWeight: value != null ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
@@ -496,15 +514,20 @@ class _DatePickerField extends StatelessWidget {
 class CurrencyInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (newValue.text.isEmpty) return newValue;
 
-    double value = double.parse(newValue.text.replaceAll(RegExp(r'[^0-9]'), ''));
+    double value = double.parse(
+      newValue.text.replaceAll(RegExp(r'[^0-9]'), ''),
+    );
     final formatter = NumberFormat.currency(locale: 'pt_BR', symbol: '');
     String newText = formatter.format(value / 100).trim();
 
     return newValue.copyWith(
-        text: newText,
-        selection: TextSelection.collapsed(offset: newText.length));
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
   }
 }

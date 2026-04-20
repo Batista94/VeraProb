@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/application/projections/providers/forensic_ledger_provider.dart';
+import 'package:veraprob/state/providers/forensic_ledger_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Activity Console Strip (SOC/NOC Style)

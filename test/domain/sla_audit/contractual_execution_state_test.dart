@@ -18,11 +18,12 @@ void main() {
     DateTime? windowStart,
     DateTime? windowEnd,
     Money contractualValue = const Money(15000),
-    double noShowPenaltyMultiplier = 1.5,
+    int noShowPenaltyBps = 15000,
   }) {
     final start = windowStart ?? DateTime.utc(2026, 3, 1, 6, 0);
     final end = windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0);
-    return ContractualExecutionState.create(organizationId: 'org-1', 
+    return ContractualExecutionState.create(
+      organizationId: 'org-1',
       setId: setId,
       contractId: contractId,
       planVersion: 1,
@@ -31,7 +32,7 @@ void main() {
       startRadiusMeters: startRadius,
       plannedVehicleId: plannedVehicleId,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
       windowStartUtc: start,
       windowEndUtc: end,
     );
@@ -58,15 +59,16 @@ void main() {
       final t = DateTime.utc(2026, 3, 1, 6, 0);
 
       expect(
-        () => ContractualExecutionState.create(organizationId: 'org-1', 
+        () => ContractualExecutionState.create(
+          organizationId: 'org-1',
           setId: 'set-1',
           contractId: 'c-1',
           planVersion: 1,
           startLatitude: -23.55,
           startLongitude: -46.63,
           startRadiusMeters: 100,
-          contractualValue: Money.fromDouble(100.0),
-          noShowPenaltyMultiplier: 1.0,
+          contractualValue: const Money(10000),
+          noShowPenaltyBps: 10000,
           windowStartUtc: t,
           windowEndUtc: t,
         ),
@@ -74,15 +76,16 @@ void main() {
       );
 
       expect(
-        () => ContractualExecutionState.create(organizationId: 'org-1',
+        () => ContractualExecutionState.create(
+          organizationId: 'org-1',
           setId: 'set-1',
           contractId: 'c-1',
           planVersion: 1,
           startLatitude: -23.55,
           startLongitude: -46.63,
           startRadiusMeters: 100,
-          contractualValue: Money.fromDouble(100.0),
-          noShowPenaltyMultiplier: 1.0,
+          contractualValue: const Money(10000),
+          noShowPenaltyBps: 10000,
           windowStartUtc: t,
           windowEndUtc: t.subtract(const Duration(minutes: 1)),
         ),
@@ -220,20 +223,24 @@ void main() {
       );
     });
 
-    test('no transitions allowed after finalization (noShow)', () {
-      final state = makeState();
-      state.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
+    test(
+      'bindExecution allowed after finalization (noShow) for late arrival re-evaluation (INV-12)',
+      () {
+        final state = makeState();
+        state.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
 
-      expect(
-        () => state.bindExecution(
+        // Should not throw, but successfully update status to executed
+        state.bindExecution(
           vehicleId: 'v-1',
           latitude: -23.55,
           longitude: -46.63,
           timestampUtc: DateTime.utc(2026, 3, 1, 7, 5),
-        ),
-        throwsA(isA<DomainException>()),
-      );
-    });
+        );
+
+        expect(state.status, ExecutionStatus.executed);
+        expect(state.boundVehicleId, 'v-1');
+      },
+    );
 
     test('updateEvaluationTimestamp updates without state change', () {
       final state = makeState();

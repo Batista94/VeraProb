@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/authority/operational_command_bus.dart';
-import 'package:veraprob/domain/authority/commands/operational_command.dart';
+import 'package:veraprob/application/authority/operational_command_bus.dart'
+    show OperationalCommand, UnauthorizedActionException;
 import 'package:veraprob/state/providers/authority_providers.dart';
 
 /// Centralized utility to dispatch operational commands from the UI.

@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-import '../../../domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
 import 'contractual_financial_trend_point.dart';
 import 'contractual_financial_trend_query_service.dart';
 
@@ -42,13 +42,13 @@ class ContractualFinancialTrendQueryServiceInMemory
       return ContractualFinancialTrendPoint(
         dateUtc: snapshot.operationalDateUtc,
         formattedDate: formattedDate,
-        baseRevenueUsedForCalculation: snapshot.totalContractedRevenue,
-        totalContractedRevenue: snapshot.totalContractedRevenue,
-        protectedRevenue: snapshot.protectedRevenue,
-        revenueAtRisk: snapshot.revenueAtRisk,
-        lostRevenue: snapshot.lostRevenue,
-        riskPercentage: snapshot.riskPercentage,
-        lossPercentage: snapshot.lossPercentage,
+        baseRevenueUsedForCalculation: snapshot.totalContractedRevenue.cents,
+        totalContractedRevenue: snapshot.totalContractedRevenue.cents,
+        protectedRevenue: snapshot.protectedRevenue.cents,
+        revenueAtRisk: snapshot.revenueAtRisk.cents,
+        lostRevenue: snapshot.lostRevenue.cents,
+        riskPercentageBps: snapshot.riskPercentageBps,
+        lossPercentageBps: snapshot.lossPercentageBps,
       );
     }).toList();
   }

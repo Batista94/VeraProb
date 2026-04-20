@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/admin_providers.dart';
-import '../../../../application/admin/accept_invitation_command.dart';
-import '../lock_screen.dart';
+import 'package:web/web.dart' as web;
+
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/admin_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/application/admin/accept_invitation_command.dart';
+import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 
 /// Public screen for accepting a pending invitation.
 ///
@@ -63,14 +66,9 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
       if (invitation == null) {
         setState(() => _tokenValid = false);
       } else {
-        final roleLabel = switch (invitation.role.name) {
-          'admin' => 'Administrador',
-          'operator' => 'Operador',
-          _ => 'Auditor',
-        };
         setState(() {
           _tokenValid = true;
-          _invitedRole = roleLabel;
+          _invitedRole = invitation.role.label;
           _emailController.text = invitation.email;
         });
       }
@@ -87,23 +85,21 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
     });
 
     try {
-      final supabase = Supabase.instance.client;
+      final authRepo = ref.read(authRepositoryProvider);
 
       // Sign in (existing user) or sign up (new user)
       String userId;
       try {
-        final res = await supabase.auth.signInWithPassword(
+        userId = await authRepo.signInWithPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-        userId = res.user!.id;
-      } on AuthException {
+      } catch (_) {
         // If sign-in fails, attempt sign-up (new user created by invitation)
-        final res = await supabase.auth.signUp(
+        userId = await authRepo.signUpWithPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-        userId = res.user!.id;
       }
 
       // Accept the invitation — provisions user_roles atomically
@@ -111,13 +107,21 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
           .read(acceptInvitationHandlerProvider)
           .handle(AcceptInvitationCommand(token: widget.token, userId: userId));
 
+      // Refresh the session so the JWT hook re-runs with the now-populated
+      // user_roles row — this injects organization_id + role into the token.
+      await authRepo.refreshSession();
+
       if (!mounted) return;
-      // Navigate to lock screen — onAuthStateChange will redirect to AdminHome
-      unawaited(
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AdminLockScreen()),
-        ),
-      );
+      // Force clean URL redirect via browser API to clear '?token=...'
+      if (kIsWeb) {
+        web.window.location.replace('/');
+      } else {
+        unawaited(
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -233,10 +237,7 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
             const SizedBox(height: 12),
             Text(
               _error!,
-              style: const TextStyle(
-                color: VeraProbColors.error,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: VeraProbColors.error, fontSize: 13),
               textAlign: TextAlign.center,
             ),
           ],

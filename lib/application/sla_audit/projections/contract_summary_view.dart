@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../domain/sla_audit/contract_status.dart';
+import 'contract_status_view.dart';
 
 /// Read model: individual [Contract] row for listing screens.
 ///
@@ -15,7 +15,7 @@ class ContractSummaryView extends Equatable {
   final String id;
   final String name;
   final String contractorName;
-  final ContractStatus status;
+  final ContractStatusView status;
   final DateTime validFromUtc;
   final DateTime validUntilUtc;
   final DateTime createdAtUtc;
@@ -30,13 +30,22 @@ class ContractSummaryView extends Equatable {
   /// Number of SETs currently in [pending] status.
   final int totalSetsInProgress;
 
-  /// SLA health percentage: `(executed / total) * 100`.
-  /// Returns 0.0 if no SETs exist.
-  final double slaHealthPercentage;
+  /// SLA health in Basis Points: `(executed / total) * 10,000`.
+  /// Returns 0 if no SETs exist.
+  final int slaHealthBps;
 
   /// Maximum cumulative penalty cap for this contract (INV-2: cents).
   /// Required for Step 4 Relative Risk calculation.
   final int? financialCeilingCents;
+
+  // ── Forensic sealing (INV-34) ─────────────────────────────
+  /// SHA-256 of the previous DB row state. 'GENESIS' on first insert.
+  /// Read-only — DB-computed. Null for pre-migration rows.
+  final String? previousHash;
+
+  /// SHA-256(id|version|status|organization_id|previous_hash) in hex.
+  /// Read-only — DB-computed. Null for pre-migration rows.
+  final String? currentHash;
 
   const ContractSummaryView({
     required this.id,
@@ -50,8 +59,10 @@ class ContractSummaryView extends Equatable {
     required this.planCount,
     required this.activePlanVersion,
     required this.totalSetsInProgress,
-    required this.slaHealthPercentage,
+    required this.slaHealthBps,
     this.financialCeilingCents,
+    this.previousHash,
+    this.currentHash,
   });
 
   @override
@@ -67,7 +78,46 @@ class ContractSummaryView extends Equatable {
     planCount,
     activePlanVersion,
     totalSetsInProgress,
-    slaHealthPercentage,
+    slaHealthBps,
     financialCeilingCents,
+    previousHash,
+    currentHash,
   ];
+
+  ContractSummaryView copyWith({
+    String? id,
+    String? name,
+    String? contractorName,
+    ContractStatusView? status,
+    DateTime? validFromUtc,
+    DateTime? validUntilUtc,
+    DateTime? createdAtUtc,
+    DateTime? activatedAtUtc,
+    int? planCount,
+    int? activePlanVersion,
+    int? totalSetsInProgress,
+    int? slaHealthBps,
+    int? financialCeilingCents,
+    String? previousHash,
+    String? currentHash,
+  }) {
+    return ContractSummaryView(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      contractorName: contractorName ?? this.contractorName,
+      status: status ?? this.status,
+      validFromUtc: validFromUtc ?? this.validFromUtc,
+      validUntilUtc: validUntilUtc ?? this.validUntilUtc,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      activatedAtUtc: activatedAtUtc ?? this.activatedAtUtc,
+      planCount: planCount ?? this.planCount,
+      activePlanVersion: activePlanVersion ?? this.activePlanVersion,
+      totalSetsInProgress: totalSetsInProgress ?? this.totalSetsInProgress,
+      slaHealthBps: slaHealthBps ?? this.slaHealthBps,
+      financialCeilingCents:
+          financialCeilingCents ?? this.financialCeilingCents,
+      previousHash: previousHash ?? this.previousHash,
+      currentHash: currentHash ?? this.currentHash,
+    );
+  }
 }

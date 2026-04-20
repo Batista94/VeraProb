@@ -1,28 +1,38 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/config/supabase_client.dart';
-import '../../domain/sla_audit/contractor.dart';
-import '../../domain/sla_audit/contractor_repository.dart';
-import '../../infrastructure/sla_audit/postgres_contractor_repository.dart';
-import '../../application/sla_audit/save_contractor_handler.dart';
-import '../../application/sla_audit/delete_contractor_handler.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
+import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_contractor_repository.dart';
+import 'package:veraprob/application/sla_audit/save_contractor_handler.dart';
+import 'package:veraprob/application/sla_audit/delete_contractor_handler.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'auth_providers.dart';
+import 'contract_providers.dart';
+import 'shared_providers.dart';
 
 /// Provider for the contractor repository implementation.
+/// INV-30: Client injected via supabaseClientProvider.
 final contractorRepositoryProvider = Provider<ContractorRepository>((ref) {
-  return PostgresContractorRepository(supabase);
+  return PostgresContractorRepository(ref.watch(supabaseClientProvider));
 });
 
 /// Future provider for the list of contractors in the current organization.
-final contractorListProvider = FutureProvider<List<Contractor>>((ref) async {
+final contractorListProvider = FutureProvider<List<ContractorView>>((
+  ref,
+) async {
   final orgId = ref.watch(currentOrganizationIdProvider);
   if (orgId == null) return [];
-  return ref.watch(contractorRepositoryProvider).findByOrganization(orgId);
+  final contractors = await ref
+      .watch(contractorRepositoryProvider)
+      .findByOrganization(orgId);
+  return contractors.map(ContractorView.fromDomain).toList();
 });
 
 /// Provider for the save contractor handler.
 final saveContractorHandlerProvider = Provider<SaveContractorHandler>((ref) {
   return SaveContractorHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(contractorRepositoryProvider),
+    clock: ref.watch(dateTimeProviderProvider),
   );
 });
 
@@ -31,6 +41,7 @@ final deleteContractorHandlerProvider = Provider<DeleteContractorHandler>((
   ref,
 ) {
   return DeleteContractorHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(contractorRepositoryProvider),
   );
 });

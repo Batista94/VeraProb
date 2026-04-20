@@ -4,16 +4,17 @@ import 'package:crypto/crypto.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 
-import '../../domain/sla_audit/contractual_service_execution.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/sla_audit/operational_alert.dart';
-import '../../domain/sla_audit/operational_alert_repository.dart';
-import '../../domain/sla_audit/operational_zone_repository.dart';
-import '../../domain/sla_audit/plan_declaration.dart';
-import '../../domain/sla_audit/plan_declaration_repository.dart';
-import '../../domain/sla_audit/shift_pattern.dart';
-import '../../domain/sla_audit/week_cycle.dart';
-import '../../domain/shared/money.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
+import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
+import 'package:veraprob/domain/sla_audit/week_cycle.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 /// Application service responsible for projecting [ContractualServiceExecution]
 /// instances from [ShiftPattern] recurrence rules.
@@ -23,7 +24,7 @@ import '../../domain/shared/money.dart';
 /// evaluates those SETs against telemetry, as before.
 ///
 /// **Projection guarantees:**
-/// - Deterministic: same [ShiftPattern] + same [operationalDate] → same [setId].
+/// - Deterministic: same [ShiftPattern] + same [operationalDate] â†’ same [setId].
 /// - Idempotent: the DB unique constraint
 ///   `(plan_declaration_id, shift_pattern_index, operational_date)` prevents
 ///   duplicate inserts. This service uses `upsert` semantics at the repo level.
@@ -38,6 +39,7 @@ class ShiftProjectionService {
   final PlanDeclarationRepository _planRepo;
   final OperationalZoneRepository _zoneRepo;
   final OperationalAlertRepository _alertRepo;
+  final IDateTimeProvider _dateTimeProvider;
 
   /// Default projection window in days (B1 decision: 30 days).
   static const int defaultProjectionDays = 30;
@@ -46,11 +48,13 @@ class ShiftProjectionService {
     required PlanDeclarationRepository planRepo,
     required OperationalZoneRepository zoneRepo,
     required OperationalAlertRepository alertRepo,
+    required IDateTimeProvider dateTimeProvider,
   }) : _planRepo = planRepo,
        _zoneRepo = zoneRepo,
-       _alertRepo = alertRepo;
+       _alertRepo = alertRepo,
+       _dateTimeProvider = dateTimeProvider;
 
-  // ── Public API ────────────────────────────────────────────
+  // â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Projects SETs for [plan] from [from] for [days] days.
   ///
@@ -85,7 +89,7 @@ class ShiftProjectionService {
         if (pattern.weekCycle != WeekCycle.everyWeek) {
           final anchor = plan.cycleAnchorDateUtc;
           if (anchor == null) {
-            continue; // guard — should not happen after validation
+            continue; // guard â€” should not happen after validation
           }
           final daysDiff = dateOnly.difference(anchor).inDays;
           final weekIndex = ((daysDiff ~/ 7) % 4 + 4) % 4;
@@ -108,7 +112,7 @@ class ShiftProjectionService {
   /// Ensures all active shift-based plans for [organizationId] have SETs
   /// projected for the next [days] days.
   ///
-  /// Called on operator login (boot check — B1 decision).
+  /// Called on operator login (boot check â€” B1 decision).
   /// Silently skips dates that already have projected SETs (idempotent).
   /// For past dates with missing SETs, calls [detectAndAlertGaps].
   ///
@@ -123,7 +127,7 @@ class ShiftProjectionService {
     final plans = await _planRepo.findByOrganization(organizationId);
     final shiftPlans = plans.where((p) => p.isShiftBased);
 
-    final now = DateTime.now().toUtc();
+    final now = _dateTimeProvider.nowUtc();
 
     for (final plan in shiftPlans) {
       // Project future days
@@ -143,7 +147,7 @@ class ShiftProjectionService {
   /// pattern schedule) but have none recorded, and raises PROJECTION_GAP
   /// CRITICAL alerts for each missing day.
   ///
-  /// **B4 decision:** gaps are permanent — no retroactive projection.
+  /// **B4 decision:** gaps are permanent â€” no retroactive projection.
   Future<void> detectAndAlertGaps(
     PlanDeclaration plan, {
     required DateTime asOf,
@@ -177,7 +181,7 @@ class ShiftProjectionService {
             contractId: plan.contractId,
             alertType: 'PROJECTION_GAP',
             severity: 'CRITICAL',
-            triggeredAtUtc: DateTime.now().toUtc(),
+            triggeredAtUtc: _dateTimeProvider.nowUtc(),
             context: {
               'operationalDate': dateLabel,
               'planDeclarationId': plan.id,
@@ -193,7 +197,7 @@ class ShiftProjectionService {
     }
   }
 
-  // ── Private helpers ───────────────────────────────────────
+  // â”€â”€ Private helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<ContractualServiceExecution?> _projectOneSet({
     required PlanDeclaration plan,
@@ -277,9 +281,9 @@ class ShiftProjectionService {
       endLatitude: destZone.geofence!.latitude,
       endLongitude: destZone.geofence!.longitude,
       endRadiusMeters: destZone.geofence!.radiusMeters,
-      // Financial — provided by caller from contract rule snapshot
+      // Financial â€” provided by caller from contract rule snapshot
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: pattern.penalties.noShowPenaltyMultiplier,
+      noShowPenaltyBps: pattern.penalties.noShowPenaltyBps,
       delayToleranceMinutes: pattern.penalties.delayToleranceMinutes,
       delayPenaltyPerMinute: pattern.penalties.delayPenaltyPerMinute,
       downgradePenaltyFlat: pattern.penalties.downgradePenaltyFlat,

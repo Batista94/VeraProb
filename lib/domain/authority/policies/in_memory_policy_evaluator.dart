@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
 
-import '../core/authority_types.dart';
-import '../decision/authorization_decision.dart';
+import 'package:veraprob/domain/authority/core/authority_types.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'authority_policy_evaluator.dart';
 
 /// In-Memory Stub for Phase 3 conceptual validation.
@@ -17,6 +17,7 @@ class InMemoryPolicyEvaluator implements AuthorityPolicyEvaluator {
     required OperationalActionType actionType,
     required AuthorizationContext context,
     required TargetRef targetRef,
+    required DateTime nowUtc,
   }) async {
     // Very dummy Mock Policy for demonstration purposes
     DecisionResult result = DecisionResult.approved;
@@ -39,7 +40,7 @@ class InMemoryPolicyEvaluator implements AuthorityPolicyEvaluator {
       policyVersion: 'mock_v1_0.0',
       result: result,
       reason: reason,
-      occurredAt: DateTime.now().toUtc(),
+      occurredAt: nowUtc,
       contextSnapshot: context.toJson(),
     );
   }

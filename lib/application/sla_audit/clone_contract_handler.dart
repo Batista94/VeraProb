@@ -1,7 +1,9 @@
-import '../../domain/sla_audit/contract.dart';
-import '../../domain/sla_audit/contract_repository.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/domain/sla_audit/contract.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'clone_contract_command.dart';
 import 'sla_ledger_mapper.dart';
 
@@ -12,20 +14,26 @@ import 'sla_ledger_mapper.dart';
 /// them separately via the UI).
 ///
 /// **Invariants enforced:**
-/// - Source contract must exist within [organizationId] — cross-tenant
+/// - Source contract must exist within [organizationId] â€” cross-tenant
 ///   cloning is rejected with [DomainException].
 /// - [organizationId] comes from the JWT, never from the source record.
 /// - The clone receives a new UUID and a new [ContractCreatedEvent].
 /// - [clonedFromContractId] is stored as an immutable audit field.
 class CloneContractHandler {
+  final TenantValidationService _tenantValidator;
   final ContractRepository _contractRepository;
   final SlaAuditLedgerRepository _ledger;
+  final IDateTimeProvider _clock;
 
   CloneContractHandler({
+    required TenantValidationService tenantValidator,
     required ContractRepository contractRepository,
     required SlaAuditLedgerRepository ledger,
-  }) : _contractRepository = contractRepository,
-       _ledger = ledger;
+    required IDateTimeProvider clock,
+  }) : _tenantValidator = tenantValidator,
+       _contractRepository = contractRepository,
+       _ledger = ledger,
+       _clock = clock;
 
   /// Returns the newly created [Contract] draft.
   ///
@@ -36,7 +44,13 @@ class CloneContractHandler {
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
   }) async {
-    // 1. Verify source belongs to the same org (tenant isolation)
+    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. Verify source belongs to the same org (tenant isolation)
     final source = await _contractRepository.findById(
       command.sourceContractId,
       organizationId: command.organizationId,
@@ -56,6 +70,7 @@ class CloneContractHandler {
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
       clonedFromContractId: command.sourceContractId,
+      nowUtc: _clock.nowUtc(),
     );
 
     // 3. Persist

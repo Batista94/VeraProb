@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../shared/providers.dart';
-import '../../../domain/entities/transit_route.dart';
+import 'package:veraprob/features/shared/providers.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 final routesListProvider = FutureProvider<List<TransitRoute>>((ref) {
   final repository = ref.watch(transitRouteRepositoryProvider);
@@ -11,13 +11,15 @@ final routesSearchQueryProvider = StateProvider<String>((ref) => '');
 
 final filteredRoutesProvider = Provider<AsyncValue<List<TransitRoute>>>((ref) {
   final routesAsync = ref.watch(routesListProvider);
-  final query = ref.watch(routesSearchQueryProvider).toLowerCase();
+  final searchTerm = ref.watch(routesSearchQueryProvider).toLowerCase();
 
   return routesAsync.whenData((routes) {
-    if (query.isEmpty) return routes;
+    if (searchTerm.isEmpty) {
+      return routes;
+    }
     return routes.where((r) {
-      return r.shortName.toLowerCase().contains(query) ||
-          r.longName.toLowerCase().contains(query);
+      return r.shortName.toLowerCase().contains(searchTerm) ||
+          r.longName.toLowerCase().contains(searchTerm);
     }).toList();
   });
 });

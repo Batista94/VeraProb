@@ -11,6 +11,8 @@ abstract class ContractApprovalCommandService {
   ///   2. Inserts a [ContractReviewToken] row with the given [token]
   ///
   /// [token] and [tokenId] are generated in Dart (INV-7: Deterministic Replay).
+  /// [expectedVersion] enables optimistic locking (INV-32) — if the contract
+  /// was modified by another user between load and submit, the RPC fails.
   /// Throws if the contract is not found in draft status, or if authorization fails.
   Future<void> submitForApproval({
     required String contractId,
@@ -18,6 +20,7 @@ abstract class ContractApprovalCommandService {
     required String tokenId,
     required String token,
     required DateTime expiresAtUtc,
+    int? expectedVersion,
   });
 
   /// Atomically:

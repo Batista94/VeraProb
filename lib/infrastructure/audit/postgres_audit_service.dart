@@ -1,13 +1,16 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../application/audit/audit_service.dart';
-import '../../domain/entities/audit_log.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
+import 'package:veraprob/application/audit/audit_service.dart';
+import 'package:veraprob/domain/entities/audit_log.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// Postgres implementation of the [AuditService].
 /// Operates strictly as an append-only persistence adapter.
 class PostgresAuditService implements AuditService {
   final SupabaseClient _client;
+  final IDateTimeProvider _dateTimeProvider;
 
-  PostgresAuditService(this._client);
+  PostgresAuditService(this._client, this._dateTimeProvider);
 
   @override
   Future<void> logAction({
@@ -20,8 +23,8 @@ class PostgresAuditService implements AuditService {
     String? reason,
   }) async {
     final log = AuditLog(
-      id: DateTime.now().millisecondsSinceEpoch
-          .toString(), // Managed by DB or here
+      id: const Uuid()
+          .v4(), // Managed by client to ensure ledger integrity before insertion
       organizationId: organizationId,
       operatorId: operatorId,
       actionType: actionType,
@@ -29,7 +32,7 @@ class PostgresAuditService implements AuditService {
       oldValue: oldValue,
       newValue: newValue,
       reason: reason,
-      timestamp: DateTime.now().toUtc(),
+      timestamp: _dateTimeProvider.nowUtc(),
     );
 
     // Append-only persistence (fire and forget / await)
@@ -60,11 +63,10 @@ class PostgresAuditService implements AuditService {
           (data) => AuditLog(
             id: data['id'],
             organizationId: data['organization_id'],
-            operatorId: data['operator_id'] ?? '',
-            actionType: data['event_type'],
-            entityId:
-                data['entity_id'] ?? data['contract_id'] ?? '', // Handle both
-            timestamp: DateTime.parse(data['occurred_at_utc']),
+            operatorId: (data['operator_id'] as String?) ?? '',
+            actionType: (data['type'] as String?) ?? '',
+            entityId: (data['set_id'] as String?) ?? '',
+            timestamp: DateTime.parse(data['occurred_at_utc']).toUtc(),
           ),
         )
         .toList();

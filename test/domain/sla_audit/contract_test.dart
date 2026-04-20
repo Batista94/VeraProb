@@ -5,6 +5,8 @@ import 'package:veraprob/domain/sla_audit/contract_events.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
+
   // ── Shared helpers ─────────────────────────────────────────
 
   Contract makeContract({
@@ -14,6 +16,7 @@ void main() {
     String? description,
     DateTime? validFrom,
     DateTime? validUntil,
+    int penaltyMultiplierBps = 10000,
   }) {
     final from = validFrom ?? DateTime.utc(2026, 1, 1);
     final until = validUntil ?? DateTime.utc(2026, 12, 31);
@@ -24,6 +27,8 @@ void main() {
       description: description,
       validFromUtc: from,
       validUntilUtc: until,
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      nowUtc: nowUtc,
     );
   }
 
@@ -97,10 +102,7 @@ void main() {
     });
 
     test('throws DomainException for blank name', () {
-      expect(
-        () => makeContract(name: '   '),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeContract(name: '   '), throwsA(isA<DomainException>()));
     });
 
     test('throws DomainException for blank contractorName', () {
@@ -132,6 +134,7 @@ void main() {
     test('does NOT emit domain events', () {
       final contract = Contract.reconstitute(
         id: 'existing-id',
+        version: 1,
         organizationId: 'org-1',
         name: 'Contract B',
         contractorName: 'Empresa B',
@@ -139,6 +142,7 @@ void main() {
         validUntilUtc: DateTime.utc(2026, 12, 31),
         status: ContractStatus.active,
         createdAtUtc: DateTime.utc(2026, 1, 1),
+        penaltyMultiplierBps: 10000,
         activatedAtUtc: DateTime.utc(2026, 2, 1),
       );
 
@@ -152,6 +156,7 @@ void main() {
 
       final contract = Contract.reconstitute(
         id: 'c-123',
+        version: 1,
         organizationId: 'org-5',
         name: 'Contract C',
         contractorName: 'Empresa C',
@@ -163,6 +168,7 @@ void main() {
         closedAtUtc: closed,
         closedByUserId: 'user-9',
         closeReason: 'Contract ended.',
+        penaltyMultiplierBps: 10000,
       );
 
       expect(contract.id, 'c-123');
@@ -180,7 +186,7 @@ void main() {
   group('activate()', () {
     test('draft → active transition returns new instance', () {
       final draft = makeContract();
-      final active = draft.activate();
+      final active = draft.activate(nowUtc: nowUtc);
 
       expect(active.status, ContractStatus.active);
       expect(active.isActive, isTrue);
@@ -190,14 +196,14 @@ void main() {
 
     test('original draft instance is not mutated', () {
       final draft = makeContract();
-      draft.activate();
+      draft.activate(nowUtc: nowUtc);
 
       expect(draft.status, ContractStatus.draft);
       expect(draft.activatedAtUtc, isNull);
     });
 
     test('emits ContractActivatedEvent', () {
-      final active = makeContract().activate();
+      final active = makeContract().activate(nowUtc: nowUtc);
 
       expect(active.domainEvents, hasLength(1));
       expect(active.domainEvents.first, isA<ContractActivatedEvent>());
@@ -207,21 +213,21 @@ void main() {
     });
 
     test('throws DomainException if already active', () {
-      final active = makeContract().activate();
+      final active = makeContract().activate(nowUtc: nowUtc);
 
       expect(
-        () => active.activate(),
+        () => active.activate(nowUtc: nowUtc),
         throwsA(isA<DomainException>()),
       );
     });
 
     test('throws DomainException if closed', () {
       final closed = makeContract()
-          .activate()
-          .close(closedByUserId: 'user-1', reason: 'Done');
+          .activate(nowUtc: nowUtc)
+          .close(closedByUserId: 'user-1', reason: 'Done', nowUtc: nowUtc);
 
       expect(
-        () => closed.activate(),
+        () => closed.activate(nowUtc: nowUtc),
         throwsA(isA<DomainException>()),
       );
     });
@@ -231,8 +237,12 @@ void main() {
 
   group('close()', () {
     test('active → closed transition', () {
-      final active = makeContract().activate();
-      final closed = active.close(closedByUserId: 'user-1', reason: 'Done');
+      final active = makeContract().activate(nowUtc: nowUtc);
+      final closed = active.close(
+        closedByUserId: 'user-1',
+        reason: 'Done',
+        nowUtc: nowUtc,
+      );
 
       expect(closed.status, ContractStatus.closed);
       expect(closed.isClosed, isTrue);
@@ -243,14 +253,18 @@ void main() {
 
     test('draft → closed transition is allowed', () {
       final draft = makeContract();
-      final closed = draft.close(closedByUserId: 'admin', reason: 'Cancelled');
+      final closed = draft.close(
+        closedByUserId: 'admin',
+        reason: 'Cancelled',
+        nowUtc: nowUtc,
+      );
 
       expect(closed.status, ContractStatus.closed);
     });
 
     test('original instance is not mutated', () {
-      final active = makeContract().activate();
-      active.close(closedByUserId: 'user-1', reason: 'Done');
+      final active = makeContract().activate(nowUtc: nowUtc);
+      active.close(closedByUserId: 'user-1', reason: 'Done', nowUtc: nowUtc);
 
       expect(active.status, ContractStatus.active);
       expect(active.closedAtUtc, isNull);
@@ -258,8 +272,8 @@ void main() {
 
     test('emits ContractClosedEvent', () {
       final closed = makeContract()
-          .activate()
-          .close(closedByUserId: 'user-1', reason: 'Done');
+          .activate(nowUtc: nowUtc)
+          .close(closedByUserId: 'user-1', reason: 'Done', nowUtc: nowUtc);
 
       expect(closed.domainEvents, hasLength(1));
       expect(closed.domainEvents.first, isA<ContractClosedEvent>());
@@ -271,29 +285,37 @@ void main() {
 
     test('throws DomainException if already closed', () {
       final closed = makeContract()
-          .activate()
-          .close(closedByUserId: 'user-1', reason: 'Done');
+          .activate(nowUtc: nowUtc)
+          .close(closedByUserId: 'user-1', reason: 'Done', nowUtc: nowUtc);
 
       expect(
-        () => closed.close(closedByUserId: 'user-1', reason: 'Again'),
+        () => closed.close(
+          closedByUserId: 'user-1',
+          reason: 'Again',
+          nowUtc: nowUtc,
+        ),
         throwsA(isA<DomainException>()),
       );
     });
 
     test('throws DomainException for empty closedByUserId', () {
-      final active = makeContract().activate();
+      final active = makeContract().activate(nowUtc: nowUtc);
 
       expect(
-        () => active.close(closedByUserId: '', reason: 'Done'),
+        () => active.close(closedByUserId: '', reason: 'Done', nowUtc: nowUtc),
         throwsA(isA<DomainException>()),
       );
     });
 
     test('throws DomainException for blank reason', () {
-      final active = makeContract().activate();
+      final active = makeContract().activate(nowUtc: nowUtc);
 
       expect(
-        () => active.close(closedByUserId: 'user-1', reason: '   '),
+        () => active.close(
+          closedByUserId: 'user-1',
+          reason: '   ',
+          nowUtc: nowUtc,
+        ),
         throwsA(isA<DomainException>()),
       );
     });
@@ -308,14 +330,14 @@ void main() {
     });
 
     test('does not throw for active', () {
-      final active = makeContract().activate();
+      final active = makeContract().activate(nowUtc: nowUtc);
       expect(() => active.assertCanReceivePlan(), returnsNormally);
     });
 
     test('throws DomainException for closed', () {
       final closed = makeContract()
-          .activate()
-          .close(closedByUserId: 'user-1', reason: 'Done');
+          .activate(nowUtc: nowUtc)
+          .close(closedByUserId: 'user-1', reason: 'Done', nowUtc: nowUtc);
 
       expect(
         () => closed.assertCanReceivePlan(),
@@ -330,6 +352,7 @@ void main() {
     test('two reconstituted contracts with same data are equal', () {
       final c1 = Contract.reconstitute(
         id: 'same-id',
+        version: 1,
         organizationId: 'org-1',
         name: 'Name',
         contractorName: 'Contractor',
@@ -337,9 +360,11 @@ void main() {
         validUntilUtc: DateTime.utc(2026, 12, 31),
         status: ContractStatus.draft,
         createdAtUtc: DateTime.utc(2026, 1, 1),
+        penaltyMultiplierBps: 10000,
       );
       final c2 = Contract.reconstitute(
         id: 'same-id',
+        version: 1,
         organizationId: 'org-1',
         name: 'Name',
         contractorName: 'Contractor',
@@ -347,6 +372,7 @@ void main() {
         validUntilUtc: DateTime.utc(2026, 12, 31),
         status: ContractStatus.draft,
         createdAtUtc: DateTime.utc(2026, 1, 1),
+        penaltyMultiplierBps: 10000,
       );
 
       expect(c1, equals(c2));

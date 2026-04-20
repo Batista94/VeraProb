@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
 
-import '../../domain/sla_audit/operational_alert.dart';
-import '../../domain/sla_audit/operational_alert_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
 
 /// In-memory implementation of [OperationalAlertRepository] for testing.
 class InMemoryOperationalAlertRepository implements OperationalAlertRepository {

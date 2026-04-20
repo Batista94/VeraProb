@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/application/operational_control_service.dart'
+    show OperationalTrip;
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
 import 'package:veraprob/application/projections/providers/command_center_filter_provider.dart';
@@ -53,7 +54,7 @@ class TripSidebar extends ConsumerWidget {
     return RebuildCounter(
       name: 'Sidebar',
       child: Container(
-        width: 280,
+        width: (MediaQuery.sizeOf(context).width * 0.22).clamp(240.0, 300.0),
         decoration: const BoxDecoration(
           color: VeraProbColors.surface,
           border: Border(right: BorderSide(color: VeraProbColors.border)),
@@ -328,10 +329,7 @@ class _TripCard extends StatelessWidget {
                       color: VeraProbColors.textDisabled,
                     ),
                     const SizedBox(width: 2),
-                    Text(
-                      trip.vehiclePlate!,
-                      style: VeraProbTypography.caption,
-                    ),
+                    Text(trip.vehiclePlate!, style: VeraProbTypography.caption),
                     const SizedBox(width: 8),
                   ],
                   if (trip.driverName != null) ...[
@@ -472,6 +470,8 @@ class _ActiveFilterBanner extends StatelessWidget {
         return VeraProbColors.critical;
       case FleetStatusFilter.atStop:
         return VeraProbColors.scheduled;
+      case FleetStatusFilter.kinematicAnomaly:
+        return VeraProbColors.delayed;
       case FleetStatusFilter.all:
         return VeraProbColors.textSecondary;
     }
@@ -489,6 +489,8 @@ class _ActiveFilterBanner extends StatelessWidget {
         return 'Alertas';
       case FleetStatusFilter.atStop:
         return 'No Ponto';
+      case FleetStatusFilter.kinematicAnomaly:
+        return 'Anomalias GPS';
       case FleetStatusFilter.all:
         return 'Todos';
     }

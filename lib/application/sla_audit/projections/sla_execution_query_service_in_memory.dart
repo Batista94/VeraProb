@@ -1,7 +1,8 @@
-import '../../../domain/shared/money.dart';
-import '../../../domain/sla_audit/contractual_execution_state.dart';
-import '../../../domain/sla_audit/contractual_execution_state_repository.dart';
-import '../../../domain/sla_audit/execution_status.dart';
+﻿import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'sla_execution_item_view.dart';
 import 'sla_execution_query_service.dart';
 import 'sla_execution_summary.dart';
@@ -12,10 +13,13 @@ import 'sla_execution_summary.dart';
 /// aggregates to read models. Never exposes aggregates directly.
 class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
   final ContractualExecutionStateRepository _repo;
+  final IDateTimeProvider _clock;
 
   SlaExecutionQueryServiceInMemory({
     required ContractualExecutionStateRepository repo,
-  }) : _repo = repo;
+    required IDateTimeProvider clock,
+  }) : _repo = repo,
+       _clock = clock;
 
   @override
   Future<SlaExecutionSummary> getSummary({
@@ -46,11 +50,16 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
         case ExecutionStatus.noShow:
           noShow++;
           lostRevenue =
-              lostRevenue + (s.contractualValue * s.noShowPenaltyMultiplier);
+              lostRevenue +
+              s.contractualValue.multiplyByBps(s.noShowPenaltyBps);
           break;
         case ExecutionStatus.evidenceGap:
           evidenceGap++;
           revenueAtRisk = revenueAtRisk + s.contractualValue;
+          break;
+        case ExecutionStatus.inhibited:
+          executed++;
+          protectedRevenue = protectedRevenue + s.contractualValue;
           break;
       }
     }
@@ -61,10 +70,10 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
       totalExecuted: executed,
       totalNoShow: noShow,
       totalEvidenceGap: evidenceGap,
-      generatedAtUtc: DateTime.now().toUtc(),
-      protectedRevenue: protectedRevenue,
-      revenueAtRisk: revenueAtRisk,
-      lostRevenue: lostRevenue,
+      generatedAtUtc: _clock.nowUtc(),
+      protectedRevenue: protectedRevenue.cents,
+      revenueAtRisk: revenueAtRisk.cents,
+      lostRevenue: lostRevenue.cents,
     );
   }
 
@@ -110,7 +119,17 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
     return filtered.map(_toItemView).toList();
   }
 
-  // ── Mapper ──────────────────────────────────────────────
+  @override
+  Future<SlaExecutionItemView?> findBySetId(
+    String setId, {
+    required String organizationId,
+  }) async {
+    final states = await _repo.findAll(organizationId: organizationId);
+    final match = states.where((s) => s.setId == setId).firstOrNull;
+    return match != null ? _toItemView(match) : null;
+  }
+
+  // â”€â”€ Mapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static SlaExecutionItemView _toItemView(ContractualExecutionState s) {
     return SlaExecutionItemView(
@@ -125,8 +144,8 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
       startLatitude: s.startLatitude,
       startLongitude: s.startLongitude,
       startRadiusMeters: s.startRadiusMeters,
-      contractualValue: s.contractualValue,
-      noShowPenaltyMultiplier: s.noShowPenaltyMultiplier,
+      contractualValue: s.contractualValue.cents,
+      noShowPenaltyBps: s.noShowPenaltyBps,
     );
   }
 }

@@ -1,9 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/admin/organization.dart';
-import '../../domain/admin/organization_repository.dart';
+import 'package:veraprob/domain/admin/organization.dart';
+import 'package:veraprob/domain/admin/organization_repository.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// PostgreSQL implementation of [OrganizationRepository] using Supabase.
-class PostgresOrganizationRepository implements OrganizationRepository {
+class PostgresOrganizationRepository
+    with PostgresErrorInterceptor
+    implements OrganizationRepository {
   final SupabaseClient _client;
 
   PostgresOrganizationRepository(this._client);
@@ -25,7 +28,14 @@ class PostgresOrganizationRepository implements OrganizationRepository {
         logoUrl: data['logo_url'] as String?,
         isActive: data['is_active'] as bool,
         createdAt: DateTime.parse(data['created_at'] as String),
+        legalName: data['legal_name'] as String?,
+        cnpj: data['cnpj'] as String?,
+        planType: data['plan_type'] as String?,
+        maxVehicles: data['max_vehicles'] as int?,
+        maxActiveContracts: data['max_active_contracts'] as int?,
       );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'organization');
     } catch (e) {
       // If single() fails (not found or multiple), return null
       return null;
@@ -34,14 +44,18 @@ class PostgresOrganizationRepository implements OrganizationRepository {
 
   @override
   Future<void> update(Organization organization) async {
-    await _client
-        .from('organizations')
-        .update({
-          'name': organization.name,
-          'timezone': organization.timezone,
-          'currency_code': organization.currencyCode,
-          'logo_url': organization.logoUrl,
-        })
-        .eq('id', organization.id);
+    try {
+      await _client
+          .from('organizations')
+          .update({
+            'name': organization.name,
+            'timezone': organization.timezone,
+            'currency_code': organization.currencyCode,
+            'logo_url': organization.logoUrl,
+          })
+          .eq('id', organization.id);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'organization');
+    }
   }
 }

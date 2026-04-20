@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/admin_providers.dart';
-import '../../../../state/providers/auth_providers.dart';
-import '../../../../application/admin/update_org_settings_command.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/state/providers/admin_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/application/admin/update_org_settings_command.dart';
 
 /// Screen for editing organization-wide settings.
 class OrgSettingsScreen extends ConsumerStatefulWidget {
@@ -34,6 +35,8 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final orgAsync = ref.watch(orgSettingsProvider);
+    final userRole = ref.watch(currentUserRoleProvider);
+    final isSuperAdmin = userRole == UserRole.superAdmin;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -98,35 +101,53 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                           children: [
                             TextFormField(
                               controller: _nameController,
-                              decoration: const InputDecoration(
+                              readOnly: !isSuperAdmin,
+                              decoration: InputDecoration(
                                 labelText: 'Nome da Organização',
-                                helperText:
-                                    'Nome exibido em relatórios e faturas.',
+                                prefixIcon: Icon(
+                                  isSuperAdmin
+                                      ? Icons.edit_outlined
+                                      : Icons.lock_outline,
+                                  size: 20,
+                                ),
+                                helperText: isSuperAdmin
+                                    ? 'Atualização permitida para Super Admin.'
+                                    : 'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
                               ),
-                              validator: (v) =>
-                                  v?.isEmpty ?? true ? 'Obrigatório' : null,
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
                               controller: _timezoneController,
-                              decoration: const InputDecoration(
+                              readOnly: !isSuperAdmin,
+                              decoration: InputDecoration(
                                 labelText: 'Fuso Horário',
-                                helperText:
-                                    'Ex: America/Sao_Paulo (usado para cálculos de SLA).',
+                                prefixIcon: Icon(
+                                  isSuperAdmin
+                                      ? Icons.access_time
+                                      : Icons.lock_outline,
+                                  size: 20,
+                                ),
+                                helperText: isSuperAdmin
+                                    ? 'Atualização permitida para Super Admin.'
+                                    : 'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
                               ),
-                              validator: (v) =>
-                                  v?.isEmpty ?? true ? 'Obrigatório' : null,
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
                               controller: _currencyController,
-                              decoration: const InputDecoration(
+                              readOnly: !isSuperAdmin,
+                              decoration: InputDecoration(
                                 labelText: 'Código da Moeda',
-                                helperText:
-                                    'Ex: BRL, USD (usado para valores financeiros).',
+                                prefixIcon: Icon(
+                                  isSuperAdmin
+                                      ? Icons.monetization_on_outlined
+                                      : Icons.lock_outline,
+                                  size: 20,
+                                ),
+                                helperText: isSuperAdmin
+                                    ? 'Atualização permitida para Super Admin.'
+                                    : 'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
                               ),
-                              validator: (v) =>
-                                  v?.isEmpty ?? true ? 'Obrigatório' : null,
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
@@ -177,16 +198,22 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final role = ref.read(currentUserRoleProvider);
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
       final command = UpdateOrgSettingsCommand(
         organizationId: orgId!,
         callerRole: role,
-        name: _nameController.text.trim(),
-        timezone: _timezoneController.text.trim(),
-        currencyCode: _currencyController.text.trim(),
+        name: role == UserRole.superAdmin ? _nameController.text.trim() : null,
+        timezone: role == UserRole.superAdmin
+            ? _timezoneController.text.trim()
+            : null,
+        currencyCode: role == UserRole.superAdmin
+            ? _currencyController.text.trim()
+            : null,
         logoUrl: _logoUrlController.text.trim().isEmpty
             ? null
             : _logoUrlController.text.trim(),
+        sessionId: sessionId,
       );
 
       await ref.read(updateOrgSettingsHandlerProvider).handle(command);

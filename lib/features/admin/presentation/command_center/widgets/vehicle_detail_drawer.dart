@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/entities/operational_trip.dart';
-import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/application/operational_control_service.dart'
+    show OperationalTrip, TripStatus;
+import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart'
+    show SlaLedgerEntry;
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
-import 'package:veraprob/domain/enums/trip_status.dart';
-import 'package:veraprob/domain/entities/operational_suggestion.dart';
-import 'package:veraprob/application/intelligence/suggestion_engine.dart';
+import 'package:veraprob/application/intelligence/suggestion_engine.dart'
+    show OperationalSuggestion, SuggestionAction, SuggestionEngine;
+import 'package:veraprob/application/authority/operational_command_bus.dart'
+    show UpdateTripStatusCommand;
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/presentation/shared/widgets/status_badge.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:veraprob/features/admin/presentation/shared/widgets/geofence_evidence_map.dart';
 import 'occurrence_modal.dart';
-import 'package:veraprob/domain/authority/commands/trips/update_trip_status_command.dart';
-import '../utils/ui_command_dispatcher.dart';
+import 'package:veraprob/features/admin/presentation/command_center/utils/ui_command_dispatcher.dart';
+import 'event_tile_widget.dart';
 
 /// Detailed vehicle/trip drawer shown when an operator selects a trip.
 ///
@@ -35,7 +40,7 @@ class VehicleDetailDrawer extends ConsumerWidget {
     final suggestion = SuggestionEngine().generateSuggestion(trip: trip);
 
     return Container(
-      width: 340,
+      width: (MediaQuery.sizeOf(context).width * 0.26).clamp(280.0, 360.0),
       decoration: const BoxDecoration(
         color: VeraProbColors.surface,
         border: Border(left: BorderSide(color: VeraProbColors.border)),
@@ -71,6 +76,11 @@ class VehicleDetailDrawer extends ConsumerWidget {
 
                   // Action Buttons
                   _ActionsSection(trip: trip),
+
+                  const Divider(height: 1, color: VeraProbColors.border),
+
+                  // Evidence Mini-Map (collapsed by default)
+                  _EvidenceMiniMapSection(trip: trip),
 
                   const Divider(height: 1, color: VeraProbColors.border),
 
@@ -190,7 +200,7 @@ class _InfoSection extends StatelessWidget {
           _InfoRow(
             Icons.trending_up,
             'Progresso',
-            '${trip.completionPct.toStringAsFixed(0)}%',
+            '${(trip.completionBps / 100).toStringAsFixed(0)}%',
           ),
           _InfoRow(
             Icons.schedule,
@@ -299,7 +309,11 @@ class _SuggestionSection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.lightbulb, color: VeraProbColors.primary, size: 18),
+              const Icon(
+                Icons.lightbulb,
+                color: VeraProbColors.primary,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Text(
                 'SUGESTÃO DO SISTEMA',
@@ -581,6 +595,100 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+// ── Evidence Mini-Map ─────────────────────────────────
+
+class _EvidenceMiniMapSection extends ConsumerWidget {
+  final OperationalTrip trip;
+
+  const _EvidenceMiniMapSection({required this.trip});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Resolve vehicle position from normalized state
+    final statesAsync = ref.watch(normalizedStateProvider);
+    final vehicleState = statesAsync.valueOrNull
+        ?.where((s) => s.tripId == trip.id)
+        .firstOrNull;
+
+    if (vehicleState == null) return const SizedBox.shrink();
+
+    final vehiclePos = LatLng(vehicleState.latitude, vehicleState.longitude);
+
+    return _CollapsibleSection(
+      title: 'EVIDÊNCIA VISUAL',
+      icon: Icons.map_outlined,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: GeofenceEvidenceMap(
+          infractionPoint: vehiclePos,
+          markerColor: trip.status.color,
+          height: 140,
+        ),
+      ),
+    );
+  }
+}
+
+class _CollapsibleSection extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _CollapsibleSection({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  State<_CollapsibleSection> createState() => _CollapsibleSectionState();
+}
+
+class _CollapsibleSectionState extends State<_CollapsibleSection> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(
+                  widget.icon,
+                  size: 14,
+                  color: VeraProbColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: VeraProbTypography.caption.copyWith(
+                      letterSpacing: 1.0,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Icon(
+                  _isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  size: 18,
+                  color: VeraProbColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_isExpanded) widget.child,
+      ],
+    );
+  }
+}
+
 // ── Event Timeline ────────────────────────────────────
 
 class _EventTimeline extends StatelessWidget {
@@ -613,173 +721,9 @@ class _EventTimeline extends StatelessWidget {
               ),
             )
           else
-            ...entries.take(15).map((entry) => _EventTile(entry: entry)),
+            ...entries.take(15).map((entry) => EventTileWidget(entry: entry)),
         ],
       ),
     );
-  }
-}
-
-class _EventTile extends StatelessWidget {
-  final SlaLedgerEntry entry;
-
-  const _EventTile({required this.entry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Timeline dot + line
-          Column(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                margin: const EdgeInsets.only(top: 2),
-                decoration: BoxDecoration(
-                  color: _eventColor(entry),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: VeraProbColors.surface, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _eventColor(entry).withValues(alpha: 0.5),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 2,
-                height: 24, // Fixed height instead of Expanded
-                color: VeraProbColors.border,
-                margin: const EdgeInsets.symmetric(vertical: 4),
-              ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      _eventIcon(entry),
-                      size: 12,
-                      color: _eventColor(entry),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        _eventLabel(entry),
-                        style: VeraProbTypography.caption.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: VeraProbColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      _formatTime(entry.occurredAtUtc.toLocal()),
-                      style: VeraProbTypography.caption.copyWith(fontSize: 10),
-                    ),
-                  ],
-                ),
-                Text(_eventSummary(entry), style: VeraProbTypography.caption),
-                if (entry.payload['notes'] != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      entry.payload['notes'] as String,
-                      style: VeraProbTypography.caption.copyWith(
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _eventIcon(SlaLedgerEntry entry) {
-    switch (entry.type) {
-      case 'OCCURRENCE_REGISTERED':
-        return Icons.report_problem;
-      case 'TRIP_INTERRUPTED':
-        return Icons.pause_circle;
-      case 'TRIP_CANCELLED':
-        return Icons.cancel;
-      case 'NO_SHOW_DECLARED':
-        return Icons.money_off;
-      case 'EVIDENCE_GAP_DECLARED':
-        return Icons.satellite_alt;
-      case 'EXECUTION_BOUND':
-        return Icons.link;
-      default:
-        return Icons.adjust;
-    }
-  }
-
-  String _eventLabel(SlaLedgerEntry entry) {
-    switch (entry.type) {
-      case 'OCCURRENCE_REGISTERED':
-        final type =
-            entry.payload['occurrence_type'] as String? ?? 'Desconhecido';
-        return 'Ocorrência: $type';
-      case 'TRIP_INTERRUPTED':
-        return 'Viagem Interrompida';
-      case 'TRIP_CANCELLED':
-        return 'Viagem Cancelada';
-      case 'NO_SHOW_DECLARED':
-        return 'Veredito: No-Show';
-      case 'EVIDENCE_GAP_DECLARED':
-        return 'Veredito: Falta Evidência';
-      case 'EXECUTION_BOUND':
-        return 'Execução Associada';
-      default:
-        return 'Fato: ${entry.type}';
-    }
-  }
-
-  String _eventSummary(SlaLedgerEntry entry) {
-    switch (entry.type) {
-      case 'OCCURRENCE_REGISTERED':
-        return 'Registrado pelo CCO';
-      case 'TRIP_INTERRUPTED':
-      case 'TRIP_CANCELLED':
-        return entry.payload['reason'] as String? ?? 'Ação manual';
-      case 'EXECUTION_BOUND':
-        final vehicle = entry.payload['vehicle_id'] as String? ?? '?';
-        return 'Veículo $vehicle atribuído';
-      default:
-        return 'Audit Entry #${entry.id ?? '-'}';
-    }
-  }
-
-  Color _eventColor(SlaLedgerEntry entry) {
-    switch (entry.type) {
-      case 'TRIP_INTERRUPTED':
-      case 'TRIP_CANCELLED':
-      case 'NO_SHOW_DECLARED':
-        return VeraProbColors.critical;
-      case 'OCCURRENCE_REGISTERED':
-      case 'EVIDENCE_GAP_DECLARED':
-        return VeraProbColors.delayed;
-      case 'EXECUTION_BOUND':
-        return VeraProbColors.onTime;
-      default:
-        return VeraProbColors.textSecondary;
-    }
-  }
-
-  String _formatTime(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:'
-        '${dt.minute.toString().padLeft(2, '0')}:'
-        '${dt.second.toString().padLeft(2, '0')}';
   }
 }

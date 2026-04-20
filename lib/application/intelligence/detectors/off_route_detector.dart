@@ -1,8 +1,8 @@
-import '../../../domain/entities/operational_trip.dart';
-import '../../../domain/entities/operational_warning.dart';
-import '../../../domain/entities/trip_event.dart';
-import '../../../domain/entities/vehicle_operational_state.dart';
-import '../../../domain/enums/route_adherence.dart';
+﻿import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/operational_warning.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/route_adherence.dart';
 import 'situation_detector.dart';
 
 /// Detects if a vehicle has deviated significantly from its assigned route.
@@ -12,7 +12,7 @@ import 'situation_detector.dart';
 ///   we flag it as a risk.
 /// - Minor deviations are tracked but don't generate severe warnings yet.
 class OffRouteDetector extends SituationDetector {
-  const OffRouteDetector()
+  OffRouteDetector(super.dateTimeProvider)
     : super(id: 'off_route', name: 'Detector de Desvio de Rota');
 
   @override
@@ -34,7 +34,7 @@ class OffRouteDetector extends SituationDetector {
         type: 'off_route',
         message: 'Desvio de Rota Detectado',
         severityScore: 30, // Moderate severity
-        detectedAt: DateTime.now().toUtc(),
+        detectedAt: dateTimeProvider.nowUtc(),
         metadata: {'distance_to_route': state.distanceToRoute},
       );
     }

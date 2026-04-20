@@ -1,342 +1,405 @@
 import 'dart:collection';
-import 'dart:math';
-import '../../domain/entities/vehicle_position.dart';
-import '../../domain/entities/vehicle_operational_state.dart';
-import '../../domain/entities/stop.dart';
-import '../../domain/enums/motion_state.dart';
-import '../../domain/enums/connectivity_state.dart';
-import '../../domain/enums/route_adherence.dart';
+import 'package:flutter/foundation.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
+import 'package:veraprob/domain/entities/stop.dart';
+import 'models/vehicle_operational_state.dart';
+import 'models/motion_state.dart';
+import 'models/connectivity_state.dart';
+import 'models/route_adherence.dart';
+import 'spatial_smoother.dart';
+import 'motion_classifier.dart';
+import 'connectivity_analyzer.dart';
 
-/// Converts raw GPS telemetry into stabilized operational state.
+/// Orchestrator that transforms raw GPS pings into stabilized
+/// [VehicleOperationalState] snapshots.
 ///
-/// This is the critical layer between [IOperationalDataProvider] and the
-/// [SituationEngine]. It ensures the UI and intelligence layers never
-/// process raw, noisy GPS coordinates.
-///
-/// Capabilities:
-/// - **Temporal debounce**: Max 1 update / vehicle / [debounceDuration].
-/// - **Spatial smoothing**: Weighted average of last 3 positions.
-/// - **Jump detection**: Discards impossible teleports (> [jumpThresholdMeters] in < 5 s).
-/// - **Signal-loss FSM**: `healthy` → `degraded` → `signalLost`.
-/// - **Stop geofencing**: Detects `dwellingAtStop` within [stopRadiusMeters] of known stops.
-/// - **Route adherence**: Placeholder for GTFS shape distance (future).
+/// Responsibilities:
+/// - Debounce: suppresses updates within [debounceDuration].
+/// - Jump filtering: rejects impossible teleportation.
+/// - Spatial smoothing: 3-sample weighted average via [SpatialSmoother].
+/// - Motion classification: delegates to [MotionClassifier].
+/// - Connectivity analysis: delegates to [ConnectivityAnalyzer].
 class OperationalStateNormalizer {
-  // ── Configuration ─────────────────────────────────────
   final Duration debounceDuration;
-  final double jumpThresholdMeters;
+  final double jumpThresholdMeters; // Physical Metric - Double Required
   final Duration degradedThreshold;
   final Duration signalLostThreshold;
-  final double stopRadiusMeters;
-  final double movingSpeedThreshold; // km/h
-  final double slowTrafficThreshold; // km/h
+  final double stopRadiusMeters; // Physical Metric - Double Required
+  final double movingSpeedThreshold; // Physical Metric - Double Required
+  final double slowTrafficThreshold; // Physical Metric - Double Required
   final Duration stoppedMinDuration;
   final Duration slowTrafficMinDuration;
-  static const List<double> _smoothingWeights = [0.15, 0.25, 0.60];
+
+  final SpatialSmoother _smoother = const SpatialSmoother();
+  MotionClassifier? _motionClassifier;
+  final ConnectivityAnalyzer _connectivityAnalyzer =
+      const ConnectivityAnalyzer();
+
+  /// Buffer per vehicle: up to 3 most recent pings.
+  final Map<String, Queue<VehiclePosition>> _rawBuffers = {};
+
+  /// Last emitted [VehicleOperationalState] per vehicle (for debounce / missing ping replay).
+  final Map<String, VehicleOperationalState> _cache = {};
+
+  /// Timestamp of last emitted state per vehicle (debounce guard).
+  final Map<String, DateTime> _lastEmittedAt = {};
+
+  /// Last processed event timestamp per vehicle (temporal guard).
+  final Map<String, DateTime> _lastProcessedTimestamp = {};
+
+  final IDateTimeProvider _clock;
 
   OperationalStateNormalizer({
     this.debounceDuration = const Duration(seconds: 5),
     this.jumpThresholdMeters = 500.0,
-    this.degradedThreshold = const Duration(seconds: 30),
-    this.signalLostThreshold = const Duration(seconds: 90),
-    this.stopRadiusMeters = 50.0,
-    this.movingSpeedThreshold = 8.0,
-    this.slowTrafficThreshold = 2.0,
-    this.stoppedMinDuration = const Duration(seconds: 15),
-    this.slowTrafficMinDuration = const Duration(seconds: 30),
-  });
+    this.degradedThreshold = const Duration(seconds: 120),
+    this.signalLostThreshold = const Duration(seconds: 300),
+    this.stopRadiusMeters = 100.0,
+    this.movingSpeedThreshold = 2.0,
+    this.slowTrafficThreshold = 0.5,
+    this.stoppedMinDuration = const Duration(seconds: 30),
+    this.slowTrafficMinDuration = const Duration(seconds: 15),
+    MotionClassifier? motionClassifier,
+    IDateTimeProvider? clock,
+  }) : _motionClassifier = motionClassifier,
+       _clock = clock ?? BrazilDateTimeProvider();
 
-  // ── Per-vehicle state buffers ─────────────────────────
-  /// Circular buffer of the last 3 raw positions per vehicle.
-  final Map<String, Queue<VehiclePosition>> _positionBuffers = {};
-
-  /// Last emitted timestamp per vehicle (for debounce).
-  final Map<String, DateTime> _lastEmittedAt = {};
-
-  /// Last emitted operational state per vehicle.
-  final Map<String, VehicleOperationalState> _lastStates = {};
-
-  /// When each vehicle first entered a low-speed state.
-  final Map<String, DateTime> _lowSpeedSince = {};
-
-  // ── Public API ────────────────────────────────────────
-
-  /// Process a batch of raw positions and return stabilized states.
+  /// Process incoming [pings] and return a list of stabilized states.
   ///
-  /// [rawPositions] — the latest GPS pings from the data adapter.
-  /// [knownStops]   — all known transit stops for geofencing.
-  /// [now]          — injectable clock for testability.
+  /// When [pings] is empty the normalizer replays degraded states for
+  /// every tracked vehicle (useful when polling on a timer).
+  /// [knownStops] enriches motion classification with geofence checks.
+  /// [now] defaults to system UTC time (via IDateTimeProvider) when null.
   List<VehicleOperationalState> normalize(
-    List<VehiclePosition> rawPositions, {
+    List<VehiclePosition> pings, {
     List<Stop> knownStops = const [],
     DateTime? now,
   }) {
-    final currentTime = now ?? DateTime.now().toUtc();
+    final effectiveNow = now ?? _clock.nowUtc();
+
+    _ensureClassifier();
+
     final results = <VehicleOperationalState>[];
 
-    // Index known stops for fast geofencing lookup
-    final stopsLookup = knownStops;
+    if (pings.isEmpty) {
+      // Replay degraded states for all tracked vehicles
+      for (final vehicleId in _cache.keys.toList()) {
+        final state = _replayDegradedState(vehicleId, effectiveNow, knownStops);
+        results.add(state);
+        _cache[vehicleId] = state;
+      }
+      _cleanStaleStates(effectiveNow);
+      return results;
+    }
 
-    // Track which vehicles sent a ping this cycle
-    final activeVehicleIds = <String>{};
+    for (final ping in pings) {
+      final vehicleId = _resolveVehicleId(ping);
+      final buffer = _rawBuffers.putIfAbsent(vehicleId, () => Queue());
 
-    for (final raw in rawPositions) {
-      final vehicleId = raw.tripId; // tripId used as vehicle key
-      activeVehicleIds.add(vehicleId);
-
-      // ── 1. Debounce ───────────────────────────────────
-      final lastEmit = _lastEmittedAt[vehicleId];
-      if (lastEmit != null &&
-          currentTime.difference(lastEmit) < debounceDuration) {
-        // Too soon — re-emit the last known state if available
-        final cached = _lastStates[vehicleId];
+      // Temporal guard: skip if event is stale (event time <= last processed)
+      // Replays cached state to maintain stream frequency without corrupting integrity.
+      final lastProcessed = _lastProcessedTimestamp[vehicleId];
+      if (lastProcessed != null &&
+          (ping.timestamp.isBefore(lastProcessed) ||
+              ping.timestamp.isAtSameMomentAs(lastProcessed))) {
+        debugPrint(
+          'REJECTED_STALE_EVENT: vehicleId=$vehicleId, '
+          'eventTs=${ping.timestamp}, lastProcessed=$lastProcessed',
+        );
+        final cached = _cache[vehicleId];
         if (cached != null) results.add(cached);
         continue;
       }
 
-      // ── 2. Buffer management ──────────────────────────
-      _positionBuffers.putIfAbsent(vehicleId, () => Queue<VehiclePosition>());
-      final buffer = _positionBuffers[vehicleId]!;
-
-      // ── 3. Jump detection ─────────────────────────────
-      if (buffer.isNotEmpty) {
-        final prev = buffer.last;
-        final distM = _haversineMeters(
-          prev.latitude,
-          prev.longitude,
-          raw.latitude,
-          raw.longitude,
+      // Debounce: skip if within debounce window
+      final cached = _cache[vehicleId];
+      final lastEmit = _lastEmittedAt[vehicleId];
+      if (lastEmit != null &&
+          effectiveNow.difference(lastEmit) < debounceDuration) {
+        debugPrint(
+          'REJECTED_DEBOUNCE: vehicleId=$vehicleId, '
+          'speed=${ping.speed}, duration=${effectiveNow.difference(lastEmit)}',
         );
-        final dtSec = raw.timestamp.difference(prev.timestamp).inSeconds.abs();
-        if (distM > jumpThresholdMeters && dtSec < 5) {
-          // Impossible jump — discard this ping, re-emit cached state
-          final cached = _lastStates[vehicleId];
-          if (cached != null) results.add(cached);
+        if (cached != null) results.add(cached);
+        continue;
+      }
+
+      // Jump filter — also records distance for spatial-confidence scoring.
+      // Pings that pass the filter but are suspiciously far reduce confidence
+      // proportionally: confidence_factor = 1 − (distance / jumpThresholdMeters).
+      double jumpDistance = 0; // Physical Metric - Double Required
+      if (cached != null) {
+        final distance = GeoMath.haversineMeters(
+          cached.latitude,
+          cached.longitude,
+          ping.latitude,
+          ping.longitude,
+        );
+        if (distance > jumpThresholdMeters) {
+          debugPrint(
+            'REJECTED_JUMP: vehicleId=$vehicleId, '
+            'distance=${distance.toStringAsFixed(1)}, velocity_check=FAILED',
+          );
+          // Reject the jump; replay cached degraded state
+          results.add(
+            _replayDegradedState(vehicleId, effectiveNow, knownStops),
+          );
           continue;
+        }
+        jumpDistance = distance;
+      }
+
+      // Append to buffer (max 3)
+      buffer.add(ping);
+      if (buffer.length > 3) buffer.removeFirst();
+
+      // Spatial smoothing & speed averaging
+      final (lat, lng) = _smoother.applySmoothing(buffer);
+      final avgSpeed = _smoother.smoothSpeed(buffer);
+
+      // Motion classification
+      final isFirstPing = !_cache.containsKey(vehicleId);
+      final motion = _motionClassifier!.classifyMotion(
+        vehicleId,
+        avgSpeed,
+        (lat, lng),
+        knownStops,
+        effectiveNow,
+        previousPosition: cached != null
+            ? (cached.latitude, cached.longitude)
+            : null,
+        previousTimestamp: cached?.lastRawPingAt,
+        isFirstPing: isFirstPing,
+      );
+
+      // Route adherence optimization - skip expensive calculation for stopped vehicles
+      final RouteAdherence routeAdherence;
+      final bool accuracyGatekeeperActive;
+      if (motion == MotionState.stopped) {
+        // Stopped vehicles reuse cached route adherence (no movement = no route change)
+        routeAdherence = cached?.routeAdherence ?? RouteAdherence.onRoute;
+        accuracyGatekeeperActive = cached?.accuracyGatekeeperActive ?? false;
+      } else {
+        // Only calculate for moving/slowTraffic/dwellingAtStop states
+        final adherenceResult = _evaluateRouteAdherence(
+          lat,
+          lng,
+          knownStops,
+          ping.accuracyMeters,
+        );
+        routeAdherence = adherenceResult.$1;
+        accuracyGatekeeperActive = adherenceResult.$2;
+      }
+
+      // Connectivity analysis — pass previousLastRawPingAt for gap-recovery detection.
+      // The resulting state stores ping.timestamp as lastRawPingAt, so the next ping
+      // sees gap=0 and is not mis-classified (no recovery loop).
+      final conn = _connectivityAnalyzer.classify(
+        ping.timestamp,
+        effectiveNow,
+        previousLastRawPingAt: cached?.lastRawPingAt,
+        degradedThreshold: degradedThreshold,
+        signalLostThreshold: signalLostThreshold,
+      );
+
+      var (nearestStopId, nearestStopName) = (null as String?, null as String?);
+      double? distanceToRoute;
+
+      if (knownStops.isNotEmpty && motion == MotionState.dwellingAtStop) {
+        nearStop:
+        for (final stop in knownStops) {
+          final d = GeoMath.haversineMeters(
+            lat,
+            lng,
+            stop.latitude,
+            stop.longitude,
+          );
+          if (d <= stopRadiusMeters) {
+            nearestStopId = stop.id;
+            nearestStopName = stop.name;
+            distanceToRoute = d;
+            break nearStop;
+          }
         }
       }
 
-      // Add to buffer (keep max 3)
-      buffer.addLast(raw);
-      while (buffer.length > 3) {
-        buffer.removeFirst();
-      }
-
-      // ── 4. Spatial smoothing ──────────────────────────
-      final smoothed = _applySmoothing(buffer);
-      final smoothedSpeed = _smoothSpeed(buffer);
-
-      // ── 5. Motion state classification ────────────────
-      final motionState = _classifyMotion(
-        vehicleId,
-        smoothedSpeed,
-        smoothed,
-        stopsLookup,
-        currentTime,
-      );
-
-      // ── 6. Connectivity state ─────────────────────────
-      final connectivity = _classifyConnectivity(raw.timestamp, currentTime);
-
-      // ── 7. Stop geofencing ────────────────────────────
-      String? nearestStopId;
-      String? nearestStopName;
-      if (motionState == MotionState.dwellingAtStop) {
-        final nearest = _findNearestStop(smoothed.$1, smoothed.$2, stopsLookup);
-        nearestStopId = nearest?.$1;
-        nearestStopName = nearest?.$2;
-      }
-
-      // ── 8. Build stabilized state ─────────────────────
-      final previousState = _lastStates[vehicleId];
-      final stateChanged =
-          previousState == null || previousState.motionState != motionState;
+      // stateChangedAt uses event time (ping.timestamp) and only advances
+      // when motionState transitions — preserving forensic immutability.
+      final prevMotion = cached?.motionState;
+      final newStateChangedAt = (prevMotion == null || prevMotion != motion)
+          ? ping.timestamp
+          : cached!.stateChangedAt;
 
       final state = VehicleOperationalState(
         vehicleId: vehicleId,
-        tripId: raw.tripId,
-        latitude: smoothed.$1,
-        longitude: smoothed.$2,
-        heading: raw.heading,
-        smoothedSpeed: smoothedSpeed,
-        motionState: motionState,
-        connectivityState: connectivity,
-        routeAdherence: RouteAdherence.onRoute, // Placeholder until GTFS shapes
-        lastRawPingAt: raw.timestamp,
-        stateChangedAt: stateChanged
-            ? currentTime
-            : (previousState.stateChangedAt),
+        tripId: ping.tripId,
+        latitude: lat,
+        longitude: lng,
+        heading: ping.heading,
+        smoothedSpeed: avgSpeed,
+        rawSpeed: ping.speed ?? 0.0, // Physical Metric - Double Required
+
+        motionState: motion,
+        connectivityState: conn,
+        routeAdherence: routeAdherence,
+        accuracyGatekeeperActive: accuracyGatekeeperActive,
+        lastRawPingAt: ping.timestamp,
+        stateChangedAt: newStateChangedAt,
         nearestStopId: nearestStopId,
         nearestStopName: nearestStopName,
-        distanceToRoute: null, // Future: GTFS shape distance
-        confidence: connectivity.confidence,
-        routeName: raw.routeName,
-        vehiclePlate: raw.vehiclePlate,
-        source: raw.source,
+        distanceToRoute: distanceToRoute,
+        confidence:
+            conn.confidence * (1.0 - jumpDistance / jumpThresholdMeters),
+        routeName: ping.routeName,
+        vehiclePlate: ping.vehiclePlate,
+        source: ping.source,
       );
 
-      _lastStates[vehicleId] = state;
-      _lastEmittedAt[vehicleId] = currentTime;
+      _cache[vehicleId] = state;
+      _lastEmittedAt[vehicleId] = effectiveNow;
+      _lastProcessedTimestamp[vehicleId] = ping.timestamp;
       results.add(state);
     }
 
-    // ── 9. Handle vehicles with NO ping this cycle ──────
-    for (final entry in _lastStates.entries) {
-      if (!activeVehicleIds.contains(entry.key)) {
-        final stale = entry.value;
-        final connectivity = _classifyConnectivity(
-          stale.lastRawPingAt,
-          currentTime,
-        );
-        // Re-emit with updated connectivity (may transition to signalLost)
-        final updated = stale.copyWith(
-          connectivityState: connectivity,
-          confidence: connectivity.confidence,
-        );
-        _lastStates[entry.key] = updated;
-        results.add(updated);
-      }
-    }
-
+    _cleanStaleStates(effectiveNow);
     return results;
   }
 
-  /// Clear all internal state (useful for testing or mode switching).
+  /// Clear all internal buffers and cached states.
   void reset() {
-    _positionBuffers.clear();
+    _rawBuffers.clear();
+    _cache.clear();
     _lastEmittedAt.clear();
-    _lastStates.clear();
-    _lowSpeedSince.clear();
+    _motionClassifier?.reset();
   }
 
-  // ── Private: Smoothing ────────────────────────────────
+  // ── Private helpers ──────────────────────────────────────────────
 
-  /// Returns (latitude, longitude) as a weighted average of the buffer.
-  (double, double) _applySmoothing(Queue<VehiclePosition> buffer) {
-    if (buffer.length == 1) {
-      return (buffer.first.latitude, buffer.first.longitude);
-    }
-
-    final positions = buffer.toList();
-    // Use tail of weights matching buffer size
-    final weights = _smoothingWeights.sublist(
-      _smoothingWeights.length - positions.length,
-    );
-    final weightSum = weights.reduce((a, b) => a + b);
-
-    double lat = 0, lng = 0;
-    for (int i = 0; i < positions.length; i++) {
-      final w = weights[i] / weightSum;
-      lat += positions[i].latitude * w;
-      lng += positions[i].longitude * w;
-    }
-    return (lat, lng);
+  String _resolveVehicleId(VehiclePosition ping) {
+    return ping.vehiclePlate?.isNotEmpty == true
+        ? ping.vehiclePlate!
+        : ping.tripId;
   }
 
-  /// Returns smoothed speed in km/h as weighted average.
-  double _smoothSpeed(Queue<VehiclePosition> buffer) {
-    final positions = buffer.toList();
-    final weights = _smoothingWeights.sublist(
-      _smoothingWeights.length - positions.length,
-    );
-    final weightSum = weights.reduce((a, b) => a + b);
-
-    double speed = 0;
-    for (int i = 0; i < positions.length; i++) {
-      final w = weights[i] / weightSum;
-      speed += (positions[i].speed ?? 0.0) * w;
-    }
-    return speed;
-  }
-
-  // ── Private: Classification ───────────────────────────
-
-  MotionState _classifyMotion(
+  VehicleOperationalState _replayDegradedState(
     String vehicleId,
-    double smoothedSpeed,
-    (double, double) position,
-    List<Stop> stops,
     DateTime now,
+    List<Stop> knownStops,
   ) {
-    if (smoothedSpeed > movingSpeedThreshold) {
-      _lowSpeedSince.remove(vehicleId);
-      return MotionState.moving;
-    }
+    final previous = _cache[vehicleId];
+    if (previous == null) return _emptyState(vehicleId, now);
 
-    // Vehicle is slow or stopped
-    _lowSpeedSince.putIfAbsent(vehicleId, () => now);
-    final lowSpeedDuration = now.difference(_lowSpeedSince[vehicleId]!);
+    final conn = _connectivityAnalyzer.classify(
+      previous.lastRawPingAt,
+      now,
+      degradedThreshold: degradedThreshold,
+      signalLostThreshold: signalLostThreshold,
+    );
 
-    if (smoothedSpeed <= slowTrafficThreshold) {
-      // Potential stop
-      if (lowSpeedDuration >= stoppedMinDuration) {
-        // Check if near a known stop
-        final nearStop = _findNearestStop(position.$1, position.$2, stops);
-        if (nearStop != null) {
-          return MotionState.dwellingAtStop;
-        }
-        return MotionState.stopped;
-      }
-      // Not long enough to classify as stopped yet
-      return MotionState.moving;
-    }
+    // Advance the motion timer even without a new ping: the low-speed clock
+    // in MotionClassifier keeps ticking, so a vehicle stopped before the gap
+    // is correctly promoted to MotionState.stopped on replay.
+    final motion = _motionClassifier!.classifyMotion(
+      vehicleId,
+      previous.smoothedSpeed,
+      (previous.latitude, previous.longitude),
+      knownStops,
+      now,
+      previousPosition: (previous.latitude, previous.longitude),
+      previousTimestamp: previous.lastRawPingAt,
+      isFirstPing: false, // Replay is never first ping
+    );
 
-    // Between slowTrafficThreshold and movingSpeedThreshold
-    if (lowSpeedDuration >= slowTrafficMinDuration) {
-      return MotionState.slowTraffic;
-    }
-    return MotionState.moving;
+    // stateChangedAt ONLY advances when motionState actually changes —
+    // connectivity changes must NOT contaminate movement duration evidence.
+    final hasMotionChanged = previous.motionState != motion;
+
+    return previous.copyWith(
+      connectivityState: conn,
+      motionState: motion,
+      confidence: conn.confidence,
+      stateChangedAt: hasMotionChanged ? now : previous.stateChangedAt,
+    );
   }
 
-  ConnectivityState _classifyConnectivity(DateTime lastPing, DateTime now) {
-    final age = now.difference(lastPing);
-    if (age <= degradedThreshold) return ConnectivityState.healthy;
-    if (age <= signalLostThreshold) return ConnectivityState.degraded;
-    return ConnectivityState.signalLost;
+  VehicleOperationalState _emptyState(String vehicleId, DateTime now) {
+    const conn = ConnectivityState.signalLost;
+    return VehicleOperationalState(
+      vehicleId: vehicleId,
+      tripId: '',
+      latitude: 0,
+      longitude: 0,
+      smoothedSpeed: 0,
+      rawSpeed: 0, // Physical Metric - Double Required
+      motionState: MotionState.moving,
+      connectivityState: conn,
+      routeAdherence: RouteAdherence.onRoute,
+      accuracyGatekeeperActive: false,
+      lastRawPingAt: now,
+      stateChangedAt: now,
+      confidence: conn.confidence,
+      source: 'normalizer',
+    );
   }
 
-  // ── Private: Geofencing ───────────────────────────────
-
-  /// Returns (stopId, stopName) if a stop is within [stopRadiusMeters],
-  /// or null if no stop is nearby.
-  (String, String)? _findNearestStop(double lat, double lng, List<Stop> stops) {
-    double minDist = double.infinity;
-    Stop? nearest;
-
-    for (final stop in stops) {
-      final dist = _haversineMeters(lat, lng, stop.latitude, stop.longitude);
-      if (dist < minDist) {
-        minDist = dist;
-        nearest = stop;
-      }
-    }
-
-    if (nearest != null && minDist <= stopRadiusMeters) {
-      return (nearest.id, nearest.name);
-    }
-    return null;
-  }
-
-  // ── Private: Haversine ────────────────────────────────
-
-  /// Distance in metres between two lat/lng points (Haversine formula).
-  static double _haversineMeters(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
+  (RouteAdherence, bool) _evaluateRouteAdherence(
+    double lat,
+    double lng,
+    List<Stop> knownStops, // Physical Metric - Double Required
+    double? accuracyMeters, // Physical Metric - Double Required
   ) {
-    const earthRadiusM = 6371000.0;
-    final dLat = _toRadians(lat2 - lat1);
-    final dLon = _toRadians(lon2 - lon1);
-    final a =
-        sin(dLat / 2) * sin(dLat / 2) +
-        cos(_toRadians(lat1)) *
-            cos(_toRadians(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return earthRadiusM * c;
+    // Accuracy gatekeeper - prevent false penalties from low-quality GPS
+    if (accuracyMeters != null && accuracyMeters > 100) {
+      return (
+        RouteAdherence.onRoute,
+        true,
+      ); // Benefit of doubt for degraded GPS
+    }
+
+    if (knownStops.isEmpty) return (RouteAdherence.onRoute, false);
+
+    double minDist = double.infinity; // Physical Metric - Double Required
+    for (final stop in knownStops) {
+      final d = GeoMath.haversineMeters(
+        lat,
+        lng,
+        stop.latitude,
+        stop.longitude,
+      );
+      if (d < minDist) minDist = d;
+    }
+
+    if (minDist > 100) return (RouteAdherence.offRoute, false);
+    if (minDist > 80) return (RouteAdherence.minorDeviation, false);
+    return (RouteAdherence.onRoute, false);
   }
 
-  static double _toRadians(double degrees) => degrees * pi / 180;
+  void _ensureClassifier() {
+    _motionClassifier ??= MotionClassifier(
+      movingSpeedThreshold: movingSpeedThreshold,
+      slowTrafficThreshold: slowTrafficThreshold,
+      stoppedMinDuration: stoppedMinDuration,
+      slowTrafficMinDuration: slowTrafficMinDuration,
+      stopRadiusMeters: stopRadiusMeters,
+    );
+  }
+
+  void _cleanStaleStates(DateTime now) {
+    final toRemove = <String>[];
+    for (final entry in _cache.entries) {
+      final age = now.difference(entry.value.lastRawPingAt);
+      if (age > const Duration(minutes: 30)) {
+        toRemove.add(entry.key);
+      }
+    }
+    for (final key in toRemove) {
+      _rawBuffers.remove(key);
+      _cache.remove(key);
+      _lastEmittedAt.remove(key);
+      _lastProcessedTimestamp.remove(key);
+      _motionClassifier?.removeKey(key);
+    }
+  }
 }

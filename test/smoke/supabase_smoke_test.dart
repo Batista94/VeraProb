@@ -23,22 +23,24 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
+
 // Domain
-import 'package:veraprob/core/time/brazil_time.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
-import 'package:veraprob/domain/enums/motion_state.dart';
-import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
-import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
-import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
-import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
 import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -56,6 +58,7 @@ import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.
 import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
 
 // Infrastructure
 import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
@@ -64,21 +67,10 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_execution
 import 'package:veraprob/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_template_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+import '../mocks/fake_date_time_provider.dart';
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────
-
-/// Repo de regras no-op (mesmo padrão do E2E).
-class _SmokeRuleRepository implements ContractualRuleRepository {
-  @override
-  Future<RuleSnapshot> getActiveSnapshotForContract(
-    String orgId,
-    String contractId,
-  ) async =>
-      const RuleSnapshot([]);
-
-  @override
-  Future<void> saveRule(ContractualRule rule) async {}
-}
 
 /// Retorna um contrato draft em memória — permite que o handler ative sem
 /// precisar de PostgresContractRepository nos grupos de plano.
@@ -89,10 +81,14 @@ class _SmokeContractStub implements ContractRepository {
   final String orgId;
 
   @override
-  Future<Contract?> findById(String id, {required String organizationId}) async {
+  Future<Contract?> findById(
+    String id, {
+    required String organizationId,
+  }) async {
     if (id != contractId) return null;
     return Contract.reconstitute(
       id: id,
+      version: 1,
       organizationId: organizationId,
       name: 'Smoke B2B Contract',
       contractorName: 'SPTRANS Smoke Corp',
@@ -100,39 +96,37 @@ class _SmokeContractStub implements ContractRepository {
       validUntilUtc: DateTime.utc(2026, 12, 31),
       status: ContractStatus.draft,
       createdAtUtc: DateTime.utc(2026, 1, 1),
+      penaltyMultiplierBps: 10000,
     );
   }
 
   @override
-  Future<void> save(Contract contract) async {}
+  Future<Contract> save(Contract contract) async => contract;
 
   @override
   Future<List<Contract>> findByOrganization(
     String organizationId, {
     ContractStatus? status,
-  }) async =>
-      [];
+  }) async => [];
 }
 
 class _StubZoneRepository implements OperationalZoneRepository {
   @override
   Future<List<OperationalZone>> findByOrganization(
     String organizationId,
-  ) async =>
-      [
-        OperationalZone.create(
-          organizationId: organizationId,
-          name: 'Stub',
-          type: ZoneType.garagem,
-        ),
-      ];
+  ) async => [
+    OperationalZone.create(
+      organizationId: organizationId,
+      name: 'Stub',
+      type: ZoneType.garagem,
+    ),
+  ];
 
   @override
   Future<OperationalZone?> findById(
     String id, {
     required String organizationId,
-  }) async =>
-      null;
+  }) async => null;
 
   @override
   Future<void> save(OperationalZone zone) async {}
@@ -144,13 +138,13 @@ class _StubZoneRepository implements OperationalZoneRepository {
 /// VehicleCategory.executive (cobre Cenários 3.4, 3.5).
 ShiftPattern _buildSmokePattern() {
   final penalties = SLAPenalties.create(
-    noShowPenaltyMultiplier: 2.0,
+    noShowPenaltyBps: 20000,
     delayToleranceMinutes: 10,
-    delayPenaltyPerMinute: const Money(150),  // R$ 1,50/min
+    delayPenaltyPerMinute: const Money(150), // R$ 1,50/min
     downgradePenaltyFlat: const Money(25000), // R$ 250,00
-    noShowThresholdMinutes: 45,               // não-default → valida persistência
-    earlyArrivalToleranceMinutes: 3,          // não-default
-    dwellTimeMinutes: 5,                      // não-default
+    noShowThresholdMinutes: 45, // não-default → valida persistência
+    earlyArrivalToleranceMinutes: 3, // não-default
+    dwellTimeMinutes: 5, // não-default
   );
 
   return ShiftPattern.create(
@@ -176,11 +170,11 @@ ShiftPattern _buildSmokePattern() {
 // main
 // ─────────────────────────────────────────────────────────────────────────────
 
+class _SmokeMockAuth extends Mock implements IAuthRepository {}
+
 void main() {
-  const supabaseUrl =
-      String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-  const supabaseKey =
-      String.fromEnvironment('SUPABASE_KEY', defaultValue: '');
+  const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+  const supabaseKey = String.fromEnvironment('SUPABASE_KEY', defaultValue: '');
   final hasCredentials = supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty;
 
   // ── Infra compartilhada pelos grupos 1–3 ─────────────────────────────────
@@ -212,35 +206,51 @@ void main() {
   // without Supabase credentials.  BrazilTime.ensureInitialized() is
   // idempotent, so the second call inside the credentials block is a no-op.
   setUpAll(() {
-    BrazilTime.ensureInitialized();
+    tz_data.initializeTimeZones();
   });
 
   if (hasCredentials) {
     setUpAll(() async {
       client = SupabaseClient(supabaseUrl, supabaseKey);
-      BrazilTime.ensureInitialized();
 
       contractRepo = PostgresContractRepository(client);
       planRepo = PostgresPlanDeclarationRepository(client);
       ledgerRepo = PostgresSlaAuditLedgerRepository(client);
-      executionRepo = PostgresContractualExecutionStateRepository(client);
+      executionRepo = PostgresContractualExecutionStateRepository(
+        client,
+        UtcDateTimeProvider(),
+      );
+
+      final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
+
+      final mockAuth = _SmokeMockAuth();
+      when(() => mockAuth.getUserBySessionId(any<String>())).thenAnswer(
+        (_) async => const domain.AuthUser(id: 'user-1', tenantId: orgId),
+      );
+      final tenantValidator = TenantValidationService(authRepository: mockAuth);
 
       createHandler = CreateContractHandler(
+        tenantValidator: tenantValidator,
         contractRepository: contractRepo,
         ledger: ledgerRepo,
+        clock: clock,
       );
 
       declareHandler = DeclareContractualPlanHandler(
+        tenantValidator: tenantValidator,
         repository: planRepo,
         ledger: ledgerRepo,
-        ruleRepository: _SmokeRuleRepository(),
         // Stub em memória — ativa o contrato no domínio sem exigir upsert
-        contractRepository:
-            _SmokeContractStub(contractId: contractId, orgId: orgId),
+        contractRepository: _SmokeContractStub(
+          contractId: contractId,
+          orgId: orgId,
+        ),
         zoneRepository: _StubZoneRepository(),
         vehicleRepository: const InMemoryActiveVehicleRepository(
           countsByOrg: {orgId: 1},
         ),
+        clock: clock,
+        idempotencyStore: InMemoryIdempotencyStore(),
       );
 
       engine = ContractualEvaluationEngine(
@@ -248,6 +258,7 @@ void main() {
         planRepo: planRepo,
         ledgerRepo: ledgerRepo,
         traceRepo: InMemoryEvaluationTraceRepository(),
+        clock: clock,
       );
     });
 
@@ -273,12 +284,16 @@ void main() {
             contractorName: 'SPTRANS Smoke Corp',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-smoke-1',
           ),
         );
 
         expect(contract.id, isNotEmpty);
-        expect(contract.status, ContractStatus.draft,
-            reason: 'Cenário 3.1 — nasce como draft');
+        expect(
+          contract.status,
+          ContractStatus.draft,
+          reason: 'Cenário 3.1 — nasce como draft',
+        );
         expect(contract.organizationId, orgId);
 
         // Verificar gravação no Supabase
@@ -304,36 +319,59 @@ void main() {
             declaredByUserId: 'smoke-admin',
             planVersion: planVersion,
             originalFileHash: hash,
-            declaredAtUtc: DateTime.now().toUtc(),
+            declaredAtUtc: DateTime.utc(2026, 4, 8, 0, 0, 0),
             shiftPatterns: [pattern],
             contractualValueCents: 50000, // R$ 500,00
+            sessionId: 'session-smoke-b2b',
+            idempotencyKey: 'smoke-plan-$runId',
           );
 
           final plan = await declareHandler.handle(cmd);
           declaredPlanId = plan.id;
 
           expect(plan.id, isNotEmpty);
-          expect(plan.isShiftBased, isTrue,
-              reason: 'Cenário 3.2 — modo B2B (shift-based)');
+          expect(
+            plan.isShiftBased,
+            isTrue,
+            reason: 'Cenário 3.2 — modo B2B (shift-based)',
+          );
           expect(plan.shiftPatterns.length, 1);
 
           final p = plan.shiftPatterns.first;
-          expect(p.requiredVehicleCategory, VehicleCategory.executive,
-              reason: 'Cenário 3.5 — categoria do veículo persistida');
-          expect(p.timezone, 'America/Sao_Paulo',
-              reason: 'Cenário 3.4 — timezone configurado');
-          expect(p.penalties.noShowThresholdMinutes, 45,
-              reason: 'Campo novo SLA — noShowThresholdMinutes');
-          expect(p.penalties.earlyArrivalToleranceMinutes, 3,
-              reason: 'Campo novo SLA — earlyArrivalToleranceMinutes');
-          expect(p.penalties.dwellTimeMinutes, 5,
-              reason: 'Campo novo SLA — dwellTimeMinutes');
+          expect(
+            p.requiredVehicleCategory,
+            VehicleCategory.executive,
+            reason: 'Cenário 3.5 — categoria do veículo persistida',
+          );
+          expect(
+            p.timezone,
+            'America/Sao_Paulo',
+            reason: 'Cenário 3.4 — timezone configurado',
+          );
+          expect(
+            p.penalties.noShowThresholdMinutes,
+            45,
+            reason: 'Campo novo SLA — noShowThresholdMinutes',
+          );
+          expect(
+            p.penalties.earlyArrivalToleranceMinutes,
+            3,
+            reason: 'Campo novo SLA — earlyArrivalToleranceMinutes',
+          );
+          expect(
+            p.penalties.dwellTimeMinutes,
+            5,
+            reason: 'Campo novo SLA — dwellTimeMinutes',
+          );
         },
       );
 
       test('1.3 — Plano persistido no Supabase com versão correta', () async {
-        expect(declaredPlanId, isNotNull,
-            reason: 'Dependência: Smoke 1.2 deve passar primeiro');
+        expect(
+          declaredPlanId,
+          isNotNull,
+          reason: 'Dependência: Smoke 1.2 deve passar primeiro',
+        );
 
         final plans = await planRepo.findByContract(
           contractId,
@@ -342,8 +380,12 @@ void main() {
         expect(plans.length, 1, reason: 'Exatamente 1 plano no banco');
         expect(plans.first.id, declaredPlanId);
         expect(plans.first.planVersion, planVersion);
-        expect(plans.first.isShiftBased, isTrue,
-            reason: 'ShiftPatterns restaurados do banco (via shift_patterns_payload)');
+        expect(
+          plans.first.isShiftBased,
+          isTrue,
+          reason:
+              'ShiftPatterns restaurados do banco (via shift_patterns_payload)',
+        );
       });
     },
   );
@@ -354,10 +396,9 @@ void main() {
   group('Smoke 2: Integridade JSONB (7.4, 14.4)', () {
     // 2.1–2.3 são testes de domínio puro — não precisam de Supabase
 
-    test('2.1 — [domínio] SLAPenalties.toJson() contém todos os 7 campos',
-        () {
+    test('2.1 — [domínio] SLAPenalties.toJson() contém todos os 7 campos', () {
       final penalties = SLAPenalties.create(
-        noShowPenaltyMultiplier: 2.5,
+        noShowPenaltyBps: 25000,
         delayToleranceMinutes: 15,
         delayPenaltyPerMinute: const Money(200),
         downgradePenaltyFlat: const Money(30000),
@@ -367,16 +408,25 @@ void main() {
       );
       final json = penalties.toJson();
 
-      expect(json, contains('noShowPenaltyMultiplier'));
+      expect(json, contains('noShowPenaltyBps'));
       expect(json, contains('delayToleranceMinutes'));
       expect(json, contains('delayPenaltyPerMinuteCents'));
       expect(json, contains('downgradePenaltyFlatCents'));
-      expect(json, contains('noShowThresholdMinutes'),
-          reason: 'Campo novo Sprint 5.10');
-      expect(json, contains('earlyArrivalToleranceMinutes'),
-          reason: 'Campo novo Sprint 5.10');
-      expect(json, contains('dwellTimeMinutes'),
-          reason: 'Campo novo Sprint 5.10');
+      expect(
+        json,
+        contains('noShowThresholdMinutes'),
+        reason: 'Campo novo Sprint 5.10',
+      );
+      expect(
+        json,
+        contains('earlyArrivalToleranceMinutes'),
+        reason: 'Campo novo Sprint 5.10',
+      );
+      expect(
+        json,
+        contains('dwellTimeMinutes'),
+        reason: 'Campo novo Sprint 5.10',
+      );
 
       // Valores não-default persistidos corretamente
       expect(json['noShowThresholdMinutes'], 45);
@@ -385,53 +435,59 @@ void main() {
     });
 
     test(
-        '2.2 — [domínio] ShiftPattern.toJson() contém requiredVehicleCategory',
-        () {
-      final pattern = _buildSmokePattern();
-      final json = pattern.toJson();
+      '2.2 — [domínio] ShiftPattern.toJson() contém requiredVehicleCategory',
+      () {
+        final pattern = _buildSmokePattern();
+        final json = pattern.toJson();
 
-      expect(json, contains('requiredVehicleCategory'),
-          reason: 'Campo Sprint 5.10');
-      expect(json['requiredVehicleCategory'], 'executive');
+        expect(
+          json,
+          contains('requiredVehicleCategory'),
+          reason: 'Campo Sprint 5.10',
+        );
+        expect(json['requiredVehicleCategory'], 'executive');
 
-      final penaltiesJson = json['penalties'] as Map<String, dynamic>;
-      expect(penaltiesJson, contains('noShowThresholdMinutes'));
-      expect(penaltiesJson, contains('earlyArrivalToleranceMinutes'));
-      expect(penaltiesJson, contains('dwellTimeMinutes'));
-    });
+        final penaltiesJson = json['penalties'] as Map<String, dynamic>;
+        expect(penaltiesJson, contains('noShowThresholdMinutes'));
+        expect(penaltiesJson, contains('earlyArrivalToleranceMinutes'));
+        expect(penaltiesJson, contains('dwellTimeMinutes'));
+      },
+    );
 
     test(
-        '2.3 — [domínio] SLAPenalties round-trip (toJson → fromJson) preserva valores',
-        () {
-      final original = SLAPenalties.create(
-        noShowPenaltyMultiplier: 2.0,
-        delayToleranceMinutes: 10,
-        delayPenaltyPerMinute: const Money(150),
-        downgradePenaltyFlat: const Money(25000),
-        noShowThresholdMinutes: 45,
-        earlyArrivalToleranceMinutes: 3,
-        dwellTimeMinutes: 5,
-      );
+      '2.3 — [domínio] SLAPenalties round-trip (toJson → fromJson) preserva valores',
+      () {
+        final original = SLAPenalties.create(
+          noShowPenaltyBps: 20000,
+          delayToleranceMinutes: 10,
+          delayPenaltyPerMinute: const Money(150),
+          downgradePenaltyFlat: const Money(25000),
+          noShowThresholdMinutes: 45,
+          earlyArrivalToleranceMinutes: 3,
+          dwellTimeMinutes: 5,
+        );
 
-      final restored = SLAPenalties.fromJson(original.toJson());
+        final restored = SLAPenalties.fromJson(original.toJson());
 
-      expect(restored.noShowThresholdMinutes, 45);
-      expect(restored.earlyArrivalToleranceMinutes, 3);
-      expect(restored.dwellTimeMinutes, 5);
-      expect(restored.noShowPenaltyMultiplier, 2.0);
-      expect(restored.delayToleranceMinutes, 10);
-      expect(restored.delayPenaltyPerMinute.cents, 150);
-      expect(restored.downgradePenaltyFlat.cents, 25000);
-    });
+        expect(restored.noShowThresholdMinutes, 45);
+        expect(restored.earlyArrivalToleranceMinutes, 3);
+        expect(restored.dwellTimeMinutes, 5);
+        expect(restored.noShowPenaltyBps, 20000);
+        expect(restored.delayToleranceMinutes, 10);
+        expect(restored.delayPenaltyPerMinute.cents, 150);
+        expect(restored.downgradePenaltyFlat.cents, 25000);
+      },
+    );
 
     test(
       '2.4 — [db] shift_patterns_payload persiste estrutura JSONB correta',
-      skip: hasCredentials
-          ? false
-          : 'Credenciais Supabase ausentes.',
+      skip: hasCredentials ? false : 'Credenciais Supabase ausentes.',
       () async {
-        expect(declaredPlanId, isNotNull,
-            reason: 'Dependência: Smoke 1.2 deve passar primeiro');
+        expect(
+          declaredPlanId,
+          isNotNull,
+          reason: 'Dependência: Smoke 1.2 deve passar primeiro',
+        );
 
         final raw = await client
             .from('plan_declarations')
@@ -440,13 +496,19 @@ void main() {
             .single();
 
         // Cenário 14.4 — isolamento de tenant
-        expect(raw['organization_id'], orgId,
-            reason: 'organization_id deve corresponder ao tenant correto');
+        expect(
+          raw['organization_id'],
+          orgId,
+          reason: 'organization_id deve corresponder ao tenant correto',
+        );
 
         // Coluna JSONB preenchida
         final payload = raw['shift_patterns_payload'];
-        expect(payload, isNotNull,
-            reason: 'shift_patterns_payload deve estar gravado (não null)');
+        expect(
+          payload,
+          isNotNull,
+          reason: 'shift_patterns_payload deve estar gravado (não null)',
+        );
         final patterns = payload as List;
         expect(patterns, isNotEmpty);
 
@@ -463,20 +525,24 @@ void main() {
 
     test(
       '2.5 — [db] organization_id em contracts corresponde ao tenant (Cenário 7.4)',
-      skip: hasCredentials
-          ? false
-          : 'Credenciais Supabase ausentes.',
+      skip: hasCredentials ? false : 'Credenciais Supabase ausentes.',
       () async {
         final rows = await client
             .from('contracts')
             .select('organization_id')
             .like('name', '%Smoke B2B $runId%');
 
-        expect(rows, isNotEmpty,
-            reason: 'Contrato do run deve existir no banco');
+        expect(
+          rows,
+          isNotEmpty,
+          reason: 'Contrato do run deve existir no banco',
+        );
         for (final row in rows) {
-          expect(row['organization_id'], orgId,
-              reason: 'Nenhum registro deve vazar para outro tenant');
+          expect(
+            row['organization_id'],
+            orgId,
+            reason: 'Nenhum registro deve vazar para outro tenant',
+          );
         }
       },
     );
@@ -487,13 +553,14 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────────
   group(
     'Smoke 3: Simulador de Telemetria (Cenário 6.1)',
-    skip: hasCredentials
-        ? false
-        : 'Credenciais Supabase ausentes.',
+    skip: hasCredentials ? false : 'Credenciais Supabase ausentes.',
     () {
       test('3.1 — SET criado com status pending', () async {
-        expect(declaredPlanId, isNotNull,
-            reason: 'Dependência: Smoke 1.2 deve passar primeiro');
+        expect(
+          declaredPlanId,
+          isNotNull,
+          reason: 'Dependência: Smoke 1.2 deve passar primeiro',
+        );
 
         // O set_id é um identificador de contractual_service_executions.
         // Precisamos inserir essa linha primeiro (causal linkage exigida pelo repo).
@@ -502,11 +569,14 @@ void main() {
 
         await client.from('contractual_service_executions').insert({
           'set_id': setId,
+          'organization_id': orgId,
           'plan_declaration_id': declaredPlanId!,
-          'scheduled_start_time_utc':
-              baseTimeUtc.subtract(const Duration(minutes: 15)).toIso8601String(),
-          'scheduled_end_time_utc':
-              baseTimeUtc.add(const Duration(minutes: 15)).toIso8601String(),
+          'scheduled_start_time_utc': baseTimeUtc
+              .subtract(const Duration(minutes: 15))
+              .toIso8601String(),
+          'scheduled_end_time_utc': baseTimeUtc
+              .add(const Duration(minutes: 15))
+              .toIso8601String(),
           'start_latitude': -23.5505,
           'start_longitude': -46.6333,
           'start_radius_meters': 100,
@@ -514,7 +584,7 @@ void main() {
           'end_longitude': -46.6333,
           'end_radius_meters': 100,
           'contractual_value_cents': 50000,
-          'no_show_penalty_multiplier': 2.0,
+          'no_show_penalty_multiplier': 20000,
         });
 
         final state = ContractualExecutionState.create(
@@ -526,9 +596,8 @@ void main() {
           startLongitude: -46.6333,
           startRadiusMeters: 100,
           contractualValue: const Money(50000),
-          noShowPenaltyMultiplier: 2.0,
-          windowStartUtc:
-              baseTimeUtc.subtract(const Duration(minutes: 15)),
+          noShowPenaltyBps: 20000,
+          windowStartUtc: baseTimeUtc.subtract(const Duration(minutes: 15)),
           windowEndUtc: baseTimeUtc.add(const Duration(minutes: 15)),
         );
 
@@ -536,55 +605,71 @@ void main() {
 
         final saved = await executionRepo.findBySetId(setId);
         expect(saved, isNotNull);
-        expect(saved!.status.name, 'pending',
-            reason: 'Estado inicial deve ser pending');
+        expect(
+          saved!.status.name,
+          'pending',
+          reason: 'Estado inicial deve ser pending',
+        );
       });
 
       test(
-          '3.2 — GPS na geofence → status = executed após dwell time satisfeito',
-          () async {
-        expect(smokeSetId, isNotNull,
-            reason: 'Dependência: Smoke 3.1 deve passar primeiro');
+        '3.2 — GPS na geofence → status = executed após dwell time satisfeito',
+        () async {
+          expect(
+            smokeSetId,
+            isNotNull,
+            reason: 'Dependência: Smoke 3.1 deve passar primeiro',
+          );
 
-        final vehicle = VehicleOperationalState(
-          vehicleId: 'smoke-vehicle-001',
-          tripId: 'smoke-trip-$runId',
-          latitude: -23.5505,  // centro exato da geofence
-          longitude: -46.6333,
-          smoothedSpeed: 0,
-          motionState: MotionState.stopped,
-          connectivityState: ConnectivityState.healthy,
-          lastRawPingAt: baseTimeUtc,
-          stateChangedAt: baseTimeUtc,
-          confidence: 1.0,
-          source: 'gps',
-        );
+          final vehicle = VehicleOperationalState(
+            rawSpeed: 0.0,
+            vehicleId: 'smoke-vehicle-001',
+            tripId: 'smoke-trip-$runId',
+            latitude: -23.5505, // centro exato da geofence
+            longitude: -46.6333,
+            smoothedSpeed: 0,
+            motionState: MotionState.stopped,
+            connectivityState: ConnectivityState.healthy,
+            lastRawPingAt: baseTimeUtc,
+            stateChangedAt: baseTimeUtc,
+            confidence: 1.0,
+            source: 'gps',
+          );
 
-        // Tick 1: dentro da geofence — inicia dwell timer
-        await engine.processVehicleState(
-          vehicle,
-          nowUtc: baseTimeUtc,
-          organizationId: orgId,
-        );
+          // Tick 1: dentro da geofence — inicia dwell timer
+          await engine.processVehicleState(
+            vehicle,
+            nowUtc: baseTimeUtc,
+            organizationId: orgId,
+          );
 
-        final stateT1 = await executionRepo.findBySetId(smokeSetId!);
-        expect(stateT1!.status.name, 'pending',
-            reason: 'Dwell time ainda não satisfeito (tick 1)');
+          final stateT1 = await executionRepo.findBySetId(smokeSetId!);
+          expect(stateT1, isNotNull, reason: 'stateT1 should be initialized');
+          expect(
+            stateT1!.status.name,
+            'pending',
+            reason: 'Dwell time ainda não satisfeito (tick 1)',
+          );
 
-        // Tick 2: 31 s depois → dwell satisfeito → bind
-        final bindTime = baseTimeUtc.add(const Duration(seconds: 31));
-        await engine.processVehicleState(
-          vehicle,
-          nowUtc: bindTime,
-          organizationId: orgId,
-        );
+          // Tick 2: 31 s depois → dwell satisfeito → bind
+          final bindTime = baseTimeUtc.add(const Duration(seconds: 31));
+          await engine.processVehicleState(
+            vehicle,
+            nowUtc: bindTime,
+            organizationId: orgId,
+          );
 
-        final stateT2 = await executionRepo.findBySetId(smokeSetId!);
-        expect(stateT2!.status.name, 'executed',
-            reason: 'Cenário 6.1 — telemetria válida muda status para executed');
-        expect(stateT2.boundVehicleId, 'smoke-vehicle-001');
-        expect(stateT2.bindingTimestampUtc, bindTime);
-      });
+          final stateT2 = await executionRepo.findBySetId(smokeSetId!);
+          expect(stateT2, isNotNull, reason: 'stateT2 should be initialized');
+          expect(
+            stateT2!.status.name,
+            'executed',
+            reason: 'Cenário 6.1 — telemetria válida muda status para executed',
+          );
+          expect(stateT2.boundVehicleId, 'smoke-vehicle-001');
+          expect(stateT2.bindingTimestampUtc, bindTime);
+        },
+      );
     },
   );
 
@@ -593,9 +678,7 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────────
   group(
     'Smoke 5: Clone de Contrato + SLA Templates (5.11)',
-    skip: hasCredentials
-        ? false
-        : 'Credenciais Supabase ausentes.',
+    skip: hasCredentials ? false : 'Credenciais Supabase ausentes.',
     () {
       String? sourceContractId;
       String? cloneContractId;
@@ -605,9 +688,20 @@ void main() {
 
       setUpAll(() {
         templateRepo = PostgresSlaTemplateRepository(client);
+
+        final mockAuthClone = _SmokeMockAuth();
+        when(() => mockAuthClone.getUserBySessionId(any<String>())).thenAnswer(
+          (_) async => const domain.AuthUser(id: 'user-1', tenantId: orgId),
+        );
+        final cloneTenantValidator = TenantValidationService(
+          authRepository: mockAuthClone,
+        );
+
         cloneHandler = CloneContractHandler(
+          tenantValidator: cloneTenantValidator,
           contractRepository: contractRepo,
           ledger: ledgerRepo,
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
         );
       });
 
@@ -620,6 +714,7 @@ void main() {
             contractorName: 'SPTRANS Source Corp',
             validFromUtc: DateTime.utc(2026, 1, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
+            sessionId: 'session-smoke-5',
           ),
         );
         sourceContractId = source.id;
@@ -630,6 +725,7 @@ void main() {
             sourceContractId: source.id,
             name: 'Smoke Clone $runId',
             contractorName: source.contractorName,
+            sessionId: 'session-smoke-clone-1',
           ),
           validFromUtc: DateTime.utc(2026, 7, 1),
           validUntilUtc: DateTime.utc(2026, 12, 31),
@@ -637,12 +733,21 @@ void main() {
         cloneContractId = clone.id;
 
         expect(clone.id, isNotEmpty);
-        expect(clone.status, ContractStatus.draft,
-            reason: 'Clone nasce como draft');
-        expect(clone.organizationId, orgId,
-            reason: 'organization_id do JWT, nunca do contrato-fonte');
-        expect(clone.clonedFromContractId, source.id,
-            reason: 'Auditoria: campo aponta para o contrato de origem');
+        expect(
+          clone.status,
+          ContractStatus.draft,
+          reason: 'Clone nasce como draft',
+        );
+        expect(
+          clone.organizationId,
+          orgId,
+          reason: 'organization_id do JWT, nunca do contrato-fonte',
+        );
+        expect(
+          clone.clonedFromContractId,
+          source.id,
+          reason: 'Auditoria: campo aponta para o contrato de origem',
+        );
       });
 
       test('5.2 — Clone cross-tenant rejeitado com DomainException', () async {
@@ -653,6 +758,7 @@ void main() {
               sourceContractId: const Uuid().v4(), // ID inexistente nesta org
               name: 'Smoke Malicious Clone',
               contractorName: 'Evil Corp',
+              sessionId: 'session-smoke-clone-2',
             ),
             validFromUtc: DateTime.utc(2026, 7, 1),
             validUntilUtc: DateTime.utc(2026, 12, 31),
@@ -662,23 +768,31 @@ void main() {
         );
       });
 
-      test('5.3 — [db] cloned_from_contract_id persistido no Supabase',
-          () async {
-        expect(cloneContractId, isNotNull,
-            reason: 'Dependência: Smoke 5.1 deve passar primeiro');
-        expect(sourceContractId, isNotNull);
+      test(
+        '5.3 — [db] cloned_from_contract_id persistido no Supabase',
+        () async {
+          expect(
+            cloneContractId,
+            isNotNull,
+            reason: 'Dependência: Smoke 5.1 deve passar primeiro',
+          );
+          expect(sourceContractId, isNotNull);
 
-        final row = await client
-            .from('contracts')
-            .select('cloned_from_contract_id, status, organization_id')
-            .eq('id', cloneContractId!)
-            .single();
+          final row = await client
+              .from('contracts')
+              .select('cloned_from_contract_id, status, organization_id')
+              .eq('id', cloneContractId!)
+              .single();
 
-        expect(row['cloned_from_contract_id'], sourceContractId,
-            reason: 'Campo de auditoria persistido corretamente');
-        expect(row['status'], 'draft');
-        expect(row['organization_id'], orgId);
-      });
+          expect(
+            row['cloned_from_contract_id'],
+            sourceContractId,
+            reason: 'Campo de auditoria persistido corretamente',
+          );
+          expect(row['status'], 'draft');
+          expect(row['organization_id'], orgId);
+        },
+      );
 
       test('5.4 — SlaTemplate save + findByOrganization round-trip', () async {
         final template = SlaTemplate.create(
@@ -686,7 +800,7 @@ void main() {
           name: 'Smoke Template $runId',
           description: 'Template criado pelo smoke 5.11',
           penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1.5,
+            noShowPenaltyBps: 15000,
             delayToleranceMinutes: 5,
             delayPenaltyPerMinute: const Money(100),
             downgradePenaltyFlat: const Money(20000),
@@ -711,8 +825,11 @@ void main() {
       test(
         '5.5 — [db] penalties_payload JSONB preserva todos os 7 campos SLA',
         () async {
-          expect(templateId, isNotNull,
-              reason: 'Dependência: Smoke 5.4 deve passar primeiro');
+          expect(
+            templateId,
+            isNotNull,
+            reason: 'Dependência: Smoke 5.4 deve passar primeiro',
+          );
 
           final row = await client
               .from('sla_templates')
@@ -720,15 +837,21 @@ void main() {
               .eq('id', templateId!)
               .single();
 
-          expect(row['organization_id'], orgId,
-              reason: 'Isolamento de tenant — organization_id correto');
+          expect(
+            row['organization_id'],
+            orgId,
+            reason: 'Isolamento de tenant — organization_id correto',
+          );
 
           final p = row['penalties_payload'] as Map<String, dynamic>;
-          expect(p['noShowThresholdMinutes'], 30,
-              reason: 'Campo Sprint 5.10 persistido no template');
+          expect(
+            p['noShowThresholdMinutes'],
+            30,
+            reason: 'Campo Sprint 5.10 persistido no template',
+          );
           expect(p['earlyArrivalToleranceMinutes'], 2);
           expect(p['dwellTimeMinutes'], 3);
-          expect(p['noShowPenaltyMultiplier'], 1.5);
+          expect(p['noShowPenaltyBps'], 15000);
           expect(p['delayToleranceMinutes'], 5);
           expect(p['delayPenaltyPerMinuteCents'], 100);
           expect(p['downgradePenaltyFlatCents'], 20000);
@@ -736,5 +859,4 @@ void main() {
       );
     },
   );
-
 }

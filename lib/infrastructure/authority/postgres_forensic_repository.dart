@@ -1,10 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/authority/decision/authorization_decision.dart';
-import '../../domain/authority/repositories/forensic_decision_repository.dart';
+import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
+import 'package:veraprob/domain/authority/repositories/forensic_decision_repository.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Postgres implementation of the [ForensicDecisionRepository].
 /// Operates strictly as an immutable append-only storage for Forensic Decisions.
-class PostgresForensicRepository implements ForensicDecisionRepository {
+class PostgresForensicRepository
+    with PostgresErrorInterceptor
+    implements ForensicDecisionRepository {
   final SupabaseClient _client;
 
   PostgresForensicRepository(this._client);
@@ -26,6 +29,10 @@ class PostgresForensicRepository implements ForensicDecisionRepository {
     };
 
     // Append-only constraint guaranteed by Supabase RLS in production.
-    await _client.from('forensic_decisions').insert(payload);
+    try {
+      await _client.from('forensic_decisions').insert(payload);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'forensic_decision');
+    }
   }
 }

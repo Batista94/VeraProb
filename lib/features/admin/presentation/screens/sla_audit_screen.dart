@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
-import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'widgets/_sla_execution_detail_drawer.dart';
 
 final _currencyFormat = NumberFormat.currency(
@@ -111,7 +110,7 @@ class _SummaryCard extends StatelessWidget {
   final Color color;
   final int percentage;
   final String revenueLabel;
-  final Money revenueValue;
+  final int revenueValue;
 
   const _SummaryCard({
     required this.title,
@@ -129,9 +128,7 @@ class _SummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: VeraProbColors.border.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: VeraProbColors.border.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,8 +169,9 @@ class _SummaryCard extends StatelessWidget {
               color: color.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 2,
               children: [
                 Text(
                   revenueLabel,
@@ -181,9 +179,8 @@ class _SummaryCard extends StatelessWidget {
                     color: VeraProbColors.textSecondary,
                   ),
                 ),
-                const SizedBox(width: 8),
                 Text(
-                  _currencyFormat.format(revenueValue.toDouble()),
+                  _currencyFormat.format(revenueValue / 100.0),
                   style: VeraProbTypography.badge.copyWith(
                     color: color,
                     fontSize: 13,
@@ -227,54 +224,57 @@ class _SlaExceptionsTable extends ConsumerWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: SingleChildScrollView(
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  VeraProbColors.textPrimary.withValues(alpha: 0.05),
-                ),
-                columns: const [
-                  DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Janela')),
-                  DataColumn(label: Text('Veículo Planejado')),
-                  DataColumn(label: Text('Valor')),
-                  DataColumn(label: Text('Ação')),
-                ],
-                rows: exceptions.map((item) {
-                  return DataRow(
-                    cells: [
-                      DataCell(_StatusBadge(status: item.status)),
-                      DataCell(
-                        Text(
-                          '${_formatTime(item.windowStartUtc)} - ${_formatTime(item.windowEndUtc)}',
-                          style: VeraProbTypography.bodyMedium,
-                        ),
-                      ),
-                      DataCell(
-                        Text(
-                          item.plannedVehicleId ?? 'Sem veículo',
-                          style: item.plannedVehicleId == null
-                              ? VeraProbTypography.bodyMedium.copyWith(
-                                  color: VeraProbColors.textDisabled,
-                                )
-                              : VeraProbTypography.bodyMedium,
-                        ),
-                      ),
-                      DataCell(
-                        Text(
-                          _currencyFormat.format(
-                            item.contractualValue.toDouble(),
+              scrollDirection: Axis.horizontal,
+              child: SingleChildScrollView(
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(
+                    VeraProbColors.textPrimary.withValues(alpha: 0.05),
+                  ),
+                  columns: const [
+                    DataColumn(label: Text('Status')),
+                    DataColumn(label: Text('Janela')),
+                    DataColumn(label: Text('Veículo Planejado')),
+                    DataColumn(label: Text('Valor')),
+                    DataColumn(label: Text('Ação')),
+                  ],
+                  rows: exceptions.map((item) {
+                    return DataRow(
+                      cells: [
+                        DataCell(_StatusBadge(status: item.status)),
+                        DataCell(
+                          Text(
+                            '${_formatTime(item.windowStartUtc)} - ${_formatTime(item.windowEndUtc)}',
+                            style: VeraProbTypography.bodyMedium,
                           ),
-                          style: VeraProbTypography.bodyMedium,
                         ),
-                      ),
-                      DataCell(
-                        IconButton(
-                          icon: const Icon(Icons.search, size: 20),
-                          onPressed: () => _showDetail(context, item),
+                        DataCell(
+                          Text(
+                            item.plannedVehicleId ?? 'Sem veículo',
+                            style: item.plannedVehicleId == null
+                                ? VeraProbTypography.bodyMedium.copyWith(
+                                    color: VeraProbColors.textDisabled,
+                                  )
+                                : VeraProbTypography.bodyMedium,
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                }).toList(),
+                        DataCell(
+                          Text(
+                            _currencyFormat.format(
+                              item.contractualValue / 100.0,
+                            ),
+                            style: VeraProbTypography.bodyMedium,
+                          ),
+                        ),
+                        DataCell(
+                          IconButton(
+                            icon: const Icon(Icons.search, size: 20),
+                            onPressed: () => _showDetail(context, item),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
             ),
           ),

@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../enums/trip_status.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
 import 'operational_warning.dart';
 
 /// The central domain entity of veraprob.
@@ -19,7 +19,7 @@ class OperationalTrip extends Equatable {
   final DateTime? actualStart;
   final DateTime? actualEnd;
   final int delaySeconds;
-  final double completionPct;
+  final int completionBps;
   final String sourceType; // 'manual', 'gtfs_static', 'gtfs_realtime'
   final String? externalTripId;
 
@@ -46,7 +46,7 @@ class OperationalTrip extends Equatable {
     this.actualStart,
     this.actualEnd,
     this.delaySeconds = 0,
-    this.completionPct = 0.0,
+    this.completionBps = 0,
     this.sourceType = 'manual',
     this.externalTripId,
     this.severityScore = 0,
@@ -98,7 +98,7 @@ class OperationalTrip extends Equatable {
     DateTime? actualStart,
     DateTime? actualEnd,
     int? delaySeconds,
-    double? completionPct,
+    int? completionBps,
     String? sourceType,
     String? externalTripId,
     int? severityScore,
@@ -121,7 +121,7 @@ class OperationalTrip extends Equatable {
       actualStart: actualStart ?? this.actualStart,
       actualEnd: actualEnd ?? this.actualEnd,
       delaySeconds: delaySeconds ?? this.delaySeconds,
-      completionPct: completionPct ?? this.completionPct,
+      completionBps: completionBps ?? this.completionBps,
       sourceType: sourceType ?? this.sourceType,
       externalTripId: externalTripId ?? this.externalTripId,
       severityScore: severityScore ?? this.severityScore,
@@ -153,7 +153,10 @@ class OperationalTrip extends Equatable {
           ? DateTime.parse(json['actual_end'] as String)
           : null,
       delaySeconds: json['delay_seconds'] as int? ?? 0,
-      completionPct: (json['completion_pct'] as num?)?.toDouble() ?? 0.0,
+      completionBps:
+          json['completion_bps'] as int? ??
+          (json['completion_pct'] as num?)?.toInt() ??
+          0,
       sourceType: json['source_type'] as String? ?? 'manual',
       externalTripId: json['external_trip_id'] as String?,
       severityScore: json['severity_score'] as int? ?? 0,
@@ -189,7 +192,7 @@ class OperationalTrip extends Equatable {
       'actual_start': actualStart?.toIso8601String(),
       'actual_end': actualEnd?.toIso8601String(),
       'delay_seconds': delaySeconds,
-      'completion_pct': completionPct,
+      'completion_bps': completionBps,
       'source_type': sourceType,
       'external_trip_id': externalTripId,
       'severity_score': severityScore,
@@ -209,7 +212,7 @@ class OperationalTrip extends Equatable {
     actualStart,
     actualEnd,
     delaySeconds,
-    completionPct,
+    completionBps,
     sourceType,
     externalTripId,
     severityScore,

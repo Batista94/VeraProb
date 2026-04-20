@@ -11,6 +11,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  migration-guard:
+    name: Migration Append-Only Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect destructive DDL in new migrations
+        run: |
+          # Get list of new migration files added in this PR (not in base branch)
+          NEW_MIGRATIONS=$(git diff --name-only --diff-filter=A origin/${{ github.base_ref }}...HEAD -- 'supabase/migrations/*.sql')
+          if [ -z "$NEW_MIGRATIONS" ]; then
+            echo "No new migrations in this PR. PASS."
+            exit 0
+          fi
+          echo "New migrations detected:"
+          echo "$NEW_MIGRATIONS"
+          VIOLATIONS=""
+          for FILE in $NEW_MIGRATIONS; do
+            # Check for destructive DDL (schema-level only, exclude comments)
+            MATCHES=$(grep -inP '^\s*(DROP\s+TABLE|DROP\s+COLUMN|ALTER\s+TABLE\s+\S+\s+DROP\s+COLUMN|TRUNCATE\s+TABLE|TRUNCATE\s+\w)' "$FILE" || true)
+            if [ -n "$MATCHES" ]; then
+              VIOLATIONS="$VIOLATIONS\n--- $FILE ---\n$MATCHES"
+            fi
+          done
+          if [ -n "$VIOLATIONS" ]; then
+            echo ""
+            echo "::error::SCHEMA LOCK VIOLATION — Destructive DDL detected in new migrations."
+            echo "Requires explicit PO sign-off and Lead Reviewer [GO] verdict before merge."
+            echo -e "$VIOLATIONS"
+            exit 1
+          fi
+          echo "No destructive DDL detected. PASS."
+
   analyze:
     name: Flutter Analyze
     runs-on: ubuntu-latest
@@ -18,7 +57,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -28,7 +67,7 @@ jobs:
           cache: true
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -46,15 +85,25 @@ jobs:
       - name: Flutter Analyze (zero warnings policy)
         run: flutter analyze --no-pub
 
+      - name: Enforce Dart Formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Dependency Intelligence (Outdated Audit)
+        run: flutter pub outdated
+
+      - name: VeraProb Forensic Scan
+        run: |
+          chmod +x scripts/pr_scanner.sh
+          bash scripts/pr_scanner.sh
+
   test:
     name: Flutter Test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: analyze
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -64,7 +113,7 @@ jobs:
           cache: true
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -74,8 +123,115 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase Local
+        run: supabase start
+
+      - name: Seed local database
+        run: supabase db seed
+
+      - name: Test Supabase Edge Functions
+        run: supabase test functions
+
       - name: Create stub .env for asset resolution
         run: echo "# CI stub — credentials injected via dart-define" > .env
 
-      - name: Flutter Test
-        run: flutter test --no-pub
+      - name: Capture Supabase Keys
+        run: |
+          # Extrai a chave de servico gerada localmente pelo Supabase (RLS Bypass para testes E2E)
+          # Usa -f 2- para capturar tudo após o primeiro '=' (JWTs podem conter '=' de padding base64)
+          SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          echo "SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
+
+      - name: JWT Sanity Check
+        run: |
+          # Tenta um comando simples no banco usando a chave capturada
+          curl -X GET "http://127.0.0.1:54321/rest/v1/" \
+          -H "apikey: $SERVICE_ROLE_KEY" \
+          -H "Authorization: Bearer $SERVICE_ROLE_KEY"
+
+      - name: Flutter Test with Coverage
+        run: |
+          flutter test --no-pub --coverage \
+            --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
+            --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"
+
+      - name: Web Build Sanity Check (Smoke Test)
+        run: |
+          # Garante que o projeto consegue ser compilado antes do deploy de staging
+          # Ignora o build remoto e testa a integridade dos plugins nativos
+          flutter build web --no-pub --release --dart-define=ENV=ci_check
+
+      - name: Install lcov
+        run: sudo apt-get install -y lcov
+
+      - name: Remove generated files from coverage report
+        run: |
+          lcov --ignore-errors unused \
+            --remove coverage/lcov.info \
+            '*.g.dart' \
+            '*.freezed.dart' \
+            'lib/features/*' \
+            'lib/presentation/*' \
+            --output-file coverage/lcov_filtered.info
+
+      - name: Enforce Coverage Gate (≥60% on domain/application/infrastructure/core)
+        uses: VeryGoodOpenSource/very_good_coverage@v3
+        with:
+          path: coverage/lcov_filtered.info
+          min_coverage: 70
+
+  wasm-build:
+    name: WASM Build Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: analyze
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create stub .env
+        run: echo "# CI stub — credentials injected via dart-define" > .env
+
+      - name: WASM Build (dart2wasm target)
+        run: |
+          flutter build web --wasm --no-pub --release \
+            --dart-define=ENV=ci_check
+
+      - name: Verify WASM artifact present
+        run: |
+          if [ ! -f build/web/main.dart.wasm ]; then
+            echo "::error::main.dart.wasm not found — WASM build did not produce expected output"
+            exit 1
+          fi
+          echo "WASM artifact confirmed: $(du -h build/web/main.dart.wasm | cut -f1)"
+
+      - name: Upload WASM build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: wasm-build-${{ github.sha }}
+          path: build/web/
+          retention-days: 3

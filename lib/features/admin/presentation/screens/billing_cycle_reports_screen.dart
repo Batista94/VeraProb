@@ -1,12 +1,14 @@
 import 'dart:convert';
-import 'package:universal_html/html.dart' as html;
+import 'dart:typed_data';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../features/shared/providers/reporting_providers.dart';
-import '../../../../domain/sla_audit/billing_cycle_report.dart';
-import '../../../../state/providers/contract_providers.dart';
-import '../../../../state/providers/auth_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/shared/providers/reporting_providers.dart';
+import 'package:veraprob/application/shared/billing_cycle_view.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 
 class BillingCycleReportsScreen extends ConsumerStatefulWidget {
   const BillingCycleReportsScreen({super.key});
@@ -18,11 +20,13 @@ class BillingCycleReportsScreen extends ConsumerStatefulWidget {
 
 class _BillingCycleReportsScreenState
     extends ConsumerState<BillingCycleReportsScreen> {
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
-  DateTime _endDate = DateTime.now();
+  DateTime _startDate = DateTime.now().toUtc().subtract(
+    const Duration(days: 30),
+  );
+  DateTime _endDate = DateTime.now().toUtc();
   String? _selectedContractId;
   bool _isLoading = false;
-  BillingCycleReport? _report;
+  BillingCycleView? _report;
 
   Future<void> _generateReport() async {
     final organizationId = ref.read(currentOrganizationIdProvider);
@@ -43,7 +47,7 @@ class _BillingCycleReportsScreenState
             periodEndUtc: _endDate,
             contractId: _selectedContractId,
           );
-      setState(() => _report = report);
+      setState(() => _report = BillingCycleView.fromDomain(report));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -53,28 +57,23 @@ class _BillingCycleReportsScreenState
     if (_report == null) return;
     try {
       final csv = ref.read(exportServiceProvider).generateCsv(_report!);
-
-      // Real download for Web
-      final bytes = utf8.encode('\uFEFF$csv'); // UTF-8 with BOM for Excel
-      final blob = html.Blob([bytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)
-        ..setAttribute(
-          'download',
-          'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}.csv',
-        )
-        ..click();
-      html.Url.revokeObjectUrl(url);
-
+      final bytes = Uint8List.fromList(utf8.encode('\uFEFF$csv')); // UTF-8 BOM
+      await FileSaver.instance.saveFile(
+        name:
+            'relatorio_auditoria_${DateTime.now().toUtc().millisecondsSinceEpoch}',
+        bytes: bytes,
+        fileExtension: 'csv',
+        mimeType: MimeType.csv,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Relatório CSV baixado com sucesso! 📊')),
+        const SnackBar(content: Text('Relatório CSV baixado com sucesso!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao exportar CSV: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: VeraProbColors.error,
         ),
       );
     }
@@ -83,30 +82,26 @@ class _BillingCycleReportsScreenState
   Future<void> _exportPdf() async {
     if (_report == null) return;
     try {
-      final pdfBytes = await ref
+      final pdfList = await ref
           .read(exportServiceProvider)
           .generatePdf(_report!);
-
-      // Real download for Web
-      final blob = html.Blob([pdfBytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)
-        ..setAttribute(
-          'download',
-          'relatorio_auditoria_${DateTime.now().millisecondsSinceEpoch}.pdf',
-        )
-        ..click();
-      html.Url.revokeObjectUrl(url);
-
+      final pdfBytes = Uint8List.fromList(pdfList);
+      await FileSaver.instance.saveFile(
+        name:
+            'relatorio_auditoria_${DateTime.now().toUtc().millisecondsSinceEpoch}',
+        bytes: pdfBytes,
+        fileExtension: 'pdf',
+        mimeType: MimeType.pdf,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Relatório PDF gerado com sucesso! 📄')),
+        const SnackBar(content: Text('Relatório PDF gerado com sucesso!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao exportar PDF: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: VeraProbColors.error,
         ),
       );
     }
@@ -161,7 +156,11 @@ class _BillingCycleReportsScreenState
                   ...contracts.map(
                     (c) => DropdownMenuItem<String?>(
                       value: c.id,
-                      child: Text('${c.name} — ${c.contractorName}'),
+                      child: Text(
+                        '${c.name} — ${c.contractorName}',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ),
                   ),
                 ],
@@ -202,13 +201,13 @@ class _BillingCycleReportsScreenState
                 onPressed: _exportCsv,
                 icon: const Icon(Icons.table_view_rounded),
                 tooltip: 'Exportar CSV',
-                color: Colors.green.shade700,
+                color: VeraProbColors.success,
               ),
               IconButton(
                 onPressed: _exportPdf,
                 icon: const Icon(Icons.picture_as_pdf_rounded),
                 tooltip: 'Exportar PDF',
-                color: Colors.red.shade700,
+                color: VeraProbColors.error,
               ),
             ],
           ],
@@ -218,11 +217,15 @@ class _BillingCycleReportsScreenState
             padding: EdgeInsets.only(top: 6),
             child: Row(
               children: [
-                Icon(Icons.info_outline, size: 14, color: Colors.orange),
+                Icon(
+                  Icons.info_outline,
+                  size: 14,
+                  color: VeraProbColors.warning,
+                ),
                 SizedBox(width: 4),
                 Text(
                   'Nenhum contrato selecionado — relatório agrega todos os contratos.',
-                  style: TextStyle(fontSize: 12, color: Colors.orange),
+                  style: TextStyle(fontSize: 12, color: VeraProbColors.warning),
                 ),
               ],
             ),
@@ -252,7 +255,7 @@ class _BillingCycleReportsScreenState
                 subtitle: Text(
                   'Executadas: ${s.executedCount} / ${s.totalObligations}',
                 ),
-                trailing: Text(_formatCents(s.totalContractedRevenue.cents)),
+                trailing: Text(_formatCents(s.totalContractedRevenue)),
               );
             },
           ),
@@ -261,23 +264,20 @@ class _BillingCycleReportsScreenState
     );
   }
 
-  Widget _buildSummaryCards(BillingCycleReport report) {
+  Widget _buildSummaryCards(BillingCycleView report) {
     return Row(
       children: [
-        _buildCard(
-          'Faturamento',
-          _formatCents(report.totalContractedRevenue.cents),
-        ),
-        _buildCard('Protegido', _formatCents(report.protectedRevenue.cents)),
+        _buildCard('Faturamento', _formatCents(report.totalContractedRevenue)),
+        _buildCard('Protegido', _formatCents(report.protectedRevenue)),
         _buildCard(
           'Perda',
-          _formatCents(report.lostRevenue.cents),
-          color: Colors.red,
+          _formatCents(report.lostRevenue),
+          color: VeraProbColors.error,
         ),
         _buildCard(
           'Risco',
-          _formatCents(report.revenueAtRisk.cents),
-          color: Colors.orange,
+          _formatCents(report.revenueAtRisk),
+          color: VeraProbColors.warning,
         ),
       ],
     );
@@ -306,22 +306,22 @@ class _BillingCycleReportsScreenState
     );
   }
 
-  Widget _buildWarning(BillingCycleReport report) {
+  Widget _buildWarning(BillingCycleView report) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: VeraProbColors.error.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red),
+        border: Border.all(color: VeraProbColors.error),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning, color: Colors.red),
+          const Icon(Icons.warning, color: VeraProbColors.error),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Relatório Incompleto: Faltam ${report.missingDates.length} dias operacionais.',
-              style: const TextStyle(color: Colors.red),
+              style: const TextStyle(color: VeraProbColors.error),
             ),
           ),
         ],

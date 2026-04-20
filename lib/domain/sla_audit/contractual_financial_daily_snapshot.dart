@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'domain_exception.dart';
 
 /// Immutable daily financial snapshot for contractual SLA obligations.
@@ -31,8 +31,8 @@ class ContractualFinancialDailySnapshot extends Equatable {
   final Money revenueAtRisk;
   final Money lostRevenue;
 
-  final double riskPercentage;
-  final double lossPercentage;
+  final int riskPercentageBps;
+  final int lossPercentageBps;
 
   final int totalObligations;
   final int executedCount;
@@ -63,8 +63,8 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required this.protectedRevenue,
     required this.revenueAtRisk,
     required this.lostRevenue,
-    required this.riskPercentage,
-    required this.lossPercentage,
+    required this.riskPercentageBps,
+    required this.lossPercentageBps,
     required this.totalObligations,
     required this.executedCount,
     required this.noShowCount,
@@ -112,12 +112,12 @@ class ContractualFinancialDailySnapshot extends Equatable {
     );
 
     final totalCents = totalContractedRevenue.cents;
-    final riskPercentage = totalCents > 0
-        ? revenueAtRisk.cents / totalCents * 100
-        : 0.0;
-    final lossPercentage = totalCents > 0
-        ? lostRevenue.cents / totalCents * 100
-        : 0.0;
+    final int riskBps = totalCents > 0
+        ? (revenueAtRisk.cents * 10000 ~/ totalCents)
+        : 0;
+    final int lossBps = totalCents > 0
+        ? (lostRevenue.cents * 10000 ~/ totalCents)
+        : 0;
 
     return ContractualFinancialDailySnapshot._(
       id: const Uuid().v4(),
@@ -130,8 +130,8 @@ class ContractualFinancialDailySnapshot extends Equatable {
       protectedRevenue: protectedRevenue,
       revenueAtRisk: revenueAtRisk,
       lostRevenue: lostRevenue,
-      riskPercentage: riskPercentage,
-      lossPercentage: lossPercentage,
+      riskPercentageBps: riskBps,
+      lossPercentageBps: lossBps,
       totalObligations: totalObligations,
       executedCount: executedCount,
       noShowCount: noShowCount,
@@ -156,8 +156,8 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required Money protectedRevenue,
     required Money revenueAtRisk,
     required Money lostRevenue,
-    required double riskPercentage,
-    required double lossPercentage,
+    required int riskPercentageBps,
+    required int lossPercentageBps,
     required int totalObligations,
     required int executedCount,
     required int noShowCount,
@@ -178,8 +178,8 @@ class ContractualFinancialDailySnapshot extends Equatable {
       protectedRevenue: protectedRevenue,
       revenueAtRisk: revenueAtRisk,
       lostRevenue: lostRevenue,
-      riskPercentage: riskPercentage,
-      lossPercentage: lossPercentage,
+      riskPercentageBps: riskPercentageBps,
+      lossPercentageBps: lossPercentageBps,
       totalObligations: totalObligations,
       executedCount: executedCount,
       noShowCount: noShowCount,
@@ -203,8 +203,8 @@ class ContractualFinancialDailySnapshot extends Equatable {
     protectedRevenue,
     revenueAtRisk,
     lostRevenue,
-    riskPercentage,
-    lossPercentage,
+    riskPercentageBps,
+    lossPercentageBps,
     totalObligations,
     executedCount,
     noShowCount,

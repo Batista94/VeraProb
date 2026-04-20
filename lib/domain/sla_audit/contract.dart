@@ -7,7 +7,7 @@ import 'contract_events.dart';
 import 'contract_status.dart';
 import 'domain_event.dart';
 import 'domain_exception.dart';
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 /// Aggregate Root representing a formal contractual agreement between
 /// the operating organization and a contractor.
@@ -36,6 +36,11 @@ class Contract extends Equatable {
   // ── Identity ──────────────────────────────────────────────
   /// UUID v4 generated internally. Immutable.
   final String id;
+
+  /// Optimistic locking version counter. Auto-incremented on each UPDATE.
+  /// Used to detect concurrent modifications (Lost Update prevention).
+  /// New aggregates start at version 1.
+  final int version;
 
   // ── Attributes ────────────────────────────────────────────
   final String organizationId;
@@ -68,6 +73,31 @@ class Contract extends Equatable {
   /// Null = no cap defined.
   final Money? financialCeiling;
 
+  /// Multiplier applied to penalties (INV-19: BPS precision).
+  ///
+  /// Example: 1.75x -> 17500 BPS.
+  /// Formula: `penalty = (base_penalty * penaltyMultiplierBps + 5000) ~/ 10000`
+  /// (Symmetric Rounding — prevents cumulative drift from truncation).
+  final int penaltyMultiplierBps;
+
+  // ── Coordinates ───────────────────────────────────────────
+  /// Optional geographic coordinates for this contract's primary location.
+  /// **INV:** Always use `double` for physical metrics.
+  final double? latitude; // Physical Metric - Double Required
+  final double? longitude; // Physical Metric - Double Required
+
+  // ── Forensic sealing (INV-34) ─────────────────────────────
+  /// SHA-256 hash of the previous row state. 'GENESIS' on first insert.
+  /// Null for rows that pre-date migration 20260415000000. Read-only —
+  /// computed by the DB trigger `seal_contracts_forensic`. NEVER sent
+  /// in INSERT/UPDATE payloads.
+  final String? previousHash;
+
+  /// SHA-256(id|version|status|organization_id|previous_hash) in hex.
+  /// Computed by the DB trigger. Null for pre-migration rows not yet updated.
+  /// Read-only — NEVER sent in INSERT/UPDATE payloads.
+  final String? currentHash;
+
   // ── Internal events ───────────────────────────────────────
   final List<DomainEvent> _domainEvents;
 
@@ -75,6 +105,7 @@ class Contract extends Equatable {
   // ignore: prefer_const_constructors_in_immutables
   Contract._({
     required this.id,
+    required this.version,
     required this.organizationId,
     required this.name,
     required this.contractorName,
@@ -90,6 +121,11 @@ class Contract extends Equatable {
     this.submittedForApprovalAtUtc,
     this.clonedFromContractId,
     this.financialCeiling,
+    required this.penaltyMultiplierBps,
+    this.latitude,
+    this.longitude,
+    this.previousHash,
+    this.currentHash,
     required List<DomainEvent> domainEvents,
   }) : _domainEvents = domainEvents;
 
@@ -113,6 +149,10 @@ class Contract extends Equatable {
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
     Money? financialCeiling,
+    int penaltyMultiplierBps = 10000,
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
+    required DateTime nowUtc,
   }) {
     // ── Validate invariants ─────────────────────────────────
     if (organizationId.isEmpty) {
@@ -132,10 +172,10 @@ class Contract extends Equatable {
 
     // ── Generate identity and timestamps ────────────────────
     final id = const Uuid().v4();
-    final now = DateTime.now().toUtc();
+    final now = nowUtc;
 
-    // ── Emit domain event ───────────────────────────────────
-    final event = ContractCreatedEvent(
+    // ── Emit domain factEvent ───────────────────────────────────
+    final domainEvent = ContractCreatedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -147,6 +187,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: 1, // New aggregate starts at version 1
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -156,7 +197,10 @@ class Contract extends Equatable {
       status: ContractStatus.draft,
       createdAtUtc: now,
       financialCeiling: financialCeiling,
-      domainEvents: [event],
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
+      domainEvents: [domainEvent],
     );
   }
 
@@ -176,6 +220,10 @@ class Contract extends Equatable {
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
     required String clonedFromContractId,
+    int penaltyMultiplierBps = 10000,
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
+    required DateTime nowUtc,
   }) {
     if (organizationId.isEmpty) {
       throw const DomainException('organizationId must not be empty');
@@ -193,9 +241,9 @@ class Contract extends Equatable {
     }
 
     final id = const Uuid().v4();
-    final now = DateTime.now().toUtc();
+    final now = nowUtc;
 
-    final event = ContractCreatedEvent(
+    final domainEvent = ContractCreatedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -207,6 +255,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: 1, // Cloned aggregate starts at version 1
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -216,7 +265,10 @@ class Contract extends Equatable {
       status: ContractStatus.draft,
       createdAtUtc: now,
       clonedFromContractId: clonedFromContractId,
-      domainEvents: [event],
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
+      domainEvents: [domainEvent],
     );
   }
 
@@ -226,6 +278,7 @@ class Contract extends Equatable {
   /// Used by infrastructure repositories. Does NOT emit domain events.
   static Contract reconstitute({
     required String id,
+    required int version,
     required String organizationId,
     required String name,
     required String contractorName,
@@ -241,9 +294,15 @@ class Contract extends Equatable {
     DateTime? submittedForApprovalAtUtc,
     String? clonedFromContractId,
     Money? financialCeiling,
+    required int penaltyMultiplierBps,
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
+    String? previousHash,
+    String? currentHash,
   }) {
     return Contract._(
       id: id,
+      version: version,
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -259,7 +318,65 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
+      previousHash: previousHash,
+      currentHash: currentHash,
       domainEvents: const [], // RECONSTITUTION: no events emitted
+    );
+  }
+
+  // ── copyWith ──────────────────────────────────────────────
+  Contract copyWith({
+    String? id,
+    int? version,
+    String? organizationId,
+    String? name,
+    String? contractorName,
+    String? description,
+    DateTime? validFromUtc,
+    DateTime? validUntilUtc,
+    ContractStatus? status,
+    DateTime? createdAtUtc,
+    DateTime? activatedAtUtc,
+    DateTime? closedAtUtc,
+    String? closedByUserId,
+    String? closeReason,
+    DateTime? submittedForApprovalAtUtc,
+    String? clonedFromContractId,
+    Money? financialCeiling,
+    int? penaltyMultiplierBps,
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
+    String? previousHash,
+    String? currentHash,
+  }) {
+    return Contract._(
+      id: id ?? this.id,
+      version: version ?? this.version,
+      organizationId: organizationId ?? this.organizationId,
+      name: name ?? this.name,
+      contractorName: contractorName ?? this.contractorName,
+      description: description ?? this.description,
+      validFromUtc: validFromUtc ?? this.validFromUtc,
+      validUntilUtc: validUntilUtc ?? this.validUntilUtc,
+      status: status ?? this.status,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      activatedAtUtc: activatedAtUtc ?? this.activatedAtUtc,
+      closedAtUtc: closedAtUtc ?? this.closedAtUtc,
+      closedByUserId: closedByUserId ?? this.closedByUserId,
+      closeReason: closeReason ?? this.closeReason,
+      submittedForApprovalAtUtc:
+          submittedForApprovalAtUtc ?? this.submittedForApprovalAtUtc,
+      clonedFromContractId: clonedFromContractId ?? this.clonedFromContractId,
+      financialCeiling: financialCeiling ?? this.financialCeiling,
+      penaltyMultiplierBps: penaltyMultiplierBps ?? this.penaltyMultiplierBps,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      previousHash: previousHash ?? this.previousHash,
+      currentHash: currentHash ?? this.currentHash,
+      domainEvents: const [],
     );
   }
 
@@ -272,7 +389,10 @@ class Contract extends Equatable {
   /// in [domainEvents].
   ///
   /// Throws [DomainException] if the contract is not in [draft].
-  Contract submitForApproval({required String reviewToken}) {
+  Contract submitForApproval({
+    required String reviewToken,
+    required DateTime nowUtc,
+  }) {
     if (status != ContractStatus.draft) {
       throw DomainException(
         'Cannot submit contract in status "$status" for approval. '
@@ -280,8 +400,8 @@ class Contract extends Equatable {
       );
     }
 
-    final now = DateTime.now().toUtc();
-    final event = ContractSubmittedForApprovalEvent(
+    final now = nowUtc;
+    final domainEvent = ContractSubmittedForApprovalEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -291,6 +411,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: version, // Version preserved — incremented by DB trigger on save
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -302,7 +423,10 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: now,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
-      domainEvents: [event],
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
+      domainEvents: [domainEvent],
     );
   }
 
@@ -315,7 +439,10 @@ class Contract extends Equatable {
   /// [ContractAcceptedByContractorEvent] in [domainEvents].
   ///
   /// Throws [DomainException] if status is not [awaitingContractorAcceptance].
-  Contract acceptByContractor({required String reviewToken}) {
+  Contract acceptByContractor({
+    required String reviewToken,
+    required DateTime nowUtc,
+  }) {
     if (status != ContractStatus.awaitingContractorAcceptance) {
       throw DomainException(
         'Cannot accept contract in status "$status". '
@@ -323,8 +450,8 @@ class Contract extends Equatable {
       );
     }
 
-    final now = DateTime.now().toUtc();
-    final event = ContractAcceptedByContractorEvent(
+    final now = nowUtc;
+    final domainEvent = ContractAcceptedByContractorEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -334,6 +461,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: version, // Version preserved — incremented by DB trigger on save
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -346,7 +474,10 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
-      domainEvents: [event],
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
+      domainEvents: [domainEvent],
     );
   }
 
@@ -358,7 +489,7 @@ class Contract extends Equatable {
   /// and a [ContractActivatedEvent] in [domainEvents].
   ///
   /// Throws [DomainException] if the contract is not in [draft].
-  Contract activate() {
+  Contract activate({required DateTime nowUtc}) {
     if (status != ContractStatus.draft) {
       throw DomainException(
         'Cannot activate contract in status "$status". '
@@ -367,8 +498,8 @@ class Contract extends Equatable {
       );
     }
 
-    final now = DateTime.now().toUtc();
-    final event = ContractActivatedEvent(
+    final now = nowUtc;
+    final domainEvent = ContractActivatedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -377,6 +508,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: version, // Version preserved — incremented by DB trigger on save
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -392,7 +524,10 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
-      domainEvents: [event],
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
+      domainEvents: [domainEvent],
     );
   }
 
@@ -407,7 +542,11 @@ class Contract extends Equatable {
   ///
   /// Throws [DomainException] if the contract is already [closed],
   /// or if required fields are empty.
-  Contract close({required String closedByUserId, required String reason}) {
+  Contract close({
+    required String closedByUserId,
+    required String reason,
+    required DateTime nowUtc,
+  }) {
     if (status == ContractStatus.closed) {
       throw const DomainException(
         'Contract is already closed. Closed is a terminal state.',
@@ -420,8 +559,8 @@ class Contract extends Equatable {
       throw const DomainException('reason must not be empty');
     }
 
-    final now = DateTime.now().toUtc();
-    final event = ContractClosedEvent(
+    final now = nowUtc;
+    final domainEvent = ContractClosedEvent(
       organizationId: organizationId,
       occurredAtUtc: now,
       contractId: id,
@@ -432,6 +571,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
+      version: version, // Version preserved — incremented by DB trigger on save
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -447,7 +587,10 @@ class Contract extends Equatable {
       submittedForApprovalAtUtc: submittedForApprovalAtUtc,
       clonedFromContractId: clonedFromContractId,
       financialCeiling: financialCeiling,
-      domainEvents: [event],
+      penaltyMultiplierBps: penaltyMultiplierBps,
+      latitude: latitude,
+      longitude: longitude,
+      domainEvents: [domainEvent],
     );
   }
 
@@ -491,6 +634,7 @@ class Contract extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    version,
     organizationId,
     name,
     contractorName,
@@ -506,5 +650,10 @@ class Contract extends Equatable {
     submittedForApprovalAtUtc,
     clonedFromContractId,
     financialCeiling,
+    penaltyMultiplierBps,
+    latitude,
+    longitude,
+    previousHash,
+    currentHash,
   ];
 }

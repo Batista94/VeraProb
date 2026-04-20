@@ -11,6 +11,10 @@ abstract interface class SlaTemplateRepository {
   /// Returns all templates for [organizationId], ordered by name ascending.
   Future<List<SlaTemplate>> findByOrganization(String organizationId);
 
+  /// Returns a single template by [id] within [organizationId].
+  /// Returns null if not found.
+  Future<SlaTemplate?> findById(String id, {required String organizationId});
+
   /// Deletes a template by [id] within [organizationId].
   /// No-op if the template does not exist.
   Future<void> delete(String id, {required String organizationId});

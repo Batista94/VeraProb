@@ -11,15 +11,17 @@
 class ContractualServiceInput {
   final DateTime scheduledStartTimeUtc;
   final DateTime scheduledEndTimeUtc;
-  final double startLatitude;
-  final double startLongitude;
+
+  final double startLatitude; // Physical Metric - Double Required
+  final double startLongitude; // Physical Metric - Double Required
   final int startRadiusMeters;
-  final double endLatitude;
-  final double endLongitude;
+
+  final double endLatitude; // Physical Metric - Double Required
+  final double endLongitude; // Physical Metric - Double Required
   final int endRadiusMeters;
   final String? plannedVehicleId;
-  final double contractualValue;
-  final double noShowPenaltyMultiplier;
+  final int contractualValueCents;
+  final int noShowPenaltyBps;
 
   const ContractualServiceInput({
     required this.scheduledStartTimeUtc,
@@ -31,7 +33,7 @@ class ContractualServiceInput {
     required this.endLongitude,
     required this.endRadiusMeters,
     this.plannedVehicleId,
-    required this.contractualValue,
-    required this.noShowPenaltyMultiplier,
+    required this.contractualValueCents,
+    required this.noShowPenaltyBps,
   });
 }

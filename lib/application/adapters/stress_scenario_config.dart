@@ -6,19 +6,21 @@ class StressScenarioConfig {
   /// The number of vehicles to simulate.
   final int vehicleCount;
 
-  /// Probability (0.0 to 1.0) of a vehicle encountering a critical incident
+  /// Probability of a vehicle encountering a critical incident
   /// (off-route, emergency, etc.) per tick.
-  final double incidentProbability;
+  /// Unit: BPS ($10000 = 100%).
+  final int incidentProbability;
 
-  /// Probability (0.0 to 1.0) of a vehicle experiencing connectivity issues
+  /// Probability of a vehicle experiencing connectivity issues
   /// (degraded or signal lost) per tick.
-  final double signalLossProbability;
+  /// Unit: BPS ($10000 = 100%).
+  final int signalLossProbability;
 
   const StressScenarioConfig({
     required this.seed,
     this.vehicleCount = 8,
-    this.incidentProbability = 0.05,
-    this.signalLossProbability = 0.05,
+    this.incidentProbability = 500,
+    this.signalLossProbability = 500,
   });
 
   /// A pre-defined stress scenario for 100 vehicles.
@@ -26,8 +28,8 @@ class StressScenarioConfig {
     return const StressScenarioConfig(
       seed: 1337,
       vehicleCount: 100,
-      incidentProbability: 0.1,
-      signalLossProbability: 0.1,
+      incidentProbability: 1000,
+      signalLossProbability: 1000,
     );
   }
 
@@ -36,8 +38,8 @@ class StressScenarioConfig {
     return const StressScenarioConfig(
       seed: 42069,
       vehicleCount: 250,
-      incidentProbability: 0.15,
-      signalLossProbability: 0.15,
+      incidentProbability: 1500,
+      signalLossProbability: 1500,
     );
   }
 }

@@ -1,4 +1,4 @@
-import '../../domain/entities/vehicle_position.dart';
+import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 /// Adapter interface for ingesting raw vehicle GPS telemetry.
 ///

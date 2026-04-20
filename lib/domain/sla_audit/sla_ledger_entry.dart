@@ -21,6 +21,9 @@ class SlaLedgerEntry extends Equatable {
   /// The Tenant / Organization ID that owns this ledger entry.
   final String organizationId;
 
+  /// The ID of the operator (user or system) that triggered this entry.
+  final String operatorId;
+
   /// Causal linkage: The specific obligation (SET) this entry refers to.
   /// For plan-level events, this might be null or represent the whole declaration.
   final String? setId;
@@ -34,7 +37,7 @@ class SlaLedgerEntry extends Equatable {
   /// The timestamp in UTC when the fact occurred.
   final DateTime occurredAtUtc;
 
-  /// Complementary forensic data in a structured but flexible format.
+  /// Complementary forensic information in a structured but flexible format.
   final Map<String, dynamic> payload;
 
   const SlaLedgerEntry({
@@ -42,6 +45,7 @@ class SlaLedgerEntry extends Equatable {
     this.eventId,
     required this.organizationId,
     required this.type,
+    this.operatorId = 'SYSTEM',
     this.setId,
     required this.contractId,
     required this.planVersion,
@@ -55,6 +59,7 @@ class SlaLedgerEntry extends Equatable {
     eventId,
     organizationId,
     type,
+    operatorId,
     setId,
     contractId,
     planVersion,

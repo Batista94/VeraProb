@@ -11,29 +11,28 @@ void main() {
   ShadowModeSimulation makeSimulation({
     String orgId = 'org-abc',
     Money actualLostRevenue = const Money(100000), // R$ 1000.00
-    double baselineDisputeRate = 60.0, // 60% would have been disputed away
+    int baselineDisputeRateBps = 6000, // 60% would have been disputed away
     int incidentCount = 10,
     Money manualCostPerIncident = const Money(5000), // R$ 50.00
     Money platformSubscriptionCost = const Money(50000), // R$ 500.00
-    double evidenceQualityRate = 95.0,
-  }) =>
-      ShadowModeSimulation.compute(
-        organizationId: orgId,
-        simulationName: 'Março 2026',
-        periodStartUtc: periodStart,
-        periodEndUtc: periodEnd,
-        actualProtectedRevenue: const Money(800000),
-        actualLostRevenue: actualLostRevenue,
-        actualAtRiskRevenue: const Money(50000),
-        actualComplianceRate: 85.0,
-        evidenceQualityRate: evidenceQualityRate,
-        baselineDisputeRate: baselineDisputeRate,
-        manualEnforcementCostPerIncident: manualCostPerIncident,
-        incidentCount: incidentCount,
-        platformSubscriptionCost: platformSubscriptionCost,
-        generatedAtUtc: generatedAt,
-        generatedByUserId: 'user-manager-1',
-      );
+    int evidenceQualityRateBps = 9500,
+  }) => ShadowModeSimulation.compute(
+    organizationId: orgId,
+    simulationName: 'Março 2026',
+    periodStartUtc: periodStart,
+    periodEndUtc: periodEnd,
+    actualProtectedRevenue: const Money(800000),
+    actualLostRevenue: actualLostRevenue,
+    actualAtRiskRevenue: const Money(50000),
+    actualComplianceRateBps: 8500,
+    evidenceQualityRateBps: evidenceQualityRateBps,
+    baselineDisputeRateBps: baselineDisputeRateBps,
+    manualEnforcementCostPerIncident: manualCostPerIncident,
+    incidentCount: incidentCount,
+    platformSubscriptionCost: platformSubscriptionCost,
+    generatedAtUtc: generatedAt,
+    generatedByUserId: 'user-manager-1',
+  );
 
   // ── ROI computation ────────────────────────────────────────────────────────
   group('ShadowModeSimulation.compute — ROI calculation', () {
@@ -43,7 +42,7 @@ void main() {
       // simulated = 100000 × (1 − 0.6) = 40000 cents
       final sim = makeSimulation(
         actualLostRevenue: const Money(100000),
-        baselineDisputeRate: 60.0,
+        baselineDisputeRateBps: 6000,
         manualCostPerIncident: const Money(0),
         incidentCount: 0,
         platformSubscriptionCost: const Money(1),
@@ -57,7 +56,7 @@ void main() {
       // protected = (100000 - 40000) + 50000 = 110000
       final sim = makeSimulation(
         actualLostRevenue: const Money(100000),
-        baselineDisputeRate: 60.0,
+        baselineDisputeRateBps: 6000,
         manualCostPerIncident: const Money(5000),
         incidentCount: 10,
         platformSubscriptionCost: const Money(1),
@@ -70,67 +69,75 @@ void main() {
       // roi = (110000 / 50000) × 100 = 220.0
       final sim = makeSimulation(
         actualLostRevenue: const Money(100000),
-        baselineDisputeRate: 60.0,
+        baselineDisputeRateBps: 6000,
         manualCostPerIncident: const Money(5000),
         incidentCount: 10,
         platformSubscriptionCost: const Money(50000),
       );
-      expect(sim.roiPercentage, closeTo(220.0, 0.01));
+      // roi = (110000 / 50000) * 10000 = 22000 bps
+      expect(sim.roiPercentageBps, equals(22000));
     });
 
     test('roiPercentage is 0 when subscription cost is 0', () {
-      final sim = makeSimulation(
-        platformSubscriptionCost: const Money(0),
-      );
-      expect(sim.roiPercentage, 0.0);
+      final sim = makeSimulation(platformSubscriptionCost: const Money(0));
+      expect(sim.roiPercentageBps, 0);
     });
 
     test('same inputs produce same results (idempotency)', () {
       final sim1 = makeSimulation();
       final sim2 = makeSimulation();
       expect(sim1.simulatedLostRevenue.cents, sim2.simulatedLostRevenue.cents);
-      expect(sim1.revenueProtectedByPlatform.cents, sim2.revenueProtectedByPlatform.cents);
-      expect(sim1.roiPercentage, sim2.roiPercentage);
+      expect(
+        sim1.revenueProtectedByPlatform.cents,
+        sim2.revenueProtectedByPlatform.cents,
+      );
+      expect(sim1.roiPercentageBps, sim2.roiPercentageBps);
     });
 
-    test('zero dispute rate means operator recovers nothing without platform', () {
-      // disputeRate=0% → all penalties would have been successfully disputed
-      // simulated = actualLost × (1-0) = actualLost
-      // protected = 0 + manualCost
-      final sim = makeSimulation(
-        actualLostRevenue: const Money(100000),
-        baselineDisputeRate: 0.0,
-        manualCostPerIncident: const Money(0),
-        incidentCount: 0,
-        platformSubscriptionCost: const Money(1),
-      );
-      expect(sim.simulatedLostRevenue.cents, equals(sim.actualLostRevenue.cents));
-      expect(sim.revenueProtectedByPlatform.cents, 0);
-    });
+    test(
+      'zero dispute rate means operator recovers nothing without platform',
+      () {
+        // disputeRate=0% → all penalties would have been successfully disputed
+        // simulated = actualLost × (1-0) = actualLost
+        // protected = 0 + manualCost
+        final sim = makeSimulation(
+          actualLostRevenue: const Money(100000),
+          baselineDisputeRateBps: 0,
+          manualCostPerIncident: const Money(0),
+          incidentCount: 0,
+          platformSubscriptionCost: const Money(1),
+        );
+        expect(
+          sim.simulatedLostRevenue.cents,
+          equals(sim.actualLostRevenue.cents),
+        );
+        expect(sim.revenueProtectedByPlatform.cents, 0);
+      },
+    );
 
-    test('100% dispute rate means without platform zero recovery (full exposure)', () {
-      // disputeRate=100% → all penalties waived without platform
-      // simulated = actualLost × (1 - 1.0) = 0
-      // protected = actualLost - 0 + manualCost
-      final sim = makeSimulation(
-        actualLostRevenue: const Money(100000),
-        baselineDisputeRate: 100.0,
-        manualCostPerIncident: const Money(0),
-        incidentCount: 0,
-        platformSubscriptionCost: const Money(1),
-      );
-      expect(sim.simulatedLostRevenue.cents, 0);
-      expect(sim.revenueProtectedByPlatform.cents, 100000);
-    });
+    test(
+      '100% dispute rate means without platform zero recovery (full exposure)',
+      () {
+        // disputeRate=100% → all penalties waived without platform
+        // simulated = actualLost × (1 - 1.0) = 0
+        // protected = actualLost - 0 + manualCost
+        final sim = makeSimulation(
+          actualLostRevenue: const Money(100000),
+          baselineDisputeRateBps: 10000,
+          manualCostPerIncident: const Money(0),
+          incidentCount: 0,
+          platformSubscriptionCost: const Money(1),
+        );
+        expect(sim.simulatedLostRevenue.cents, 0);
+        expect(sim.revenueProtectedByPlatform.cents, 100000);
+      },
+    );
   });
 
   // ── Validation ─────────────────────────────────────────────────────────────
   group('ShadowModeSimulation.compute — validation', () {
     test('throws if organizationId is empty', () {
-      expect(
-        () => makeSimulation(orgId: ''),
-        throwsA(isA<DomainException>()),
-      );
+      expect(() => makeSimulation(orgId: ''), throwsA(isA<DomainException>()));
     });
 
     test('throws if baselineDisputeRate > 100', () {
@@ -143,9 +150,9 @@ void main() {
           actualProtectedRevenue: const Money(0),
           actualLostRevenue: const Money(0),
           actualAtRiskRevenue: const Money(0),
-          actualComplianceRate: 100,
-          evidenceQualityRate: 100,
-          baselineDisputeRate: 101.0, // invalid
+          actualComplianceRateBps: 10000,
+          evidenceQualityRateBps: 10000,
+          baselineDisputeRateBps: 10100, // invalid
           manualEnforcementCostPerIncident: const Money(0),
           incidentCount: 0,
           platformSubscriptionCost: const Money(1),
@@ -166,9 +173,9 @@ void main() {
           actualProtectedRevenue: const Money(0),
           actualLostRevenue: const Money(0),
           actualAtRiskRevenue: const Money(0),
-          actualComplianceRate: 100,
-          evidenceQualityRate: -1.0, // invalid
-          baselineDisputeRate: 50,
+          actualComplianceRateBps: 10000,
+          evidenceQualityRateBps: -100, // invalid
+          baselineDisputeRateBps: 5000,
           manualEnforcementCostPerIncident: const Money(0),
           incidentCount: 0,
           platformSubscriptionCost: const Money(1),
@@ -189,9 +196,9 @@ void main() {
           actualProtectedRevenue: const Money(0),
           actualLostRevenue: const Money(0),
           actualAtRiskRevenue: const Money(0),
-          actualComplianceRate: 100,
-          evidenceQualityRate: 95,
-          baselineDisputeRate: 60,
+          actualComplianceRateBps: 10000,
+          evidenceQualityRateBps: 9500,
+          baselineDisputeRateBps: 6000,
           manualEnforcementCostPerIncident: const Money(0),
           incidentCount: 0,
           platformSubscriptionCost: const Money(1),
@@ -205,30 +212,33 @@ void main() {
 
   // ── Evidence quality attribution ───────────────────────────────────────────
   group('ShadowModeSimulation.evidenceQualityAttribution', () {
-    test('excellent text when evidenceQualityRate >= 95', () {
-      final sim = makeSimulation(evidenceQualityRate: 97.5);
+    test('excellent text when evidenceQualityRateBps >= 9500', () {
+      final sim = makeSimulation(evidenceQualityRateBps: 9750);
       final text = sim.evidenceQualityAttribution;
       expect(text, contains('excelente'));
       expect(text, contains('97.5%'));
     });
 
-    test('adequate text when 80 <= evidenceQualityRate < 95', () {
-      final sim = makeSimulation(evidenceQualityRate: 82.0);
+    test('adequate text when 8000 <= evidenceQualityRateBps < 9500', () {
+      final sim = makeSimulation(evidenceQualityRateBps: 8200);
       final text = sim.evidenceQualityAttribution;
       expect(text, contains('adequada'));
     });
 
-    test('warning text when evidenceQualityRate < 80 — attributes to hardware', () {
-      final sim = makeSimulation(evidenceQualityRate: 65.0);
-      final text = sim.evidenceQualityAttribution;
-      // Must mention hardware attribution (PO directive: protect operator's legal position)
-      expect(text, contains('hardware GPS'));
-      expect(text, contains('contratante'));
-      expect(text, contains('veraprob processou 100%'));
-    });
+    test(
+      'warning text when evidenceQualityRateBps < 8000 — attributes to hardware',
+      () {
+        final sim = makeSimulation(evidenceQualityRateBps: 6500);
+        final text = sim.evidenceQualityAttribution;
+        // Must mention hardware attribution (PO directive: protect operator's legal position)
+        expect(text, contains('hardware GPS'));
+        expect(text, contains('contratante'));
+        expect(text, contains('veraprob processou 100%'));
+      },
+    );
 
     test('attribution text never blames veraprob for hardware issues', () {
-      final sim = makeSimulation(evidenceQualityRate: 40.0);
+      final sim = makeSimulation(evidenceQualityRateBps: 4000);
       final text = sim.evidenceQualityAttribution;
       expect(text, isNot(contains('erro do sistema')));
       expect(text, isNot(contains('falha do veraprob')));

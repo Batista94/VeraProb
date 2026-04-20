@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:veraprob/domain/auth/auth_user.dart' as domain;
+import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
@@ -17,7 +21,11 @@ import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repositor
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
 import 'package:timezone/data/latest.dart' as tz;
+
+class MockAuthRepository extends Mock implements IAuthRepository {}
 
 const _orgId = 'org-1';
 
@@ -27,6 +35,8 @@ void main() {
   late InMemorySlaAuditLedgerRepository ledger;
   late InMemoryOperationalZoneRepository zoneRepository;
   late DeclareContractualPlanHandler handler;
+  late MockAuthRepository mockAuthRepo;
+  late TenantValidationService tenantValidator;
 
   /// Creates a handler with a pre-populated zone (INV-18 happy path).
   /// [activeVehicleCount] controls the vehicle gate for shift-based tests.
@@ -35,15 +45,18 @@ void main() {
     int activeVehicleCount = 1,
     InMemoryOperationalZoneRepository? zones,
   }) {
+    final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
     return DeclareContractualPlanHandler(
+      tenantValidator: tenantValidator,
       repository: repository,
       ledger: ledger,
-      ruleRepository: MockContractualRuleRepository(),
       contractRepository: MockContractRepository(),
       zoneRepository: zones ?? zoneRepository,
       vehicleRepository: InMemoryActiveVehicleRepository(
         countsByOrg: {_orgId: activeVehicleCount},
       ),
+      clock: clock,
+      idempotencyStore: InMemoryIdempotencyStore(),
     );
   }
 
@@ -52,6 +65,8 @@ void main() {
     repository = InMemoryPlanDeclarationRepository();
     ledger = InMemorySlaAuditLedgerRepository();
     zoneRepository = InMemoryOperationalZoneRepository();
+    mockAuthRepo = MockAuthRepository();
+    tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
 
     // Pre-populate one zone so the INV-18 gate passes in all baseline tests.
     await zoneRepository.save(
@@ -63,6 +78,13 @@ void main() {
     );
 
     handler = makeHandler();
+    when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
+      (_) async => const domain.AuthUser(
+        id: 'user-1',
+        email: 'test@test.com',
+        tenantId: _orgId,
+      ),
+    );
   });
 
   ContractualServiceInput makeInput({
@@ -74,8 +96,8 @@ void main() {
     double endLat = -23.5600,
     double endLng = -46.6400,
     int endRadius = 100,
-    double contractualValue = 150.0,
-    double noShowPenaltyMultiplier = 1.5,
+    int contractualValueCents = 15000,
+    int noShowPenaltyBps = 15000,
   }) {
     final s = start ?? DateTime.utc(2026, 3, 1, 6, 0);
     final e = end ?? s.add(const Duration(hours: 1));
@@ -88,8 +110,8 @@ void main() {
       endLatitude: endLat,
       endLongitude: endLng,
       endRadiusMeters: endRadius,
-      contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      contractualValueCents: contractualValueCents,
+      noShowPenaltyBps: noShowPenaltyBps,
     );
   }
 
@@ -109,34 +131,33 @@ void main() {
       originalFileHash: hash,
       declaredAtUtc: declaredAt ?? DateTime.utc(2026, 2, 25),
       services: services ?? [makeInput()],
+      sessionId: 'session-1',
+      idempotencyKey: 'idemp-$contractId-$version-$hash',
     );
   }
 
   // ── Tests ────────────────────────────────────────────────
   group('DeclareContractualPlanHandler', () {
-    test(
-      'happy path — aggregate created, persisted, event in ledger',
-      () async {
-        final plan = await handler.handle(makeCommand());
+    test('happy path — aggregate created, persisted, event in ledger', () async {
+      final plan = await handler.handle(makeCommand());
 
-        // Aggregate was created with correct fields
-        expect(plan.id, isNotEmpty);
-        expect(plan.contractId, 'contract-1');
-        expect(plan.declaredByUserId, 'user-1');
-        expect(plan.planVersion, 1);
-        expect(plan.services, hasLength(1));
+      // Aggregate was created with correct fields
+      expect(plan.id, isNotEmpty);
+      expect(plan.contractId, 'contract-1');
+      expect(plan.declaredByUserId, 'user-1');
+      expect(plan.planVersion, 1);
+      expect(plan.services, hasLength(1));
 
-        // Aggregate was persisted
-        final persisted = await repository.findById(plan.id);
-        expect(persisted, isNotNull);
-        expect(persisted!.id, plan.id);
+      // Aggregate was persisted
+      final persisted = await repository.findById(plan.id);
+      expect(persisted, isNotNull);
+      expect(persisted!.id, plan.id);
 
-        // Two entries appended: PLAN_DECLARED + CONTRACT_ACTIVATED (draft→active)
-        expect(ledger.entries, hasLength(2));
-        expect(ledger.entries.first.type, 'PLAN_DECLARED');
-        expect(ledger.entries.last.type, 'CONTRACT_ACTIVATED');
-      },
-    );
+      // Two entries appended: PLAN_DECLARED + CONTRACT_ACTIVATED (draft→active)
+      expect(ledger.entries, hasLength(2));
+      expect(ledger.entries.first.type, 'PLAN_DECLARED');
+      expect(ledger.entries.last.type, 'CONTRACT_ACTIVATED');
+    });
 
     test('persistence — findById returns saved aggregate', () async {
       final plan = await handler.handle(makeCommand());
@@ -169,7 +190,10 @@ void main() {
         ),
       );
 
-      final results = await repository.findByContract('c-1', organizationId: _orgId);
+      final results = await repository.findByContract(
+        'c-1',
+        organizationId: _orgId,
+      );
       expect(results, hasLength(2));
       expect(results.every((p) => p.contractId == 'c-1'), isTrue);
     });
@@ -185,7 +209,10 @@ void main() {
         );
 
         // Repository should be empty
-        final found = await repository.findByContract('', organizationId: _orgId);
+        final found = await repository.findByContract(
+          '',
+          organizationId: _orgId,
+        );
         expect(found, isEmpty);
 
         // Ledger should be empty
@@ -221,7 +248,7 @@ void main() {
           final handlerWithNoZones = makeHandler(zones: emptyZones);
 
           await expectLater(
-            () => handlerWithNoZones.handle(makeCommand()),
+            () => handlerWithNoZones.handle(makeCommand(hash: 'un-zones')),
             throwsA(
               isA<DomainException>().having(
                 (e) => e.message,
@@ -257,7 +284,7 @@ void main() {
             originZoneId: 'zone-origin',
             destinationZoneId: 'zone-destination',
             penalties: SLAPenalties.create(
-              noShowPenaltyMultiplier: 1.0,
+              noShowPenaltyBps: 10000,
               delayToleranceMinutes: 15,
               delayPenaltyPerMinute: const Money(100),
               downgradePenaltyFlat: const Money(5000),
@@ -269,10 +296,12 @@ void main() {
             contractId: 'contract-1',
             declaredByUserId: 'user-1',
             planVersion: 1,
-            originalFileHash: 'hash',
+            originalFileHash: 'un-vehicles',
             declaredAtUtc: DateTime.utc(2026, 2, 25),
             shiftPatterns: [pattern],
             contractualValueCents: 10000,
+            sessionId: 'session-1',
+            idempotencyKey: 'idemp-fail-vehicles',
           );
 
           await expectLater(
@@ -315,10 +344,14 @@ class MockContractualRuleRepository implements ContractualRuleRepository {
 /// Allows the handler to validate and activate contracts during tests.
 class MockContractRepository implements ContractRepository {
   @override
-  Future<Contract?> findById(String id, {required String organizationId}) async {
+  Future<Contract?> findById(
+    String id, {
+    required String organizationId,
+  }) async {
     if (id.isEmpty) return null;
     return Contract.reconstitute(
       id: id,
+      version: 1,
       organizationId: organizationId,
       name: 'Test Contract',
       contractorName: 'Test Contractor',
@@ -326,11 +359,12 @@ class MockContractRepository implements ContractRepository {
       validUntilUtc: DateTime.utc(2026, 12, 31),
       status: ContractStatus.draft,
       createdAtUtc: DateTime.utc(2026, 1, 1),
+      penaltyMultiplierBps: 10000,
     );
   }
 
   @override
-  Future<void> save(Contract contract) async {}
+  Future<Contract> save(Contract contract) async => contract;
 
   @override
   Future<List<Contract>> findByOrganization(

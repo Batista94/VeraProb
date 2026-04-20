@@ -1,42 +1,52 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/shared/money.dart';
-import '../../domain/sla_audit/contractual_service_execution.dart';
-import '../../domain/sla_audit/plan_declaration.dart';
-import '../../domain/sla_audit/plan_declaration_repository.dart';
-import '../../domain/sla_audit/rule_snapshot.dart';
-import '../../domain/sla_audit/shift_pattern.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
+import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Postgres implementation of [PlanDeclarationRepository].
 ///
 /// Ensures Immutability, Monotonic Versioning, and Atomic Aggregate Persistence.
 /// DELETION is physically and logically prohibited by lack of implementation.
-class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
-  final SupabaseClient _client;
-
-  PostgresPlanDeclarationRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+class PostgresPlanDeclarationRepository extends BasePostgresRepository
+    implements PlanDeclarationRepository {
+  PostgresPlanDeclarationRepository(super.client);
 
   @override
-  Future<void> save(PlanDeclaration plan) async {
+  Future<PlanDeclaration> save(PlanDeclaration plan) async {
     // 1. Check for existing version to ensure Monotonicity & Immutability
-    final existing = await _client
-        .from('plan_declarations')
-        .select('id')
-        .eq('organization_id', plan.organizationId)
-        .eq('contract_id', plan.contractId)
-        .eq('plan_version', plan.planVersion)
-        .maybeSingle();
+    try {
+      final existing = await client
+          .from('plan_declarations')
+          .select('id')
+          .eq('organization_id', plan.organizationId)
+          .eq('contract_id', plan.contractId)
+          .eq('plan_version', plan.planVersion)
+          .maybeSingle();
 
-    if (existing != null) {
-      throw Exception(
-        'Version ${plan.planVersion} for contract ${plan.contractId} already exists and is immutable.',
+      if (existing != null) {
+        throw const IntegrityException(
+          'Version violation: duplicate plan version for contract.',
+          field: 'plan_version',
+        );
+      }
+    } on IntegrityException {
+      rethrow;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'plan_declaration',
+        resourceId: plan.contractId,
       );
     }
 
     // 2. Persist Aggregate Root
-    await _client.from('plan_declarations').insert({
+    await client.from('plan_declarations').insert({
       'id': plan.id,
       'contract_id': plan.contractId,
       'organization_id': plan.organizationId,
@@ -70,16 +80,17 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         'end_radius_meters': s.endRadiusMeters,
         'planned_vehicle_id': s.plannedVehicleId,
         'contractual_value_cents': s.contractualValue.cents,
-        'no_show_penalty_multiplier': s.noShowPenaltyMultiplier,
+        'no_show_penalty_multiplier': s.noShowPenaltyBps,
       };
     }).toList();
 
-    await _client.from('contractual_service_executions').insert(servicesData);
+    await client.from('contractual_service_executions').insert(servicesData);
+    return plan;
   }
 
   @override
   Future<PlanDeclaration?> findById(String id) async {
-    final planData = await _client
+    final planData = await client
         .from('plan_declarations')
         .select('*, contractual_service_executions(*)')
         .eq('id', id)
@@ -96,7 +107,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
     required String organizationId,
   }) async {
     // Deterministic, Ordered Historical Recovery (Ordered by Version)
-    final List<dynamic> data = await _client
+    final List<dynamic> data = await client
         .from('plan_declarations')
         .select('*, contractual_service_executions(*)')
         .eq('organization_id', organizationId)
@@ -110,7 +121,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
   Future<List<PlanDeclaration>> findByOrganization(
     String organizationId,
   ) async {
-    final List<dynamic> data = await _client
+    final List<dynamic> data = await client
         .from('plan_declarations')
         .select('*, contractual_service_executions(*)')
         .eq('organization_id', organizationId)
@@ -142,7 +153,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         'end_radius_meters': s.endRadiusMeters,
         'planned_vehicle_id': s.plannedVehicleId,
         'contractual_value_cents': s.contractualValue.cents,
-        'no_show_penalty_multiplier': s.noShowPenaltyMultiplier,
+        'no_show_penalty_multiplier': s.noShowPenaltyBps,
         'origin_zone_id': s.originZoneId,
         'destination_zone_id': s.destinationZoneId,
         'operational_date': s.operationalDate != null
@@ -159,7 +170,7 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
 
     // Upsert with ignoreDuplicates — idempotency via unique constraint
     // (plan_declaration_id, shift_pattern_index, operational_date)
-    await _client
+    await client
         .from('contractual_service_executions')
         .upsert(data, ignoreDuplicates: true);
   }
@@ -180,12 +191,11 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
         endRadiusMeters: s['end_radius_meters'] as int,
         plannedVehicleId: s['planned_vehicle_id'],
         contractualValue: Money((s['contractual_value_cents'] as num).toInt()),
-        noShowPenaltyMultiplier: (s['no_show_penalty_multiplier'] as num)
-            .toDouble(),
+        noShowPenaltyBps: (s['no_show_penalty_multiplier'] as num).toInt(),
         originZoneId: s['origin_zone_id'],
         destinationZoneId: s['destination_zone_id'],
         operationalDate: s['operational_date'] != null
-            ? DateTime.parse(s['operational_date'])
+            ? DateTime.parse('${s['operational_date']}T00:00:00.000Z')
             : null,
         shiftPatternIndex: s['shift_pattern_index'],
         delayToleranceMinutes: s['delay_tolerance_minutes'],
@@ -224,6 +234,8 @@ class PostgresPlanDeclarationRepository implements PlanDeclarationRepository {
       cycleAnchorDateUtc: data['cycle_anchor_date_utc'] != null
           ? DateTime.parse(data['cycle_anchor_date_utc'] as String).toUtc()
           : null,
+      previousHash: data['previous_hash'] as String?,
+      currentHash: data['current_hash'] as String?,
     );
   }
 }

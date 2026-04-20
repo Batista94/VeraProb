@@ -1,6 +1,7 @@
-import '../../domain/enums/user_permissions.dart';
-import '../../domain/services/rbac_service.dart';
-import '../../domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/domain/enums/user_permissions.dart';
+import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'rule_studio_command_service.dart';
 import 'update_contractual_rule_command.dart';
 
@@ -15,13 +16,16 @@ import 'update_contractual_rule_command.dart';
 ///   3. Atomic RPC: close old version + insert new version
 ///   4. Return new rule UUID
 class UpdateContractualRuleHandler {
+  final TenantValidationService _tenantValidator;
   final RuleStudioCommandService _commandService;
   final RbacService _rbac;
 
   UpdateContractualRuleHandler({
+    required TenantValidationService tenantValidator,
     required RuleStudioCommandService commandService,
     required RbacService rbac,
-  }) : _commandService = commandService,
+  }) : _tenantValidator = tenantValidator,
+       _commandService = commandService,
        _rbac = rbac;
 
   /// Returns the UUID of the newly created rule version.
@@ -30,7 +34,13 @@ class UpdateContractualRuleHandler {
   /// - Caller lacks [UserPermission.canEditSlaRules]
   /// - [newConfig] is missing required keys for the given [ruleType]
   Future<String> handle(UpdateContractualRuleCommand command) async {
-    // 1. RBAC — before any I/O
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    await _tenantValidator.assertTenantMatches(
+      payloadOrgId: command.organizationId,
+      sessionId: command.sessionId,
+    );
+
+    // 2. RBAC — before any I/O
     if (!_rbac.can(command.callerRole, UserPermission.canEditSlaRules)) {
       throw const DomainException('Unauthorized: canEditSlaRules required.');
     }

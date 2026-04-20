@@ -1,11 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import '../domain/entities/operational_trip.dart';
-import '../domain/entities/trip_event.dart';
-import '../domain/enums/event_type.dart';
-import '../domain/enums/trip_status.dart';
-import '../data/services/fleet_simulation_service.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/data/services/fleet_simulation_service.dart';
 import 'audit/audit_service.dart';
 import 'operational_control_service.dart';
 import 'ports/contractual_event_port.dart';
@@ -21,6 +18,7 @@ class SimulationControlService implements OperationalControlService {
   final ContractualEventPort _contractualEvents;
   final String Function() _getOperatorId;
   final String Function() _getOrganizationId;
+  final IDateTimeProvider _dateTimeProvider;
 
   SimulationControlService(
     this._simulation,
@@ -28,8 +26,10 @@ class SimulationControlService implements OperationalControlService {
     this._contractualEvents, {
     required String Function() getOperatorId,
     required String Function() getOrganizationId,
+    IDateTimeProvider? dateTimeProvider,
   }) : _getOperatorId = getOperatorId,
-       _getOrganizationId = getOrganizationId;
+       _getOrganizationId = getOrganizationId,
+       _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   @override
   Future<TripEvent> updateTripStatus(
@@ -66,12 +66,12 @@ class SimulationControlService implements OperationalControlService {
         // ignore: use_null_aware_elements
         if (reason != null) 'reason': reason,
         'source': 'operator_manual',
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': _dateTimeProvider.nowUtc().toIso8601String(),
       },
     );
 
-    // ── Dispatch forensic evidence to the SLA ledger via the module port ──
-    final nowUtc = DateTime.now().toUtc();
+    // â”€â”€ Dispatch forensic evidence to the SLA ledger via the module port â”€â”€
+    final nowUtc = _dateTimeProvider.nowUtc();
     final trip = _simulation.getTripById(tripId);
 
     if (newStatus == TripStatus.interrupted) {
@@ -134,11 +134,11 @@ class SimulationControlService implements OperationalControlService {
         // ignore: use_null_aware_elements
         if (notes != null) 'notes': notes,
         'source': 'operator_manual',
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': _dateTimeProvider.nowUtc().toIso8601String(),
       },
     );
 
-    // ── Dispatch forensic evidence to the SLA ledger via the module port ──
+    // â”€â”€ Dispatch forensic evidence to the SLA ledger via the module port â”€â”€
     await _contractualEvents.dispatchOccurrenceRegistered(
       organizationId: _getOrganizationId(),
       tripId: tripId,
@@ -147,7 +147,7 @@ class SimulationControlService implements OperationalControlService {
       occurrenceType: eventType.name,
       notes: notes,
       metadata: metadata ?? const {},
-      occurredAtUtc: DateTime.now().toUtc(),
+      occurredAtUtc: _dateTimeProvider.nowUtc(),
     );
 
     return event;
@@ -160,6 +160,29 @@ class SimulationControlService implements OperationalControlService {
       TripStatus.enRoute,
       reason: 'Alerta resolvido pelo operador',
     );
+  }
+
+  @override
+  Future<void> updateContract(String contractId, int newValueCents) async {
+    // Audit log only for now as this is a sensitive administrative action
+    unawaited(
+      _auditService
+          .logAction(
+            organizationId: _getOrganizationId(),
+            operatorId: _getOperatorId(),
+            actionType: 'UPDATE_CONTRACT',
+            entityId: contractId,
+            oldValue: 'unknown',
+            newValue: newValueCents.toString(),
+            reason: 'Atualização de contrato via barramento autorizado',
+          )
+          .catchError((e) {
+            debugPrint('Failed to log audit action: $e');
+          }),
+    );
+
+    // In a real implementation, we would call the contract repository here.
+    debugPrint('Contract $contractId updated to $newValueCents cents');
   }
 
   @override

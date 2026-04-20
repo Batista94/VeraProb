@@ -1,8 +1,8 @@
-import '../../../domain/entities/operational_trip.dart';
-import '../../../domain/entities/operational_warning.dart';
-import '../../../domain/entities/trip_event.dart';
-import '../../../domain/enums/trip_status.dart';
-import '../../../domain/entities/vehicle_operational_state.dart';
+﻿import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/operational_warning.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'situation_detector.dart';
 
 /// Detects if a trip is delayed beyond acceptable thresholds.
@@ -11,7 +11,7 @@ import 'situation_detector.dart';
 /// - Delay > 10 min: Critical Delay (Score: 40)
 /// - Delay > 3 min: Risk of Delay (Score: 20)
 class DelayDetector extends SituationDetector {
-  const DelayDetector()
+  DelayDetector(super.dateTimeProvider)
     : super(id: 'delay_detector', name: 'Detector de Atraso');
 
   @override
@@ -32,9 +32,9 @@ class DelayDetector extends SituationDetector {
       return OperationalWarning(
         id: 'warn_delay_critical_${trip.id}',
         type: 'delay_critical',
-        message: 'Atraso Crítico: $delayMinutes min',
+        message: 'Atraso CrÃ­tico: $delayMinutes min',
         severityScore: 40,
-        detectedAt: DateTime.now().toUtc(),
+        detectedAt: dateTimeProvider.nowUtc(),
         metadata: {'delay_minutes': delayMinutes},
       );
     }
@@ -45,7 +45,7 @@ class DelayDetector extends SituationDetector {
         type: 'delay_risk',
         message: 'Risco de Atraso: $delayMinutes min',
         severityScore: 20,
-        detectedAt: DateTime.now().toUtc(),
+        detectedAt: dateTimeProvider.nowUtc(),
         metadata: {'delay_minutes': delayMinutes},
       );
     }

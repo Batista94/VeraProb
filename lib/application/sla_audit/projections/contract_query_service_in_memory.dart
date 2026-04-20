@@ -1,10 +1,11 @@
-import '../../../domain/sla_audit/contract_repository.dart';
-import '../../../domain/sla_audit/contract_status.dart';
-import '../../../domain/sla_audit/contractual_execution_state_repository.dart';
-import '../../../domain/sla_audit/execution_status.dart';
-import '../../../domain/sla_audit/plan_declaration_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_status.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
 import 'contract_detail_view.dart';
 import 'contract_query_service.dart';
+import 'contract_status_view.dart';
 import 'contract_summary_view.dart';
 import 'sla_execution_item_view.dart';
 import 'sla_execution_query_service.dart';
@@ -32,11 +33,11 @@ class ContractQueryServiceInMemory implements ContractQueryService {
   @override
   Future<List<ContractSummaryView>> listContracts({
     required String organizationId,
-    ContractStatus? status,
+    ContractStatusView? status,
   }) async {
     final contracts = await _contractRepository.findByOrganization(
       organizationId,
-      status: status,
+      status: _mapToDomainStatus(status),
     );
 
     final views = <ContractSummaryView>[];
@@ -78,8 +79,8 @@ class ContractQueryServiceInMemory implements ContractQueryService {
                 startLatitude: s.startLatitude,
                 startLongitude: s.startLongitude,
                 startRadiusMeters: s.startRadiusMeters,
-                contractualValue: s.contractualValue,
-                noShowPenaltyMultiplier: s.noShowPenaltyMultiplier,
+                contractualValue: s.contractualValue.cents,
+                noShowPenaltyBps: s.noShowPenaltyBps,
               ),
             )
             .toList()
@@ -129,20 +130,20 @@ class ContractQueryServiceInMemory implements ContractQueryService {
         .where((s) => s.status == ExecutionStatus.pending)
         .length;
 
-    // SLA health: executed / total * 100
+    // SLA health: executed / total * 10,000
     final totalSets = allStates.length;
     final executedCount = allStates
         .where((s) => s.status == ExecutionStatus.executed)
         .length;
-    final slaHealthPercentage = totalSets == 0
-        ? 0.0
-        : (executedCount / totalSets) * 100.0;
+    final slaHealthBps = totalSets == 0
+        ? 0
+        : (executedCount * 10000 ~/ totalSets);
 
     return ContractSummaryView(
       id: contract.id,
       name: contract.name,
       contractorName: contract.contractorName,
-      status: contract.status,
+      status: _mapFromDomainStatus(contract.status),
       validFromUtc: contract.validFromUtc,
       validUntilUtc: contract.validUntilUtc,
       createdAtUtc: contract.createdAtUtc,
@@ -150,8 +151,19 @@ class ContractQueryServiceInMemory implements ContractQueryService {
       planCount: planCount,
       activePlanVersion: activePlanVersion,
       totalSetsInProgress: totalSetsInProgress,
-      slaHealthPercentage: slaHealthPercentage,
+      slaHealthBps: slaHealthBps,
       financialCeilingCents: contract.financialCeiling?.cents,
+      previousHash: contract.previousHash,
+      currentHash: contract.currentHash,
     );
+  }
+
+  ContractStatus? _mapToDomainStatus(ContractStatusView? view) {
+    if (view == null) return null;
+    return ContractStatus.values.byName(view.name);
+  }
+
+  ContractStatusView _mapFromDomainStatus(ContractStatus domain) {
+    return ContractStatusView.values.byName(domain.name);
   }
 }

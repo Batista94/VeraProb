@@ -16,6 +16,7 @@ import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 void main() {
@@ -25,6 +26,7 @@ void main() {
     late InMemoryOperationalZoneRepository zoneRepo;
 
     final baseDate = DateTime.utc(2026, 3, 3); // Tuesday
+    final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
     const testOrgId = 'org-b2b';
     const testContractId = 'c-b2b-01';
 
@@ -37,6 +39,7 @@ void main() {
         planRepo: planRepo,
         zoneRepo: zoneRepo,
         alertRepo: MockAlertRepo(),
+        dateTimeProvider: BrazilDateTimeProvider(),
       );
     });
 
@@ -76,7 +79,7 @@ void main() {
           originZoneId: z1.id,
           destinationZoneId: z2.id,
           penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1.0,
+            noShowPenaltyBps: 10000,
             delayToleranceMinutes: 15,
             delayPenaltyPerMinute: const Money(100),
             downgradePenaltyFlat: const Money(5000),
@@ -92,6 +95,7 @@ void main() {
           declaredAtUtc: baseDate,
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         // Gen 1
@@ -152,7 +156,7 @@ void main() {
           originZoneId: 'z1',
           destinationZoneId: 'z2',
           penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1,
+            noShowPenaltyBps: 10000,
             delayToleranceMinutes: 15,
             delayPenaltyPerMinute: const Money(100),
             downgradePenaltyFlat: const Money(100),
@@ -186,7 +190,7 @@ void main() {
           originZoneId: z1.id,
           destinationZoneId: z1.id,
           penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1.0,
+            noShowPenaltyBps: 10000,
             delayToleranceMinutes: 15,
             delayPenaltyPerMinute: const Money(100),
             downgradePenaltyFlat: const Money(100),
@@ -202,6 +206,7 @@ void main() {
           declaredAtUtc: baseDate,
           ruleSnapshot: const RuleSnapshot([]),
           shiftPatterns: [pattern],
+          nowUtc: nowUtc,
         );
 
         // Monday 2026-03-02
@@ -269,6 +274,7 @@ class MockContractRepo implements ContractRepository {
     if (id == contractId && organizationId == orgId) {
       return Contract.reconstitute(
         id: contractId,
+        version: 1,
         organizationId: orgId,
         name: 'Test',
         contractorName: 'Tester',
@@ -276,13 +282,14 @@ class MockContractRepo implements ContractRepository {
         validUntilUtc: DateTime.utc(2027),
         status: ContractStatus.active,
         createdAtUtc: DateTime.utc(2026),
+        penaltyMultiplierBps: 10000,
       );
     }
     return null;
   }
 
   @override
-  Future<void> save(Contract contract) async {}
+  Future<Contract> save(Contract contract) async => contract;
   @override
   Future<List<Contract>> findByOrganization(
     String orgId, {

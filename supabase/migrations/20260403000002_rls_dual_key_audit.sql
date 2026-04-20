@@ -83,15 +83,16 @@ DROP POLICY IF EXISTS "Tenant Isolation: contractors" ON public.contractors;
 
 -- Policy 1: Internal roles (TENANT_ADMIN, OPERATOR, AUDITOR)
 -- contractor_id in JWT must be NULL (enforced by hook — defense-in-depth INV-20)
+-- FIX: Use canonical JWT path (auth.jwt() ->> 'organization_id') per INV-5
 CREATE POLICY "contractors_internal_roles"
   ON public.contractors
   FOR ALL
   USING (
-    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    organization_id = (auth.jwt() ->> 'organization_id')::uuid
     AND (auth.jwt() -> 'app_metadata' ->> 'contractor_id') IS NULL
   )
   WITH CHECK (
-    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    organization_id = (auth.jwt() ->> 'organization_id')::uuid
     AND (auth.jwt() -> 'app_metadata' ->> 'contractor_id') IS NULL
   );
 
@@ -101,7 +102,7 @@ CREATE POLICY "contractors_contractor_viewer_isolation"
   ON public.contractors
   FOR SELECT
   USING (
-    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    organization_id = (auth.jwt() ->> 'organization_id')::uuid
     AND id = (auth.jwt() -> 'app_metadata' ->> 'contractor_id')::uuid
   );
 

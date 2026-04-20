@@ -1,9 +1,8 @@
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../domain/shared/money.dart';
-import '../../application/sla_audit/projections/contractual_financial_trend_point.dart';
-import '../../application/sla_audit/projections/contractual_financial_trend_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_point.dart';
+import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_query_service.dart';
 
 /// Postgres implementation for [ContractualFinancialTrendQueryService].
 /// Extracts time-series financial trend projection directly from `contractual_financial_snapshot`.
@@ -59,24 +58,19 @@ class ContractualFinancialTrendQueryServicePostgres
       ).toUtc();
       final formattedDate = DateFormat('dd/MM/yyyy', 'pt_BR').format(dateUtc);
 
-      final contracted = Money(
-        (snapshot['total_contracted_revenue_cents'] as num).toInt(),
-      );
+      final contractedCents =
+          (snapshot['total_contracted_revenue_cents'] as num).toInt();
 
       return ContractualFinancialTrendPoint(
         dateUtc: dateUtc,
         formattedDate: formattedDate,
-        baseRevenueUsedForCalculation: contracted,
-        totalContractedRevenue: contracted,
-        protectedRevenue: Money(
-          (snapshot['protected_revenue_cents'] as num).toInt(),
-        ),
-        revenueAtRisk: Money(
-          (snapshot['revenue_at_risk_cents'] as num).toInt(),
-        ),
-        lostRevenue: Money((snapshot['lost_revenue_cents'] as num).toInt()),
-        riskPercentage: (snapshot['risk_percentage'] as num).toDouble(),
-        lossPercentage: (snapshot['loss_percentage'] as num).toDouble(),
+        baseRevenueUsedForCalculation: contractedCents,
+        totalContractedRevenue: contractedCents,
+        protectedRevenue: (snapshot['protected_revenue_cents'] as num).toInt(),
+        revenueAtRisk: (snapshot['revenue_at_risk_cents'] as num).toInt(),
+        lostRevenue: (snapshot['lost_revenue_cents'] as num).toInt(),
+        riskPercentageBps: (snapshot['risk_percentage'] as num).toInt(),
+        lossPercentageBps: (snapshot['loss_percentage'] as num).toInt(),
       );
     }).toList();
   }

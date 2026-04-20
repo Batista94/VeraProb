@@ -1,8 +1,9 @@
-import 'dart:convert' show utf8, jsonEncode;
+﻿import 'dart:convert' show utf8, jsonEncode;
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'spoofing_risk_score.dart';
 
 /// Append-only audit entry documenting an algorithmic detection of
@@ -73,7 +74,8 @@ class SpoofingAuditEntry extends Equatable {
     required int factsAnalyzed,
     required List<String> factIds,
   }) {
-    final now = DateTime.now().toUtc();
+    final now =
+        StaticDateTimeProvider.instance?.nowUtc() ?? DateTime.now().toUtc();
     final id = const Uuid().v4();
 
     // Deterministic payload for hashing
@@ -83,7 +85,7 @@ class SpoofingAuditEntry extends Equatable {
       'dev': deviceId,
       'winStart': windowStart.toIso8601String(),
       'winEnd': windowEnd.toIso8601String(),
-      'score': riskScore.score,
+      'score': riskScore.scoreBps,
       'signalCount': riskScore.signals.length,
       'factCount': factsAnalyzed,
       'factIds': factIds..sort(), // Order-independent hash

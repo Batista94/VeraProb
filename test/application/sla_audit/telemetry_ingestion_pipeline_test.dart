@@ -17,10 +17,29 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_executio
 import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_detector.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_audit_repository.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_audit_entry.dart';
+import 'package:veraprob/domain/sla_audit/spoofing_risk_score.dart';
 
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
   setUpAll(() {
     tz_data.initializeTimeZones();
+    registerFallbackValue(SpoofingRiskScore.zero());
+    registerFallbackValue(
+      SpoofingAuditEntry.create(
+        organizationId: 'o',
+        deviceId: 'd',
+        assetId: 'a',
+        windowStart: nowUtc,
+        windowEnd: nowUtc,
+        riskScore: SpoofingRiskScore.zero(),
+        factsAnalyzed: 0,
+        factIds: [],
+      ),
+    );
   });
 
   // ── Geofence: São Paulo downtown ──────────────────────────────────────────
@@ -102,7 +121,7 @@ void main() {
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
       contractualValue: const Money(15000),
-      noShowPenaltyMultiplier: 1.5,
+      noShowPenaltyBps: 15000,
       windowStartUtc: windowStart ?? DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0),
     );
@@ -128,10 +147,11 @@ void main() {
           endLongitude: -46.6400,
           endRadiusMeters: 100,
           contractualValue: const Money(15000),
-          noShowPenaltyMultiplier: 1.5,
+          noShowPenaltyBps: 15000,
         ),
       ],
       ruleSnapshot: const RuleSnapshot([]),
+      nowUtc: nowUtc,
     );
     await planRepo.save(plan);
   }
@@ -165,29 +185,34 @@ void main() {
       expect(result.skippedByKinematicJump, 0);
     });
 
-    test('late arrival facts (gpsTimestamp 4h before received) are processed', () async {
-      final state = makeExecState(
-        windowStart: DateTime.utc(2026, 3, 1, 6, 0),
-        windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
-      );
-      await execRepo.save(state);
-      await seedPlan('c-1');
+    test(
+      'late arrival facts (gpsTimestamp 4h before received) are processed',
+      () async {
+        final state = makeExecState(
+          windowStart: DateTime.utc(2026, 3, 1, 6, 0),
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await execRepo.save(state);
+        await seedPlan('c-1');
 
-      final gpsTime = DateTime.utc(2026, 3, 1, 6, 30); // inside window
-      final arrivedAt = DateTime.utc(2026, 3, 1, 10, 30); // 4h later
+        final gpsTime = DateTime.utc(2026, 3, 1, 6, 30); // inside window
+        final arrivedAt = DateTime.utc(2026, 3, 1, 10, 30); // 4h later
 
-      final lateFact = makeFact(
-        gpsTimestamp: gpsTime,
-        receivedAtUtc: arrivedAt,
-        flag: IngestionIntegrityFlag.lateArrival,
-      );
+        final lateFact = makeFact(
+          gpsTimestamp: gpsTime,
+          receivedAtUtc: arrivedAt,
+          flag: IngestionIntegrityFlag.lateArrival,
+        );
 
-      final result = await pipeline.process([lateFact], organizationId: 'org-1');
+        final result = await pipeline.process([
+          lateFact,
+        ], organizationId: 'org-1');
 
-      expect(result.processed, 1); // lateArrival is eligible
-      expect(result.lateArrivalCount, 1);
-      expect(result.lateArrivalAssetIds, contains('asset-1'));
-    });
+        expect(result.processed, 1); // lateArrival is eligible
+        expect(result.lateArrivalCount, 1);
+        expect(result.lateArrivalAssetIds, contains('asset-1'));
+      },
+    );
 
     test('futureTimestamp facts are skipped', () async {
       final futureFact = makeFact(
@@ -195,7 +220,9 @@ void main() {
         flag: IngestionIntegrityFlag.futureTimestamp,
       );
 
-      final result = await pipeline.process([futureFact], organizationId: 'org-1');
+      final result = await pipeline.process([
+        futureFact,
+      ], organizationId: 'org-1');
 
       expect(result.processed, 0);
       expect(result.skippedByIntegrityFlag, 1);
@@ -209,7 +236,9 @@ void main() {
         flag: IngestionIntegrityFlag.nullIsland,
       );
 
-      final result = await pipeline.process([nullIslandFact], organizationId: 'org-1');
+      final result = await pipeline.process([
+        nullIslandFact,
+      ], organizationId: 'org-1');
 
       expect(result.processed, 0);
       expect(result.skippedByIntegrityFlag, 1);
@@ -294,9 +323,7 @@ void main() {
         ),
       );
 
-      final facts = [
-        makeFact(gpsTimestamp: DateTime.utc(2026, 3, 1, 6, 0)),
-      ];
+      final facts = [makeFact(gpsTimestamp: DateTime.utc(2026, 3, 1, 6, 0))];
 
       final result = await pipeline.process(facts, organizationId: 'org-1');
 
@@ -304,21 +331,22 @@ void main() {
       expect(result.processed, 0);
     });
 
-    test('ACTIVE asset (default — no events): facts are processed normally', () async {
-      // No status events — defaults to ACTIVE
-      final state = makeExecState();
-      await execRepo.save(state);
-      await seedPlan('c-1');
+    test(
+      'ACTIVE asset (default — no events): facts are processed normally',
+      () async {
+        // No status events — defaults to ACTIVE
+        final state = makeExecState();
+        await execRepo.save(state);
+        await seedPlan('c-1');
 
-      final facts = [
-        makeFact(gpsTimestamp: DateTime.utc(2026, 3, 1, 6, 0)),
-      ];
+        final facts = [makeFact(gpsTimestamp: DateTime.utc(2026, 3, 1, 6, 0))];
 
-      final result = await pipeline.process(facts, organizationId: 'org-1');
+        final result = await pipeline.process(facts, organizationId: 'org-1');
 
-      expect(result.skippedByAssetStatus, 0);
-      expect(result.processed, 1);
-    });
+        expect(result.skippedByAssetStatus, 0);
+        expect(result.processed, 1);
+      },
+    );
 
     test('AssetStatusEvent: throws on same-status transition', () {
       expect(
@@ -350,23 +378,27 @@ void main() {
 
     test('status history replay: last event wins', () async {
       // active → maintenance → active
-      await statusRepo.append(AssetStatusEvent.create(
-        organizationId: 'org-1',
-        assetId: 'asset-1',
-        newStatus: AssetStatus.maintenance,
-        previousStatus: AssetStatus.active,
-        occurredAtUtc: DateTime.utc(2026, 3, 1, 8, 0),
-        triggeredBy: 'user',
-      ));
-      await statusRepo.append(AssetStatusEvent.create(
-        organizationId: 'org-1',
-        assetId: 'asset-1',
-        newStatus: AssetStatus.active,
-        previousStatus: AssetStatus.maintenance,
-        occurredAtUtc: DateTime.utc(2026, 3, 1, 16, 0),
-        triggeredBy: 'user',
-        reason: 'Maintenance complete',
-      ));
+      await statusRepo.append(
+        AssetStatusEvent.create(
+          organizationId: 'org-1',
+          assetId: 'asset-1',
+          newStatus: AssetStatus.maintenance,
+          previousStatus: AssetStatus.active,
+          occurredAtUtc: DateTime.utc(2026, 3, 1, 8, 0),
+          triggeredBy: 'user',
+        ),
+      );
+      await statusRepo.append(
+        AssetStatusEvent.create(
+          organizationId: 'org-1',
+          assetId: 'asset-1',
+          newStatus: AssetStatus.active,
+          previousStatus: AssetStatus.maintenance,
+          occurredAtUtc: DateTime.utc(2026, 3, 1, 16, 0),
+          triggeredBy: 'user',
+          reason: 'Maintenance complete',
+        ),
+      );
 
       final status = await statusRepo.getCurrentStatus(
         assetId: 'asset-1',
@@ -379,31 +411,34 @@ void main() {
 
   // ── 6.5.4: Kinematic Noise Filter ──────────────────────────────────────────
   group('6.5.4 — Kinematic Noise Filter (sequential Haversine)', () {
-    test('GPS jitter jump of ~200m is discarded, surrounding valid points pass', () async {
-      // t1: valid position inside geofence
-      // t2: GPS jitter — "jumps" 200m away at same speed (impossible)
-      // t3: returns to valid position (proves t2 was noise, not real movement)
+    test(
+      'GPS jitter jump of ~200m is discarded, surrounding valid points pass',
+      () async {
+        // t1: valid position inside geofence
+        // t2: GPS jitter — "jumps" 200m away at same speed (impossible)
+        // t3: returns to valid position (proves t2 was noise, not real movement)
 
-      final t1 = DateTime.utc(2026, 3, 1, 6, 0, 0);
-      final t2 = DateTime.utc(2026, 3, 1, 6, 0, 1); // 1 second later
-      final t3 = DateTime.utc(2026, 3, 1, 6, 0, 2);
+        final t1 = DateTime.utc(2026, 3, 1, 6, 0, 0);
+        final t2 = DateTime.utc(2026, 3, 1, 6, 0, 1); // 1 second later
+        final t3 = DateTime.utc(2026, 3, 1, 6, 0, 2);
 
-      final facts = [
-        makeFact(gpsTimestamp: t1, lat: insideLat, lng: insideLng),
-        // Jump ~200m in 1 second = 720 km/h — physically impossible
-        makeFact(
-          gpsTimestamp: t2,
-          lat: insideLat + 0.0018, // ~200m north
-          lng: insideLng,
-        ),
-        makeFact(gpsTimestamp: t3, lat: insideLat, lng: insideLng),
-      ];
+        final facts = [
+          makeFact(gpsTimestamp: t1, lat: insideLat, lng: insideLng),
+          // Jump ~200m in 1 second = 720 km/h — physically impossible
+          makeFact(
+            gpsTimestamp: t2,
+            lat: insideLat + 0.0018, // ~200m north
+            lng: insideLng,
+          ),
+          makeFact(gpsTimestamp: t3, lat: insideLat, lng: insideLng),
+        ];
 
-      final result = await pipeline.process(facts, organizationId: 'org-1');
+        final result = await pipeline.process(facts, organizationId: 'org-1');
 
-      expect(result.skippedByKinematicJump, 1); // t2 discarded
-      expect(result.processed, 2); // t1 and t3 pass
-    });
+        expect(result.skippedByKinematicJump, 1); // t2 discarded
+        expect(result.processed, 2); // t1 and t3 pass
+      },
+    );
 
     test('same timestamp but displaced > 5m is discarded', () async {
       final t = DateTime.utc(2026, 3, 1, 6, 0, 0);
@@ -471,5 +506,61 @@ void main() {
       expect(result.skippedByKinematicJump, 1); // only Device A's t2
       expect(result.processed, 3); // Device A t1 + Device B t1 + Device B t2
     });
+    // ── 8.8: Anti-Spoofing Detector ──────────────────────────────────────────
+    group('8.8 — Anti-Spoofing Detector (INV-21)', () {
+      test(
+        'suspected spoofing batch is flagged and audited, not processed',
+        () async {
+          final mockDetector = _MockSpoofingDetector();
+          final mockSpoofingRepo = _MockSpoofingRepo();
+          final pipelineWithMocks = TelemetryIngestionPipeline(
+            engine: engine,
+            spoofingDetector: mockDetector,
+            spoofingRepo: mockSpoofingRepo,
+          );
+
+          final t1 = DateTime.utc(2026, 3, 1, 6, 0, 0);
+          final fact = makeFact(gpsTimestamp: t1);
+
+          // Algorithmic detection triggers
+          when(
+            () => mockDetector.analyze(any()),
+          ).thenReturn(const SpoofingRiskScore(scoreBps: 9500, signals: []));
+          when(() => mockSpoofingRepo.append(any())).thenAnswer((_) async {});
+
+          final result = await pipelineWithMocks.process([
+            fact,
+          ], organizationId: 'org-1');
+
+          expect(result.suspectedSpoofingCount, 1);
+          expect(result.processed, 0);
+
+          // Verify audit log was written
+          verify(() => mockSpoofingRepo.append(any())).called(1);
+        },
+      );
+
+      test('manual confirmed spoofing flag skips processing', () async {
+        final t1 = DateTime.utc(2026, 3, 1, 6, 0, 0);
+        final confirmedFact = makeFact(
+          gpsTimestamp: t1,
+          flag: IngestionIntegrityFlag.confirmedSpoofing,
+        );
+
+        final result = await pipeline.process([
+          confirmedFact,
+        ], organizationId: 'org-1');
+
+        expect(
+          result.suspectedSpoofingCount,
+          1,
+        ); // logic uses this counter for both types
+        expect(result.processed, 0);
+      });
+    });
   });
 }
+
+class _MockSpoofingDetector extends Mock implements SpoofingDetector {}
+
+class _MockSpoofingRepo extends Mock implements SpoofingAuditRepository {}

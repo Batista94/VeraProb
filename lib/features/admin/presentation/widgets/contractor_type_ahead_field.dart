@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
 
 import 'contractor_form_dialog.dart';
 
 // ── Filter helper ─────────────────────────────────────────────
 
-List<Contractor> filterContractors(
-  List<Contractor> contractors,
+List<ContractorView> filterContractors(
+  List<ContractorView> contractors,
   String query,
 ) {
-  if (query.isEmpty) return contractors;
+  if (query.isEmpty) {
+    return contractors;
+  }
 
   final lower = query.toLowerCase();
   return contractors
-      .where((c) =>
-          c.name.toLowerCase().contains(lower) ||
-          (c.taxId?.toLowerCase().contains(lower) ?? false))
+      .where(
+        (c) =>
+            c.name.toLowerCase().contains(lower) ||
+            (c.taxId?.toLowerCase().contains(lower) ?? false),
+      )
       .toList();
 }
 
@@ -30,16 +34,16 @@ class ContractorTypeAheadField extends StatefulWidget {
   final IconData prefixIcon;
 
   /// Full list of contractors available for the organization.
-  final List<Contractor> contractors;
+  final List<ContractorView> contractors;
 
   /// The currently selected contractor.
-  final Contractor? selectedContractor;
+  final ContractorView? selectedContractor;
 
   /// Invalidates the contractors cache after the modal creates/edits a contractor.
   final Future<void> Function() onInvalidateContractors;
 
   /// Called when the user selects an existing contractor or after contractor creation.
-  final ValueChanged<Contractor?> onChanged;
+  final ValueChanged<ContractorView?> onChanged;
 
   const ContractorTypeAheadField({
     super.key,
@@ -91,7 +95,7 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
       initialName: initialName.isNotEmpty ? initialName : null,
     );
     if (!mounted || contractor == null) return;
-    
+
     // Auto-select the newly created contractor!
     _textController.text = contractor.name;
     widget.onChanged(contractor);
@@ -104,20 +108,16 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildAutocomplete(),
-        _buildCreateButton(),
-      ],
+      children: [_buildAutocomplete(), _buildCreateButton()],
     );
   }
 
   /// Shows "+ Criar contractor 'X'" below the field when no exact name match exists.
   Widget _buildCreateButton() {
     final query = _textController.text.trim();
-    final hasExactMatch =
-        query.isNotEmpty &&
-        widget.contractors.any(
-            (c) => c.name.toLowerCase() == query.toLowerCase());
+    final hasExactMatch = widget.contractors.any(
+      (c) => c.name.toLowerCase() == query.toLowerCase(),
+    );
     if (hasExactMatch) return const SizedBox.shrink();
 
     final label = query.isEmpty
@@ -141,13 +141,12 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
   }
 
   Widget _buildAutocomplete() {
-    return Autocomplete<Contractor>(
-      initialValue: TextEditingValue(text: widget.selectedContractor?.name ?? ''),
+    return Autocomplete<ContractorView>(
+      initialValue: TextEditingValue(
+        text: widget.selectedContractor?.name ?? '',
+      ),
       optionsBuilder: (textEditingValue) {
-        return filterContractors(
-          widget.contractors,
-          textEditingValue.text,
-        );
+        return filterContractors(widget.contractors, textEditingValue.text);
       },
       displayStringForOption: (contractor) => contractor.name,
       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
@@ -184,7 +183,13 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
             elevation: 4,
             borderRadius: BorderRadius.circular(8),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 280, maxWidth: 480),
+              constraints: BoxConstraints(
+                maxHeight: 280,
+                maxWidth: (MediaQuery.sizeOf(context).width * 0.9).clamp(
+                  240.0,
+                  480.0,
+                ),
+              ),
               child: ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,

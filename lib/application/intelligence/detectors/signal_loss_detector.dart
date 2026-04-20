@@ -1,8 +1,8 @@
-import '../../../domain/entities/operational_trip.dart';
-import '../../../domain/entities/operational_warning.dart';
-import '../../../domain/entities/trip_event.dart';
-import '../../../domain/entities/vehicle_operational_state.dart';
-import '../../../domain/enums/connectivity_state.dart';
+﻿import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/operational_warning.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 import 'situation_detector.dart';
 
 /// Detects if a vehicle has lost GPS transmission connectivity.
@@ -11,7 +11,7 @@ import 'situation_detector.dart';
 /// - If [ConnectivityState] from the Normalization Layer is [ConnectivityState.signalLost],
 ///   we flag it to alert the operator.
 class SignalLossDetector extends SituationDetector {
-  const SignalLossDetector()
+  const SignalLossDetector(super.dateTimeProvider)
     : super(id: 'signal_loss', name: 'Detector de Perda de Sinal');
 
   @override
@@ -28,8 +28,8 @@ class SignalLossDetector extends SituationDetector {
     if (state == null) return null;
 
     if (state.connectivityState == ConnectivityState.signalLost) {
-      final secondsSincePing = DateTime.now()
-          .toUtc()
+      final secondsSincePing = dateTimeProvider
+          .nowUtc()
           .difference(state.lastRawPingAt)
           .inSeconds;
 
@@ -38,7 +38,7 @@ class SignalLossDetector extends SituationDetector {
         type: 'signal_lost',
         message: 'Perda de Sinal GPS: >${secondsSincePing}s',
         severityScore: 40, // High severity
-        detectedAt: DateTime.now().toUtc(),
+        detectedAt: dateTimeProvider.nowUtc(),
         metadata: {
           'last_ping_at': state.lastRawPingAt.toIso8601String(),
           'seconds_offline': secondsSincePing,

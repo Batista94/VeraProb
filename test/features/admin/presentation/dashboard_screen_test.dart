@@ -53,7 +53,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Painel de Controle'), findsOneWidget);
-      expect(find.text('Operação em Tempo Real • Receita Protegida'), findsOneWidget);
+      expect(
+        find.text('Operação em Tempo Real • Receita Protegida'),
+        findsOneWidget,
+      );
 
       // Charts Section
       expect(find.text('Performance de Execução Operacional'), findsOneWidget);

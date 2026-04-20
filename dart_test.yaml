@@ -1,0 +1,8 @@
+# dart_test.yaml — tag configuration for test runner
+# Run integration tests: flutter test --tags integration
+# Run postgres tests:    flutter test --tags postgres
+tags:
+  integration:
+    skip: "Requires 'supabase start' — run explicitly with --tags integration"
+  postgres:
+    skip: "Requires a live Postgres instance — run explicitly with --tags postgres"

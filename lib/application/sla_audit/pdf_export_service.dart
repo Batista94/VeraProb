@@ -1,11 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-import '../../domain/sla_audit/audit_package.dart';
-import '../../domain/sla_audit/audit_package_status.dart';
-import '../../domain/sla_audit/billing_cycle_report.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
+import 'package:veraprob/domain/sla_audit/audit_package_status.dart';
+import 'package:veraprob/domain/sla_audit/billing_cycle_report.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 /// Generates legally-defensible PDF exports from sealed [AuditPackage] records.
 ///
@@ -14,16 +15,36 @@ import '../../domain/shared/money.dart';
 ///   The last page contains the full chain-of-custody block with hash
 ///   verification instructions.
 ///
+/// **Font injection (INV-18 / WASM-safe):** Supply [fontRegular] and [fontBold]
+/// as TTF [ByteData] (loaded by the caller via [rootBundle]) to enable full
+/// Unicode coverage (e.g. em-dash U+2014, ≤ U+2264 in legal notice strings).
+/// When omitted, the built-in Helvetica font is used — legal content renders
+/// but Unicode glyphs outside Latin-1 produce console warnings.
+///
 /// Document structure:
 ///   Page 1 — Attestation cover (full legal block).
 ///   Page 2 — Executive summary (KPIs, revenue table).
 ///   Page 3..N — Daily snapshot breakdown (one table per contract).
 ///   Last page — Chain of Custody & hash verification instructions.
 class PdfExportService {
+  final pw.Font? _fontBase;
+  final pw.Font? _fontBold;
+
+  /// Constructs the service with optional Unicode-capable TTF fonts.
+  ///
+  /// [fontRegular] and [fontBold] must be raw TTF [ByteData], e.g.:
+  /// ```dart
+  /// final data = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+  /// PdfExportService(fontRegular: data);
+  /// ```
+  PdfExportService({ByteData? fontRegular, ByteData? fontBold})
+    : _fontBase = fontRegular != null ? pw.Font.ttf(fontRegular) : null,
+      _fontBold = fontBold != null ? pw.Font.ttf(fontBold) : null;
+
   /// Generates a PDF document as raw bytes.
   ///
   /// **IMPORTANT (INV-3):** [package.generatedAtUtc] is used for the timestamp
-  /// in the document — this service does NOT call [DateTime.now()].
+  /// in the document — this service does NOT call [DateTime.now().toUtc()].
   ///
   /// Throws [DomainException] if the package is not sealed (INV-18).
   Future<List<int>> generatePdf({
@@ -33,7 +54,10 @@ class PdfExportService {
     _assertSealed(package);
     _assertReportMatches(package, report);
 
-    final pdf = pw.Document();
+    final theme = _fontBase != null
+        ? pw.ThemeData.withFont(base: _fontBase, bold: _fontBold)
+        : pw.ThemeData();
+    final pdf = pw.Document(theme: theme);
     final h = package.attestationHeader;
     final contractScope = package.contractId ?? 'Todos os contratos';
 
@@ -122,17 +146,20 @@ class PdfExportService {
               data: [
                 [
                   'Faturamento Total Contratado',
-                  _fmtBrl(package.totalContractedRevenue),
+                  _fmtBrl(package.totalContractedRevenue.cents),
                 ],
                 [
                   'Receita Protegida (Blindada)',
-                  _fmtBrl(package.protectedRevenue),
+                  _fmtBrl(package.protectedRevenue.cents),
                 ],
-                ['Receita em Risco', _fmtBrl(package.revenueAtRisk)],
-                ['Receita Perdida (Penalidades)', _fmtBrl(package.lostRevenue)],
+                ['Receita em Risco', _fmtBrl(package.revenueAtRisk.cents)],
+                [
+                  'Receita Perdida (Penalidades)',
+                  _fmtBrl(package.lostRevenue.cents),
+                ],
                 [
                   'Taxa de Conformidade',
-                  '${package.complianceRate.toStringAsFixed(1)}%',
+                  '${(package.complianceRateBps / 100.0).toStringAsFixed(1)}%',
                 ],
                 ['Total de Obrigações', '${package.totalObligations}'],
                 ['Executadas', '${package.executedCount}'],
@@ -196,10 +223,10 @@ class PdfExportService {
                     : 100.0;
                 return [
                   _fmtDate(s.operationalDateUtc),
-                  _fmtBrl(s.totalContractedRevenue),
-                  _fmtBrl(s.protectedRevenue),
-                  _fmtBrl(s.revenueAtRisk),
-                  _fmtBrl(s.lostRevenue),
+                  _fmtBrl(s.totalContractedRevenue.cents),
+                  _fmtBrl(s.protectedRevenue.cents),
+                  _fmtBrl(s.revenueAtRisk.cents),
+                  _fmtBrl(s.lostRevenue.cents),
                   '${s.totalObligations}',
                   '${s.executedCount}',
                   '${s.noShowCount}',
@@ -342,13 +369,17 @@ class PdfExportService {
       data: [
         [
           'Receita Protegida (Blindada)',
-          _fmtBrl(package.protectedRevenue),
+          _fmtBrl(package.protectedRevenue.cents),
           '$protectedPct%',
         ],
-        ['Receita em Risco', _fmtBrl(package.revenueAtRisk), '$atRiskPct%'],
+        [
+          'Receita em Risco',
+          _fmtBrl(package.revenueAtRisk.cents),
+          '$atRiskPct%',
+        ],
         [
           'Receita Perdida (Penalidades)',
-          _fmtBrl(package.lostRevenue),
+          _fmtBrl(package.lostRevenue.cents),
           '$lostPct%',
         ],
       ],
@@ -357,8 +388,8 @@ class PdfExportService {
 
   String _fmtDate(DateTime dt) => dt.toIso8601String().split('T')[0];
 
-  String _fmtBrl(Money money) {
-    final value = money.cents / 100;
+  String _fmtBrl(int cents) {
+    final value = cents / 100;
     return 'R\$ ${value.toStringAsFixed(2)}';
   }
 

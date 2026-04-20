@@ -1,7 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../application/sla_audit/contract_approval_command_service.dart';
-import '../../core/config/supabase_client.dart';
+import 'package:veraprob/application/sla_audit/contract_approval_command_service.dart';
 
 /// PostgreSQL implementation of [ContractApprovalCommandService] via Supabase RPCs.
 ///
@@ -9,10 +8,9 @@ import '../../core/config/supabase_client.dart';
 /// atomicity server-side.
 class PostgresContractApprovalCommandService
     implements ContractApprovalCommandService {
-  final SupabaseClient _client;
+  final SupabaseClient client;
 
-  PostgresContractApprovalCommandService([SupabaseClient? client])
-    : _client = client ?? supabase;
+  PostgresContractApprovalCommandService(this.client);
 
   @override
   Future<void> submitForApproval({
@@ -21,14 +19,16 @@ class PostgresContractApprovalCommandService
     required String tokenId,
     required String token,
     required DateTime expiresAtUtc,
+    int? expectedVersion,
   }) async {
-    await _client.rpc(
+    await client.rpc(
       'submit_contract_for_approval',
       params: {
         'p_contract_id': contractId,
         'p_token_id': tokenId,
         'p_token': token,
         'p_expires_at': expiresAtUtc.toIso8601String(),
+        'p_expected_version': expectedVersion,
       },
     );
   }
@@ -38,7 +38,7 @@ class PostgresContractApprovalCommandService
     required String token,
   }) async {
     final result =
-        await _client.rpc(
+        await client.rpc(
               'accept_contract_by_contractor',
               params: {'p_token': token},
             )

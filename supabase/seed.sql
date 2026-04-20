@@ -33,6 +33,11 @@ VALUES
     '00000000-0000-0000-0000-000000000002',
     'Org Beta (Test Tenant B)',
     true
+  ),
+  (
+    '00000000-0000-0000-0000-000000000003',
+    'Org Gamma (Test Tenant C)',
+    true
   )
 ON CONFLICT (id) DO NOTHING;
 

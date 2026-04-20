@@ -8,7 +8,7 @@ import 'plan_declaration.dart';
 
 abstract class PlanDeclarationRepository {
   /// Persists a [PlanDeclaration] aggregate.
-  Future<void> save(PlanDeclaration plan);
+  Future<PlanDeclaration> save(PlanDeclaration plan);
 
   /// Retrieves a [PlanDeclaration] by its unique ID.
   /// Returns `null` if not found.

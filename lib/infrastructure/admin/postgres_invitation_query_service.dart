@@ -1,14 +1,16 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/admin/invitation.dart';
-import '../../domain/admin/invitation_repository.dart';
-import '../../domain/enums/user_role.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/domain/admin/invitation.dart';
+import 'package:veraprob/domain/admin/invitation_repository.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// PostgreSQL read-side implementation of [InvitationRepository].
-/// Uses direct table queries — RLS scopes reads to the caller's org.
+/// Uses direct table queries â€” RLS scopes reads to the caller's org.
 class PostgresInvitationQueryService implements InvitationRepository {
   final SupabaseClient _client;
+  final IDateTimeProvider _dateTimeProvider;
 
-  PostgresInvitationQueryService(this._client);
+  PostgresInvitationQueryService(this._client, this._dateTimeProvider);
 
   @override
   Future<List<Invitation>> listByOrganization(String organizationId) async {
@@ -31,7 +33,7 @@ class PostgresInvitationQueryService implements InvitationRepository {
         .eq('token', token)
         .isFilter('accepted_at_utc', null)
         .isFilter('revoked_at_utc', null)
-        .gt('expires_at_utc', DateTime.now().toUtc().toIso8601String())
+        .gt('expires_at_utc', _dateTimeProvider.nowUtc().toIso8601String())
         .maybeSingle();
 
     if (row == null) return null;
@@ -63,8 +65,12 @@ class PostgresInvitationQueryService implements InvitationRepository {
         return UserRole.admin;
       case 'OPERATOR':
         return UserRole.operator;
-      default:
+      case 'AUDITOR':
         return UserRole.auditor;
+      case 'CONTRACTOR_VIEWER':
+        return UserRole.contractorViewer;
+      default:
+        throw ArgumentError('Unknown DB role: $dbRole');
     }
   }
 }

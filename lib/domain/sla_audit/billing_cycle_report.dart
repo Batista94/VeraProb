@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'contractual_financial_daily_snapshot.dart';
 
 /// Ephemeral read model representing a financial aggregation for a billing cycle.
@@ -29,7 +29,8 @@ class BillingCycleReport extends Equatable {
   final int noShowCount;
   final int evidenceGapCount;
 
-  final double complianceRate;
+  /// Compliance rate in bps (e.g. 8750 = 87.5%).
+  final int complianceRateBps;
   final DateTime generatedAtUtc;
 
   /// Provenance: identifiers of the daily snapshots aggregated into this report.
@@ -59,7 +60,7 @@ class BillingCycleReport extends Equatable {
     required this.executedCount,
     required this.noShowCount,
     required this.evidenceGapCount,
-    required this.complianceRate,
+    required this.complianceRateBps,
     required this.generatedAtUtc,
     required this.snapshotIds,
     required this.operationalDates,
@@ -104,7 +105,7 @@ class BillingCycleReport extends Equatable {
       gap += s.evidenceGapCount;
     }
 
-    final double compliance = totalOb > 0 ? (exec / totalOb) * 100 : 100.0;
+    final int complianceBps = totalOb > 0 ? (exec * 10000 ~/ totalOb) : 10000;
 
     // Canonical ID generation
     final canonicalString = '$organizationId|$contractScope|$startStr|$endStr';
@@ -126,7 +127,7 @@ class BillingCycleReport extends Equatable {
       executedCount: exec,
       noShowCount: noShow,
       evidenceGapCount: gap,
-      complianceRate: compliance,
+      complianceRateBps: complianceBps,
       generatedAtUtc: generatedAtUtc ?? DateTime.now().toUtc(),
       snapshotIds: snapshots.map((s) => s.id).toList(),
       operationalDates: snapshots.map((s) => s.operationalDateUtc).toList(),
@@ -150,7 +151,7 @@ class BillingCycleReport extends Equatable {
     executedCount,
     noShowCount,
     evidenceGapCount,
-    complianceRate,
+    complianceRateBps,
     snapshots,
     generatedAtUtc,
     snapshotIds,

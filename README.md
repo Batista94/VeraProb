@@ -1,44 +1,62 @@
-# 🌊 VeraProb
-### The Immutable Verifier for B2B Compliance & Financial Protection
+# VeraProb
 
-[![Stack: Flutter](https://img.shields.io/badge/Stack-Flutter%20|%20Supabase%20|%20PostgreSQL-02569B?logo=flutter)](https://flutter.dev)
-[![Architecture: Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20|%20Event--Driven-green)](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-
-**VeraProb** is a high-performance, event-driven platform designed to eliminate the friction between signed B2B contracts and real-world operational execution. It acts as an automated, impartial **"Digital Judge"** that monitors service levels (SLAs), protects financial margins, and generates immutable evidence for auditing.
+VeraProb is a high-performance platform designed to eliminate friction between B2B contracts and operational execution. It acts as an automated, impartial "Digital Judge" that transforms raw telemetry into Verifiable Contractual Truth.
 
 ---
 
-## 💎 The "Truth" Engine
+## Architecture & Data Pipeline
 
-In complex B2B operations, disputes over SLA breaches often lead to administrative fatigue and financial leakage. VeraProb solves this by transforming raw telemetry into **Verifiable Contractual Truth**.
+The platform follows a strict Event-Sourced logic across four core stages to ensure a forensic audit trail:
 
-- **🛡️ Financial Protection (INV-2):** Real-time monitoring of SLA breaches with automatic penalty calculation and **Financial Ceiling** (Teto Financeiro) management.
-- **📈 Relative Risk KPIs:** Instant visibility into financial exposure (Exposição No-Show) vs. negotiated contract caps.
-- **📜 Immutable Ledger:** Every operational event and financial verdict is recorded in an append-only, tamper-proof system of record.
-- **⚡ Zero-Friction UX:** Just-in-Time (JIT) master data management designed for high-stakes Operations Control Centers (OCC).
-- **🔒 Multi-Tenant Sovereignty:** Enterprise-grade data isolation powered by Row-Level Security (RLS).
-
----
-
-## 🏗️ Technical Pillar
-
-Built for reliability, scalability, and deterministic results:
-
-*   **Logic:** Pure Dart Domain (Sovereign Logic) — no dependencies on infrastructure.
-*   **Engine:** Deterministic Evaluation Engine for contractual rule replay.
-*   **Persistence:** PostgreSQL/Supabase with strict RLS enforcement.
-*   **Frontend:** Premium Flutter Web interface with reactive state management (Riverpod).
-*   **Precision:** All financial operations handled in integer cents via `Money` Value Objects.
+1. Ingestion: Raw telemetry (GPS, IoT, Check-ins) is received via secure Edge Functions.
+2. Normalization: Noisy data is unified into Canonical Facts (Deterministic Snapshots).
+3. Evaluation: Facts are replayed against SLA Rules by the Forensic Evaluation Engine.
+4. Verdict: Financial impacts (penalties/approvals) are sealed into an Immutable Ledger (INV-7).
 
 ---
 
-## 🚀 Vertical Applications
+## Getting Started (Local Development)
 
-While the core engine is industry-agnostic, VeraProb is currently optimized for:
+VeraProb relies on the **Supabase CLI (Docker)** to replicate the production environment locally, ensuring RLS policies and Edge Functions work as expected.
 
-1.  **Corporate Shuttle & Charter (Fretamento):** Arrival windows, route compliance, and fleet quality.
-2.  **Industrial Logistics:** Material flow tracking and contractual milestones.
-3.  **Facilities Management:** Service delivery validation and vendor compliance.
+### 1. Prerequisites
 
----
-© 2026 VeraProb — *Generating Truth from Telemetry.*
+- **Flutter SDK** (>= 3.41.5)
+- **Docker Desktop** (Active)
+- **Supabase CLI** (`brew install supabase/tap/supabase`)
+
+### 2. Setup Infrastructure
+
+```bash
+# Start local containers (PostgreSQL, Auth, Storage, Edge Functions)
+supabase start
+
+# Apply local migrations and seed data
+supabase db reset
+```
+
+### 3. Setup Environment
+
+Copy .env.example to .env and fill in the local keys obtained from supabase status:
+
+```bash
+cp .env.example .env
+```
+
+### 4. Run Application
+
+```bash
+flutter run -d chrome --web-renderer wasm
+```
+
+### Project Structure (Clean Architecture)
+
+- lib/domain/: Sovereign logic, Entities, and Repository Interfaces (Zero Infrastructure Dependencies).
+- lib/infrastructure/: Supabase/Postgres implementations, External Adapters, and Data Mappers.
+- lib/application/: Business use cases, Commands, Handlers, and Projections.
+- lib/state/: Riverpod Providers and global state management.
+- lib/presentation/: Flutter UI (Atomic Widgets, Features, and Screens).
+- lib/core/: Shared utilities, Forensic Invariants, and Constants.
+
+### Professional Standards
+VeraProb adheres to strict Forensic Invariants to guarantee legal admissibility. For the complete list of 27 technical invariants and core protocols, refer to [CLAUDE.md](CLAUDE.md).

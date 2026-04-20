@@ -36,6 +36,7 @@ sentry-wizard*
 # Logs & Temporary Files
 *.log
 test_output.txt
+*.txt
 *.exe
 *.bak
 *.tmp
@@ -55,3 +56,8 @@ Thumbs.db
 .claude/logs/
 .claude/*.log
 !.claude/skills/
+
+# Supabase Local Infrastructure
+supabase/.temp/
+supabase/.branches/
+

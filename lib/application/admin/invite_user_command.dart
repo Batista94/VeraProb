@@ -1,4 +1,4 @@
-import '../../domain/enums/user_role.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// Immutable command DTO for inviting a new user to the organization.
 ///
@@ -13,11 +13,15 @@ class InviteUserCommand {
   final String email;
   final UserRole roleToAssign;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const InviteUserCommand({
     required this.organizationId,
     required this.callerRole,
     required this.invitedByUserId,
     required this.email,
     required this.roleToAssign,
+    required this.sessionId,
   });
 }

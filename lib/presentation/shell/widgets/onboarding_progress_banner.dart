@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../domain/enums/vehicle_status.dart';
-import '../../../state/providers/operational_zone_providers.dart';
-import '../../../state/providers/contractor_providers.dart';
-import '../../../state/providers/sla_template_providers.dart';
-import '../../../features/admin/providers/vehicles_provider.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/enums/vehicle_status.dart';
+import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/state/providers/contractor_providers.dart';
+import 'package:veraprob/state/providers/sla_template_providers.dart';
+import 'package:veraprob/features/admin/providers/vehicles_provider.dart';
 
 /// Slim top bar verifying 4 core master data prerequisites.
 /// Renders as a 48px strip anchored above the main content — no layout displacement.
@@ -14,10 +14,7 @@ import '../../../features/admin/providers/vehicles_provider.dart';
 class OnboardingProgressBanner extends ConsumerWidget {
   final ValueChanged<int> onNavigate;
 
-  const OnboardingProgressBanner({
-    super.key,
-    required this.onNavigate,
-  });
+  const OnboardingProgressBanner({super.key, required this.onNavigate});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,13 +26,19 @@ class OnboardingProgressBanner extends ConsumerWidget {
     final hasZones = (zonesAsync.valueOrNull ?? []).isNotEmpty;
     final hasContractors = (contractorsAsync.valueOrNull ?? []).isNotEmpty;
     final hasVehicles = (vehiclesAsync.valueOrNull ?? []).any(
-        (v) => v.status == VehicleStatus.available ||
-               v.status == VehicleStatus.inService);
+      (v) =>
+          v.status == VehicleStatus.available ||
+          v.status == VehicleStatus.inService,
+    );
     final hasRules = (rulesAsync.valueOrNull ?? []).isNotEmpty;
 
     final prerequisites = [
       _Prerequisite(label: 'Zonas', isFulfilled: hasZones, navIndex: 7),
-      _Prerequisite(label: 'Contratantes', isFulfilled: hasContractors, navIndex: 11),
+      _Prerequisite(
+        label: 'Contratantes',
+        isFulfilled: hasContractors,
+        navIndex: 11,
+      ),
       _Prerequisite(label: 'Veículos', isFulfilled: hasVehicles, navIndex: 1),
       _Prerequisite(label: 'SLA Template', isFulfilled: hasRules, navIndex: 9),
     ];
@@ -89,9 +92,7 @@ class _SlimBar extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 1),
       decoration: const BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        border: Border(
-          bottom: BorderSide(color: VeraProbColors.border),
-        ),
+        border: Border(bottom: BorderSide(color: VeraProbColors.border)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -131,13 +132,18 @@ class _SlimBar extends StatelessWidget {
             const SizedBox(width: 24),
             // Prerequisite dots
             Expanded(
-              child: Row(
-                children: prerequisites
-                    .map((p) => _PrerequisiteDot(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: prerequisites
+                      .map(
+                        (p) => _PrerequisiteDot(
                           prerequisite: p,
                           onNavigate: onNavigate,
-                        ))
-                    .toList(),
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
             ),
           ],

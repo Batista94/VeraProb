@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
-import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
-import 'package:veraprob/domain/enums/motion_state.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
@@ -39,6 +39,8 @@ void main() {
       );
     });
 
+    final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
+
     Future<void> declarePlanWithRules(
       String orgId,
       String contractId,
@@ -73,11 +75,12 @@ void main() {
             endLatitude: -23.5600,
             endLongitude: -46.6400,
             endRadiusMeters: 100,
-            contractualValue: Money.fromDouble(150.0),
-            noShowPenaltyMultiplier: 1.5,
+            contractualValue: const Money(15000),
+            noShowPenaltyBps: 15000,
           ),
         ],
         ruleSnapshot: rules,
+        nowUtc: nowUtc,
       );
       await planRepo.save(declaration);
 
@@ -89,8 +92,8 @@ void main() {
         startLatitude: geoLat,
         startLongitude: geoLng,
         startRadiusMeters: geoRadius,
-        contractualValue: Money.fromDouble(150.0),
-        noShowPenaltyMultiplier: 1.5,
+        contractualValue: const Money(15000),
+        noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 3, 1, 5, 45),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 15),
       );
@@ -99,6 +102,7 @@ void main() {
 
     VehicleOperationalState createPing(DateTime time) {
       return VehicleOperationalState(
+        rawSpeed: 0.0,
         vehicleId: 'bus-1',
         tripId: 'trip-1',
         latitude: geoLat,
@@ -133,12 +137,26 @@ void main() {
         ); // Vehicle stayed for 10 seconds
 
         // Replay telemetry against the Engine
-        await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-1');
-        await engine.processVehicleState(createPing(t10), nowUtc: t10, organizationId: 'org-1');
+        await engine.processVehicleState(
+          createPing(t0),
+          nowUtc: t0,
+          organizationId: 'org-1',
+        );
+        await engine.processVehicleState(
+          createPing(t10),
+          nowUtc: t10,
+          organizationId: 'org-1',
+        );
 
         // Fetch the execution states
-        final stateV1 = (await execRepo.findByContract('contract-v1', organizationId: 'org-1')).first;
-        final stateV2 = (await execRepo.findByContract('contract-v2', organizationId: 'org-1')).first;
+        final stateV1 = (await execRepo.findByContract(
+          'contract-v1',
+          organizationId: 'org-1',
+        )).first;
+        final stateV2 = (await execRepo.findByContract(
+          'contract-v2',
+          organizationId: 'org-1',
+        )).first;
 
         // Assert Determinism:
         // Even though the same physical vehicle telemetry was fed to the engine at exactly the same time,
@@ -175,13 +193,35 @@ void main() {
       // Identical telemetry fed into each tenant's engine boundary separately.
       // The isolation test verifies that the same physical vehicle, evaluated
       // under org-a rules (60s) vs org-b rules (10s), produces different outcomes.
-      await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-a');
-      await engine.processVehicleState(createPing(t15), nowUtc: t15, organizationId: 'org-a');
-      await engine.processVehicleState(createPing(t0), nowUtc: t0, organizationId: 'org-b');
-      await engine.processVehicleState(createPing(t15), nowUtc: t15, organizationId: 'org-b');
+      await engine.processVehicleState(
+        createPing(t0),
+        nowUtc: t0,
+        organizationId: 'org-a',
+      );
+      await engine.processVehicleState(
+        createPing(t15),
+        nowUtc: t15,
+        organizationId: 'org-a',
+      );
+      await engine.processVehicleState(
+        createPing(t0),
+        nowUtc: t0,
+        organizationId: 'org-b',
+      );
+      await engine.processVehicleState(
+        createPing(t15),
+        nowUtc: t15,
+        organizationId: 'org-b',
+      );
 
-      final stateA = (await execRepo.findByContract('contract-a', organizationId: 'org-a')).first;
-      final stateB = (await execRepo.findByContract('contract-b', organizationId: 'org-b')).first;
+      final stateA = (await execRepo.findByContract(
+        'contract-a',
+        organizationId: 'org-a',
+      )).first;
+      final stateB = (await execRepo.findByContract(
+        'contract-b',
+        organizationId: 'org-b',
+      )).first;
 
       // Verification of tenant boundary isolation inside identical compute pipeline
       expect(

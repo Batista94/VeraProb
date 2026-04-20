@@ -1,8 +1,7 @@
-import '../../domain/sla_audit/audit_package.dart';
-import '../../domain/sla_audit/audit_package_status.dart';
-import '../../domain/sla_audit/billing_cycle_report.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
+import 'package:veraprob/domain/sla_audit/audit_package_status.dart';
+import 'package:veraprob/domain/sla_audit/billing_cycle_report.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 /// Generates legally-defensible CSV exports from sealed [AuditPackage] records.
 ///
@@ -101,13 +100,13 @@ class CsvExportService {
       _appendRow(buffer, [
         s.operationalDateUtc.toIso8601String().split('T')[0],
         s.totalContractedRevenue.cents,
-        _formatBrl(s.totalContractedRevenue),
+        _formatBrl(s.totalContractedRevenue.cents),
         s.protectedRevenue.cents,
-        _formatBrl(s.protectedRevenue),
+        _formatBrl(s.protectedRevenue.cents),
         s.revenueAtRisk.cents,
-        _formatBrl(s.revenueAtRisk),
+        _formatBrl(s.revenueAtRisk.cents),
         s.lostRevenue.cents,
-        _formatBrl(s.lostRevenue),
+        _formatBrl(s.lostRevenue.cents),
         s.totalObligations,
         s.executedCount,
         s.noShowCount,
@@ -122,18 +121,18 @@ class CsvExportService {
     _appendRow(buffer, [
       'TOTAL PERIODO',
       package.totalContractedRevenue.cents,
-      _formatBrl(package.totalContractedRevenue),
+      _formatBrl(package.totalContractedRevenue.cents),
       package.protectedRevenue.cents,
-      _formatBrl(package.protectedRevenue),
+      _formatBrl(package.protectedRevenue.cents),
       package.revenueAtRisk.cents,
-      _formatBrl(package.revenueAtRisk),
+      _formatBrl(package.revenueAtRisk.cents),
       package.lostRevenue.cents,
-      _formatBrl(package.lostRevenue),
+      _formatBrl(package.lostRevenue.cents),
       package.totalObligations,
       package.executedCount,
       package.noShowCount,
       package.evidenceGapCount,
-      package.complianceRate.toStringAsFixed(2),
+      (package.complianceRateBps / 100.0).toStringAsFixed(2),
       package.reportLedgerBoundary,
     ]);
 
@@ -156,8 +155,8 @@ class CsvExportService {
     buf.write('\r\n');
   }
 
-  String _formatBrl(Money money) {
-    final value = money.cents / 100;
+  String _formatBrl(int cents) {
+    final value = cents / 100;
     return 'R\$ ${value.toStringAsFixed(2)}';
   }
 

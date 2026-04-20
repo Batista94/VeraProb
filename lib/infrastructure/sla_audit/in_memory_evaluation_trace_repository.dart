@@ -1,5 +1,5 @@
-import '../../domain/sla_audit/evaluation_trace.dart';
-import '../../domain/sla_audit/evaluation_trace_repository.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
+import 'package:veraprob/domain/sla_audit/evaluation_trace_repository.dart';
 
 class InMemoryEvaluationTraceRepository implements EvaluationTraceRepository {
   final Map<String, EvaluationTrace> _db = {};

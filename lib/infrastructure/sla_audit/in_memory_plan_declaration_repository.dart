@@ -1,8 +1,8 @@
 import 'dart:collection';
 
-import '../../domain/sla_audit/contractual_service_execution.dart';
-import '../../domain/sla_audit/plan_declaration.dart';
-import '../../domain/sla_audit/plan_declaration_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
 
 /// In-memory implementation of [PlanDeclarationRepository].
 ///
@@ -16,8 +16,9 @@ class InMemoryPlanDeclarationRepository implements PlanDeclarationRepository {
       {};
 
   @override
-  Future<void> save(PlanDeclaration plan) async {
+  Future<PlanDeclaration> save(PlanDeclaration plan) async {
     _store[plan.id] = plan;
+    return plan;
   }
 
   @override

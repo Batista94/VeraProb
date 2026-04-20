@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
-import 'package:veraprob/domain/enums/motion_state.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
@@ -81,6 +81,7 @@ void main() {
     double longitude = geoLng,
   }) {
     return VehicleOperationalState(
+      rawSpeed: 0.0,
       vehicleId: vehicleId,
       tripId: 'trip-1',
       latitude: latitude,
@@ -107,8 +108,8 @@ void main() {
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
-      contractualValue: Money.fromDouble(150.0),
-      noShowPenaltyMultiplier: 1.5,
+      contractualValue: const Money(15000),
+      noShowPenaltyBps: 15000,
       windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
     );
@@ -183,8 +184,8 @@ void main() {
         startLatitude: geoLat,
         startLongitude: geoLng,
         startRadiusMeters: geoRadius,
-        contractualValue: Money.fromDouble(150.0),
-        noShowPenaltyMultiplier: 1.5,
+        contractualValue: const Money(15000),
+        noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 2, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 2, 1, 7, 0), // past
       );

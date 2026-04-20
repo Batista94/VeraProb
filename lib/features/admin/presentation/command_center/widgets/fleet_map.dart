@@ -10,7 +10,7 @@ import 'package:veraprob/application/projections/providers/fleet_status_projecti
 import 'package:veraprob/application/projections/providers/command_center_filter_provider.dart';
 import 'package:veraprob/application/projections/providers/fleet_attention_projection_provider.dart';
 import 'package:veraprob/dev/performance_metrics.dart';
-import '../map_widgets/animated_vehicle_marker.dart';
+import 'package:veraprob/features/admin/presentation/command_center/map_widgets/animated_vehicle_marker.dart';
 
 /// The main fleet map for the Command Center.
 ///

@@ -1,4 +1,4 @@
-import '../../domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 
 /// Port: atomic rule version transition.
 ///

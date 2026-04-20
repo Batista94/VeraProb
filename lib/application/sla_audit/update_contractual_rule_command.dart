@@ -1,5 +1,5 @@
-import '../../domain/enums/user_role.dart';
-import '../../domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 
 /// Immutable command DTO for updating a contractual rule configuration.
 ///
@@ -31,6 +31,9 @@ class UpdateContractualRuleCommand {
   /// Role of the user — sourced from JWT claim, never from user input.
   final UserRole callerRole;
 
+  /// Session ID for tenant validation.
+  final String sessionId;
+
   const UpdateContractualRuleCommand({
     required this.organizationId,
     required this.contractId,
@@ -39,5 +42,6 @@ class UpdateContractualRuleCommand {
     required this.newConfig,
     required this.evaluationOrder,
     required this.callerRole,
+    required this.sessionId,
   });
 }

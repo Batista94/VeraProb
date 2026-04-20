@@ -1,6 +1,6 @@
-import '../../domain/sla_audit/audit_package.dart';
-import '../../domain/sla_audit/audit_package_repository.dart';
-import '../../domain/sla_audit/audit_package_status.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
+import 'package:veraprob/domain/sla_audit/audit_package_repository.dart';
+import 'package:veraprob/domain/sla_audit/audit_package_status.dart';
 
 /// In-memory implementation of [AuditPackageRepository] for testing.
 ///

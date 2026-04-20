@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../domain/enums/user_role.dart';
-import '../../../state/providers/auth_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/features/admin/presentation/screens/admin_hub_screen.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// Navigation destinations for the admin icon sidebar.
+///
+/// 9.8.B: Consolidated from 8 → 6 items by merging `settings`, `userManagement`,
+/// and `orgSettings` into a single `adminHub` destination with 3 tabs.
 enum AdminDestination {
   commandCenter(
     icon: Icons.radar_outlined,
@@ -42,26 +46,12 @@ enum AdminDestination {
     tooltip: 'Auditoria OCC',
     minimumRole: UserRole.auditor,
   ),
-  settings(
-    icon: Icons.settings_outlined,
-    selectedIcon: Icons.settings,
-    label: 'Ajustes',
-    tooltip: 'Configurações do Sistema',
+  adminHub(
+    icon: Icons.settings_applications_outlined,
+    selectedIcon: Icons.settings_applications,
+    label: 'Hub',
+    tooltip: 'Central Administrativa',
     minimumRole: UserRole.operator,
-  ),
-  userManagement(
-    icon: Icons.people_outline,
-    selectedIcon: Icons.people,
-    label: 'Equipe',
-    tooltip: 'Gestão de Usuários',
-    minimumRole: UserRole.admin,
-  ),
-  orgSettings(
-    icon: Icons.business_outlined,
-    selectedIcon: Icons.business,
-    label: 'Organização',
-    tooltip: 'Configurações da Empresa',
-    minimumRole: UserRole.admin,
   );
 
   final IconData icon;
@@ -80,9 +70,10 @@ enum AdminDestination {
 }
 
 class AdminShell extends ConsumerStatefulWidget {
-  final Widget child;
+  /// Optional override child. When null, [_buildScreen] handles routing.
+  final Widget? child;
 
-  const AdminShell({super.key, required this.child});
+  const AdminShell({super.key, this.child});
 
   @override
   ConsumerState<AdminShell> createState() => _AdminShellState();
@@ -95,7 +86,13 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     setState(() {
       currentDestination = destination;
     });
-    // Navigation logic would go here (e.g., GoRouter)
+  }
+
+  Widget _buildScreen(AdminDestination destination) {
+    if (destination == AdminDestination.adminHub) {
+      return const AdminHubScreen();
+    }
+    return widget.child ?? const SizedBox.shrink();
   }
 
   @override
@@ -123,7 +120,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
                 ],
               ),
               clipBehavior: Clip.antiAlias,
-              child: widget.child,
+              child: _buildScreen(currentDestination),
             ),
           ),
         ],
@@ -151,7 +148,10 @@ class _AdminSidebar extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
         border: Border(
-          right: BorderSide(color: Colors.black.withValues(alpha: 0.05), width: 1),
+          right: BorderSide(
+            color: Colors.black.withValues(alpha: 0.05),
+            width: 1,
+          ),
         ),
       ),
       child: Column(

@@ -1,9 +1,9 @@
-import '../../../domain/entities/operational_trip.dart';
-import '../../../domain/entities/operational_warning.dart';
-import '../../../domain/entities/trip_event.dart';
-import '../../../domain/enums/trip_status.dart';
-import '../../../domain/entities/vehicle_operational_state.dart';
-import '../../../domain/enums/motion_state.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/operational_warning.dart';
+import 'package:veraprob/domain/entities/trip_event.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'situation_detector.dart';
 
 /// Detects if a dispatched/enRoute vehicle is stopped for too long.
@@ -14,8 +14,8 @@ import 'situation_detector.dart';
 ///   we flag it as a severe stoppage.
 /// - We still keep the fallback for interrupted trips from Phase 0.
 class StoppedVehicleDetector extends SituationDetector {
-  const StoppedVehicleDetector()
-    : super(id: 'stopped_vehicle', name: 'Detector de Veículo Parado');
+  StoppedVehicleDetector(super.dateTimeProvider)
+    : super(id: 'stopped_vehicle', name: 'Detector de VeÃ­culo Parado');
 
   @override
   bool canDetect(OperationalTrip trip) {
@@ -30,19 +30,17 @@ class StoppedVehicleDetector extends SituationDetector {
   ) {
     // 1. Check real operational state from the Normalization Layer
     if (state != null && state.motionState == MotionState.stopped) {
-      final minutesStopped = DateTime.now()
-          .toUtc()
-          .difference(state.stateChangedAt)
-          .inMinutes;
+      final nowUtc = dateTimeProvider.nowUtc();
+      final minutesStopped = nowUtc.difference(state.stateChangedAt).inMinutes;
       // Only warn if stopped for a significant time based on business logic
       // (The normalizer already requires 15s to classify as stopped, but for a severe warning we might want more like 2-3 mins)
       if (minutesStopped >= 2) {
         return OperationalWarning(
           id: 'warn_stopped_operational_${trip.id}',
           type: 'vehicle_stopped',
-          message: 'Veículo Parado na Via: $minutesStopped min',
+          message: 'VeÃ­culo Parado na Via: $minutesStopped min',
           severityScore: 40,
-          detectedAt: DateTime.now().toUtc(),
+          detectedAt: state.lastRawPingAt,
         );
       }
     }
@@ -52,9 +50,9 @@ class StoppedVehicleDetector extends SituationDetector {
       return OperationalWarning(
         id: 'warn_stopped_interrupted_${trip.id}',
         type: 'vehicle_stopped',
-        message: 'Veículo Interrompido',
+        message: 'VeÃ­culo Interrompido',
         severityScore: 50,
-        detectedAt: DateTime.now().toUtc(),
+        detectedAt: state?.lastRawPingAt ?? dateTimeProvider.nowUtc(),
       );
     }
 

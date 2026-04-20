@@ -18,5 +18,43 @@ Depois preencha com as credenciais do projeto veraprob-dev no Supabase.
 Write-Host "🔧 [DEV] Iniciando veraprob com credenciais de desenvolvimento..." -ForegroundColor Cyan
 Write-Host "   Credenciais lidas de: .env" -ForegroundColor DarkGray
 
-# Run on Chrome (Flutter Web). .env is read automatically by flutter_dotenv.
-flutter run -d chrome --dart-define=ENV=dev
+# 1. Garante que o Supabase local está rodando e reseta o banco.
+Write-Host "🐘 Iniciando serviços Supabase (supabase start)..." -ForegroundColor Green
+supabase start
+
+# Pequena pausa para garantir que o proxy está aceitando conexões antes do reset
+Write-Host "⏳ Aguardando serviços estabilizarem..." -ForegroundColor DarkGray
+Start-Sleep -Seconds 2
+
+Write-Host "🔄 Resetando banco local (supabase db reset)..." -ForegroundColor Green
+supabase db reset
+
+# 2. Seed the DB with test data.
+Write-Host "🌱 Populando banco com dados de teste..." -ForegroundColor Green
+node scripts/bootstrap_dev.mjs
+
+# 3. Start Edge Functions in a background job.
+Write-Host "⚡ Iniciando Edge Functions localmente (super-admin-proxy)..." -ForegroundColor Yellow
+$efJob = Start-Job -ScriptBlock {
+    Set-Location $using:PWD
+    supabase functions serve super-admin-proxy --env-file .env 2>&1
+}
+Write-Host "   Edge Functions job ID: $($efJob.Id)" -ForegroundColor DarkGray
+
+# 4. Clean and get dependencies.
+Write-Host "🧹 Limpando cache e baixando dependências..." -ForegroundColor Cyan
+flutter clean
+flutter pub get
+
+# 5. Run on Chrome (Flutter Web). 
+# Note: --dart-define=SKIP_MFA_DEV=true can be added to bypass 2FA locally.
+Write-Host "🚀 Iniciando Flutter Web..." -ForegroundColor Cyan
+flutter run -d chrome `
+    --dart-define=ENV=dev `
+    --dart-define=SKIP_MFA_DEV=true
+
+# Cleanup Edge Function job when Flutter exits
+Write-Host "🛑 Encerrando serviços de fundo..." -ForegroundColor DarkGray
+Stop-Job $efJob -ErrorAction SilentlyContinue
+Remove-Job $efJob -ErrorAction SilentlyContinue
+Write-Host "✅ Ambiente encerrado." -ForegroundColor DarkGray

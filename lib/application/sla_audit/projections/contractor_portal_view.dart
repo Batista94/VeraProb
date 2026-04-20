@@ -1,5 +1,4 @@
-import '../../../domain/shared/money.dart';
-import '../../../domain/sla_audit/audit_package.dart';
+import 'package:veraprob/domain/sla_audit/audit_package.dart';
 
 /// Read model: contractor-facing view of a single sealed billing cycle.
 ///
@@ -12,6 +11,8 @@ import '../../../domain/sla_audit/audit_package.dart';
 ///
 /// Built directly from a sealed [AuditPackage] to preserve the same
 /// deterministic content that backs the exported PDF/CSV (INV-16, INV-17).
+///
+/// All monetary values are stored as integer cents (INV-19).
 class ContractorPortalView {
   final String sealedPackageId;
   final String packageHash;
@@ -28,12 +29,12 @@ class ContractorPortalView {
   final int noShowCount;
   final int evidenceGapCount;
 
-  /// complianceRate ∈ [0.0, 100.0]
-  final double complianceRate;
+  /// complianceRateBps ∈ [0, 10000]
+  final int complianceRateBps;
 
-  // ── Financial summary ──────────────────────────────────────────────────────
-  final Money totalContractedRevenue;
-  final Money lostRevenue;
+  // ── Financial summary (cents) ──────────────────────────────────────────────
+  final int totalContractedRevenue;
+  final int lostRevenue;
 
   const ContractorPortalView({
     required this.sealedPackageId,
@@ -46,7 +47,7 @@ class ContractorPortalView {
     required this.executedCount,
     required this.noShowCount,
     required this.evidenceGapCount,
-    required this.complianceRate,
+    required this.complianceRateBps,
     required this.totalContractedRevenue,
     required this.lostRevenue,
   });
@@ -74,9 +75,9 @@ class ContractorPortalView {
       executedCount: package.executedCount,
       noShowCount: package.noShowCount,
       evidenceGapCount: package.evidenceGapCount,
-      complianceRate: package.complianceRate,
-      totalContractedRevenue: package.totalContractedRevenue,
-      lostRevenue: package.lostRevenue,
+      complianceRateBps: package.complianceRateBps,
+      totalContractedRevenue: package.totalContractedRevenue.cents,
+      lostRevenue: package.lostRevenue.cents,
     );
   }
 }

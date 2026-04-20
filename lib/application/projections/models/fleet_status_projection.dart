@@ -1,4 +1,4 @@
-import '../../../domain/entities/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 
 /// Represents the global operational status of the fleet.
 /// Pure data contract used for rendering the Fleet Status sidebar/panels.

@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
-import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
-import 'investigation_map_panel.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_map_panel.dart';
 
 final _timeFormat = DateFormat('HH:mm:ss');
 final _dateFormat = DateFormat('dd/MM/yyyy HH:mm:ss');
@@ -40,11 +39,7 @@ class InvestigationModal extends ConsumerWidget {
           ),
           title: Row(
             children: [
-              const Icon(
-                Icons.search,
-                size: 18,
-                color: VeraProbColors.primary,
-              ),
+              const Icon(Icons.search, size: 18, color: VeraProbColors.primary),
               const SizedBox(width: 8),
               Text(
                 'Análise Forense de Decisões',
@@ -242,9 +237,7 @@ class _LedgerTimelinePanel extends StatelessWidget {
           Expanded(
             child: ledgerAsync.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: VeraProbColors.primary,
-                ),
+                child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
               error: (err, _) => Center(
                 child: Text(
@@ -450,9 +443,7 @@ class _EvaluationTracePanel extends StatelessWidget {
           Expanded(
             child: tracesAsync.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: VeraProbColors.primary,
-                ),
+                child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
               error: (err, _) => Center(
                 child: Text(
@@ -593,10 +584,7 @@ class _MetaChip extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: VeraProbTypography.bodySmall.copyWith(color: color),
-        ),
+        Text(label, style: VeraProbTypography.bodySmall.copyWith(color: color)),
       ],
     );
   }
@@ -664,9 +652,7 @@ class _DecisionRow extends StatelessWidget {
                 ),
                 child: Text(
                   decision.outcome,
-                  style: VeraProbTypography.badge.copyWith(
-                    color: outcomeColor,
-                  ),
+                  style: VeraProbTypography.badge.copyWith(color: outcomeColor),
                 ),
               ),
             ],
@@ -700,7 +686,7 @@ class _DecisionRow extends StatelessWidget {
           ),
 
           // Evidence
-          if (decision.evidence.isNotEmpty) ...[
+          if (decision.evidence.toJson().isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
@@ -721,7 +707,7 @@ class _DecisionRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...decision.evidence.entries.map(
+                  ...decision.evidence.toJson().entries.map(
                     (e) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Row(

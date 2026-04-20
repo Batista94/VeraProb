@@ -3,9 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/features/admin/presentation/drivers_screen.dart';
 import 'package:veraprob/features/shared/providers.dart';
-import 'package:veraprob/features/shared/domain/entities/driver.dart';
-import 'package:veraprob/features/shared/data/repositories/driver_repository.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/domain/assets/i_driver_repository.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,7 +25,12 @@ void main() {
 
     // Register Fallback Value for Driver
     registerFallbackValue(
-      const Driver(id: '0', organizationId: 'test-org', name: 'Fallback', licenseNumber: '0'),
+      const Driver(
+        id: '0',
+        organizationId: 'test-org',
+        name: 'Fallback',
+        licenseNumber: '0',
+      ),
     );
   });
 
@@ -56,8 +60,18 @@ void main() {
     testWidgets('renders List of Drivers', (tester) async {
       when(() => mockDriverRepository.getDrivers()).thenAnswer(
         (_) async => [
-          const Driver(id: '1', organizationId: 'test-org', name: 'João Silva', licenseNumber: '111'),
-          const Driver(id: '2', organizationId: 'test-org', name: 'Maria Oliveira', licenseNumber: '222'),
+          const Driver(
+            id: '1',
+            organizationId: 'test-org',
+            name: 'João Silva',
+            licenseNumber: '111',
+          ),
+          const Driver(
+            id: '2',
+            organizationId: 'test-org',
+            name: 'Maria Oliveira',
+            licenseNumber: '222',
+          ),
         ],
       );
 
@@ -158,8 +172,18 @@ void main() {
     testWidgets('Search filters drivers', (tester) async {
       when(() => mockDriverRepository.getDrivers()).thenAnswer(
         (_) async => [
-          const Driver(id: '1', organizationId: 'test-org', name: 'João Silva', licenseNumber: '111'),
-          const Driver(id: '2', organizationId: 'test-org', name: 'Maria Oliveira', licenseNumber: '222'),
+          const Driver(
+            id: '1',
+            organizationId: 'test-org',
+            name: 'João Silva',
+            licenseNumber: '111',
+          ),
+          const Driver(
+            id: '2',
+            organizationId: 'test-org',
+            name: 'Maria Oliveira',
+            licenseNumber: '222',
+          ),
         ],
       );
 
@@ -204,4 +228,3 @@ void main() {
     });
   });
 }
-

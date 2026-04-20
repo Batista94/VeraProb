@@ -1,10 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../domain/sla_audit/operational_alert.dart';
-import '../../domain/sla_audit/operational_alert_repository.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
+import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// Postgres implementation of [OperationalAlertRepository] via Supabase.
-class PostgresOperationalAlertRepository implements OperationalAlertRepository {
+class PostgresOperationalAlertRepository
+    with PostgresErrorInterceptor
+    implements OperationalAlertRepository {
   final SupabaseClient _client;
 
   PostgresOperationalAlertRepository(this._client);
@@ -13,68 +16,88 @@ class PostgresOperationalAlertRepository implements OperationalAlertRepository {
 
   @override
   Future<String> save(OperationalAlert alert) async {
-    final result = await _client
-        .from(_table)
-        .insert({
-          'organization_id': alert.organizationId,
-          'entity_id': alert.entityId,
-          'contract_id': alert.contractId,
-          'alert_type': alert.alertType,
-          'severity': alert.severity,
-          'triggered_at_utc': alert.triggeredAtUtc.toIso8601String(),
-          'triggering_event_id': alert.triggeringEventId,
-          'trace_id': alert.traceId,
-          'context': alert.context,
-          'status': alert.status,
-        })
-        .select('id')
-        .single();
-    return result['id'] as String;
+    try {
+      final result = await _client
+          .from(_table)
+          .insert({
+            'organization_id': alert.organizationId,
+            'entity_id': alert.entityId,
+            'contract_id': alert.contractId,
+            'alert_type': alert.alertType,
+            'severity': alert.severity,
+            'triggered_at_utc': alert.triggeredAtUtc.toIso8601String(),
+            'triggering_event_id': alert.triggeringEventId,
+            'trace_id': alert.traceId,
+            'context': alert.context,
+            'status': alert.status,
+          })
+          .select('id')
+          .single();
+      return result['id'] as String;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'operational_alert');
+    }
   }
 
   @override
   Future<List<OperationalAlert>> findActive(String organizationId) async {
-    final data = await _client
-        .from(_table)
-        .select()
-        .eq('organization_id', organizationId)
-        .eq('status', 'ACTIVE')
-        .order('severity')
-        .order('triggered_at_utc', ascending: false);
-    return data.map(_fromRow).toList();
+    try {
+      final data = await _client
+          .from(_table)
+          .select()
+          .eq('organization_id', organizationId)
+          .eq('status', 'ACTIVE')
+          .order('severity')
+          .order('triggered_at_utc', ascending: false);
+      return data.map(_fromRow).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'operational_alert');
+    }
   }
 
   @override
   Future<List<OperationalAlert>> findByEntityId(String entityId) async {
-    final data = await _client
-        .from(_table)
-        .select()
-        .eq('entity_id', entityId)
-        .order('triggered_at_utc', ascending: false);
-    return data.map(_fromRow).toList();
+    try {
+      final data = await _client
+          .from(_table)
+          .select()
+          .eq('entity_id', entityId)
+          .order('triggered_at_utc', ascending: false);
+      return data.map(_fromRow).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'operational_alert');
+    }
   }
 
   @override
   Future<OperationalAlert?> findById(String alertId) async {
-    final data = await _client
-        .from(_table)
-        .select()
-        .eq('id', alertId)
-        .maybeSingle();
-    return data == null ? null : _fromRow(data);
+    try {
+      final data = await _client
+          .from(_table)
+          .select()
+          .eq('id', alertId)
+          .maybeSingle();
+      return data == null ? null : _fromRow(data);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'operational_alert');
+    }
   }
 
   @override
   Future<void> update(OperationalAlert alert) async {
-    await _client
-        .from(_table)
-        .update({
-          'status': alert.status,
-          'acknowledged_at_utc': alert.acknowledgedAtUtc?.toIso8601String(),
-          'acknowledged_by_user_id': alert.acknowledgedByUserId,
-          'resolved_at_utc': alert.resolvedAtUtc?.toIso8601String(),
-        })
-        .eq('id', alert.id);
+    try {
+      await _client
+          .from(_table)
+          .update({
+            'status': alert.status,
+            'acknowledged_at_utc': alert.acknowledgedAtUtc?.toIso8601String(),
+            'acknowledged_by_user_id': alert.acknowledgedByUserId,
+            'resolved_at_utc': alert.resolvedAtUtc?.toIso8601String(),
+          })
+          .eq('id', alert.id);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'operational_alert');
+    }
   }
 
   OperationalAlert _fromRow(Map<String, dynamic> row) {

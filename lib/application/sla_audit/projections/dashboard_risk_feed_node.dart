@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../domain/sla_audit/execution_status.dart';
-import '../../../domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'sla_execution_item_view.dart';
 
 /// Defines the severity of a node in the dashboard risk feed.

@@ -28,7 +28,7 @@ class AuditLog extends Equatable {
   /// Human readable reason or system-generated notes
   final String? reason;
 
-  /// Strict server-side or localized timestamp of the event
+  /// Strict server-side or localized timestamp of the factEvent
   final DateTime timestamp;
 
   const AuditLog({
@@ -53,7 +53,7 @@ class AuditLog extends Equatable {
       oldValue: json['old_value'] as String?,
       newValue: json['new_value'] as String?,
       reason: json['reason'] as String?,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      timestamp: DateTime.parse(json['timestamp'] as String).toUtc(),
     );
   }
 

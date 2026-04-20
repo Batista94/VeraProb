@@ -10,10 +10,14 @@ library;
 import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
-import '../../core/config/environment.dart';
+import 'package:veraprob/core/config/environment.dart';
 
 @JS('initPosthog')
-external void _jsInitPosthog(JSString apiKey, JSString apiHost, JSBoolean enableSessionReplay);
+external void _jsInitPosthog(
+  JSString apiKey,
+  JSString apiHost,
+  JSBoolean enableSessionReplay,
+);
 
 /// Product analytics events tracked by VeraProb.
 abstract final class VeraProbEvent {
@@ -23,7 +27,8 @@ abstract final class VeraProbEvent {
 
   // Contracts
   static const String contractCreated = 'contract_created';
-  static const String contractSubmittedForApproval = 'contract_submitted_for_approval';
+  static const String contractSubmittedForApproval =
+      'contract_submitted_for_approval';
   static const String contractApproved = 'contract_approved';
   static const String contractRejected = 'contract_rejected';
 
@@ -46,7 +51,9 @@ class AnalyticsService {
   static Future<void> initialize() async {
     if (!EnvironmentConfig.posthogEnabled) {
       if (kDebugMode) {
-        debugPrint('[Analytics] PostHog disabled in ${EnvironmentConfig.label}');
+        debugPrint(
+          '[Analytics] PostHog disabled in ${EnvironmentConfig.label}',
+        );
       }
       return;
     }
@@ -66,7 +73,9 @@ class AnalyticsService {
     }
 
     if (kDebugMode) {
-      debugPrint('[Analytics] PostHog initialized (${EnvironmentConfig.label})');
+      debugPrint(
+        '[Analytics] PostHog initialized (${EnvironmentConfig.label})',
+      );
     }
   }
 
@@ -76,42 +85,39 @@ class AnalyticsService {
     Map<String, Object>? properties,
   }) async {
     if (kDebugMode) {
-      debugPrint('[Analytics] event: $event${properties != null ? ' | $properties' : ''}');
+      debugPrint(
+        '[Analytics] event: $event${properties != null ? ' | $properties' : ''}',
+      );
     }
 
-    if (!EnvironmentConfig.posthogEnabled || EnvironmentConfig.posthogKey.isEmpty) {
+    if (!EnvironmentConfig.posthogEnabled ||
+        EnvironmentConfig.posthogKey.isEmpty) {
       return;
     }
 
     // Auto-inject environment tag based on EnvironmentConfig.label
-    final mergedProperties = {
-      'env': EnvironmentConfig.label,
-      ...?properties,
-    };
+    final mergedProperties = {'env': EnvironmentConfig.label, ...?properties};
 
-    await Posthog().capture(
-      eventName: event,
-      properties: mergedProperties,
-    );
+    await Posthog().capture(eventName: event, properties: mergedProperties);
   }
 
   /// Identify the current user session (tenant-scoped, no PII).
   static Future<void> identifyOrganization(String organizationId) async {
-    if (!EnvironmentConfig.posthogEnabled || EnvironmentConfig.posthogKey.isEmpty) {
+    if (!EnvironmentConfig.posthogEnabled ||
+        EnvironmentConfig.posthogKey.isEmpty) {
       return;
     }
 
     await Posthog().identify(
       userId: organizationId,
-      userProperties: {
-        'env': EnvironmentConfig.label,
-      },
+      userProperties: {'env': EnvironmentConfig.label},
     );
   }
 
   /// Reset identity on logout.
   static Future<void> reset() async {
-    if (!EnvironmentConfig.posthogEnabled || EnvironmentConfig.posthogKey.isEmpty) {
+    if (!EnvironmentConfig.posthogEnabled ||
+        EnvironmentConfig.posthogKey.isEmpty) {
       return;
     }
     await Posthog().reset();

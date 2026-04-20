@@ -1,24 +1,22 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/supabase_client.dart';
-import '../../domain/sla_audit/domain_exception.dart';
-import '../../domain/sla_audit/operational_zone.dart';
-import '../../domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Postgres implementation of [OperationalZoneRepository].
 ///
 /// RLS guarantees tenant isolation: all queries are scoped to the
 /// authenticated user's organization via JWT `app_metadata.org_id`.
-class PostgresOperationalZoneRepository implements OperationalZoneRepository {
-  final SupabaseClient _client;
-
-  PostgresOperationalZoneRepository([SupabaseClient? client])
-    : _client = client ?? supabase;
+class PostgresOperationalZoneRepository extends BasePostgresRepository
+    implements OperationalZoneRepository {
+  PostgresOperationalZoneRepository(super.client);
 
   @override
   Future<void> save(OperationalZone zone) async {
     try {
-      await _client.from('operational_zones').upsert({
+      await client.from('operational_zones').upsert({
         'id': zone.id,
         'organization_id': zone.organizationId,
         'name': zone.name,
@@ -44,7 +42,7 @@ class PostgresOperationalZoneRepository implements OperationalZoneRepository {
     String id, {
     required String organizationId,
   }) async {
-    final data = await _client
+    final data = await client
         .from('operational_zones')
         .select()
         .eq('id', id)
@@ -59,7 +57,7 @@ class PostgresOperationalZoneRepository implements OperationalZoneRepository {
   Future<List<OperationalZone>> findByOrganization(
     String organizationId,
   ) async {
-    final List<dynamic> data = await _client
+    final List<dynamic> data = await client
         .from('operational_zones')
         .select()
         .eq('organization_id', organizationId)

@@ -1,0 +1,15 @@
+{
+    "name":  "business-maverick",
+    "description":  "Strategic guardian of VeraProb\u0027s economic engine.",
+    "resources":  [
+                      "file://.kiro/steering/core-protocols.md",
+                      "file://.claude/agents/business-maverick.md"
+                  ],
+    "model":  "claude-3-5-sonnet-latest",
+    "allowedTools":  [
+                         "shell",
+                         "read",
+                         "write"
+                     ],
+    "prompt":  "You are the business-maverick. Follow the core protocols and forensic invariants strictly. Your specific persona rules are loaded as resources."
+}

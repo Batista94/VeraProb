@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../enums/user_role.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// Represents a pending or past invitation to join an organization.
 class Invitation extends Equatable {
@@ -27,10 +27,12 @@ class Invitation extends Equatable {
     this.revokedAtUtc,
   });
 
-  bool get isExpired => DateTime.now().toUtc().isAfter(expiresAtUtc);
+  bool isExpiredAt(DateTime nowUtc) => nowUtc.isAfter(expiresAtUtc);
+
   bool get isAccepted => acceptedAtUtc != null;
   bool get isRevoked => revokedAtUtc != null;
-  bool get isActive => !isExpired && !isAccepted && !isRevoked;
+  bool isActiveAt(DateTime nowUtc) =>
+      !isExpiredAt(nowUtc) && !isAccepted && !isRevoked;
 
   @override
   List<Object?> get props => [

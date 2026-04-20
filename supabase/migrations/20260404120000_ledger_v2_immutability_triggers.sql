@@ -1,3 +1,6 @@
+-- Suppress DROP TRIGGER IF EXISTS NOTICEs (triggers don't exist on fresh reset).
+SET client_min_messages TO 'WARNING';
+
 -- =============================================================================
 -- Migration: sla_audit_ledger_v2 DB-level immutability (INV-1)
 --

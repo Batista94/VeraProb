@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "develop" ]; then
+  echo ">>> [PROTECTED BRANCH: $BRANCH] Running Full Forensic Scanner (Slow)..."
+  bash scripts/pr_full_scanner.sh
+else
+  echo ">>> [FEATURE BRANCH: $BRANCH] Running Fast Pattern Scanner..."
+  FAST_SCAN=1 bash scripts/pr_full_scanner.sh
+fi

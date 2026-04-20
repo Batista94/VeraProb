@@ -12,13 +12,26 @@ enum UserPermission {
   canApproveContractAcceptance,
   canManageUsers,
   canManageContractors,
+
+  // Sanction review permissions (admin + auditor)
+  canApproveSanctions,
+  canRejectSanctions,
+
+  // Justification permissions (Phase 9.8.J)
+  canSubmitJustification,
+  canReviewJustifications,
+
+  // SuperAdmin-exclusive permissions
+  canManageTenants,
+  canViewAllTenants,
+  canViewSystemAuditLog,
 }
 
 /// Centralized RBAC mapping.
 const Map<UserPermission, Set<UserRole>> rolePermissions = {
   UserPermission.canEditSlaRules: {UserRole.admin},
-  UserPermission.canInviteUsers: {UserRole.admin},
-  UserPermission.canManageOrganization: {UserRole.admin},
+  UserPermission.canInviteUsers: {UserRole.admin, UserRole.superAdmin},
+  UserPermission.canManageOrganization: {UserRole.admin, UserRole.superAdmin},
   UserPermission.canApproveContractAcceptance: {UserRole.admin},
   UserPermission.canManageUsers: {UserRole.admin},
 
@@ -32,4 +45,16 @@ const Map<UserPermission, Set<UserRole>> rolePermissions = {
     UserRole.operator,
     UserRole.auditor,
   },
+
+  UserPermission.canApproveSanctions: {UserRole.admin, UserRole.auditor},
+  UserPermission.canRejectSanctions: {UserRole.admin, UserRole.auditor},
+
+  // Justification permissions (Phase 9.8.J)
+  UserPermission.canSubmitJustification: {UserRole.admin, UserRole.operator},
+  UserPermission.canReviewJustifications: {UserRole.admin, UserRole.operator},
+
+  // SuperAdmin-exclusive
+  UserPermission.canManageTenants: {UserRole.superAdmin},
+  UserPermission.canViewAllTenants: {UserRole.superAdmin},
+  UserPermission.canViewSystemAuditLog: {UserRole.superAdmin},
 };

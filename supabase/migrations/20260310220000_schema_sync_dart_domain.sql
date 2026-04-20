@@ -35,10 +35,13 @@ CREATE POLICY "ExecutionState tenant isolation" ON public.execution_states
   USING     (organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid)
   WITH CHECK (organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid);
 
--- ── Block 5: contractual_financial_snapshot (DROP + RECREATE) ────────────────
-DROP TABLE IF EXISTS public.contractual_financial_snapshot CASCADE;
-
-CREATE TABLE public.contractual_financial_snapshot (
+-- ── Block 5: contractual_financial_snapshot (safe recreate — append-only) ────
+-- NOTE: Destructive operations were omitted to comply with the zero-downtime / append-only
+-- migration invariant (INV-1 / Rule 39). On a fresh `db reset` the base schema
+-- creates the table first; here we ensure the full column set exists via IF NOT
+-- EXISTS semantics. Any column added in this block that did not exist previously
+-- is safe to run idempotently.
+CREATE TABLE IF NOT EXISTS public.contractual_financial_snapshot (
   id                              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id                 UUID NOT NULL REFERENCES public.organizations(id),
   contract_id                     TEXT NOT NULL,
@@ -63,7 +66,18 @@ CREATE TABLE public.contractual_financial_snapshot (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
 
+-- Ensure audit timestamp columns exist (not present in base schema or prior migrations)
+ALTER TABLE public.contractual_financial_snapshot
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now());
+
 ALTER TABLE public.contractual_financial_snapshot ENABLE ROW LEVEL SECURITY;
+
+-- Drop old policies that used the incorrect JWT path (from 20260306103100_snapshot_org_id.sql)
+DROP POLICY IF EXISTS "Users can view their organization snapshots" ON public.contractual_financial_snapshot;
+DROP POLICY IF EXISTS "Users can insert their organization snapshots" ON public.contractual_financial_snapshot;
+DROP POLICY IF EXISTS "Snapshot tenant isolation select" ON public.contractual_financial_snapshot;
+DROP POLICY IF EXISTS "Snapshot tenant isolation insert" ON public.contractual_financial_snapshot;
 
 CREATE POLICY "Snapshot tenant isolation select" ON public.contractual_financial_snapshot
   FOR SELECT TO authenticated

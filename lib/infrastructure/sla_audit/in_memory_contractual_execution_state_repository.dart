@@ -1,8 +1,8 @@
 import 'dart:collection';
 
-import '../../domain/sla_audit/contractual_execution_state.dart';
-import '../../domain/sla_audit/contractual_execution_state_repository.dart';
-import '../../domain/sla_audit/execution_status.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
+import 'package:veraprob/domain/sla_audit/execution_status.dart';
 
 /// In-memory implementation of [ContractualExecutionStateRepository].
 ///
@@ -46,6 +46,26 @@ class InMemoryContractualExecutionStateRepository
     final results = _store.values.where((s) {
       return s.organizationId == organizationId &&
           s.status == ExecutionStatus.pending &&
+          !s.windowStartUtc.isAfter(nowUtc) &&
+          !s.windowEndUtc.isBefore(nowUtc);
+    }).toList();
+
+    return UnmodifiableListView(results);
+  }
+
+  @override
+  Future<List<ContractualExecutionState>> findActiveInWindow(
+    DateTime nowUtc, {
+    required String organizationId,
+  }) async {
+    final results = _store.values.where((s) {
+      final isReevaluable =
+          s.status == ExecutionStatus.pending ||
+          s.status == ExecutionStatus.noShow ||
+          s.status == ExecutionStatus.evidenceGap;
+
+      return s.organizationId == organizationId &&
+          isReevaluable &&
           !s.windowStartUtc.isAfter(nowUtc) &&
           !s.windowEndUtc.isBefore(nowUtc);
     }).toList();

@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/projections/providers/audit_filter_provider.dart';
-import 'package:veraprob/application/projections/providers/audit_log_projection_provider.dart';
-import 'package:veraprob/application/audit/audit_service.dart';
+import 'package:veraprob/state/providers/audit_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/shared/mappers/incident_status_ui_mapper.dart';
 

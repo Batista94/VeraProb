@@ -1,534 +1,226 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:timezone/data/latest.dart' as tz_data;
-import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
-import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
-import 'package:veraprob/domain/enums/motion_state.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
-import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
-import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
-import 'package:veraprob/domain/sla_audit/execution_status.dart';
-import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
-import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
-import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
-import 'package:veraprob/domain/sla_audit/sla_penalties.dart';
-import 'package:veraprob/domain/sla_audit/vehicle_category.dart';
-import 'package:veraprob/domain/sla_audit/week_cycle.dart';
-import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
-import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
-import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
-import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
-import 'package:veraprob/domain/shared/money.dart';
+
+import 'evaluation_engine/_engine_test_helpers.dart';
+
+// ── Skill Insight: INV-5 (BPS Precision), INV-6 (UTC), INV-15 (Deterministic)
+// ── INV-23 (SANCTION_RECOMMENDED carries VerdictEvidence)
+//
+// Coverage targets:
+//   1. False Positive  — minGeofenceCoverage, dwell ≥ 30s → ExecutionStatus.executed,
+//                        ledger has ZERO SANCTION_RECOMMENDED entries.
+//   2. Relentless Fine — noShowPenalty BPS cap (INV-5):
+//                        contractualValue=15000, noShowPenaltyBps=15000
+//                        raw = (15000 * 15000 + 5000) ~/ 10000 = 22500
+//                        cap = (15000 *   100 + 5000) ~/ 10000 =   150
+//                        → fineCents = 150 (cap enforced)
 
 void main() {
-  setUpAll(() {
-    tz_data.initializeTimeZones();
-  });
+  setUpAll(initializeTimezones);
 
-  // ── Shared fixtures ──────────────────────────────────────
   late InMemoryContractualExecutionStateRepository repo;
   late InMemoryPlanDeclarationRepository planRepo;
   late InMemorySlaAuditLedgerRepository ledger;
   late ContractualEvaluationEngine engine;
 
-  // Geofence center: -23.5505, -46.6333, radius 100m
-  const geoLat = -23.5505;
-  const geoLng = -46.6333;
-  const geoRadius = 100;
-
   setUp(() {
-    repo = InMemoryContractualExecutionStateRepository();
-    planRepo = InMemoryPlanDeclarationRepository();
-    ledger = InMemorySlaAuditLedgerRepository();
-    final traceRepo = InMemoryEvaluationTraceRepository();
-    engine = ContractualEvaluationEngine(
-      executionRepo: repo,
-      planRepo: planRepo,
-      ledgerRepo: ledger,
-      traceRepo: traceRepo,
-    );
+    final deps = createEngine();
+    repo = deps.repo;
+    planRepo = deps.planRepo;
+    ledger = deps.ledger;
+    engine = deps.engine;
   });
 
-  ContractualExecutionState makeExecState({
-    String setId = 'set-1',
-    String contractId = 'c-1',
-    String? plannedVehicleId,
-    DateTime? windowStart,
-    DateTime? windowEnd,
-  }) {
-    return ContractualExecutionState.create(
-      organizationId: 'org-1',
-      setId: setId,
-      contractId: contractId,
-      planVersion: 1,
-      startLatitude: geoLat,
-      startLongitude: geoLng,
-      startRadiusMeters: geoRadius,
-      plannedVehicleId: plannedVehicleId,
-      contractualValue: Money.fromDouble(150.0),
-      noShowPenaltyMultiplier: 1.5,
-      windowStartUtc: windowStart ?? DateTime.utc(2026, 3, 1, 6, 0),
-      windowEndUtc: windowEnd ?? DateTime.utc(2026, 3, 1, 7, 0),
-    );
-  }
+  // ── Group 1: False Positive ──────────────────────────────────────────────
 
-  Future<void> seedPlan(String contractId, int version) async {
-    final declaration = PlanDeclaration.create(
-      organizationId: 'org-1',
-      contractId: contractId,
-      planVersion: version,
-      declaredAtUtc: DateTime.utc(2026, 1, 1),
-      declaredByUserId: 'user-1',
-      originalFileHash: 'hash-1',
-      services: [
-        ContractualServiceExecution.create(
-          contractId: contractId,
-          scheduledStartTimeUtc: DateTime.utc(2026, 3, 1, 6, 0),
-          scheduledEndTimeUtc: DateTime.utc(2026, 3, 1, 7, 0),
-          startLatitude: -23.5505,
-          startLongitude: -46.6333,
-          startRadiusMeters: 100,
-          endLatitude: -23.5600,
-          endLongitude: -46.6400,
-          endRadiusMeters: 100,
-          contractualValue: Money.fromDouble(150.0),
-          noShowPenaltyMultiplier: 1.5,
-        ),
-      ],
-      ruleSnapshot: const RuleSnapshot([]),
-    );
-    await planRepo.save(declaration);
-  }
-
-  VehicleOperationalState makeVehicleState({
-    String vehicleId = 'v-1',
-    double latitude = geoLat,
-    double longitude = geoLng,
-  }) {
-    return VehicleOperationalState(
-      vehicleId: vehicleId,
-      tripId: 'trip-1',
-      latitude: latitude,
-      longitude: longitude,
-      smoothedSpeed: 0.0,
-      motionState: MotionState.stopped,
-      connectivityState: ConnectivityState.healthy,
-      lastRawPingAt: DateTime.utc(2026, 3, 1, 6, 30),
-      stateChangedAt: DateTime.utc(2026, 3, 1, 6, 30),
-      confidence: 1.0,
-      source: 'test',
-    );
-  }
-
-  // ── Tests ────────────────────────────────────────────────
-  group('ContractualEvaluationEngine', () {
-    test('binding occurs after 30s continuous dwell inside geofence', () async {
-      await seedPlan('c-1', 1);
-      final state = makeExecState();
-      await repo.save(state);
-
-      final vehicle = makeVehicleState();
-      final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
-      final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
-
-      // First ping — enters geofence, timer starts
-      await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
-      final afterFirst = await repo.findBySetId('set-1');
-      expect(afterFirst!.status, ExecutionStatus.pending);
-
-      // Second ping — 31s later, still inside → binding
-      await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1');
-      final afterBinding = await repo.findBySetId('set-1');
-      expect(afterBinding!.status, ExecutionStatus.executed);
-      expect(afterBinding.boundVehicleId, 'v-1');
-      expect(ledger.entries, hasLength(1));
-    });
-
-    test('no binding if vehicle leaves geofence before 30s', () async {
-      await seedPlan('c-1', 1);
-      final state = makeExecState();
-      await repo.save(state);
-
-      final insideVehicle = makeVehicleState();
-      // ~500m away — well outside 100m radius
-      final outsideVehicle = makeVehicleState(latitude: geoLat + 0.005);
-
-      final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
-      final t15 = DateTime.utc(2026, 3, 1, 6, 30, 15);
-      final t45 = DateTime.utc(2026, 3, 1, 6, 30, 45);
-
-      // Enter geofence
-      await engine.processVehicleState(insideVehicle, nowUtc: t0, organizationId: 'org-1');
-      // Leave geofence at 15s
-      await engine.processVehicleState(outsideVehicle, nowUtc: t15, organizationId: 'org-1');
-      // Re-enter at 45s — timer should have reset
-      await engine.processVehicleState(insideVehicle, nowUtc: t45, organizationId: 'org-1');
-
-      final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
-      expect(ledger.entries, isEmpty);
-    });
-
-    test('plannedVehicleId is respected — wrong vehicle ignored', () async {
-      await seedPlan('c-1', 1);
-      final state = makeExecState(plannedVehicleId: 'v-assigned');
-      await repo.save(state);
-
-      // Wrong vehicle inside geofence
-      final wrongVehicle = makeVehicleState(vehicleId: 'v-intruder');
-      final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
-      final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
-
-      await engine.processVehicleState(wrongVehicle, nowUtc: t0, organizationId: 'org-1');
-      await engine.processVehicleState(wrongVehicle, nowUtc: t31, organizationId: 'org-1');
-
-      final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
-
-      // Correct vehicle binds normally
-      final rightVehicle = makeVehicleState(vehicleId: 'v-assigned');
-      await engine.processVehicleState(rightVehicle, nowUtc: t0, organizationId: 'org-1');
-      await engine.processVehicleState(rightVehicle, nowUtc: t31, organizationId: 'org-1');
-
-      final bound = await repo.findBySetId('set-1');
-      expect(bound!.status, ExecutionStatus.executed);
-      expect(bound.boundVehicleId, 'v-assigned');
-    });
-
-    test('sweepExpiredObligations marks NoShow correctly', () async {
-      await seedPlan('c-1', 1);
-      final state = makeExecState(windowEnd: DateTime.utc(2026, 3, 1, 7, 0));
-      await repo.save(state);
-
-      final afterExpiry = DateTime.utc(2026, 3, 1, 7, 1);
-      await engine.sweepExpiredObligations(nowUtc: afterExpiry, organizationId: 'org-1');
-
-      final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.noShow);
-      expect(ledger.entries, hasLength(1));
-    });
-
-    test('finalized states are not reprocessed', () async {
-      await seedPlan('c-1', 1);
-      final state = makeExecState();
-      await repo.save(state);
-
-      // Bind successfully
-      final vehicle = makeVehicleState();
-      final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
-      final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
-      await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
-      await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1');
-
-      expect(ledger.entries, hasLength(1));
-
-      // Process again — should NOT create another binding
-      final t60 = DateTime.utc(2026, 3, 1, 6, 31, 0);
-      final t91 = DateTime.utc(2026, 3, 1, 6, 31, 31);
-      await engine.processVehicleState(vehicle, nowUtc: t60, organizationId: 'org-1');
-      await engine.processVehicleState(vehicle, nowUtc: t91, organizationId: 'org-1');
-
-      // Still only 1 event
-      expect(ledger.entries, hasLength(1));
-    });
-
-    test('multiple execution states do not interfere', () async {
-      await seedPlan('c-1', 1);
-      await seedPlan('c-2', 1);
-
-      final state1 = makeExecState(setId: 'set-1');
-      final state2 = makeExecState(
-        setId: 'set-2',
-        // Geofence far away — vehicle won't match
-        contractId: 'c-2',
-      );
-      await repo.save(state1);
-      await repo.save(state2);
-
-      final vehicle = makeVehicleState(); // at geoLat/geoLng
-      final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
-      final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
-
-      await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
-      await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1');
-
-      // state1 bound (vehicle is at geofence center)
-      final r1 = await repo.findBySetId('set-1');
-      expect(r1!.status, ExecutionStatus.executed);
-
-      // state2 also bound (same geofence defaults)
-      final r2 = await repo.findBySetId('set-2');
-      expect(r2!.status, ExecutionStatus.executed);
-
-      // Sweep should not affect finalized states
-      await engine.sweepExpiredObligations(
-        nowUtc: DateTime.utc(2026, 3, 1, 7, 1),
-        organizationId: 'org-1',
-      );
-      expect(r1.status, ExecutionStatus.executed);
-      expect(r2.status, ExecutionStatus.executed);
-    });
+  group('False Positive — minGeofenceCoverage dwell met', () {
+    const contractId = 'c-fp';
+    const setId = 'set-fp';
 
     test(
-      'idempotency: same payload twice does not duplicate processing',
+      'vehicle inside geofence ≥ 30s → status executed, zero SANCTION_RECOMMENDED',
       () async {
-        await seedPlan('c-1', 1);
-        final state = makeExecState();
-        await repo.save(state);
-        final vehicle = makeVehicleState();
-
-        final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
-        final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
-
-        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
-        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1'); // Duplicate
-
-        await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1');
-        await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'); // Duplicate
-
-        final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.executed);
-        expect(ledger.entries, hasLength(1));
-      },
-    );
-
-    test(
-      'out-of-order telemetry: older timestamp does not break dwell if already started',
-      () async {
-        await seedPlan('c-1', 1);
-        final state = makeExecState();
-        await repo.save(state);
-        final vehicleInside = makeVehicleState();
-        final vehicleOutside = makeVehicleState(latitude: geoLat + 0.005);
-
-        final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
-        final tMinus10 = DateTime.utc(
-          2026,
-          3,
-          1,
-          6,
-          29,
-          50,
-        ); // Came late, was outside then
-        final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
-
-        await engine.processVehicleState(vehicleInside, nowUtc: t0, organizationId: 'org-1');
-
-        // Late event arrives out of order
-        await engine.processVehicleState(vehicleOutside, nowUtc: tMinus10, organizationId: 'org-1');
-
-        await engine.processVehicleState(vehicleInside, nowUtc: t31, organizationId: 'org-1');
-
-        final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.executed);
-        expect(ledger.entries, hasLength(1));
-      },
-    );
-
-    test(
-      'sweepExpiredObligations is idempotent for prolonged absence',
-      () async {
-        await seedPlan('c-1', 1);
-        final state = makeExecState(windowEnd: DateTime.utc(2026, 3, 1, 7, 0));
-        await repo.save(state);
-
-        final afterExpiry1 = DateTime.utc(2026, 3, 1, 7, 1);
-        await engine.sweepExpiredObligations(nowUtc: afterExpiry1, organizationId: 'org-1');
-
-        final afterExpiry2 = DateTime.utc(2026, 3, 1, 7, 10);
-        await engine.sweepExpiredObligations(nowUtc: afterExpiry2, organizationId: 'org-1');
-
-        final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.noShow);
-        // Should still be 1 event in ledger, not 2
-        expect(ledger.entries, hasLength(1));
-      },
-    );
-
-    test(
-      'delayed execution is rejected if already marked as no-show',
-      () async {
-        await seedPlan('c-1', 1);
-        final state = makeExecState(windowEnd: DateTime.utc(2026, 3, 1, 7, 0));
-        await repo.save(state);
-
-        // Sweep marks as no-show
-        final afterExpiry = DateTime.utc(2026, 3, 1, 7, 1);
-        await engine.sweepExpiredObligations(nowUtc: afterExpiry, organizationId: 'org-1');
-
-        // Vehicle arrives very late (after no-show)
-        final vehicle = makeVehicleState();
-        final tLate0 = DateTime.utc(2026, 3, 1, 7, 5, 0);
-        final tLate31 = DateTime.utc(2026, 3, 1, 7, 5, 31);
-
-        await engine.processVehicleState(vehicle, nowUtc: tLate0, organizationId: 'org-1');
-        await engine.processVehicleState(vehicle, nowUtc: tLate31, organizationId: 'org-1');
-
-        final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.noShow);
-
-        // Still only 1 ledger entry (the no-show)
-        expect(ledger.entries, hasLength(1));
-      },
-    );
-
-    test(
-      'concurrent events for same setid do not duplicate execution',
-      () async {
-        await seedPlan('c-1', 1);
-        final state = makeExecState();
-        await repo.save(state);
-
-        final vehicle = makeVehicleState();
-        final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
-        final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
-
-        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
-
-        // Fire 3 simultaneous events for t31
-        await Future.wait([
-          engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'),
-          engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'),
-          engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'),
-        ]);
-
-        expect(ledger.entries, hasLength(1));
-      },
-    );
-
-    // ── 7.5: Grace Period ─────────────────────────────────────
-
-    group('gracePeriodMinutes (7.5)', () {
-      /// Seeds a plan with a ShiftPattern that has [gracePeriodMinutes].
-      Future<void> seedPlanWithGracePeriod(
-        String contractId,
-        int version,
-        int gracePeriodMinutes,
-      ) async {
-        final pattern = ShiftPattern.create(
-          index: 0,
-          daysOfWeek: [DayOfWeek.monday],
-          arrivalTimeLocal: '07:00',
-          departureTimeLocal: '06:00',
-          timezone: 'America/Sao_Paulo',
-          originZoneId: 'zone-origin',
-          destinationZoneId: 'zone-dest',
-          penalties: SLAPenalties.create(
-            noShowPenaltyMultiplier: 1.5,
-            delayToleranceMinutes: 5,
-            delayPenaltyPerMinute: Money.fromDouble(1.0),
-            downgradePenaltyFlat: Money.fromDouble(50.0),
-            gracePeriodMinutes: gracePeriodMinutes,
-            baseTripValue: Money.fromDouble(100.0),
-          ),
-          requiredVehicleCategory: VehicleCategory.conventional,
-          weekCycle: WeekCycle.everyWeek,
-        );
-        final declaration = PlanDeclaration.createWithShiftPatterns(
-          organizationId: 'org-1',
-          contractId: contractId,
-          planVersion: version,
-          declaredAtUtc: DateTime.utc(2026, 1, 1),
-          declaredByUserId: 'user-1',
-          originalFileHash: 'hash-grace',
-          ruleSnapshot: const RuleSnapshot([]),
-          shiftPatterns: [pattern],
-        );
-        await planRepo.save(declaration);
-      }
-
-      test('SET inside grace period is skipped — no binding occurs', () async {
-        // windowStart = 06:00. Grace period = 10 min. Telemetry arrives at 06:05.
-        const contractId = 'c-grace';
+        // Arrange
         final windowStart = DateTime.utc(2026, 3, 1, 6, 0);
-        await seedPlanWithGracePeriod(contractId, 1, 10);
-
+        final windowEnd = DateTime.utc(2026, 3, 1, 7, 0);
         final state = makeExecState(
+          setId: setId,
           contractId: contractId,
           windowStart: windowStart,
-          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+          windowEnd: windowEnd,
         );
         await repo.save(state);
+        await seedPlanWithDwellRule(planRepo, contractId, 1);
 
-        // Telemetry inside geofence, but within grace window (06:05 < 06:00 + 10min)
-        final duringGrace = DateTime.utc(2026, 3, 1, 6, 5);
+        // Act — ping 1: vehicle enters geofence at 06:30:00
+        final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
         await engine.processVehicleState(
-          makeVehicleState(),
-          nowUtc: duringGrace,
-          organizationId: 'org-1',
-        );
-
-        final s = await repo.findBySetId(state.setId);
-        expect(s!.status, ExecutionStatus.pending,
-            reason: 'SET should remain pending during grace period');
-        expect(ledger.entries, isEmpty);
-      });
-
-      test('SET after grace period is evaluated — binding occurs normally', () async {
-        // windowStart = 06:00. Grace period = 5 min. Telemetry arrives after 06:05.
-        const contractId = 'c-after-grace';
-        final windowStart = DateTime.utc(2026, 3, 1, 6, 0);
-        await seedPlanWithGracePeriod(contractId, 1, 5);
-
-        final state = makeExecState(
-          contractId: contractId,
-          windowStart: windowStart,
-          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
-        );
-        await repo.save(state);
-
-        // t0: first ping after grace ends — 06:06
-        final afterGrace = DateTime.utc(2026, 3, 1, 6, 6, 0);
-        await engine.processVehicleState(
-          makeVehicleState(),
-          nowUtc: afterGrace,
-          organizationId: 'org-1',
-        );
-
-        // t31: 31s later — dwell satisfied, binding should occur
-        final t31 = DateTime.utc(2026, 3, 1, 6, 6, 31);
-        await engine.processVehicleState(
-          makeVehicleState(),
-          nowUtc: t31,
-          organizationId: 'org-1',
-        );
-
-        final s = await repo.findBySetId(state.setId);
-        expect(s!.status, ExecutionStatus.executed,
-            reason: 'SET should be bound after grace period expires');
-      });
-
-      test('grace period 0 — SET evaluated immediately (no suppression)', () async {
-        // Grace period = 0 means the engine evaluates from windowStart.
-        const contractId = 'c-no-grace';
-        final windowStart = DateTime.utc(2026, 3, 1, 6, 0);
-        await seedPlanWithGracePeriod(contractId, 1, 0);
-
-        final state = makeExecState(
-          contractId: contractId,
-          windowStart: windowStart,
-          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
-        );
-        await repo.save(state);
-
-        // t0: immediately at window start
-        final t0 = DateTime.utc(2026, 3, 1, 6, 0, 0);
-        await engine.processVehicleState(
-          makeVehicleState(),
+          makeVehicleAtTime(latitude: geoLat, longitude: geoLng, timestamp: t0),
           nowUtc: t0,
           organizationId: 'org-1',
         );
 
-        final t31 = DateTime.utc(2026, 3, 1, 6, 0, 31);
+        // Act — ping 2: still inside geofence, 31 seconds later (dwell ≥ 30s)
+        final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
         await engine.processVehicleState(
-          makeVehicleState(),
+          makeVehicleAtTime(
+            latitude: geoLat,
+            longitude: geoLng,
+            timestamp: t31,
+          ),
           nowUtc: t31,
           organizationId: 'org-1',
         );
 
-        final s = await repo.findBySetId(state.setId);
-        expect(s!.status, ExecutionStatus.executed,
-            reason: 'With grace=0, engine should bind immediately after dwell');
-      });
+        // Assert: state is now executed
+        final updated = await repo.findBySetId(setId);
+        expect(
+          updated!.status,
+          ExecutionStatus.executed,
+          reason: 'bindExecution must fire once dwell threshold is met',
+        );
+
+        // Assert: no financial penalty emitted (false positive)
+        final sanctions = ledger.entries
+            .where((e) => e.type == 'SANCTION_RECOMMENDED')
+            .toList();
+        expect(
+          sanctions,
+          isEmpty,
+          reason:
+              'minGeofenceCoverage success must NOT emit SANCTION_RECOMMENDED',
+        );
+      },
+    );
+
+    test('vehicle inside geofence < 30s → state remains pending', () async {
+      // Arrange
+      final state = makeExecState(
+        setId: setId,
+        contractId: contractId,
+        windowStart: DateTime.utc(2026, 3, 1, 6, 0),
+        windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+      );
+      await repo.save(state);
+      await seedPlanWithDwellRule(planRepo, contractId, 1);
+
+      // Act — single ping inside geofence, dwell NOT yet met
+      final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
+      await engine.processVehicleState(
+        makeVehicleAtTime(latitude: geoLat, longitude: geoLng, timestamp: t0),
+        nowUtc: t0,
+        organizationId: 'org-1',
+      );
+
+      // Assert: state remains pending (dwell not satisfied after single ping)
+      final updated = await repo.findBySetId(setId);
+      expect(
+        updated!.status,
+        ExecutionStatus.pending,
+        reason: 'Single ping must not bind execution — dwell threshold unmet',
+      );
+      expect(ledger.entries, isEmpty);
     });
+  });
+
+  // ── Group 2: Relentless Fine — noShowPenalty BPS cap ────────────────────
+
+  group('Relentless Fine — noShowPenalty BPS cap (INV-5)', () {
+    const contractId = 'c-fine';
+    const setId = 'set-fine';
+
+    // contractualValue = Money(15000), noShowPenaltyBps = 15000 (from makeExecState defaults)
+    // INV-5: raw = (15000 * 15000 + 5000) ~/ 10000 = 22500
+    //        cap = (15000 *   100 + 5000) ~/ 10000 =   150
+    //        22500 > 150  →  penaltyCents = 150
+
+    test(
+      'sweep emits SANCTION_RECOMMENDED with fineCents capped at 100 BPS = 150',
+      () async {
+        // Arrange
+        final windowEnd = DateTime.utc(2026, 3, 1, 7, 0);
+        final state = makeExecState(
+          setId: setId,
+          contractId: contractId,
+          windowStart: DateTime.utc(2026, 3, 1, 6, 0),
+          windowEnd: windowEnd,
+        );
+        await repo.save(state);
+        await seedPlanWithPenaltyRule(planRepo, contractId, 1);
+
+        // Act — sweep 5 minutes after window expiry
+        final sweepNow = DateTime.utc(2026, 3, 1, 7, 5);
+        await engine.sweepExpiredObligations(
+          nowUtc: sweepNow,
+          organizationId: 'org-1',
+        );
+
+        // Assert: state marked as noShow
+        final updated = await repo.findBySetId(setId);
+        expect(
+          updated!.status,
+          ExecutionStatus.noShow,
+          reason: 'sweepExpiredObligations must mark state as noShow',
+        );
+
+        // Assert: SANCTION_RECOMMENDED emitted
+        final sanctions = ledger.entries
+            .where((e) => e.type == 'SANCTION_RECOMMENDED')
+            .toList();
+        expect(
+          sanctions,
+          hasLength(1),
+          reason: 'Exactly one SANCTION_RECOMMENDED entry expected',
+        );
+
+        // Assert: fine_cents is capped at 100 BPS of contractualValue (INV-5)
+        final evidence =
+            sanctions.first.payload['verdict_evidence'] as Map<String, dynamic>;
+        expect(
+          evidence['fine_cents'],
+          150,
+          reason:
+              'INV-5 BPS cap: (15000 * 100 + 5000) ~/ 10000 = 150; '
+              'raw (15000 * 15000 + 5000) ~/ 10000 = 22500 exceeds cap',
+        );
+
+        // Assert: verdict_evidence is forensically complete (INV-23)
+        expect(evidence['rule_id'], isNotEmpty);
+        expect(evidence['evidence_hash'], isNotEmpty);
+        expect(evidence['confidence_score'], 100);
+      },
+    );
+
+    test(
+      'sweep without noShowPenalty rule emits NO SANCTION_RECOMMENDED',
+      () async {
+        // Arrange: plan with only a dwell rule — no noShowPenalty trigger
+        final state = makeExecState(
+          setId: setId,
+          contractId: contractId,
+          windowStart: DateTime.utc(2026, 3, 1, 6, 0),
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await repo.save(state);
+        await seedPlanWithDwellRule(planRepo, contractId, 1);
+
+        // Act
+        await engine.sweepExpiredObligations(
+          nowUtc: DateTime.utc(2026, 3, 1, 7, 5),
+          organizationId: 'org-1',
+        );
+
+        // Assert: noShow declared but no financial sanction
+        final updated = await repo.findBySetId(setId);
+        expect(updated!.status, ExecutionStatus.noShow);
+        final sanctions = ledger.entries
+            .where((e) => e.type == 'SANCTION_RECOMMENDED')
+            .toList();
+        expect(
+          sanctions,
+          isEmpty,
+          reason: 'No noShowPenalty rule → no SANCTION_RECOMMENDED emitted',
+        );
+      },
+    );
   });
 }

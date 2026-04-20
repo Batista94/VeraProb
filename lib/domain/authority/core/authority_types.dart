@@ -21,6 +21,10 @@ class OperationalActionType extends Equatable {
   );
   static const assignDriver = OperationalActionType('assign_driver');
   static const createTripEvent = OperationalActionType('create_trip_event');
+  static const updateContract = OperationalActionType('update_contract');
+  static const approveTrip = OperationalActionType('approve_trip');
+  static const rejectTrip = OperationalActionType('reject_trip');
+  static const adminOnly = OperationalActionType('admin_only');
 
   @override
   List<Object?> get props => [key];

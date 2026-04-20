@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../domain/enums/trip_status.dart';
-import '../trip_status_theme.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/presentation/shared/trip_status_theme.dart';
 
 /// A compact badge showing trip status with color and label.
 class StatusBadge extends StatelessWidget {

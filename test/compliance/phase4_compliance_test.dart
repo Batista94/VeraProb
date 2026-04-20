@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/alert_derivation_service.dart';
 import 'package:veraprob/application/sla_audit/alert_service.dart';
-import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
-import 'package:veraprob/domain/enums/motion_state.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
@@ -23,6 +23,7 @@ void main() {
   const geoLat = -23.5505;
   const geoLng = -46.6333;
   const geoRadius = 100;
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
 
   late InMemoryContractualExecutionStateRepository repo;
   late InMemoryPlanDeclarationRepository planRepo;
@@ -40,8 +41,8 @@ void main() {
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
-      contractualValue: Money.fromDouble(150.0),
-      noShowPenaltyMultiplier: 1.5,
+      contractualValue: const Money(15000),
+      noShowPenaltyBps: 15000,
       windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
       windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
     );
@@ -49,6 +50,7 @@ void main() {
 
   VehicleOperationalState makeVehicle() {
     return VehicleOperationalState(
+      rawSpeed: 0.0,
       vehicleId: 'v-1',
       tripId: 'trip-1',
       latitude: geoLat,
@@ -83,11 +85,12 @@ void main() {
             endLatitude: -23.56,
             endLongitude: -46.64,
             endRadiusMeters: geoRadius,
-            contractualValue: Money.fromDouble(150.0),
-            noShowPenaltyMultiplier: 1.5,
+            contractualValue: const Money(15000),
+            noShowPenaltyBps: 15000,
           ),
         ],
         ruleSnapshot: const RuleSnapshot([]),
+        nowUtc: nowUtc,
       ),
     );
   }
@@ -121,7 +124,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final alerts = alertRepo.alerts;
       expect(alerts, isNotEmpty);
@@ -140,12 +143,12 @@ void main() {
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30),
         organizationId: 'org-1',
-);
+      );
       await engine.processVehicleState(
         v,
         nowUtc: DateTime.utc(2026, 3, 1, 6, 30, 31),
         organizationId: 'org-1',
-);
+      );
 
       final state = await repo.findBySetId('set-1');
       expect(state!.status, ExecutionStatus.executed);
@@ -170,7 +173,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final alert = alertRepo.alerts.first;
       expect(alert.triggeringEventId, isNotNull);
@@ -197,7 +200,7 @@ void main() {
         await engine.sweepExpiredObligations(
           nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
           organizationId: 'org-1',
-);
+        );
 
         final alert = alertRepo.alerts.first;
 
@@ -235,7 +238,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final alertId = alertRepo.alerts.first.id;
       final service = AlertService(repo: alertRepo);
@@ -269,7 +272,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final alertId = alertRepo.alerts.first.id;
       final service = AlertService(repo: alertRepo);
@@ -311,7 +314,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       final org1Alerts = await alertRepo.findActive('org-1');
       final org2Alerts = await alertRepo.findActive('org-2');
@@ -367,8 +370,8 @@ void main() {
         startLatitude: geoLat,
         startLongitude: geoLng,
         startRadiusMeters: geoRadius,
-        contractualValue: Money.fromDouble(150.0),
-        noShowPenaltyMultiplier: 1.5,
+        contractualValue: const Money(15000),
+        noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
         status: ExecutionStatus.noShow,
@@ -397,8 +400,8 @@ void main() {
         startLatitude: geoLat,
         startLongitude: geoLng,
         startRadiusMeters: geoRadius,
-        contractualValue: Money.fromDouble(150.0),
-        noShowPenaltyMultiplier: 1.5,
+        contractualValue: const Money(15000),
+        noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
         status: ExecutionStatus.evidenceGap,
@@ -427,8 +430,8 @@ void main() {
         startLatitude: geoLat,
         startLongitude: geoLng,
         startRadiusMeters: geoRadius,
-        contractualValue: Money.fromDouble(150.0),
-        noShowPenaltyMultiplier: 1.5,
+        contractualValue: const Money(15000),
+        noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
         status: ExecutionStatus.pending,
@@ -463,7 +466,7 @@ void main() {
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
         organizationId: 'org-1',
-);
+      );
 
       // Alert produced by engine pipeline
       expect(alertRepo.alerts, isNotEmpty);

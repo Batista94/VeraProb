@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
-import '../shared/money.dart';
+import 'package:veraprob/domain/shared/money.dart';
 import 'domain_exception.dart';
 
 /// Read model for a Shadow Mode ROI simulation.
@@ -9,7 +9,7 @@ import 'domain_exception.dart';
 /// Answers the question: "What financial losses would have occurred without
 /// veraprob's automated SLA enforcement?"
 ///
-/// This is a comparison model — it holds both the actual platform data
+/// This is a comparison model — it holds both the actual platform information
 /// and a simulated "without-platform" baseline scenario, producing an
 /// [roiPercentage] that quantifies the platform's financial protection value.
 ///
@@ -18,7 +18,7 @@ import 'domain_exception.dart';
 /// explicitly attributes this to hardware quality (the contratante's GPS devices),
 /// NOT to veraprob's software. This protects the operator's legal position.
 ///
-/// **INV-2:** All monetary values stored as [Money] (cents). Never double/float.
+/// **INV-2:** All monetary values stored as [Money] (cents). Never IEEE-754 values.
 /// **INV-3:** All timestamps UTC.
 /// **INV-4:** Zero Flutter/Supabase dependencies.
 class ShadowModeSimulation extends Equatable {
@@ -31,22 +31,22 @@ class ShadowModeSimulation extends Equatable {
   final DateTime periodStartUtc;
   final DateTime periodEndUtc;
 
-  // ── Actual platform data ───────────────────────────────────────────────────
+  // ── Actual platform information ───────────────────────────────────────────────────
   final Money actualProtectedRevenue;
   final Money actualLostRevenue;
   final Money actualAtRiskRevenue;
 
   /// Compliance rate achieved WITH veraprob (executedCount / totalObligations × 100).
-  final double actualComplianceRate;
+  final int actualComplianceRateBps;
 
   /// Ratio of canonical_facts with integrity_flag = OK over total facts (0.0–100.0).
   /// Low values indicate poor hardware quality at the contractor's fleet.
-  final double evidenceQualityRate;
+  final int evidenceQualityRateBps;
 
   // ── Simulated baseline (without-platform scenario) ─────────────────────────
   /// Estimated percentage of no-show penalties that would have been successfully
   /// disputed without automated evidence (e.g., 60%).
-  final double baselineDisputeRate;
+  final int baselineDisputeRateBps;
 
   /// Estimated labor cost per incident for manual SLA tracking (in cents).
   final Money manualEnforcementCostPerIncident;
@@ -63,7 +63,7 @@ class ShadowModeSimulation extends Equatable {
   final Money revenueProtectedByPlatform;
 
   /// (revenueProtectedByPlatform / platformSubscriptionCost) × 100.
-  final double roiPercentage;
+  final int roiPercentageBps;
 
   // ── Meta ───────────────────────────────────────────────────────────────────
   final Map<String, dynamic> simulationParameters;
@@ -79,14 +79,14 @@ class ShadowModeSimulation extends Equatable {
     required this.actualProtectedRevenue,
     required this.actualLostRevenue,
     required this.actualAtRiskRevenue,
-    required this.actualComplianceRate,
-    required this.evidenceQualityRate,
-    required this.baselineDisputeRate,
+    required this.actualComplianceRateBps,
+    required this.evidenceQualityRateBps,
+    required this.baselineDisputeRateBps,
     required this.manualEnforcementCostPerIncident,
     required this.incidentCount,
     required this.simulatedLostRevenue,
     required this.revenueProtectedByPlatform,
-    required this.roiPercentage,
+    required this.roiPercentageBps,
     required this.simulationParameters,
     required this.generatedAtUtc,
     required this.generatedByUserId,
@@ -100,9 +100,9 @@ class ShadowModeSimulation extends Equatable {
     required Money actualProtectedRevenue,
     required Money actualLostRevenue,
     required Money actualAtRiskRevenue,
-    required double actualComplianceRate,
-    required double evidenceQualityRate,
-    required double baselineDisputeRate,
+    required int actualComplianceRateBps,
+    required int evidenceQualityRateBps,
+    required int baselineDisputeRateBps,
     required Money manualEnforcementCostPerIncident,
     required int incidentCount,
     required Money platformSubscriptionCost,
@@ -116,21 +116,20 @@ class ShadowModeSimulation extends Equatable {
     if (!periodStartUtc.isUtc || !periodEndUtc.isUtc || !generatedAtUtc.isUtc) {
       throw const DomainException('All DateTime fields must be UTC (INV-3).');
     }
-    if (baselineDisputeRate < 0 || baselineDisputeRate > 100) {
+    if (baselineDisputeRateBps < 0 || baselineDisputeRateBps > 10000) {
       throw const DomainException(
-        'baselineDisputeRate must be between 0 and 100.',
+        'baselineDisputeRateBps must be between 0 and 10000.',
       );
     }
-    if (evidenceQualityRate < 0 || evidenceQualityRate > 100) {
+    if (evidenceQualityRateBps < 0 || evidenceQualityRateBps > 10000) {
       throw const DomainException(
-        'evidenceQualityRate must be between 0 and 100.',
+        'evidenceQualityRateBps must be between 0 and 10000.',
       );
     }
 
     // Simulation: revenue that would have leaked without enforcement
-    final disputedFraction = baselineDisputeRate / 100;
-    final simulatedLost = Money(
-      (actualLostRevenue.cents * (1 - disputedFraction)).round(),
+    final simulatedLost = actualLostRevenue.multiplyByBps(
+      10000 - baselineDisputeRateBps,
     );
 
     // Manual enforcement labor cost savings
@@ -142,9 +141,9 @@ class ShadowModeSimulation extends Equatable {
       actualLostRevenue.cents - simulatedLost.cents + manualCostTotal.cents,
     );
 
-    final roi = platformSubscriptionCost.cents > 0
-        ? (protected.cents / platformSubscriptionCost.cents) * 100
-        : 0.0;
+    final int roiBps = platformSubscriptionCost.cents > 0
+        ? (protected.cents * 10000 ~/ platformSubscriptionCost.cents)
+        : 0;
 
     return ShadowModeSimulation._(
       id: const Uuid().v4(),
@@ -155,14 +154,14 @@ class ShadowModeSimulation extends Equatable {
       actualProtectedRevenue: actualProtectedRevenue,
       actualLostRevenue: actualLostRevenue,
       actualAtRiskRevenue: actualAtRiskRevenue,
-      actualComplianceRate: actualComplianceRate,
-      evidenceQualityRate: evidenceQualityRate,
-      baselineDisputeRate: baselineDisputeRate,
+      actualComplianceRateBps: actualComplianceRateBps,
+      evidenceQualityRateBps: evidenceQualityRateBps,
+      baselineDisputeRateBps: baselineDisputeRateBps,
       manualEnforcementCostPerIncident: manualEnforcementCostPerIncident,
       incidentCount: incidentCount,
       simulatedLostRevenue: simulatedLost,
       revenueProtectedByPlatform: protected,
-      roiPercentage: roi,
+      roiPercentageBps: roiBps,
       simulationParameters: Map.unmodifiable(simulationParameters),
       generatedAtUtc: generatedAtUtc,
       generatedByUserId: generatedByUserId,
@@ -178,14 +177,14 @@ class ShadowModeSimulation extends Equatable {
     required Money actualProtectedRevenue,
     required Money actualLostRevenue,
     required Money actualAtRiskRevenue,
-    required double actualComplianceRate,
-    required double evidenceQualityRate,
-    required double baselineDisputeRate,
+    required int actualComplianceRateBps,
+    required int evidenceQualityRateBps,
+    required int baselineDisputeRateBps,
     required Money manualEnforcementCostPerIncident,
     required int incidentCount,
     required Money simulatedLostRevenue,
     required Money revenueProtectedByPlatform,
-    required double roiPercentage,
+    required int roiPercentageBps,
     required Map<String, dynamic> simulationParameters,
     required DateTime generatedAtUtc,
     required String generatedByUserId,
@@ -199,14 +198,14 @@ class ShadowModeSimulation extends Equatable {
       actualProtectedRevenue: actualProtectedRevenue,
       actualLostRevenue: actualLostRevenue,
       actualAtRiskRevenue: actualAtRiskRevenue,
-      actualComplianceRate: actualComplianceRate,
-      evidenceQualityRate: evidenceQualityRate,
-      baselineDisputeRate: baselineDisputeRate,
+      actualComplianceRateBps: actualComplianceRateBps,
+      evidenceQualityRateBps: evidenceQualityRateBps,
+      baselineDisputeRateBps: baselineDisputeRateBps,
       manualEnforcementCostPerIncident: manualEnforcementCostPerIncident,
       incidentCount: incidentCount,
       simulatedLostRevenue: simulatedLostRevenue,
       revenueProtectedByPlatform: revenueProtectedByPlatform,
-      roiPercentage: roiPercentage,
+      roiPercentageBps: roiPercentageBps,
       simulationParameters: simulationParameters,
       generatedAtUtc: generatedAtUtc,
       generatedByUserId: generatedByUserId,
@@ -219,17 +218,17 @@ class ShadowModeSimulation extends Equatable {
   /// to the contratante's GPS hardware, not to veraprob software.
   /// Operators should include this text in reports to protect their legal position.
   String get evidenceQualityAttribution {
-    if (evidenceQualityRate >= 95) {
-      return 'Qualidade de telemetria excelente (${evidenceQualityRate.toStringAsFixed(1)}%). '
+    if (evidenceQualityRateBps >= 9500) {
+      return 'Qualidade de telemetria excelente (${(evidenceQualityRateBps / 100).toStringAsFixed(1)}%). '
           'Hardware do contratante está operando dentro dos parâmetros esperados.';
     }
-    if (evidenceQualityRate >= 80) {
-      return 'Qualidade de telemetria adequada (${evidenceQualityRate.toStringAsFixed(1)}%). '
+    if (evidenceQualityRateBps >= 8000) {
+      return 'Qualidade de telemetria adequada (${(evidenceQualityRateBps / 100).toStringAsFixed(1)}%). '
           'Eventuais lacunas de evidência são atribuíveis à latência de rede ou '
           'precisão do hardware GPS do contratante.';
     }
     return 'ATENÇÃO — Qualidade de telemetria abaixo do esperado '
-        '(${evidenceQualityRate.toStringAsFixed(1)}%). '
+        '(${(evidenceQualityRateBps / 100).toStringAsFixed(1)}%). '
         'A redução na pontuação de evidência é atribuída à qualidade do hardware GPS '
         'instalado na frota do contratante (classificações: KINEMATIC_ANOMALY, '
         'NULL_ISLAND, LOW_ACCURACY, FUTURE_TIMESTAMP). '

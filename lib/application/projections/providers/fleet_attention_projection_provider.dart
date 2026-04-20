@@ -1,13 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/enums/trip_status.dart';
-import '../../../state/providers/fleet_providers.dart';
-import '../models/attention_state.dart';
+import 'package:veraprob/application/normalization/models/trip_status_view.dart';
+import 'package:veraprob/domain/enums/trip_status.dart';
+import 'package:veraprob/state/providers/fleet_providers.dart';
+import 'package:veraprob/application/projections/models/attention_state.dart';
 
 /// Context for a single vehicle's attention state on the map.
 class AttentionContext {
   final AttentionState attentionState;
-  final double opacityMultiplier;
+  final double opacityMultiplier; // Physical Metric - Double Required
   final bool isPulsing;
 
   const AttentionContext({
@@ -67,7 +68,7 @@ final fleetAttentionProjectionProvider = Provider<FleetAttentionProjection>((
   for (final state in states) {
     final trip = tripsByTripId[state.tripId];
     final attention = deriveAttentionState(
-      status: trip?.status ?? TripStatus.enRoute,
+      status: _mapToView(trip?.status ?? TripStatus.enRoute),
       severityScore: trip?.severityScore ?? 0,
       connectivity: state.connectivityState,
       adherence: state.routeAdherence,
@@ -111,3 +112,7 @@ final fleetAttentionProjectionProvider = Provider<FleetAttentionProjection>((
     vehicleStates: vehicleStates,
   );
 });
+
+TripStatusView _mapToView(TripStatus domain) {
+  return TripStatusView.values.byName(domain.name);
+}

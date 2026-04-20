@@ -15,14 +15,10 @@ dependencies:
   flutter_riverpod: ^2.5.1
   supabase_flutter: ^2.12.0
   flutter_map: ^8.2.2
-  geolocator: ^14.0.2
   latlong2: ^0.9.1
   shared_preferences: ^2.5.1
   equatable: ^2.0.5
-  flutter_map_marker_cluster: any
-  flutter_tts: ^3.8.3
   fl_chart: ^0.66.2
-  flutter_local_notifications: ^17.0.0
   collection: ^1.19.1
   intl: 0.20.2
   uuid: ^4.5.3
@@ -35,12 +31,19 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   google_fonts: ^6.1.0
-  universal_html: ^2.3.0
+  qr_flutter: ^4.1.0
   file_saver: ^0.3.1
   # ── 8.4 Observabilidade ─────────────────────────────
   sentry_flutter: ^9.15.0
-  posthog_flutter: ^5.20.0
-  web: ^1.1.0
+  posthog_flutter: ^5.21.0
+  web: ^1.1.1
+  postgres: ^3.5.9
+  # ── 9.8.H Edge Ledger (LocalFactQueue) ──────────────────────────────────
+  drift: ^2.22.0
+  drift_flutter: ^0.2.4
+  # ── Red Team v2.1: XSS Protection (ID 4) ────────────
+  sanitize_html: ^2.1.0
+
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.1
@@ -49,13 +52,20 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   mocktail: ^1.0.3
+  mockito: ^5.4.4
   flutter_lints: ^6.0.0
+  build_runner: ^2.4.0
+  drift_dev: ^2.22.0
 
+  fake_async: any
+  test: ^1.25.0
 flutter:
   uses-material-design: true
   # 8.4 Observabilidade
   assets:
     - .env
+    - assets/fonts/Lato-Regular.ttf
+    - assets/fonts/Lato-Bold.ttf
 
 sentry:
   upload_debug_symbols: true

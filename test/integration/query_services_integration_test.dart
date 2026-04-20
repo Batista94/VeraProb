@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
-import 'package:veraprob/domain/entities/vehicle_operational_state.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
-import 'package:veraprob/domain/enums/motion_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
@@ -13,6 +13,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_rep
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/shared/money.dart';
+import '../mocks/fake_date_time_provider.dart';
 
 void main() {
   group('Query Services Integration Consistency', () {
@@ -21,7 +22,10 @@ void main() {
       () async {
         final execRepo = InMemoryContractualExecutionStateRepository();
         final ledgerRepo = InMemorySlaAuditLedgerRepository();
-        final queryService = SlaExecutionQueryServiceInMemory(repo: execRepo);
+        final queryService = SlaExecutionQueryServiceInMemory(
+          repo: execRepo,
+          clock: FakeDateTimeProvider(DateTime.utc(2026, 1, 1)),
+        );
 
         final planRepo = InMemoryPlanDeclarationRepository();
         final engine = ContractualEvaluationEngine(
@@ -55,8 +59,8 @@ void main() {
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 100,
-          contractualValue: Money.fromDouble(200.0),
-          noShowPenaltyMultiplier: 2.0, // Should be 400.0 if no-show
+          contractualValue: const Money(20000),
+          noShowPenaltyBps: 20000, // Should be 400.0 if no-show
           windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
           windowEndUtc: windowEnd,
         );
@@ -68,10 +72,11 @@ void main() {
         );
         expect(initialSummary.totalPending, 1);
         expect(initialSummary.totalExecuted, 0);
-        expect(initialSummary.protectedRevenue, const Money(0));
+        expect(initialSummary.protectedRevenue, 0);
 
         // 2. Execute via Engine
         final vehicle = VehicleOperationalState(
+          rawSpeed: 0.0,
           vehicleId: 'v-100',
           tripId: 'set-consistent',
           latitude: -23.5,
@@ -88,8 +93,16 @@ void main() {
         final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
         final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
 
-        await engine.processVehicleState(vehicle, nowUtc: t0, organizationId: 'org-1');
-        await engine.processVehicleState(vehicle, nowUtc: t31, organizationId: 'org-1'); // Triggers bind
+        await engine.processVehicleState(
+          vehicle,
+          nowUtc: t0,
+          organizationId: 'org-1',
+        );
+        await engine.processVehicleState(
+          vehicle,
+          nowUtc: t31,
+          organizationId: 'org-1',
+        ); // Triggers bind
 
         // 3. Query verification (Executed)
         final midSummary = await queryService.getSummary(
@@ -97,8 +110,8 @@ void main() {
         );
         expect(midSummary.totalPending, 0);
         expect(midSummary.totalExecuted, 1);
-        expect(midSummary.protectedRevenue, const Money(20000)); // Revenue bound!
-        expect(midSummary.lostRevenue, const Money(0));
+        expect(midSummary.protectedRevenue, 20000); // Revenue bound!
+        expect(midSummary.lostRevenue, 0);
 
         final executedList = await queryService.listByStatus(
           ExecutionStatus.executed,
@@ -115,8 +128,8 @@ void main() {
           startLatitude: -23.5,
           startLongitude: -46.6,
           startRadiusMeters: 100,
-          contractualValue: Money.fromDouble(100.0),
-          noShowPenaltyMultiplier: 1.5, // Penalty = 150.0
+          contractualValue: const Money(10000),
+          noShowPenaltyBps: 15000, // Penalty = 150.0
           windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
           windowEndUtc: windowEnd,
         );
@@ -135,8 +148,8 @@ void main() {
         expect(finalSummary.totalPending, 0);
         expect(finalSummary.totalExecuted, 1);
         expect(finalSummary.totalNoShow, 1);
-        expect(finalSummary.protectedRevenue, const Money(20000));
-        expect(finalSummary.lostRevenue, const Money(15000)); // 100 * 1.5 Penalty matched
+        expect(finalSummary.protectedRevenue, 20000);
+        expect(finalSummary.lostRevenue, 15000); // 100 * 1.5 Penalty matched
 
         final noshowList = await queryService.listByStatus(
           ExecutionStatus.noShow,

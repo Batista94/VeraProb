@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../application/admin/invitation_command_service.dart';
-import '../../domain/enums/user_role.dart';
+import 'package:veraprob/application/admin/invitation_command_service.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// PostgreSQL implementation of [InvitationCommandService] using Supabase RPCs.
 class PostgresInvitationCommandService implements InvitationCommandService {
@@ -57,6 +57,10 @@ class PostgresInvitationCommandService implements InvitationCommandService {
         return 'AUDITOR';
       case UserRole.contractorViewer:
         return 'CONTRACTOR_VIEWER';
+      case UserRole.superAdmin:
+        throw ArgumentError(
+          'superAdmin is not a tenant role and cannot be assigned via invitation',
+        );
     }
   }
 }

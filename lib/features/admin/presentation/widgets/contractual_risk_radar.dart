@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../application/sla_audit/projections/dashboard_risk_feed_node.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../state/providers/dashboard_risk_feed_provider.dart';
-import '../../../../state/providers/sla_financial_providers.dart';
-import '../screens/widgets/investigation_modal.dart';
+import 'package:veraprob/application/sla_audit/projections/dashboard_risk_feed_node.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/dashboard_risk_feed_provider.dart';
+import 'package:veraprob/state/providers/sla_financial_providers.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 
 final _timeFormat = DateFormat('HH:mm');
 
@@ -91,7 +91,7 @@ class _FinancialKpiRow extends ConsumerWidget {
               child: _KpiCard(
                 title: 'Receita Protegida',
                 value:
-                    'R\$ ${(impact.protectedRevenue.cents / 100).toStringAsFixed(2)}',
+                    'R\$ ${(impact.protectedRevenue / 100).toStringAsFixed(2)}',
                 color: VeraProbColors.success,
                 icon: Icons.shield,
               ),
@@ -100,8 +100,7 @@ class _FinancialKpiRow extends ConsumerWidget {
             Expanded(
               child: _KpiCard(
                 title: 'Receita em Risco (Atrasos)',
-                value:
-                    'R\$ ${(impact.revenueAtRisk.cents / 100).toStringAsFixed(2)}',
+                value: 'R\$ ${(impact.revenueAtRisk / 100).toStringAsFixed(2)}',
                 color: VeraProbColors.warning,
                 icon: Icons.warning_amber_rounded,
               ),
@@ -110,8 +109,7 @@ class _FinancialKpiRow extends ConsumerWidget {
             Expanded(
               child: _KpiCard(
                 title: 'SLA Violado (Penalty)',
-                value:
-                    'R\$ ${(impact.lostRevenue.cents / 100).toStringAsFixed(2)}',
+                value: 'R\$ ${(impact.lostRevenue / 100).toStringAsFixed(2)}',
                 color: VeraProbColors.error,
                 icon: Icons.gavel,
               ),
@@ -152,11 +150,14 @@ class _KpiCard extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: color),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: VeraProbTypography.caption.copyWith(
-                  letterSpacing: 0.5,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  title,
+                  style: VeraProbTypography.caption.copyWith(
+                    letterSpacing: 0.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -224,9 +225,7 @@ class _RiskFeedList extends ConsumerWidget {
             loading: () => const Padding(
               padding: EdgeInsets.all(24.0),
               child: Center(
-                child: CircularProgressIndicator(
-                  color: VeraProbColors.primary,
-                ),
+                child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
             ),
             error: (err, _) => Padding(
@@ -404,7 +403,7 @@ class _FeedNodeItem extends StatelessWidget {
                               color: VeraProbColors.textSecondary,
                             ),
                             Text(
-                              'R\$ ${(node.execution.contractualValue.cents / 100).toStringAsFixed(2)}',
+                              'R\$ ${(node.execution.contractualValue / 100).toStringAsFixed(2)}',
                               style: VeraProbTypography.bodySmall,
                             ),
                             if (node.activeAlerts.isNotEmpty) ...[

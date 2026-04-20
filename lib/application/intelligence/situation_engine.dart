@@ -1,13 +1,13 @@
-import '../../../application/operational_control_service.dart';
-import '../../../domain/entities/operational_trip.dart';
-import '../../../domain/entities/operational_warning.dart';
+import 'package:veraprob/application/operational_control_service.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/entities/operational_warning.dart';
 import 'detectors/delay_detector.dart';
 import 'detectors/off_route_detector.dart';
 import 'detectors/signal_loss_detector.dart';
 import 'detectors/situation_detector.dart';
 import 'detectors/stopped_vehicle_detector.dart';
 
-import '../../../domain/entities/vehicle_operational_state.dart';
+import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 
 /// The core intelligence engine that analyzes active trips and detects issues.
 ///
@@ -15,11 +15,15 @@ import '../../../domain/entities/vehicle_operational_state.dart';
 /// trips from the data layer and enhances them with [OperationalWarning]s and
 /// a total `severityScore`.
 class SituationEngine {
-  final List<SituationDetector> _detectors = [
-    const DelayDetector(),
-    const StoppedVehicleDetector(),
-    const OffRouteDetector(),
-    const SignalLossDetector(),
+  final IDateTimeProvider _dateTimeProvider;
+
+  SituationEngine(this._dateTimeProvider);
+
+  List<SituationDetector> get _detectors => [
+    DelayDetector(_dateTimeProvider),
+    StoppedVehicleDetector(_dateTimeProvider),
+    OffRouteDetector(_dateTimeProvider),
+    SignalLossDetector(_dateTimeProvider),
   ];
 
   /// Analyzes a list of trips and returns a new list enriched with intelligence.

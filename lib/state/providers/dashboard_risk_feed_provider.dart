@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/sla_audit/projections/dashboard_risk_feed_node.dart';
+import 'package:veraprob/application/sla_audit/projections/dashboard_risk_feed_node.dart';
 import 'alert_providers.dart';
 import 'auth_providers.dart';
 import 'sla_providers.dart';
@@ -27,7 +27,7 @@ final dashboardRiskFeedProvider = FutureProvider<List<DashboardRiskFeedNode>>((
 
   // Determine "today" boundaries in local time, then convert to UTC bounds
   // (Assuming application runs in a stable timezone approach, or simple UTC boundary for now)
-  final now = DateTime.now();
+  final now = DateTime.now().toUtc();
   final startOfDay = DateTime(now.year, now.month, now.day).toUtc();
   final endOfDay = startOfDay.add(const Duration(days: 1));
 

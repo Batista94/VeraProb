@@ -1,6 +1,6 @@
-import 'package:veraprob/domain/enums/trip_status.dart';
-import 'package:veraprob/domain/enums/connectivity_state.dart';
-import 'package:veraprob/domain/enums/route_adherence.dart';
+import 'package:veraprob/application/normalization/models/trip_status_view.dart';
+import 'package:veraprob/application/normalization/models/connectivity_state.dart';
+import 'package:veraprob/application/normalization/models/route_adherence.dart';
 
 /// Operational attention level for a vehicle in the Command Center.
 ///
@@ -35,7 +35,7 @@ enum AttentionState {
 /// 6. Severity score ≥ 30 → WARNING
 /// 7. Everything else → NORMAL
 AttentionState deriveAttentionState({
-  required TripStatus status,
+  required TripStatusView status,
   required int severityScore,
   required ConnectivityState connectivity,
   required RouteAdherence adherence,
@@ -48,9 +48,9 @@ AttentionState deriveAttentionState({
     return AttentionState.critical;
   }
   switch (status) {
-    case TripStatus.interrupted:
-    case TripStatus.noShow:
-    case TripStatus.maintenance:
+    case TripStatusView.interrupted:
+    case TripStatusView.noShow:
+    case TripStatusView.maintenance:
       return AttentionState.critical;
     default:
       break;
@@ -60,7 +60,7 @@ AttentionState deriveAttentionState({
   }
 
   // ── WARNING: Operational variance ──────────────────────
-  if (status == TripStatus.delayed) {
+  if (status == TripStatusView.delayed) {
     return AttentionState.warning;
   }
   if (severityScore >= 30) {

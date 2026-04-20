@@ -17,38 +17,40 @@ void main() {
   late CsvExportService service;
 
   AttestationHeader makeHeader() => AttestationHeader.create(
-        tenantName: 'Operadora Alpha',
-        tenantCnpj: '12.345.678/0001-99',
-        contractorName: 'Empresa ACME Ltda',
-        contractorCnpj: '98.765.432/0001-11',
-        reportGeneratedBy: 'user-admin-1',
-        reportGeneratedAtUtc: DateTime.utc(2026, 4, 1),
-        engineVersion: '7.1.0-test',
-      );
+    tenantName: 'Operadora Alpha',
+    tenantCnpj: '12.345.678/0001-99',
+    contractorName: 'Empresa ACME Ltda',
+    contractorCnpj: '98.765.432/0001-11',
+    reportGeneratedBy: 'user-admin-1',
+    reportGeneratedAtUtc: DateTime.utc(2026, 4, 1),
+    engineVersion: '7.1.0-test',
+  );
 
   ContractualFinancialDailySnapshot makeSnapshot({
     required DateTime date,
     String? lastLedgerEntryId = '100',
-  }) =>
-      ContractualFinancialDailySnapshot.create(
-        organizationId: orgId,
-        contractId: contractId,
-        operationalDateUtc: date,
-        operationalTimezone: 'America/Sao_Paulo',
-        closedAtUtc: date.add(const Duration(hours: 1)),
-        totalContractedRevenue: const Money(100000), // R$ 1000.00
-        protectedRevenue: const Money(85000),
-        revenueAtRisk: const Money(10000),
-        lostRevenue: const Money(5000),
-        totalObligations: 10,
-        executedCount: 9,
-        noShowCount: 1,
-        evidenceGapCount: 0,
-        lastLedgerEntryId: lastLedgerEntryId,
-      );
+  }) => ContractualFinancialDailySnapshot.create(
+    organizationId: orgId,
+    contractId: contractId,
+    operationalDateUtc: date,
+    operationalTimezone: 'America/Sao_Paulo',
+    closedAtUtc: date.add(const Duration(hours: 1)),
+    totalContractedRevenue: const Money(100000), // R$ 1000.00
+    protectedRevenue: const Money(85000),
+    revenueAtRisk: const Money(10000),
+    lostRevenue: const Money(5000),
+    totalObligations: 10,
+    executedCount: 9,
+    noShowCount: 1,
+    evidenceGapCount: 0,
+    lastLedgerEntryId: lastLedgerEntryId,
+  );
 
-  BillingCycleReport makeReport({List<ContractualFinancialDailySnapshot>? snapshots}) {
-    final snaps = snapshots ??
+  BillingCycleReport makeReport({
+    List<ContractualFinancialDailySnapshot>? snapshots,
+  }) {
+    final snaps =
+        snapshots ??
         [
           makeSnapshot(date: DateTime.utc(2026, 3, 1)),
           makeSnapshot(date: DateTime.utc(2026, 3, 2)),
@@ -92,8 +94,11 @@ void main() {
       final package = makeSealedPackage(report);
       final csv = service.generateCsv(package: package, report: report);
 
-      expect(csv.startsWith('\uFEFF'), isTrue,
-          reason: 'UTF-8 BOM required for Brazilian Excel compatibility');
+      expect(
+        csv.startsWith('\uFEFF'),
+        isTrue,
+        reason: 'UTF-8 BOM required for Brazilian Excel compatibility',
+      );
     });
 
     test('attestation comment block present — Report ID line', () {
@@ -281,44 +286,47 @@ void main() {
       );
     });
 
-    test('throws DomainException if sealed package has null hash (data integrity)', () {
-      final report = makeReport();
-      // Reconstitute a "sealed" package without a hash (corrupted state)
-      final corrupt = AuditPackage.reconstitute(
-        id: 'fake-id',
-        organizationId: orgId,
-        contractId: contractId,
-        contractorName: 'Empresa ACME Ltda',
-        periodStartUtc: periodStart,
-        periodEndUtc: periodEnd,
-        billingCycleReportId: report.id,
-        reportLedgerBoundary: '100',
-        snapshotIds: const [],
-        totalContractedRevenue: const Money(0),
-        protectedRevenue: const Money(0),
-        revenueAtRisk: const Money(0),
-        lostRevenue: const Money(0),
-        totalObligations: 0,
-        executedCount: 0,
-        noShowCount: 0,
-        evidenceGapCount: 0,
-        complianceRate: 100.0,
-        packageHash: null, // Missing hash!
-        hashAlgorithm: 'SHA-256',
-        schemaVersion: '7.1.0',
-        engineVersionAtGeneration: '7.1.0-test',
-        status: AuditPackageStatus.sealed,
-        previousPackageId: null,
-        supersessionReason: null,
-        generatedAtUtc: DateTime.utc(2026, 4, 1),
-        generatedByUserId: 'user-admin-1',
-        attestationHeader: makeHeader(),
-      );
+    test(
+      'throws DomainException if sealed package has null hash (data integrity)',
+      () {
+        final report = makeReport();
+        // Reconstitute a "sealed" package without a hash (corrupted state)
+        final corrupt = AuditPackage.reconstitute(
+          id: 'fake-id',
+          organizationId: orgId,
+          contractId: contractId,
+          contractorName: 'Empresa ACME Ltda',
+          periodStartUtc: periodStart,
+          periodEndUtc: periodEnd,
+          billingCycleReportId: report.id,
+          reportLedgerBoundary: '100',
+          snapshotIds: const [],
+          totalContractedRevenue: const Money(0),
+          protectedRevenue: const Money(0),
+          revenueAtRisk: const Money(0),
+          lostRevenue: const Money(0),
+          totalObligations: 0,
+          executedCount: 0,
+          noShowCount: 0,
+          evidenceGapCount: 0,
+          complianceRateBps: 10000,
+          packageHash: null, // Missing hash!
+          hashAlgorithm: 'SHA-256',
+          schemaVersion: '7.1.0',
+          engineVersionAtGeneration: '7.1.0-test',
+          status: AuditPackageStatus.sealed,
+          previousPackageId: null,
+          supersessionReason: null,
+          generatedAtUtc: DateTime.utc(2026, 4, 1),
+          generatedByUserId: 'user-admin-1',
+          attestationHeader: makeHeader(),
+        );
 
-      expect(
-        () => service.generateCsv(package: corrupt, report: report),
-        throwsA(isA<DomainException>()),
-      );
-    });
+        expect(
+          () => service.generateCsv(package: corrupt, report: report),
+          throwsA(isA<DomainException>()),
+        );
+      },
+    );
   });
 }

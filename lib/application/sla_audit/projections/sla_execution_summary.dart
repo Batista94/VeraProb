@@ -1,7 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../domain/shared/money.dart';
-
 /// Read model: aggregated summary of SLA execution states.
 ///
 /// One summary per contract (or global if contractId is null).
@@ -15,9 +13,9 @@ class SlaExecutionSummary extends Equatable {
   final DateTime generatedAtUtc;
 
   // ── Financial Projections ──────────────────────────────────
-  final Money protectedRevenue;
-  final Money revenueAtRisk;
-  final Money lostRevenue;
+  final int protectedRevenue;
+  final int revenueAtRisk;
+  final int lostRevenue;
 
   const SlaExecutionSummary({
     this.contractId,
@@ -26,18 +24,19 @@ class SlaExecutionSummary extends Equatable {
     required this.totalNoShow,
     required this.totalEvidenceGap,
     required this.generatedAtUtc,
-    this.protectedRevenue = const Money(0),
-    this.revenueAtRisk = const Money(0),
-    this.lostRevenue = const Money(0),
+    this.protectedRevenue = 0,
+    this.revenueAtRisk = 0,
+    this.lostRevenue = 0,
   });
 
-  factory SlaExecutionSummary.empty() => SlaExecutionSummary(
-    totalPending: 0,
-    totalExecuted: 0,
-    totalNoShow: 0,
-    totalEvidenceGap: 0,
-    generatedAtUtc: DateTime.now().toUtc(),
-  );
+  factory SlaExecutionSummary.empty({required DateTime generatedAtUtc}) =>
+      SlaExecutionSummary(
+        totalPending: 0,
+        totalExecuted: 0,
+        totalNoShow: 0,
+        totalEvidenceGap: 0,
+        generatedAtUtc: generatedAtUtc,
+      );
 
   int get total =>
       totalPending + totalExecuted + totalNoShow + totalEvidenceGap;

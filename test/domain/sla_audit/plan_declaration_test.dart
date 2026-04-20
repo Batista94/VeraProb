@@ -7,6 +7,8 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 
 void main() {
+  final nowUtc = DateTime.parse('2026-04-08T12:00:00Z').toUtc();
+
   // ── Helpers ──────────────────────────────────────────────────
   ContractualServiceExecution makeService({
     String contractId = 'contract-1',
@@ -19,7 +21,7 @@ void main() {
     double endLng = -46.6400,
     int endRadius = 100,
     Money contractualValue = const Money(15000),
-    double noShowPenaltyMultiplier = 1.5,
+    int noShowPenaltyBps = 15000,
   }) {
     final s = start ?? DateTime.utc(2026, 3, 1, 6, 0);
     final e = end ?? s.add(const Duration(hours: 1));
@@ -34,7 +36,7 @@ void main() {
       endLongitude: endLng,
       endRadiusMeters: endRadius,
       contractualValue: contractualValue,
-      noShowPenaltyMultiplier: noShowPenaltyMultiplier,
+      noShowPenaltyBps: noShowPenaltyBps,
     );
   }
 
@@ -55,6 +57,7 @@ void main() {
       planVersion: version,
       originalFileHash: hash,
       services: services ?? [makeService()],
+      nowUtc: nowUtc,
     );
   }
 
@@ -163,9 +166,7 @@ void main() {
       expect(event.planVersion, 3);
       expect(event.totalServicesDeclared, 1);
       expect(
-        event.occurredAtUtc.isBefore(
-          DateTime.now().toUtc().add(const Duration(seconds: 1)),
-        ),
+        event.occurredAtUtc.isBefore(nowUtc.add(const Duration(seconds: 1))),
         isTrue,
       );
     });
@@ -205,9 +206,7 @@ void main() {
 
     test('throws on future declaredAtUtc', () {
       expect(
-        () => makeDeclaration(
-          declaredAt: DateTime.now().toUtc().add(const Duration(days: 1)),
-        ),
+        () => makeDeclaration(declaredAt: nowUtc.add(const Duration(days: 1))),
         throwsA(isA<DomainException>()),
       );
     });

@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../application/admin/user_management_command_service.dart';
-import '../../domain/enums/user_role.dart';
+import 'package:veraprob/application/admin/user_management_command_service.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
 
 /// PostgreSQL implementation of [UserManagementCommandService] using Supabase RPCs.
 class PostgresUserManagementCommandService
@@ -45,6 +45,10 @@ class PostgresUserManagementCommandService
         return 'AUDITOR';
       case UserRole.contractorViewer:
         return 'CONTRACTOR_VIEWER';
+      case UserRole.superAdmin:
+        throw ArgumentError(
+          'superAdmin is not a tenant role and cannot be assigned via user management',
+        );
     }
   }
 }
