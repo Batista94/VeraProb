@@ -11,7 +11,8 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
+// import 'dart:io'; (Fix web build)
+
 
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/forensic_violation_exception.dart';
@@ -76,7 +77,7 @@ class ForensicErrorInterpreter {
       );
     }
 
-    if (error is SocketException) {
+    if (error.toString().contains('SocketException')) {
       return const InterpretedForensicError(
         userMessage: 'Conexão instável detectada durante o envio da evidência.',
         suggestedAction:

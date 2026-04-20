@@ -1,4 +1,5 @@
-import 'dart:io';
+// import 'dart:io'; (Removed to fix web build)
+
 
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
@@ -46,12 +47,13 @@ class SupabaseAuthRepository implements IAuthRepository {
         throw const AuthFailureException('Sign-in returned no user.');
       }
       return res.user!.id;
-    } on sb.AuthException catch (e) {
-      throw _mapAuthException(e);
-    } on SocketException {
-      throw const AuthFailureException(
-        'Erro de conexão com o servidor de autenticação.',
-      );
+    } catch (e) {
+      if (e.toString().contains('SocketException')) {
+        throw const AuthFailureException(
+          'Erro de conexão com o servidor de autenticação.',
+        );
+      }
+      rethrow;
     }
   }
 
@@ -66,12 +68,13 @@ class SupabaseAuthRepository implements IAuthRepository {
         throw const AuthFailureException('Sign-up returned no user.');
       }
       return res.user!.id;
-    } on sb.AuthException catch (e) {
-      throw _mapAuthException(e);
-    } on SocketException {
-      throw const AuthFailureException(
-        'Erro de conexão com o servidor de autenticação.',
-      );
+    } catch (e) {
+      if (e.toString().contains('SocketException')) {
+        throw const AuthFailureException(
+          'Erro de conexão com o servidor de autenticação.',
+        );
+      }
+      rethrow;
     }
   }
 
@@ -158,11 +161,7 @@ class SupabaseAuthRepository implements IAuthRepository {
       ).toUtc();
 
       return authUser;
-    } on sb.AuthException {
-      // Server-side auth failure (invalid JWT, revoked, etc.)
-      _invalidateCache();
-      return null;
-    } on SocketException {
+    } catch (e) {
       _invalidateCache();
       return null;
     }
@@ -182,12 +181,16 @@ class SupabaseAuthRepository implements IAuthRepository {
       await _client.auth.signOut(scope: sb.SignOutScope.global);
       // INV-1: Invalidate cache on sign-out to prevent stale session reuse
       _invalidateCache();
-    } on sb.AuthException catch (e) {
-      throw _mapAuthException(e);
-    } on SocketException {
-      throw const AuthFailureException(
-        'Erro de conexão com o servidor de autenticação.',
-      );
+    } catch (e) {
+      if (e.toString().contains('SocketException')) {
+        throw const AuthFailureException(
+          'Erro de conexão com o servidor de autenticação.',
+        );
+      }
+      if (e is sb.AuthException) {
+        throw _mapAuthException(e);
+      }
+      rethrow;
     }
   }
 
@@ -197,12 +200,16 @@ class SupabaseAuthRepository implements IAuthRepository {
       await _client.auth.refreshSession();
       // INV-1: Invalidate cache on refresh — the JWT claims may have changed
       _invalidateCache();
-    } on sb.AuthException catch (e) {
-      throw _mapAuthException(e);
-    } on SocketException {
-      throw const AuthFailureException(
-        'Erro de conexão com o servidor de autenticação.',
-      );
+    } catch (e) {
+      if (e.toString().contains('SocketException')) {
+        throw const AuthFailureException(
+          'Erro de conexão com o servidor de autenticação.',
+        );
+      }
+      if (e is sb.AuthException) {
+        throw _mapAuthException(e);
+      }
+      rethrow;
     }
   }
 
