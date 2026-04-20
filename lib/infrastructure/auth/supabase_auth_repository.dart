@@ -1,6 +1,5 @@
 // import 'dart:io'; (Removed to fix web build)
 
-
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import 'package:veraprob/domain/auth/auth_failure_exception.dart';
