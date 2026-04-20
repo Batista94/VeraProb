@@ -1,7 +1,5 @@
 # VeraProb
 
-### The Immutable Verifier for B2B Compliance & Financial Protection
-
 VeraProb is a high-performance platform designed to eliminate friction between B2B contracts and operational execution. It acts as an automated, impartial "Digital Judge" that transforms raw telemetry into Verifiable Contractual Truth.
 
 ---
