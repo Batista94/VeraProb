@@ -52,6 +52,9 @@ class SupabaseAuthRepository implements IAuthRepository {
           'Erro de conexão com o servidor de autenticação.',
         );
       }
+      if (e is sb.AuthException) {
+        throw _mapAuthException(e);
+      }
       rethrow;
     }
   }
@@ -72,6 +75,9 @@ class SupabaseAuthRepository implements IAuthRepository {
         throw const AuthFailureException(
           'Erro de conexão com o servidor de autenticação.',
         );
+      }
+      if (e is sb.AuthException) {
+        throw _mapAuthException(e);
       }
       rethrow;
     }
@@ -161,6 +167,8 @@ class SupabaseAuthRepository implements IAuthRepository {
 
       return authUser;
     } catch (e) {
+      // Server-side auth failure (invalid JWT, revoked, etc.)
+      // or network error
       _invalidateCache();
       return null;
     }
