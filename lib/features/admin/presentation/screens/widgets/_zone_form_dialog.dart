@@ -58,7 +58,6 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
 
   // G3 — FocusNodes
   final FocusNode _nameFocus = FocusNode();
-  final FocusNode _contractorLabelFocus = FocusNode();
   final FocusNode _addressFocus = FocusNode();
   final FocusNode _radiusFocus = FocusNode();
 
@@ -90,7 +89,6 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
     _addressController.dispose();
     _radiusController.dispose();
     _nameFocus.dispose();
-    _contractorLabelFocus.dispose();
     _addressFocus.dispose();
     _radiusFocus.dispose();
     _debounce?.cancel();
@@ -335,8 +333,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           validator: (v) =>
               (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
           autofocus: widget.existingZone == null,
-          onFieldSubmitted: (_) =>
-              FocusScope.of(context).requestFocus(_contractorLabelFocus),
+          onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
         ),
         const SizedBox(height: 16),
 
@@ -356,13 +353,13 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                 return options.where((n) => n.toLowerCase().contains(lower));
               },
               displayStringForOption: (o) => o,
-              fieldViewBuilder: (ctx, ctrl, focusNode, onSubmitted) {
+              fieldViewBuilder: (ctx, ctrl, fn, onSubmitted) {
                 ctrl.addListener(
                   () => _contractorLabelController.text = ctrl.text,
                 );
                 return TextFormField(
                   controller: ctrl,
-                  focusNode: _contractorLabelFocus,
+                  focusNode: fn,
                   decoration: const InputDecoration(
                     labelText: 'Contratante / Cliente (opcional)',
                     hintText: 'Ex: Empresa ABC',
@@ -457,7 +454,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           ),
           title: const Text('Configuração de Geofence'),
           subtitle: Text(
-            _lat != null ? 'Configurado' : 'Não configurado',
+            _lat != null ? 'Configurado' : 'Zona Inativa para Auditoria',
             style: TextStyle(
               color: _lat != null
                   ? VeraProbColors.success

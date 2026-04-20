@@ -43,3 +43,19 @@ pubspec.lock
 .flutter-plugins*
 test-output/
 .env*
+
+# Media & Fonts
+*.ttf
+*.otf
+*.woff
+*.woff2
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.ico
+*.mp4
+
+# Supabase Local State
+supabase/.temp/
+supabase/.branches/
