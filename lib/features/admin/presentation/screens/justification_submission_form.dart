@@ -1,14 +1,13 @@
-import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:web/web.dart' as web;
 
 import 'package:veraprob/application/sla_audit/justification/submit_justification_command.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/features/admin/presentation/screens/justification_file_service.dart';
 import 'package:veraprob/presentation/shared/widgets/evidence_validation_checklist_widget.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/justification_providers.dart';
@@ -21,9 +20,9 @@ import 'package:veraprob/state/providers/justification_providers.dart';
 /// - **Pre-filled path** (contractId + setId provided by SLA drawer): fields
 ///   are pre-filled but still editable.
 ///
-/// Evidence files are SHA-256 hashed client-side (INV-8) and uploaded to
-/// Supabase Storage via [JustificationEvidenceStorageService].
-/// File size guard: ≤ 10 MB per file.
+/// Evidence files are SHA-256 hashed client-side (INV-9) via
+/// [JustificationFileService] and uploaded to Supabase Storage.
+/// File size guard: ≤ 10 MB per file (enforced by [JustificationFileService]).
 /// INV-24: opened as an overlay modal.
 class JustificationSubmissionForm extends ConsumerStatefulWidget {
   final String? contractId;
@@ -87,8 +86,6 @@ class _JustificationSubmissionFormState
       error: error,
     );
   }
-
-  static const _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
   @override
   void initState() {
@@ -248,48 +245,25 @@ class _JustificationSubmissionFormState
   }
 
   Future<void> _pickFiles() async {
-    final input = web.HTMLInputElement()
-      ..type = 'file'
-      ..accept = 'image/*,.pdf,.zip'
-      ..multiple = true;
+    final service = ref.read(justificationFileServiceProvider);
+    final result = await service.pickFiles();
 
-    input.click();
-
-    await input.onChange.first;
-
-    final fileList = input.files;
-    if (fileList == null) return;
-
-    for (var i = 0; i < fileList.length; i++) {
-      final file = fileList.item(i);
-      if (file == null) continue;
-      if (file.size > _maxFileSizeBytes) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${file.name}: arquivo maior que 10 MB. Ignorado.'),
-              backgroundColor: VeraProbColors.error,
-            ),
-          );
-        }
-        continue;
+    for (final name in result.oversized) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$name: arquivo maior que 10 MB. Ignorado.'),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
       }
-
-      final bytes = await _readFileBytes(file);
-      final hash = sha256.convert(bytes).toString();
-      setState(() => _files.add((name: file.name, bytes: bytes, hash: hash)));
     }
-  }
 
-  Future<Uint8List> _readFileBytes(web.File file) async {
-    final reader = web.FileReader();
-    reader.readAsArrayBuffer(file);
-    await reader.onLoadEnd.first;
-    final result = reader.result;
-    if (result == null) return Uint8List(0);
-    // result is a JSArrayBuffer — convert to Uint8List
-    final jsBuffer = result as JSArrayBuffer;
-    return Uint8List.view(jsBuffer.toDart);
+    for (final f in result.picked) {
+      // INV-9: SHA-256 client-side before upload
+      final hash = sha256.convert(f.bytes).toString();
+      setState(() => _files.add((name: f.name, bytes: f.bytes, hash: hash)));
+    }
   }
 
   Future<void> _submit() async {
@@ -340,6 +314,7 @@ class _JustificationSubmissionFormState
           ),
         );
         final storage = ref.read(justificationStorageServiceProvider);
+        final fileService = ref.read(justificationFileServiceProvider);
         try {
           for (final f in _files) {
             final String storagePath;
@@ -348,19 +323,7 @@ class _JustificationSubmissionFormState
                 justificationToken: widget.token!.token,
                 fileName: f.name,
               );
-              final uploadOk = await _uploadViaSignedUrl(result.url, f.bytes);
-              if (!uploadOk) {
-                if (mounted) {
-                  setState(
-                    () => _updateStep(
-                      EvidenceValidationStepKind.transfer,
-                      EvidenceValidationStatus.failed,
-                      error: _error ?? 'Falha no upload.',
-                    ),
-                  );
-                }
-                return;
-              }
+              await fileService.uploadPut(result.url, f.bytes);
               storagePath = result.storagePath;
             } else {
               storagePath = await storage.uploadAuthenticated(
@@ -454,24 +417,6 @@ class _JustificationSubmissionFormState
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
-  }
-
-  /// Returns true if upload succeeded, false otherwise (error set in state).
-  Future<bool> _uploadViaSignedUrl(String url, Uint8List bytes) async {
-    // Use Fetch API (package:web) for WASM-safe binary upload
-    final response = await web.window
-        .fetch(url.toJS, web.RequestInit(method: 'PUT', body: bytes.toJS))
-        .toDart;
-    if (!response.ok) {
-      if (mounted) {
-        setState(
-          () => _error =
-              'Falha no upload do arquivo (${response.status}). Tente novamente.',
-        );
-      }
-      return false;
-    }
-    return true;
   }
 
   String _categoryLabel(JustificationCategory c) {

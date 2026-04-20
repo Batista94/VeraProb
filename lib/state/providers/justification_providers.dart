@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/features/admin/presentation/screens/justification_file_service.dart';
 import 'package:veraprob/application/sla_audit/justification/approve_justification_handler.dart';
 import 'package:veraprob/application/sla_audit/justification/contextual_signature_analyzer.dart';
 import 'package:veraprob/application/sla_audit/justification/generate_justification_token_handler.dart';
@@ -80,6 +81,10 @@ final justificationStorageServiceProvider =
         ref.watch(supabaseClientProvider),
       );
     });
+
+final justificationFileServiceProvider = Provider<JustificationFileService>(
+  (ref) => createJustificationFileService(),
+);
 
 // ── Realtime stream of all justifications ────────────────────────────────────
 

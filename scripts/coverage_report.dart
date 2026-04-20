@@ -81,9 +81,9 @@ void main() {
   }
 
   // Calculate what we need
-  final neededHit = (totalFound * 0.60).ceil();
+  final neededHit = (totalFound * 0.70).ceil();
   final gap = neededHit - totalHit;
   print(
-    '\nNeed $neededHit hits for 60%; currently have $totalHit. Gap: $gap lines to cover.',
+    '\nNeed $neededHit hits for 70%; currently have $totalHit. Gap: ${gap > 0 ? gap : 0} lines to cover.',
   );
 }
