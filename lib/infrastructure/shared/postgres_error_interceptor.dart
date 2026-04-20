@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 
 /// INV-26: Error Parity — Intercepts PostgREST/PostgreSQL-specific error
 /// codes and maps them to domain-layer exceptions that produce indistinguishable
@@ -31,14 +32,15 @@ import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
 /// ```
 ///
 /// **Error Code Mapping:**
-/// | PostgREST Code | Meaning                    | Domain Exception            |
-/// |----------------|----------------------------|-----------------------------|
-/// | 22P02          | invalid_text_representation| ResourceNotFoundException   |
-/// | 23503          | foreign_key_violation      | ResourceNotFoundException   |
-/// | PGRST116       | not_found                  | ResourceNotFoundException   |
-/// | PGRST204       | column_not_found           | ResourceNotFoundException   |
-/// | P0001          | RAISE EXCEPTION            | IntegrityException(message) |
-/// | 23505          | unique_violation           | IntegrityException          |
+/// | PostgREST Code | Meaning                    | Domain Exception                |
+/// |----------------|----------------------------|---------------------------------|
+/// | 22P02          | invalid_text_representation| ResourceNotFoundException        |
+/// | 23503          | foreign_key_violation      | ResourceNotFoundException        |
+/// | PGRST116       | not_found                  | ResourceNotFoundException        |
+/// | PGRST204       | column_not_found           | ResourceNotFoundException        |
+/// | P0001          | RAISE EXCEPTION            | IntegrityException(message)      |
+/// | 23505          | unique_violation           | IntegrityException               |
+/// | 42501          | insufficient_privilege     | SovereigntyViolationException    |
 mixin PostgresErrorInterceptor {
   /// Maps a [PostgrestException] to the appropriate domain-layer exception.
   ///
@@ -66,6 +68,14 @@ mixin PostgresErrorInterceptor {
       // Business Logic: RAISE EXCEPTION from Postgres functions/triggers
       // Message is passed through for domain-level handling
       'P0001' => IntegrityException(e.message),
+
+      // Tenant Isolation: RLS denied access — map to SovereigntyViolation
+      // so callers never inspect raw DB codes (INV-2 / INV-26 Oracle Attack prevention).
+      '42501' => SovereigntyViolationException(
+        payloadOrgId: resourceId ?? '',
+        jwtOrgId: '',
+        message: 'RLS policy denied access (42501 insufficient_privilege)',
+      ),
 
       // Integrity: Unique constraint violations
       // Mapped to IntegrityException for caller-level handling

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:veraprob/features/admin/presentation/screens/justification_file_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/justification/file_service/justification_file_service.dart';
 import 'package:veraprob/application/sla_audit/justification/approve_justification_handler.dart';
 import 'package:veraprob/application/sla_audit/justification/contextual_signature_analyzer.dart';
 import 'package:veraprob/application/sla_audit/justification/generate_justification_token_handler.dart';

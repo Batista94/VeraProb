@@ -134,7 +134,6 @@ class PostgresContractRepository extends BasePostgresRepository
       final newVersion = await updateWithVersion(
         table: 'contracts',
         data: {
-          'organization_id': contract.organizationId,
           'name': contract.name,
           'contractor_name': contract.contractorName,
           'description': contract.description,
