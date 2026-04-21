@@ -1,7 +1,7 @@
 ---
 name: qa-security
 description: Invoke when adding or modifying database tables, RLS policies, RBAC roles, idempotency logic, telemetry ingestion flows, evidence-handling code, or any agentic workflow (INV-11 Skill Sealing). Guards multi-tenant isolation, ledger integrity, and cryptographic evidence immutability. Treats every bypass as a potential breach. Invoke proactively without being asked when the task involves database schema changes, RLS policies, financial tables, or any security-sensitive code.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tools: ["Read", "Grep", "Glob", "Bash", "Write"]
 model: sonnet
 ---
 

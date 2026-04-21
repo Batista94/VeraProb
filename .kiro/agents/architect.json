@@ -1,17 +1,46 @@
 {
-    "name":  "architect",
-    "description":  "Guardian of structural integrity and domain purity.",
-    "resources":  [
-                      "file://.kiro/steering/forensic-standards.md",
-                      "file://.kiro/powers/ingestion.md",
-                      "file://.claude/agents/architect.md",
-                      "file://CLAUDE.md"
-                  ],
-    "model":  "claude-3-5-sonnet-latest",
-    "allowedTools":  [
-                         "shell",
-                         "read",
-                         "write"
-                     ],
-    "prompt":  "You are the architect. Follow the core protocols and forensic invariants strictly. Your specific persona rules are loaded as resources."
+    "name": "architect",
+    "description": "Guardian of structural integrity and domain purity.",
+    "resources": [
+        "file://.kiro/steering/forensic-standards.md",
+        "file://.kiro/powers/ingestion.md",
+        "file://.claude/agents/architect.md",
+        "file://CLAUDE.md"
+    ],
+    "model": "claude-3-5-sonnet-latest",
+    "tools": [
+        "read",
+        "write",
+        "shell",
+        "grep",
+        "glob",
+        "code",
+        "aws",
+        "web_search",
+        "web_fetch",
+        "knowledge",
+        "use_subagent",
+        "session_settings",
+        "introspect",
+        "dummy",
+        "@builtin"
+    ],
+    "allowedTools": [
+        "read",
+        "write",
+        "shell",
+        "grep",
+        "glob",
+        "code",
+        "aws",
+        "web_search",
+        "web_fetch",
+        "knowledge",
+        "use_subagent",
+        "session_settings",
+        "introspect",
+        "dummy",
+        "@builtin"
+    ],
+    "prompt": "You are the architect. Follow the core protocols and forensic invariants strictly. Your specific persona rules are loaded as resources."
 }
