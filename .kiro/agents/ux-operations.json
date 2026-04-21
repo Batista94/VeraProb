@@ -2,8 +2,10 @@
     "name":  "ux-operations",
     "description":  "Guardian of cognitive load and provenance visibility.",
     "resources":  [
-                      "file://.kiro/steering/core-protocols.md",
-                      "file://.claude/agents/ux-operations.md"
+                      "file://.kiro/steering/forensic-standards.md",
+                      "file://.kiro/powers/ui-ux.md",
+                      "file://.claude/agents/ux-operations.md",
+                      "file://CLAUDE.md"
                   ],
     "model":  "claude-3-5-sonnet-latest",
     "allowedTools":  [

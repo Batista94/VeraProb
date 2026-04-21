@@ -210,6 +210,45 @@ async function ensureTenantAdmin(url, serviceKey, user) {
   throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
 }
 
+async function ensureTestData(url, serviceKey) {
+  process.stdout.write('  ── Provisionando Dados de Teste (Motorista + Token Telegram)\n');
+
+  const driverId = '00000000-0000-0000-0000-d00000000001';
+  const orgId    = '00000000-0000-0000-0000-000000000001';
+
+  // 1. Criar Motorista
+  process.stdout.write('      [1/2] Criar motorista de teste... ');
+  const resDriver = await post(
+    `${url}/rest/v1/drivers`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    { 
+      id: driverId, 
+      organization_id: orgId, 
+      full_name: 'Motorista de Teste Telegram', 
+      status: 'active',
+      license_number: 'CNH123456789'
+    }
+  );
+  if (!resDriver.ok) throw new Error(`Erro ao criar motorista: ${resDriver.status}`);
+  console.log('ok');
+
+  // 2. Criar Token de Vinculação
+  process.stdout.write('      [2/2] Gerar token VERAPR22... ');
+  const resToken = await post(
+    `${url}/rest/v1/telegram_binding_tokens`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      organization_id: orgId,
+      driver_id: driverId,
+      created_by_user_id: '00000000-0000-0000-0000-ffffffffffff',
+      code: 'VERAPR22',
+      expires_at_utc: new Date(Date.now() + 15 * 60 * 1000).toISOString() // Máximo de 15 min permitido pelo banco
+    }
+  );
+  if (!resToken.ok) throw new Error(`Erro ao criar token: ${resToken.status}`);
+  console.log('ok\n');
+}
+
 async function signIn(url, anonKey, email, password) {
   const res = await post(
     `${url}/auth/v1/token?grant_type=password`,
@@ -299,6 +338,9 @@ async function main() {
     results.push(user);
     console.log('');
   }
+
+  // Novo: Dados de negócio
+  await ensureTestData(url, serviceKey);
 
   console.log('╔══════════════════════════════════════════════════════════╗');
   console.log('║                  CREDENCIAIS DE TESTE                   ║');

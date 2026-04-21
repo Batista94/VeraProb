@@ -2,8 +2,10 @@
     "name":  "lead-reviewer",
     "description":  "Final arbiter for all PRs and structural changes.",
     "resources":  [
-                      "file://.kiro/steering/core-protocols.md",
-                      "file://.claude/agents/lead-reviewer.md"
+                      "file://.kiro/steering/forensic-standards.md",
+                      "file://.kiro/powers/pr-scanner.md",
+                      "file://.claude/agents/lead-reviewer.md",
+                      "file://CLAUDE.md"
                   ],
     "model":  "claude-3-5-sonnet-latest",
     "allowedTools":  [

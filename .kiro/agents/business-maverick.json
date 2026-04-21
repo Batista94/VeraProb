@@ -2,8 +2,10 @@
     "name":  "business-maverick",
     "description":  "Strategic guardian of VeraProb\u0027s economic engine.",
     "resources":  [
-                      "file://.kiro/steering/core-protocols.md",
-                      "file://.claude/agents/business-maverick.md"
+                      "file://.kiro/steering/forensic-standards.md",
+                      "file://.kiro/powers/firecrawl.md",
+                      "file://.claude/agents/business-maverick.md",
+                      "file://CLAUDE.md"
                   ],
     "model":  "claude-3-5-sonnet-latest",
     "allowedTools":  [

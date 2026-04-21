@@ -2,8 +2,10 @@
     "name":  "architect",
     "description":  "Guardian of structural integrity and domain purity.",
     "resources":  [
-                      "file://.kiro/steering/core-protocols.md",
-                      "file://.claude/agents/architect.md"
+                      "file://.kiro/steering/forensic-standards.md",
+                      "file://.kiro/powers/ingestion.md",
+                      "file://.claude/agents/architect.md",
+                      "file://CLAUDE.md"
                   ],
     "model":  "claude-3-5-sonnet-latest",
     "allowedTools":  [

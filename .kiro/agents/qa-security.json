@@ -2,8 +2,12 @@
     "name":  "qa-security",
     "description":  "Protector of tenant data and ledger integrity.",
     "resources":  [
-                      "file://.kiro/steering/core-protocols.md",
-                      "file://.claude/agents/qa-security.md"
+                      "file://.kiro/steering/forensic-standards.md",
+                      "file://.kiro/powers/security-audit.md",
+                      "file://.kiro/powers/attorney.md",
+                      "file://.kiro/powers/pr-scanner.md",
+                      "file://.claude/agents/qa-security.md",
+                      "file://CLAUDE.md"
                   ],
     "model":  "claude-3-5-sonnet-latest",
     "allowedTools":  [
