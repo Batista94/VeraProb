@@ -25,6 +25,7 @@ app.*.map.json
 .env*
 .env
 .dev.env
+docs/governance/dev_environment.md
 *.secret
 *.jks
 *.keystore

@@ -94,12 +94,12 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 
 ### [ ] Phase 10.4 — OCC UX Polish (Differential Refinement)
 
-- **Status:** EM ANDAMENTO — WS-1, WS-2, WS-3, WS-5, WS-6 Concluídos ✅
+- **Status:** EM ANDAMENTO — WS-1, WS-2, WS-3, WS-4, WS-5, WS-6 Concluídos ✅
 - **Deliverables:**
   - [x] **WS-1: Forensic Authority Language & Sealed Verdict Lock** (Verbs forensicized, 🔒 locked state implemented, Pillar C audit trail active).
   - [x] **WS-2: Predictive SLA Breach Alerts** (Dynamic Risk Buffer + Risk Thermometer visual).
   - [x] **WS-3: Ingestion Health & Confidence Score** (Signal Integrity monitor + Double confirmation logic).
-  - [ ] **WS-4: Telegram Evidence Bot** (Deno Edge Function + Hot-linking to Verdict Cards).
+  - [x] **WS-4: Telegram Evidence Bot** (Deno Edge Function + Hot-linking to Verdict Cards) ✅.
   - [x] **WS-5: Telemetry Map-Sync** (Reactive repositioning on click) ✅.
   - [x] **WS-6: Recurrence & Contractual Context** (Infringement history on cards).
   - [ ] **WS-7: Operational Macros** (1-Click standard justifications).
