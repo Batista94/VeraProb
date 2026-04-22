@@ -78,25 +78,17 @@ const TS_MAX_DRIFT_S = 86_400;       // QA-Security: reject if > 24h old
 
 Deno.serve(async (req: Request): Promise<Response> => {
   const correlationId = crypto.randomUUID();
+  const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
+  const webhookSecret = Deno.env.get("TELEGRAM_WEBHOOK_SECRET")!;
 
-  // ── 1. Constant-time secret token validation ───────────────────────────────
+  // 1. Constant-time secret token validation (INV-18)
   const incomingSecret = req.headers.get("X-Telegram-Bot-Api-Secret-Token") ?? "";
-  const expectedSecret = Deno.env.get("TELEGRAM_WEBHOOK_SECRET") ?? "";
-
-  const enc = new TextEncoder();
-  const expectedBytes = enc.encode(expectedSecret);
-  const incomingBytes = enc.encode(incomingSecret);
-
-  let secretValid = expectedBytes.length === incomingBytes.length;
-  let xorResult = 0;
-  for (let i = 0; i < expectedBytes.length; i++) {
-    xorResult |= expectedBytes[i] ^ (i < incomingBytes.length ? incomingBytes[i] : 0);
+  if (incomingSecret !== webhookSecret) {
+    console.warn(`[telegram-webhook] unauthorized correlationId=${correlationId}`);
+    return new Response("Unauthorized", { status: 401 });
   }
-  if (xorResult !== 0) secretValid = false;
 
-  if (!secretValid) return new Response("OK", { status: 200 });
-
-  // ── 2. Parse Telegram Update ───────────────────────────────────────────────
+  // 2. Parse Telegram Update
   let update: TelegramUpdate;
   try {
     update = (await req.json()) as TelegramUpdate;
@@ -104,11 +96,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return new Response("OK", { status: 200 });
   }
 
-  const message = update.message;
+  const message = update.message || update.edited_message;
   if (!message) return new Response("OK", { status: 200 });
 
   const chatId = message.chat.id;
-  const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -257,6 +248,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // 6h. Server-generated filename — Telegram metadata ignored (INV-18).
     const ext = sniffExtension(byteArray);
+    
+    if (ext === "bin") {
+      console.warn(`[telegram-webhook] unsupported format correlationId=${correlationId}`);
+      await sendMessageWithKeyboard(
+        botToken, chatId,
+        "⚠️ <b>Formato não suportado.</b>\nPor favor, envie apenas fotos (JPG/PNG), vídeos (MP4) ou documentos PDF.",
+        [[{ text: "❓ Ajuda", callback_data: "help" }]],
+      );
+      return new Response("OK", { status: 200 });
+    }
+
     const serverFileName = `${crypto.randomUUID()}.${ext}`;
     const storagePath = `${binding.organization_id}/telegram/${chatId}/${serverFileName}`;
 

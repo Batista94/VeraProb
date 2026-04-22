@@ -139,20 +139,26 @@ LANGUAGE sql
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  -- Convert Unix timestamp to TIMESTAMPTZ
-  -- Retroactive window: -10 minutes before window_start_utc
-  -- Forward window: +4 hours after message timestamp
+  -- Heurística Temporal:
+  -- Busca execuções onde a foto foi tirada dentro da janela de 4h da execução,
+  -- ou na janela de tolerância de 10min antes do início oficial.
   SELECT es.set_id
   FROM public.execution_states es
   INNER JOIN public.contractual_service_executions cse
     ON es.set_id = cse.set_id
   INNER JOIN public.plan_declarations pd
     ON cse.plan_declaration_id = pd.id
+  INNER JOIN public.drivers d
+    ON d.id = p_driver_id
   WHERE pd.organization_id = p_org_id
     AND es.status IN ('pending', 'executed', 'evidenceGap')
-    -- Window: [message_ts - 10min, message_ts + 4h]
-    AND es.window_start_utc >= to_timestamp(p_message_ts - 600) AT TIME ZONE 'UTC'
-    AND es.window_start_utc <= to_timestamp(p_message_ts + 4 * 3600) AT TIME ZONE 'UTC'
+    -- Filtro de Veículo: Garante que o motorista só vincule às suas próprias execuções
+    AND (es.planned_vehicle_id IS NULL OR es.planned_vehicle_id = d.license_number OR es.planned_vehicle_id = d.id::text)
+    -- Janela: [T - 4h, T + 10min] -> T = window_start_utc
+    -- msg_ts >= T - 10min  => T <= msg_ts + 10min
+    -- msg_ts <= T + 4h     => T >= msg_ts - 4h
+    AND es.window_start_utc >= to_timestamp(p_message_ts - 4 * 3600) AT TIME ZONE 'UTC'
+    AND es.window_start_utc <= to_timestamp(p_message_ts + 600) AT TIME ZONE 'UTC'
   ORDER BY es.window_start_utc DESC
   LIMIT 1;
 $$;

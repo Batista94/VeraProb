@@ -242,10 +242,14 @@ async function ensureTestData(url, serviceKey) {
       driver_id: driverId,
       created_by_user_id: '00000000-0000-0000-0000-ffffffffffff',
       code: 'VERAPR22',
-      expires_at_utc: new Date(Date.now() + 15 * 60 * 1000).toISOString() // Máximo de 15 min permitido pelo banco
+      // Usamos 14 min para evitar violação da constraint de 15 min por drift de milissegundos entre Node e DB
+      expires_at_utc: new Date(Date.now() + 14 * 60 * 1000).toISOString() 
     }
   );
-  if (!resToken.ok) throw new Error(`Erro ao criar token: ${resToken.status}`);
+  if (!resToken.ok) {
+    console.log('FALHOU');
+    throw new Error(`Erro ao criar token: ${resToken.status} - ${JSON.stringify(resToken.data)}`);
+  }
   console.log('ok\n');
 }
 
