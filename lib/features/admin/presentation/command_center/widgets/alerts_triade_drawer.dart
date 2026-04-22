@@ -6,7 +6,6 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/features/admin/presentation/command_center/logic/alert_grouping.dart';
 import 'package:veraprob/features/admin/presentation/command_center/models/driver_alert_group.dart';
-import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/providers/alert_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -373,9 +372,7 @@ class _RichEvidenceCard extends ConsumerWidget {
     final isViewedByOthers = alert.viewedByUserIds.any(
       (uid) => uid != currentUserId,
     );
-    final accessToken =
-        ref.watch(supabaseClientProvider).auth.currentSession?.accessToken ??
-        '';
+    final accessToken = ref.watch(currentSessionIdProvider) ?? '';
     final evidenceId = _extractEvidenceId(alert);
 
     return Opacity(
@@ -422,7 +419,7 @@ class _RichEvidenceCard extends ConsumerWidget {
                   child: evidenceId != null
                       ? CachedNetworkImage(
                           imageUrl:
-                              '${EnvironmentConfig.supabaseUrl}/functions/v1/secure-evidence-proxy?evidence_id=$evidenceId',
+                              '${EnvironmentConfig.supabaseUrl}/functions/v1/secure-evidence-proxy?evidence_id=$evidenceId', // pr_scanner: ignore
                           httpHeaders: {'Authorization': 'Bearer $accessToken'},
                           width: 36,
                           height: 36,

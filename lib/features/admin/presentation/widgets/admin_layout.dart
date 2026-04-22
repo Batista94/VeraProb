@@ -122,9 +122,7 @@ class AdminLayout extends ConsumerWidget {
           Container(
             decoration: const BoxDecoration(
               color: VeraProbColors.background,
-              border: Border(
-                right: BorderSide(color: VeraProbColors.border),
-              ),
+              border: Border(right: BorderSide(color: VeraProbColors.border)),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -141,11 +139,8 @@ class AdminLayout extends ConsumerWidget {
                         selectedIndex: selectedIndex,
                         onDestinationSelected: (index) {
                           if (index == selectedIndex) return;
-                          ref.read(adminIndexProvider.notifier).state =
-                              index;
-                          ref
-                                  .read(selectedContractIdProvider.notifier)
-                                  .state =
+                          ref.read(adminIndexProvider.notifier).state = index;
+                          ref.read(selectedContractIdProvider.notifier).state =
                               null;
                         },
                         useIndicator: true,
@@ -168,11 +163,8 @@ class AdminLayout extends ConsumerWidget {
                     children: [
                       OnboardingProgressBanner(
                         onNavigate: (destIdx) {
-                          ref.read(adminIndexProvider.notifier).state =
-                              destIdx;
-                          ref
-                                  .read(selectedContractIdProvider.notifier)
-                                  .state =
+                          ref.read(adminIndexProvider.notifier).state = destIdx;
+                          ref.read(selectedContractIdProvider.notifier).state =
                               null;
                         },
                       ),
@@ -180,9 +172,7 @@ class AdminLayout extends ConsumerWidget {
                         _InternalBackButton(
                           onBack: () =>
                               ref
-                                      .read(
-                                        selectedContractIdProvider.notifier,
-                                      )
+                                      .read(selectedContractIdProvider.notifier)
                                       .state =
                                   null,
                         ),
