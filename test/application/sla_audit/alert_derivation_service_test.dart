@@ -126,5 +126,47 @@ void main() {
       expect(alert.triggeringEventId, 'evt-1');
       expect(alert.traceId, 'trace-1');
     });
+
+    test('context includes driver_id and driver_name when provided', () {
+      final alert = AlertDerivationService.deriveFrom(
+        state: makeState(ExecutionStatus.noShow),
+        decisions: [],
+        evaluatedAtUtc: now,
+        driverId: 'driver-abc',
+        driverName: 'João Silva',
+      );
+      expect(alert!.context['driver_id'], 'driver-abc');
+      expect(alert.context['driver_name'], 'João Silva');
+    });
+
+    test('context omits driver fields when null', () {
+      final alert = AlertDerivationService.deriveFrom(
+        state: makeState(ExecutionStatus.noShow),
+        decisions: [],
+        evaluatedAtUtc: now,
+      );
+      expect(alert!.context.containsKey('driver_id'), isFalse);
+      expect(alert.context.containsKey('driver_name'), isFalse);
+    });
+
+    test('driver enrichment works for all alert types', () {
+      final gap = AlertDerivationService.deriveFrom(
+        state: makeState(ExecutionStatus.evidenceGap),
+        decisions: [],
+        evaluatedAtUtc: now,
+        driverId: 'd-1',
+      );
+      expect(gap!.context['driver_id'], 'd-1');
+
+      final penalty = AlertDerivationService.deriveFrom(
+        state: makeState(ExecutionStatus.executed),
+        decisions: [makeDecision(penaltyCents: 5000)],
+        evaluatedAtUtc: now,
+        driverId: 'd-2',
+        driverName: 'Maria',
+      );
+      expect(penalty!.context['driver_id'], 'd-2');
+      expect(penalty.context['driver_name'], 'Maria');
+    });
   });
 }

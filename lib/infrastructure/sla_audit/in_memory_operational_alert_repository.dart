@@ -77,6 +77,31 @@ class InMemoryOperationalAlertRepository implements OperationalAlertRepository {
     }
   }
 
+  @override
+  Future<void> markViewed(String alertId, String userId) async {
+    final index = _alerts.indexWhere((a) => a.id == alertId);
+    if (index < 0) return;
+    final alert = _alerts[index];
+    if (alert.viewedByUserIds.contains(userId)) return;
+    _alerts[index] = OperationalAlert(
+      id: alert.id,
+      organizationId: alert.organizationId,
+      entityId: alert.entityId,
+      contractId: alert.contractId,
+      alertType: alert.alertType,
+      severity: alert.severity,
+      triggeredAtUtc: alert.triggeredAtUtc,
+      triggeringEventId: alert.triggeringEventId,
+      traceId: alert.traceId,
+      context: alert.context,
+      status: alert.status,
+      acknowledgedAtUtc: alert.acknowledgedAtUtc,
+      acknowledgedByUserId: alert.acknowledgedByUserId,
+      resolvedAtUtc: alert.resolvedAtUtc,
+      viewedByUserIds: [...alert.viewedByUserIds, userId],
+    );
+  }
+
   int _severityRank(String severity) {
     switch (severity) {
       case 'CRITICAL':

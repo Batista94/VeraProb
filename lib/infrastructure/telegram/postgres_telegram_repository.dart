@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/sla_audit/telegram/i_telegram_repository.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_binding_token.dart';
+import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_link.dart';
+import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_upload.dart';
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Supabase/Postgres implementation of [ITelegramRepository].
@@ -85,6 +87,71 @@ class PostgresTelegramRepository extends BasePostgresRepository
     }
   }
 
+  @override
+  Future<List<TelegramEvidenceUpload>> findOrphanEvidences({
+    required String organizationId,
+  }) async {
+    try {
+      // Fetch uploads with requires_manual_link=true, embed links to filter client-side.
+      // PostgREST LEFT JOIN: rows with no links return empty array for the relation.
+      final rows = await client
+          .from('telegram_evidence_uploads')
+          .select(
+            'id, organization_id, driver_id, chat_id, telegram_message_id, '
+            'file_name, forensic_hash, storage_path, source, linked_set_id, '
+            'uploaded_at_utc, telegram_message_date, requires_manual_link, '
+            'telegram_evidence_links(id)',
+          )
+          .eq('organization_id', organizationId)
+          .eq('requires_manual_link', true)
+          .order('telegram_message_date', ascending: false);
+
+      // Filter: only include uploads with no reconciliation links
+      return (rows as List<dynamic>)
+          .where((row) {
+            final links = row['telegram_evidence_links'] as List<dynamic>?;
+            return links == null || links.isEmpty;
+          })
+          .map((row) => _evidenceFromRow(row as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'telegram_evidence_upload',
+      );
+    }
+  }
+
+  @override
+  Future<TelegramEvidenceLink> linkEvidenceToExecution({
+    required String evidenceUploadId,
+    required String executionSetId,
+    required String organizationId,
+    required String userId,
+    String source = 'reconciliation',
+  }) async {
+    try {
+      final row = await client
+          .from('telegram_evidence_links')
+          .insert({
+            'organization_id': organizationId,
+            'evidence_upload_id': evidenceUploadId,
+            'execution_set_id': executionSetId,
+            'linked_by_user_id': userId,
+            'source': source,
+          })
+          .select()
+          .single();
+
+      return _linkFromRow(row);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'telegram_evidence_link',
+      );
+    }
+  }
+
   TelegramBindingToken _tokenFromRow(Map<String, dynamic> row) {
     return TelegramBindingToken(
       id: row['id'] as String,
@@ -97,6 +164,38 @@ class PostgresTelegramRepository extends BasePostgresRepository
           ? DateTime.parse(row['used_at_utc'] as String).toUtc()
           : null,
       createdAtUtc: DateTime.parse(row['created_at_utc'] as String).toUtc(),
+    );
+  }
+
+  TelegramEvidenceUpload _evidenceFromRow(Map<String, dynamic> row) {
+    return TelegramEvidenceUpload(
+      id: row['id'] as String,
+      organizationId: row['organization_id'] as String,
+      driverId: row['driver_id'] as String,
+      chatId: row['chat_id'] as int,
+      telegramMessageId: row['telegram_message_id'] as int,
+      fileName: row['file_name'] as String,
+      forensicHash: row['forensic_hash'] as String,
+      storagePath: row['storage_path'] as String,
+      source: row['source'] as String,
+      linkedSetId: row['linked_set_id'] as String?,
+      uploadedAtUtc: DateTime.parse(row['uploaded_at_utc'] as String).toUtc(),
+      telegramMessageDate: DateTime.parse(
+        row['telegram_message_date'] as String,
+      ).toUtc(),
+      requiresManualLink: row['requires_manual_link'] as bool,
+    );
+  }
+
+  TelegramEvidenceLink _linkFromRow(Map<String, dynamic> row) {
+    return TelegramEvidenceLink(
+      id: row['id'] as String,
+      organizationId: row['organization_id'] as String,
+      evidenceUploadId: row['evidence_upload_id'] as String,
+      executionSetId: row['execution_set_id'] as String,
+      linkedAtUtc: DateTime.parse(row['linked_at_utc'] as String).toUtc(),
+      linkedByUserId: row['linked_by_user_id'] as String?,
+      source: row['source'] as String,
     );
   }
 }

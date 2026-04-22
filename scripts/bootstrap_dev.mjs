@@ -233,23 +233,49 @@ async function ensureTestData(url, serviceKey) {
   console.log('ok');
 
   // 2. Criar Token de Vinculação
-  process.stdout.write('      [2/2] Gerar token VERAPR22... ');
+  process.stdout.write('      [2/4] Gerar token VERAPR22... ');
   const resToken = await post(
     `${url}/rest/v1/telegram_binding_tokens`,
-    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=representation' },
     {
       organization_id: orgId,
       driver_id: driverId,
       created_by_user_id: '00000000-0000-0000-0000-ffffffffffff',
       code: 'VERAPR22',
-      // Usamos 14 min para evitar violação da constraint de 15 min por drift de milissegundos entre Node e DB
       expires_at_utc: new Date(Date.now() + 14 * 60 * 1000).toISOString() 
     }
   );
+
   if (!resToken.ok) {
     console.log('FALHOU');
     throw new Error(`Erro ao criar token: ${resToken.status} - ${JSON.stringify(resToken.data)}`);
   }
+  
+  // Se o token já existia (ignore-duplicates), pegamos o ID dele via GET
+  let tokenId = resToken.data?.[0]?.id;
+  if (!tokenId) {
+    const resGetToken = await fetch(`${url}/rest/v1/telegram_binding_tokens?code=eq.VERAPR22&select=id`, {
+      headers: authHeaders(serviceKey)
+    });
+    const tokens = await resGetToken.json();
+    tokenId = tokens[0]?.id;
+  }
+  console.log('ok');
+
+  // 3. Pré-vincular Chat Telegram (Dev-Mode)
+  const TEST_CHAT_ID = 908453789;
+  process.stdout.write(`      [3/4] Pré-vincular Chat ID ${TEST_CHAT_ID}... `);
+  const resBind = await post(
+    `${url}/rest/v1/telegram_chat_bindings`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      organization_id: orgId,
+      driver_id: driverId,
+      chat_id: TEST_CHAT_ID,
+      binding_token_id: tokenId // Campo obrigatório corrigido
+    }
+  );
+  if (!resBind.ok) throw new Error(`Erro ao pré-vincular: ${resBind.status} - ${JSON.stringify(resBind.data)}`);
   console.log('ok\n');
 }
 

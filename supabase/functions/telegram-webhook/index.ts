@@ -13,6 +13,9 @@
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { checkConsent } from "../shared/consent_middleware.ts";
+import { extractExifMetadata } from "../shared/exif_extractor.ts";
+import { validateImageQuality, type QualityWarning } from "../shared/image_quality_validator.ts";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -46,9 +49,18 @@ interface TelegramMessage {
   video?: TelegramVideo;
 }
 
+interface TelegramCallbackQuery {
+  id: string;
+  from: { id: number };
+  message?: TelegramMessage;
+  data?: string;
+}
+
 interface TelegramUpdate {
   update_id: number;
   message?: TelegramMessage;
+  edited_message?: TelegramMessage;
+  callback_query?: TelegramCallbackQuery;
 }
 
 interface InlineKeyboardButton {
@@ -97,24 +109,65 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   const message = update.message || update.edited_message;
-  if (!message) return new Response("OK", { status: 200 });
-
-  const chatId = message.chat.id;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // ── 2b. Callback Query handler (consent acceptance) ───────────────────────
+  if (update.callback_query) {
+    const cb = update.callback_query;
+    const cbChatId = cb.message?.chat.id;
+    if (cbChatId && cb.data === "accept_consent_v1") {
+      await supabase.from("telegram_user_consents").upsert(
+        { chat_id: cbChatId, consent_version: "v1" },
+        { onConflict: "chat_id,consent_version" },
+      );
+      
+      const binding = await getActiveBinding(supabase, cbChatId);
+      await answerCallbackQuery(botToken, cb.id, "✅ Termos aceitos!");
+      
+      if (binding) {
+        await sendMessageWithKeyboard(botToken, cbChatId,
+          "✅ <b>Termos aceitos!</b>\n\nSua conta já está vinculada. Você já pode enviar fotos ou documentos como evidência forense.",
+          [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+      } else {
+        await sendMessageWithKeyboard(botToken, cbChatId,
+          "✅ <b>Termos aceitos!</b>\n\nAgora só falta o <b>passo 2</b>: Envie o código de 8 caracteres gerado no aplicativo para vincular sua conta.",
+          [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+      }
+    }
+    return new Response("OK", { status: 200 });
+  }
+
+  if (!message) return new Response("OK", { status: 200 });
+
+  const chatId = message.chat.id;
+
   // ── 3. /start command ─────────────────────────────────────────────────────
   if (message.text?.startsWith("/start")) {
-    await sendMessageWithKeyboard(
-      botToken, chatId,
-      "Bem-vindo ao VeraProb Evidence Bot!\n\n" +
-      "Envie o código de 8 caracteres gerado pelo operador no aplicativo VeraProb para vincular sua conta.\n\n" +
-      "Após a vinculação, envie fotos ou documentos como evidência forense.",
-      [[{ text: "❓ Ajuda", callback_data: "help" }]],
-    );
+    const alreadyConsented = await checkConsent(supabase, chatId);
+    if (alreadyConsented) {
+      await sendMessageWithKeyboard(
+        botToken, chatId,
+        "<b>Bem-vindo ao VeraProb Evidence Bot!</b>\n\n" +
+        "✅ Seus termos de uso (LGPD) já estão aceitos.\n\n" +
+        "Agora, envie o <b>código de 8 caracteres</b> gerado no aplicativo VeraProb para vincular sua conta.\n\n" +
+        "Após a vinculação, você poderá enviar fotos ou documentos como evidência forense.",
+        [[{ text: "❓ Ajuda", callback_data: "help" }]],
+      );
+    } else {
+      await sendMessageWithKeyboard(
+        botToken, chatId,
+        "<b>Bem-vindo ao VeraProb Evidence Bot!</b>\n\n" +
+        "Para operar, você precisa de dois passos:\n" +
+        "1️⃣ <b>Aceitar os Termos (LGPD)</b>\n" +
+        "2️⃣ <b>Vincular sua conta</b>\n\n" +
+        "Clique no botão abaixo para ler os termos e continuar:",
+        [[{ text: "✅ Ver e Aceitar os Termos (LGPD)", callback_data: "accept_consent_v1" }]],
+      );
+    }
     return new Response("OK", { status: 200 });
   }
 
@@ -122,11 +175,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (message.text?.startsWith("/help")) {
     await sendMessageWithKeyboard(
       botToken, chatId,
-      "📋 <b>VeraProb Evidence Bot</b>\n\n" +
-      "• Envie o código de 8 caracteres para vincular sua conta.\n" +
-      "• Após vinculação, envie fotos, documentos ou vídeos como evidência.\n" +
+      "📋 <b>VeraProb Evidence Bot - Guia de Operação</b>\n\n" +
+      "Para operar, você precisa cumprir dois requisitos:\n" +
+      "1️⃣ <b>Aceite da LGPD:</b> Envie /start para ver e aceitar os termos.\n" +
+      "2️⃣ <b>Vinculação:</b> Envie o código de 8 caracteres gerado no App.\n\n" +
+      "• Após cumprir ambos, anexe fotos ou documentos para registro.\n" +
       "• Cada envio gera um recibo forense com hash SHA-256.\n" +
-      "• Em caso de dúvidas, contate seu supervisor.",
+      "• Dúvidas? Contate seu supervisor operacional.",
     );
     return new Response("OK", { status: 200 });
   }
@@ -161,11 +216,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
             await sendMessageWithKeyboard(botToken, chatId, "Erro ao processar o código. Tente novamente.");
           }
         } else if (data && (data as unknown[]).length > 0) {
-          await sendMessageWithKeyboard(
-            botToken, chatId,
-            "✅ Vinculação realizada com sucesso!\nAgora você pode enviar fotos ou documentos como evidência forense.",
-            [[{ text: "❓ Ajuda", callback_data: "help" }]],
-          );
+          const hasConsent = await checkConsent(supabase, chatId);
+          if (hasConsent) {
+            await sendMessageWithKeyboard(
+              botToken, chatId,
+              "✅ Vinculação realizada com sucesso!\nAgora você pode enviar fotos ou documentos como evidência forense.",
+              [[{ text: "❓ Ajuda", callback_data: "help" }]],
+            );
+          } else {
+            await sendMessageWithKeyboard(
+              botToken, chatId,
+              "✅ Vinculação realizada com sucesso!\n\n⚠️ <b>Atenção:</b> Para começar a enviar evidências, você ainda precisa aceitar os Termos de Uso.\n\nEnvie /start para visualizar e aceitar os termos.",
+              [[{ text: "📋 Ver Termos", callback_data: "accept_consent_v1" }]],
+            );
+          }
         }
       } catch (e) {
         console.error(`[telegram-webhook] bind error correlationId=${correlationId}:`, e);
@@ -188,6 +252,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const fileInfo = extractFileInfo(message);
   if (!fileInfo) return new Response("OK", { status: 200 });
 
+  // 6.pre: LGPD Consent Gate — block ALL processing without consent (INV-3)
+  const hasConsent = await checkConsent(supabase, chatId);
+  if (!hasConsent) {
+    await sendMessageWithKeyboard(botToken, chatId,
+      "⚠️ Para enviar evidências, é necessário aceitar os Termos de Uso.\nEnvie /start para visualizar e aceitar os termos.",
+      [[{ text: "📋 Aceitar Termos", callback_data: "accept_consent_v1" }]]);
+    return new Response("OK", { status: 200 });
+  }
+
   // 6a. WS-4 QA-Security Gate: validate message.date BEFORE any processing (INV-6)
   const tsValidation = validateMessageDate(message.date);
   if (!tsValidation.valid) {
@@ -199,6 +272,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     );
     return new Response("OK", { status: 200 });
   }
+
+  // 6a.post: Clock discrepancy audit log (INV-7) — forensic gold for fraud detection.
+  const clockDriftS = Math.round(Date.now() / 1000 - message.date);
+  console.info(`[telegram-webhook] clock_drift correlationId=${correlationId} chat_id=${chatId} drift_seconds=${clockDriftS}`);
 
   // 6b. Resolve active binding — org_id from DB, never from Telegram (INV-18).
   const binding = await getActiveBinding(supabase, chatId);
@@ -248,6 +325,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // 6h. Server-generated filename — Telegram metadata ignored (INV-18).
     const ext = sniffExtension(byteArray);
+
+    // 6h.post: Image quality validation (INV-18)
+    let qualityWarning: QualityWarning | null = null;
+    if (message.photo?.length) {
+      const largest = message.photo[message.photo.length - 1];
+      qualityWarning = validateImageQuality(largest.width, largest.height, largest.file_size);
+    }
     
     if (ext === "bin") {
       console.warn(`[telegram-webhook] unsupported format correlationId=${correlationId}`);
@@ -275,18 +359,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // 6j. WS-4 Dead Zone Logic: use message.date (device clock) as chronological anchor (INV-6).
     //     RPC encapsulates Latest-Wins + retroactive -10min window.
-    const linkedSetId = await findExecutionForTelegram(
+    const executionInfo = await findExecutionForTelegram(
       supabase,
       binding.organization_id,
       binding.driver_id,
       message.date,
       correlationId,
     );
+    const linkedSetId = executionInfo?.setId ?? null;
     const requiresManualLink = linkedSetId === null;
 
     // 6k. Insert evidence record — idempotent via UNIQUE (chat_id, telegram_message_id).
     //     telegram_message_date = device timestamp (INV-6 audit anchor).
-    const { error: insertError } = await supabase
+    const { data: insertedRow, error: insertError } = await supabase
       .from("telegram_evidence_uploads")
       .insert({
         organization_id: binding.organization_id,
@@ -301,7 +386,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
         telegram_message_date: new Date(message.date * 1000).toISOString(), // INV-6: device clock
         requires_manual_link: requiresManualLink,
         // uploaded_at_utc: omitted — DB DEFAULT NOW() is the ingest anchor for discrepancy audit
-      });
+      })
+      .select("id")
+      .single();
 
     if (insertError) {
       if (insertError.code === "23505") {
@@ -314,27 +401,42 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return new Response("OK", { status: 200 });
     }
 
+    const evidenceId = insertedRow?.id as string;
+
+    // 6k.post: Extract EXIF metadata (best-effort, non-blocking) (INV-9, INV-18)
+    const exifData = extractExifMetadata(byteArray);
+    if (exifData) {
+      await supabase.from("telegram_evidence_metadata").insert({
+        organization_id: binding.organization_id,
+        evidence_upload_id: evidenceId,
+        exif_data: exifData,
+      }).then(() => {}, (e: unknown) => {
+        console.warn(`[telegram-webhook] exif metadata insert failed correlationId=${correlationId}:`, e);
+      });
+    }
+
     // 6l. WS-4 Proactive Orphan Flag: fire TELEGRAM_ORPHAN alert when no execution found.
     if (requiresManualLink) {
-      await fireOrphanAlert(supabase, binding.organization_id, chatId, hashHex, correlationId);
+      await fireOrphanAlert(supabase, binding.organization_id, chatId, hashHex, correlationId, evidenceId, binding.driver_id);
     }
 
     // 6m. WS-4 Feedback Diferencial:
     //     Linked  → receipt + execution_id (confirms forensic chain)
     //     Orphan  → forensic receipt only (strategic silence — no anxiety)
-    if (linkedSetId) {
+    const qualitySuffix = qualityWarning ? `\n⚠️ ${qualityWarning.message}` : "";
+    if (executionInfo) {
       await sendMessageWithKeyboard(
         botToken, chatId,
         `✅ <b>Evidência registrada</b>\n` +
         `🔐 Hash: <code>${hashHex.substring(0, 16)}…</code>\n` +
-        `📋 Execução: <code>${linkedSetId}</code>`,
+        `📍 <b>Rota:</b> ${executionInfo.displayName}${qualitySuffix}`,
         [[{ text: "❓ Ajuda", callback_data: "help" }]],
       );
     } else {
       await sendMessageWithKeyboard(
         botToken, chatId,
         `📎 <b>Recibo Forense</b>\n` +
-        `🔐 Hash: <code>${hashHex.substring(0, 16)}…</code>`,
+        `🔐 Hash: <code>${hashHex.substring(0, 16)}…</code>${qualitySuffix}`,
         [
           [{ text: "❓ Ajuda", callback_data: "help" }],
           [{ text: "📣 Reportar ao Supervisor", callback_data: "report_orphan" }],
@@ -367,6 +469,11 @@ function validateMessageDate(messageUnixTs: number): { valid: boolean; reason?: 
   return { valid: true };
 }
 
+interface ExecutionInfo {
+  setId: string;
+  displayName: string;
+}
+
 /**
  * WS-4 Dead Zone Logic (INV-6):
  * Delegates to RPC find_execution_for_telegram which implements:
@@ -380,7 +487,7 @@ async function findExecutionForTelegram(
   driverId: string,
   messageUnixTs: number,
   correlationId: string,
-): Promise<string | null> {
+): Promise<ExecutionInfo | null> {
   try {
     const { data, error } = await supabase.rpc("find_execution_for_telegram", {
       p_org_id: orgId,
@@ -391,17 +498,23 @@ async function findExecutionForTelegram(
       console.warn(`[telegram-webhook] find_execution_for_telegram error correlationId=${correlationId}:`, error);
       return null;
     }
-    return (data as string | null) ?? null;
+    if (data) {
+      const obj = data as any;
+      return { setId: obj.set_id, displayName: obj.display_name };
+    }
+    return null;
   } catch {
     return null;
   }
 }
+
 
 /**
  * WS-4 Proactive Orphan Flag:
  * Inserts a TELEGRAM_ORPHAN alert for supervisor triage.
  * Uses (chat_id as entity_id, correlationId as triggering_event_id) for idempotency.
  * Failure is non-blocking — evidence is already committed.
+ * Context includes driver_id + driver_name for Command Center smart grouping.
  */
 async function fireOrphanAlert(
   supabase: ReturnType<typeof createClient>,
@@ -409,14 +522,27 @@ async function fireOrphanAlert(
   chatId: number,
   forensicHash: string,
   correlationId: string,
+  evidenceId: string,
+  driverId: string,
 ): Promise<void> {
+  // Fetch driver name for Command Center grouping (INV-7: best-effort, non-blocking)
+  let driverName: string | null = null;
+  try {
+    const { data: driver } = await supabase
+      .from("drivers")
+      .select("full_name")
+      .eq("id", driverId)
+      .maybeSingle();
+    driverName = (driver?.full_name as string | null) ?? null;
+  } catch { /* non-blocking */ }
+
   try {
     await supabase.from("operational_alerts").insert({
       organization_id: orgId,
       entity_id: String(chatId),
       contract_id: "TELEGRAM_ORPHAN",
       alert_type: "TELEGRAM_ORPHAN",
-      severity: "WARNING",
+      severity: "CRITICAL",
       status: "ACTIVE",
       source: "telegram",
       triggering_event_id: correlationId,
@@ -424,6 +550,9 @@ async function fireOrphanAlert(
         correlation_id: correlationId,
         forensic_hash_prefix: forensicHash.substring(0, 16),
         chat_id: chatId,
+        deep_link: `veraprob://reconciliation/${evidenceId}`,
+        driver_id: driverId,
+        ...(driverName ? { driver_name: driverName } : {}),
       },
     });
   } catch (e) {
@@ -499,6 +628,20 @@ async function sendMessageWithKeyboard(
   } catch {
     // Fire-and-forget.
   }
+}
+
+/**
+ * Answers a Telegram callback query (inline button press).
+ * Fire-and-forget — failure never blocks processing.
+ */
+async function answerCallbackQuery(botToken: string, callbackQueryId: string, text: string): Promise<void> {
+  try {
+    await fetch(`${TELEGRAM_API}${botToken}/answerCallbackQuery`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
+    });
+  } catch { /* fire-and-forget */ }
 }
 
 /**

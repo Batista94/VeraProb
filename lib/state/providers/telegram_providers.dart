@@ -4,8 +4,11 @@ import 'package:veraprob/application/telegram/generate_telegram_binding_token_ha
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/telegram/i_telegram_repository.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_binding_token.dart';
+import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_link.dart';
+import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_upload.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/infrastructure/telegram/postgres_telegram_repository.dart';
+import 'auth_providers.dart';
 import 'contract_providers.dart';
 import 'shared_providers.dart';
 
@@ -63,4 +66,57 @@ final driverHasActiveTelegramBindingProvider = FutureProvider.autoDispose
             driverId: args.driverId,
             organizationId: args.organizationId,
           );
+    });
+
+// ── WS-4: Reconciliation Providers ───────────────────────────────────────────
+
+/// Orphan evidence uploads awaiting manual reconciliation (INV-1: org-scoped).
+final orphanEvidencesProvider =
+    FutureProvider.autoDispose<List<TelegramEvidenceUpload>>((ref) async {
+      final orgId = ref.watch(currentOrganizationIdProvider);
+      if (orgId == null) return [];
+      return ref
+          .watch(telegramRepositoryProvider)
+          .findOrphanEvidences(organizationId: orgId);
+    });
+
+/// Notifier for linking orphan evidence to an execution set (INV-7: append-only).
+class LinkEvidenceNotifier
+    extends StateNotifier<AsyncValue<TelegramEvidenceLink?>> {
+  final ITelegramRepository _repo;
+  final Ref _ref;
+
+  LinkEvidenceNotifier(this._repo, this._ref) : super(const AsyncData(null));
+
+  Future<void> link({
+    required String evidenceUploadId,
+    required String executionSetId,
+  }) async {
+    final orgId = _ref.read(currentOrganizationIdProvider);
+    final userId = _ref.read(currentOperatorIdProvider);
+    if (orgId == null || userId == null) return;
+
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => _repo.linkEvidenceToExecution(
+        evidenceUploadId: evidenceUploadId,
+        executionSetId: executionSetId,
+        organizationId: orgId,
+        userId: userId,
+      ),
+    );
+
+    // Invalidate orphan list after successful link
+    if (state.hasValue && state.value != null) {
+      _ref.invalidate(orphanEvidencesProvider);
+    }
+  }
+}
+
+final linkEvidenceNotifierProvider =
+    StateNotifierProvider.autoDispose<
+      LinkEvidenceNotifier,
+      AsyncValue<TelegramEvidenceLink?>
+    >((ref) {
+      return LinkEvidenceNotifier(ref.watch(telegramRepositoryProvider), ref);
     });

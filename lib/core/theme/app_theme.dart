@@ -28,6 +28,7 @@ class VeraProbColors {
   // A calmer, more premium teal.
   static const Color primary = Color(0xFF2DD4BF);
   static const Color secondary = Color(0xFF818CF8); // Desaturated Indigo
+  static const Color accent = Color(0xFF38BDF8); // Sky-400 — sidebar hover
 
   // ── Premium Text Hierarchy (Dark Mode Defaults) ──────────
   static const Color textPrimary = Color(0xFFF8FAFC);

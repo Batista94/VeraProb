@@ -23,4 +23,8 @@ abstract class OperationalAlertRepository {
   /// Updates the status and audit fields of an existing alert.
   /// Used exclusively by AlertService for lifecycle transitions.
   Future<void> update(OperationalAlert alert);
+
+  /// Marks an alert as viewed by [userId] (collision awareness).
+  /// Idempotent: no-op if user already in viewed_by_user_ids.
+  Future<void> markViewed(String alertId, String userId);
 }

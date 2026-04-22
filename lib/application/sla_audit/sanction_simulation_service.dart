@@ -9,7 +9,7 @@ import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'sla_ledger_mapper.dart';
 
-/// Service used ONLY during development/Stress Mode to inject
+/// Service used ONLY during development to inject
 /// artificial sanctions into the review queue for testing Phase 9.
 class SanctionSimulationService {
   final SlaAuditLedgerRepository _ledger;

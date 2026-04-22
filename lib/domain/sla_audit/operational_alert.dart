@@ -21,6 +21,9 @@ class OperationalAlert extends Equatable {
   final String? acknowledgedByUserId;
   final DateTime? resolvedAtUtc;
 
+  /// User IDs that have viewed this alert (collision awareness).
+  final List<String> viewedByUserIds;
+
   const OperationalAlert({
     required this.id,
     required this.organizationId,
@@ -36,6 +39,7 @@ class OperationalAlert extends Equatable {
     this.acknowledgedAtUtc,
     this.acknowledgedByUserId,
     this.resolvedAtUtc,
+    this.viewedByUserIds = const [],
   });
 
   /// Creates an acknowledged copy of this alert.
@@ -55,6 +59,7 @@ class OperationalAlert extends Equatable {
       acknowledgedAtUtc: atUtc,
       acknowledgedByUserId: userId,
       resolvedAtUtc: resolvedAtUtc,
+      viewedByUserIds: viewedByUserIds,
     );
   }
 
@@ -75,6 +80,7 @@ class OperationalAlert extends Equatable {
       acknowledgedAtUtc: acknowledgedAtUtc,
       acknowledgedByUserId: acknowledgedByUserId,
       resolvedAtUtc: atUtc,
+      viewedByUserIds: viewedByUserIds,
     );
   }
 
@@ -93,5 +99,6 @@ class OperationalAlert extends Equatable {
     acknowledgedAtUtc,
     acknowledgedByUserId,
     resolvedAtUtc,
+    viewedByUserIds,
   ];
 }

@@ -32,6 +32,9 @@ class FakeAlertRepository implements OperationalAlertRepository {
 
   @override
   Future<void> update(OperationalAlert alert) async => _store[alert.id] = alert;
+
+  @override
+  Future<void> markViewed(String alertId, String userId) async {}
 }
 
 void main() {

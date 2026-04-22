@@ -6,7 +6,8 @@ import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
-/// Core metrics repository for the Stress Mode (Dev Only).
+/// Core performance metrics repository (Dev-Only overlay). Previously used
+/// by the Stress Mode simulation; now retained as a standalone perf HUD.
 class PerformanceMetrics {
   double fps = 60.0;
   int rebuildsFleetMap = 0;
@@ -185,7 +186,7 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                '🚀 OPERATIONAL STRESS MODE',
+                '⚡ PERFORMANCE OVERLAY (DEV)',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

@@ -249,6 +249,9 @@ class MockAlertRepo implements OperationalAlertRepository {
   Future<List<OperationalAlert>> findActive(String organizationId) async => [];
   @override
   Future<OperationalAlert?> findById(String id) async => null;
+
+  @override
+  Future<void> markViewed(String alertId, String userId) async {}
 }
 
 class MockRuleRepo implements ContractualRuleRepository {

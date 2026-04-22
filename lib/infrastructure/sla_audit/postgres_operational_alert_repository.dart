@@ -100,7 +100,25 @@ class PostgresOperationalAlertRepository
     }
   }
 
+  @override
+  Future<void> markViewed(String alertId, String userId) async {
+    try {
+      // Idempotent: array_append only if userId not already present.
+      await _client.rpc(
+        'mark_alert_viewed',
+        params: {'p_alert_id': alertId, 'p_user_id': userId},
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'operational_alert');
+    }
+  }
+
   OperationalAlert _fromRow(Map<String, dynamic> row) {
+    final viewedRaw = row['viewed_by_user_ids'];
+    final viewedByUserIds = viewedRaw is List
+        ? viewedRaw.cast<String>()
+        : <String>[];
+
     return OperationalAlert(
       id: row['id'] as String,
       organizationId: row['organization_id'] as String,
@@ -120,6 +138,7 @@ class PostgresOperationalAlertRepository
       resolvedAtUtc: row['resolved_at_utc'] != null
           ? DateTime.parse(row['resolved_at_utc'] as String)
           : null,
+      viewedByUserIds: viewedByUserIds,
     );
   }
 }

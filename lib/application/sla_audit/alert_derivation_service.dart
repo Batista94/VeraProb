@@ -14,12 +14,17 @@ class AlertDerivationService {
   ///
   /// Returns `null` if no alert is warranted (e.g., successful execution
   /// without penalties, or still pending).
+  ///
+  /// [driverId] and [driverName] are optional enrichment fields included
+  /// in the alert context for downstream grouping (Command Center).
   static OperationalAlert? deriveFrom({
     required ContractualExecutionState state,
     required List<EvaluationDecision> decisions,
     required DateTime evaluatedAtUtc,
     String? triggeringEventId,
     String? traceId,
+    String? driverId,
+    String? driverName,
   }) {
     switch (state.status) {
       case ExecutionStatus.noShow:
@@ -33,11 +38,15 @@ class AlertDerivationService {
           triggeredAtUtc: evaluatedAtUtc,
           triggeringEventId: triggeringEventId,
           traceId: traceId,
-          context: {
-            'window_start': state.windowStartUtc.toIso8601String(),
-            'window_end': state.windowEndUtc.toIso8601String(),
-            'plan_version': state.planVersion,
-          },
+          context: _buildContext(
+            base: {
+              'window_start': state.windowStartUtc.toIso8601String(),
+              'window_end': state.windowEndUtc.toIso8601String(),
+              'plan_version': state.planVersion,
+            },
+            driverId: driverId,
+            driverName: driverName,
+          ),
         );
 
       case ExecutionStatus.evidenceGap:
@@ -51,11 +60,15 @@ class AlertDerivationService {
           triggeredAtUtc: evaluatedAtUtc,
           triggeringEventId: triggeringEventId,
           traceId: traceId,
-          context: {
-            'window_start': state.windowStartUtc.toIso8601String(),
-            'window_end': state.windowEndUtc.toIso8601String(),
-            'plan_version': state.planVersion,
-          },
+          context: _buildContext(
+            base: {
+              'window_start': state.windowStartUtc.toIso8601String(),
+              'window_end': state.windowEndUtc.toIso8601String(),
+              'plan_version': state.planVersion,
+            },
+            driverId: driverId,
+            driverName: driverName,
+          ),
         );
 
       case ExecutionStatus.executed:
@@ -82,18 +95,22 @@ class AlertDerivationService {
           triggeredAtUtc: evaluatedAtUtc,
           triggeringEventId: triggeringEventId,
           traceId: traceId,
-          context: {
-            'total_penalty_cents': totalPenaltyCents,
-            'penalty_decisions': decisions
-                .where(
-                  (d) =>
-                      d.financialImpactCents != null &&
-                      d.financialImpactCents! > 0,
-                )
-                .map((d) => d.ruleType)
-                .toList(),
-            'plan_version': state.planVersion,
-          },
+          context: _buildContext(
+            base: {
+              'total_penalty_cents': totalPenaltyCents,
+              'penalty_decisions': decisions
+                  .where(
+                    (d) =>
+                        d.financialImpactCents != null &&
+                        d.financialImpactCents! > 0,
+                  )
+                  .map((d) => d.ruleType)
+                  .toList(),
+              'plan_version': state.planVersion,
+            },
+            driverId: driverId,
+            driverName: driverName,
+          ),
         );
 
       case ExecutionStatus.pending:
@@ -102,5 +119,14 @@ class AlertDerivationService {
       case ExecutionStatus.inhibited:
         return null; // Penalty suppressed by approved justification — no alert
     }
+  }
+
+  /// Merges driver enrichment into the alert context when available.
+  static Map<String, dynamic> _buildContext({
+    required Map<String, dynamic> base,
+    String? driverId,
+    String? driverName,
+  }) {
+    return {...base, 'driver_id': ?driverId, 'driver_name': ?driverName};
   }
 }
