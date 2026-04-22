@@ -154,11 +154,12 @@ AS $$
     AND es.status IN ('pending', 'executed', 'evidenceGap')
     -- Filtro de Veículo: Garante que o motorista só vincule às suas próprias execuções
     AND (es.planned_vehicle_id IS NULL OR es.planned_vehicle_id = d.license_number OR es.planned_vehicle_id = d.id::text)
-    -- Janela: [T - 4h, T + 10min] -> T = window_start_utc
-    -- msg_ts >= T - 10min  => T <= msg_ts + 10min
+    -- Janela: [T - 4h, T + 60min] -> T = window_start_utc (INV-6: UTC anchor)
+    -- Tolerância de 60min ANTES para fotos órfãs (IoT Chaos: clock drift, network delay)
+    -- msg_ts >= T - 60min  => T <= msg_ts + 60min
     -- msg_ts <= T + 4h     => T >= msg_ts - 4h
     AND es.window_start_utc >= to_timestamp(p_message_ts - 4 * 3600) AT TIME ZONE 'UTC'
-    AND es.window_start_utc <= to_timestamp(p_message_ts + 600) AT TIME ZONE 'UTC'
+    AND es.window_start_utc <= to_timestamp(p_message_ts + 3600) AT TIME ZONE 'UTC'
   ORDER BY es.window_start_utc DESC
   LIMIT 1;
 $$;

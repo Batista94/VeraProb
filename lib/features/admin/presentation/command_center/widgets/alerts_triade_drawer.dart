@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:veraprob/features/admin/presentation/command_center/widgets/evidence_dossier_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/config/environment.dart';
@@ -40,7 +41,7 @@ class _AlertsTriadeDrawerState extends ConsumerState<AlertsTriadeDrawer> {
   void _markAllViewed() {
     final alerts = ref.read(activeAlertsStreamProvider).valueOrNull;
     final userId = ref.read(currentOperatorIdProvider);
-    if (alerts == null || userId == null) return;
+    if (alerts == null || alerts.isEmpty || userId == null) return;
     final repo = ref.read(operationalAlertRepositoryProvider);
     for (final alert in alerts) {
       if (!alert.viewedByUserIds.contains(userId)) {
@@ -282,7 +283,7 @@ class _DriverGroupCardState extends State<_DriverGroupCard> {
                                 children: [
                                   Text(
                                     group.driverName ??
-                                        'Motorista Desconhecido',
+                                        'Operador Não Identificado',
                                     style: VeraProbTypography.bodyMedium
                                         .copyWith(fontWeight: FontWeight.w600),
                                     maxLines: 1,
@@ -369,133 +370,129 @@ class _RichEvidenceCard extends ConsumerWidget {
     final severityColor = _severityColor(alert.severity);
     final timeAgo = _formatTimeAgo(alert.triggeredAtUtc);
     final currentUserId = ref.watch(currentOperatorIdProvider);
+
+    // TASK 2: Collision awareness — unread = not viewed by current user
+    final isUnread =
+        currentUserId != null && !alert.viewedByUserIds.contains(currentUserId);
     final isViewedByOthers = alert.viewedByUserIds.any(
       (uid) => uid != currentUserId,
     );
-    final accessToken = ref.watch(currentSessionIdProvider) ?? '';
-    final evidenceId = _extractEvidenceId(alert);
+    final evidenceIds = _extractEvidenceIds(alert);
 
-    return Opacity(
-      opacity: isViewedByOthers ? 0.6 : 1.0,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: VeraProbColors.surface,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: VeraProbColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header: type + severity + time ──
-            Row(
-              children: [
-                _SeverityBadge(
-                  label: _alertTypeLabel(alert.alertType),
-                  color: severityColor,
-                ),
-                const Spacer(),
-                if (isViewedByOthers)
-                  const Tooltip(
-                    message: 'Sendo tratado por outro operador',
-                    child: Icon(
-                      Icons.visibility_rounded,
-                      size: 14,
-                      color: VeraProbColors.textDisabled,
-                    ),
-                  ),
-                const SizedBox(width: 4),
-                Text(timeAgo, style: VeraProbTypography.caption),
+    final card = Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header: type + severity + time ──
+          Row(
+            children: [
+              _SeverityBadge(
+                label: _alertTypeLabel(alert.alertType),
+                color: severityColor,
+              ),
+              if (evidenceIds.length > 1) ...[
+                const SizedBox(width: 6),
+                _PhotoCountBadge(count: evidenceIds.length),
               ],
-            ),
-            const SizedBox(height: 8),
-            // ── Body: hash + gap label ──
-            Row(
-              children: [
-                // Evidence thumbnail — served via secure-evidence-proxy (INV-26)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: evidenceId != null
-                      ? CachedNetworkImage(
-                          imageUrl:
-                              '${EnvironmentConfig.supabaseUrl}/functions/v1/secure-evidence-proxy?evidence_id=$evidenceId', // pr_scanner: ignore
-                          httpHeaders: {'Authorization': 'Bearer $accessToken'},
-                          width: 36,
-                          height: 36,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => _thumbnailFallback(),
-                          errorWidget: (context, url, error) =>
-                              _thumbnailFallback(),
-                        )
-                      : _thumbnailFallback(),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (alert.context['forensic_hash_prefix'] != null)
-                        Text(
-                          '🔐 ${alert.context['forensic_hash_prefix']}…',
-                          style: VeraProbTypography.caption.copyWith(
-                            fontFamily: 'monospace',
-                            fontSize: 10,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      Text(
-                        _gapLabel(alert),
-                        style: VeraProbTypography.bodySmall.copyWith(
-                          color: severityColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+              const Spacer(),
+              // TASK 2: 👀 badge when viewed by another operator
+              if (isViewedByOthers)
+                const Tooltip(
+                  message: 'Sendo tratado por outro operador',
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 4),
+                    child: Text('👀', style: TextStyle(fontSize: 12)),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // ── Footer: Quick Actions ──
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Reconciliar',
-                    icon: Icons.open_in_new_rounded,
-                    onPressed: () {
-                      ref.read(selectedContractIdProvider.notifier).state =
-                          alert.contractId;
-                      ref.read(adminIndexProvider.notifier).state = 5;
-                      Navigator.of(context).pop();
-                    },
+              Text(timeAgo, style: VeraProbTypography.caption),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // ── Body: evidence peek (INV-26: proxy-only) ──
+          _EvidencePeekWidget(evidenceIds: evidenceIds),
+          const SizedBox(height: 6),
+          // ── Gap label / forensic hash ──
+          Row(
+            children: [
+              if (alert.context['forensic_hash_prefix'] != null) ...[
+                Text(
+                  '🔐 ${alert.context['forensic_hash_prefix']}…',
+                  style: VeraProbTypography.caption.copyWith(
+                    fontFamily: 'monospace',
+                    fontSize: 10,
                   ),
                 ),
                 const SizedBox(width: 6),
-                if (alert.alertType == 'TELEGRAM_ORPHAN' &&
-                    alert.context['driver_id'] != null)
-                  Expanded(child: _QuickLinkButton(alert: alert)),
               ],
-            ),
-          ],
-        ),
+              Flexible(
+                child: Text(
+                  _gapLabel(alert),
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: severityColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // ── Footer: Quick Actions ──
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  label: 'Reconciliar',
+                  icon: Icons.open_in_new_rounded,
+                  onPressed: () {
+                    ref.read(selectedContractIdProvider.notifier).state =
+                        alert.contractId;
+                    ref.read(adminIndexProvider.notifier).state = 5;
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+              const SizedBox(width: 6),
+              if (alert.alertType == 'TELEGRAM_ORPHAN' &&
+                  alert.context['driver_id'] != null)
+                Expanded(
+                  child: _QuickLinkButton(
+                    alert: alert,
+                    evidenceIds: evidenceIds,
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
-  }
 
-  static Widget _thumbnailFallback() {
-    return Container(
-      width: 36,
-      height: 36,
-      color: VeraProbColors.surfaceElevated,
-      child: const Icon(
-        Icons.fingerprint_rounded,
-        size: 18,
-        color: VeraProbColors.textDisabled,
-      ),
-    );
+    // TASK 2: Dim unread cards + collision indicator
+    if (isUnread) {
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Opacity(opacity: 0.6, child: card),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Container(
+              width: 16,
+              height: 16,
+              alignment: Alignment.center,
+              child: const Text('👀', style: TextStyle(fontSize: 12)),
+            ),
+          ),
+        ],
+      );
+    }
+    return card;
   }
 
   static String? _extractEvidenceId(OperationalAlert alert) {
@@ -504,6 +501,22 @@ class _RichEvidenceCard extends ConsumerWidget {
     final uri = Uri.tryParse(deepLink);
     if (uri == null || uri.pathSegments.isEmpty) return null;
     return uri.pathSegments.last;
+  }
+
+  /// Returns the full list of evidence IDs for this alert.
+  ///
+  /// Reads `context['evidence_ids']` (accumulated by the flood-suppression
+  /// trigger after the 20260613 migration). Falls back to the single
+  /// `context['evidence_id']` or the deep_link path for legacy alerts.
+  static List<String> _extractEvidenceIds(OperationalAlert alert) {
+    final ids = alert.context['evidence_ids'];
+    if (ids is List && ids.isNotEmpty) {
+      return ids.whereType<String>().toList();
+    }
+    // Fallback: legacy single-photo alert
+    final single =
+        alert.context['evidence_id'] as String? ?? _extractEvidenceId(alert);
+    return single != null ? [single] : [];
   }
 
   static String _gapLabel(OperationalAlert alert) {
@@ -548,7 +561,11 @@ class _RichEvidenceCard extends ConsumerWidget {
 // ── Quick Link Button (with race condition protection) ───
 class _QuickLinkButton extends ConsumerStatefulWidget {
   final OperationalAlert alert;
-  const _QuickLinkButton({required this.alert});
+
+  /// TASK 4: Full list of evidence IDs — passed to reconcileQuick
+  final List<String> evidenceIds;
+
+  const _QuickLinkButton({required this.alert, required this.evidenceIds});
 
   @override
   ConsumerState<_QuickLinkButton> createState() => _QuickLinkButtonState();
@@ -581,12 +598,15 @@ class _QuickLinkButtonState extends ConsumerState<_QuickLinkButton> {
       final userId = ref.read(currentOperatorIdProvider);
       if (orgId == null || userId == null) return;
 
+      // TASK 4: Pass full evidenceIds list; for TELEGRAM_ORPHAN alerts
+      // driver_id is resolved via context (populated by webhook at ingest time).
       await ref
           .read(quickReconciliationServiceProvider)
           .reconcileQuick(
             alertId: widget.alert.id,
             organizationId: orgId,
             userId: userId,
+            evidenceIds: widget.evidenceIds,
           );
       // Stream will auto-remove the resolved alert
     } catch (e) {
@@ -683,6 +703,152 @@ class _SeverityBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Photo Count Badge ────────────────────────────────────
+class _PhotoCountBadge extends StatelessWidget {
+  final int count;
+  const _PhotoCountBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    // "10 FOTOS" for exact 10, "+N FOTOS" for burst < 10
+    final label = count >= 10 ? '$count FOTOS' : '+$count FOTOS';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: VeraProbColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: VeraProbColors.primary.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: VeraProbColors.primary,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Evidence Peek Widget ─────────────────────────────────
+/// TASK 1: Shows up to 3 evidence thumbnails (48×48).
+///
+/// If more than 3 exist, the last thumb gets a "+N" overlay.
+/// Tapping any thumb opens [EvidenceDossierModal] (full grid, 15 items).
+/// All images are fetched exclusively via secure-evidence-proxy (INV-26).
+class _EvidencePeekWidget extends ConsumerWidget {
+  final List<String> evidenceIds;
+
+  static const _kMaxThumbs = 3;
+  static const _kSize = 48.0;
+
+  const _EvidencePeekWidget({required this.evidenceIds});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (evidenceIds.isEmpty) return const SizedBox.shrink();
+
+    final accessToken = ref.watch(currentSessionIdProvider) ?? '';
+    final visible = evidenceIds.take(_kMaxThumbs).toList();
+    final overflow = evidenceIds.length - _kMaxThumbs;
+
+    return GestureDetector(
+      onTap: () => showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (_) => EvidenceDossierModal(evidenceIds: evidenceIds),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int i = 0; i < visible.length; i++) ...[
+            _buildThumb(
+              id: visible[i],
+              accessToken: accessToken,
+              // Last thumb gets overflow badge when there are more than 3
+              overflowCount: (i == visible.length - 1 && overflow > 0)
+                  ? overflow
+                  : 0,
+            ),
+            if (i < visible.length - 1) const SizedBox(width: 4),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThumb({
+    required String id,
+    required String accessToken,
+    required int overflowCount,
+  }) {
+    // INV-26: images MUST flow through secure-evidence-proxy only
+    final url =
+        '${EnvironmentConfig.supabaseUrl}/functions/v1/secure-evidence-proxy?evidence_id=$id'; // pr_scanner: ignore
+
+    final thumb = ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: CachedNetworkImage(
+        imageUrl: url,
+        httpHeaders: {'Authorization': 'Bearer $accessToken'},
+        width: _kSize,
+        height: _kSize,
+        fit: BoxFit.cover,
+        placeholder: (ctx, _) => _placeholder(),
+        errorWidget: (ctx, _, _) => _placeholder(),
+      ),
+    );
+
+    if (overflowCount <= 0) return thumb;
+
+    // Last visible thumb: overlay with "+N" badge
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        thumb,
+        Positioned(
+          top: 0,
+          right: 0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: VeraProbColors.background.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '+$overflowCount',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: VeraProbColors.textPrimary,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static Widget _placeholder() => Container(
+    width: _kSize,
+    height: _kSize,
+    decoration: BoxDecoration(
+      color: VeraProbColors.surfaceElevated,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: const Icon(
+      Icons.fingerprint_rounded,
+      size: 20,
+      color: VeraProbColors.textDisabled,
+    ),
+  );
 }
 
 // ── Empty State ──────────────────────────────────────────

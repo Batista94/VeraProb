@@ -86,6 +86,20 @@ const BUCKET = "telegram_evidence";
 const TS_FUTURE_TOLERANCE_S = 60;    // QA-Security: reject if > 60s in the future
 const TS_MAX_DRIFT_S = 86_400;       // QA-Security: reject if > 24h old
 
+const LGPD_TERMS = `
+⚖️ <b>Termos de Uso e Privacidade (LGPD)</b>
+
+Ao utilizar o VeraProb Evidence Bot, você concorda que:
+
+1. <b>Coleta de Dados:</b> Coletamos seu ID de chat do Telegram, fotos, vídeos e documentos enviados, além de metadados técnicos (como data/hora do dispositivo e localização GPS se presente no arquivo).
+2. <b>Finalidade:</b> Estes dados são utilizados exclusivamente para a geração de <b>evidências forenses</b> em operações logísticas, servindo como prova de execução e conformidade.
+3. <b>Segurança:</b> Suas evidências são seladas com hash SHA-256 e armazenadas em ambiente seguro com isolamento por organização.
+4. <b>Compartilhamento:</b> Seus dados serão visíveis apenas para os supervisores e administradores da sua organização no painel VeraProb.
+5. <b>Retenção:</b> As evidências são mantidas pelo período necessário para auditoria contratual e conformidade legal.
+
+Você pode revogar este consentimento a qualquer momento entrando em contato com seu supervisor, porém isso impedirá o envio de novas evidências pelo bot.
+`.trim();
+
 // ── Main handler ───────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -115,28 +129,73 @@ Deno.serve(async (req: Request): Promise<Response> => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  // ── 2b. Callback Query handler (consent acceptance) ───────────────────────
+  // ── 2b. Callback Query handler (UX Interactions) ─────────────────────────
   if (update.callback_query) {
     const cb = update.callback_query;
     const cbChatId = cb.message?.chat.id;
-    if (cbChatId && cb.data === "accept_consent_v1") {
-      await supabase.from("telegram_user_consents").upsert(
-        { chat_id: cbChatId, consent_version: "v1" },
-        { onConflict: "chat_id,consent_version" },
-      );
-      
-      const binding = await getActiveBinding(supabase, cbChatId);
-      await answerCallbackQuery(botToken, cb.id, "✅ Termos aceitos!");
-      
-      if (binding) {
-        await sendMessageWithKeyboard(botToken, cbChatId,
-          "✅ <b>Termos aceitos!</b>\n\nSua conta já está vinculada. Você já pode enviar fotos ou documentos como evidência forense.",
-          [[{ text: "❓ Ajuda", callback_data: "help" }]]);
-      } else {
-        await sendMessageWithKeyboard(botToken, cbChatId,
-          "✅ <b>Termos aceitos!</b>\n\nAgora só falta o <b>passo 2</b>: Envie o código de 8 caracteres gerado no aplicativo para vincular sua conta.",
+    if (!cbChatId) return new Response("OK", { status: 200 });
+
+    try {
+      if (cb.data === "view_terms") {
+        await answerCallbackQuery(botToken, cb.id);
+        await sendMessageWithKeyboard(botToken, cbChatId, LGPD_TERMS, [
+          [{ text: "✅ Aceitar e Continuar", callback_data: "accept_consent_v1" }]
+        ]);
+      } 
+      else if (cb.data === "accept_consent_v1") {
+        await supabase.from("telegram_user_consents").upsert(
+          { chat_id: cbChatId, consent_version: "v1" },
+          { onConflict: "chat_id,consent_version" },
+        );
+        
+        const binding = await getActiveBinding(supabase, cbChatId);
+        await answerCallbackQuery(botToken, cb.id, "✅ Termos aceitos!");
+        
+        const text = binding
+          ? "✅ <b>Termos aceitos!</b>\n\nSua conta já está vinculada. Você já pode enviar fotos ou documentos como evidência forense."
+          : "✅ <b>Termos aceitos!</b>\n\nAgora só falta o <b>passo 2</b>: Envie o código de 8 caracteres gerado no aplicativo para vincular sua conta.";
+        
+        await sendMessageWithKeyboard(botToken, cbChatId, text, [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+      } 
+      else if (cb.data === "help") {
+        await answerCallbackQuery(botToken, cb.id);
+        await sendHelpMessage(botToken, cbChatId);
+      }
+      else if (cb.data === "report_orphan") {
+        // Find latest orphan alert for this chat to flag it for the supervisor
+        const { data: alert } = await supabase
+          .from("operational_alerts")
+          .select("id, context")
+          .eq("entity_id", String(cbChatId))
+          .eq("alert_type", "TELEGRAM_ORPHAN")
+          .eq("status", "ACTIVE")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (alert) {
+          const updatedContext = { 
+            ...(alert.context as Record<string, unknown> || {}), 
+            driver_manually_reported: true,
+            reported_at: new Date().toISOString()
+          };
+
+          await supabase.from("operational_alerts")
+            .update({ 
+              status: "ACKNOWLEDGED",
+              context: updatedContext
+            })
+            .eq("id", alert.id);
+        }
+
+        await answerCallbackQuery(botToken, cb.id, "📣 Notificado!");
+        await sendMessageWithKeyboard(botToken, cbChatId, 
+          "📣 <b>Supervisor notificado!</b>\n\nSua evidência foi marcada para prioridade de vinculação manual pelo Centro de Comando.",
           [[{ text: "❓ Ajuda", callback_data: "help" }]]);
       }
+    } catch (e) {
+      console.error(`[telegram-webhook] callback error correlationId=${correlationId}:`, e);
+      await answerCallbackQuery(botToken, cb.id, "❌ Erro ao processar.");
     }
     return new Response("OK", { status: 200 });
   }
@@ -165,7 +224,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         "1️⃣ <b>Aceitar os Termos (LGPD)</b>\n" +
         "2️⃣ <b>Vincular sua conta</b>\n\n" +
         "Clique no botão abaixo para ler os termos e continuar:",
-        [[{ text: "✅ Ver e Aceitar os Termos (LGPD)", callback_data: "accept_consent_v1" }]],
+        [[{ text: "📋 Ler Termos de Uso (LGPD)", callback_data: "view_terms" }]],
       );
     }
     return new Response("OK", { status: 200 });
@@ -173,16 +232,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   // ── 4. /help command ──────────────────────────────────────────────────────
   if (message.text?.startsWith("/help")) {
-    await sendMessageWithKeyboard(
-      botToken, chatId,
-      "📋 <b>VeraProb Evidence Bot - Guia de Operação</b>\n\n" +
-      "Para operar, você precisa cumprir dois requisitos:\n" +
-      "1️⃣ <b>Aceite da LGPD:</b> Envie /start para ver e aceitar os termos.\n" +
-      "2️⃣ <b>Vinculação:</b> Envie o código de 8 caracteres gerado no App.\n\n" +
-      "• Após cumprir ambos, anexe fotos ou documentos para registro.\n" +
-      "• Cada envio gera um recibo forense com hash SHA-256.\n" +
-      "• Dúvidas? Contate seu supervisor operacional.",
-    );
+    await sendHelpMessage(botToken, chatId);
     return new Response("OK", { status: 200 });
   }
 
@@ -236,14 +286,32 @@ Deno.serve(async (req: Request): Promise<Response> => {
         await sendMessageWithKeyboard(botToken, chatId, "Erro interno. Tente novamente.");
       }
     } else {
+      const hasConsent = await checkConsent(supabase, chatId);
       const binding = await getActiveBinding(supabase, chatId);
-      await sendMessageWithKeyboard(
-        botToken, chatId,
-        binding
-          ? "Para enviar evidências, anexe uma foto ou documento."
-          : "Chat não vinculado. Envie o código de 8 caracteres do aplicativo VeraProb.",
-        [[{ text: "❓ Ajuda", callback_data: "help" }]],
-      );
+
+      if (!hasConsent) {
+        await sendMessageWithKeyboard(
+          botToken, chatId,
+          "⚠️ <b>Passo Pendente: LGPD</b>\n\n" +
+          "Para operar, você primeiro precisa aceitar os termos de uso.\n\n" +
+          "Clique no botão abaixo para ler e continuar:",
+          [[{ text: "📋 Ler Termos de Uso (LGPD)", callback_data: "view_terms" }]],
+        );
+      } else if (!binding) {
+        await sendMessageWithKeyboard(
+          botToken, chatId,
+          "⚠️ <b>Passo Pendente: Vinculação</b>\n\n" +
+          "Seus termos já estão aceitos, mas sua conta ainda não foi vinculada.\n\n" +
+          "Envie o <b>código de 8 caracteres</b> gerado no aplicativo VeraProb para concluir.",
+          [[{ text: "❓ Ajuda", callback_data: "help" }]],
+        );
+      } else {
+        await sendMessageWithKeyboard(
+          botToken, chatId,
+          "Para enviar evidências, anexe uma foto ou documento.",
+          [[{ text: "❓ Ajuda", callback_data: "help" }]],
+        );
+      }
     }
     return new Response("OK", { status: 200 });
   }
@@ -256,8 +324,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const hasConsent = await checkConsent(supabase, chatId);
   if (!hasConsent) {
     await sendMessageWithKeyboard(botToken, chatId,
-      "⚠️ Para enviar evidências, é necessário aceitar os Termos de Uso.\nEnvie /start para visualizar e aceitar os termos.",
-      [[{ text: "📋 Aceitar Termos", callback_data: "accept_consent_v1" }]]);
+      "⚠️ Para enviar evidências, é necessário aceitar os Termos de Uso.\nClique no botão abaixo para ler e aceitar.",
+      [[{ text: "📋 Ler Termos", callback_data: "view_terms" }]]);
     return new Response("OK", { status: 200 });
   }
 
@@ -428,7 +496,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       await sendMessageWithKeyboard(
         botToken, chatId,
         `✅ <b>Evidência registrada</b>\n` +
-        `🔐 Hash: <code>${hashHex.substring(0, 16)}…</code>\n` +
+        `🔐 Assinatura: <code>${hashHex.substring(0, 16)}…</code>\n` +
         `📍 <b>Rota:</b> ${executionInfo.displayName}${qualitySuffix}`,
         [[{ text: "❓ Ajuda", callback_data: "help" }]],
       );
@@ -436,7 +504,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       await sendMessageWithKeyboard(
         botToken, chatId,
         `📎 <b>Recibo Forense</b>\n` +
-        `🔐 Hash: <code>${hashHex.substring(0, 16)}…</code>${qualitySuffix}`,
+        `🔐 Assinatura: <code>${hashHex.substring(0, 16)}…</code>${qualitySuffix}`,
         [
           [{ text: "❓ Ajuda", callback_data: "help" }],
           [{ text: "📣 Reportar ao Supervisor", callback_data: "report_orphan" }],
@@ -450,6 +518,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   return new Response("OK", { status: 200 });
 });
+
+// ── WS-4 UX Functions ─────────────────────────────────────────────────────────
+
+/**
+ * Sends the operation guide to the user.
+ */
+async function sendHelpMessage(botToken: string, chatId: number): Promise<void> {
+  await sendMessageWithKeyboard(
+    botToken, chatId,
+    "📋 <b>VeraProb Evidence Bot - Guia de Operação</b>\n\n" +
+    "Para operar, você precisa cumprir dois requisitos:\n" +
+    "1️⃣ <b>Aceite da LGPD:</b> Envie /start para ler e aceitar os termos.\n" +
+    "2️⃣ <b>Vinculação:</b> Envie o código de 8 caracteres gerado no App.\n\n" +
+    "• Após cumprir ambos, anexe fotos ou documentos para registro.\n" +
+    "• Cada envio gera um recibo forense com <b>assinatura digital única</b>.\n" +
+    "• Dúvidas? Contate seu supervisor operacional.",
+  );
+}
 
 // ── WS-4 Core Functions ────────────────────────────────────────────────────────
 
@@ -499,8 +585,8 @@ async function findExecutionForTelegram(
       return null;
     }
     if (data) {
-      const obj = data as any;
-      return { setId: obj.set_id, displayName: obj.display_name };
+      const setId = data as string;
+      return { setId, displayName: setId };
     }
     return null;
   } catch {
@@ -550,6 +636,7 @@ async function fireOrphanAlert(
         correlation_id: correlationId,
         forensic_hash_prefix: forensicHash.substring(0, 16),
         chat_id: chatId,
+        evidence_id: evidenceId,
         deep_link: `veraprob://reconciliation/${evidenceId}`,
         driver_id: driverId,
         ...(driverName ? { driver_name: driverName } : {}),
@@ -634,12 +721,15 @@ async function sendMessageWithKeyboard(
  * Answers a Telegram callback query (inline button press).
  * Fire-and-forget — failure never blocks processing.
  */
-async function answerCallbackQuery(botToken: string, callbackQueryId: string, text: string): Promise<void> {
+async function answerCallbackQuery(botToken: string, callbackQueryId: string, text?: string): Promise<void> {
   try {
+    const body: Record<string, unknown> = { callback_query_id: callbackQueryId };
+    if (text) body.text = text;
+
     await fetch(`${TELEGRAM_API}${botToken}/answerCallbackQuery`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
+      body: JSON.stringify(body),
     });
   } catch { /* fire-and-forget */ }
 }

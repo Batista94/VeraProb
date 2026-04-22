@@ -272,10 +272,74 @@ async function ensureTestData(url, serviceKey) {
       organization_id: orgId,
       driver_id: driverId,
       chat_id: TEST_CHAT_ID,
-      binding_token_id: tokenId // Campo obrigatório corrigido
+      binding_token_id: tokenId
     }
   );
   if (!resBind.ok) throw new Error(`Erro ao pré-vincular: ${resBind.status} - ${JSON.stringify(resBind.data)}`);
+  console.log('ok');
+
+  // 4. Criar Viagem de Teste (TRIP-8H-TEST) para Heurística WS-4
+  process.stdout.write('      [4/4] Criar Viagem TRIP-8H-TEST (8h)... ');
+  const now = new Date();
+  const start = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
+  const end = new Date(now.getTime() + 8 * 60 * 60 * 1000 - 5 * 60 * 1000).toISOString();
+  const contractId = '00000000-0000-0000-0000-ca0000000001';
+  const planId = '00000000-0000-0000-0000-000000000001';
+  const setId = 'TRIP-8H-TEST';
+
+  // 4.1 Plan Declaration (com organization_id!)
+  await post(
+    `${url}/rest/v1/plan_declarations`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      id: planId,
+      contract_id: contractId,
+      organization_id: orgId,
+      declared_at_utc: now.toISOString(),
+      declared_by_user_id: '00000000-0000-0000-0000-ffffffffffff',
+      plan_version: 1,
+      original_file_hash: 'bootstrap'
+    }
+  );
+
+  // 4.2 Service Execution
+  await post(
+    `${url}/rest/v1/contractual_service_executions`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      set_id: setId,
+      plan_declaration_id: planId,
+      scheduled_start_time_utc: start,
+      scheduled_end_time_utc: end,
+      planned_vehicle_id: driverId,
+      contractual_value_cents: 25000,
+      no_show_penalty_multiplier: 1.5,
+      start_latitude: -23.55, start_longitude: -46.63, start_radius_meters: 500,
+      end_latitude: -23.6, end_longitude: -46.7, end_radius_meters: 500
+    }
+  );
+
+  // 4.3 Execution State (pending)
+  await post(
+    `${url}/rest/v1/execution_states`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      id: '00000000-0000-0000-0000-e00000000001',
+      set_id: setId,
+      contract_id: contractId,
+      plan_version: 1,
+      planned_vehicle_id: driverId,
+      status: 'pending',
+      window_start_utc: start,
+      window_end_utc: end,
+      contractual_value_cents: 25000,
+      no_show_penalty_multiplier: 1.5,
+      created_at_utc: now.toISOString(),
+      last_evaluated_at_utc: now.toISOString(),
+      status_last_updated_at_utc: now.toISOString(),
+      start_latitude: -23.55, start_longitude: -46.63, start_radius_meters: 500
+    }
+  );
   console.log('ok\n');
 }
 

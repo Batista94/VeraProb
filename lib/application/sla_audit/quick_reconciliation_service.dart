@@ -37,23 +37,36 @@ class QuickReconciliationService {
   /// 4. Acknowledges then resolves the alert
   ///
   /// Throws [StateError] if alert not found, missing context, or no SET found.
+  /// [evidenceIds] — full list from `context['evidence_ids']`.
+  /// When provided, all items are linked. Falls back to deep_link (legacy).
   Future<void> reconcileQuick({
     required String alertId,
     required String organizationId,
     required String userId,
+    List<String>? evidenceIds,
   }) async {
     final alert = await _alertRepo.findById(alertId);
     if (alert == null) {
       throw StateError('Alert not found: $alertId');
     }
 
-    final evidenceUploadId = _extractEvidenceId(alert);
-    if (evidenceUploadId == null) {
+    // Prefer the caller-supplied list; fall back to legacy deep_link extraction
+    final allEvidenceIds = (evidenceIds != null && evidenceIds.isNotEmpty)
+        ? evidenceIds
+        : () {
+            final single = _extractEvidenceId(alert);
+            return single != null ? [single] : <String>[];
+          }();
+
+    if (allEvidenceIds.isEmpty) {
       throw StateError(
         'Cannot extract evidence_upload_id from alert context. '
-        'deep_link missing or malformed.',
+        'evidence_ids empty and deep_link missing or malformed.',
       );
     }
+
+    // For backward compat, primary evidenceUploadId is first in the list
+    final evidenceUploadId = allEvidenceIds.first;
 
     final driverId = alert.context['driver_id'] as String?;
     if (driverId == null) {
