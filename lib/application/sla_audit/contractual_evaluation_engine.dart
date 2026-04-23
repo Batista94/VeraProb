@@ -339,7 +339,13 @@ class ContractualEvaluationEngine {
         // startTransit is idempotent — no-op if already inTransit.
         if (!tracking && state.status == ExecutionStatus.planned) {
           state.startTransit(timestampUtc: firstEntry, source: 'geofence');
+          // Persist TRANSIT_STARTED to ledger immediately — the aggregate is
+          // reloaded from DB on the next tick, which would lose in-memory events.
+          for (final event in state.domainEvents) {
+            await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(event));
+          }
           await _executionRepo.save(state);
+          state.clearDomainEvents();
         }
 
         if (now.isBefore(firstEntry)) continue;

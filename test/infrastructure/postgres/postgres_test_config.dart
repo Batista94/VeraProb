@@ -184,19 +184,25 @@ class PostgresTestConfig {
   }) async {
     const uuid = Uuid();
     final driverId = uuid.v4();
+    final license = licenseNumber ?? 'TST-$driverId'.substring(0, 12);
     final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
     try {
-      await seedClient.from('drivers').insert({
-        'id': driverId,
-        'organization_id': orgId,
-        'full_name': 'Test Driver $driverId',
-        'license_number': licenseNumber ?? 'TST-$driverId'.substring(0, 12),
-        'created_at': DateTime.now().toUtc().toIso8601String(),
-      });
+      // Upsert on unique (organization_id, license_number) to handle
+      // residual data from previous runs whose tearDown failed.
+      final rows = await seedClient
+          .from('drivers')
+          .upsert({
+            'id': driverId,
+            'organization_id': orgId,
+            'full_name': 'Test Driver $driverId',
+            'license_number': license,
+            'created_at': DateTime.now().toUtc().toIso8601String(),
+          }, onConflict: 'organization_id,license_number')
+          .select('id');
+      return rows.first['id'] as String;
     } finally {
       await seedClient.dispose();
     }
-    return driverId;
   }
 
   /// Creates a `telegram_binding_tokens` row directly via service_role.
@@ -317,29 +323,24 @@ class PostgresTestConfig {
 
   // ── Telegram cleanup helpers ──────────────────────────────────────────────
 
-  /// Removes telegram test data in reverse FK order.
+  /// Removes telegram test data via the SECURITY DEFINER RPC
+  /// [test_cleanup_forensic_data], which runs as the function owner (postgres)
+  /// and therefore bypasses the append-only triggers on telegram tables (INV-7).
+  ///
+  /// Background: PostgREST executes as the `authenticator` Postgres role even
+  /// when using a service_role JWT, so `current_user` inside a trigger is
+  /// *never* `postgres` — direct DELETEs from a SupabaseClient always hit the
+  /// trigger guard. The SECURITY DEFINER RPC is the only safe cleanup path.
   static Future<void> cleanupTelegramData(
     SupabaseClient client, {
     required String orgId,
   }) async {
     final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
     try {
-      await seedClient
-          .from('telegram_evidence_links')
-          .delete()
-          .eq('organization_id', orgId);
-      await seedClient
-          .from('telegram_evidence_uploads')
-          .delete()
-          .eq('organization_id', orgId);
-      await seedClient
-          .from('telegram_chat_bindings')
-          .delete()
-          .eq('organization_id', orgId);
-      await seedClient
-          .from('telegram_binding_tokens')
-          .delete()
-          .eq('organization_id', orgId);
+      await seedClient.rpc(
+        'test_cleanup_forensic_data',
+        params: {'p_org_id': orgId},
+      );
     } finally {
       await seedClient.dispose();
     }

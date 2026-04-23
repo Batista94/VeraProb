@@ -81,6 +81,10 @@ class ContractualExecutionState {
   final List<DomainEvent> _domainEvents = [];
   List<DomainEvent> get domainEvents => UnmodifiableListView(_domainEvents);
 
+  /// Drains all pending domain events. Call after persisting events to
+  /// prevent duplicate writes when the aggregate is reused across ticks.
+  void clearDomainEvents() => _domainEvents.clear();
+
   // ── Private Constructor ───────────────────────────────────
   ContractualExecutionState._({
     required this.id,

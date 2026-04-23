@@ -190,7 +190,7 @@ void main() {
       // After 100s of oscillation, no continuous 30s dwell achieved
       final result = await repo.findBySetId('set-1');
       expect(result!.status, ExecutionStatus.inTransit);
-      expect(ledger.entries, isEmpty);
+      expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
 
     test('A5: boundaryDrift_exitAndReenter → NO BIND (timer reset)', () async {
@@ -561,7 +561,7 @@ void main() {
       // All pings at same instant → dwell = 0s
       final result = await repo.findBySetId('set-1');
       expect(result!.status, ExecutionStatus.inTransit);
-      expect(ledger.entries, isEmpty);
+      expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
 
     test(
@@ -766,7 +766,7 @@ void main() {
 
       final result = await repo.findBySetId('set-1');
       expect(result!.status, ExecutionStatus.inTransit);
-      expect(ledger.entries, isEmpty);
+      expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
 
     test(

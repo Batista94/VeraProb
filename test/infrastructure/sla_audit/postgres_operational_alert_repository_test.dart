@@ -38,10 +38,11 @@ final _userBEmail = 'alert_b_${_uuid.v4().substring(0, 8)}@veraprob.test';
 final _entityId = _uuid.v4();
 late String _orgAContractId;
 late String _orgBContractId;
+late String _traceIdA; // Seeded trace for FK-safe alert tests
 
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 
-Future<String> _ensureUser(String email) async {
+Future<String> _ensureUser(String email, {required String orgId}) async {
   final res = await http.post(
     Uri.parse('${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users'),
     headers: {
@@ -53,6 +54,7 @@ Future<String> _ensureUser(String email) async {
       'email': email,
       'password': _testPassword,
       'email_confirm': true,
+      'app_metadata': {'org_id': orgId},
     }),
   );
   if (res.statusCode == 200 || res.statusCode == 201) {
@@ -70,7 +72,23 @@ Future<String> _ensureUser(String email) async {
     );
     final users =
         ((jsonDecode(list.body) as Map<String, dynamic>)['users'] as List);
-    return (users.first as Map<String, dynamic>)['id'] as String;
+    final userId = (users.first as Map<String, dynamic>)['id'] as String;
+
+    // Ensure app_metadata.org_id is set (may be missing from a prior run).
+    await http.put(
+      Uri.parse(
+        '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users/$userId',
+      ),
+      headers: {
+        'apikey': PostgresTestConfig.serviceRoleKey,
+        'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'app_metadata': {'org_id': orgId},
+      }),
+    );
+    return userId;
   }
   throw Exception('Failed to create user $email: ${res.body}');
 }
@@ -159,9 +177,19 @@ void main() {
       _orgAContractId = await _seedContract(adminClient, _orgAId);
       _orgBContractId = await _seedContract(adminClient, _orgBId);
 
+      // Provision a contractual_evaluation_trace for FK-safe alert tests
+      _traceIdA = _uuid.v4();
+      await adminClient.from('contractual_evaluation_traces').insert({
+        'id': _traceIdA,
+        'organization_id': _orgAId,
+        'entity_id': _entityId,
+        'triggering_event_id': _uuid.v4(),
+        'engine_version': 'test-v1',
+      });
+
       // Provision auth users + roles
-      final userAId = await _ensureUser(_userAEmail);
-      final userBId = await _ensureUser(_userBEmail);
+      final userAId = await _ensureUser(_userAEmail, orgId: _orgAId);
+      final userBId = await _ensureUser(_userBEmail, orgId: _orgBId);
 
       await adminClient.from('user_roles').upsert({
         'user_id': userAId,
@@ -186,6 +214,10 @@ void main() {
         await PostgresTestConfig.cleanupOperationalAlerts(
           orgIds: [_orgAId, _orgBId],
         );
+        await adminClient
+            .from('contractual_evaluation_traces')
+            .delete()
+            .inFilter('organization_id', [_orgAId, _orgBId]);
         await adminClient.from('contracts').delete().inFilter(
           'organization_id',
           [_orgAId, _orgBId],
@@ -386,7 +418,7 @@ void main() {
             orgId: _orgAId,
             contractId: _orgAContractId,
             context: complexContext,
-            traceId: _uuid.v4(),
+            traceId: _traceIdA,
             triggeringEventId: _uuid.v4(),
           );
 
@@ -539,7 +571,7 @@ void main() {
             entityId: _entityId,
             contractId: _orgAContractId,
           );
-          const userId = 'user-idempotent-test';
+          const userId = '00000000-0000-0000-0000-000000000099';
 
           // Call markViewed twice with the same userId.
           await repoA.markViewed(alertId, userId);
@@ -579,7 +611,7 @@ void main() {
             severity: 'WARNING',
             triggeredAtUtc: now,
             triggeringEventId: _uuid.v4(),
-            traceId: _uuid.v4(),
+            traceId: _traceIdA,
             context: {'key': 'value'},
             status: 'ACTIVE',
           );
@@ -626,16 +658,19 @@ void main() {
           final stopwatch = Stopwatch()..start();
 
           // Fire all 100 inserts concurrently.
-          final results = await Future.wait(
-            alerts.map((a) => repoA.save(a)),
-            eagerError: false,
+          final futures = alerts.map(
+            (a) => repoA
+                .save(a)
+                .then<String?>(
+                  (id) => null, // success → null marker
+                  onError: (Object e) => e.toString(), // failure → error string
+                ),
           );
+          final results = await Future.wait(futures);
 
           stopwatch.stop();
 
-          final errors = results
-              .whereType<Object>()
-              .length; // Future.wait with eagerError:false
+          final errors = results.where((r) => r != null).length;
           final elapsed = stopwatch.elapsedMilliseconds;
 
           expect(

@@ -121,7 +121,10 @@ void main() {
           reason:
               'First geofence entry transitions planned→inTransit; dwell not yet met so not completed',
         );
-        expect(ledger.entries, isEmpty);
+        expect(
+          ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'),
+          isEmpty,
+        );
       },
     );
   });

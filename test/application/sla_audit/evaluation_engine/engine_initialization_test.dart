@@ -91,7 +91,7 @@ void main() {
         result!.status,
         ExecutionStatus.inTransit,
       ); // FSM: already inTransit from first entry
-      expect(ledger.entries, isEmpty);
+      expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
 
     test('plannedVehicleId is respected — wrong vehicle ignored', () async {
