@@ -555,7 +555,7 @@ void main() {
     'Smoke 3: Simulador de Telemetria (Cenário 6.1)',
     skip: hasCredentials ? false : 'Credenciais Supabase ausentes.',
     () {
-      test('3.1 — SET criado com status pending', () async {
+      test('3.1 — SET criado com status planned', () async {
         expect(
           declaredPlanId,
           isNotNull,
@@ -607,13 +607,13 @@ void main() {
         expect(saved, isNotNull);
         expect(
           saved!.status.name,
-          'pending',
-          reason: 'Estado inicial deve ser pending',
+          'planned',
+          reason: 'Estado inicial deve ser planned',
         );
       });
 
       test(
-        '3.2 — GPS na geofence → status = executed após dwell time satisfeito',
+        '3.2 — GPS na geofence → status = completed após dwell time satisfeito',
         () async {
           expect(
             smokeSetId,
@@ -647,8 +647,8 @@ void main() {
           expect(stateT1, isNotNull, reason: 'stateT1 should be initialized');
           expect(
             stateT1!.status.name,
-            'pending',
-            reason: 'Dwell time ainda não satisfeito (tick 1)',
+            'inTransit',
+            reason: 'Dwell time ainda não satisfeito (transição automática para inTransit)',
           );
 
           // Tick 2: 31 s depois → dwell satisfeito → bind
@@ -663,8 +663,8 @@ void main() {
           expect(stateT2, isNotNull, reason: 'stateT2 should be initialized');
           expect(
             stateT2!.status.name,
-            'executed',
-            reason: 'Cenário 6.1 — telemetria válida muda status para executed',
+            'completed',
+            reason: 'Cenário 6.1 — telemetria válida muda status para completed',
           );
           expect(stateT2.boundVehicleId, 'smoke-vehicle-001');
           expect(stateT2.bindingTimestampUtc, bindTime);

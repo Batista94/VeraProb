@@ -294,8 +294,8 @@ void main() {
       var stateAfterTick1 = await executionRepo.findBySetId(sharedSetId!);
       expect(
         stateAfterTick1!.status.name,
-        'pending',
-        reason: 'Dwell time not satisfied yet',
+        'inTransit',
+        reason: 'Dwell time not satisfied yet (automatic transition to inTransit)',
       );
 
       // Second tick inside geofence 31 seconds later (Dwell time satisfied -> Bind!)
@@ -310,8 +310,8 @@ void main() {
       var stateAfterTick2 = await executionRepo.findBySetId(sharedSetId!);
       expect(
         stateAfterTick2!.status.name,
-        'executed',
-        reason: 'Status updated to executed in DB',
+        'completed',
+        reason: 'Status updated to completed in DB',
       );
       expect(stateAfterTick2.boundVehicleId, vehicleId);
       expect(stateAfterTick2.bindingTimestampUtc, timeBindUtc);
@@ -328,7 +328,7 @@ void main() {
         greaterThanOrEqualTo(2),
         reason: 'At least 1 for creation and 1 for execute bind',
       );
-      expect(transitions.last['new_status'], 'executed');
+      expect(transitions.last['new_status'], 'completed');
     });
 
     test('Stage 3 â€” Validate SLA Audit Ledger Constraints', () async {
@@ -345,9 +345,9 @@ void main() {
 
       expect(
         entries.length,
-        3,
+        4,
         reason:
-            '1 PLAN_DECLARED + 1 CONTRACT_ACTIVATED + 1 EXECUTION_BOUND expected',
+            '1 PLAN_DECLARED + 1 CONTRACT_ACTIVATED + 1 TRANSIT_STARTED + 1 EXECUTION_BOUND expected',
       );
 
       DateTime? previousTime;
