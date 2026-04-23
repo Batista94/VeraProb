@@ -1,4 +1,4 @@
-// ignore_for_file: lines_longer_than_80_chars, prefer_const_declarations
+﻿// ignore_for_file: lines_longer_than_80_chars, prefer_const_declarations
 // =============================================================================
 // test/application/sla_audit/contractual_financial_closing_edge_cases_test.dart
 //
@@ -122,15 +122,15 @@ ContractualExecutionState makeState({
     windowEndUtc: windowStartUtc.add(const Duration(hours: 1)),
   );
 
-  if (status == ExecutionStatus.executed) {
+  if (status == ExecutionStatus.completed) {
     state.bindExecution(
       vehicleId: 'vehicle-1',
       latitude: -23.5612,
       longitude: -46.6560,
       timestampUtc: windowStartUtc.add(const Duration(minutes: 30)),
     );
-  } else if (status == ExecutionStatus.noShow) {
-    state.markNoShow(windowStartUtc.add(const Duration(hours: 2)));
+  } else if (status == ExecutionStatus.failed) {
+    state.markFailed(windowStartUtc.add(const Duration(hours: 2)));
   }
 
   return state;
@@ -153,7 +153,7 @@ void main() {
         makeState(
           organizationId: 'org-1',
           contractId: 'contract-1',
-          status: ExecutionStatus.executed,
+          status: ExecutionStatus.completed,
           value: const Money(10000),
           noShowPenaltyBps: 15000,
           windowStartUtc: kEpoch,
@@ -183,7 +183,7 @@ void main() {
       final state = makeState(
         organizationId: 'org-1',
         contractId: 'contract-1',
-        status: ExecutionStatus.pending,
+        status: ExecutionStatus.planned,
         value: const Money(10000),
         noShowPenaltyBps: 15000,
         windowStartUtc: kEpoch,
@@ -215,7 +215,7 @@ void main() {
         makeState(
           organizationId: 'org-1',
           contractId: 'contract-1',
-          status: ExecutionStatus.noShow,
+          status: ExecutionStatus.failed,
           value: const Money(10000),
           noShowPenaltyBps: 15000,
           windowStartUtc: kEpoch,
@@ -248,7 +248,7 @@ void main() {
         makeState(
           organizationId: 'org-1',
           contractId: 'contract-1',
-          status: ExecutionStatus.noShow,
+          status: ExecutionStatus.failed,
           value: const Money(10000),
           noShowPenaltyBps: 10000,
           windowStartUtc: kEpoch,
@@ -310,7 +310,7 @@ void main() {
           makeState(
             organizationId: 'org-2',
             contractId: 'contract-1',
-            status: ExecutionStatus.executed,
+            status: ExecutionStatus.completed,
             value: const Money(10000),
             noShowPenaltyBps: 15000,
             windowStartUtc: kEpoch,

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -34,7 +34,7 @@ const _kOrgId = 'org-test-001';
 final _kNow = DateTime.utc(2026, 4, 20, 10, 0, 0);
 
 ContractualExecutionState _buildExecution({
-  ExecutionStatus status = ExecutionStatus.pending,
+  ExecutionStatus status = ExecutionStatus.planned,
   double lat = -23.550520,
   double lng = -46.633308,
 }) {
@@ -441,7 +441,7 @@ void main() {
 
         // Lat/lng with 6 decimal places — physical metric precision
         final execution = _buildExecution(
-          status: ExecutionStatus.executed,
+          status: ExecutionStatus.completed,
           lat: -23.550520,
           lng: -46.633308,
         );

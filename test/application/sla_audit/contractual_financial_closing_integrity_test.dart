@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:veraprob/application/sla_audit/contractual_financial_closing_service.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
@@ -57,7 +57,7 @@ void main() {
           noShowPenaltyBps: 1,
           windowStartUtc: operationalDay.add(const Duration(hours: 10)),
           windowEndUtc: operationalDay.add(const Duration(hours: 11)),
-          status: ExecutionStatus.noShow,
+          status: ExecutionStatus.failed,
           createdAtUtc: operationalDay,
           lastEvaluatedAtUtc: operationalDay,
           statusLastUpdatedAtUtc: operationalDay,
@@ -107,7 +107,7 @@ void main() {
             windowEndUtc: operationalDay
                 .add(const Duration(hours: 13))
                 .add(Duration(seconds: i)),
-            status: ExecutionStatus.noShow,
+            status: ExecutionStatus.failed,
             createdAtUtc: operationalDay,
             lastEvaluatedAtUtc: operationalDay,
             statusLastUpdatedAtUtc: operationalDay,
@@ -152,7 +152,7 @@ void main() {
           noShowPenaltyBps: 1500, // 15%
           windowStartUtc: operationalDay.add(const Duration(hours: 10)),
           windowEndUtc: operationalDay.add(const Duration(hours: 11)),
-          status: ExecutionStatus.noShow,
+          status: ExecutionStatus.failed,
           createdAtUtc: operationalDay,
           lastEvaluatedAtUtc: operationalDay,
           statusLastUpdatedAtUtc: operationalDay,

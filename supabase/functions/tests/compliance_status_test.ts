@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Compliance Status Tests — /status, /finish, tg_status handlers
  *
  * Tests the pure formatting logic (compliance_formatter.ts) and the
@@ -26,7 +26,7 @@ Deno.test("formatStatusMessage: no_active_trip returns correct message", () => {
 });
 
 Deno.test("formatStatusMessage: no_requirements singular (1 evidence)", () => {
-  const result: ComplianceRpcResult = { status: "no_requirements", set_id: "SET-1", evidence_count: 1 };
+  const result: ComplianceRpcResult = { status: "no_requirements", set_id: "SET-1", execution_status: "inTransit" as const, evidence_count: 1 };
   const msg = formatStatusMessage(result);
   assertStringIncludes(msg, "<b>1</b> evidência");
   // singular — no trailing 's'
@@ -34,13 +34,13 @@ Deno.test("formatStatusMessage: no_requirements singular (1 evidence)", () => {
 });
 
 Deno.test("formatStatusMessage: no_requirements plural (3 evidences)", () => {
-  const result: ComplianceRpcResult = { status: "no_requirements", set_id: "SET-1", evidence_count: 3 };
+  const result: ComplianceRpcResult = { status: "no_requirements", set_id: "SET-1", execution_status: "inTransit" as const, evidence_count: 3 };
   const msg = formatStatusMessage(result);
   assertStringIncludes(msg, "<b>3</b> evidências");
 });
 
 Deno.test("formatStatusMessage: no_requirements zero evidences", () => {
-  const result: ComplianceRpcResult = { status: "no_requirements", set_id: "SET-1", evidence_count: 0 };
+  const result: ComplianceRpcResult = { status: "no_requirements", set_id: "SET-1", execution_status: "inTransit" as const, evidence_count: 0 };
   const msg = formatStatusMessage(result);
   assertStringIncludes(msg, "<b>0</b> evidências");
 });
@@ -49,6 +49,7 @@ Deno.test("formatStatusMessage: active — fulfilled item shows checkmark", () =
   const result: ComplianceRpcResult = {
     status: "active",
     set_id: "SET-abc123456789",
+    execution_status: "inTransit" as const,
     items: [{ type_key: "estado", is_fulfilled: true, count: 2 }],
     total_required: 1,
     total_fulfilled: 1,
@@ -61,6 +62,7 @@ Deno.test("formatStatusMessage: active — pending item shows bold PENDENTE", ()
   const result: ComplianceRpcResult = {
     status: "active",
     set_id: "SET-abc123456789",
+    execution_status: "inTransit" as const,
     items: [{ type_key: "doc", is_fulfilled: false, count: 0 }],
     total_required: 1,
     total_fulfilled: 0,
@@ -73,6 +75,7 @@ Deno.test("formatStatusMessage: active — complete shows celebration", () => {
   const result: ComplianceRpcResult = {
     status: "active",
     set_id: "SET-abc123456789",
+    execution_status: "inTransit" as const,
     items: [
       { type_key: "estado", is_fulfilled: true, count: 1 },
       { type_key: "doc", is_fulfilled: true, count: 1 },
@@ -89,6 +92,7 @@ Deno.test("formatStatusMessage: active — pending count in footer", () => {
   const result: ComplianceRpcResult = {
     status: "active",
     set_id: "SET-abc123456789",
+    execution_status: "inTransit" as const,
     items: [
       { type_key: "estado", is_fulfilled: true, count: 1 },
       { type_key: "doc", is_fulfilled: false, count: 0 },
@@ -105,6 +109,7 @@ Deno.test("formatStatusMessage: active — set_id truncated to 12 chars", () => 
   const result: ComplianceRpcResult = {
     status: "active",
     set_id: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    execution_status: "inTransit" as const,
     items: [],
     total_required: 0,
     total_fulfilled: 0,
@@ -118,6 +123,7 @@ Deno.test("formatStatusMessage: active — unknown category key falls back to ke
   const result: ComplianceRpcResult = {
     status: "active",
     set_id: "SET-1",
+    execution_status: "inTransit" as const,
     items: [{ type_key: "custom_type", is_fulfilled: false, count: 0 }],
     total_required: 1,
     total_fulfilled: 0,
@@ -130,6 +136,7 @@ Deno.test("formatStatusMessage: active — empty items list, 0/0 complete", () =
   const result: ComplianceRpcResult = {
     status: "active",
     set_id: "SET-1",
+    execution_status: "inTransit" as const,
     items: [],
     total_required: 0,
     total_fulfilled: 0,
@@ -144,6 +151,7 @@ Deno.test("formatFinishWarning: lists all pending items", () => {
   const result: Extract<ComplianceRpcResult, { status: "active" }> = {
     status: "active",
     set_id: "SET-1",
+    execution_status: "inTransit" as const,
     items: [
       { type_key: "estado", is_fulfilled: false, count: 0 },
       { type_key: "doc", is_fulfilled: true, count: 1 },
@@ -163,6 +171,7 @@ Deno.test("formatFinishWarning: ends with confirmation question", () => {
   const result: Extract<ComplianceRpcResult, { status: "active" }> = {
     status: "active",
     set_id: "SET-1",
+    execution_status: "inTransit" as const,
     items: [{ type_key: "estado", is_fulfilled: false, count: 0 }],
     total_required: 1,
     total_fulfilled: 0,
@@ -175,6 +184,7 @@ Deno.test("formatFinishWarning: unknown category key falls back to key", () => {
   const result: Extract<ComplianceRpcResult, { status: "active" }> = {
     status: "active",
     set_id: "SET-1",
+    execution_status: "inTransit" as const,
     items: [{ type_key: "xyz_custom", is_fulfilled: false, count: 0 }],
     total_required: 1,
     total_fulfilled: 0,
@@ -256,6 +266,7 @@ Deno.test("handleFinishCheck integration: complete trip skips warning", async ()
     data: {
       status: "active",
       set_id: "SET-1",
+      execution_status: "inTransit" as const,
       items: [{ type_key: "estado", is_fulfilled: true, count: 1 }],
       total_required: 1,
       total_fulfilled: 1,
@@ -275,6 +286,7 @@ Deno.test("handleFinishCheck integration: gaps trigger warning with set_id in ca
     data: {
       status: "active",
       set_id: "SET-abc",
+      execution_status: "inTransit" as const,
       items: [
         { type_key: "estado", is_fulfilled: false, count: 0 },
         { type_key: "doc", is_fulfilled: true, count: 1 },
@@ -300,6 +312,7 @@ Deno.test("forced_completion_with_gaps: snapshot contains flag", () => {
     query_type: "finish_forced",
     forced_completion_with_gaps: true,
     set_id: "SET-1",
+    execution_status: "inTransit" as const,
   };
   assertEquals(snapshot.forced_completion_with_gaps, true);
   assertEquals(snapshot.query_type, "finish_forced");

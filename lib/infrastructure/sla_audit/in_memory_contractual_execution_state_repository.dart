@@ -5,8 +5,6 @@ import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 
 /// In-memory implementation of [ContractualExecutionStateRepository].
-///
-/// Uses a [Map] indexed by [setId]. Save overwrites existing state.
 class InMemoryContractualExecutionStateRepository
     implements ContractualExecutionStateRepository {
   final Map<String, ContractualExecutionState> _store = {};
@@ -22,35 +20,41 @@ class InMemoryContractualExecutionStateRepository
   }
 
   @override
-  Future<List<ContractualExecutionState>> findPendingByContractAndTime(
+  Future<List<ContractualExecutionState>> findPlannedByContractAndTime(
     String contractId,
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final results = _store.values.where((s) {
-      return s.organizationId == organizationId &&
-          s.status == ExecutionStatus.pending &&
-          s.contractId == contractId &&
-          !s.windowStartUtc.isAfter(nowUtc) &&
-          !s.windowEndUtc.isBefore(nowUtc);
-    }).toList();
-
-    return UnmodifiableListView(results);
+    return UnmodifiableListView(
+      _store.values
+          .where(
+            (s) =>
+                s.organizationId == organizationId &&
+                s.status == ExecutionStatus.planned &&
+                s.contractId == contractId &&
+                !s.windowStartUtc.isAfter(nowUtc) &&
+                !s.windowEndUtc.isBefore(nowUtc),
+          )
+          .toList(),
+    );
   }
 
   @override
-  Future<List<ContractualExecutionState>> findPendingInWindow(
+  Future<List<ContractualExecutionState>> findPlannedInWindow(
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final results = _store.values.where((s) {
-      return s.organizationId == organizationId &&
-          s.status == ExecutionStatus.pending &&
-          !s.windowStartUtc.isAfter(nowUtc) &&
-          !s.windowEndUtc.isBefore(nowUtc);
-    }).toList();
-
-    return UnmodifiableListView(results);
+    return UnmodifiableListView(
+      _store.values
+          .where(
+            (s) =>
+                s.organizationId == organizationId &&
+                s.status == ExecutionStatus.planned &&
+                !s.windowStartUtc.isAfter(nowUtc) &&
+                !s.windowEndUtc.isBefore(nowUtc),
+          )
+          .toList(),
+    );
   }
 
   @override
@@ -58,43 +62,50 @@ class InMemoryContractualExecutionStateRepository
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final results = _store.values.where((s) {
-      final isReevaluable =
-          s.status == ExecutionStatus.pending ||
-          s.status == ExecutionStatus.noShow ||
-          s.status == ExecutionStatus.evidenceGap;
-
-      return s.organizationId == organizationId &&
-          isReevaluable &&
-          !s.windowStartUtc.isAfter(nowUtc) &&
-          !s.windowEndUtc.isBefore(nowUtc);
-    }).toList();
-
-    return UnmodifiableListView(results);
+    const reevaluable = {
+      ExecutionStatus.planned,
+      ExecutionStatus.inTransit,
+      ExecutionStatus.failed,
+      ExecutionStatus.completedWithGaps,
+    };
+    return UnmodifiableListView(
+      _store.values
+          .where(
+            (s) =>
+                s.organizationId == organizationId &&
+                reevaluable.contains(s.status) &&
+                !s.windowStartUtc.isAfter(nowUtc) &&
+                !s.windowEndUtc.isBefore(nowUtc),
+          )
+          .toList(),
+    );
   }
 
   @override
-  Future<List<ContractualExecutionState>> findExpiredPending(
+  Future<List<ContractualExecutionState>> findExpiredPlanned(
     DateTime nowUtc, {
     required String organizationId,
   }) async {
-    final results = _store.values.where((s) {
-      return s.organizationId == organizationId &&
-          s.status == ExecutionStatus.pending &&
-          s.windowEndUtc.isBefore(nowUtc);
-    }).toList();
-
-    return UnmodifiableListView(results);
+    return UnmodifiableListView(
+      _store.values
+          .where(
+            (s) =>
+                s.organizationId == organizationId &&
+                (s.status == ExecutionStatus.planned ||
+                    s.status == ExecutionStatus.inTransit) &&
+                s.windowEndUtc.isBefore(nowUtc),
+          )
+          .toList(),
+    );
   }
 
   @override
   Future<List<ContractualExecutionState>> findAll({
     required String organizationId,
   }) async {
-    final results = _store.values
-        .where((s) => s.organizationId == organizationId)
-        .toList();
-    return UnmodifiableListView(results);
+    return UnmodifiableListView(
+      _store.values.where((s) => s.organizationId == organizationId).toList(),
+    );
   }
 
   @override
@@ -102,13 +113,14 @@ class InMemoryContractualExecutionStateRepository
     String contractId, {
     required String organizationId,
   }) async {
-    final results = _store.values
-        .where(
-          (s) =>
-              s.organizationId == organizationId && s.contractId == contractId,
-        )
-        .toList();
-
-    return UnmodifiableListView(results);
+    return UnmodifiableListView(
+      _store.values
+          .where(
+            (s) =>
+                s.organizationId == organizationId &&
+                s.contractId == contractId,
+          )
+          .toList(),
+    );
   }
 }

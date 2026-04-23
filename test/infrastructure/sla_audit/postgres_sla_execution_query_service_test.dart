@@ -1,4 +1,4 @@
-/// Unit tests for [SlaExecutionQueryServicePostgres].
+﻿/// Unit tests for [SlaExecutionQueryServicePostgres].
 ///
 /// Tests the **real service** using HTTP-level interception with properly
 /// constructed http.Response objects (including `request` field).
@@ -79,7 +79,7 @@ class _ResponseWithRequest extends http.Response {
 Map<String, dynamic> _makeMockRow({
   String setId = 'set-001',
   String contractId = 'contract-001',
-  String status = 'pending',
+  String status = 'planned',
   int contractualValueCents = 10000,
   double noShowPenaltyMultiplier = 1.5,
   String windowStartUtc = '2026-03-01T06:00:00+00:00',
@@ -195,13 +195,13 @@ void main() {
         stubJson([]);
 
         await service.listByStatus(
-          ExecutionStatus.pending,
+          ExecutionStatus.planned,
           organizationId: orgId,
         );
 
         // ── PROVA FORENSE: verify() via captured HTTP params ──
         verifyOrgId(orgId);
-        expect(_captured.queryParams['status'], 'eq.pending');
+        expect(_captured.queryParams['status'], 'eq.planned');
       },
     );
 
@@ -227,12 +227,12 @@ void main() {
         stubJson([
           _makeMockRow(
             setId: 's-legit',
-            status: 'executed',
+            status: 'completed',
             contractualValueCents: 20000,
           ),
           _makeMockRow(
             setId: 's-intruder',
-            status: 'executed',
+            status: 'completed',
             contractualValueCents: 99999,
           ),
         ]);
@@ -241,7 +241,7 @@ void main() {
 
         // O serviço processa TODAS as rows que recebe — prova que NÃO há
         // re-filtragem client-side. O total inclui a row "intrusa":
-        expect(result.totalExecuted, 2);
+        expect(result.totalCompleted, 2);
         expect(result.protectedRevenue, 119999); // 20000 + 99999
 
         // Isso DOCUMENTA que a tenant isolation DEPENDE CRITICAMENTE
@@ -297,7 +297,7 @@ void main() {
           windowEndUtc: '2026-03-01T07:00:00-03:00',
           bindingTimestampUtc: '2026-03-01T06:30:00-03:00',
           boundVehicleId: 'v-1',
-          status: 'executed',
+          status: 'completed',
         ),
       ]);
 
@@ -335,7 +335,7 @@ void main() {
         _makeMockRow(
           windowStartUtc: '2026-04-09T20:00:00', // ← SEM timezone!
           windowEndUtc: '2026-04-09T21:00:00',
-          status: 'executed',
+          status: 'completed',
         ),
       ]);
 
@@ -438,7 +438,7 @@ void main() {
     test('WASM safe: 2^53 - 1 cents without precision loss', () async {
       const safeMax = 9007199254740991; // 2^53 - 1
       stubJson([
-        _makeMockRow(contractualValueCents: safeMax, status: 'executed'),
+        _makeMockRow(contractualValueCents: safeMax, status: 'completed'),
       ]);
 
       final result = await service.getSummary(organizationId: orgId);
@@ -459,7 +459,7 @@ void main() {
         // Este teste DOCUMENTA o risco para auditoria forense.
         const unsafeValue = 9007199254740993; // 2^53 + 1
         stubJson([
-          _makeMockRow(contractualValueCents: unsafeValue, status: 'executed'),
+          _makeMockRow(contractualValueCents: unsafeValue, status: 'completed'),
         ]);
 
         final result = await service.getSummary(organizationId: orgId);
@@ -492,7 +492,7 @@ void main() {
           boundVehicleId: null,
           bindingTimestampUtc: null,
           plannedVehicleId: null,
-          status: 'pending',
+          status: 'planned',
         ),
       ]);
 
@@ -515,7 +515,7 @@ void main() {
       stubJson([]);
 
       final result = await service.listByStatus(
-        ExecutionStatus.pending,
+        ExecutionStatus.planned,
         organizationId: orgId,
       );
 
@@ -556,14 +556,14 @@ void main() {
     test('evidence_payload nulo não quebra o mapper', () async {
       // Row sem campo evidence_payload (não existe na view atual)
       // Deve funcionar normalmente — campos opcionais são null
-      final row = _makeMockRow(status: 'executed');
+      final row = _makeMockRow(status: 'completed');
       row.remove('evidence_payload'); // Garante que não existe
       stubJson([row]);
 
       final result = await service.findBySetId(setId, organizationId: orgId);
 
       expect(result, isNotNull);
-      expect(result!.status, ExecutionStatus.executed);
+      expect(result!.status, ExecutionStatus.completed);
     });
   });
 
@@ -577,7 +577,7 @@ void main() {
         _makeMockRow(
           setId: 'complete-1',
           contractId: 'contract-XYZ',
-          status: 'executed',
+          status: 'completed',
           contractualValueCents: 25000,
           noShowPenaltyMultiplier: 2.0,
           windowStartUtc: '2026-05-01T08:00:00+00:00',
@@ -598,7 +598,7 @@ void main() {
 
       expect(result!.setId, 'complete-1');
       expect(result.contractId, 'contract-XYZ');
-      expect(result.status, ExecutionStatus.executed);
+      expect(result.status, ExecutionStatus.completed);
       expect(result.windowStartUtc, DateTime.utc(2026, 5, 1, 8, 0, 0));
       expect(result.windowEndUtc, DateTime.utc(2026, 5, 1, 9, 0, 0));
       expect(result.plannedVehicleId, 'veh-200');
@@ -618,25 +618,25 @@ void main() {
         stubJson([
           _makeMockRow(
             setId: 's-pending',
-            status: 'pending',
+            status: 'planned',
             contractualValueCents: 5000,
             noShowPenaltyMultiplier: 1.0,
           ),
           _makeMockRow(
             setId: 's-executed',
-            status: 'executed',
+            status: 'completed',
             contractualValueCents: 20000,
             noShowPenaltyMultiplier: 1.0,
           ),
           _makeMockRow(
             setId: 's-noshow',
-            status: 'noShow',
+            status: 'failed',
             contractualValueCents: 10000,
             noShowPenaltyMultiplier: 1.5,
           ),
           _makeMockRow(
             setId: 's-gap',
-            status: 'evidenceGap',
+            status: 'completedWithGaps',
             contractualValueCents: 8000,
             noShowPenaltyMultiplier: 1.0,
           ),
@@ -644,10 +644,10 @@ void main() {
 
         final result = await service.getSummary(organizationId: orgId);
 
-        expect(result.totalPending, 1);
-        expect(result.totalExecuted, 1);
-        expect(result.totalNoShow, 1);
-        expect(result.totalEvidenceGap, 1);
+        expect(result.totalPlanned, 1);
+        expect(result.totalCompleted, 1);
+        expect(result.totalFailed, 1);
+        expect(result.totalCompletedWithGaps, 1);
         expect(result.total, 4);
         expect(result.protectedRevenue, 20000);
         expect(result.revenueAtRisk, 5000);
@@ -672,7 +672,7 @@ void main() {
       ]);
 
       final result = await service.listByStatus(
-        ExecutionStatus.pending,
+        ExecutionStatus.planned,
         organizationId: orgId,
       );
 

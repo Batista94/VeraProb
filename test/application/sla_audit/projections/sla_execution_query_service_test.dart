@@ -65,12 +65,16 @@ void main() {
       setId: 'noshow-1',
       windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
     );
-    noShow.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
+    noShow.markFailed(DateTime.utc(2026, 3, 1, 7, 1));
     await repo.save(noShow);
 
-    // 1 evidenceGap
+    // 1 completedWithGaps
     final gap = makeState(setId: 'gap-1');
-    gap.markEvidenceGap(DateTime.utc(2026, 3, 1, 6, 45));
+    gap.startTransit(
+      timestampUtc: DateTime.utc(2026, 3, 1, 6, 30),
+      source: 'telegram',
+    );
+    gap.completeWithGaps(DateTime.utc(2026, 3, 1, 6, 45));
     await repo.save(gap);
   }
 
@@ -80,10 +84,10 @@ void main() {
 
       final summary = await queryService.getSummary(organizationId: 'org-1');
 
-      expect(summary.totalPending, 2);
-      expect(summary.totalExecuted, 1);
-      expect(summary.totalNoShow, 1);
-      expect(summary.totalEvidenceGap, 1);
+      expect(summary.totalPlanned, 2);
+      expect(summary.totalCompleted, 1);
+      expect(summary.totalFailed, 1);
+      expect(summary.totalCompletedWithGaps, 1);
       expect(summary.total, 5);
       expect(summary.contractId, isNull);
     });
@@ -97,7 +101,7 @@ void main() {
         organizationId: 'org-1',
         contractId: 'c-1',
       );
-      expect(summaryC1.totalPending, 2);
+      expect(summaryC1.totalPlanned, 2);
       expect(summaryC1.total, 2);
       expect(summaryC1.contractId, 'c-1');
 
@@ -105,7 +109,7 @@ void main() {
         organizationId: 'org-1',
         contractId: 'c-2',
       );
-      expect(summaryC2.totalPending, 1);
+      expect(summaryC2.totalPlanned, 1);
       expect(summaryC2.total, 1);
     });
 
@@ -113,17 +117,17 @@ void main() {
       await seedMixedStates();
 
       final pending = await queryService.listByStatus(
-        ExecutionStatus.pending,
+        ExecutionStatus.planned,
         organizationId: 'org-1',
       );
       expect(pending, hasLength(2));
       expect(
-        pending.every((item) => item.status == ExecutionStatus.pending),
+        pending.every((item) => item.status == ExecutionStatus.planned),
         isTrue,
       );
 
       final executed = await queryService.listByStatus(
-        ExecutionStatus.executed,
+        ExecutionStatus.completed,
         organizationId: 'org-1',
       );
       expect(executed, hasLength(1));
@@ -155,7 +159,7 @@ void main() {
       );
 
       final items = await queryService.listByStatus(
-        ExecutionStatus.pending,
+        ExecutionStatus.planned,
         organizationId: 'org-1',
       );
 
@@ -169,14 +173,14 @@ void main() {
       await seedMixedStates();
 
       final noShowItems = await queryService.listByStatus(
-        ExecutionStatus.noShow,
+        ExecutionStatus.failed,
         organizationId: 'org-1',
       );
       expect(noShowItems, hasLength(1));
       expect(noShowItems.first.setId, 'noshow-1');
 
       final gapItems = await queryService.listByStatus(
-        ExecutionStatus.evidenceGap,
+        ExecutionStatus.completedWithGaps,
         organizationId: 'org-1',
       );
       expect(gapItems, hasLength(1));
@@ -184,7 +188,7 @@ void main() {
 
       // Verify read model fields are mapped correctly
       final executedItems = await queryService.listByStatus(
-        ExecutionStatus.executed,
+        ExecutionStatus.completed,
         organizationId: 'org-1',
       );
       final item = executedItems.first;
@@ -262,7 +266,7 @@ void main() {
       await repo.save(makeState(setId: 'c2-set', contractId: 'c-2'));
 
       final items = await queryService.listByStatus(
-        ExecutionStatus.pending,
+        ExecutionStatus.planned,
         organizationId: 'org-1',
         contractId: 'c-1',
       );
@@ -302,30 +306,37 @@ void main() {
           noShowPenaltyBps: 15000,
           windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
         );
-        noShow.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
+        noShow.markFailed(DateTime.utc(2026, 3, 1, 7, 1));
         await repo.save(noShow);
 
-        // 4. EvidenceGap: contractualValue = 80.0 → revenueAtRisk only
+        // 4. CompletedWithGaps: contractualValue = 80.0 → lostRevenue
         final gap = makeState(
           setId: 'fin-gap',
           contractualValue: const Money(8000),
           noShowPenaltyBps: 10000,
         );
-        gap.markEvidenceGap(DateTime.utc(2026, 3, 1, 6, 45));
+        gap.startTransit(
+          timestampUtc: DateTime.utc(2026, 3, 1, 6, 30),
+          source: 'telegram',
+        );
+        gap.completeWithGaps(DateTime.utc(2026, 3, 1, 6, 45));
         await repo.save(gap);
 
         final summary = await queryService.getSummary(organizationId: 'org-1');
 
         // Verify counters are isolated
-        expect(summary.totalPending, 1);
-        expect(summary.totalExecuted, 1);
-        expect(summary.totalNoShow, 1);
-        expect(summary.totalEvidenceGap, 1);
+        expect(summary.totalPlanned, 1);
+        expect(summary.totalCompleted, 1);
+        expect(summary.totalFailed, 1);
+        expect(summary.totalCompletedWithGaps, 1);
 
         // Verify revenues are isolated
         expect(summary.protectedRevenue, 20000);
-        expect(summary.lostRevenue, 15000); // 100 * 1.5
-        expect(summary.revenueAtRisk, 8000);
+        expect(
+          summary.lostRevenue,
+          23000,
+        ); // 15000 (noShow) + 8000 (completedWithGaps)
+        expect(summary.revenueAtRisk, 0);
       },
     );
   });

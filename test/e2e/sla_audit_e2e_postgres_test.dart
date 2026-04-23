@@ -261,7 +261,7 @@ void main() {
       await executionRepo.save(newState);
 
       // Now we have 1 pending state
-      final pendingStates = await executionRepo.findPendingByContractAndTime(
+      final pendingStates = await executionRepo.findPlannedByContractAndTime(
         contractId,
         testBaseTimeUtc,
         organizationId: '00000000-0000-0000-0000-000000000001',
@@ -531,7 +531,7 @@ void main() {
 
       // 2. Try to query the execution states
       final stolenExecutions = await executionQueryService.listByStatus(
-        ExecutionStatus.executed,
+        ExecutionStatus.completed,
         organizationId: '00000000-0000-0000-0000-000000000002',
         contractId: contractId,
       );
@@ -590,13 +590,17 @@ void main() {
         contractId: contractId,
       );
 
-      expect(summary.totalExecuted, 1, reason: '1 executed set from telemetry');
-      expect(summary.totalPending, 0);
+      expect(
+        summary.totalCompleted,
+        1,
+        reason: '1 executed set from telemetry',
+      );
+      expect(summary.totalPlanned, 0);
       expect(summary.total, 1);
       expect(summary.protectedRevenue, 10000);
 
       final executedList = await executionQueryService.listByStatus(
-        ExecutionStatus.executed,
+        ExecutionStatus.completed,
         organizationId: '00000000-0000-0000-0000-000000000001',
         contractId: contractId,
       );

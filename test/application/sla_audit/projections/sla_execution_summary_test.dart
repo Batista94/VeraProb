@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
 
 void main() {
@@ -6,10 +6,10 @@ void main() {
     test('total calculates correctly', () {
       final summary = SlaExecutionSummary(
         contractId: 'c1',
-        totalPending: 10,
-        totalExecuted: 20,
-        totalNoShow: 5,
-        totalEvidenceGap: 2,
+        totalPlanned: 10,
+        totalCompleted: 20,
+        totalFailed: 5,
+        totalCompletedWithGaps: 2,
         generatedAtUtc: DateTime.utc(2026, 3, 1),
       );
 
@@ -18,10 +18,10 @@ void main() {
 
     test('default properties are assigned', () {
       final summary = SlaExecutionSummary(
-        totalPending: 1,
-        totalExecuted: 1,
-        totalNoShow: 1,
-        totalEvidenceGap: 1,
+        totalPlanned: 1,
+        totalCompleted: 1,
+        totalFailed: 1,
+        totalCompletedWithGaps: 1,
         generatedAtUtc: DateTime.utc(2026, 3, 1),
       );
 
@@ -34,17 +34,17 @@ void main() {
     test('props computes identical states as equal', () {
       final t = DateTime.utc(2026, 3, 1);
       final s1 = SlaExecutionSummary(
-        totalPending: 1,
-        totalExecuted: 1,
-        totalNoShow: 1,
-        totalEvidenceGap: 1,
+        totalPlanned: 1,
+        totalCompleted: 1,
+        totalFailed: 1,
+        totalCompletedWithGaps: 1,
         generatedAtUtc: t,
       );
       final s2 = SlaExecutionSummary(
-        totalPending: 1,
-        totalExecuted: 1,
-        totalNoShow: 1,
-        totalEvidenceGap: 1,
+        totalPlanned: 1,
+        totalCompleted: 1,
+        totalFailed: 1,
+        totalCompletedWithGaps: 1,
         generatedAtUtc: t,
       );
 

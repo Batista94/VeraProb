@@ -20,10 +20,12 @@ export interface ComplianceItem {
   count: number;
 }
 
+export type ExecutionFsmStatus = "planned" | "inTransit" | "completed" | "completedWithGaps" | "failed" | "inhibited";
+
 export type ComplianceRpcResult =
   | { status: "no_active_trip" }
-  | { status: "no_requirements"; set_id: string; evidence_count: number }
-  | { status: "active"; set_id: string; items: ComplianceItem[]; total_required: number; total_fulfilled: number };
+  | { status: "no_requirements"; set_id: string; execution_status: ExecutionFsmStatus; evidence_count: number }
+  | { status: "active"; set_id: string; execution_status: ExecutionFsmStatus; items: ComplianceItem[]; total_required: number; total_fulfilled: number };
 
 /** Formats the /status checklist message body. Pure — no side effects. */
 export function formatStatusMessage(result: ComplianceRpcResult): string {

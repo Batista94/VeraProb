@@ -13,7 +13,6 @@ import 'sla_financial_providers.dart';
 // ── Repositories ────────────────────────────────────────────────────────────
 
 final _auditPackageRepositoryProvider = Provider((ref) {
-  // TODO(Phase 7.2): swap to PostgresAuditPackageRepository when Postgres mode
   return InMemoryAuditPackageRepository();
 });
 

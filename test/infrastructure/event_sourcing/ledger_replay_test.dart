@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
@@ -81,7 +81,7 @@ void main() {
             noShowPenaltyBps: rebuiltState.noShowPenaltyBps,
             windowStartUtc: rebuiltState.windowStartUtc,
             windowEndUtc: rebuiltState.windowEndUtc,
-            status: ExecutionStatus.executed, // Updated
+            status: ExecutionStatus.completed, // Updated
             createdAtUtc: rebuiltState.createdAtUtc,
             lastEvaluatedAtUtc: entry.occurredAtUtc,
             statusLastUpdatedAtUtc: entry.occurredAtUtc,
@@ -108,7 +108,7 @@ void main() {
             noShowPenaltyBps: rebuiltState.noShowPenaltyBps,
             windowStartUtc: rebuiltState.windowStartUtc,
             windowEndUtc: rebuiltState.windowEndUtc,
-            status: ExecutionStatus.noShow, // Updated
+            status: ExecutionStatus.failed, // Updated
             createdAtUtc: rebuiltState.createdAtUtc,
             lastEvaluatedAtUtc: entry.occurredAtUtc,
             statusLastUpdatedAtUtc: entry.occurredAtUtc,
@@ -124,7 +124,7 @@ void main() {
 
       expect(finalState, isNotNull);
       expect(finalState!.setId, 'set-1');
-      expect(finalState.status, ExecutionStatus.executed);
+      expect(finalState.status, ExecutionStatus.completed);
       expect(finalState.boundVehicleId, 'v-1');
       expect(finalState.bindingTimestampUtc, DateTime.utc(2026, 3, 1, 6, 30));
     });
@@ -154,7 +154,7 @@ void main() {
         await execRepo.save(originalState);
 
         // 2. Business action execution (Time passed without vehicle)
-        originalState.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
+        originalState.markFailed(DateTime.utc(2026, 3, 1, 7, 1));
 
         for (final event in originalState.domainEvents) {
           await ledgerRepo.append(SlaLedgerMapper.mapToEntry(event));
@@ -199,7 +199,7 @@ void main() {
               noShowPenaltyBps: rebuiltState.noShowPenaltyBps,
               windowStartUtc: rebuiltState.windowStartUtc,
               windowEndUtc: rebuiltState.windowEndUtc,
-              status: ExecutionStatus.noShow,
+              status: ExecutionStatus.failed,
               createdAtUtc: rebuiltState.createdAtUtc,
               lastEvaluatedAtUtc: entry.occurredAtUtc,
               statusLastUpdatedAtUtc: entry.occurredAtUtc,
@@ -217,7 +217,7 @@ void main() {
 
         expect(finalState, isNotNull);
         expect(finalState!.setId, 'set-noshow');
-        expect(finalState.status, ExecutionStatus.noShow);
+        expect(finalState.status, ExecutionStatus.failed);
         expect(finalState.finalizedAtUtc, DateTime.utc(2026, 3, 1, 7, 1));
         expect(finalState.boundVehicleId, isNull);
       },

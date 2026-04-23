@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/alert_derivation_service.dart';
 import 'package:veraprob/application/sla_audit/alert_service.dart';
@@ -151,7 +151,7 @@ void main() {
       );
 
       final state = await repo.findBySetId('set-1');
-      expect(state!.status, ExecutionStatus.executed);
+      expect(state!.status, ExecutionStatus.completed);
 
       // No alert for successful execution without penalties
       final alerts = alertRepo.alerts;
@@ -374,7 +374,7 @@ void main() {
         noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
-        status: ExecutionStatus.noShow,
+        status: ExecutionStatus.failed,
         createdAtUtc: DateTime.utc(2026, 3, 1, 6, 0),
         lastEvaluatedAtUtc: DateTime.utc(2026, 3, 1, 8, 0),
         statusLastUpdatedAtUtc: DateTime.utc(2026, 3, 1, 8, 0),
@@ -404,7 +404,7 @@ void main() {
         noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
-        status: ExecutionStatus.evidenceGap,
+        status: ExecutionStatus.completedWithGaps,
         createdAtUtc: DateTime.utc(2026, 3, 1, 6, 0),
         lastEvaluatedAtUtc: DateTime.utc(2026, 3, 1, 8, 0),
         statusLastUpdatedAtUtc: DateTime.utc(2026, 3, 1, 8, 0),
@@ -434,7 +434,7 @@ void main() {
         noShowPenaltyBps: 15000,
         windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
         windowEndUtc: DateTime.utc(2026, 3, 1, 7, 0),
-        status: ExecutionStatus.pending,
+        status: ExecutionStatus.planned,
         createdAtUtc: DateTime.utc(2026, 3, 1, 6, 0),
         lastEvaluatedAtUtc: DateTime.utc(2026, 3, 1, 6, 30),
         statusLastUpdatedAtUtc: DateTime.utc(2026, 3, 1, 6, 30),

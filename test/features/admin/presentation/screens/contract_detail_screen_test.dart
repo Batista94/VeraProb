@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -75,7 +75,7 @@ ContractSummaryView _summary({
 );
 
 SlaExecutionItemView _execution({
-  ExecutionStatus status = ExecutionStatus.executed,
+  ExecutionStatus status = ExecutionStatus.completed,
   String? vehicleId = 'VEH-001',
   int contractualValue = 50000,
 }) => SlaExecutionItemView(
@@ -96,16 +96,16 @@ SlaExecutionSummary _financial({
   int protectedRevenue = 120000,
   int revenueAtRisk = 30000,
   int lostRevenue = 50000,
-  int totalPending = 2,
-  int totalExecuted = 10,
-  int totalNoShow = 1,
-  int totalEvidenceGap = 1,
+  int totalPlanned = 2,
+  int totalCompleted = 10,
+  int totalFailed = 1,
+  int totalCompletedWithGaps = 1,
 }) => SlaExecutionSummary(
   contractId: 'c-1',
-  totalPending: totalPending,
-  totalExecuted: totalExecuted,
-  totalNoShow: totalNoShow,
-  totalEvidenceGap: totalEvidenceGap,
+  totalPlanned: totalPlanned,
+  totalCompleted: totalCompleted,
+  totalFailed: totalFailed,
+  totalCompletedWithGaps: totalCompletedWithGaps,
   generatedAtUtc: _utc,
   protectedRevenue: protectedRevenue,
   revenueAtRisk: revenueAtRisk,
@@ -565,10 +565,10 @@ void main() {
           activatedAtUtc: _utc,
         ),
         financial: _financial(
-          totalPending: 2,
-          totalExecuted: 10,
-          totalNoShow: 1,
-          totalEvidenceGap: 1,
+          totalPlanned: 2,
+          totalCompleted: 10,
+          totalFailed: 1,
+          totalCompletedWithGaps: 1,
         ),
       );
 

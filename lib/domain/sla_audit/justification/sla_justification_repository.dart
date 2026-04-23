@@ -1,4 +1,4 @@
-import '../concurrency_exception.dart';
+﻿import '../concurrency_exception.dart';
 import 'justification_audit_log.dart';
 import 'justification_status.dart';
 import 'sla_justification.dart';
@@ -44,7 +44,7 @@ abstract class SLAJustificationRepository {
   ///
   /// **Deprecated in favour of [findExpiredPendingPaged].** Kept for backwards
   /// compatibility with existing test fixtures that have not yet been migrated.
-  Future<List<SLAJustification>> findExpiredPending({
+  Future<List<SLAJustification>> findExpiredPlanned({
     required DateTime cutoffUtc,
     required String organizationId,
   });

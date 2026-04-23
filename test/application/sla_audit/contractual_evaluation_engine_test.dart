@@ -6,7 +6,7 @@ import 'evaluation_engine/_engine_test_helpers.dart';
 // ── INV-23 (SANCTION_RECOMMENDED carries VerdictEvidence)
 //
 // Coverage targets:
-//   1. False Positive  — minGeofenceCoverage, dwell ≥ 30s → ExecutionStatus.executed,
+//   1. False Positive  — minGeofenceCoverage, dwell ≥ 30s → ExecutionStatus.completed,
 //                        ledger has ZERO SANCTION_RECOMMENDED entries.
 //   2. Relentless Fine — noShowPenalty BPS cap (INV-5):
 //                        contractualValue=15000, noShowPenaltyBps=15000
@@ -75,7 +75,7 @@ void main() {
         final updated = await repo.findBySetId(setId);
         expect(
           updated!.status,
-          ExecutionStatus.executed,
+          ExecutionStatus.completed,
           reason: 'bindExecution must fire once dwell threshold is met',
         );
 
@@ -92,34 +92,38 @@ void main() {
       },
     );
 
-    test('vehicle inside geofence < 30s → state remains pending', () async {
-      // Arrange
-      final state = makeExecState(
-        setId: setId,
-        contractId: contractId,
-        windowStart: DateTime.utc(2026, 3, 1, 6, 0),
-        windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
-      );
-      await repo.save(state);
-      await seedPlanWithDwellRule(planRepo, contractId, 1);
+    test(
+      'vehicle inside geofence < 30s → state transitions to inTransit (dwell not met)',
+      () async {
+        // Arrange
+        final state = makeExecState(
+          setId: setId,
+          contractId: contractId,
+          windowStart: DateTime.utc(2026, 3, 1, 6, 0),
+          windowEnd: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        await repo.save(state);
+        await seedPlanWithDwellRule(planRepo, contractId, 1);
 
-      // Act — single ping inside geofence, dwell NOT yet met
-      final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
-      await engine.processVehicleState(
-        makeVehicleAtTime(latitude: geoLat, longitude: geoLng, timestamp: t0),
-        nowUtc: t0,
-        organizationId: 'org-1',
-      );
+        // Act — single ping inside geofence, dwell NOT yet met
+        final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
+        await engine.processVehicleState(
+          makeVehicleAtTime(latitude: geoLat, longitude: geoLng, timestamp: t0),
+          nowUtc: t0,
+          organizationId: 'org-1',
+        );
 
-      // Assert: state remains pending (dwell not satisfied after single ping)
-      final updated = await repo.findBySetId(setId);
-      expect(
-        updated!.status,
-        ExecutionStatus.pending,
-        reason: 'Single ping must not bind execution — dwell threshold unmet',
-      );
-      expect(ledger.entries, isEmpty);
-    });
+        // Assert: state transitions to inTransit (geofence entry detected, dwell not yet met)
+        final updated = await repo.findBySetId(setId);
+        expect(
+          updated!.status,
+          ExecutionStatus.inTransit,
+          reason:
+              'First geofence entry transitions planned→inTransit; dwell not yet met so not completed',
+        );
+        expect(ledger.entries, isEmpty);
+      },
+    );
   });
 
   // ── Group 2: Relentless Fine — noShowPenalty BPS cap ────────────────────
@@ -158,7 +162,7 @@ void main() {
         final updated = await repo.findBySetId(setId);
         expect(
           updated!.status,
-          ExecutionStatus.noShow,
+          ExecutionStatus.failed,
           reason: 'sweepExpiredObligations must mark state as noShow',
         );
 
@@ -211,7 +215,7 @@ void main() {
 
         // Assert: noShow declared but no financial sanction
         final updated = await repo.findBySetId(setId);
-        expect(updated!.status, ExecutionStatus.noShow);
+        expect(updated!.status, ExecutionStatus.failed);
         final sanctions = ledger.entries
             .where((e) => e.type == 'SANCTION_RECOMMENDED')
             .toList();

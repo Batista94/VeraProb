@@ -1,4 +1,4 @@
-import 'contractual_execution_state.dart';
+﻿import 'contractual_execution_state.dart';
 
 /// Domain Port: Repository for persisting and querying
 /// [ContractualExecutionState] aggregates.
@@ -16,7 +16,7 @@ abstract class ContractualExecutionStateRepository {
   /// whose time window contains [nowUtc].
   ///
   /// Returns an unmodifiable list.
-  Future<List<ContractualExecutionState>> findPendingByContractAndTime(
+  Future<List<ContractualExecutionState>> findPlannedByContractAndTime(
     String contractId,
     DateTime nowUtc, {
     required String organizationId,
@@ -26,7 +26,7 @@ abstract class ContractualExecutionStateRepository {
   /// contains [nowUtc], scoped to [organizationId].
   ///
   /// Returns an unmodifiable list.
-  Future<List<ContractualExecutionState>> findPendingInWindow(
+  Future<List<ContractualExecutionState>> findPlannedInWindow(
     DateTime nowUtc, {
     required String organizationId,
   });
@@ -43,7 +43,7 @@ abstract class ContractualExecutionStateRepository {
   /// has expired (windowEndUtc < [nowUtc]), scoped to [organizationId].
   ///
   /// Returns an unmodifiable list.
-  Future<List<ContractualExecutionState>> findExpiredPending(
+  Future<List<ContractualExecutionState>> findExpiredPlanned(
     DateTime nowUtc, {
     required String organizationId,
   });

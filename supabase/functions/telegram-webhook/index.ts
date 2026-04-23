@@ -389,6 +389,29 @@ Deno.serve(async (req: Request): Promise<Response> => {
           }
         }
       }
+      // ── tg_start_transit:{set_id} — Driver initiates trip (planned → inTransit) ──
+      // First-wins idempotent: if already inTransit, returns true silently.
+      else if (cb.data?.startsWith("tg_start_transit:")) {
+        const setId = cb.data.substring(17); // "tg_start_transit:".length === 17
+        const cbBinding = await getActiveBinding(supabase, cbChatId);
+        if (!cbBinding) {
+          await answerCallbackQuery(botToken, cb.id, "⚠️ Chat não vinculado.");
+        } else {
+          const { data: ok } = await supabase.rpc("start_transit_for_execution", {
+            p_org_id: cbBinding.organization_id,
+            p_set_id: setId,
+          });
+          if (ok) {
+            await answerCallbackQuery(botToken, cb.id, "▶️ Viagem iniciada!");
+            if (cb.message?.message_id) {
+              await editMessageText(botToken, cbChatId, cb.message.message_id,
+                `▶️ <b>Viagem iniciada.</b>\nRota <b>${setId}</b> em trânsito. Envie suas evidências.`);
+            }
+          } else {
+            await answerCallbackQuery(botToken, cb.id, "⚠️ Não foi possível iniciar.");
+          }
+        }
+      }
       // ── tg_finish_cancel — Driver cancels finish ─────────────────────────
       else if (cb.data === "tg_finish_cancel") {
         await answerCallbackQuery(botToken, cb.id, "↩️ Cancelado.");
@@ -1171,7 +1194,12 @@ async function handleStatusCheck(
 
     await sendMessageWithKeyboard(botToken, chatId,
       formatStatusMessage(result),
-      [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+      result.status !== "no_active_trip" && (result as { execution_status?: string }).execution_status === "planned"
+        ? [
+            [{ text: "▶️ Iniciar Viagem", callback_data: `tg_start_transit:${(result as { set_id: string }).set_id}` }],
+            [{ text: "❓ Ajuda", callback_data: "help" }],
+          ]
+        : [[{ text: "❓ Ajuda", callback_data: "help" }]]);
   } catch (e) {
     console.error(`[telegram-webhook] handleStatusCheck error correlationId=${correlationId}:`, e);
     await sendMessageWithKeyboard(botToken, chatId,

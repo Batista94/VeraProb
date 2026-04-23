@@ -169,11 +169,11 @@ final slaExceptionsProvider = FutureProvider<List<SlaExecutionItemView>>((
 
   final service = ref.watch(slaExecutionQueryServiceProvider);
   final noShows = await service.listByStatus(
-    ExecutionStatus.noShow,
+    ExecutionStatus.failed,
     organizationId: organizationId,
   );
   final evidenceGaps = await service.listByStatus(
-    ExecutionStatus.evidenceGap,
+    ExecutionStatus.completedWithGaps,
     organizationId: organizationId,
   );
 

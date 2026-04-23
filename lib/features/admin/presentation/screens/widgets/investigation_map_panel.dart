@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
@@ -16,10 +16,10 @@ class InvestigationMapPanel extends StatelessWidget {
 
     // Convert status to visual color
     Color statusColor = VeraProbColors.info;
-    if (execution.status == ExecutionStatus.noShow ||
-        execution.status == ExecutionStatus.evidenceGap) {
+    if (execution.status == ExecutionStatus.failed ||
+        execution.status == ExecutionStatus.completedWithGaps) {
       statusColor = VeraProbColors.error;
-    } else if (execution.status == ExecutionStatus.executed) {
+    } else if (execution.status == ExecutionStatus.completed) {
       statusColor = VeraProbColors.success;
     }
 
@@ -81,7 +81,7 @@ class InvestigationMapPanel extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (execution.status == ExecutionStatus.executed &&
+                    if (execution.status == ExecutionStatus.completed &&
                         execution.bindingTimestampUtc != null) ...[
                       MarkerLayer(
                         markers: [

@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 
 import '_engine_test_helpers.dart';
 
@@ -48,7 +48,7 @@ void main() {
         final s = await repo.findBySetId(state.setId);
         expect(
           s!.status,
-          ExecutionStatus.pending,
+          ExecutionStatus.planned,
           reason: 'SET should remain pending during grace period',
         );
         expect(ledger.entries, isEmpty);
@@ -88,7 +88,7 @@ void main() {
           final s = await repo.findBySetId(state.setId);
           expect(
             s!.status,
-            ExecutionStatus.executed,
+            ExecutionStatus.completed,
             reason: 'SET should be bound after grace period expires',
           );
         },
@@ -127,7 +127,7 @@ void main() {
           final s = await repo.findBySetId(state.setId);
           expect(
             s!.status,
-            ExecutionStatus.executed,
+            ExecutionStatus.completed,
             reason: 'With grace=0, engine should bind immediately after dwell',
           );
         },
@@ -168,7 +168,7 @@ void main() {
         final result = await repo.findBySetId('set-1');
         expect(
           result!.status,
-          ExecutionStatus.executed,
+          ExecutionStatus.completed,
           reason: 'Dwell 10s should be enough',
         );
       });

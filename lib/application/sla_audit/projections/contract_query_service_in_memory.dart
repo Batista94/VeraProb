@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+﻿import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
@@ -127,13 +127,13 @@ class ContractQueryServiceInMemory implements ContractQueryService {
       organizationId: organizationId,
     );
     final totalSetsInProgress = allStates
-        .where((s) => s.status == ExecutionStatus.pending)
+        .where((s) => s.status == ExecutionStatus.planned)
         .length;
 
     // SLA health: executed / total * 10,000
     final totalSets = allStates.length;
     final executedCount = allStates
-        .where((s) => s.status == ExecutionStatus.executed)
+        .where((s) => s.status == ExecutionStatus.completed)
         .length;
     final slaHealthBps = totalSets == 0
         ? 0

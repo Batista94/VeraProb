@@ -92,18 +92,19 @@ class ContractualFinancialSnapshotGenerator {
       totalContractedRevenue = totalContractedRevenue + value;
 
       switch (s.status) {
-        case ExecutionStatus.pending:
+        case ExecutionStatus.planned:
+        case ExecutionStatus.inTransit:
           revenueAtRisk = revenueAtRisk + value;
           break;
-        case ExecutionStatus.executed:
+        case ExecutionStatus.completed:
           protectedRevenue = protectedRevenue + value;
           executedCount++;
           break;
-        case ExecutionStatus.noShow:
+        case ExecutionStatus.failed:
           lostRevenue = lostRevenue + value.multiplyByBps(s.noShowPenaltyBps);
           noShowCount++;
           break;
-        case ExecutionStatus.evidenceGap:
+        case ExecutionStatus.completedWithGaps:
           revenueAtRisk = revenueAtRisk + value;
           evidenceGapCount++;
           break;
@@ -182,18 +183,19 @@ class ContractualFinancialSnapshotGenerator {
       totalContractedRevenue = totalContractedRevenue + value;
 
       switch (s.status) {
-        case ExecutionStatus.pending:
+        case ExecutionStatus.planned:
+        case ExecutionStatus.inTransit:
           revenueAtRisk = revenueAtRisk + value;
           break;
-        case ExecutionStatus.executed:
+        case ExecutionStatus.completed:
           protectedRevenue = protectedRevenue + value;
           executedCount++;
           break;
-        case ExecutionStatus.noShow:
+        case ExecutionStatus.failed:
           lostRevenue = lostRevenue + value.multiplyByBps(s.noShowPenaltyBps);
           noShowCount++;
           break;
-        case ExecutionStatus.evidenceGap:
+        case ExecutionStatus.completedWithGaps:
           revenueAtRisk = revenueAtRisk + value;
           evidenceGapCount++;
           break;

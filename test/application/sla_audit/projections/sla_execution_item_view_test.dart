@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 
@@ -6,7 +6,7 @@ void main() {
   final now = DateTime.utc(2024, 6, 1);
 
   SlaExecutionItemView makeView({
-    ExecutionStatus status = ExecutionStatus.executed,
+    ExecutionStatus status = ExecutionStatus.completed,
     int bps = 15000,
     String? plannedVehicleId,
     String? boundVehicleId,
@@ -44,8 +44,8 @@ void main() {
     });
 
     test('props inequality — different status', () {
-      final v1 = makeView(status: ExecutionStatus.executed);
-      final v2 = makeView(status: ExecutionStatus.noShow);
+      final v1 = makeView(status: ExecutionStatus.completed);
+      final v2 = makeView(status: ExecutionStatus.failed);
       expect(v1, isNot(equals(v2)));
     });
 

@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -244,7 +244,7 @@ void main() {
         final r = await repo.findBySetId(state.setId);
         expect(
           r!.status,
-          ExecutionStatus.executed,
+          ExecutionStatus.completed,
           reason:
               'No exato segundo que a janela expira (>= start + grace), a avaliação DEVE ser processada e ligada',
         );
@@ -266,7 +266,7 @@ void main() {
         );
 
         var r = await repo.findBySetId(state.setId);
-        expect(r!.status, ExecutionStatus.noShow);
+        expect(r!.status, ExecutionStatus.failed);
 
         // Passo 2: Telemetria dentro da janela do passado chega com 49 horas de atraso na recepção
         final pingReal = DateTime.utc(2026, 3, 1, 6, 30); // Estava lá na hora!
@@ -285,7 +285,7 @@ void main() {
         r = await repo.findBySetId(state.setId);
         expect(
           r!.status,
-          ExecutionStatus.noShow,
+          ExecutionStatus.failed,
           reason:
               'Telemetria que chega após o LateArrivalWindowPolicy (48h) não pode alterar o estado já julgado como noShow.',
         );

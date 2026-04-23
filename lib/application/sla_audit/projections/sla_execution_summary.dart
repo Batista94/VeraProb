@@ -6,10 +6,11 @@ import 'package:equatable/equatable.dart';
 /// Immutable projection — no domain logic.
 class SlaExecutionSummary extends Equatable {
   final String? contractId;
-  final int totalPending;
-  final int totalExecuted;
-  final int totalNoShow;
-  final int totalEvidenceGap;
+  final int totalPlanned;
+  final int totalInTransit;
+  final int totalCompleted;
+  final int totalCompletedWithGaps;
+  final int totalFailed;
   final DateTime generatedAtUtc;
 
   // ── Financial Projections ──────────────────────────────────
@@ -19,10 +20,11 @@ class SlaExecutionSummary extends Equatable {
 
   const SlaExecutionSummary({
     this.contractId,
-    required this.totalPending,
-    required this.totalExecuted,
-    required this.totalNoShow,
-    required this.totalEvidenceGap,
+    required this.totalPlanned,
+    this.totalInTransit = 0,
+    required this.totalCompleted,
+    required this.totalCompletedWithGaps,
+    required this.totalFailed,
     required this.generatedAtUtc,
     this.protectedRevenue = 0,
     this.revenueAtRisk = 0,
@@ -31,23 +33,28 @@ class SlaExecutionSummary extends Equatable {
 
   factory SlaExecutionSummary.empty({required DateTime generatedAtUtc}) =>
       SlaExecutionSummary(
-        totalPending: 0,
-        totalExecuted: 0,
-        totalNoShow: 0,
-        totalEvidenceGap: 0,
+        totalPlanned: 0,
+        totalCompleted: 0,
+        totalCompletedWithGaps: 0,
+        totalFailed: 0,
         generatedAtUtc: generatedAtUtc,
       );
 
   int get total =>
-      totalPending + totalExecuted + totalNoShow + totalEvidenceGap;
+      totalPlanned +
+      totalInTransit +
+      totalCompleted +
+      totalCompletedWithGaps +
+      totalFailed;
 
   @override
   List<Object?> get props => [
     contractId,
-    totalPending,
-    totalExecuted,
-    totalNoShow,
-    totalEvidenceGap,
+    totalPlanned,
+    totalInTransit,
+    totalCompleted,
+    totalCompletedWithGaps,
+    totalFailed,
     generatedAtUtc,
     protectedRevenue,
     revenueAtRisk,

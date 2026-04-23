@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/application/normalization/models/motion_state.dart';
@@ -142,7 +142,7 @@ void main() {
       );
 
       final afterBinding = await repo.findBySetId('set-1');
-      expect(afterBinding!.status, ExecutionStatus.executed);
+      expect(afterBinding!.status, ExecutionStatus.completed);
 
       final traces = await traceRepo.findByEntityId('set-1');
       expect(
@@ -163,7 +163,7 @@ void main() {
       );
 
       final afterSweep = await repo.findBySetId('set-1');
-      expect(afterSweep!.status, ExecutionStatus.noShow);
+      expect(afterSweep!.status, ExecutionStatus.failed);
 
       final traces = await traceRepo.findByEntityId('set-1');
       expect(

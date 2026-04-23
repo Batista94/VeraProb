@@ -322,3 +322,59 @@ class SLAJustificationExpiredEvent extends DomainEvent {
     required this.eventTimestamp,
   });
 }
+
+/// Emitted when transit is initiated for an obligation.
+/// Source: Telegram button OR engine geofence entry (first-wins).
+class TransitStartedEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final DateTime startedAtUtc;
+
+  /// 'telegram' | 'geofence'
+  final String source;
+
+  const TransitStartedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.startedAtUtc,
+    required this.source,
+  });
+}
+
+/// Emitted when a driver forces route completion with pending evidence gaps.
+/// Forensic negligence anchor (INV-3).
+class CompletedWithGapsEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final DateTime completedAtUtc;
+
+  const CompletedWithGapsEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.completedAtUtc,
+  });
+}
+
+class ExecutionInhibitedEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final String reason;
+
+  const ExecutionInhibitedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.reason,
+  });
+}

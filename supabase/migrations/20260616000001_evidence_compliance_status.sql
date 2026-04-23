@@ -20,9 +20,8 @@
 SET client_min_messages TO 'WARNING';
 
 -- ── 1. Extend sla_rule_type enum ─────────────────────────────────────────────
-
--- Postgres 9.3+: IF NOT EXISTS prevents error on re-run (idempotent).
-ALTER TYPE sla_rule_type ADD VALUE IF NOT EXISTS 'REQUIRED_EVIDENCE';
+-- NOTE: ADD VALUE moved to 20260615000002_add_required_evidence_enum.sql
+-- ALTER TYPE ... ADD VALUE is non-transactional — must run in a prior migration.
 
 -- ── 2. Update rule_config_schema_check constraint ────────────────────────────
 -- Must DROP + recreate because ALTER CONSTRAINT doesn't exist in Postgres.

@@ -37,7 +37,10 @@ void main() {
         organizationId: 'org-1',
       );
       final afterFirst = await repo.findBySetId('set-1');
-      expect(afterFirst!.status, ExecutionStatus.pending);
+      expect(
+        afterFirst!.status,
+        ExecutionStatus.inTransit,
+      ); // FSM: planned→inTransit on first geofence entry
 
       // Second ping — 31s later, still inside → binding
       await engine.processVehicleState(
@@ -46,9 +49,9 @@ void main() {
         organizationId: 'org-1',
       );
       final afterBinding = await repo.findBySetId('set-1');
-      expect(afterBinding!.status, ExecutionStatus.executed);
+      expect(afterBinding!.status, ExecutionStatus.completed);
       expect(afterBinding.boundVehicleId, 'v-1');
-      expect(ledger.entries, hasLength(1));
+      expect(ledger.entries, hasLength(2));
     });
 
     test('no binding if vehicle leaves geofence before 30s', () async {
@@ -84,7 +87,10 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
+      expect(
+        result!.status,
+        ExecutionStatus.inTransit,
+      ); // FSM: already inTransit from first entry
       expect(ledger.entries, isEmpty);
     });
 
@@ -110,7 +116,7 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
+      expect(result!.status, ExecutionStatus.planned);
 
       // Correct vehicle binds normally
       final rightVehicle = makeVehicleState(vehicleId: 'v-assigned');
@@ -126,7 +132,7 @@ void main() {
       );
 
       final bound = await repo.findBySetId('set-1');
-      expect(bound!.status, ExecutionStatus.executed);
+      expect(bound!.status, ExecutionStatus.completed);
       expect(bound.boundVehicleId, 'v-assigned');
     });
 
@@ -142,7 +148,7 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.noShow);
+      expect(result!.status, ExecutionStatus.failed);
       expect(ledger.entries, hasLength(1));
     });
 
@@ -166,7 +172,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      expect(ledger.entries, hasLength(1));
+      expect(ledger.entries, hasLength(2));
 
       // Process again — should NOT create another binding
       final t60 = DateTime.utc(2026, 3, 1, 6, 31, 0);
@@ -183,7 +189,7 @@ void main() {
       );
 
       // Still only 1 event
-      expect(ledger.entries, hasLength(1));
+      expect(ledger.entries, hasLength(2));
     });
 
     test('multiple execution states do not interfere', () async {
@@ -216,19 +222,19 @@ void main() {
 
       // state1 bound (vehicle is at geofence center)
       final r1 = await repo.findBySetId('set-1');
-      expect(r1!.status, ExecutionStatus.executed);
+      expect(r1!.status, ExecutionStatus.completed);
 
       // state2 also bound (same geofence defaults)
       final r2 = await repo.findBySetId('set-2');
-      expect(r2!.status, ExecutionStatus.executed);
+      expect(r2!.status, ExecutionStatus.completed);
 
       // Sweep should not affect finalized states
       await engine.sweepExpiredObligations(
         nowUtc: DateTime.utc(2026, 3, 1, 7, 1),
         organizationId: 'org-1',
       );
-      expect(r1.status, ExecutionStatus.executed);
-      expect(r2.status, ExecutionStatus.executed);
+      expect(r1.status, ExecutionStatus.completed);
+      expect(r2.status, ExecutionStatus.completed);
     });
 
     test(
@@ -265,8 +271,8 @@ void main() {
         ); // Duplicate
 
         final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.executed);
-        expect(ledger.entries, hasLength(1));
+        expect(result!.status, ExecutionStatus.completed);
+        expect(ledger.entries, hasLength(2));
       },
     );
 
@@ -310,8 +316,8 @@ void main() {
         );
 
         final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.executed);
-        expect(ledger.entries, hasLength(1));
+        expect(result!.status, ExecutionStatus.completed);
+        expect(ledger.entries, hasLength(2));
       },
     );
 
@@ -335,7 +341,7 @@ void main() {
         );
 
         final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.noShow);
+        expect(result!.status, ExecutionStatus.failed);
         // Should still be 1 event in ledger, not 2
         expect(ledger.entries, hasLength(1));
       },
@@ -372,7 +378,7 @@ void main() {
         );
 
         final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.noShow);
+        expect(result!.status, ExecutionStatus.failed);
 
         // Still only 1 ledger entry (the no-show)
         expect(ledger.entries, hasLength(1));
@@ -415,7 +421,7 @@ void main() {
           ),
         ]);
 
-        expect(ledger.entries, hasLength(1));
+        expect(ledger.entries, hasLength(2));
       },
     );
   });

@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/domain/sla_audit/sla_breach_risk_calculator.dart';
@@ -22,7 +22,7 @@ final atRiskSlaCountProvider = FutureProvider.autoDispose<int>((ref) async {
   final todayUtc = DateTime.utc(now.year, now.month, now.day);
 
   final pending = await queryService.listByStatus(
-    ExecutionStatus.pending,
+    ExecutionStatus.planned,
     organizationId: organizationId,
   );
 

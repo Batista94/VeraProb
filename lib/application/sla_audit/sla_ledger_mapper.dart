@@ -365,6 +365,46 @@ class SlaLedgerMapper {
       );
     }
 
+    if (event is TransitStartedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'TRANSIT_STARTED',
+        operatorId: 'SYSTEM',
+        setId: event.setId,
+        contractId: event.contractId,
+        planVersion: event.planVersion,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {
+          'started_at_utc': event.startedAtUtc.toIso8601String(),
+          'source': event.source,
+        },
+      );
+    }
+
+    if (event is CompletedWithGapsEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'COMPLETED_WITH_GAPS',
+        operatorId: 'SYSTEM',
+        setId: event.setId,
+        contractId: event.contractId,
+        planVersion: event.planVersion,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {'completed_at_utc': event.completedAtUtc.toIso8601String()},
+      );
+    }
+    if (event is ExecutionInhibitedEvent) {
+      return SlaLedgerEntry(
+        organizationId: event.organizationId,
+        type: 'EXECUTION_INHIBITED',
+        operatorId: 'SYSTEM',
+        setId: event.setId,
+        contractId: event.contractId,
+        planVersion: event.planVersion,
+        occurredAtUtc: event.occurredAtUtc,
+        payload: {'reason': event.reason},
+      );
+    }
     // Generic fallback for unknown events
     return SlaLedgerEntry(
       organizationId: event.organizationId,
