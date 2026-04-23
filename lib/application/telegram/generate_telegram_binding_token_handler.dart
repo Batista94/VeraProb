@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/core/utils/uuid_generator.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -18,26 +18,33 @@ import 'generate_telegram_binding_token_command.dart';
 /// Ambiguous characters (0/O, 1/I/L) are excluded for readability.
 ///
 /// INV-1: Tenant validation is the first operation.
-/// INV-7: ID and code are generated in Dart (deterministic replay).
+/// INV-15: ID and code are generated via injected abstractions (deterministic replay).
 class GenerateTelegramBindingTokenHandler {
-  static const _alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  static const _codeLength = 8;
+  static const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  static const codeLength = 8;
   static const _expiryMinutes = 15;
+  static const maxRetries = 3;
 
   final TenantValidationService _tenantValidator;
   final ITelegramRepository _telegramRepo;
   final RbacService _rbac;
   final IDateTimeProvider _dateTimeProvider;
+  final IUuidGenerator _uuidGenerator;
+  final Random _random;
 
   GenerateTelegramBindingTokenHandler({
     required TenantValidationService tenantValidator,
     required ITelegramRepository telegramRepo,
     required RbacService rbac,
     required IDateTimeProvider dateTimeProvider,
+    required IUuidGenerator uuidGenerator,
+    Random? random,
   }) : _tenantValidator = tenantValidator,
        _telegramRepo = telegramRepo,
        _rbac = rbac,
-       _dateTimeProvider = dateTimeProvider;
+       _dateTimeProvider = dateTimeProvider,
+       _uuidGenerator = uuidGenerator,
+       _random = random ?? Random.secure();
 
   Future<TelegramBindingToken> handle(
     GenerateTelegramBindingTokenCommand command,
@@ -53,28 +60,44 @@ class GenerateTelegramBindingTokenHandler {
     }
 
     final now = _dateTimeProvider.nowUtc();
-    final code = _generateCode();
 
-    final token = TelegramBindingToken(
-      id: const Uuid().v4(),
-      organizationId: command.organizationId,
-      driverId: command.driverId,
-      createdByUserId: command.callerUserId,
-      code: code,
-      expiresAtUtc: now.add(const Duration(minutes: _expiryMinutes)),
-      usedAtUtc: null,
-      createdAtUtc: now,
+    // Retry loop: regenerate code on unique constraint violation (code collision).
+    for (var attempt = 0; attempt < maxRetries; attempt++) {
+      final code = generateCode();
+      final token = TelegramBindingToken(
+        id: _uuidGenerator.v4(),
+        organizationId: command.organizationId,
+        driverId: command.driverId,
+        createdByUserId: command.callerUserId,
+        code: code,
+        expiresAtUtc: now.add(const Duration(minutes: _expiryMinutes)),
+        usedAtUtc: null,
+        createdAtUtc: now,
+      );
+
+      try {
+        await _telegramRepo.createBindingToken(token);
+        return token;
+      } on DomainException catch (e) {
+        final isCollision =
+            e.message.contains('unique') ||
+            e.message.contains('duplicate') ||
+            e.message.contains('23505');
+        if (!isCollision || attempt == maxRetries - 1) rethrow;
+        // Collision: retry with a new code on next iteration.
+      }
+    }
+
+    // Unreachable: loop always returns or rethrows. Dart requires this.
+    throw const DomainException(
+      'Code generation failed after $maxRetries retries',
     );
-
-    await _telegramRepo.createBindingToken(token);
-    return token;
   }
 
-  static String _generateCode() {
-    final rng = Random.secure();
+  String generateCode() {
     return List.generate(
-      _codeLength,
-      (_) => _alphabet[rng.nextInt(_alphabet.length)],
+      codeLength,
+      (_) => alphabet[_random.nextInt(alphabet.length)],
     ).join();
   }
 }

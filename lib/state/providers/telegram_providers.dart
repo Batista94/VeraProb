@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/telegram/generate_telegram_binding_token_command.dart';
 import 'package:veraprob/application/telegram/generate_telegram_binding_token_handler.dart';
+import 'package:veraprob/core/utils/uuid_generator.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
 import 'package:veraprob/domain/sla_audit/telegram/i_telegram_repository.dart';
@@ -28,6 +29,7 @@ final generateTelegramBindingTokenHandlerProvider =
         telegramRepo: ref.watch(telegramRepositoryProvider),
         rbac: RbacService(),
         dateTimeProvider: ref.watch(dateTimeProviderProvider),
+        uuidGenerator: const UuidGenerator(),
       );
     });
 
