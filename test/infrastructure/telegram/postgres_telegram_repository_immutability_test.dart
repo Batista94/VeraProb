@@ -64,7 +64,7 @@ void main() async {
 
       setUp(() async {
         // Fresh unique message_id per test to avoid UNIQUE constraint conflict.
-        final msgId = DateTime.now().microsecondsSinceEpoch;
+        final msgId = DateTime.now().toUtc().microsecondsSinceEpoch;
         final hash = PostgresTestConfig.fakeForensicHash('immutable-$msgId');
         evidenceId = await PostgresTestConfig.seedTelegramEvidenceUpload(
           serviceClient,
@@ -215,7 +215,7 @@ void main() async {
           final originalHash = PostgresTestConfig.fakeForensicHash(
             'immutable-original',
           );
-          final msgId = DateTime.now().microsecondsSinceEpoch + 9999;
+          final msgId = DateTime.now().toUtc().microsecondsSinceEpoch + 9999;
           final freshEvidenceId =
               await PostgresTestConfig.seedTelegramEvidenceUpload(
                 serviceClient,
@@ -290,7 +290,7 @@ void main() async {
       });
 
       setUp(() async {
-        final seed = DateTime.now().microsecondsSinceEpoch.toString();
+        final seed = DateTime.now().toUtc().microsecondsSinceEpoch.toString();
         final code = PostgresTestConfig.fakeTokenCode('tbt-$seed');
         tokenId = await PostgresTestConfig.seedBindingToken(
           serviceClient,

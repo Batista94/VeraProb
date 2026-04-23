@@ -345,6 +345,112 @@ class PostgresTestConfig {
     }
   }
 
+  // ── Operational Alert seed helpers ───────────────────────────────────────
+
+  /// Seeds a minimal [OperationalAlert] row, bypassing RLS via service_role.
+  ///
+  /// Returns the generated alert UUID.
+  ///
+  /// Always uses the [serviceRoleKey] internally so adversarial seeds
+  /// (e.g., Org_B data planted for cross-tenant attack tests) are never
+  /// blocked by the calling client's JWT.
+  static Future<String> seedOperationalAlert({
+    required String orgId,
+    required String entityId,
+    required String contractId,
+    String severity = 'CRITICAL',
+    String alertType = 'SLA_BREACH',
+    String status = 'ACTIVE',
+    Map<String, dynamic> context = const {},
+    String? triggeringEventId,
+    String? traceId,
+  }) async {
+    const uuid = Uuid();
+    final alertId = uuid.v4();
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      await seedClient.from('operational_alerts').insert({
+        'id': alertId,
+        'organization_id': orgId,
+        'entity_id': entityId,
+        'contract_id': contractId,
+        'alert_type': alertType,
+        'severity': severity,
+        'triggered_at_utc': DateTime.now().toUtc().toIso8601String(),
+        'triggering_event_id': triggeringEventId,
+        'trace_id': traceId,
+        'context': context,
+        'status': status,
+      });
+    } finally {
+      await seedClient.dispose();
+    }
+    return alertId;
+  }
+
+  /// Seeds [count] operational alerts in batches of [batchSize] to avoid
+  /// PostgREST request-size limits. All alerts belong to [orgId].
+  ///
+  /// Returns the list of generated alert UUIDs.
+  static Future<List<String>> seedOperationalAlertBatch({
+    required String orgId,
+    required String entityId,
+    required String contractId,
+    required int count,
+    int batchSize = 200,
+    String severity = 'CRITICAL',
+    String status = 'ACTIVE',
+  }) async {
+    const uuid = Uuid();
+    final ids = <String>[];
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      final now = DateTime.now().toUtc().toIso8601String();
+      for (var offset = 0; offset < count; offset += batchSize) {
+        final end = (offset + batchSize).clamp(0, count);
+        final batch = <Map<String, dynamic>>[];
+        for (var i = offset; i < end; i++) {
+          final id = uuid.v4();
+          ids.add(id);
+          batch.add({
+            'id': id,
+            'organization_id': orgId,
+            'entity_id': entityId,
+            'contract_id': contractId,
+            'alert_type': 'SLA_BREACH',
+            'severity': severity,
+            'triggered_at_utc': now,
+            'context': <String, dynamic>{},
+            'status': status,
+          });
+        }
+        await seedClient.from('operational_alerts').insert(batch);
+      }
+    } finally {
+      await seedClient.dispose();
+    }
+    return ids;
+  }
+
+  /// Removes all operational_alerts for the given [orgIds] via service_role.
+  static Future<void> cleanupOperationalAlerts({
+    required List<String> orgIds,
+  }) async {
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      for (final orgId in orgIds) {
+        await seedClient
+            .from('operational_alerts')
+            .delete()
+            .eq('organization_id', orgId);
+      }
+    } finally {
+      await seedClient.dispose();
+    }
+  }
+
+  // ── Shared utilities ──────────────────────────────────────────────────────
+
   /// Generates a deterministic 64-char hex SHA-256-like string for testing.
   static String fakeForensicHash(String seed) {
     // Produces a stable 64-char hex string — not a real SHA-256 but valid for

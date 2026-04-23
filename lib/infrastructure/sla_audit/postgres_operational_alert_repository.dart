@@ -94,6 +94,11 @@ class PostgresOperationalAlertRepository
             'acknowledged_by_user_id': alert.acknowledgedByUserId,
             'resolved_at_utc': alert.resolvedAtUtc?.toIso8601String(),
           })
+          // INV-1/INV-22 Defense-in-Depth: explicit org filter in Dart layer.
+          // RLS is the last gate; this filter is the first. If RLS is
+          // temporarily disabled during maintenance, cross-org updates are
+          // still structurally impossible at the wire level.
+          .eq('organization_id', alert.organizationId)
           .eq('id', alert.id);
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'operational_alert');

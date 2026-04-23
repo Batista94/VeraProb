@@ -355,7 +355,8 @@ void main() async {
           final hashA = PostgresTestConfig.fakeForensicHash('rls-int-2-orgA');
           final hashB = PostgresTestConfig.fakeForensicHash('rls-int-2-orgB');
 
-          final msgIdA = DateTime.now().millisecondsSinceEpoch % 1000000;
+          final msgIdA =
+              DateTime.now().toUtc().millisecondsSinceEpoch % 1000000;
           final msgIdB = msgIdA + 1;
 
           await PostgresTestConfig.seedTelegramEvidenceUpload(

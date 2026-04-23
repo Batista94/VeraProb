@@ -88,7 +88,7 @@ void main() async {
         'COL-1: Duplicate token code raises 23505 unique_violation on second INSERT',
         () async {
           // Seed first token with a known code.
-          final seed = DateTime.now().microsecondsSinceEpoch.toString();
+          final seed = DateTime.now().toUtc().microsecondsSinceEpoch.toString();
           final code = PostgresTestConfig.fakeTokenCode('col1-$seed');
 
           await PostgresTestConfig.seedBindingToken(
@@ -128,7 +128,7 @@ void main() async {
         'COL-2: Duplicate (chat_id, telegram_message_id) raises 23505 on second INSERT',
         () async {
           // This models a webhook retry scenario — idempotency guard.
-          final msgId = DateTime.now().microsecondsSinceEpoch % 1000000;
+          final msgId = DateTime.now().toUtc().microsecondsSinceEpoch % 1000000;
           final hash1 = PostgresTestConfig.fakeForensicHash('col2-msg-a');
           const chatId = 400000001;
 
@@ -174,7 +174,8 @@ void main() async {
       test(
         'COL-3: After collision, original evidence row remains intact (no partial write)',
         () async {
-          final msgId = DateTime.now().microsecondsSinceEpoch % 1000000 + 100;
+          final msgId =
+              DateTime.now().toUtc().microsecondsSinceEpoch % 1000000 + 100;
           final originalHash = PostgresTestConfig.fakeForensicHash(
             'col3-original',
           );
@@ -228,7 +229,7 @@ void main() async {
       test(
         'COL-4: createBindingToken propagates 23505 as IntegrityException (not crash)',
         () async {
-          final seed = DateTime.now().microsecondsSinceEpoch.toString();
+          final seed = DateTime.now().toUtc().microsecondsSinceEpoch.toString();
           final code = PostgresTestConfig.fakeTokenCode('col4-$seed');
 
           // Seed first token directly.

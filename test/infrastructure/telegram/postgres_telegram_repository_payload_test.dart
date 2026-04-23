@@ -441,7 +441,7 @@ void main() async {
         'JSONB-1: Simple evidence upload round-trips forensic_hash byte-identically',
         () async {
           final hash = PostgresTestConfig.fakeForensicHash('jsonb-1-payload');
-          final msgId = DateTime.now().microsecondsSinceEpoch % 1000000;
+          final msgId = DateTime.now().toUtc().microsecondsSinceEpoch % 1000000;
 
           final evidenceId =
               await PostgresTestConfig.seedTelegramEvidenceUpload(
@@ -477,7 +477,8 @@ void main() async {
         () async {
           // Postgres TEXT type must handle full UTF-8 without truncation.
           // We test this via storage_path which also is TEXT.
-          final msgId = DateTime.now().microsecondsSinceEpoch % 1000000 + 500;
+          final msgId =
+              DateTime.now().toUtc().microsecondsSinceEpoch % 1000000 + 500;
           final hash = PostgresTestConfig.fakeForensicHash('jsonb-2-utf8');
           // ignore: prefer_const_declarations
           final specialPath = '$orgId/telegram/600000001/observação-câmera.jpg';
@@ -520,7 +521,8 @@ void main() async {
             (_) => random.nextInt(16).toRadixString(16),
           ).join();
 
-          final msgId = DateTime.now().microsecondsSinceEpoch % 1000000 + 999;
+          final msgId =
+              DateTime.now().toUtc().microsecondsSinceEpoch % 1000000 + 999;
 
           final evidenceId =
               await PostgresTestConfig.seedTelegramEvidenceUpload(
