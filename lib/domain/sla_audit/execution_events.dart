@@ -288,12 +288,12 @@ class JustificationRejectedEvent extends DomainEvent {
 
 /// Emitted when a driver submits a justification for a vehicle infraction occurrence.
 ///
-/// Forensic anchor: [vehicleId] + [eventTimestamp] link back to the original
+/// Forensic anchor: [vehicleId] + [occurrenceTimestamp] link back to the original
 /// `VehicleOperationalState.stateChangedAt` from the Normalizer (CX-04).
 class SLAJustificationSubmittedEvent extends DomainEvent {
   final String justificationId;
   final String vehicleId;
-  final DateTime eventTimestamp;
+  final DateTime occurrenceTimestamp;
   final String actorUserId;
   final List<String> evidenceHashes;
 
@@ -302,7 +302,7 @@ class SLAJustificationSubmittedEvent extends DomainEvent {
     required super.occurredAtUtc,
     required this.justificationId,
     required this.vehicleId,
-    required this.eventTimestamp,
+    required this.occurrenceTimestamp,
     required this.actorUserId,
     required this.evidenceHashes,
   });
@@ -312,14 +312,14 @@ class SLAJustificationSubmittedEvent extends DomainEvent {
 class SLAJustificationExpiredEvent extends DomainEvent {
   final String justificationId;
   final String vehicleId;
-  final DateTime eventTimestamp;
+  final DateTime occurrenceTimestamp;
 
   const SLAJustificationExpiredEvent({
     required super.organizationId,
     required super.occurredAtUtc,
     required this.justificationId,
     required this.vehicleId,
-    required this.eventTimestamp,
+    required this.occurrenceTimestamp,
   });
 }
 

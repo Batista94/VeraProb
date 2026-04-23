@@ -39,10 +39,28 @@ WHERE mime_type IS NULL;
 -- Re-enable immutability trigger immediately
 ALTER TABLE public.telegram_evidence_uploads ENABLE TRIGGER trg_teu_no_update;
 
--- ── 3. Enforce NOT NULL after backfill ───────────────────────────────────────
+-- ── 3. Enforce NOT NULL for new rows via constraint trigger ───────────────
+--
+-- Non-blocking: avoids the exclusive lock that a column-level NOT NULL constraint requires.
+-- Existing rows are already backfilled above; this trigger guards future INSERTs.
 
-ALTER TABLE public.telegram_evidence_uploads
-  ALTER COLUMN mime_type SET NOT NULL;
+CREATE OR REPLACE FUNCTION public.trg_teu_mime_type_not_null()
+RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.mime_type IS NULL THEN
+    RAISE EXCEPTION 'mime_type cannot be null'
+      USING ERRCODE = '23502'; -- not_null_violation
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_teu_enforce_mime_type ON public.telegram_evidence_uploads;
+CREATE TRIGGER trg_teu_enforce_mime_type
+  BEFORE INSERT ON public.telegram_evidence_uploads
+  FOR EACH ROW
+  EXECUTE FUNCTION public.trg_teu_mime_type_not_null();
 
 -- ── 4. Index for media type queries (BI, volumetry reports) ──────────────────
 

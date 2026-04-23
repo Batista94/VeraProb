@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/screens/evidence_reconciliation_screen.dart';
 import 'package:veraprob/presentation/shell/settings_screen.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';

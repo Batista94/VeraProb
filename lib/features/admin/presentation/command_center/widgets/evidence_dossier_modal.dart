@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/config/environment.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/shared/compliance_widgets.dart';
 import 'package:veraprob/features/admin/presentation/shared/evidence_category_chip.dart';
 import 'package:veraprob/features/admin/presentation/shared/forensic_audio_player.dart';

@@ -47,7 +47,7 @@ import 'xss_input_sanitizer.dart';
 /// concurrent process already changed the status.
 ///
 /// **Anti-Double Dipping:** `submitJustification` checks for an existing
-/// justification for the same vehicle+event anchor before persisting a new one.
+/// justification for the vehicle+occurrence anchor before persisting a new one.
 ///
 /// **OOM Prevention:** `expireStaleJustifications` uses cursor-based pagination
 /// (`findExpiredPendingPaged`) with a hard `maxIterations` safety guard.
@@ -76,12 +76,13 @@ class SLAJustificationManager {
   static const int _maxExpireIterations = 10000;
 
   /// Callback to verify that a vehicle event exists in the history.
+  /// Forensic anchor: [vehicleId] + [occurrenceTimestamp] link back to the original history.
   /// Returns `true` if a state transition was recorded for [vehicleId]
-  /// at [eventTimestamp]. This decouples the Manager from the Normalizer's
+  /// at [occurrenceTimestamp]. This decouples the Manager from the Normalizer's
   /// internal storage, satisfying Clean Architecture layer bounds.
   final Future<bool> Function({
     required String vehicleId,
-    required DateTime eventTimestamp,
+    required DateTime occurrenceTimestamp,
     required String organizationId,
   })
   eventExistsChecker;
@@ -173,7 +174,7 @@ class SLAJustificationManager {
     final now = _clock.nowUtc();
 
     // ── Step 7: CX05-INV-22 (Expiration Window) ─────────────────────────
-    final elapsed = now.difference(command.eventTimestamp);
+    final elapsed = now.difference(command.occurrenceTimestamp);
     if (elapsed > expirationWindow) {
       throw DomainException(
         'Justification window expired: event occurred '
@@ -185,7 +186,7 @@ class SLAJustificationManager {
     // ── Step 8: CX05-INV-20 (Linkage Integrity) ─────────────────────────
     final eventExists = await eventExistsChecker(
       vehicleId: command.vehicleId,
-      eventTimestamp: command.eventTimestamp,
+      occurrenceTimestamp: command.occurrenceTimestamp,
       organizationId: command.organizationId,
     );
     if (!eventExists) {
@@ -198,7 +199,7 @@ class SLAJustificationManager {
     // ── Step 9: Anti-Double Dipping ──────────────────────────────────────
     final existing = await _repository.findByVehicleAndEvent(
       vehicleId: command.vehicleId,
-      eventTimestamp: command.eventTimestamp,
+      occurrenceTimestamp: command.occurrenceTimestamp,
       organizationId: command.organizationId,
     );
     if (existing != null) {
@@ -214,7 +215,7 @@ class SLAJustificationManager {
       id: id,
       organizationId: command.organizationId,
       vehicleId: command.vehicleId,
-      eventTimestamp: command.eventTimestamp,
+      occurrenceTimestamp: command.occurrenceTimestamp,
       category: category,
       description: sanitizedDescription, // Use sanitized version
       evidenceUrls: List.unmodifiable(command.evidenceUrls),

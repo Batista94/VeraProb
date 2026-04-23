@@ -648,7 +648,8 @@ void main() {
           expect(
             stateT1!.status.name,
             'inTransit',
-            reason: 'Dwell time ainda não satisfeito (transição automática para inTransit)',
+            reason:
+                'Dwell time ainda não satisfeito (transição automática para inTransit)',
           );
 
           // Tick 2: 31 s depois → dwell satisfeito → bind
@@ -664,7 +665,8 @@ void main() {
           expect(
             stateT2!.status.name,
             'completed',
-            reason: 'Cenário 6.1 — telemetria válida muda status para completed',
+            reason:
+                'Cenário 6.1 — telemetria válida muda status para completed',
           );
           expect(stateT2.boundVehicleId, 'smoke-vehicle-001');
           expect(stateT2.bindingTimestampUtc, bindTime);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Compact badge showing evidence compliance fraction (e.g. "2/3 ✅").
 /// Used in [SanctionVerdictCard] for at-a-glance compliance status.

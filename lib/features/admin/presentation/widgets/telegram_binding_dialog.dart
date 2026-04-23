@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/telegram/generate_telegram_binding_token_command.dart';
-import 'package:veraprob/domain/sla_audit/telegram/telegram_binding_token.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
 

@@ -1,5 +1,5 @@
 /// Forensic Audit Signature: CX-05-v2.2
-/// Test Suite: Red Team v2.2 — Ironclad Security Tests
+/// Test Suite: Justification Advanced Hardening — Ironclad Security Tests (v2.2)
 /// Security Guard: INV-24 Compliance Verified
 /// Authorized By: VeraProb QA Security Lead
 ///
@@ -115,7 +115,7 @@ void main() {
       id: _justificationId,
       organizationId: _orgId,
       vehicleId: 'vehicle-001',
-      eventTimestamp: _eventTime,
+      occurrenceTimestamp: _eventTime,
       category: SLAJustificationCategory.transitoAtipico,
       description: 'Test justification',
       evidenceUrls: evidenceUrls ?? ['https://example.com/evidence.jpg'],
@@ -145,7 +145,7 @@ void main() {
       eventExistsChecker:
           ({
             required String vehicleId,
-            required DateTime eventTimestamp,
+            required DateTime occurrenceTimestamp,
             required String organizationId,
           }) async => true,
     );

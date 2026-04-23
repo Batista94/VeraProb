@@ -1,6 +1,6 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 /// Forensic Audit Signature: CX-05-v2.1
-/// Test Suite: Red Team v2.1 — Adversarial Security Tests
+/// Test Suite: Justification Defense-in-Depth — Adversarial Security Tests (v2.1)
 /// Security Guard: INV-24 Compliance Verified
 ///
 /// 8 hostile test scenarios targeting the 4 critical vulnerabilities
@@ -102,7 +102,7 @@ void main() {
       id: id,
       organizationId: orgId,
       vehicleId: 'vehicle-001',
-      eventTimestamp: eventTime,
+      occurrenceTimestamp: eventTime,
       category: SLAJustificationCategory.transitoAtipico,
       description: 'Test justification',
       evidenceUrls: evidenceUrls ?? ['https://example.com/evidence.jpg'],
@@ -188,7 +188,7 @@ void main() {
       eventExistsChecker:
           ({
             required String vehicleId,
-            required DateTime eventTimestamp,
+            required DateTime occurrenceTimestamp,
             required String organizationId,
           }) async => true,
     );
@@ -365,7 +365,7 @@ void main() {
         organizationId: orgId,
         sessionId: 'session-001',
         vehicleId: 'vehicle-001',
-        eventTimestamp: eventTime,
+        occurrenceTimestamp: eventTime,
         category: SLAJustificationCategory.transitoAtipico.dbValue,
         description: 'Legitimate description text',
         evidenceUrls: ['https://example.com/evidence.jpg'],
@@ -403,7 +403,7 @@ void main() {
           organizationId: orgId,
           sessionId: 'session-001',
           vehicleId: 'vehicle-001',
-          eventTimestamp: eventTime,
+          occurrenceTimestamp: eventTime,
           category: SLAJustificationCategory.transitoAtipico.dbValue,
           description: 'SVG evidence upload attempt',
           evidenceUrls: ['https://example.com/evidence.svg'],
@@ -432,7 +432,7 @@ void main() {
         when(
           () => mockRepo.findByVehicleAndEvent(
             vehicleId: any(named: 'vehicleId'),
-            eventTimestamp: any(named: 'eventTimestamp'),
+            occurrenceTimestamp: any(named: 'occurrenceTimestamp'),
             organizationId: any(named: 'organizationId'),
           ),
         ).thenAnswer((_) async => null);
@@ -445,7 +445,7 @@ void main() {
           organizationId: orgId,
           sessionId: 'session-001',
           vehicleId: 'vehicle-001',
-          eventTimestamp: eventTime,
+          occurrenceTimestamp: eventTime,
           category: SLAJustificationCategory.transitoAtipico.dbValue,
           description: 'Photo taken on iPhone with HEIC format',
           evidenceUrls: ['https://example.com/photo.heic'],
@@ -482,7 +482,7 @@ void main() {
       when(
         () => mockRepo.findByVehicleAndEvent(
           vehicleId: any(named: 'vehicleId'),
-          eventTimestamp: any(named: 'eventTimestamp'),
+          occurrenceTimestamp: any(named: 'occurrenceTimestamp'),
           organizationId: any(named: 'organizationId'),
         ),
       ).thenAnswer((_) async => null);
@@ -495,7 +495,7 @@ void main() {
         organizationId: orgId,
         sessionId: 'session-001',
         vehicleId: 'vehicle-001',
-        eventTimestamp: eventTime,
+        occurrenceTimestamp: eventTime,
         category: SLAJustificationCategory.transitoAtipico.dbValue,
         description: maliciousDescription,
         evidenceUrls: ['https://example.com/evidence.jpg'],
@@ -754,7 +754,7 @@ void main() {
           organizationId: orgId,
           sessionId: 'session-001',
           vehicleId: 'vehicle-001',
-          eventTimestamp: eventTime,
+          occurrenceTimestamp: eventTime,
           category: SLAJustificationCategory.transitoAtipico.dbValue,
           description: maliciousAndShort,
           evidenceUrls: ['https://example.com/evidence.jpg'],
@@ -793,7 +793,7 @@ void main() {
           organizationId: orgId,
           sessionId: 'session-001',
           vehicleId: 'vehicle-001',
-          eventTimestamp: eventTime,
+          occurrenceTimestamp: eventTime,
           category: SLAJustificationCategory.transitoAtipico.dbValue,
           description: 'Sufficient description text',
           evidenceUrls: ['https://example.com/malware.exe'],
@@ -826,7 +826,7 @@ void main() {
         when(
           () => mockRepo.findByVehicleAndEvent(
             vehicleId: any(named: 'vehicleId'),
-            eventTimestamp: any(named: 'eventTimestamp'),
+            occurrenceTimestamp: any(named: 'occurrenceTimestamp'),
             organizationId: any(named: 'organizationId'),
           ),
         ).thenAnswer((_) async => null);
@@ -839,7 +839,7 @@ void main() {
           organizationId: orgId,
           sessionId: 'session-001',
           vehicleId: 'vehicle-001',
-          eventTimestamp: eventTime,
+          occurrenceTimestamp: eventTime,
           category: SLAJustificationCategory.transitoAtipico.dbValue,
           description: 'Clean description without any malicious content',
           evidenceUrls: ['https://example.com/evidence.jpg'],

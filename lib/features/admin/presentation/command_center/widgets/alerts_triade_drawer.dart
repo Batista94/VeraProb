@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/config/environment.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/command_center/logic/alert_grouping.dart';
 import 'package:veraprob/features/admin/presentation/command_center/models/driver_alert_group.dart';
 import 'package:veraprob/features/admin/presentation/shared/evidence_category_chip.dart';

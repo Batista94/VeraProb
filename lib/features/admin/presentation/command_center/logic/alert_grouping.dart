@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/command_center/models/driver_alert_group.dart';
 
 /// Groups a flat list of alerts by driver_id from the alert context.

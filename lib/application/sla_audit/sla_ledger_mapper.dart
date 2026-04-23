@@ -341,7 +341,7 @@ class SlaLedgerMapper {
         payload: {
           'justification_id': event.justificationId,
           'vehicle_id': event.vehicleId,
-          'event_timestamp': event.eventTimestamp.toIso8601String(),
+          'occurrence_timestamp': event.occurrenceTimestamp.toIso8601String(),
           'actor_user_id': event.actorUserId,
           'evidence_hashes': event.evidenceHashes,
         },
@@ -360,7 +360,7 @@ class SlaLedgerMapper {
         payload: {
           'justification_id': event.justificationId,
           'vehicle_id': event.vehicleId,
-          'event_timestamp': event.eventTimestamp.toIso8601String(),
+          'occurrence_timestamp': event.occurrenceTimestamp.toIso8601String(),
         },
       );
     }

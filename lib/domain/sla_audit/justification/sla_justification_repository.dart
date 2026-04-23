@@ -1,4 +1,4 @@
-﻿import '../concurrency_exception.dart';
+import '../concurrency_exception.dart';
 import 'justification_audit_log.dart';
 import 'justification_status.dart';
 import 'sla_justification.dart';
@@ -25,7 +25,7 @@ abstract class SLAJustificationRepository {
   /// for the same vehicle + event combination.
   Future<SLAJustification?> findByVehicleAndEvent({
     required String vehicleId,
-    required DateTime eventTimestamp,
+    required DateTime occurrenceTimestamp,
     required String organizationId,
   });
 

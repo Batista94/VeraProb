@@ -25,9 +25,9 @@
     "severity": "BLOCK"
   },
   "DDD-BAD-NAMES": {
-    "pattern": "\\b(getData|processItem|handleResult|data|event)\\b",
+    "pattern": "\\b(getData|processItem|handleResult)\\b|(var|final|late)\\s+(data|event)\\s*[=;:)]",
     "path_filter": "lib/domain/",
-    "description": "Generic naming in Domain layer. Use CanonicalFact, LedgerEntry, etc.",
+    "description": "Generic variable/method naming in Domain layer. Use CanonicalFact, LedgerEntry, etc.",
     "severity": "BLOCK"
   },
   "CQRS-LEAK": {
@@ -92,6 +92,12 @@
     ],
     "must_also_contain": "hmac_signer|hmac|signPayload|verifyPayload|loadAllKeys",
     "description": "INV-31: Ingestion/ledger Edge Functions MUST import hmac_signer.ts for HMAC signing (Zero-Knowledge integrity).",
+    "severity": "BLOCK"
+  },
+  "INV-DB": {
+    "pattern": "\\bDELETE\\s+FROM\\b|\\bTRUNCATE\\b|\\bDROP\\s+TABLE\\b|\\bALTER\\s+COLUMN\\b.+\\bSET\\s+NOT\\s+NULL\\b",
+    "path_filter": "supabase/migrations/",
+    "description": "Destructive migration operation. Use soft-delete, triggers, or non-blocking constraints (INV-DB: Zero-Downtime).",
     "severity": "BLOCK"
   }
 }

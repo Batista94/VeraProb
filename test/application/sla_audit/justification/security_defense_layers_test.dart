@@ -62,7 +62,7 @@ void main() {
       eventExistsChecker:
           ({
             required String vehicleId,
-            required DateTime eventTimestamp,
+            required DateTime occurrenceTimestamp,
             required String organizationId,
           }) async => true,
     );
@@ -120,7 +120,7 @@ void main() {
     when(
       repository.findByVehicleAndEvent(
         vehicleId: anyNamed('vehicleId'),
-        eventTimestamp: anyNamed('eventTimestamp'),
+        occurrenceTimestamp: anyNamed('occurrenceTimestamp'),
         organizationId: anyNamed('organizationId'),
       ),
     ).thenAnswer((_) async => null);
@@ -143,7 +143,7 @@ void main() {
             id: justificationId,
             organizationId: organizationId,
             vehicleId: 'vehicle-001',
-            eventTimestamp: DateTime.utc(2026, 4, 16, 2, 0, 0),
+            occurrenceTimestamp: DateTime.utc(2026, 4, 16, 2, 0, 0),
             category: SLAJustificationCategory.transitoAtipico,
             description: 'Test justification',
             evidenceUrls: ['https://example.com/evidence.jpg'],
@@ -181,7 +181,7 @@ void main() {
               id: justificationId,
               organizationId: organizationId,
               vehicleId: 'vehicle-001',
-              eventTimestamp: DateTime.utc(2026, 4, 16, 2, 0, 0),
+              occurrenceTimestamp: DateTime.utc(2026, 4, 16, 2, 0, 0),
               category: SLAJustificationCategory.transitoAtipico,
               description: 'Test justification',
               evidenceUrls: ['https://example.com/evidence.jpg'],
@@ -244,7 +244,7 @@ void main() {
           organizationId: 'org-001',
           sessionId: 'session-001',
           vehicleId: 'vehicle-001',
-          eventTimestamp: DateTime.utc(2026, 4, 16, 2, 0, 0),
+          occurrenceTimestamp: DateTime.utc(2026, 4, 16, 2, 0, 0),
           category: SLAJustificationCategory.transitoAtipico.dbValue,
           description: '<script>alert("XSS")</script>Legitimate text',
           evidenceUrls: ['https://example.com/evidence.jpg'],
@@ -271,7 +271,7 @@ void main() {
         organizationId: 'org-001',
         sessionId: 'session-001',
         vehicleId: 'vehicle-001',
-        eventTimestamp: DateTime.utc(2026, 4, 16, 2, 0, 0),
+        occurrenceTimestamp: DateTime.utc(2026, 4, 16, 2, 0, 0),
         category: SLAJustificationCategory.transitoAtipico.dbValue,
         description: 'Evidence attached',
         evidenceUrls: ['https://example.com/malware.jpg'],
@@ -298,7 +298,7 @@ void main() {
         organizationId: 'org-001',
         sessionId: 'session-001',
         vehicleId: 'vehicle-001',
-        eventTimestamp: DateTime.utc(2026, 4, 16, 2, 0, 0),
+        occurrenceTimestamp: DateTime.utc(2026, 4, 16, 2, 0, 0),
         category: SLAJustificationCategory.transitoAtipico.dbValue,
         description: 'Clean description',
         evidenceUrls: ['https://example.com/evidence.jpg'],

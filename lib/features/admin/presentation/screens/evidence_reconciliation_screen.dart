@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_upload.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/shared/evidence_category_chip.dart';
 import 'package:veraprob/features/admin/presentation/shared/evidence_link_source_chip.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS public.telegram_pending_links (
   driver_id           UUID        NOT NULL,
   created_at_utc      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at_utc      TIMESTAMPTZ NOT NULL,
+  is_resolved         BOOLEAN     NOT NULL DEFAULT FALSE,
 
   CONSTRAINT uq_tpl_short_id UNIQUE (short_id),
   CONSTRAINT chk_tpl_short_id_len CHECK (char_length(short_id) = 8)
@@ -85,7 +86,7 @@ AS $$
   INNER JOIN public.drivers d
     ON d.id = p_driver_id
   WHERE pd.organization_id = p_org_id
-    AND es.status = 'pending'
+    AND es.status = 'planned'
     AND (
       es.planned_vehicle_id IS NULL
       OR UPPER(REPLACE(es.planned_vehicle_id, '-', ''))
@@ -124,9 +125,10 @@ DECLARE
   v_pending       RECORD;
   v_resolved_set  TEXT;
 BEGIN
-  -- 1. Opportunistic cleanup of expired rows (lightweight, index-backed)
-  DELETE FROM public.telegram_pending_links
-  WHERE expires_at_utc < NOW();
+  -- 1. Opportunistic soft-delete of expired rows (lightweight, index-backed)
+  UPDATE public.telegram_pending_links
+  SET is_resolved = TRUE
+  WHERE expires_at_utc < NOW() AND is_resolved = FALSE;
 
   -- 2. Fetch pending link by short_id
   SELECT tpl.evidence_upload_id,
@@ -136,7 +138,8 @@ BEGIN
          tpl.expires_at_utc
   INTO v_pending
   FROM public.telegram_pending_links tpl
-  WHERE tpl.short_id = p_short_id;
+  WHERE tpl.short_id = p_short_id
+    AND tpl.is_resolved = FALSE;
 
   -- 3. Not found (already cleaned up or never existed) — INV-26: same as expired
   IF NOT FOUND THEN
@@ -146,8 +149,8 @@ BEGIN
 
   -- 4. Expiry check (belt-and-suspenders; cleanup above may miss race conditions)
   IF v_pending.expires_at_utc < NOW() THEN
-    -- Clean this specific row
-    DELETE FROM public.telegram_pending_links WHERE short_id = p_short_id;
+    -- Clean this specific row (soft-delete)
+    UPDATE public.telegram_pending_links SET is_resolved = TRUE WHERE short_id = p_short_id;
     RAISE EXCEPTION 'expired'
       USING ERRCODE = 'P0001';
   END IF;
@@ -187,9 +190,11 @@ BEGIN
     AND status = 'ACTIVE'
     AND context->>'evidence_id' = v_pending.evidence_upload_id::text;
 
-  -- 8. Cleanup ALL pending links for this evidence (not just the clicked one)
-  DELETE FROM public.telegram_pending_links
-  WHERE evidence_upload_id = v_pending.evidence_upload_id;
+  -- 8. Soft-delete ALL pending links for this evidence (not just the clicked one)
+  UPDATE public.telegram_pending_links
+  SET is_resolved = TRUE
+  WHERE evidence_upload_id = v_pending.evidence_upload_id
+    AND is_resolved = FALSE;
 
   RETURN v_resolved_set;
 END;

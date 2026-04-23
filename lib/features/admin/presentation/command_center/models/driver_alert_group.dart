@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 
 /// Health status of a driver's contract relationship.
 enum ContractHealthStatus {

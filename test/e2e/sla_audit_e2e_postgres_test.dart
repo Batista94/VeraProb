@@ -295,7 +295,8 @@ void main() {
       expect(
         stateAfterTick1!.status.name,
         'inTransit',
-        reason: 'Dwell time not satisfied yet (automatic transition to inTransit)',
+        reason:
+            'Dwell time not satisfied yet (automatic transition to inTransit)',
       );
 
       // Second tick inside geofence 31 seconds later (Dwell time satisfied -> Bind!)

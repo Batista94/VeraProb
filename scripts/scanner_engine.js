@@ -61,6 +61,7 @@ const violations = [];
 const bypassKeywords = [
   "// Physical Metric",
   "// pr_scanner: ignore",
+    "-- pr_scanner: ignore",
   "- Double Required",
   "Bridge Conversion",
   "Probability Score",
@@ -129,10 +130,12 @@ changedFiles.forEach((file) => {
     // ── Line-by-line check ──
     lines.forEach((line, index) => {
       // Ignore full-line comments and strip end-of-line comments for matching
-      const strippedLine = line
-        .replace(/\/\/\/.*$/, "")
-        .replace(/\/\/.*$/, "")
-        .trim();
+      const strippedLine = file.endsWith(".sql")
+              ? line.replace(/--.*$/, "").trim()
+              : line
+                  .replace(/\/\/\/.*$/, "")
+                  .replace(/\/\/.*$/, "")
+                  .trim();
 
       if (!regex.test(strippedLine)) return;
 
