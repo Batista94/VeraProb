@@ -114,7 +114,7 @@ class SLAJustificationManager {
   /// - CX05-INV-22: Must be within [expirationWindow] of the event.
   /// - CX05-INV-23: Evidence hash count must match evidence URL count; hashes
   ///   must be valid 64-char hex strings.
-  /// - Anti-double dipping: Rejects if a justification for the same
+  /// - Anti-duplication: Rejects if a justification for the same
   ///   vehicle+event anchor already exists.
   /// - Server-side hash re-verification: After persistence, recomputes SHA-256
   ///   via streaming and auto-rejects if any hash diverges (tamper detection).
