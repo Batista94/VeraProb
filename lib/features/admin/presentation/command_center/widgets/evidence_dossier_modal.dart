@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/config/environment.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
+import 'package:veraprob/features/admin/presentation/shared/compliance_widgets.dart';
 import 'package:veraprob/features/admin/presentation/shared/evidence_category_chip.dart';
 import 'package:veraprob/features/admin/presentation/shared/forensic_audio_player.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -33,6 +35,10 @@ class EvidenceDossierModal extends ConsumerStatefulWidget {
   /// When an entry starts with 'audio/', a [ForensicAudioPlayer] is rendered.
   final Map<String, String?> mimeTypes;
 
+  /// Optional compliance result — when provided, shows [EvidenceComplianceChecklist]
+  /// above the photo grid. Null = no checklist (backward compatible).
+  final ActiveCompliance? compliance;
+
   /// Maximum items rendered in the grid.
   static const int _kMaxItems = 15;
 
@@ -41,6 +47,7 @@ class EvidenceDossierModal extends ConsumerStatefulWidget {
     required this.evidenceIds,
     this.categories = const {},
     this.mimeTypes = const {},
+    this.compliance,
   });
 
   @override
@@ -162,6 +169,9 @@ class _EvidenceDossierModalState extends ConsumerState<EvidenceDossierModal> {
             ),
           ),
           const Divider(color: VeraProbColors.border, height: 16),
+          // ── Compliance checklist (optional) ──
+          if (widget.compliance != null)
+            EvidenceComplianceChecklist(compliance: widget.compliance!),
           // ── Grid ──
           Flexible(
             child: GridView.builder(

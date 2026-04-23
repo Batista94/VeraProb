@@ -631,6 +631,8 @@ void main() {
       category: category,
       driverId: driverId,
       isLinked: isLinked,
+      statusQueryCount: 0,
+      hadPendingItems: false,
       mimeType: mimeType,
     );
 

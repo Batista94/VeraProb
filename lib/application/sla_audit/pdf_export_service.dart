@@ -17,6 +17,8 @@ typedef PdfEvidenceRow = ({
   String driverId,
   bool isLinked,
   String? mimeType,
+  int statusQueryCount,
+  bool hadPendingItems,
 });
 
 /// Generates legally-defensible PDF exports from sealed [AuditPackage] records.
@@ -312,6 +314,23 @@ class PdfExportService {
                     child: pw.Text(
                       'Evidência em formato de áudio disponível no sistema sob '
                       'Hash ${e.forensicHash.length > 16 ? e.forensicHash.substring(0, 16) : e.forensicHash}…',
+                      style: pw.TextStyle(
+                        fontSize: 7,
+                        fontStyle: pw.FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ),
+            // Negligence footnotes — drivers who were warned but had gaps
+            ...sorted
+                .where((e) => e.statusQueryCount > 0 && e.hadPendingItems)
+                .map(
+                  (e) => pw.Padding(
+                    padding: const pw.EdgeInsets.only(top: 4),
+                    child: pw.Text(
+                      '⚠ Motorista ${e.driverId.length > 8 ? e.driverId.substring(0, 8) : e.driverId}… '
+                      'consultou /status ${e.statusQueryCount}x e foi avisado de pendências. '
+                      'Prova de ciência registrada no sistema.',
                       style: pw.TextStyle(
                         fontSize: 7,
                         fontStyle: pw.FontStyle.italic,

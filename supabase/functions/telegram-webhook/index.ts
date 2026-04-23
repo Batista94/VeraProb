@@ -12,10 +12,15 @@
  *   - Audit Trail (INV-7): telegram_message_date recorded for discrepancy audit vs uploaded_at_utc.
  */
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { checkConsent } from "../shared/consent_middleware.ts";
 import { extractExifMetadata } from "../shared/exif_extractor.ts";
 import { validateImageQuality, type QualityWarning } from "../shared/image_quality_validator.ts";
+import { formatStatusMessage, formatFinishWarning, type ComplianceRpcResult } from "../shared/compliance_formatter.ts";
+
+// Single type alias used by all helper functions — avoids JSR/npm generic mismatch.
+// deno-lint-ignore no-explicit-any
+type Supabase = SupabaseClient<any, any, any>;
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -283,6 +288,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
                   `✅ Classificado como: ${cat.emoji} <b>${cat.label}</b>`,
                 );
               }
+              // Task 5: Send checklist shortcut button after classification
+              await sendMessageWithKeyboard(botToken, cbChatId,
+                "📋 Quer verificar o checklist de conformidade da sua rota?",
+                [[{ text: "📋 Ver Checklist Atual", callback_data: "tg_status" }]]);
             }
           }
         }
@@ -347,6 +356,47 @@ Deno.serve(async (req: Request): Promise<Response> => {
           }
         }
       }
+      // ── tg_status — Compliance checklist via callback button ──────────────
+      else if (cb.data === "tg_status") {
+        const cbBinding = await getActiveBinding(supabase, cbChatId);
+        if (!cbBinding) {
+          await answerCallbackQuery(botToken, cb.id, "⚠️ Chat não vinculado.");
+        } else {
+          await answerCallbackQuery(botToken, cb.id, "📋 Verificando...");
+          await handleStatusCheck(supabase, botToken, cbChatId, cbBinding, correlationId, "tg_status_button");
+        }
+      }
+      // ── tg_finish_confirm:{set_id} — Driver confirms finish with gaps ────
+      else if (cb.data?.startsWith("tg_finish_confirm:")) {
+        const setId = cb.data.substring(18); // "tg_finish_confirm:".length === 18
+        const cbBinding = await getActiveBinding(supabase, cbChatId);
+        if (!cbBinding) {
+          await answerCallbackQuery(botToken, cb.id, "⚠️ Chat não vinculado.");
+        } else {
+          // Log forced completion with gaps (forensic negligence audit)
+          supabase.from("telegram_status_queries").insert({
+            organization_id: cbBinding.organization_id,
+            driver_id: cbBinding.driver_id,
+            chat_id: cbChatId,
+            set_id: setId,
+            compliance_snapshot: { query_type: "finish_forced", forced_completion_with_gaps: true },
+          }).then(() => {}, () => {});
+
+          await answerCallbackQuery(botToken, cb.id, "✅ Encerrado.");
+          if (cb.message?.message_id) {
+            await editMessageText(botToken, cbChatId, cb.message.message_id,
+              "✅ <b>Rota encerrada.</b>\n⚠️ Evidências pendentes foram registradas no sistema.");
+          }
+        }
+      }
+      // ── tg_finish_cancel — Driver cancels finish ─────────────────────────
+      else if (cb.data === "tg_finish_cancel") {
+        await answerCallbackQuery(botToken, cb.id, "↩️ Cancelado.");
+        if (cb.message?.message_id) {
+          await editMessageText(botToken, cbChatId, cb.message.message_id,
+            "↩️ Encerramento cancelado. Continue enviando suas evidências.");
+        }
+      }
     } catch (e) {
       console.error(`[telegram-webhook] callback error correlationId=${correlationId}:`, e);
       await answerCallbackQuery(botToken, cb.id, "❌ Erro ao processar.");
@@ -406,6 +456,32 @@ Deno.serve(async (req: Request): Promise<Response> => {
       "⚠️ Limite: 10 MB",
       [[{ text: "❓ Ajuda", callback_data: "help" }]],
     );
+    return new Response("OK", { status: 200 });
+  }
+
+  // ── 4c. /status command — evidence compliance checklist ─────────────────────
+  if (message.text?.startsWith("/status")) {
+    const binding = await getActiveBinding(supabase, chatId);
+    if (!binding) {
+      await sendMessageWithKeyboard(botToken, chatId,
+        "Chat não vinculado. Envie o código do aplicativo VeraProb primeiro.",
+        [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+    } else {
+      await handleStatusCheck(supabase, botToken, chatId, binding, correlationId);
+    }
+    return new Response("OK", { status: 200 });
+  }
+
+  // ── 4d. /finish command — predictive compliance alert ─────────────────────
+  if (message.text?.startsWith("/finish")) {
+    const binding = await getActiveBinding(supabase, chatId);
+    if (!binding) {
+      await sendMessageWithKeyboard(botToken, chatId,
+        "Chat não vinculado. Envie o código do aplicativo VeraProb primeiro.",
+        [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+    } else {
+      await handleFinishCheck(supabase, botToken, chatId, binding, correlationId);
+    }
     return new Response("OK", { status: 200 });
   }
 
@@ -820,7 +896,7 @@ interface ExecutionInfo {
  * Failure never blocks evidence ingestion.
  */
 async function findExecutionForTelegram(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Supabase,
   orgId: string,
   driverId: string,
   messageUnixTs: number,
@@ -855,7 +931,7 @@ async function findExecutionForTelegram(
  * Context includes driver_id + driver_name for Command Center smart grouping.
  */
 async function fireOrphanAlert(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Supabase,
   orgId: string,
   chatId: number,
   forensicHash: string,
@@ -915,7 +991,7 @@ function extractFileInfo(message: TelegramMessage): FileInfo | null {
 }
 
 async function getActiveBinding(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Supabase,
   chatId: number,
 ): Promise<ActiveBinding | null> {
   const { data } = await supabase
@@ -1046,4 +1122,128 @@ function mimeFromExt(ext: string): string {
     ogg: "audio/ogg", bin: "application/octet-stream",
   };
   return map[ext] ?? "application/octet-stream";
+}
+
+
+// ── Compliance Status Helpers ──────────────────────────────────────────────────
+
+/**
+ * Shared handler for /status command and tg_status callback.
+ * Calls get_trip_compliance_status RPC, formats the checklist, and logs the query.
+ *
+ * INV-1: org_id from binding, never from Telegram.
+ * INV-7: telegram_status_queries is append-only.
+ */
+async function handleStatusCheck(
+  supabase: Supabase,
+  botToken: string,
+  chatId: number,
+  binding: ActiveBinding,
+  correlationId: string,
+  queryType: string = "status",
+): Promise<void> {
+  try {
+    const { data, error } = await supabase.rpc("get_trip_compliance_status", {
+      p_org_id: binding.organization_id,
+      p_driver_id: binding.driver_id,
+    });
+
+    if (error) {
+      console.warn(`[telegram-webhook] compliance RPC error correlationId=${correlationId}:`, error);
+      await sendMessageWithKeyboard(botToken, chatId,
+        "⚠️ Não foi possível verificar a conformidade. Tente novamente.",
+        [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+      return;
+    }
+
+    const result = data as ComplianceRpcResult;
+
+    // Forensic audit: log the query (fire-and-forget, INV-7)
+    supabase.from("telegram_status_queries").insert({
+      organization_id: binding.organization_id,
+      driver_id: binding.driver_id,
+      chat_id: chatId,
+      set_id: "set_id" in result ? (result as { set_id: string }).set_id : null,
+      compliance_snapshot: { ...(result as Record<string, unknown>), query_type: queryType },
+    }).then(() => {}, (e: unknown) => {
+      console.warn(`[telegram-webhook] status query audit insert failed correlationId=${correlationId}:`, e);
+    });
+
+    await sendMessageWithKeyboard(botToken, chatId,
+      formatStatusMessage(result),
+      [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+  } catch (e) {
+    console.error(`[telegram-webhook] handleStatusCheck error correlationId=${correlationId}:`, e);
+    await sendMessageWithKeyboard(botToken, chatId,
+      "⚠️ Erro ao verificar conformidade. Tente novamente.",
+      [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+  }
+}
+
+/**
+ * Shared handler for /finish command.
+ * Checks compliance, warns about gaps, but NEVER blocks completion.
+ * forced_completion_with_gaps flag logged for forensic negligence audit.
+ */
+async function handleFinishCheck(
+  supabase: Supabase,
+  botToken: string,
+  chatId: number,
+  binding: ActiveBinding,
+  correlationId: string,
+): Promise<void> {
+  try {
+    const { data, error } = await supabase.rpc("get_trip_compliance_status", {
+      p_org_id: binding.organization_id,
+      p_driver_id: binding.driver_id,
+    });
+
+    if (error) {
+      console.warn(`[telegram-webhook] finish compliance RPC error correlationId=${correlationId}:`, error);
+      await sendMessageWithKeyboard(botToken, chatId,
+        "⚠️ Não foi possível verificar a conformidade antes do encerramento.",
+        [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+      return;
+    }
+
+    const result = data as ComplianceRpcResult;
+
+    if (result.status === "no_active_trip") {
+      await sendMessageWithKeyboard(botToken, chatId,
+        "📍 Você não possui rotas ativas para encerrar.",
+        [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+      return;
+    }
+
+    const setId = (result as { set_id: string }).set_id;
+    const isComplete = result.status === "no_requirements" ||
+      (result.status === "active" && result.total_fulfilled >= result.total_required);
+
+    if (isComplete) {
+      supabase.from("telegram_status_queries").insert({
+        organization_id: binding.organization_id,
+        driver_id: binding.driver_id,
+        chat_id: chatId,
+        set_id: setId,
+        compliance_snapshot: { ...(result as Record<string, unknown>), query_type: "finish_complete" },
+      }).then(() => {}, () => {});
+
+      await sendMessageWithKeyboard(botToken, chatId,
+        "✅ <b>Checklist completo!</b>\nRota pronta para encerramento.",
+        [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+      return;
+    }
+
+    // Gaps exist — warn but never block
+    await sendMessageWithKeyboard(botToken, chatId,
+      formatFinishWarning(result as Extract<ComplianceRpcResult, { status: "active" }>), [
+      [{ text: "✅ Sim, encerrar", callback_data: `tg_finish_confirm:${setId}` }],
+      [{ text: "❌ Voltar", callback_data: "tg_finish_cancel" }],
+    ]);
+  } catch (e) {
+    console.error(`[telegram-webhook] handleFinishCheck error correlationId=${correlationId}:`, e);
+    await sendMessageWithKeyboard(botToken, chatId,
+      "⚠️ Erro ao verificar conformidade para encerramento.",
+      [[{ text: "❓ Ajuda", callback_data: "help" }]]);
+  }
 }

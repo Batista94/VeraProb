@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/telegram/generate_telegram_binding_token_command.dart';
 import 'package:veraprob/application/telegram/generate_telegram_binding_token_handler.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
 import 'package:veraprob/domain/sla_audit/telegram/i_telegram_repository.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_binding_token.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_link.dart';
@@ -119,4 +120,87 @@ final linkEvidenceNotifierProvider =
       AsyncValue<TelegramEvidenceLink?>
     >((ref) {
       return LinkEvidenceNotifier(ref.watch(telegramRepositoryProvider), ref);
+    });
+
+// ── Compliance Status Providers ───────────────────────────────────────────────
+
+/// Compliance status for a driver's active trip.
+/// keepAlive: true — result survives widget rebuilds (INV-16: avoid redundant RPCs).
+final complianceStatusProvider = FutureProvider.family
+    .autoDispose<
+      ComplianceCheckResult,
+      ({String organizationId, String driverId})
+    >((ref, args) async {
+      ref.keepAlive();
+      return ref
+          .watch(telegramRepositoryProvider)
+          .getComplianceStatus(
+            organizationId: args.organizationId,
+            driverId: args.driverId,
+          );
+    });
+
+/// Batch compliance for a list of SET IDs — one RPC call for the whole dashboard.
+/// Keyed by organizationId to allow per-org caching (INV-16, INV-22).
+final batchComplianceProvider = FutureProvider.family
+    .autoDispose<
+      Map<String, ComplianceCheckResult>,
+      ({String organizationId, List<String> setIds})
+    >((ref, args) async {
+      ref.keepAlive();
+      return ref
+          .watch(telegramRepositoryProvider)
+          .getBatchComplianceStatus(
+            organizationId: args.organizationId,
+            setIds: args.setIds,
+          );
+    });
+
+/// Per-SET compliance — reads from the batch cache when available.
+/// Falls back to individual RPC if batch hasn't been loaded.
+final executionComplianceProvider = FutureProvider.family
+    .autoDispose<
+      ComplianceCheckResult?,
+      ({String organizationId, String setId})
+    >((ref, args) async {
+      ref.keepAlive();
+      // Try to read from batch cache first (avoids extra RPC)
+      final batchKey = (
+        organizationId: args.organizationId,
+        setIds: [args.setId],
+      );
+      final batchState = ref.read(batchComplianceProvider(batchKey));
+      if (batchState.hasValue) {
+        return batchState.value?[args.setId];
+      }
+      // Fallback: individual call
+      final result = await ref
+          .watch(telegramRepositoryProvider)
+          .getBatchComplianceStatus(
+            organizationId: args.organizationId,
+            setIds: [args.setId],
+          );
+      return result[args.setId];
+    });
+
+/// Forensic negligence data for a driver+SET combination.
+/// Used in SanctionVerdictCard to show "driver was warned X times".
+final negligenceProvider = FutureProvider.family
+    .autoDispose<
+      ({
+        int queryCount,
+        DateTime? lastQueriedAt,
+        bool hadPendingItems,
+        int forcedCompletions,
+      }),
+      ({String organizationId, String driverId, String setId})
+    >((ref, args) async {
+      ref.keepAlive();
+      return ref
+          .watch(telegramRepositoryProvider)
+          .getDriverStatusQueryCount(
+            organizationId: args.organizationId,
+            driverId: args.driverId,
+            setId: args.setId,
+          );
     });

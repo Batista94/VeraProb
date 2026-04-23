@@ -8,7 +8,7 @@
  * INV-22: No cross-tenant leakage — chat_id is user-scoped, not org-scoped.
  */
 
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
+import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 /**
  * Checks whether a Telegram chat has accepted the consent terms.

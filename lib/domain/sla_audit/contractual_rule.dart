@@ -5,7 +5,8 @@ enum SlaRuleType {
   maxEvidenceGap('MAX_EVIDENCE_GAP'),
   minGeofenceCoverage('MIN_GEOFENCE_COVERAGE'),
   noShowPenalty('NO_SHOW_PENALTY'),
-  excessiveSpeed('EXCESSIVE_SPEED');
+  excessiveSpeed('EXCESSIVE_SPEED'),
+  requiredEvidence('REQUIRED_EVIDENCE');
 
   final String value;
   const SlaRuleType(this.value);

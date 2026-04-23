@@ -8,7 +8,9 @@ import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
+import 'package:veraprob/features/admin/presentation/shared/compliance_widgets.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
+import 'package:veraprob/state/providers/telegram_providers.dart';
 import 'ghost_bar_widget.dart';
 import 'ingestion_health_widget.dart';
 import 'recurrence_badge_widget.dart';
@@ -340,6 +342,12 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
 
                   // ── Zona 3.7: Recurrence Badge (WS-6) ─────────────────────────
                   _RecurrenceZone(item: item),
+
+                  // ── Zona 3.8: Evidence Compliance Badge ───────────────────────
+                  _ComplianceBadgeZone(
+                    setId: item.setId,
+                    orgId: item.organizationId,
+                  ),
 
                   const Divider(color: VeraProbColors.border, height: 1),
 
@@ -836,6 +844,52 @@ class _VerdictActionRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Zona 3.8: Evidence compliance badge — reads from executionComplianceProvider.
+/// keepAlive in the provider ensures no redundant RPCs on rebuild (INV-16).
+class _ComplianceBadgeZone extends ConsumerWidget {
+  final String setId;
+  final String orgId;
+
+  const _ComplianceBadgeZone({required this.setId, required this.orgId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final complianceAsync = ref.watch(
+      executionComplianceProvider((organizationId: orgId, setId: setId)),
+    );
+
+    return complianceAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (compliance) {
+        if (compliance == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.assignment_turned_in_outlined,
+                size: 13,
+                color: VeraProbColors.textDisabled,
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'Evidências:',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: VeraProbColors.textDisabled,
+                ),
+              ),
+              const SizedBox(width: 6),
+              ComplianceBadge(compliance: compliance),
+            ],
+          ),
+        );
+      },
     );
   }
 }

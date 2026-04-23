@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
 import 'package:veraprob/domain/sla_audit/telegram/i_telegram_repository.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_binding_token.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_link.dart';
@@ -216,5 +217,86 @@ class PostgresTelegramRepository extends BasePostgresRepository
       linkedByUserId: row['linked_by_user_id'] as String?,
       source: row['source'] as String,
     );
+  }
+
+  @override
+  Future<ComplianceCheckResult> getComplianceStatus({
+    required String organizationId,
+    required String driverId,
+  }) async {
+    try {
+      final data = await client.rpc(
+        'get_trip_compliance_status',
+        params: {'p_org_id': organizationId, 'p_driver_id': driverId},
+      );
+      return ComplianceCheckResult.fromJson((data as Map<String, dynamic>));
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'compliance_status');
+    }
+  }
+
+  @override
+  Future<Map<String, ComplianceCheckResult>> getBatchComplianceStatus({
+    required String organizationId,
+    required List<String> setIds,
+  }) async {
+    if (setIds.isEmpty) return {};
+    try {
+      final data = await client.rpc(
+        'get_batch_compliance_status',
+        params: {'p_org_id': organizationId, 'p_set_ids': setIds},
+      );
+      final list = data as List<dynamic>;
+      return {
+        for (final item in list)
+          (item as Map<String, dynamic>)['set_id'] as String:
+              ComplianceCheckResult.fromJson(item),
+      };
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'batch_compliance_status',
+      );
+    }
+  }
+
+  @override
+  Future<
+    ({
+      int queryCount,
+      DateTime? lastQueriedAt,
+      bool hadPendingItems,
+      int forcedCompletions,
+    })
+  >
+  getDriverStatusQueryCount({
+    required String organizationId,
+    required String driverId,
+    required String setId,
+  }) async {
+    try {
+      final data = await client.rpc(
+        'get_driver_status_query_count',
+        params: {
+          'p_org_id': organizationId,
+          'p_driver_id': driverId,
+          'p_set_id': setId,
+        },
+      );
+      final row = data as Map<String, dynamic>;
+      return (
+        queryCount: row['query_count'] as int,
+        lastQueriedAt: row['last_queried_at'] != null
+            ? DateTime.parse(row['last_queried_at'] as String).toUtc()
+            : null,
+        hadPendingItems: row['had_pending_items'] as bool,
+        forcedCompletions: row['forced_completions'] as int,
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'driver_status_query_count',
+      );
+    }
   }
 }

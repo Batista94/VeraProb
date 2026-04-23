@@ -3,6 +3,7 @@ import 'package:veraprob/application/sla_audit/alert_service.dart';
 import 'package:veraprob/application/sla_audit/quick_reconciliation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
+import 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
 import 'package:veraprob/domain/sla_audit/telegram/i_telegram_repository.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_binding_token.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_link.dart';
@@ -53,6 +54,30 @@ class FakeTelegramRepo implements ITelegramRepository {
   @override
   Future<List<TelegramEvidenceUpload>> findOrphanEvidences({
     required String organizationId,
+  }) => throw UnimplementedError();
+  @override
+  Future<ComplianceCheckResult> getComplianceStatus({
+    required String organizationId,
+    required String driverId,
+  }) => throw UnimplementedError();
+  @override
+  Future<Map<String, ComplianceCheckResult>> getBatchComplianceStatus({
+    required String organizationId,
+    required List<String> setIds,
+  }) => throw UnimplementedError();
+  @override
+  Future<
+    ({
+      int queryCount,
+      DateTime? lastQueriedAt,
+      bool hadPendingItems,
+      int forcedCompletions,
+    })
+  >
+  getDriverStatusQueryCount({
+    required String organizationId,
+    required String driverId,
+    required String setId,
   }) => throw UnimplementedError();
 }
 

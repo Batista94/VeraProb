@@ -67,6 +67,7 @@ class UpdateContractualRuleHandler {
       'MAX_EVIDENCE_GAP' => 'max_gap_seconds',
       'MIN_GEOFENCE_COVERAGE' => 'min_dwell_seconds',
       'NO_SHOW_PENALTY' => 'penalty_amount_cents',
+      'REQUIRED_EVIDENCE' => 'types',
       _ => throw DomainException('Unknown rule type: ${type.value}'),
     };
 
