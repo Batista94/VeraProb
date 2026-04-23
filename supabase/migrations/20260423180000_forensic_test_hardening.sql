@@ -89,19 +89,19 @@ BEGIN
   -- Disable append-only triggers, delete, re-enable — in reverse FK order.
 
   ALTER TABLE public.telegram_evidence_links  DISABLE TRIGGER USER;
-  DELETE FROM public.telegram_evidence_links  WHERE organization_id = p_org_id;
+  DELETE FROM public.telegram_evidence_links  WHERE organization_id = p_org_id; -- pr_scanner: ignore (test-only SECURITY DEFINER RPC)
   ALTER TABLE public.telegram_evidence_links  ENABLE TRIGGER USER;
 
   ALTER TABLE public.telegram_evidence_uploads DISABLE TRIGGER USER;
-  DELETE FROM public.telegram_evidence_uploads WHERE organization_id = p_org_id;
+  DELETE FROM public.telegram_evidence_uploads WHERE organization_id = p_org_id; -- pr_scanner: ignore
   ALTER TABLE public.telegram_evidence_uploads ENABLE TRIGGER USER;
 
   ALTER TABLE public.telegram_chat_bindings   DISABLE TRIGGER USER;
-  DELETE FROM public.telegram_chat_bindings   WHERE organization_id = p_org_id;
+  DELETE FROM public.telegram_chat_bindings   WHERE organization_id = p_org_id; -- pr_scanner: ignore
   ALTER TABLE public.telegram_chat_bindings   ENABLE TRIGGER USER;
 
   ALTER TABLE public.telegram_binding_tokens  DISABLE TRIGGER USER;
-  DELETE FROM public.telegram_binding_tokens  WHERE organization_id = p_org_id;
+  DELETE FROM public.telegram_binding_tokens  WHERE organization_id = p_org_id; -- pr_scanner: ignore
   ALTER TABLE public.telegram_binding_tokens  ENABLE TRIGGER USER;
 END;
 $$;

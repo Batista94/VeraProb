@@ -463,10 +463,17 @@ class PostgresTestConfig {
   /// Builds a valid 8-char binding token code from [seed].
   static String fakeTokenCode(String seed) {
     const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-    final idx = seed.hashCode.abs();
+    // FNV-1a 64-bit for collision-free distribution (hashCode collides).
+    final bytes = utf8.encode(seed);
+    var h = 0xcbf29ce484222325;
+    for (final b in bytes) {
+      h ^= b;
+      h = (h * 0x100000001b3) & 0x7FFFFFFFFFFFFFFF;
+    }
     final buf = StringBuffer();
     for (var i = 0; i < 8; i++) {
-      buf.write(alphabet[(idx + i * 7) % alphabet.length]);
+      buf.write(alphabet[h % alphabet.length]);
+      h ~/= alphabet.length;
     }
     return buf.toString();
   }

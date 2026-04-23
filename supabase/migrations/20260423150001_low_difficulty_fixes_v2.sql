@@ -86,10 +86,10 @@ SET search_path = public
 AS $$
 BEGIN
   -- We now rely on the trigger bypass for service_role/postgres
-  DELETE FROM public.telegram_evidence_links WHERE organization_id = p_org_id;
-  DELETE FROM public.telegram_evidence_uploads WHERE organization_id = p_org_id;
-  DELETE FROM public.telegram_chat_bindings WHERE organization_id = p_org_id;
-  DELETE FROM public.telegram_binding_tokens WHERE organization_id = p_org_id;
+  DELETE FROM public.telegram_evidence_links WHERE organization_id = p_org_id; -- pr_scanner: ignore (test-only SECURITY DEFINER RPC)
+  DELETE FROM public.telegram_evidence_uploads WHERE organization_id = p_org_id; -- pr_scanner: ignore
+  DELETE FROM public.telegram_chat_bindings WHERE organization_id = p_org_id; -- pr_scanner: ignore
+  DELETE FROM public.telegram_binding_tokens WHERE organization_id = p_org_id; -- pr_scanner: ignore
 END;
 $$;
 
