@@ -102,8 +102,9 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
   - [x] **WS-4: Telegram Evidence Bot** (Deno Edge Function + Hot-linking to Verdict Cards) ✅.
   - [x] **WS-5: Telemetry Map-Sync** (Reactive repositioning on click) ✅.
   - [x] **WS-6: Recurrence & Contractual Context** (Infringement history on cards).
-  - [ ] **WS-7: Operational Macros** (1-Click standard justifications).
-  - [ ] **WS-8: UX Polish Bundle** (Invitations, empty states, sparklines).
+  - [ ] **WS-7: Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz', 'Trânsito') que preenchem justificativa e aplicam regras de tolerância automaticamente.
+  - [ ] **WS-8: Keyboard-First Navigation:** Implementar atalhos de teclado para navegação ultra-rápida na Fila Auditora (Focus Management entre cards).
+  - [ ] **WS-9: Signal Integrity Monitor:** Lógica SQL/Dart para detectar 'GPS Jumps' e inconsistências na telemetria, gerando um 'Confidence Score' no card.
 
 - Cognitive load audit · Verdict traceable in ≤1 click · WCAG 2.2 AA.
 - [x] **[UX] Forensic Audit Context:** Enriquecer o card da Fila Auditora com Histórico de Recorrência (ex: '3ª infração deste veículo/motorista no mês') e visualização comparativa direta entre o dado observado e o limite contratual.
@@ -135,8 +136,23 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - **Tenant Heartbeat Dashboard:** SuperAdmin view of "Signal Health" (GPS success rate vs hardware failures).
 - **[BIZ] Webhooks & API-First Integration:** Anticipated from Phase 11. Implement 'Sealed Verdict' Webhooks (JSON) for immediate SAP/Oracle/ERP integration.
 - **[BIZ] Data Lifecycle Management (LGPD):** Automatic retention engine (5 years for evidence, 1 year for raw telemetry) for legal compliance.
+- [ ] **[BIZ] Immutable Rule Snapshot:** No momento do veredito, persistir o snapshot JSON da regra de SLA aplicada para garantir integridade jurídica retroativa.
+- [ ] **[BIZ] Executive PDF Certificate:** Gerador de dossiê forense (pdf) com Mapa, Foto do Telegram, Hash SHA-256 e Sumário de ROI (Savings BRL).
 
-### [ ] Phase 10.7 — Operational Intelligence & Decision
+### [ ] Phase 10.7 — Operational Automation & Data Ingestion
+
+- [ ] **[TECH] Universal CSV Mapping Engine:** Interface de upload que permite ao usuário mapear colunas de arquivos externos para as entidades do sistema (Contracts, Vehicles, Zones).
+- [ ] **[UX] Smart Defaulting:** Sistema de preenchimento inteligente de formulários baseado nos últimos registros inseridos (Redução de 60% no tempo de cadastro).
+- [ ] **[UX] Bulk Action Mode:** Seleção múltipla de infrações na Fila Auditora para tratamento em massa (Batch Processing).
+
+### [ ] Phase 10.8 — Governance & Dispute
+
+- [ ] **[BIZ] Forensic Dispute Portal (ReadOnly):** Tela externa (link temporário/tokenizado) para que transportadores visualizem as evidências contra eles sem precisar de login no sistema core.
+- [ ] **[BIZ] Real-time Risk Thermometer:** Visualização preditiva de quebra de SLA (ETA vs Prazo do Contrato) para ação preventiva do operador.
+- **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows.
+- **[UX] Auditor Productivity Dashboard:** Transform the 'Auditee Queue' into a performance center with metrics for response time, verdict accuracy, and daily throughput.
+
+### [ ] Phase 10.9 — Operational Intelligence & Decision
 
 *Hardening the product against real-world operational challenges and financial disputes.*
 
@@ -154,18 +170,13 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - **[BIZ] Forensic Dispute Portal:** Limited external interface for carriers/drivers to view evidence snapshots and submit digital counter-proofs.
 - **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance.
 
----
-
-### [ ] Phase 10.8 — High-Stakes Governance & Performance
+### [ ] Phase 10.10 — High-Stakes Governance & Performance
 
 *Advanced features for large-scale operations and high-precision auditing.*
 
-- **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows.
-- **[UX] Auditor Productivity Dashboard:** Transform the 'Auditee Queue' into a performance center with metrics for response time, verdict accuracy, and daily throughput.
-
 ---
 
-### [ ] Phase 10.9 — Enterprise Governance & Anti-Fraud
+### [ ] Phase 10.11 — Enterprise Governance & Anti-Fraud
 
 *Hardening the platform for multi-national corporations and high-stakes auditing integrity.*
 
@@ -174,6 +185,13 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - **[BIZ] Configuration Audit Log:** Immutable meta-audit of changes to SLA models, contracts, and permissions (Who changed the rule and when?).
 - **[BIZ] Rule-Version Snapshot:** Mecanismo que vincula a 'fotografia' exata da regra de SLA ao veredito no momento da infração, garantindo proteção jurídica retroativa.
 - **[BIZ] Systemic Fraud Detection:** Automatic behavioral alerts for operator deviations (e.g., excessive inhibitions for specific carriers).
+
+---
+
+## UI/UX General Polish
+
+- [ ] **Empty State UX:** Substituir placeholders 'Nenhum registro' por guias contextuais (Empty State Onboarding).
+- [ ] **Skeletal Loading:** Implementar Shimmer Effect em 100% das listas para melhorar a percepção de performance.
 
 ---
 

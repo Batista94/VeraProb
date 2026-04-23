@@ -39,6 +39,23 @@ interface TelegramVideo {
   duration: number;
 }
 
+interface TelegramVoice {
+  file_id: string;
+  file_unique_id: string;
+  file_size?: number;
+  duration: number;
+  mime_type?: string; // NOT trusted (INV-18) — server sniffs magic bytes
+}
+
+interface TelegramAudio {
+  file_id: string;
+  file_unique_id: string;
+  file_size?: number;
+  duration: number;
+  mime_type?: string; // NOT trusted (INV-18)
+  file_name?: string; // NOT trusted (INV-18)
+}
+
 interface TelegramMessage {
   message_id: number;
   date: number; // Unix timestamp — device clock (INV-6 anchor)
@@ -47,6 +64,8 @@ interface TelegramMessage {
   photo?: TelegramPhotoSize[];
   document?: TelegramDocument;
   video?: TelegramVideo;
+  voice?: TelegramVoice;
+  audio?: TelegramAudio;
 }
 
 interface TelegramCallbackQuery {
@@ -86,6 +105,16 @@ const BUCKET = "telegram_evidence";
 const TS_FUTURE_TOLERANCE_S = 60;    // QA-Security: reject if > 60s in the future
 const TS_MAX_DRIFT_S = 86_400;       // QA-Security: reject if > 24h old
 
+// ── Category tagging (Menu Pai Universal) ──────────────────────────────────────
+
+const CATEGORY_MAP: Record<string, { emoji: string; label: string }> = {
+  estado:    { emoji: "📸", label: "Estado / Visual" },
+  doc:       { emoji: "📑", label: "Documental / NF" },
+  oper:      { emoji: "🛠️", label: "Operacional" },
+  incidente: { emoji: "🚨", label: "Incidente / SLA" },
+  outros:    { emoji: "🔍", label: "Outros / Info" },
+};
+
 const LGPD_TERMS = `
 ⚖️ <b>Termos de Uso e Privacidade (LGPD)</b>
 
@@ -99,6 +128,23 @@ Ao utilizar o VeraProb Evidence Bot, você concorda que:
 
 Você pode revogar este consentimento a qualquer momento entrando em contato com seu supervisor, porém isso impedirá o envio de novas evidências pelo bot.
 `.trim();
+
+// ── Self-Link Constants ─────────────────────────────────────────────────────────
+
+const SHORT_ID_CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // Crockford base32
+const SHORT_ID_LENGTH = 8;
+const SELF_LINK_TTL_S = 86_400; // 24h
+
+function generateShortId(): string {
+  const bytes = new Uint8Array(SHORT_ID_LENGTH);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => SHORT_ID_CHARSET[b % SHORT_ID_CHARSET.length]).join("");
+}
+
+function formatTripTime(windowStartUtc: string): string {
+  const d = new Date(windowStartUtc);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
+}
 
 // ── Main handler ───────────────────────────────────────────────────────────────
 
@@ -193,6 +239,114 @@ Deno.serve(async (req: Request): Promise<Response> => {
           "📣 <b>Supervisor notificado!</b>\n\nSua evidência foi marcada para prioridade de vinculação manual pelo Centro de Comando.",
           [[{ text: "❓ Ajuda", callback_data: "help" }]]);
       }
+      // ── tg_tag:{evidenceId}:{category} — Menu Pai Universal ──────────────
+      else if (cb.data?.startsWith("tg_tag:")) {
+        const parts = cb.data.split(":");
+        const evidenceId = parts[1];
+        const categoryKey = parts[2];
+
+        if (!evidenceId || !categoryKey || !CATEGORY_MAP[categoryKey]) {
+          await answerCallbackQuery(botToken, cb.id, "⚠️ Dados inválidos.");
+        } else {
+          const cbBinding = await getActiveBinding(supabase, cbChatId);
+          if (!cbBinding) {
+            await answerCallbackQuery(botToken, cb.id, "⚠️ Chat não vinculado.");
+          } else {
+            const { error: tagError } = await supabase
+              .from("telegram_evidence_categories")
+              .insert({
+                organization_id: cbBinding.organization_id,
+                evidence_upload_id: evidenceId,
+                category: categoryKey,
+              });
+
+            if (tagError) {
+              if (tagError.code === "23505") {
+                // Already tagged (UNIQUE constraint) — idempotent
+                await answerCallbackQuery(botToken, cb.id, "✅ Já classificado.");
+              } else if (tagError.code === "23503") {
+                // FK violation — evidence not found or deleted
+                await answerCallbackQuery(botToken, cb.id, "⚠️ Registro não encontrado ou expirado.");
+              } else {
+                console.error(`[telegram-webhook] tag insert error correlationId=${correlationId}:`, tagError);
+                await answerCallbackQuery(botToken, cb.id, "❌ Erro ao classificar.");
+              }
+            } else {
+              const cat = CATEGORY_MAP[categoryKey];
+              await answerCallbackQuery(botToken, cb.id, `${cat.emoji} Classificado!`);
+              // Edit original message: remove buttons, show classification
+              if (cb.message?.message_id) {
+                await editMessageText(
+                  botToken,
+                  cbChatId,
+                  cb.message.message_id,
+                  `✅ Classificado como: ${cat.emoji} <b>${cat.label}</b>`,
+                );
+              }
+            }
+          }
+        }
+      }
+      // ── tg_lnk_skip — Driver chose not to link ──────────────────────────
+      else if (cb.data === "tg_lnk_skip") {
+        await answerCallbackQuery(botToken, cb.id, "📎 Salvo para auditoria.");
+        if (cb.message?.message_id) {
+          await editMessageText(botToken, cbChatId, cb.message.message_id,
+            "📎 Evidência salva para auditoria manual pelo supervisor.");
+        }
+      }
+      // ── tg_lnk:{short_id} — Self-link via atomic RPC ────────────────────
+      else if (cb.data?.startsWith("tg_lnk:")) {
+        const shortId = cb.data.substring(7); // "tg_lnk:".length === 7
+        const cbBinding = await getActiveBinding(supabase, cbChatId);
+
+        if (!cbBinding) {
+          await answerCallbackQuery(botToken, cb.id, "⚠️ Chat não vinculado.");
+        } else {
+          try {
+            const { data: setId, error: rpcErr } = await supabase.rpc(
+              "resolve_telegram_orphan_with_link",
+              { p_short_id: shortId, p_driver_id: cbBinding.driver_id },
+            );
+
+            if (rpcErr) {
+              const msg = rpcErr.message ?? "";
+              if (msg.includes("expired")) {
+                await answerCallbackQuery(botToken, cb.id, "⚠️ Expirado.");
+                if (cb.message?.message_id) {
+                  await editMessageText(botToken, cbChatId, cb.message.message_id,
+                    "⚠️ Este link de vinculação expirou por razões de segurança.");
+                }
+              } else if (msg.includes("identity")) {
+                await answerCallbackQuery(botToken, cb.id, "⚠️ Não autorizado.");
+                if (cb.message?.message_id) {
+                  await editMessageText(botToken, cbChatId, cb.message.message_id,
+                    "⚠️ Vinculação não autorizada.");
+                }
+              } else if (rpcErr.code === "23505") {
+                // Already linked (idempotent)
+                await answerCallbackQuery(botToken, cb.id, "✅ Já vinculado.");
+                if (cb.message?.message_id) {
+                  await editMessageText(botToken, cbChatId, cb.message.message_id,
+                    "✅ Evidência já vinculada anteriormente.");
+                }
+              } else {
+                console.error(`[telegram-webhook] self-link RPC error correlationId=${correlationId}:`, rpcErr);
+                await answerCallbackQuery(botToken, cb.id, "❌ Erro ao vincular.");
+              }
+            } else {
+              await answerCallbackQuery(botToken, cb.id, "✅ Vinculado!");
+              if (cb.message?.message_id) {
+                await editMessageText(botToken, cbChatId, cb.message.message_id,
+                  `✅ <b>Sucesso!</b>\nEvidência vinculada à rota <b>${setId}</b> com sucesso.`);
+              }
+            }
+          } catch (e) {
+            console.error(`[telegram-webhook] self-link error correlationId=${correlationId}:`, e);
+            await answerCallbackQuery(botToken, cb.id, "❌ Erro ao vincular.");
+          }
+        }
+      }
     } catch (e) {
       console.error(`[telegram-webhook] callback error correlationId=${correlationId}:`, e);
       await answerCallbackQuery(botToken, cb.id, "❌ Erro ao processar.");
@@ -233,6 +387,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // ── 4. /help command ──────────────────────────────────────────────────────
   if (message.text?.startsWith("/help")) {
     await sendHelpMessage(botToken, chatId);
+    return new Response("OK", { status: 200 });
+  }
+
+  // ── 4b. /audio command — voice evidence compliance guide ──────────────────
+  if (message.text?.startsWith("/audio")) {
+    await sendMessageWithKeyboard(
+      botToken, chatId,
+      "🎙️ <b>Depoimento de Voz</b>\n\n" +
+      "Para registrar evidência em áudio:\n\n" +
+      "1️⃣ Pressione e segure o botão 🎤 do Telegram\n" +
+      "2️⃣ Grave seu relato sobre o ocorrido\n" +
+      "3️⃣ Solte para enviar\n\n" +
+      "O áudio será automaticamente:\n" +
+      "✅ Assinado com hash SHA-256\n" +
+      "✅ Vinculado à sua rota ativa\n" +
+      "✅ Classificado por categoria\n\n" +
+      "⚠️ Limite: 10 MB",
+      [[{ text: "❓ Ajuda", callback_data: "help" }]],
+    );
     return new Response("OK", { status: 200 });
   }
 
@@ -405,7 +578,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       console.warn(`[telegram-webhook] unsupported format correlationId=${correlationId}`);
       await sendMessageWithKeyboard(
         botToken, chatId,
-        "⚠️ <b>Formato não suportado.</b>\nPor favor, envie apenas fotos (JPG/PNG), vídeos (MP4) ou documentos PDF.",
+        "⚠️ <b>Formato não suportado.</b>\nPor favor, envie apenas fotos (JPG/PNG), vídeos (MP4), áudios (voice note) ou documentos PDF.",
         [[{ text: "❓ Ajuda", callback_data: "help" }]],
       );
       return new Response("OK", { status: 200 });
@@ -453,6 +626,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         linked_set_id: linkedSetId ?? null,
         telegram_message_date: new Date(message.date * 1000).toISOString(), // INV-6: device clock
         requires_manual_link: requiresManualLink,
+        mime_type: mimeFromExt(ext), // INV-18: server-authoritative from magic bytes
         // uploaded_at_utc: omitted — DB DEFAULT NOW() is the ingest anchor for discrepancy audit
       })
       .select("id")
@@ -492,25 +666,102 @@ Deno.serve(async (req: Request): Promise<Response> => {
     //     Linked  → receipt + execution_id (confirms forensic chain)
     //     Orphan  → forensic receipt only (strategic silence — no anxiety)
     const qualitySuffix = qualityWarning ? `\n⚠️ ${qualityWarning.message}` : "";
+    const isAudioEvidence = ext === "ogg";
     if (executionInfo) {
+      const receiptEmoji = isAudioEvidence ? "🎙️" : "✅";
+      const receiptTitle = isAudioEvidence ? "Depoimento Forense Registrado" : "Evidência registrada";
       await sendMessageWithKeyboard(
         botToken, chatId,
-        `✅ <b>Evidência registrada</b>\n` +
+        `${receiptEmoji} <b>${receiptTitle}</b>\n` +
         `🔐 Assinatura: <code>${hashHex.substring(0, 16)}…</code>\n` +
         `📍 <b>Rota:</b> ${executionInfo.displayName}${qualitySuffix}`,
         [[{ text: "❓ Ajuda", callback_data: "help" }]],
       );
     } else {
-      await sendMessageWithKeyboard(
-        botToken, chatId,
-        `📎 <b>Recibo Forense</b>\n` +
-        `🔐 Assinatura: <code>${hashHex.substring(0, 16)}…</code>${qualitySuffix}`,
-        [
-          [{ text: "❓ Ajuda", callback_data: "help" }],
-          [{ text: "📣 Reportar ao Supervisor", callback_data: "report_orphan" }],
-        ],
-      );
+      // 6m.self-link: Secondary search — find pending trips for self-linking.
+      //   Webhook is "dumb": asks the DB and renders the result.
+      //   Plate normalization (UPPER + strip hyphens) is inside the RPC.
+      let selfLinkOffered = false;
+      try {
+        const { data: trips } = await supabase.rpc("find_pending_trips_for_driver", {
+          p_org_id: binding.organization_id,
+          p_driver_id: binding.driver_id,
+          p_limit: 3,
+        });
+
+        if (trips && (trips as unknown[]).length > 0) {
+          const tripRows = trips as { set_id: string; window_start_utc: string }[];
+          // Insert pending links with short_ids
+          const pendingRows = tripRows.map((t) => ({
+            short_id: generateShortId(),
+            organization_id: binding.organization_id,
+            evidence_upload_id: evidenceId,
+            execution_set_id: t.set_id,
+            driver_id: binding.driver_id,
+            expires_at_utc: new Date(Date.now() + SELF_LINK_TTL_S * 1000).toISOString(),
+          }));
+
+          const { error: plErr } = await supabase
+            .from("telegram_pending_links")
+            .insert(pendingRows);
+
+          if (!plErr) {
+            const tripButtons: InlineKeyboardButton[][] = pendingRows.map((row, i) => ([{
+              text: `🚚 Vincular à ${tripRows[i].set_id} (${formatTripTime(tripRows[i].window_start_utc)})`,
+              callback_data: `tg_lnk:${row.short_id}`,
+            }]));
+            tripButtons.push([{ text: "❌ Não, apenas salvar", callback_data: "tg_lnk_skip" }]);
+
+            await sendMessageWithKeyboard(
+              botToken, chatId,
+              `📎 <b>Recibo Forense Gerado.</b>\n` +
+              `🔐 Assinatura: <code>${hashHex.substring(0, 16)}…</code>${qualitySuffix}\n\n` +
+              (isAudioEvidence
+                ? `🎙️ Depoimento de voz recebido. Não identifiquei uma viagem ativa agora. Deseja vincular a uma de suas viagens agendadas?`
+                : `Não identifiquei uma viagem ativa agora. Deseja vincular esta foto a uma de suas viagens agendadas?`),
+              tripButtons,
+            );
+            selfLinkOffered = true;
+          }
+        }
+      } catch (e) {
+        // Non-blocking: self-link is best-effort. Fall through to standard orphan receipt.
+        console.warn(`[telegram-webhook] self-link search failed correlationId=${correlationId}:`, e);
+      }
+
+      if (!selfLinkOffered) {
+        await sendMessageWithKeyboard(
+          botToken, chatId,
+          `📎 <b>Recibo Forense</b>\n` +
+          `🔐 Assinatura: <code>${hashHex.substring(0, 16)}…</code>${qualitySuffix}`,
+          [
+            [{ text: "❓ Ajuda", callback_data: "help" }],
+            [{ text: "📣 Reportar ao Supervisor", callback_data: "report_orphan" }],
+          ],
+        );
+      }
     }
+
+    // 6n. Menu Pai Universal: category tagging (fire-and-forget, never blocks evidence).
+    //     Sent as a SEPARATE message so the forensic receipt above stays clean.
+    //     callback_data format: tg_tag:{UUID}:{key} — max 50 bytes, within 64-byte limit.
+    await sendMessageWithKeyboard(
+      botToken, chatId,
+      "🏷️ <b>Como você classifica esta evidência?</b>",
+      [
+        [
+          { text: "📸 Estado / Visual", callback_data: `tg_tag:${evidenceId}:estado` },
+          { text: "📑 Documental / NF", callback_data: `tg_tag:${evidenceId}:doc` },
+        ],
+        [
+          { text: "🛠️ Operacional", callback_data: `tg_tag:${evidenceId}:oper` },
+          { text: "🚨 Incidente / SLA", callback_data: `tg_tag:${evidenceId}:incidente` },
+        ],
+        [
+          { text: "🔍 Outros / Info", callback_data: `tg_tag:${evidenceId}:outros` },
+        ],
+      ],
+    );
   } catch (e) {
     console.error(`[telegram-webhook] evidence processing error correlationId=${correlationId}:`, e);
     await sendMessageWithKeyboard(botToken, chatId, "Erro ao processar evidência. Tente novamente.");
@@ -531,8 +782,9 @@ async function sendHelpMessage(botToken: string, chatId: number): Promise<void> 
     "Para operar, você precisa cumprir dois requisitos:\n" +
     "1️⃣ <b>Aceite da LGPD:</b> Envie /start para ler e aceitar os termos.\n" +
     "2️⃣ <b>Vinculação:</b> Envie o código de 8 caracteres gerado no App.\n\n" +
-    "• Após cumprir ambos, anexe fotos ou documentos para registro.\n" +
+    "• Após cumprir ambos, anexe fotos, documentos ou áudios para registro.\n" +
     "• Cada envio gera um recibo forense com <b>assinatura digital única</b>.\n" +
+    "• Envie /audio para instruções sobre depoimentos de voz.\n" +
     "• Dúvidas? Contate seu supervisor operacional.",
   );
 }
@@ -655,6 +907,8 @@ function extractFileInfo(message: TelegramMessage): FileInfo | null {
     const largest = message.photo[message.photo.length - 1];
     return { fileId: largest.file_id, fileSize: largest.file_size };
   }
+  if (message.voice) return { fileId: message.voice.file_id, fileSize: message.voice.file_size };
+  if (message.audio) return { fileId: message.audio.file_id, fileSize: message.audio.file_size };
   if (message.document) return { fileId: message.document.file_id, fileSize: message.document.file_size };
   if (message.video) return { fileId: message.video.file_id, fileSize: message.video.file_size };
   return null;
@@ -735,12 +989,40 @@ async function answerCallbackQuery(botToken: string, callbackQueryId: string, te
 }
 
 /**
+ * Edits a previously sent message text and removes inline keyboard.
+ * Used by Menu Pai Universal to replace category buttons with confirmation.
+ * Fire-and-forget — failure never blocks processing.
+ */
+async function editMessageText(
+  botToken: string,
+  chatId: number,
+  messageId: number,
+  text: string,
+): Promise<void> {
+  try {
+    await fetch(`${TELEGRAM_API}${botToken}/editMessageText`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        message_id: messageId,
+        text,
+        parse_mode: "HTML",
+        reply_markup: { inline_keyboard: [] },
+      }),
+    });
+  } catch { /* fire-and-forget */ }
+}
+
+/**
  * Sniffs file extension from magic bytes (INV-18: never trust Telegram metadata).
  */
 function sniffExtension(bytes: Uint8Array): string {
   if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return "jpg";
   if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return "png";
   if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) return "pdf";
+  // OGG container (Opus/Vorbis voice messages) — "OggS" magic bytes
+  if (bytes[0] === 0x4F && bytes[1] === 0x67 && bytes[2] === 0x67 && bytes[3] === 0x53) return "ogg";
   if (
     bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
     bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
@@ -761,7 +1043,7 @@ function mimeFromExt(ext: string): string {
   const map: Record<string, string> = {
     jpg: "image/jpeg", png: "image/png", pdf: "application/pdf",
     mp4: "video/mp4", webp: "image/webp", heic: "image/heic",
-    bin: "application/octet-stream",
+    ogg: "audio/ogg", bin: "application/octet-stream",
   };
   return map[ext] ?? "application/octet-stream";
 }

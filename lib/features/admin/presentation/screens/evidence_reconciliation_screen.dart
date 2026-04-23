@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_upload.dart';
+import 'package:veraprob/features/admin/presentation/shared/evidence_category_chip.dart';
+import 'package:veraprob/features/admin/presentation/shared/evidence_link_source_chip.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
 
 /// WS-4 Evidence Reconciliation Screen — auditor triage for orphan evidence.
@@ -168,6 +170,12 @@ class _OrphanEvidenceCard extends ConsumerWidget {
           // Bottom row: metadata
           Row(
             children: [
+              EvidenceCategoryChip(category: evidence.category),
+              if (evidence.linkSource != null) ...[
+                const SizedBox(width: 6),
+                EvidenceLinkSourceChip(source: evidence.linkSource!),
+              ],
+              const SizedBox(width: 12),
               _MetaChip(
                 icon: Icons.person_outline,
                 label: 'Driver: ${evidence.driverId.substring(0, 8)}…',
@@ -279,6 +287,7 @@ class _TypeBadge extends StatelessWidget {
       'HEIC' => (VeraProbColors.info, Icons.image_outlined),
       'PDF' => (VeraProbColors.warning, Icons.picture_as_pdf_outlined),
       'MP4' => (VeraProbColors.secondary, Icons.videocam_outlined),
+      'OGG' => (VeraProbColors.secondary, Icons.mic_rounded),
       _ => (VeraProbColors.neutral, Icons.insert_drive_file_outlined),
     };
 

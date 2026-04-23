@@ -100,7 +100,9 @@ class PostgresTelegramRepository extends BasePostgresRepository
             'id, organization_id, driver_id, chat_id, telegram_message_id, '
             'file_name, forensic_hash, storage_path, source, linked_set_id, '
             'uploaded_at_utc, telegram_message_date, requires_manual_link, '
-            'telegram_evidence_links(id)',
+            'mime_type, '
+            'telegram_evidence_links(id, source), '
+            'telegram_evidence_categories(category)',
           )
           .eq('organization_id', organizationId)
           .eq('requires_manual_link', true)
@@ -168,6 +170,20 @@ class PostgresTelegramRepository extends BasePostgresRepository
   }
 
   TelegramEvidenceUpload _evidenceFromRow(Map<String, dynamic> row) {
+    // PostgREST embedding: telegram_evidence_categories is a 0-or-1 element
+    // list (UNIQUE FK). Extract category from first element if present.
+    final catList = row['telegram_evidence_categories'] as List<dynamic>?;
+    final category = (catList != null && catList.isNotEmpty)
+        ? catList[0]['category'] as String?
+        : null;
+
+    // PostgREST embedding: telegram_evidence_links may contain 0+ elements.
+    // Extract source from first link if present.
+    final linkList = row['telegram_evidence_links'] as List<dynamic>?;
+    final linkSource = (linkList != null && linkList.isNotEmpty)
+        ? linkList[0]['source'] as String?
+        : null;
+
     return TelegramEvidenceUpload(
       id: row['id'] as String,
       organizationId: row['organization_id'] as String,
@@ -184,6 +200,9 @@ class PostgresTelegramRepository extends BasePostgresRepository
         row['telegram_message_date'] as String,
       ).toUtc(),
       requiresManualLink: row['requires_manual_link'] as bool,
+      category: category,
+      linkSource: linkSource,
+      mimeType: row['mime_type'] as String?,
     );
   }
 

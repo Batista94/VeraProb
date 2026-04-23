@@ -1,9 +1,9 @@
 // Regras de Escrita:
-// 1. Use DateTime.utc() ou DateTime.now().toUtc() em uma única linha (INV-9).
-// 2. Use int para valores monetários (cents) e taxas (BPS) — INV-19.
+// 1. Use DateTime.utc() ou DateTime.now().toUtc() em uma Ãºnica linha (INV-9).
+// 2. Use int para valores monetÃ¡rios (cents) e taxas (BPS) â€” INV-19.
 // 3. Proibido importar lib/infrastructure em testes de application
-//    (exceto implementações in-memory de repositórios para suporte de testes).
-// 4. Fonts são carregadas via rootBundle (flutter_test) — sem dependência de dart:io.
+//    (exceto implementaÃ§Ãµes in-memory de repositÃ³rios para suporte de testes).
+// 4. Fonts sÃ£o carregadas via rootBundle (flutter_test) â€” sem dependÃªncia de dart:io.
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,8 +21,8 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_audit_package_reposi
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
 
 void main() {
-  // ── Font bytes — loaded once for the entire suite via rootBundle ──────────
-  // Eliminates Helvetica Unicode warnings for em-dash and ≤ in legal notices.
+  // â”€â”€ Font bytes â€” loaded once for the entire suite via rootBundle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Eliminates Helvetica Unicode warnings for em-dash and â‰¤ in legal notices.
   late ByteData fontRegular;
   late ByteData fontBold;
 
@@ -32,7 +32,7 @@ void main() {
     fontBold = await rootBundle.load('assets/fonts/Lato-Bold.ttf');
   });
 
-  // ── Constants ─────────────────────────────────────────────────────────────
+  // â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   final periodStart = DateTime.utc(2026, 3, 1);
   final periodEnd = DateTime.utc(2026, 3, 31, 23, 59, 59);
   const orgId = 'org-forensic';
@@ -41,12 +41,12 @@ void main() {
   const engineVersion = '7.1.0-test';
   const userId = 'user-test-1';
 
-  // ── Local formatting helpers (mirror private _fmtBrl / BPS display) ───────
+  // â”€â”€ Local formatting helpers (mirror private _fmtBrl / BPS display) â”€â”€â”€â”€â”€â”€â”€
   // These test the algorithm independently of the private methods in the service.
   String fmtBrl(int cents) => 'R\$ ${(cents / 100).toStringAsFixed(2)}';
   String fmtBps(int bps) => '${(bps / 100.0).toStringAsFixed(1)}%';
 
-  // ── Domain object factories ───────────────────────────────────────────────
+  // â”€â”€ Domain object factories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   AttestationHeader makeHeader({
     String tenantName = 'Operadora Alpha',
     String? tenantCnpj = '12.345.678/0001-99',
@@ -83,7 +83,7 @@ void main() {
     lastLedgerEntryId: lastLedgerEntryId,
   );
 
-  // ── Infrastructure ────────────────────────────────────────────────────────
+  // â”€â”€ Infrastructure â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   late InMemoryAuditPackageRepository auditPackageRepo;
   late InMemoryContractualFinancialSnapshotRepository snapshotRepo;
   late ReportingService reportingService;
@@ -101,7 +101,7 @@ void main() {
     pdfService = PdfExportService(fontRegular: fontRegular, fontBold: fontBold);
   });
 
-  // ── Fixture helper ────────────────────────────────────────────────────────
+  // â”€â”€ Fixture helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   /// Seeds [snapshots] (defaults to a single March-1 row), calls
   /// [packageService.createDraftAndSeal], and returns the sealed package
   /// together with the matching [BillingCycleReport].
@@ -141,9 +141,9 @@ void main() {
   }
 
   // =========================================================================
-  // Group 1 — Guard Clauses (INV-18)
+  // Group 1 â€” Guard Clauses (INV-18)
   // =========================================================================
-  group('Guard clauses — INV-18', () {
+  group('Guard clauses â€” INV-18', () {
     test('1. throws DomainException for draft package', () async {
       await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 1)));
       final report = await reportingService.generateBillingCycleReport(
@@ -204,7 +204,7 @@ void main() {
           noShowCount: report.noShowCount,
           evidenceGapCount: report.evidenceGapCount,
           complianceRateBps: report.complianceRateBps,
-          packageHash: null, // ← data-integrity violation
+          packageHash: null, // â† data-integrity violation
           hashAlgorithm: 'SHA-256',
           schemaVersion: AuditPackage.kSchemaVersion,
           engineVersionAtGeneration: engineVersion,
@@ -247,7 +247,7 @@ void main() {
           noShowCount: report.noShowCount,
           evidenceGapCount: report.evidenceGapCount,
           complianceRateBps: report.complianceRateBps,
-          packageHash: '', // ← empty — equally invalid
+          packageHash: '', // â† empty â€” equally invalid
           hashAlgorithm: 'SHA-256',
           schemaVersion: AuditPackage.kSchemaVersion,
           engineVersionAtGeneration: engineVersion,
@@ -272,7 +272,7 @@ void main() {
       () async {
         final (sealed, _) = await makeSealedFixture();
 
-        // Generate a DIFFERENT report (different period → different deterministic ID)
+        // Generate a DIFFERENT report (different period â†’ different deterministic ID)
         final mismatchedPeriodStart = DateTime.utc(2026, 2, 1);
         final mismatchedPeriodEnd = DateTime.utc(2026, 2, 28, 23, 59, 59);
         await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 2, 1)));
@@ -293,9 +293,9 @@ void main() {
   });
 
   // =========================================================================
-  // Group 2 — Happy Path & Structural Integrity (INV-20/21)
+  // Group 2 â€” Happy Path & Structural Integrity (INV-20/21)
   // =========================================================================
-  group('Happy path — structural integrity (INV-20/21)', () {
+  group('Happy path â€” structural integrity (INV-20/21)', () {
     test('6. returns non-empty bytes for minimal valid input', () async {
       final (sealed, report) = await makeSealedFixture();
       final bytes = await pdfService.generatePdf(
@@ -321,7 +321,7 @@ void main() {
         organizationId: orgId,
         periodStartUtc: periodStart,
         periodEndUtc: periodEnd,
-        contractId: null, // ← all-contracts
+        contractId: null, // â† all-contracts
       );
       final sealed = await packageService.createDraftAndSeal(
         organizationId: orgId,
@@ -344,7 +344,7 @@ void main() {
     test(
       '9. succeeds with zero snapshots (Page 3 skipped gracefully)',
       () async {
-        // No snapshots seeded → empty report, no daily breakdown page
+        // No snapshots seeded â†’ empty report, no daily breakdown page
         final report = await reportingService.generateBillingCycleReport(
           organizationId: orgId,
           periodStartUtc: periodStart,
@@ -384,7 +384,7 @@ void main() {
           report: report,
         );
 
-        // Exact byte equality expected — same pw.Document, same inputs, no
+        // Exact byte equality expected â€” same pw.Document, same inputs, no
         // internal mutation between calls.
         expect(bytes1.length, equals(bytes2.length));
       },
@@ -392,11 +392,11 @@ void main() {
   });
 
   // =========================================================================
-  // Group 3 — Financial Precision (INV-19)
+  // Group 3 â€” Financial Precision (INV-19)
   // =========================================================================
-  group('Financial precision — INV-19', () {
+  group('Financial precision â€” INV-19', () {
     // Tests 11-14: Verify the BRL formatting algorithm used by _fmtBrl.
-    // The helper mirrors `cents / 100 → toStringAsFixed(2)` exactly.
+    // The helper mirrors `cents / 100 â†’ toStringAsFixed(2)` exactly.
 
     test('11. fmtBrl formats 0 cents as R\$ 0.00', () {
       expect(fmtBrl(0), equals('R\$ 0.00'));
@@ -424,7 +424,7 @@ void main() {
           totalRevenue: const Money(15000),
         );
         final (sealed, report) = await makeSealedFixture(snapshots: [snapshot]);
-        // If _fmtBrl misbehaves, generatePdf would crash — we prove it does not.
+        // If _fmtBrl misbehaves, generatePdf would crash â€” we prove it does not.
         final bytes = await pdfService.generatePdf(
           package: sealed,
           report: report,
@@ -444,9 +444,9 @@ void main() {
   });
 
   // =========================================================================
-  // Group 4 — Layout Resilience (Dirty Data)
+  // Group 4 â€” Layout Resilience (Dirty Data)
   // =========================================================================
-  group('Layout resilience — dirty data', () {
+  group('Layout resilience â€” dirty data', () {
     test('17. handles null tenantCnpj gracefully (renders "N/A")', () async {
       final (sealed, report) = await makeSealedFixture(
         header: makeHeader(tenantCnpj: null),
@@ -485,10 +485,12 @@ void main() {
     });
 
     test(
-      '20. handles special characters in tenant name (ã ç ê ñ — "Ltda")',
+      '20. handles special characters in tenant name (Ã£ Ã§ Ãª Ã± â€” "Ltda")',
       () async {
         final (sealed, report) = await makeSealedFixture(
-          header: makeHeader(tenantName: 'Operadora São João & Cia — "Ltda"'),
+          header: makeHeader(
+            tenantName: 'Operadora SÃ£o JoÃ£o & Cia â€” "Ltda"',
+          ),
         );
         final bytes = await pdfService.generatePdf(
           package: sealed,
@@ -501,7 +503,7 @@ void main() {
     test(
       '21. renders missing-dates warning without crash (incomplete report)',
       () async {
-        // Seed only day 1 and day 31 → 29 missing days in March
+        // Seed only day 1 and day 31 â†’ 29 missing days in March
         final snaps = [
           makeSnapshot(date: DateTime.utc(2026, 3, 1)),
           makeSnapshot(date: DateTime.utc(2026, 3, 31)),
@@ -522,7 +524,7 @@ void main() {
     test(
       '22. renders zero-revenue bar as text node (no division-by-zero)',
       () async {
-        // All Money values zero → _revenueBar returns text fallback
+        // All Money values zero â†’ _revenueBar returns text fallback
         final zeroSnap = ContractualFinancialDailySnapshot.create(
           organizationId: orgId,
           contractId: contractId,
@@ -581,7 +583,7 @@ void main() {
         periodStartUtc: originalSealed.periodStartUtc,
         periodEndUtc: originalSealed.periodEndUtc,
         billingCycleReportId: originalSealed.billingCycleReportId,
-        reportLedgerBoundary: null, // ← explicitly null
+        reportLedgerBoundary: null, // â† explicitly null
         snapshotIds: originalSealed.snapshotIds,
         totalContractedRevenue: originalSealed.totalContractedRevenue,
         protectedRevenue: originalSealed.protectedRevenue,
@@ -613,9 +615,225 @@ void main() {
   });
 
   // =========================================================================
-  // Group 5 — Performance / Stress (200+ Snapshots)
+  // Group 5 — Evidence Catalogue — ADVERSARIAL (dirty data from Telegram)
   // =========================================================================
-  group('Performance — 200+ snapshots', () {
+  group('Evidence catalogue — adversarial', () {
+    PdfEvidenceRow makeEvidence({
+      String? category,
+      String driverId = 'drv-001',
+      String forensicHash = 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6',
+      bool isLinked = true,
+      DateTime? ts,
+      String? mimeType,
+    }) => (
+      timestampUtc: ts ?? DateTime.utc(2026, 3, 15, 10, 30),
+      forensicHash: forensicHash,
+      category: category,
+      driverId: driverId,
+      isLinked: isLinked,
+      mimeType: mimeType,
+    );
+
+    test('27. empty forensicHash does not crash substring', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [makeEvidence(forensicHash: '')],
+      );
+      expect(bytes, isNotEmpty);
+    });
+
+    test('28. 3-char forensicHash (shorter than 16) renders safely', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [makeEvidence(forensicHash: 'abc')],
+      );
+      expect(bytes, isNotEmpty);
+    });
+
+    test('29. empty driverId does not crash substring', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [makeEvidence(driverId: '')],
+      );
+      expect(bytes, isNotEmpty);
+    });
+
+    test('30. unknown category string renders without crash', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [makeEvidence(category: 'HACKED')],
+      );
+      expect(bytes, isNotEmpty);
+    });
+
+    test('31. epoch-zero timestamp renders without crash', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [makeEvidence(ts: DateTime.utc(1970, 1, 1))],
+      );
+      expect(bytes, isNotEmpty);
+    });
+
+    test(
+      '32. far-future timestamp (year 2099) renders without crash',
+      () async {
+        final (sealed, report) = await makeSealedFixture();
+        final bytes = await pdfService.generatePdf(
+          package: sealed,
+          report: report,
+          evidences: [makeEvidence(ts: DateTime.utc(2099, 12, 31, 23, 59, 59))],
+        );
+        expect(bytes, isNotEmpty);
+      },
+    );
+
+    test(
+      '33. all orphan evidences (isLinked=false) render correctly',
+      () async {
+        final (sealed, report) = await makeSealedFixture();
+        final bytes = await pdfService.generatePdf(
+          package: sealed,
+          report: report,
+          evidences: [
+            makeEvidence(isLinked: false, category: 'incidente'),
+            makeEvidence(isLinked: false, category: null),
+          ],
+        );
+        expect(bytes, isNotEmpty);
+      },
+    );
+
+    test('34. 500 evidences renders without OOM (< 5 MB)', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final cats = ['incidente', 'oper', 'estado', 'doc', 'outros', null];
+      final evidences = List.generate(
+        500,
+        (i) => makeEvidence(
+          category: cats[i % 6],
+          driverId: 'drv-${i.toString().padLeft(4, "0")}',
+          isLinked: i.isEven,
+          ts: DateTime.utc(2026, 3, 1).add(Duration(minutes: i)),
+        ),
+      );
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: evidences,
+      );
+      expect(bytes, isNotEmpty);
+      expect(bytes.length, lessThan(5 * 1024 * 1024));
+    });
+
+    test('35. PDF with evidences is strictly larger than without', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytesWithout = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+      );
+      final bytesWith = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [
+          makeEvidence(category: null),
+          makeEvidence(category: 'doc'),
+          makeEvidence(category: 'incidente'),
+        ],
+      );
+      expect(bytesWith.length, greaterThan(bytesWithout.length));
+    });
+
+    test('36. driverId with unicode chars renders safely', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [makeEvidence(driverId: 'José_Ñ_驾')],
+      );
+      expect(bytes, isNotEmpty);
+    });
+
+    test('37. forensicHash with only spaces renders safely', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [makeEvidence(forensicHash: '                ')],
+      );
+      expect(bytes, isNotEmpty);
+    });
+
+    test(
+      '38. audio evidence (mimeType: audio/ogg) renders without crash',
+      () async {
+        final (sealed, report) = await makeSealedFixture();
+        final bytes = await pdfService.generatePdf(
+          package: sealed,
+          report: report,
+          evidences: [makeEvidence(mimeType: 'audio/ogg')],
+        );
+        expect(bytes, isNotEmpty);
+      },
+    );
+
+    test('39. null mimeType → backward compatible (assumes photo)', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [makeEvidence(mimeType: null)],
+      );
+      expect(bytes, isNotEmpty);
+    });
+
+    test('40. audio with empty hash → no crash', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [makeEvidence(mimeType: 'audio/ogg', forensicHash: '')],
+      );
+      expect(bytes, isNotEmpty);
+    });
+
+    test('41. video/mp4 → not treated as audio', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [makeEvidence(mimeType: 'video/mp4')],
+      );
+      expect(bytes, isNotEmpty);
+    });
+
+    test('42. mix of photos and audio renders both types', () async {
+      final (sealed, report) = await makeSealedFixture();
+      final bytes = await pdfService.generatePdf(
+        package: sealed,
+        report: report,
+        evidences: [
+          makeEvidence(mimeType: 'image/jpeg', category: 'estado'),
+          makeEvidence(mimeType: 'audio/ogg', category: 'incidente'),
+          makeEvidence(mimeType: null, category: 'doc'),
+        ],
+      );
+      expect(bytes, isNotEmpty);
+    });
+  });
+
+  // =========================================================================
+  // Group 5 â€” Performance / Stress (200+ Snapshots)
+  // =========================================================================
+  group('Performance â€” 200+ snapshots', () {
     /// Builds 200 daily snapshots starting from [baseDate].
     List<ContractualFinancialDailySnapshot> build200Snapshots() {
       final base = DateTime.utc(2026, 1, 1);

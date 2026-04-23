@@ -7,6 +7,17 @@ import 'package:veraprob/domain/sla_audit/audit_package.dart';
 import 'package:veraprob/domain/sla_audit/audit_package_status.dart';
 import 'package:veraprob/domain/sla_audit/billing_cycle_report.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/features/admin/presentation/shared/evidence_category_chip.dart';
+
+/// Lightweight DTO for evidence rows in the PDF export.
+typedef PdfEvidenceRow = ({
+  DateTime timestampUtc,
+  String forensicHash,
+  String? category,
+  String driverId,
+  bool isLinked,
+  String? mimeType,
+});
 
 /// Generates legally-defensible PDF exports from sealed [AuditPackage] records.
 ///
@@ -25,6 +36,7 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 ///   Page 1 — Attestation cover (full legal block).
 ///   Page 2 — Executive summary (KPIs, revenue table).
 ///   Page 3..N — Daily snapshot breakdown (one table per contract).
+///   Page N+1 — Evidence catalogue (Telegram photos, when provided).
 ///   Last page — Chain of Custody & hash verification instructions.
 class PdfExportService {
   final pw.Font? _fontBase;
@@ -50,6 +62,7 @@ class PdfExportService {
   Future<List<int>> generatePdf({
     required AuditPackage package,
     required BillingCycleReport report,
+    List<PdfEvidenceRow> evidences = const [],
   }) async {
     _assertSealed(package);
     _assertReportMatches(package, report);
@@ -241,6 +254,76 @@ class PdfExportService {
       );
     }
 
+    // ── Evidence Catalogue (Telegram) ─────────────────────────────────────────
+    if (evidences.isNotEmpty) {
+      final sorted = List<PdfEvidenceRow>.of(evidences)
+        ..sort(
+          (a, b) => EvidenceCategoryChip.sortPriority(
+            a.category,
+          ).compareTo(EvidenceCategoryChip.sortPriority(b.category)),
+        );
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+          build: (context) => [
+            _sectionHeader('CATÁLOGO DE EVIDÊNCIAS'),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              '${evidences.length} evidência(s) capturada(s) via Telegram Bot no período.',
+              style: const pw.TextStyle(fontSize: 9),
+            ),
+            pw.SizedBox(height: 8),
+            pw.TableHelper.fromTextArray(
+              headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 8,
+              ),
+              cellStyle: const pw.TextStyle(fontSize: 7),
+              headers: [
+                'Data/Hora (UTC)',
+                'Tipo',
+                'Hash SHA-256',
+                'Categoria',
+                'Motorista',
+                'Vinculação',
+              ],
+              data: sorted.map((e) {
+                final isAudio = e.mimeType?.startsWith('audio/') ?? false;
+                return [
+                  _fmtDateTime(e.timestampUtc),
+                  isAudio ? 'Áudio' : 'Foto',
+                  '${e.forensicHash.length > 16 ? e.forensicHash.substring(0, 16) : e.forensicHash}…',
+                  EvidenceCategoryChip.labelFor(e.category),
+                  e.driverId.length > 8
+                      ? '${e.driverId.substring(0, 8)}…'
+                      : e.driverId,
+                  e.isLinked ? 'Vinculada' : 'Órfã',
+                ];
+              }).toList(),
+            ),
+            // Audio footnotes
+            ...sorted
+                .where((e) => e.mimeType?.startsWith('audio/') ?? false)
+                .map(
+                  (e) => pw.Padding(
+                    padding: const pw.EdgeInsets.only(top: 4),
+                    child: pw.Text(
+                      'Evidência em formato de áudio disponível no sistema sob '
+                      'Hash ${e.forensicHash.length > 16 ? e.forensicHash.substring(0, 16) : e.forensicHash}…',
+                      style: pw.TextStyle(
+                        fontSize: 7,
+                        fontStyle: pw.FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ),
+          ],
+        ),
+      );
+    }
+
     // ── Last Page: Chain of Custody ───────────────────────────────────────────
     pdf.addPage(
       pw.Page(
@@ -387,6 +470,9 @@ class PdfExportService {
   }
 
   String _fmtDate(DateTime dt) => dt.toIso8601String().split('T')[0];
+
+  String _fmtDateTime(DateTime dt) =>
+      '${_fmtDate(dt)} ${dt.toIso8601String().split('T')[1].split('.')[0]}';
 
   String _fmtBrl(int cents) {
     final value = cents / 100;

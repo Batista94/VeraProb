@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/config/environment.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/shared/evidence_category_chip.dart';
+import 'package:veraprob/features/admin/presentation/shared/forensic_audio_player.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// Full evidence photo dossier — shown via [showModalBottomSheet].
@@ -23,10 +25,23 @@ class EvidenceDossierModal extends ConsumerStatefulWidget {
   /// Full list of evidence IDs to display.
   final List<String> evidenceIds;
 
+  /// Optional category map: evidenceId → category key.
+  /// When provided, items are sorted by risk and a caption is shown.
+  final Map<String, String?> categories;
+
+  /// Optional MIME type map: evidenceId → mime_type string.
+  /// When an entry starts with 'audio/', a [ForensicAudioPlayer] is rendered.
+  final Map<String, String?> mimeTypes;
+
   /// Maximum items rendered in the grid.
   static const int _kMaxItems = 15;
 
-  const EvidenceDossierModal({super.key, required this.evidenceIds});
+  const EvidenceDossierModal({
+    super.key,
+    required this.evidenceIds,
+    this.categories = const {},
+    this.mimeTypes = const {},
+  });
 
   @override
   ConsumerState<EvidenceDossierModal> createState() =>
@@ -39,12 +54,30 @@ class _EvidenceDossierModalState extends ConsumerState<EvidenceDossierModal> {
       _loadedCount <
       widget.evidenceIds.take(EvidenceDossierModal._kMaxItems).length;
 
+  bool _isAudio(String id) =>
+      widget.mimeTypes[id]?.startsWith('audio/') ?? false;
+
+  String get _headerLabel {
+    final audioCount = widget.evidenceIds.where(_isAudio).length;
+    final photoCount = widget.evidenceIds.length - audioCount;
+    if (audioCount == 0) return '$photoCount FOTOS';
+    if (photoCount == 0) return '$audioCount ÁUDIOS';
+    return '$photoCount FOTOS · $audioCount ÁUDIOS';
+  }
+
   @override
   Widget build(BuildContext context) {
     final accessToken = ref.watch(currentSessionIdProvider) ?? '';
-    final items = widget.evidenceIds
-        .take(EvidenceDossierModal._kMaxItems)
-        .toList();
+    // Sort by risk when categories are available (incidente first, null last)
+    final sorted = List<String>.of(widget.evidenceIds);
+    if (widget.categories.isNotEmpty) {
+      sorted.sort(
+        (a, b) => EvidenceCategoryChip.sortPriority(
+          widget.categories[a],
+        ).compareTo(EvidenceCategoryChip.sortPriority(widget.categories[b])),
+      );
+    }
+    final items = sorted.take(EvidenceDossierModal._kMaxItems).toList();
 
     return Container(
       decoration: const BoxDecoration(
@@ -102,7 +135,7 @@ class _EvidenceDossierModalState extends ConsumerState<EvidenceDossierModal> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    '${widget.evidenceIds.length} FOTOS',
+                    _headerLabel,
                     style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
@@ -135,19 +168,42 @@ class _EvidenceDossierModalState extends ConsumerState<EvidenceDossierModal> {
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
               shrinkWrap: true,
               physics: const BouncingScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 crossAxisSpacing: 6,
                 mainAxisSpacing: 6,
+                childAspectRatio: widget.categories.isNotEmpty ? 0.78 : 1.0,
               ),
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final id = items[index];
-                // INV-26: ALL images MUST go through secure-evidence-proxy
+                // INV-26: ALL files MUST go through secure-evidence-proxy
                 final url =
                     '${EnvironmentConfig.supabaseUrl}/functions/v1/secure-evidence-proxy?evidence_id=$id'; // pr_scanner: ignore
 
-                return ClipRRect(
+                // ── Audio evidence → ForensicAudioPlayer ──
+                if (_isAudio(id)) {
+                  final player = ForensicAudioPlayer(
+                    audioUrl: url,
+                    forensicHash:
+                        id, // evidence ID as fallback hash for waveform
+                    httpHeaders: {'Authorization': 'Bearer $accessToken'},
+                  );
+                  if (widget.categories.isNotEmpty) {
+                    final cat = widget.categories[id];
+                    return Column(
+                      children: [
+                        Expanded(child: player),
+                        const SizedBox(height: 3),
+                        EvidenceCategoryChip(category: cat),
+                      ],
+                    );
+                  }
+                  return player;
+                }
+
+                // ── Photo/document evidence → CachedNetworkImage ──
+                final image = ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: CachedNetworkImage(
                     imageUrl: url,
@@ -174,6 +230,19 @@ class _EvidenceDossierModalState extends ConsumerState<EvidenceDossierModal> {
                     },
                   ),
                 );
+
+                // Show category caption when categories map is provided
+                if (widget.categories.isNotEmpty) {
+                  final cat = widget.categories[id];
+                  return Column(
+                    children: [
+                      Expanded(child: image),
+                      const SizedBox(height: 3),
+                      EvidenceCategoryChip(category: cat),
+                    ],
+                  );
+                }
+                return image;
               },
             ),
           ),

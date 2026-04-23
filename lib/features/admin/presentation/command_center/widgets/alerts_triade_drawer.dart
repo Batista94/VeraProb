@@ -7,6 +7,8 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/features/admin/presentation/command_center/logic/alert_grouping.dart';
 import 'package:veraprob/features/admin/presentation/command_center/models/driver_alert_group.dart';
+import 'package:veraprob/features/admin/presentation/shared/evidence_category_chip.dart';
+import 'package:veraprob/features/admin/presentation/shared/evidence_link_source_chip.dart';
 import 'package:veraprob/state/providers/alert_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -397,6 +399,14 @@ class _RichEvidenceCard extends ConsumerWidget {
                 label: _alertTypeLabel(alert.alertType),
                 color: severityColor,
               ),
+              if (alert.context['evidence_category'] case final String cat) ...[
+                const SizedBox(width: 6),
+                EvidenceCategoryChip(category: cat),
+              ],
+              if (alert.context['link_source'] case final String src) ...[
+                const SizedBox(width: 6),
+                EvidenceLinkSourceChip(source: src),
+              ],
               if (evidenceIds.length > 1) ...[
                 const SizedBox(width: 6),
                 _PhotoCountBadge(count: evidenceIds.length),
