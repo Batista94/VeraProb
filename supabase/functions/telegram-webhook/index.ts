@@ -17,6 +17,7 @@ import { checkConsent } from "../shared/consent_middleware.ts";
 import { extractExifMetadata } from "../shared/exif_extractor.ts";
 import { validateImageQuality, type QualityWarning } from "../shared/image_quality_validator.ts";
 import { formatStatusMessage, formatFinishWarning, type ComplianceRpcResult } from "../shared/compliance_formatter.ts";
+import { calculateClockDrift, FRAUD_DRIFT_THRESHOLD_S } from "../shared/clock_drift_helper.ts";
 
 // Single type alias used by all helper functions — avoids JSR/npm generic mismatch.
 // deno-lint-ignore no-explicit-any
@@ -113,12 +114,18 @@ const TS_MAX_DRIFT_S = 86_400;       // QA-Security: reject if > 24h old
 // ── Category tagging (Menu Pai Universal) ──────────────────────────────────────
 
 const CATEGORY_MAP: Record<string, { emoji: string; label: string }> = {
-  estado:    { emoji: "📸", label: "Estado / Visual" },
-  doc:       { emoji: "📑", label: "Documental / NF" },
-  oper:      { emoji: "🛠️", label: "Operacional" },
-  incidente: { emoji: "🚨", label: "Incidente / SLA" },
-  outros:    { emoji: "🔍", label: "Outros / Info" },
+  estado:      { emoji: "📸", label: "Estado / Visual" },
+  doc:         { emoji: "📑", label: "Documental / NF" },
+  oper:        { emoji: "🛠️", label: "Operacional" },
+  incidente:   { emoji: "🚨", label: "Incidente / SLA" },
+  outros:      { emoji: "🔍", label: "Outros / Info" },
+  // ▶️ prefix: auto-start triggers — photographing these starts transit (INV-6 physical sovereignty)
+  lacre:       { emoji: "▶️🔒", label: "Lacre" },
+  chk_saida:   { emoji: "▶️📋", label: "Checklist Saída" },
+  carregamento: { emoji: "▶️📦", label: "Carregamento" },
 };
+
+const TRANSIT_TRIGGER_CATEGORIES = new Set(["lacre", "chk_saida", "carregamento"]);
 
 const LGPD_TERMS = `
 ⚖️ <b>Termos de Uso e Privacidade (LGPD)</b>
@@ -154,6 +161,8 @@ function formatTripTime(windowStartUtc: string): string {
 // ── Main handler ───────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request): Promise<Response> => {
+  // Capture server timestamp at entry — before any I/O — for accurate drift measurement (INV-15).
+  const serverUnixTs = Date.now() / 1000;
   const correlationId = crypto.randomUUID();
   const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
   const webhookSecret = Deno.env.get("TELEGRAM_WEBHOOK_SECRET")!;
@@ -278,17 +287,42 @@ Deno.serve(async (req: Request): Promise<Response> => {
               }
             } else {
               const cat = CATEGORY_MAP[categoryKey];
+              let transitStarted = false;
+
+              // Task 3: Physical Evidence Sovereignty — auto-start transit on trigger categories.
+              if (TRANSIT_TRIGGER_CATEGORIES.has(categoryKey)) {
+                try {
+                  const { data: evidenceRow } = await supabase
+                    .from("telegram_evidence_uploads")
+                    .select("linked_set_id")
+                    .eq("id", evidenceId)
+                    .eq("organization_id", cbBinding.organization_id)
+                    .maybeSingle();
+
+                  const linkedSetId = evidenceRow?.linked_set_id as string | null;
+                  if (linkedSetId) {
+                    const { data: started } = await supabase.rpc("start_transit_for_execution", {
+                      p_org_id: cbBinding.organization_id,
+                      p_set_id: linkedSetId,
+                    });
+                    transitStarted = started === true;
+                  }
+                } catch (e) {
+                  // Non-blocking: category save is already committed. Transit failure logged only.
+                  console.warn(`[telegram-webhook] auto-start transit failed correlationId=${correlationId}:`, e);
+                }
+              }
+
+              const transitSuffix = transitStarted ? "\n🚀 Trânsito iniciado automaticamente." : "";
               await answerCallbackQuery(botToken, cb.id, `${cat.emoji} Classificado!`);
-              // Edit original message: remove buttons, show classification
               if (cb.message?.message_id) {
                 await editMessageText(
                   botToken,
                   cbChatId,
                   cb.message.message_id,
-                  `✅ Classificado como: ${cat.emoji} <b>${cat.label}</b>`,
+                  `✅ Classificado como: ${cat.emoji} <b>${cat.label}</b>${transitSuffix}`,
                 );
               }
-              // Task 5: Send checklist shortcut button after classification
               await sendMessageWithKeyboard(botToken, cbChatId,
                 "📋 Quer verificar o checklist de conformidade da sua rota?",
                 [[{ text: "📋 Ver Checklist Atual", callback_data: "tg_status" }]]);
@@ -613,8 +647,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return new Response("OK", { status: 200 });
   }
 
-  // 6a.post: Clock discrepancy audit log (INV-7) — forensic gold for fraud detection.
-  const clockDriftS = Math.round(Date.now() / 1000 - message.date);
+  // 6a.post: Clock drift — sealed at ingest, replay reads stored value (INV-15).
+  const clockDriftS = calculateClockDrift(message.date, serverUnixTs);
   console.info(`[telegram-webhook] clock_drift correlationId=${correlationId} chat_id=${chatId} drift_seconds=${clockDriftS}`);
 
   // 6b. Resolve active binding — org_id from DB, never from Telegram (INV-18).
@@ -726,6 +760,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         telegram_message_date: new Date(message.date * 1000).toISOString(), // INV-6: device clock
         requires_manual_link: requiresManualLink,
         mime_type: mimeFromExt(ext), // INV-18: server-authoritative from magic bytes
+        clock_drift_seconds: clockDriftS, // INV-15: sealed at ingest, never recomputed
         // uploaded_at_utc: omitted — DB DEFAULT NOW() is the ingest anchor for discrepancy audit
       })
       .select("id")
@@ -756,9 +791,36 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // 6l. WS-4 Proactive Orphan Flag: fire TELEGRAM_ORPHAN alert when no execution found.
+    // 6l. WS-4 Proactive Orphan Flag + shadow capture.
+    let shadowExecutionId: string | null = null;
     if (requiresManualLink) {
-      await fireOrphanAlert(supabase, binding.organization_id, chatId, hashHex, correlationId, evidenceId, binding.driver_id);
+      // Task 2: Capture unlinked evidence as a traceable cost object (INV-3 fallback).
+      try {
+        const { data: shadowId } = await supabase.rpc("create_shadow_execution", {
+          p_org_id: binding.organization_id,
+          p_operator_id: binding.driver_id,
+          p_chat_id: chatId,
+          p_evidence_id: evidenceId,
+          p_telegram_message_id: message.message_id,
+          p_message_ts: message.date,
+        });
+        shadowExecutionId = shadowId as string | null;
+      } catch (e) {
+        // Non-blocking: evidence already sealed. Pure orphan path as fallback.
+        console.warn(`[telegram-webhook] shadow_execution creation failed correlationId=${correlationId}:`, e);
+      }
+      await fireOrphanAlert(
+        supabase, binding.organization_id, chatId, hashHex,
+        correlationId, evidenceId, binding.driver_id, shadowExecutionId,
+      );
+    }
+
+    // Task 1: Fire POTENTIAL_TIME_FRAUD alert if drift exceeds threshold (non-blocking).
+    if (Math.abs(clockDriftS) > FRAUD_DRIFT_THRESHOLD_S) {
+      await fireFraudAlert(
+        supabase, binding.organization_id, chatId,
+        correlationId, evidenceId, binding.driver_id, clockDriftS,
+      );
     }
 
     // 6m. WS-4 Feedback Diferencial:
@@ -844,6 +906,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // 6n. Menu Pai Universal: category tagging (fire-and-forget, never blocks evidence).
     //     Sent as a SEPARATE message so the forensic receipt above stays clean.
     //     callback_data format: tg_tag:{UUID}:{key} — max 50 bytes, within 64-byte limit.
+    // 6n. Menu Pai Universal: 8 categories (5 rows). ▶️ prefix = auto-starts transit.
+    //     callback_data: tg_tag:{UUID}:{key} — max 53 bytes (chk_saida), within 64-byte limit.
     await sendMessageWithKeyboard(
       botToken, chatId,
       "🏷️ <b>Como você classifica esta evidência?</b>",
@@ -858,6 +922,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
         ],
         [
           { text: "🔍 Outros / Info", callback_data: `tg_tag:${evidenceId}:outros` },
+        ],
+        [
+          { text: "▶️🔒 Lacre", callback_data: `tg_tag:${evidenceId}:lacre` },
+          { text: "▶️📋 Checklist Saída", callback_data: `tg_tag:${evidenceId}:chk_saida` },
+        ],
+        [
+          { text: "▶️📦 Carregamento", callback_data: `tg_tag:${evidenceId}:carregamento` },
         ],
       ],
     );
@@ -961,8 +1032,8 @@ async function fireOrphanAlert(
   correlationId: string,
   evidenceId: string,
   driverId: string,
+  shadowExecutionId: string | null = null,
 ): Promise<void> {
-  // Fetch driver name for Command Center grouping (INV-7: best-effort, non-blocking)
   let driverName: string | null = null;
   try {
     const { data: driver } = await supabase
@@ -991,11 +1062,43 @@ async function fireOrphanAlert(
         deep_link: `veraprob://reconciliation/${evidenceId}`,
         driver_id: driverId,
         ...(driverName ? { driver_name: driverName } : {}),
+        ...(shadowExecutionId ? { shadow_execution_id: shadowExecutionId } : {}),
       },
     });
   } catch (e) {
-    // Non-blocking: evidence is sealed. Alert failure is logged only.
     console.warn(`[telegram-webhook] orphan alert insert failed correlationId=${correlationId}:`, e);
+  }
+}
+
+async function fireFraudAlert(
+  supabase: Supabase,
+  orgId: string,
+  chatId: number,
+  correlationId: string,
+  evidenceId: string,
+  driverId: string,
+  driftSeconds: number,
+): Promise<void> {
+  try {
+    await supabase.from("operational_alerts").insert({
+      organization_id: orgId,
+      entity_id: String(chatId),
+      contract_id: "POTENTIAL_TIME_FRAUD",
+      alert_type: "POTENTIAL_TIME_FRAUD",
+      severity: "HIGH",
+      status: "ACTIVE",
+      source: "telegram",
+      triggering_event_id: correlationId,
+      context: {
+        evidence_id: evidenceId, // required: suppress_flood_alerts accumulator reads this
+        clock_drift_seconds: driftSeconds,
+        correlation_id: correlationId,
+        driver_id: driverId,
+        chat_id: chatId,
+      },
+    });
+  } catch (e) {
+    console.warn(`[telegram-webhook] fraud alert insert failed correlationId=${correlationId}:`, e);
   }
 }
 

@@ -6,7 +6,7 @@
  */
 
 export interface QualityWarning {
-  type: "low_resolution" | "too_small";
+  type: "low_resolution" | "too_small" | "low_quality";
   message: string;
 }
 
@@ -25,6 +25,9 @@ export function validateImageQuality(
 ): QualityWarning | null {
   if (fileSize !== undefined && fileSize < 10_240) {
     return { type: "too_small", message: "Arquivo muito pequeno (< 10KB). A qualidade pode ser insuficiente para uso como evidência." };
+  }
+  if (fileSize !== undefined && fileSize < 153_600) {
+    return { type: "low_quality", message: "Resolução baixa — pode não servir como prova em disputa. Reenvie mais nítida." };
   }
   if (width < 640 || height < 480) {
     return { type: "low_resolution", message: "Resolução baixa. Recomendado: mínimo 640x480 para evidência forense." };

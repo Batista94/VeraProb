@@ -76,7 +76,15 @@
       "Bash(dart /c/tmp/gen.dart)",
       "Bash(dart write_sec_test.dart)",
       "Bash(dart test.dart)",
-      "Bash(powershell.exe *)"
+      "Bash(powershell.exe *)",
+      "Bash(deno check *)",
+      "Bash(FAST_SCAN=1 bash scripts/pr_full_scanner.sh)",
+      "Bash(deno test *)",
+      "Bash(where.exe deno *)",
+      "Read(//c/Users/wes_b/AppData/Local/deno/**)",
+      "Read(//c/Users/wes_b/.deno/bin/**)",
+      "Bash(/c/Users/wes_b/.deno/bin/deno test *)",
+      "Bash(npx deno *)"
     ]
   },
   "model": "sonnet"

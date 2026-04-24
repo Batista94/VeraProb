@@ -173,9 +173,11 @@ class PostgresTelegramRepository extends BasePostgresRepository
   TelegramEvidenceUpload _evidenceFromRow(Map<String, dynamic> row) {
     // PostgREST embedding: telegram_evidence_categories is a 0-or-1 element
     // list (UNIQUE FK). Extract category from first element if present.
-    final catList = row['telegram_evidence_categories'] as List<dynamic>?;
-    final category = (catList != null && catList.isNotEmpty)
-        ? catList[0]['category'] as String?
+    final catData = row['telegram_evidence_categories'];
+    final category = (catData is List && catData.isNotEmpty)
+        ? catData[0]['category'] as String?
+        : (catData is Map)
+        ? catData['category'] as String?
         : null;
 
     // PostgREST embedding: telegram_evidence_links may contain 0+ elements.

@@ -28,6 +28,24 @@ class PostgresTestConfig {
   static const String testOrgId = '00000000-0000-0000-0000-000000000001';
 
   static final Set<String> _seededOrgs = {};
+  static bool _schemaReloaded = false;
+
+  /// Notifica o PostgREST para recarregar o schema cache via
+  /// [notify_pgrst_reload] RPC (pg_notify 'pgrst', 'reload schema').
+  ///
+  /// Necessario apos `supabase db reset` ou aplicacao manual de migrations.
+  /// Idempotente por processo: executa no maximo uma vez por test run.
+  static Future<void> reloadPostgrestSchema() async {
+    if (_schemaReloaded) return;
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      await seedClient.rpc('notify_pgrst_reload');
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    } finally {
+      await seedClient.dispose();
+    }
+    _schemaReloaded = true;
+  }
 
   /// Garante que uma organização existe no banco para evitar violações de FK.
   /// Se [id] for nulo, usa [testOrgId].
@@ -40,6 +58,8 @@ class PostgresTestConfig {
     String? id,
     String? name,
   }) async {
+    await reloadPostgrestSchema();
+
     final effectiveId = id ?? testOrgId;
 
     if (_seededOrgs.contains(effectiveId)) {
@@ -182,19 +202,20 @@ class PostgresTestConfig {
     required String orgId,
     String? licenseNumber,
   }) async {
-    const uuid = Uuid();
-    final driverId = uuid.v4();
-    final license = licenseNumber ?? 'TST-$driverId'.substring(0, 12);
+    final license = licenseNumber ?? 'TST-${orgId.substring(0, 8)}';
+    final deterministicId = const Uuid().v5(
+      Namespace.url.value,
+      'driver-$orgId-$license',
+    );
+
     final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
     try {
-      // Upsert on unique (organization_id, license_number) to handle
-      // residual data from previous runs whose tearDown failed.
       final rows = await seedClient
           .from('drivers')
           .upsert({
-            'id': driverId,
+            'id': deterministicId,
             'organization_id': orgId,
-            'full_name': 'Test Driver $driverId',
+            'full_name': 'Test Driver $license',
             'license_number': license,
             'created_at': DateTime.now().toUtc().toIso8601String(),
           }, onConflict: 'organization_id,license_number')
