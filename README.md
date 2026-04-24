@@ -1,4 +1,13 @@
-# VeraProb
+# VeraProb - Vibing
+
+> [!IMPORTANT]
+> **Natureza do Projeto e Isenção de Responsabilidade**
+> 
+> Este repositório é um experimento de **"vibe coding"**. Embora o desenvolvimento seja conduzido com o objetivo de aproximar-se ao máximo de padrões de engenharia reais — visando demonstrar a viabilidade e o potencial produtivo desta metodologia — ele permanece estritamente educacional.
+> 
+> * **Infraestrutura**: O projeto é construído utilizando exclusivamente ferramentas e serviços em camadas gratuitas (*free*) ou *freemium*.
+> * **Riscos e Limitações**: Como uma iniciativa experimental, o sistema está suscetível a instabilidades, erros de lógica e vulnerabilidades de segurança.
+> * **Aviso Crítico**: **Não utilize este software em ambientes de produção ou com dados reais.** Este projeto não deve ser adotado como referência técnica definitiva para sistemas críticos de missão.
 
 VeraProb is a high-performance platform designed to eliminate friction between B2B contracts and operational execution. It acts as an automated, impartial "Digital Judge" that transforms raw telemetry into Verifiable Contractual Truth.
 
