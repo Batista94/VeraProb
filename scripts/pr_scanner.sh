@@ -8,6 +8,7 @@
 #   A2 — Financial Prec.:  Blocks double/float near financial terms (INV-4)
 #   A3 — UTC Determinism:  Blocks DateTime.now() without .toUtc() (INV-6)
 #   A4 — Zero-Downtime DB: Blocks destructive migration operations (INV-DB)
+#   A4b — UTC Mandatory (SQL): Blocks timestamp without time zone / bare TIMESTAMP in migrations (INV-6)
 #
 # PILLAR B: Static Quality
 #   B1 — Dart Analyzer:    Blocks on errors; warns on warnings
@@ -237,6 +238,49 @@ else
   if [[ $DB_BLOCK_FOUND -eq 0 ]]; then
     pass "No destructive DB operations in changed migrations"
   fi
+fi
+
+# ── A4b: INV-6 UTC — SQL Timestamp Type Check ────────────────────────────────
+echo ""
+echo "  A4b — UTC Mandatory (SQL): scanning migrations for forbidden timestamp types (INV-6)..."
+
+if [[ -n "$CHANGED_MIGRATIONS" ]]; then
+  TZ_BLOCK_FOUND=0
+  while IFS= read -r migration_file; do
+    if [[ -f "$migration_file" ]]; then
+      # BLOCK: explicit "timestamp without time zone" — always wrong
+      TZ_HITS=$(grep -niE \
+        "timestamp\s+without\s+time\s+zone" \
+        "$migration_file" 2>/dev/null \
+        | grep -v "pr_scanner: ignore" \
+        || true)
+      if [[ -n "$TZ_HITS" ]]; then
+        block "[INV6-BLOCK] $migration_file: 'timestamp without time zone' PROHIBITED — use TIMESTAMPTZ (INV-6)"
+        echo "$TZ_HITS" | print_hits 3
+        TZ_BLOCK_FOUND=1
+      fi
+
+      # BLOCK: bare TIMESTAMP column type (not TIMESTAMPTZ / TIMESTAMP WITH TIME ZONE)
+      # Pattern: TIMESTAMP followed by NOT NULL, DEFAULT, or end-of-word, but NOT TZ/WITH TIME ZONE
+      BARE_TS_HITS=$(grep -niE \
+        "\bTIMESTAMP\s+(NOT\s+NULL|DEFAULT\s|NULL\b)" \
+        "$migration_file" 2>/dev/null \
+        | grep -ivE "TIMESTAMPTZ|TIMESTAMP\s+WITH\s+TIME\s+ZONE" \
+        | grep -v "pr_scanner: ignore" \
+        || true)
+      if [[ -n "$BARE_TS_HITS" ]]; then
+        block "[INV6-BLOCK] $migration_file: bare TIMESTAMP (without TZ) detected — use TIMESTAMPTZ (INV-6)"
+        echo "$BARE_TS_HITS" | print_hits 3
+        TZ_BLOCK_FOUND=1
+      fi
+    fi
+  done <<< "$CHANGED_MIGRATIONS"
+
+  if [[ $TZ_BLOCK_FOUND -eq 0 ]]; then
+    pass "No forbidden timestamp types in changed migrations (INV-6 compliant)"
+  fi
+else
+  echo -e "  ${NC}[INFO]  No changed migration files to check for timestamp types"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────

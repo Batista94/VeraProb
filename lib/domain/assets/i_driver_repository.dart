@@ -7,6 +7,8 @@ import 'package:veraprob/domain/entities/driver.dart';
 abstract class IDriverRepository {
   Future<List<Driver>> getDrivers();
   Future<void> addDriver(Driver driver);
-  Future<void> deleteDriver(String id);
+
+  /// INV-3: Soft-archive via offboard_driver RPC. No hard DELETE.
+  Future<void> archiveDriver(String id);
   Future<void> updateDriver(Driver driver);
 }

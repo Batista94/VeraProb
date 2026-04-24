@@ -99,5 +99,23 @@
     "path_filter": "supabase/migrations/",
     "description": "Destructive migration operation. Use soft-delete, triggers, or non-blocking constraints (INV-DB: Zero-Downtime).",
     "severity": "BLOCK"
+  },
+  "INV6-TIMESTAMP-TZ": {
+    "pattern": "timestamp\\s+without\\s+time\\s+zone",
+    "path_filter": "supabase/migrations/|supabase/functions/",
+    "description": "INV-6 (Universal UTC): timestamp without time zone PROHIBITED. All timestamps MUST use TIMESTAMPTZ to preserve UTC offset.",
+    "severity": "BLOCK"
+  },
+  "INV6-BARE-TIMESTAMP-SQL": {
+    "pattern": "\\bTIMESTAMP\\s+(NOT\\s+NULL|DEFAULT|NULL\\b)",
+    "path_filter": "supabase/migrations/",
+    "description": "INV-6 (Universal UTC): Bare TIMESTAMP (without TZ) detected. Use TIMESTAMPTZ instead.",
+    "severity": "BLOCK"
+  },
+  "INV6-DEVICE-CLOCK-DEFAULT": {
+    "pattern": "\\b(message_date|device_time|client_ts|driver_ts)\\b.+DEFAULT\\s+NOW\\(\\)",
+    "path_filter": "supabase/migrations/",
+    "description": "INV-6: Device-clock column has DEFAULT NOW(). Server clock silently substitutes device anchor. DROP DEFAULT and force explicit insert.",
+    "severity": "WARN"
   }
 }

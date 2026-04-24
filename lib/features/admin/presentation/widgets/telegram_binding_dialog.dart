@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/telegram/generate_telegram_binding_token_command.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/core/services/logger_service.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
 
@@ -27,6 +28,20 @@ class TelegramBindingDialog extends ConsumerStatefulWidget {
   @override
   ConsumerState<TelegramBindingDialog> createState() =>
       _TelegramBindingDialogState();
+
+  /// INV-1: JWT org_id is the inviolable sovereignty anchor.
+  /// Widget prop cannot be trusted alone — validate against JWT before any I/O.
+  static void assertOrgIdMatch({
+    required String widgetOrgId,
+    required String? jwtOrgId,
+  }) {
+    if (widgetOrgId.isEmpty || jwtOrgId == null || jwtOrgId != widgetOrgId) {
+      throw SovereigntyViolationException(
+        payloadOrgId: widgetOrgId,
+        jwtOrgId: jwtOrgId ?? 'none',
+      );
+    }
+  }
 }
 
 class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
@@ -60,6 +75,24 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
   }
 
   Future<void> _generate() async {
+    // INV-1: Fail-Fast sovereignty check before any RPC call.
+    final jwtOrgId = ref.read(currentOrganizationIdProvider);
+    try {
+      TelegramBindingDialog.assertOrgIdMatch(
+        widgetOrgId: widget.organizationId,
+        jwtOrgId: jwtOrgId,
+      );
+    } on SovereigntyViolationException catch (e) {
+      LoggerService().error(
+        'SovereigntyViolation in TelegramBindingDialog',
+        error: e,
+      );
+      ref
+          .read(telegramBindingNotifierProvider(widget.driverId).notifier)
+          .fail(e, StackTrace.current);
+      return;
+    }
+
     final userId = ref.read(currentOperatorIdProvider);
     final role = ref.read(currentUserRoleProvider);
     final sessionId =

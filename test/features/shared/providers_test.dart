@@ -33,7 +33,7 @@ class FakeDriverRepository implements IDriverRepository {
   Future<void> addDriver(Driver driver) async {}
 
   @override
-  Future<void> deleteDriver(String id) async {}
+  Future<void> archiveDriver(String id) async {}
 
   @override
   Future<void> updateDriver(Driver driver) async {}

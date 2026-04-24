@@ -17,7 +17,7 @@ Details: .claude/rules/forensic-standards.md
 | 3 | Ledger: APPEND-ONLY. NO Update/Delete. |
 | 4 | Money: BIGINT cents (DB/DTO). Money VO (Domain). |
 | 5 | Round: (cents * bps + 5000) ~/ 10000. |
-| 6 | UTC: DateTime.now().toUtc() ONE LINE. |
+| 6 | UTC: TIMESTAMPTZ mandatory. NO timestamp without time zone. clock_drift sealed at ingest. DROP DEFAULT on device-clock columns. |
 | 7 | Type: No dynamic. Strict null safety. |
 | 8 | Repo: Enforce org_id. |
 | 9 | Seal: SHA-256 telemetry/files. |

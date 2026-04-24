@@ -47,6 +47,11 @@ class TelegramBindingNotifier
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => _handler.handle(command));
   }
+
+  // INV-1: exposes error path for pre-flight sovereignty failures caught in the UI layer.
+  void fail(Object error, StackTrace stackTrace) {
+    state = AsyncError(error, stackTrace);
+  }
 }
 
 final telegramBindingNotifierProvider = StateNotifierProvider.autoDispose

@@ -23,7 +23,6 @@ void main() {
 
     when(() => mockSharedPreferences.getStringList(any())).thenReturn([]);
 
-    // Register Fallback Value for Driver
     registerFallbackValue(
       const Driver(
         id: '0',
@@ -40,6 +39,7 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(mockSharedPreferences),
         driverRepositoryProvider.overrideWithValue(mockDriverRepository),
         currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
+        currentOrganizationIdProvider.overrideWith((ref) => 'test-org'),
       ],
       child: const MaterialApp(home: Scaffold(body: DriversScreen())),
     );
@@ -47,6 +47,10 @@ void main() {
 
   group('DriversScreen', () {
     testWidgets('renders Empty State when no drivers', (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
       when(() => mockDriverRepository.getDrivers()).thenAnswer((_) async => []);
 
       await tester.pumpWidget(buildDriversScreen());
@@ -58,6 +62,10 @@ void main() {
     });
 
     testWidgets('renders List of Drivers', (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
       when(() => mockDriverRepository.getDrivers()).thenAnswer(
         (_) async => [
           const Driver(
@@ -85,6 +93,10 @@ void main() {
     });
 
     testWidgets('Add Driver flow via drawer', (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
       when(() => mockDriverRepository.getDrivers()).thenAnswer((_) async => []);
       when(
         () => mockDriverRepository.addDriver(any()),
@@ -135,6 +147,10 @@ void main() {
     });
 
     testWidgets('Delete Driver flow', (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
       const driver = Driver(
         id: '1',
         organizationId: 'test-org',
@@ -145,31 +161,35 @@ void main() {
         () => mockDriverRepository.getDrivers(),
       ).thenAnswer((_) async => [driver]);
       when(
-        () => mockDriverRepository.deleteDriver('1'),
+        () => mockDriverRepository.archiveDriver('1'),
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(buildDriversScreen());
       await tester.pumpAndSettle();
 
-      // Find delete icon
-      final deleteButton = find.byIcon(Icons.delete_outline);
-      expect(deleteButton, findsOneWidget);
+      // Find archive icon
+      final archiveButton = find.byIcon(Icons.archive_outlined);
+      expect(archiveButton, findsOneWidget);
 
-      await tester.tap(deleteButton);
+      await tester.tap(archiveButton);
       await tester.pumpAndSettle();
 
       // Verify Confirmation Dialog
-      expect(find.text('Confirmar exclusão'), findsOneWidget);
+      expect(find.text('Arquivar motorista'), findsOneWidget);
 
       // Tap Confirm
-      await tester.tap(find.text('Excluir'));
+      await tester.tap(find.text('Arquivar'));
       await tester.pumpAndSettle();
 
       // Verify interaction
-      verify(() => mockDriverRepository.deleteDriver('1')).called(1);
+      verify(() => mockDriverRepository.archiveDriver('1')).called(1);
     });
 
     testWidgets('Search filters drivers', (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
       when(() => mockDriverRepository.getDrivers()).thenAnswer(
         (_) async => [
           const Driver(
@@ -206,6 +226,10 @@ void main() {
     });
 
     testWidgets('Form validation prevents empty fields', (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
       when(() => mockDriverRepository.getDrivers()).thenAnswer((_) async => []);
 
       await tester.pumpWidget(buildDriversScreen());
