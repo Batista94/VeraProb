@@ -25,7 +25,7 @@ abstract class SLAJustificationRepository {
   /// for the same vehicle + event combination.
   Future<SLAJustification?> findByVehicleAndEvent({
     required String vehicleId,
-    required DateTime eventTimestamp,
+    required DateTime occurrenceTimestamp,
     required String organizationId,
   });
 
@@ -44,7 +44,7 @@ abstract class SLAJustificationRepository {
   ///
   /// **Deprecated in favour of [findExpiredPendingPaged].** Kept for backwards
   /// compatibility with existing test fixtures that have not yet been migrated.
-  Future<List<SLAJustification>> findExpiredPending({
+  Future<List<SLAJustification>> findExpiredPlanned({
     required DateTime cutoffUtc,
     required String organizationId,
   });

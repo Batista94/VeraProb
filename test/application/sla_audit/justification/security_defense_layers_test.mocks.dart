@@ -268,13 +268,13 @@ class MockSLAJustificationRepository extends _i1.Mock
   @override
   _i5.Future<_i2.SLAJustification?> findByVehicleAndEvent({
     required String? vehicleId,
-    required DateTime? eventTimestamp,
+    required DateTime? occurrenceTimestamp,
     required String? organizationId,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#findByVehicleAndEvent, [], {
               #vehicleId: vehicleId,
-              #eventTimestamp: eventTimestamp,
+              #occurrenceTimestamp: occurrenceTimestamp,
               #organizationId: organizationId,
             }),
             returnValue: _i5.Future<_i2.SLAJustification?>.value(),
@@ -316,12 +316,12 @@ class MockSLAJustificationRepository extends _i1.Mock
           as _i5.Future<_i2.SLAJustification>);
 
   @override
-  _i5.Future<List<_i2.SLAJustification>> findExpiredPending({
+  _i5.Future<List<_i2.SLAJustification>> findExpiredPlanned({
     required DateTime? cutoffUtc,
     required String? organizationId,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#findExpiredPending, [], {
+            Invocation.method(#findExpiredPlanned, [], {
               #cutoffUtc: cutoffUtc,
               #organizationId: organizationId,
             }),

@@ -1,7 +1,7 @@
 ---
 name: architect
 description: Invoke when creating new domain entities, defining layer boundaries, mapping complex B2B relational schemas, or refactoring CORE logic to be industry-agnostic. Guards the "Agnostic Core" vision, ensuring VeraProb remains a universal Forensic Engine (Judge) that doesn't leak transport-specific vertical logic into its base. Invoke proactively without being asked when the task involves new domain entities, architectural boundaries, or CORE logic refactoring.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tools: ["Read", "Grep", "Glob", "Bash", "Write"]
 model: sonnet
 ---
 

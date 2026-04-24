@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
@@ -95,10 +95,10 @@ void main() async {
           // Mock financial summary
           final mockSummary = SlaExecutionSummary(
             contractId: contractId,
-            totalPending: 5,
-            totalExecuted: 10,
-            totalNoShow: 1,
-            totalEvidenceGap: 0,
+            totalPlanned: 5,
+            totalCompleted: 10,
+            totalFailed: 1,
+            totalCompletedWithGaps: 0,
             generatedAtUtc: DateTime.now().toUtc(),
             protectedRevenue: 50000,
           );
@@ -117,7 +117,7 @@ void main() async {
 
           expect(detail, isNotNull);
           expect(detail!.summary.id, contractId);
-          expect(detail.financialSummary.totalExecuted, 10);
+          expect(detail.financialSummary.totalCompleted, 10);
           expect(detail.financialSummary.protectedRevenue, 50000);
         },
       );

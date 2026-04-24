@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_query_service.dart';
@@ -128,7 +128,7 @@ class PostgresContractQueryService implements ContractQueryService {
             (s) => SlaExecutionItemView(
               setId: s['set_id'] as String,
               contractId: contractId,
-              status: ExecutionStatus.pending,
+              status: ExecutionStatus.planned,
               windowStartUtc: DateTime.parse(
                 s['scheduled_start_time_utc'] as String,
               ).toUtc(),
@@ -201,8 +201,8 @@ class PostgresContractQueryService implements ContractQueryService {
 
     for (final s in stateRows) {
       final st = s['status'] as String;
-      if (st == ExecutionStatus.pending.name) pendingCount++;
-      if (st == ExecutionStatus.executed.name) executedCount++;
+      if (st == ExecutionStatus.planned.name) pendingCount++;
+      if (st == ExecutionStatus.completed.name) executedCount++;
     }
 
     final slaHealthBps = totalSets == 0

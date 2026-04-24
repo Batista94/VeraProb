@@ -1,7 +1,7 @@
 ---
 name: senior-engineer
 description: Invoke when implementing domain logic, creating Riverpod providers, writing SQL migrations, optimizing Flutter performance (Wasm/WGL), or resolving complex bugs. Guards technical excellence, ensuring that Clean Architecture principles are applied pragmatically and that Forensic Invariants are never compromised. Invoke proactively without being asked when the task involves coding, SQL migrations, bug fixes, or performance optimization.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tools: ["Read", "Grep", "Glob", "Bash", "Write"]
 model: sonnet
 ---
 

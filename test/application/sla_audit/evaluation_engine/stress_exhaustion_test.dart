@@ -73,8 +73,8 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.executed);
-      expect(ledger.entries, hasLength(1));
+      expect(result!.status, ExecutionStatus.completed);
+      expect(ledger.entries, hasLength(2));
     });
 
     test('A2: epsilonOutside_100_1m → NO BIND', () async {
@@ -115,7 +115,7 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
+      expect(result!.status, ExecutionStatus.planned);
       expect(ledger.entries, isEmpty);
     });
 
@@ -156,7 +156,7 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.executed);
+      expect(result!.status, ExecutionStatus.completed);
     });
 
     test('A4: oscillatingOnBoundary_130mExit_100pings → NO BIND', () async {
@@ -189,8 +189,8 @@ void main() {
       // Timer should have been reset every time vehicle exits
       // After 100s of oscillation, no continuous 30s dwell achieved
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
-      expect(ledger.entries, isEmpty);
+      expect(result!.status, ExecutionStatus.inTransit);
+      expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
 
     test('A5: boundaryDrift_exitAndReenter → NO BIND (timer reset)', () async {
@@ -233,7 +233,7 @@ void main() {
 
       // Only 30s accumulated from T+45 → T+75, but we only pinged until T+45
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
+      expect(result!.status, ExecutionStatus.inTransit);
     });
 
     test('A6: boundaryEast_bearing90 at 99.9m → BIND', () async {
@@ -262,7 +262,7 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.executed);
+      expect(result!.status, ExecutionStatus.completed);
     });
 
     test('A7: boundaryNE_bearing45 at 99.9m → BIND', () async {
@@ -291,7 +291,7 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.executed);
+      expect(result!.status, ExecutionStatus.completed);
     });
 
     test('A8: boundarySouth_bearing180 at 100.1m → NO BIND', () async {
@@ -320,7 +320,7 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
+      expect(result!.status, ExecutionStatus.planned);
       expect(ledger.entries, isEmpty);
     });
 
@@ -364,8 +364,8 @@ void main() {
         }
 
         final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.executed);
-        expect(ledger.entries, hasLength(1));
+        expect(result!.status, ExecutionStatus.completed);
+        expect(ledger.entries, hasLength(2));
       },
     );
   });
@@ -416,7 +416,7 @@ void main() {
 
       // Timer started at T+0, but only 0s dwell so far
       var result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
+      expect(result!.status, ExecutionStatus.inTransit);
 
       // At T+30, should bind (timer counted from T+0, not 3x T+0)
       await engine.processVehicleState(
@@ -426,8 +426,8 @@ void main() {
       );
 
       result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.executed);
-      expect(ledger.entries, hasLength(1));
+      expect(result!.status, ExecutionStatus.completed);
+      expect(ledger.entries, hasLength(2));
     });
 
     test('B2: reverseOrder_T30_T15_T0 → uses T+0 as entry', () async {
@@ -476,7 +476,7 @@ void main() {
       // `if (now.isBefore(firstEntry)) continue;` guard.
       // Dwell from T+30 perspective = 0s at T+30.
       var result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
+      expect(result!.status, ExecutionStatus.inTransit);
 
       // At T+60 (30s after T+30), should bind
       await engine.processVehicleState(
@@ -486,7 +486,7 @@ void main() {
       );
 
       result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.executed);
+      expect(result!.status, ExecutionStatus.completed);
     });
 
     test('B3: outOfOrder_exitBeforeEntry → processes T+0 first', () async {
@@ -514,7 +514,7 @@ void main() {
 
       // At T+15, no firstEntry exists yet (vehicle outside). Nothing happens.
       var result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
+      expect(result!.status, ExecutionStatus.planned);
 
       // Now entry event arrives (T+0, inside)
       await engine.processVehicleState(
@@ -525,7 +525,7 @@ void main() {
 
       // firstEntry = T+0. Dwell = 0s at T+0.
       result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
+      expect(result!.status, ExecutionStatus.inTransit);
 
       // At T+30, should bind
       await engine.processVehicleState(
@@ -535,7 +535,7 @@ void main() {
       );
 
       result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.executed);
+      expect(result!.status, ExecutionStatus.completed);
     });
 
     test('B4: duplicateTimestamp_60pings_T0 → dwell=0, NO BIND', () async {
@@ -560,8 +560,8 @@ void main() {
 
       // All pings at same instant → dwell = 0s
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
-      expect(ledger.entries, isEmpty);
+      expect(result!.status, ExecutionStatus.inTransit);
+      expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
 
     test(
@@ -609,9 +609,9 @@ void main() {
         );
 
         final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.executed);
+        expect(result!.status, ExecutionStatus.completed);
         expect(result.boundVehicleId, 'v-assigned');
-        expect(ledger.entries, hasLength(1));
+        expect(ledger.entries, hasLength(2));
       },
     );
 
@@ -643,7 +643,7 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.executed);
+      expect(result!.status, ExecutionStatus.completed);
     });
 
     test('B7: doubleReplay_identicalLedger → 1 EXECUTION_BOUND', () async {
@@ -667,7 +667,7 @@ void main() {
       }
 
       final entriesAfterFirst = ledger.entries.length;
-      expect(entriesAfterFirst, 1); // One EXECUTION_BOUND
+      expect(entriesAfterFirst, 2); // One EXECUTION_BOUND
 
       // Reset the execution state back to pending (simulate reprocessing)
       final state2 = makeExecState();
@@ -684,7 +684,7 @@ void main() {
 
       // Should have exactly 1 more entry (the second replay's binding)
       // Total = 2, but each replay independently produces exactly 1
-      expect(ledger.entries, hasLength(2));
+      expect(ledger.entries, hasLength(4));
 
       // Verify both are EXECUTION_BOUND (no duplicate sanctions)
       final boundCount = ledger.entries
@@ -736,7 +736,7 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.executed);
+      expect(result!.status, ExecutionStatus.completed);
     });
 
     test('C2: oneSecondShort_29s → NO BIND (PENDING)', () async {
@@ -765,8 +765,8 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.pending);
-      expect(ledger.entries, isEmpty);
+      expect(result!.status, ExecutionStatus.inTransit);
+      expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
 
     test(
@@ -816,38 +816,35 @@ void main() {
         );
 
         final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.executed);
+        expect(result!.status, ExecutionStatus.completed);
       },
     );
 
-    test(
-      'C4: gracePeriodSuppression_5min → engine does not evaluate',
-      () async {
-        await seedPlan(planRepo, 'c-1', 1);
-        await seedPlanWithGracePeriod(planRepo, 'c-1', 1, 10);
-        final state = makeExecState();
-        await repo.save(state);
+    test('C4: gracePeriodSuppression_5min → engine does not evaluate', () async {
+      // seedPlan removed — C4 only needs the grace period plan to test suppression
+      await seedPlanWithGracePeriod(planRepo, 'c-1', 1, 10);
+      final state = makeExecState();
+      await repo.save(state);
 
-        final vehicle = makeVehicleAtPreciseCoord(
-          offsetMeters: 50.0,
-          bearing: bearingNorth,
-          timestamp: baseTime,
-        );
+      final vehicle = makeVehicleAtPreciseCoord(
+        offsetMeters: 50.0,
+        bearing: bearingNorth,
+        timestamp: baseTime,
+      );
 
-        // SET window starts at 06:00. Grace period = 10min.
-        // Ping at T+5min (within grace) — engine should skip
-        await engine.processVehicleState(
-          vehicle,
-          nowUtc: baseTime.add(const Duration(minutes: 5)),
-          organizationId: 'org-1',
-        );
+      // SET window starts at 06:00. Grace period = 10min.
+      // Ping at T+5min (within grace) — engine should skip
+      await engine.processVehicleState(
+        vehicle,
+        nowUtc: baseTime.add(const Duration(minutes: 5)),
+        organizationId: 'org-1',
+      );
 
-        // Still pending, no ledger entries
-        final result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.pending);
-        expect(ledger.entries, isEmpty);
-      },
-    );
+      // Still pending, no ledger entries
+      final result = await repo.findBySetId('set-1');
+      expect(result!.status, ExecutionStatus.planned);
+      expect(ledger.entries, isEmpty);
+    });
 
     test('C5: postGraceBinding_11min + 30s dwell → BIND', () async {
       await seedPlan(planRepo, 'c-1', 1);
@@ -876,7 +873,7 @@ void main() {
       );
 
       final result = await repo.findBySetId('set-1');
-      expect(result!.status, ExecutionStatus.executed);
+      expect(result!.status, ExecutionStatus.completed);
     });
 
     test(
@@ -910,7 +907,7 @@ void main() {
         );
 
         var result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.executed);
+        expect(result!.status, ExecutionStatus.completed);
 
         // Sweep at T+45 (past windowEnd at T+40) — should NOT affect executed state
         await engine.sweepExpiredObligations(
@@ -919,7 +916,7 @@ void main() {
         );
 
         result = await repo.findBySetId('set-1');
-        expect(result!.status, ExecutionStatus.executed);
+        expect(result!.status, ExecutionStatus.completed);
 
         // Only 1 ledger entry (EXECUTION_BOUND, no NO_SHOW)
         final boundCount = ledger.entries

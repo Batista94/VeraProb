@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/alert_derivation_service.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
@@ -27,7 +27,7 @@ void main() {
     );
 
     switch (targetStatus) {
-      case ExecutionStatus.executed:
+      case ExecutionStatus.completed:
         state.bindExecution(
           vehicleId: 'v1',
           latitude: -23.5,
@@ -35,13 +35,17 @@ void main() {
           timestampUtc: now,
         );
         break;
-      case ExecutionStatus.noShow:
-        state.markNoShow(now);
+      case ExecutionStatus.failed:
+        state.markFailed(now);
         break;
-      case ExecutionStatus.evidenceGap:
-        state.markEvidenceGap(now);
+      case ExecutionStatus.completedWithGaps:
+        state.startTransit(timestampUtc: now, source: 'telegram');
+        state.completeWithGaps(now);
         break;
-      case ExecutionStatus.pending:
+      case ExecutionStatus.planned:
+        break;
+      case ExecutionStatus.inTransit:
+        state.startTransit(timestampUtc: now, source: 'telegram');
         break;
       case ExecutionStatus.inhibited:
         break;
@@ -63,7 +67,7 @@ void main() {
   group('AlertDerivationService.deriveFrom', () {
     test('noShow state → CRITICAL alert type NO_SHOW', () {
       final alert = AlertDerivationService.deriveFrom(
-        state: makeState(ExecutionStatus.noShow),
+        state: makeState(ExecutionStatus.failed),
         decisions: [],
         evaluatedAtUtc: now,
       );
@@ -74,7 +78,7 @@ void main() {
 
     test('evidenceGap state → WARNING alert type EVIDENCE_GAP', () {
       final alert = AlertDerivationService.deriveFrom(
-        state: makeState(ExecutionStatus.evidenceGap),
+        state: makeState(ExecutionStatus.completedWithGaps),
         decisions: [],
         evaluatedAtUtc: now,
       );
@@ -85,7 +89,7 @@ void main() {
 
     test('executed with penalty → HIGH alert type PENALTY_APPLIED', () {
       final alert = AlertDerivationService.deriveFrom(
-        state: makeState(ExecutionStatus.executed),
+        state: makeState(ExecutionStatus.completed),
         decisions: [makeDecision(penaltyCents: 15000)],
         evaluatedAtUtc: now,
       );
@@ -96,7 +100,7 @@ void main() {
 
     test('executed with no penalty → null (no alert)', () {
       final alert = AlertDerivationService.deriveFrom(
-        state: makeState(ExecutionStatus.executed),
+        state: makeState(ExecutionStatus.completed),
         decisions: [makeDecision()],
         evaluatedAtUtc: now,
       );
@@ -105,7 +109,7 @@ void main() {
 
     test('pending state → null (no alert)', () {
       final alert = AlertDerivationService.deriveFrom(
-        state: makeState(ExecutionStatus.pending),
+        state: makeState(ExecutionStatus.planned),
         decisions: [],
         evaluatedAtUtc: now,
       );
@@ -113,7 +117,7 @@ void main() {
     });
 
     test('alert has correct organizationId and contractId', () {
-      final state = makeState(ExecutionStatus.noShow);
+      final state = makeState(ExecutionStatus.failed);
       final alert = AlertDerivationService.deriveFrom(
         state: state,
         decisions: [],
@@ -125,6 +129,48 @@ void main() {
       expect(alert.contractId, state.contractId);
       expect(alert.triggeringEventId, 'evt-1');
       expect(alert.traceId, 'trace-1');
+    });
+
+    test('context includes driver_id and driver_name when provided', () {
+      final alert = AlertDerivationService.deriveFrom(
+        state: makeState(ExecutionStatus.failed),
+        decisions: [],
+        evaluatedAtUtc: now,
+        driverId: 'driver-abc',
+        driverName: 'João Silva',
+      );
+      expect(alert!.context['driver_id'], 'driver-abc');
+      expect(alert.context['driver_name'], 'João Silva');
+    });
+
+    test('context omits driver fields when null', () {
+      final alert = AlertDerivationService.deriveFrom(
+        state: makeState(ExecutionStatus.failed),
+        decisions: [],
+        evaluatedAtUtc: now,
+      );
+      expect(alert!.context.containsKey('driver_id'), isFalse);
+      expect(alert.context.containsKey('driver_name'), isFalse);
+    });
+
+    test('driver enrichment works for all alert types', () {
+      final gap = AlertDerivationService.deriveFrom(
+        state: makeState(ExecutionStatus.completedWithGaps),
+        decisions: [],
+        evaluatedAtUtc: now,
+        driverId: 'd-1',
+      );
+      expect(gap!.context['driver_id'], 'd-1');
+
+      final penalty = AlertDerivationService.deriveFrom(
+        state: makeState(ExecutionStatus.completed),
+        decisions: [makeDecision(penaltyCents: 5000)],
+        evaluatedAtUtc: now,
+        driverId: 'd-2',
+        driverName: 'Maria',
+      );
+      expect(penalty!.context['driver_id'], 'd-2');
+      expect(penalty.context['driver_name'], 'Maria');
     });
   });
 }

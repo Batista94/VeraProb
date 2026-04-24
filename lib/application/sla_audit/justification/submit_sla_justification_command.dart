@@ -1,6 +1,6 @@
 /// Command to submit a new SLA justification for a vehicle infraction event.
 ///
-/// The [vehicleId] + [eventTimestamp] pair forms the forensic anchor
+/// The [vehicleId] + [occurrenceTimestamp] pair forms the forensic anchor
 /// linking this justification to the original `VehicleOperationalState`
 /// detected by the Normalizer (CX-04).
 ///
@@ -12,7 +12,7 @@ class SubmitSLAJustificationCommand {
   final String organizationId;
   final String sessionId;
   final String vehicleId;
-  final DateTime eventTimestamp;
+  final DateTime occurrenceTimestamp;
   final String category;
   final String description;
   final List<String> evidenceUrls;
@@ -23,7 +23,7 @@ class SubmitSLAJustificationCommand {
     required this.organizationId,
     required this.sessionId,
     required this.vehicleId,
-    required this.eventTimestamp,
+    required this.occurrenceTimestamp,
     required this.category,
     required this.description,
     required this.evidenceUrls,

@@ -70,7 +70,7 @@ void main() {
   final eventTime = DateTime.utc(2026, 4, 14, 10, 0);
 
   SubmitSLAJustificationCommand buildCommand({
-    DateTime? eventTimestamp,
+    DateTime? occurrenceTimestamp,
     String? category,
     String? description,
     List<String>? evidenceUrls,
@@ -80,7 +80,7 @@ void main() {
       organizationId: 'org-1',
       sessionId: 'session-1',
       vehicleId: 'vehicle-42',
-      eventTimestamp: eventTimestamp ?? eventTime,
+      occurrenceTimestamp: occurrenceTimestamp ?? eventTime,
       category: category ?? 'PNEU_FURADO',
       description: description ?? 'Pneu furado na BR-116 km 230',
       evidenceUrls:
@@ -99,7 +99,7 @@ void main() {
       id: id,
       organizationId: 'org-1',
       vehicleId: 'vehicle-42',
-      eventTimestamp: eventTime,
+      occurrenceTimestamp: eventTime,
       category: category,
       description: description,
       evidenceUrls: ['https://example.com/photo.jpg'],
@@ -135,7 +135,7 @@ void main() {
     when(
       () => mockRepo.findByVehicleAndEvent(
         vehicleId: any(named: 'vehicleId'),
-        eventTimestamp: any(named: 'eventTimestamp'),
+        occurrenceTimestamp: any(named: 'occurrenceTimestamp'),
         organizationId: any(named: 'organizationId'),
       ),
     ).thenAnswer((_) async => null);
@@ -253,7 +253,7 @@ void main() {
       eventExistsChecker:
           ({
             required String vehicleId,
-            required DateTime eventTimestamp,
+            required DateTime occurrenceTimestamp,
             required String organizationId,
           }) async => true,
     );
@@ -487,7 +487,7 @@ void main() {
         expect(result.id, isNotEmpty);
         expect(result.status, JustificationStatus.pending);
         expect(result.vehicleId, 'vehicle-42');
-        expect(result.eventTimestamp, eventTime);
+        expect(result.occurrenceTimestamp, eventTime);
 
         verify(() => mockRepo.create(any())).called(1);
         verify(() => mockRepo.appendAuditLog(any())).called(1);
@@ -541,7 +541,7 @@ void main() {
         eventExistsChecker:
             ({
               required String vehicleId,
-              required DateTime eventTimestamp,
+              required DateTime occurrenceTimestamp,
               required String organizationId,
             }) async => true,
         expirationWindow: const Duration(hours: 48),
@@ -646,7 +646,7 @@ void main() {
           eventExistsChecker:
               ({
                 required String vehicleId,
-                required DateTime eventTimestamp,
+                required DateTime occurrenceTimestamp,
                 required String organizationId,
               }) async => false,
         );
@@ -679,7 +679,7 @@ void main() {
       final result = await manager.submitJustification(command);
 
       expect(result.vehicleId, 'vehicle-42');
-      expect(result.eventTimestamp, eventTime);
+      expect(result.occurrenceTimestamp, eventTime);
       verify(() => mockRepo.create(any())).called(1);
     });
   });
@@ -700,7 +700,7 @@ void main() {
       when(
         () => mockRepo.findByVehicleAndEvent(
           vehicleId: any(named: 'vehicleId'),
-          eventTimestamp: any(named: 'eventTimestamp'),
+          occurrenceTimestamp: any(named: 'occurrenceTimestamp'),
           organizationId: any(named: 'organizationId'),
         ),
       ).thenAnswer((_) async => existingJustification);
@@ -745,7 +745,7 @@ void main() {
       when(
         () => mockRepo.findByVehicleAndEvent(
           vehicleId: any(named: 'vehicleId'),
-          eventTimestamp: any(named: 'eventTimestamp'),
+          occurrenceTimestamp: any(named: 'occurrenceTimestamp'),
           organizationId: any(named: 'organizationId'),
         ),
       ).thenAnswer((_) async => existing);

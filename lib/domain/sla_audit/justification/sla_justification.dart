@@ -6,7 +6,7 @@ import 'sla_justification_category.dart';
 /// Aggregate Root for a driver's defense submission against a specific
 /// infraction event detected by the OperationalStateNormalizer (CX-04).
 ///
-/// **Forensic Anchor:** [vehicleId] + [eventTimestamp] form the immutable
+/// **Forensic Anchor:** [vehicleId] + [occurrenceTimestamp] form the immutable
 /// linkage to the original `VehicleOperationalState.stateChangedAt`. These
 /// fields are excluded from [copyWith] to guarantee forensic integrity —
 /// an auditor can always trace a justification back to the exact physical
@@ -28,7 +28,7 @@ class SLAJustification extends Equatable {
   /// Forensic anchor — maps to `VehicleOperationalState.stateChangedAt`.
   /// Immutable after creation. The Red Team auditor verifies this is never
   /// tampered with.
-  final DateTime eventTimestamp;
+  final DateTime occurrenceTimestamp;
 
   final SLAJustificationCategory category;
 
@@ -58,7 +58,7 @@ class SLAJustification extends Equatable {
     required this.id,
     required this.organizationId,
     required this.vehicleId,
-    required this.eventTimestamp,
+    required this.occurrenceTimestamp,
     required this.category,
     required this.description,
     required this.evidenceUrls,
@@ -75,7 +75,7 @@ class SLAJustification extends Equatable {
   bool get isExpired => status == JustificationStatus.expired;
 
   /// Only review fields may change after creation.
-  /// [vehicleId], [eventTimestamp], [evidenceUrls], [evidenceHashes] are
+  /// [vehicleId], [occurrenceTimestamp], [evidenceUrls], [evidenceHashes] are
   /// deliberately excluded to preserve forensic integrity.
   SLAJustification copyWith({
     JustificationStatus? status,
@@ -86,7 +86,7 @@ class SLAJustification extends Equatable {
       id: id,
       organizationId: organizationId,
       vehicleId: vehicleId,
-      eventTimestamp: eventTimestamp,
+      occurrenceTimestamp: occurrenceTimestamp,
       category: category,
       description: description,
       evidenceUrls: evidenceUrls,

@@ -1,4 +1,4 @@
-﻿import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
@@ -33,32 +33,40 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
     // org filter is enforced in the repo; iterate directly
     final filteredByOrg = states;
 
-    int pending = 0, executed = 0, noShow = 0, evidenceGap = 0;
+    int planned = 0,
+        inTransit = 0,
+        completed = 0,
+        completedWithGaps = 0,
+        failed = 0;
     Money protectedRevenue = const Money(0);
     Money revenueAtRisk = const Money(0);
     Money lostRevenue = const Money(0);
 
     for (final s in filteredByOrg) {
       switch (s.status) {
-        case ExecutionStatus.pending:
-          pending++;
+        case ExecutionStatus.planned:
+          planned++;
           break;
-        case ExecutionStatus.executed:
-          executed++;
+        case ExecutionStatus.inTransit:
+          inTransit++;
+          revenueAtRisk = revenueAtRisk + s.contractualValue;
+          break;
+        case ExecutionStatus.completed:
+          completed++;
           protectedRevenue = protectedRevenue + s.contractualValue;
           break;
-        case ExecutionStatus.noShow:
-          noShow++;
+        case ExecutionStatus.failed:
+          failed++;
           lostRevenue =
               lostRevenue +
               s.contractualValue.multiplyByBps(s.noShowPenaltyBps);
           break;
-        case ExecutionStatus.evidenceGap:
-          evidenceGap++;
-          revenueAtRisk = revenueAtRisk + s.contractualValue;
+        case ExecutionStatus.completedWithGaps:
+          completedWithGaps++;
+          lostRevenue = lostRevenue + s.contractualValue;
           break;
         case ExecutionStatus.inhibited:
-          executed++;
+          completed++;
           protectedRevenue = protectedRevenue + s.contractualValue;
           break;
       }
@@ -66,10 +74,11 @@ class SlaExecutionQueryServiceInMemory implements SlaExecutionQueryService {
 
     return SlaExecutionSummary(
       contractId: contractId,
-      totalPending: pending,
-      totalExecuted: executed,
-      totalNoShow: noShow,
-      totalEvidenceGap: evidenceGap,
+      totalPlanned: planned,
+      totalInTransit: inTransit,
+      totalCompleted: completed,
+      totalFailed: failed,
+      totalCompletedWithGaps: completedWithGaps,
       generatedAtUtc: _clock.nowUtc(),
       protectedRevenue: protectedRevenue.cents,
       revenueAtRisk: revenueAtRisk.cents,

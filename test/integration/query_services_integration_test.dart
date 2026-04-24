@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -70,8 +70,8 @@ void main() {
         final initialSummary = await queryService.getSummary(
           organizationId: 'org-1',
         );
-        expect(initialSummary.totalPending, 1);
-        expect(initialSummary.totalExecuted, 0);
+        expect(initialSummary.totalPlanned, 1);
+        expect(initialSummary.totalCompleted, 0);
         expect(initialSummary.protectedRevenue, 0);
 
         // 2. Execute via Engine
@@ -108,13 +108,13 @@ void main() {
         final midSummary = await queryService.getSummary(
           organizationId: 'org-1',
         );
-        expect(midSummary.totalPending, 0);
-        expect(midSummary.totalExecuted, 1);
+        expect(midSummary.totalPlanned, 0);
+        expect(midSummary.totalCompleted, 1);
         expect(midSummary.protectedRevenue, 20000); // Revenue bound!
         expect(midSummary.lostRevenue, 0);
 
         final executedList = await queryService.listByStatus(
-          ExecutionStatus.executed,
+          ExecutionStatus.completed,
           organizationId: 'org-1',
         );
         expect(executedList.first.boundVehicleId, 'v-100');
@@ -145,20 +145,20 @@ void main() {
         final finalSummary = await queryService.getSummary(
           organizationId: 'org-1',
         );
-        expect(finalSummary.totalPending, 0);
-        expect(finalSummary.totalExecuted, 1);
-        expect(finalSummary.totalNoShow, 1);
+        expect(finalSummary.totalPlanned, 0);
+        expect(finalSummary.totalCompleted, 1);
+        expect(finalSummary.totalFailed, 1);
         expect(finalSummary.protectedRevenue, 20000);
         expect(finalSummary.lostRevenue, 15000); // 100 * 1.5 Penalty matched
 
         final noshowList = await queryService.listByStatus(
-          ExecutionStatus.noShow,
+          ExecutionStatus.failed,
           organizationId: 'org-1',
         );
         expect(noshowList.first.setId, 'set-noshow');
 
         // Also verify ledger consistency (2 business events overall)
-        expect(ledgerRepo.entries.length, 2);
+        expect(ledgerRepo.entries.length, 3);
       },
     );
   });

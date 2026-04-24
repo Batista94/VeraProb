@@ -496,10 +496,10 @@ class _FinancialTab extends StatelessWidget {
           ),
           _CountCard(
             label: 'Execuções',
-            executed: financialSummary.totalExecuted,
-            pending: financialSummary.totalPending,
-            noShow: financialSummary.totalNoShow,
-            gap: financialSummary.totalEvidenceGap,
+            executed: financialSummary.totalCompleted,
+            pending: financialSummary.totalPlanned,
+            noShow: financialSummary.totalFailed,
+            gap: financialSummary.totalCompletedWithGaps,
           ),
         ],
       ),
@@ -775,11 +775,15 @@ class _ExecutionStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      ExecutionStatus.pending => ('Pendente', VeraProbColors.info),
-      ExecutionStatus.executed => ('Executado', VeraProbColors.success),
-      ExecutionStatus.noShow => ('No-show', VeraProbColors.error),
-      ExecutionStatus.evidenceGap => ('Gap', VeraProbColors.warning),
-      ExecutionStatus.inhibited => ('Inibido', VeraProbColors.textSecondary),
+      ExecutionStatus.planned => ('Planejada', VeraProbColors.info),
+      ExecutionStatus.inTransit => ('Em Trânsito', VeraProbColors.primary),
+      ExecutionStatus.completed => ('Concluída', VeraProbColors.success),
+      ExecutionStatus.completedWithGaps => (
+        'C/ Pendências',
+        VeraProbColors.warning,
+      ),
+      ExecutionStatus.failed => ('Falha', VeraProbColors.error),
+      ExecutionStatus.inhibited => ('Inibida', VeraProbColors.textSecondary),
     };
 
     return Container(

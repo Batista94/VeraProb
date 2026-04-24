@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -167,7 +167,7 @@ void main() {
       );
       expect(
         (await repo.findBySetId('grace-edge'))!.status,
-        ExecutionStatus.pending,
+        ExecutionStatus.planned,
       );
 
       // T-0 (Exact Expiry): Should start evaluation (not skipped)
@@ -187,7 +187,7 @@ void main() {
 
       expect(
         (await repo.findBySetId('grace-edge'))!.status,
-        ExecutionStatus.executed,
+        ExecutionStatus.completed,
       );
     });
 
@@ -228,7 +228,7 @@ void main() {
       final result = await repo.findBySetId('ooo-test');
       expect(
         result!.status,
-        ExecutionStatus.executed,
+        ExecutionStatus.completed,
         reason: 'Out-of-order telemetry should not break dwell logic',
       );
     });
@@ -251,7 +251,7 @@ void main() {
         noShowPenaltyBps: -500, // ANOMALY: Forced negative BPS
         windowStartUtc: windowEnd.subtract(const Duration(hours: 1)),
         windowEndUtc: windowEnd,
-        status: ExecutionStatus.pending,
+        status: ExecutionStatus.planned,
         createdAtUtc: nowUtc,
         lastEvaluatedAtUtc: nowUtc,
         statusLastUpdatedAtUtc: nowUtc,

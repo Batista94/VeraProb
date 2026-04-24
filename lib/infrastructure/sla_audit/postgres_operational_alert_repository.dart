@@ -94,13 +94,36 @@ class PostgresOperationalAlertRepository
             'acknowledged_by_user_id': alert.acknowledgedByUserId,
             'resolved_at_utc': alert.resolvedAtUtc?.toIso8601String(),
           })
+          // INV-1/INV-22 Defense-in-Depth: explicit org filter in Dart layer.
+          // RLS is the last gate; this filter is the first. If RLS is
+          // temporarily disabled during maintenance, cross-org updates are
+          // still structurally impossible at the wire level.
+          .eq('organization_id', alert.organizationId)
           .eq('id', alert.id);
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'operational_alert');
     }
   }
 
+  @override
+  Future<void> markViewed(String alertId, String userId) async {
+    try {
+      // Idempotent: array_append only if userId not already present.
+      await _client.rpc(
+        'mark_alert_viewed',
+        params: {'p_alert_id': alertId, 'p_user_id': userId},
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'operational_alert');
+    }
+  }
+
   OperationalAlert _fromRow(Map<String, dynamic> row) {
+    final viewedRaw = row['viewed_by_user_ids'];
+    final viewedByUserIds = viewedRaw is List
+        ? viewedRaw.cast<String>()
+        : <String>[];
+
     return OperationalAlert(
       id: row['id'] as String,
       organizationId: row['organization_id'] as String,
@@ -120,6 +143,7 @@ class PostgresOperationalAlertRepository
       resolvedAtUtc: row['resolved_at_utc'] != null
           ? DateTime.parse(row['resolved_at_utc'] as String)
           : null,
+      viewedByUserIds: viewedByUserIds,
     );
   }
 }

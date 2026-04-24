@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+﻿import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -76,7 +76,7 @@ void main() async {
         expect(loadedState!.id, state.id);
         expect(loadedState.setId, setId);
         expect(loadedState.contractId, contractId);
-        expect(loadedState.status.name, 'executed');
+        expect(loadedState.status.name, 'completed');
 
         // Binding checks
         expect(loadedState.boundVehicleId, 'veh-01');

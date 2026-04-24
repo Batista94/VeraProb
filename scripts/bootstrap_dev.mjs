@@ -210,6 +210,139 @@ async function ensureTenantAdmin(url, serviceKey, user) {
   throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
 }
 
+async function ensureTestData(url, serviceKey) {
+  process.stdout.write('  ── Provisionando Dados de Teste (Motorista + Token Telegram)\n');
+
+  const driverId = '00000000-0000-0000-0000-d00000000001';
+  const orgId    = '00000000-0000-0000-0000-000000000001';
+
+  // 1. Criar Motorista
+  process.stdout.write('      [1/2] Criar motorista de teste... ');
+  const resDriver = await post(
+    `${url}/rest/v1/drivers`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    { 
+      id: driverId, 
+      organization_id: orgId, 
+      full_name: 'Motorista de Teste Telegram', 
+      status: 'active',
+      license_number: 'CNH123456789'
+    }
+  );
+  if (!resDriver.ok) throw new Error(`Erro ao criar motorista: ${resDriver.status}`);
+  console.log('ok');
+
+  // 2. Criar Token de Vinculação
+  process.stdout.write('      [2/4] Gerar token VERAPR22... ');
+  const resToken = await post(
+    `${url}/rest/v1/telegram_binding_tokens`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=representation' },
+    {
+      organization_id: orgId,
+      driver_id: driverId,
+      created_by_user_id: '00000000-0000-0000-0000-ffffffffffff',
+      code: 'VERAPR22',
+      expires_at_utc: new Date(Date.now() + 14 * 60 * 1000).toISOString() 
+    }
+  );
+
+  if (!resToken.ok) {
+    console.log('FALHOU');
+    throw new Error(`Erro ao criar token: ${resToken.status} - ${JSON.stringify(resToken.data)}`);
+  }
+  
+  // Se o token já existia (ignore-duplicates), pegamos o ID dele via GET
+  let tokenId = resToken.data?.[0]?.id;
+  if (!tokenId) {
+    const resGetToken = await fetch(`${url}/rest/v1/telegram_binding_tokens?code=eq.VERAPR22&select=id`, {
+      headers: authHeaders(serviceKey)
+    });
+    const tokens = await resGetToken.json();
+    tokenId = tokens[0]?.id;
+  }
+  console.log('ok');
+
+  // 3. Pré-vincular Chat Telegram (Dev-Mode)
+  const TEST_CHAT_ID = 908453789;
+  process.stdout.write(`      [3/4] Pré-vincular Chat ID ${TEST_CHAT_ID}... `);
+  const resBind = await post(
+    `${url}/rest/v1/telegram_chat_bindings`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      organization_id: orgId,
+      driver_id: driverId,
+      chat_id: TEST_CHAT_ID,
+      binding_token_id: tokenId
+    }
+  );
+  if (!resBind.ok) throw new Error(`Erro ao pré-vincular: ${resBind.status} - ${JSON.stringify(resBind.data)}`);
+  console.log('ok');
+
+  // 4. Criar Viagem de Teste (TRIP-8H-TEST) para Heurística WS-4
+  process.stdout.write('      [4/4] Criar Viagem TRIP-8H-TEST (8h)... ');
+  const now = new Date();
+  const start = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
+  const end = new Date(now.getTime() + 8 * 60 * 60 * 1000 - 5 * 60 * 1000).toISOString();
+  const contractId = '00000000-0000-0000-0000-ca0000000001';
+  const planId = '00000000-0000-0000-0000-000000000001';
+  const setId = 'TRIP-8H-TEST';
+
+  // 4.1 Plan Declaration (com organization_id!)
+  await post(
+    `${url}/rest/v1/plan_declarations`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      id: planId,
+      contract_id: contractId,
+      organization_id: orgId,
+      declared_at_utc: now.toISOString(),
+      declared_by_user_id: '00000000-0000-0000-0000-ffffffffffff',
+      plan_version: 1,
+      original_file_hash: 'bootstrap'
+    }
+  );
+
+  // 4.2 Service Execution
+  await post(
+    `${url}/rest/v1/contractual_service_executions`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      set_id: setId,
+      plan_declaration_id: planId,
+      scheduled_start_time_utc: start,
+      scheduled_end_time_utc: end,
+      planned_vehicle_id: driverId,
+      contractual_value_cents: 25000,
+      no_show_penalty_multiplier: 1.5,
+      start_latitude: -23.55, start_longitude: -46.63, start_radius_meters: 500,
+      end_latitude: -23.6, end_longitude: -46.7, end_radius_meters: 500
+    }
+  );
+
+  // 4.3 Execution State (pending)
+  await post(
+    `${url}/rest/v1/execution_states`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      id: '00000000-0000-0000-0000-e00000000001',
+      set_id: setId,
+      contract_id: contractId,
+      plan_version: 1,
+      planned_vehicle_id: driverId,
+      status: 'pending',
+      window_start_utc: start,
+      window_end_utc: end,
+      contractual_value_cents: 25000,
+      no_show_penalty_multiplier: 1.5,
+      created_at_utc: now.toISOString(),
+      last_evaluated_at_utc: now.toISOString(),
+      status_last_updated_at_utc: now.toISOString(),
+      start_latitude: -23.55, start_longitude: -46.63, start_radius_meters: 500
+    }
+  );
+  console.log('ok\n');
+}
+
 async function signIn(url, anonKey, email, password) {
   const res = await post(
     `${url}/auth/v1/token?grant_type=password`,
@@ -299,6 +432,9 @@ async function main() {
     results.push(user);
     console.log('');
   }
+
+  // Novo: Dados de negócio
+  await ensureTestData(url, serviceKey);
 
   console.log('╔══════════════════════════════════════════════════════════╗');
   console.log('║                  CREDENCIAIS DE TESTE                   ║');

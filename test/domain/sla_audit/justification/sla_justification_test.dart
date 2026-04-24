@@ -4,7 +4,7 @@ import 'package:veraprob/domain/sla_audit/justification/sla_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_category.dart';
 
 void main() {
-  final eventTimestamp = DateTime.utc(2026, 4, 14, 10, 30);
+  final occurrenceTimestamp = DateTime.utc(2026, 4, 14, 10, 30);
   final createdAt = DateTime.utc(2026, 4, 14, 11, 0);
 
   SLAJustification buildJustification({
@@ -15,7 +15,7 @@ void main() {
       id: id,
       organizationId: 'org-1',
       vehicleId: 'vehicle-42',
-      eventTimestamp: eventTimestamp,
+      occurrenceTimestamp: occurrenceTimestamp,
       category: SLAJustificationCategory.pneuFurado,
       description: 'Pneu furado na BR-116 km 230',
       evidenceUrls: ['https://storage.supabase.co/evidence/photo1.jpg'],
@@ -36,7 +36,7 @@ void main() {
       expect(j.id, 'just-1');
       expect(j.organizationId, 'org-1');
       expect(j.vehicleId, 'vehicle-42');
-      expect(j.eventTimestamp, eventTimestamp);
+      expect(j.occurrenceTimestamp, occurrenceTimestamp);
       expect(j.category, SLAJustificationCategory.pneuFurado);
       expect(j.description, 'Pneu furado na BR-116 km 230');
       expect(j.evidenceUrls, hasLength(1));
@@ -69,7 +69,7 @@ void main() {
 
   group('SLAJustification — Forensic Immutability', () {
     test(
-      'copyWith preserves vehicleId and eventTimestamp (forensic anchor)',
+      'copyWith preserves vehicleId and occurrenceTimestamp (forensic anchor)',
       () {
         final original = buildJustification();
         final updated = original.copyWith(
@@ -80,7 +80,7 @@ void main() {
 
         // Forensic anchor MUST be immutable
         expect(updated.vehicleId, original.vehicleId);
-        expect(updated.eventTimestamp, original.eventTimestamp);
+        expect(updated.occurrenceTimestamp, original.occurrenceTimestamp);
 
         // Review fields changed
         expect(updated.status, JustificationStatus.approved);
@@ -96,15 +96,15 @@ void main() {
       },
     );
 
-    test('copyWith does NOT expose vehicleId or eventTimestamp', () {
-      // Compile-time guarantee: copyWith has no vehicleId/eventTimestamp params.
+    test('copyWith does NOT expose vehicleId or occurrenceTimestamp', () {
+      // Compile-time guarantee: copyWith has no vehicleId/occurrenceTimestamp params.
       // This test documents the design intent — if someone adds those params,
       // this test description should remind them WHY they were excluded.
       final j = buildJustification();
       final copy = j.copyWith(status: JustificationStatus.rejected);
 
       expect(copy.vehicleId, j.vehicleId);
-      expect(copy.eventTimestamp, j.eventTimestamp);
+      expect(copy.occurrenceTimestamp, j.occurrenceTimestamp);
     });
   });
 

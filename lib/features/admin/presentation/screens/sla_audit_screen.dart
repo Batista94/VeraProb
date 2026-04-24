@@ -61,10 +61,10 @@ class _SlaSummarySection extends ConsumerWidget {
           Expanded(
             child: _SummaryCard(
               title: 'CONFORMIDADES',
-              value: summary.totalExecuted,
+              value: summary.totalCompleted,
               color: VeraProbColors.success,
               percentage: summary.total > 0
-                  ? (summary.totalExecuted / summary.total * 100).round()
+                  ? (summary.totalCompleted / summary.total * 100).round()
                   : 0,
               revenueLabel: 'RECEITA PROTEGIDA',
               revenueValue: summary.protectedRevenue,
@@ -74,10 +74,11 @@ class _SlaSummarySection extends ConsumerWidget {
           Expanded(
             child: _SummaryCard(
               title: 'INCONSISTÊNCIAS',
-              value: summary.totalEvidenceGap,
+              value: summary.totalCompletedWithGaps,
               color: VeraProbColors.warning,
               percentage: summary.total > 0
-                  ? (summary.totalEvidenceGap / summary.total * 100).round()
+                  ? (summary.totalCompletedWithGaps / summary.total * 100)
+                        .round()
                   : 0,
               revenueLabel: 'RECEITA EM RISCO',
               revenueValue: summary.revenueAtRisk,
@@ -87,10 +88,10 @@ class _SlaSummarySection extends ConsumerWidget {
           Expanded(
             child: _SummaryCard(
               title: 'QUEBRAS DE SLA',
-              value: summary.totalNoShow,
+              value: summary.totalFailed,
               color: VeraProbColors.error,
               percentage: summary.total > 0
-                  ? (summary.totalNoShow / summary.total * 100).round()
+                  ? (summary.totalFailed / summary.total * 100).round()
                   : 0,
               revenueLabel: 'RECEITA PERDIDA',
               revenueValue: summary.lostRevenue,
@@ -306,11 +307,11 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = status == ExecutionStatus.noShow
+    final color = status == ExecutionStatus.failed
         ? VeraProbColors.error
         : VeraProbColors.warning;
 
-    final label = status == ExecutionStatus.noShow ? 'Falha' : 'Gargalo';
+    final label = status == ExecutionStatus.failed ? 'Falha' : 'Gargalo';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

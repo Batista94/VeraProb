@@ -26,14 +26,16 @@ class DashboardRiskFeedNode extends Equatable {
   ) {
     DashboardFeedSeverity derivedSeverity = DashboardFeedSeverity.onTime;
 
-    if (execution.status == ExecutionStatus.noShow ||
-        execution.status == ExecutionStatus.evidenceGap) {
+    if (execution.status == ExecutionStatus.failed ||
+        execution.status == ExecutionStatus.completedWithGaps) {
       derivedSeverity = DashboardFeedSeverity.critical;
     } else if (alerts.any((a) => a.severity == 'CRITICAL')) {
       derivedSeverity = DashboardFeedSeverity.critical;
     } else if (alerts.any((a) => a.severity == 'WARNING')) {
       derivedSeverity = DashboardFeedSeverity.warning;
-    } else if (execution.status == ExecutionStatus.pending) {
+    } else if (execution.status == ExecutionStatus.planned ||
+        execution.status == ExecutionStatus.inTransit ||
+        execution.status == ExecutionStatus.inhibited) {
       derivedSeverity = DashboardFeedSeverity.pending;
     }
 

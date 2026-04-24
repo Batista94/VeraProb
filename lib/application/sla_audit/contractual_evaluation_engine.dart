@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -145,8 +145,8 @@ class ContractualEvaluationEngine {
       // 48h reprocessing window. noShow and evidenceGap states past the cutoff
       // are final â€” the verdict cannot be overturned by a late fact.
       if (receivedAtUtc != null &&
-          (state.status == ExecutionStatus.noShow ||
-              state.status == ExecutionStatus.evidenceGap)) {
+          (state.status == ExecutionStatus.failed ||
+              state.status == ExecutionStatus.completedWithGaps)) {
         if (!LateArrivalWindowPolicy.isWithinReprocessingWindow(
           windowEndUtc: state.windowEndUtc,
           receivedAtUtc: receivedAtUtc,
@@ -334,13 +334,27 @@ class ContractualEvaluationEngine {
           state.setId,
           () => now,
         );
+
+        // FSM: transition planned → inTransit on first geofence entry (first-wins).
+        // startTransit is idempotent — no-op if already inTransit.
+        if (!tracking && state.status == ExecutionStatus.planned) {
+          state.startTransit(timestampUtc: firstEntry, source: 'geofence');
+          // Persist TRANSIT_STARTED to ledger immediately — the aggregate is
+          // reloaded from DB on the next tick, which would lose in-memory events.
+          for (final event in state.domainEvents) {
+            await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(event));
+          }
+          await _executionRepo.save(state);
+          state.clearDomainEvents();
+        }
+
         if (now.isBefore(firstEntry)) continue;
 
         final dwellDuration = now.difference(firstEntry);
 
         if (dwellDuration.inSeconds >= requiredDwell) {
           // If already executed (from a previous fact), nothing to do.
-          if (state.status == ExecutionStatus.executed) continue;
+          if (state.status == ExecutionStatus.completed) continue;
 
           state.bindExecution(
             vehicleId: vehicleState.vehicleId,
@@ -395,7 +409,7 @@ class ContractualEvaluationEngine {
     required String organizationId,
   }) async {
     final now = nowUtc ?? _clock.nowUtc();
-    final expiredStates = await _executionRepo.findExpiredPending(
+    final expiredStates = await _executionRepo.findExpiredPlanned(
       now,
       organizationId: organizationId,
     );
@@ -445,7 +459,7 @@ class ContractualEvaluationEngine {
         }
       }
 
-      state.markNoShow(now);
+      state.markFailed(now);
 
       decisions.add(
         EvaluationDecision(

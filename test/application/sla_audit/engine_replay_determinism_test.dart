@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/telemetry_ingestion_pipeline.dart';
 import 'package:veraprob/domain/shared/money.dart';
@@ -149,7 +149,7 @@ void main() {
         await pipeline.process(facts, organizationId: orgId);
 
         final stateA = await execRepo.findBySetId(setId);
-        expect(stateA?.status, equals(ExecutionStatus.executed));
+        expect(stateA?.status, equals(ExecutionStatus.completed));
 
         final ledgerA = await ledgerRepo.getEntriesBySetId(setId);
         expect(ledgerA.any((e) => e.type == 'EXECUTION_BOUND'), isTrue);
@@ -173,7 +173,7 @@ void main() {
         await pipeline.process([facts[2]], organizationId: orgId);
 
         final stateB = await execRepo.findBySetId(setId);
-        expect(stateB?.status, equals(ExecutionStatus.executed));
+        expect(stateB?.status, equals(ExecutionStatus.completed));
 
         final ledgerB = await ledgerRepo.getEntriesBySetId(setId);
         expect(ledgerB.any((e) => e.type == 'EXECUTION_BOUND'), isTrue);
@@ -230,7 +230,7 @@ void main() {
         final stateAtSweep = await execRepo.findBySetId(setId);
         expect(
           stateAtSweep?.status,
-          equals(ExecutionStatus.noShow),
+          equals(ExecutionStatus.failed),
           reason: 'Sweep should mark expired pending state as noShow',
         );
 
@@ -256,7 +256,7 @@ void main() {
         final finalState = await execRepo.findBySetId(setId);
         expect(
           finalState?.status,
-          equals(ExecutionStatus.executed),
+          equals(ExecutionStatus.completed),
           reason: 'Late arrival MUST correct noShow state to executed',
         );
 

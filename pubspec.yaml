@@ -44,6 +44,11 @@ dependencies:
   # ── Red Team v2.1: XSS Protection (ID 4) ────────────
   sanitize_html: ^2.1.0
 
+  # ── Alert Command Center: Industrial Sound ──────────
+  just_audio: 0.9.39
+
+  # ── Alert Command Center: Evidence Thumbnail (INV-26: proxy-only) ──
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.1
@@ -67,6 +72,7 @@ flutter:
     - assets/fonts/Lato-Regular.ttf
     - assets/fonts/Lato-Bold.ttf
 
+    - assets/sounds/
 sentry:
   upload_debug_symbols: true
   upload_source_maps: true

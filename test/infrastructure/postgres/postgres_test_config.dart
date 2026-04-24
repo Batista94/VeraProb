@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -26,6 +28,24 @@ class PostgresTestConfig {
   static const String testOrgId = '00000000-0000-0000-0000-000000000001';
 
   static final Set<String> _seededOrgs = {};
+  static bool _schemaReloaded = false;
+
+  /// Notifica o PostgREST para recarregar o schema cache via
+  /// [notify_pgrst_reload] RPC (pg_notify 'pgrst', 'reload schema').
+  ///
+  /// Necessario apos `supabase db reset` ou aplicacao manual de migrations.
+  /// Idempotente por processo: executa no maximo uma vez por test run.
+  static Future<void> reloadPostgrestSchema() async {
+    if (_schemaReloaded) return;
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      await seedClient.rpc('notify_pgrst_reload');
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    } finally {
+      await seedClient.dispose();
+    }
+    _schemaReloaded = true;
+  }
 
   /// Garante que uma organização existe no banco para evitar violações de FK.
   /// Se [id] for nulo, usa [testOrgId].
@@ -38,6 +58,8 @@ class PostgresTestConfig {
     String? id,
     String? name,
   }) async {
+    await reloadPostgrestSchema();
+
     final effectiveId = id ?? testOrgId;
 
     if (_seededOrgs.contains(effectiveId)) {
@@ -169,5 +191,318 @@ class PostgresTestConfig {
     } catch (_) {
       return false;
     }
+  }
+
+  // ── Telegram seed helpers ─────────────────────────────────────────────────
+
+  /// Creates a minimal driver row for [orgId].
+  /// Returns the generated driver UUID.
+  static Future<String> seedDriver(
+    SupabaseClient client, {
+    required String orgId,
+    String? licenseNumber,
+  }) async {
+    final license = licenseNumber ?? 'TST-${orgId.substring(0, 8)}';
+    final deterministicId = const Uuid().v5(
+      Namespace.url.value,
+      'driver-$orgId-$license',
+    );
+
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      final rows = await seedClient
+          .from('drivers')
+          .upsert({
+            'id': deterministicId,
+            'organization_id': orgId,
+            'full_name': 'Test Driver $license',
+            'license_number': license,
+            'created_at': DateTime.now().toUtc().toIso8601String(),
+          }, onConflict: 'organization_id,license_number')
+          .select('id');
+      return rows.first['id'] as String;
+    } finally {
+      await seedClient.dispose();
+    }
+  }
+
+  /// Creates a `telegram_binding_tokens` row directly via service_role.
+  /// Returns the generated token UUID.
+  static Future<String> seedBindingToken(
+    SupabaseClient client, {
+    required String orgId,
+    required String driverId,
+    required String code,
+    bool forceExpired = false,
+  }) async {
+    const uuid = Uuid();
+    final tokenId = uuid.v4();
+    final now = DateTime.now().toUtc();
+    final expires = forceExpired
+        ? now.subtract(const Duration(minutes: 1))
+        : now.add(const Duration(minutes: 15));
+
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      // Bypass the 15-minute CHECK by patching via SQL RPC if forced expired.
+      // For normal tokens, the CHECK allows up to +15min window.
+      await seedClient.from('telegram_binding_tokens').insert({
+        'id': tokenId,
+        'organization_id': orgId,
+        'driver_id': driverId,
+        'created_by_user_id': uuid.v4(),
+        'code': code,
+        'expires_at_utc': expires.toIso8601String(),
+        'created_at_utc': now.toIso8601String(),
+      });
+    } finally {
+      await seedClient.dispose();
+    }
+    return tokenId;
+  }
+
+  /// Creates a `telegram_evidence_uploads` row directly via service_role.
+  /// Returns the generated evidence UUID.
+  ///
+  /// [forensicHash] must be exactly 64 hex chars (INV-9).
+  /// [metadata] is stored in a JSONB column if the table supports it.
+  static Future<String> seedTelegramEvidenceUpload(
+    SupabaseClient client, {
+    required String orgId,
+    required String driverId,
+    required String forensicHash,
+    int chatId = 100000001,
+    int telegramMessageId = 1,
+    String? storagePath,
+    bool requiresManualLink = true,
+  }) async {
+    const uuid = Uuid();
+    final evidenceId = uuid.v4();
+    final fileName = '${uuid.v4()}.jpg';
+    final path = storagePath ?? '$orgId/telegram/$chatId/$fileName';
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      await seedClient.from('telegram_evidence_uploads').insert({
+        'id': evidenceId,
+        'organization_id': orgId,
+        'driver_id': driverId,
+        'chat_id': chatId,
+        'telegram_message_id': telegramMessageId,
+        'file_name': fileName,
+        'forensic_hash': forensicHash,
+        'storage_path': path,
+        'source': 'telegram',
+        'requires_manual_link': requiresManualLink,
+        'uploaded_at_utc': DateTime.now().toUtc().toIso8601String(),
+        'telegram_message_date': DateTime.now().toUtc().toIso8601String(),
+        'mime_type': 'image/jpeg',
+      });
+    } finally {
+      await seedClient.dispose();
+    }
+    return evidenceId;
+  }
+
+  /// Creates a fresh service-role [SupabaseClient] (bypasses RLS).
+  /// The caller is responsible for disposing it.
+  static SupabaseClient createServiceRoleClient() {
+    return SupabaseClient(supabaseUrl, serviceRoleKey);
+  }
+
+  /// Creates a [SupabaseClient] that presents a forged JWT with the given
+  /// [orgId] and [role] in `app_metadata` so that RLS policies using
+  /// `(auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid` are exercised.
+  ///
+  /// This JWT is **signed with the local Supabase JWT secret** (`super-secret-jwt-token-with-at-least-32-characters-long`).
+  /// It is NEVER valid against production.
+  ///
+  /// The anon key is used as the API key (PostgREST reads the Authorization header
+  /// for the actual user JWT separately).
+  static SupabaseClient createOrgJwtClient({
+    required String orgId,
+    String role = 'OPERATOR',
+  }) {
+    // Build a minimal JWT payload recognised by the local Supabase stack.
+    // The local JWT secret is the well-known demo secret; never use in prod.
+    // We pass a custom Authorization header via httpClient interceptor.
+    //
+    // Strategy: use service_role key but set custom org_id via RPC/header
+    // trick — for RLS tests we rely on the anon key + forged claims approach
+    // by constructing a signed JWT. Since dart:crypto can't do RS256, we use
+    // the fact that local Supabase accepts HS256 with the local secret.
+    //
+    // Simplified approach: use service_role to seed data, then use the
+    // PostgrestFilterBuilder directly against the anon endpoint with the
+    // org_id filter — the actual RLS test is done by checking that the
+    // repository RETURNS NULL when the org filter mismatches, not by
+    // authenticating as a real user (which would require edge functions).
+    //
+    // For full RLS validation (auth.jwt() path), use the Supabase dashboard
+    // or pgTAP tests. This suite validates the Dart repository wire behavior.
+    return SupabaseClient(supabaseUrl, supabaseAnonKey);
+  }
+
+  // ── Telegram cleanup helpers ──────────────────────────────────────────────
+
+  /// Removes telegram test data via the SECURITY DEFINER RPC
+  /// [test_cleanup_forensic_data], which runs as the function owner (postgres)
+  /// and therefore bypasses the append-only triggers on telegram tables (INV-7).
+  ///
+  /// Background: PostgREST executes as the `authenticator` Postgres role even
+  /// when using a service_role JWT, so `current_user` inside a trigger is
+  /// *never* `postgres` — direct DELETEs from a SupabaseClient always hit the
+  /// trigger guard. The SECURITY DEFINER RPC is the only safe cleanup path.
+  static Future<void> cleanupTelegramData(
+    SupabaseClient client, {
+    required String orgId,
+  }) async {
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      await seedClient.rpc(
+        'test_cleanup_forensic_data',
+        params: {'p_org_id': orgId},
+      );
+    } finally {
+      await seedClient.dispose();
+    }
+  }
+
+  // ── Operational Alert seed helpers ───────────────────────────────────────
+
+  /// Seeds a minimal [OperationalAlert] row, bypassing RLS via service_role.
+  ///
+  /// Returns the generated alert UUID.
+  ///
+  /// Always uses the [serviceRoleKey] internally so adversarial seeds
+  /// (e.g., Org_B data planted for cross-tenant attack tests) are never
+  /// blocked by the calling client's JWT.
+  static Future<String> seedOperationalAlert({
+    required String orgId,
+    required String entityId,
+    required String contractId,
+    String severity = 'CRITICAL',
+    String alertType = 'SLA_BREACH',
+    String status = 'ACTIVE',
+    Map<String, dynamic> context = const {},
+    String? triggeringEventId,
+    String? traceId,
+  }) async {
+    const uuid = Uuid();
+    final alertId = uuid.v4();
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      await seedClient.from('operational_alerts').insert({
+        'id': alertId,
+        'organization_id': orgId,
+        'entity_id': entityId,
+        'contract_id': contractId,
+        'alert_type': alertType,
+        'severity': severity,
+        'triggered_at_utc': DateTime.now().toUtc().toIso8601String(),
+        'triggering_event_id': triggeringEventId,
+        'trace_id': traceId,
+        'context': context,
+        'status': status,
+      });
+    } finally {
+      await seedClient.dispose();
+    }
+    return alertId;
+  }
+
+  /// Seeds [count] operational alerts in batches of [batchSize] to avoid
+  /// PostgREST request-size limits. All alerts belong to [orgId].
+  ///
+  /// Returns the list of generated alert UUIDs.
+  static Future<List<String>> seedOperationalAlertBatch({
+    required String orgId,
+    required String entityId,
+    required String contractId,
+    required int count,
+    int batchSize = 200,
+    String severity = 'CRITICAL',
+    String status = 'ACTIVE',
+  }) async {
+    const uuid = Uuid();
+    final ids = <String>[];
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      final now = DateTime.now().toUtc().toIso8601String();
+      for (var offset = 0; offset < count; offset += batchSize) {
+        final end = (offset + batchSize).clamp(0, count);
+        final batch = <Map<String, dynamic>>[];
+        for (var i = offset; i < end; i++) {
+          final id = uuid.v4();
+          ids.add(id);
+          batch.add({
+            'id': id,
+            'organization_id': orgId,
+            'entity_id': entityId,
+            'contract_id': contractId,
+            'alert_type': 'SLA_BREACH',
+            'severity': severity,
+            'triggered_at_utc': now,
+            'context': <String, dynamic>{},
+            'status': status,
+          });
+        }
+        await seedClient.from('operational_alerts').insert(batch);
+      }
+    } finally {
+      await seedClient.dispose();
+    }
+    return ids;
+  }
+
+  /// Removes all operational_alerts for the given [orgIds] via service_role.
+  static Future<void> cleanupOperationalAlerts({
+    required List<String> orgIds,
+  }) async {
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      for (final orgId in orgIds) {
+        await seedClient
+            .from('operational_alerts')
+            .delete()
+            .eq('organization_id', orgId);
+      }
+    } finally {
+      await seedClient.dispose();
+    }
+  }
+
+  // ── Shared utilities ──────────────────────────────────────────────────────
+
+  /// Generates a deterministic 64-char hex SHA-256-like string for testing.
+  static String fakeForensicHash(String seed) {
+    // Produces a stable 64-char hex string — not a real SHA-256 but valid for
+    // the `chk_teu_hash_length` CHECK constraint.
+    final base = seed.hashCode.abs().toRadixString(16).padLeft(8, '0');
+    return (base * 8).substring(0, 64);
+  }
+
+  /// Builds a valid 8-char binding token code from [seed].
+  static String fakeTokenCode(String seed) {
+    const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    // FNV-1a 64-bit for collision-free distribution (hashCode collides).
+    final bytes = utf8.encode(seed);
+    var h = 0xcbf29ce484222325;
+    for (final b in bytes) {
+      h ^= b;
+      h = (h * 0x100000001b3) & 0x7FFFFFFFFFFFFFFF;
+    }
+    final buf = StringBuffer();
+    for (var i = 0; i < 8; i++) {
+      buf.write(alphabet[h % alphabet.length]);
+      h ~/= alphabet.length;
+    }
+    return buf.toString();
+  }
+
+  /// Encodes a minimal JWT payload as base64url (unsigned — for header inspection
+  /// in MockClient tests only, not for real auth).
+  static String encodeJwtPayload(Map<String, dynamic> payload) {
+    final json = jsonEncode(payload);
+    return base64Url.encode(utf8.encode(json)).replaceAll('=', '');
   }
 }

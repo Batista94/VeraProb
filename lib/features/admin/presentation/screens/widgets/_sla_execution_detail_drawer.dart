@@ -76,7 +76,7 @@ class SlaExecutionDetailDrawer extends ConsumerWidget {
                       value:
                           '${(item.noShowPenaltyBps / 10000.0).toStringAsFixed(1)}x',
                     ),
-                    if (item.status == ExecutionStatus.noShow)
+                    if (item.status == ExecutionStatus.failed)
                       _InfoField(
                         label: 'Penalidade Calculada',
                         value: _currencyFormat.format(
@@ -97,7 +97,7 @@ class SlaExecutionDetailDrawer extends ConsumerWidget {
                       label: 'Raio de Detecção',
                       value: '${item.startRadiusMeters} metros',
                     ),
-                    if (item.status == ExecutionStatus.executed) ...[
+                    if (item.status == ExecutionStatus.completed) ...[
                       const Divider(height: 48),
                       Text(
                         'EVIDÊNCIA DE EXECUÇÃO',
@@ -177,8 +177,8 @@ class SlaExecutionDetailDrawer extends ConsumerWidget {
 
   bool _canRequestDefense(ExecutionStatus status, UserRole role) {
     final isDefensibleStatus =
-        status == ExecutionStatus.noShow ||
-        status == ExecutionStatus.evidenceGap;
+        status == ExecutionStatus.failed ||
+        status == ExecutionStatus.completedWithGaps;
     final hasPermission = RbacService().can(
       role,
       UserPermission.canSubmitJustification,
@@ -226,21 +226,26 @@ class _StatusSection extends StatelessWidget {
     final String description;
 
     switch (status) {
-      case ExecutionStatus.noShow:
+      case ExecutionStatus.failed:
         color = VeraProbColors.error;
         label = 'NO SHOW';
         description =
             'Não detectado: Obrigação não executada na Zona Operacional.';
-      case ExecutionStatus.evidenceGap:
+      case ExecutionStatus.completedWithGaps:
         color = VeraProbColors.warning;
         label = 'EVIDENCE GAP';
         description =
             'Detecção Parcial: Indícios de Execução sem comprovação contínua.';
-      case ExecutionStatus.executed:
+      case ExecutionStatus.completed:
         color = VeraProbColors.success;
         label = 'EXECUTADO';
         description = 'Evidência confirmada: Obrigação B2B cumprida.';
-      case ExecutionStatus.pending:
+      case ExecutionStatus.inTransit:
+        color = VeraProbColors.primary;
+        label = 'EM TRÂNSITO';
+        description = 'Rota ativa — motorista em deslocamento.';
+
+      case ExecutionStatus.planned:
         color = VeraProbColors.textSecondary;
         label = 'PENDENTE';
         description = 'Aguardando encerramento da janela.';

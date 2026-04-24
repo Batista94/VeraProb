@@ -288,12 +288,12 @@ class JustificationRejectedEvent extends DomainEvent {
 
 /// Emitted when a driver submits a justification for a vehicle infraction occurrence.
 ///
-/// Forensic anchor: [vehicleId] + [eventTimestamp] link back to the original
+/// Forensic anchor: [vehicleId] + [occurrenceTimestamp] link back to the original
 /// `VehicleOperationalState.stateChangedAt` from the Normalizer (CX-04).
 class SLAJustificationSubmittedEvent extends DomainEvent {
   final String justificationId;
   final String vehicleId;
-  final DateTime eventTimestamp;
+  final DateTime occurrenceTimestamp;
   final String actorUserId;
   final List<String> evidenceHashes;
 
@@ -302,7 +302,7 @@ class SLAJustificationSubmittedEvent extends DomainEvent {
     required super.occurredAtUtc,
     required this.justificationId,
     required this.vehicleId,
-    required this.eventTimestamp,
+    required this.occurrenceTimestamp,
     required this.actorUserId,
     required this.evidenceHashes,
   });
@@ -312,13 +312,69 @@ class SLAJustificationSubmittedEvent extends DomainEvent {
 class SLAJustificationExpiredEvent extends DomainEvent {
   final String justificationId;
   final String vehicleId;
-  final DateTime eventTimestamp;
+  final DateTime occurrenceTimestamp;
 
   const SLAJustificationExpiredEvent({
     required super.organizationId,
     required super.occurredAtUtc,
     required this.justificationId,
     required this.vehicleId,
-    required this.eventTimestamp,
+    required this.occurrenceTimestamp,
+  });
+}
+
+/// Emitted when transit is initiated for an obligation.
+/// Source: Telegram button OR engine geofence entry (first-wins).
+class TransitStartedEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final DateTime startedAtUtc;
+
+  /// 'telegram' | 'geofence'
+  final String source;
+
+  const TransitStartedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.startedAtUtc,
+    required this.source,
+  });
+}
+
+/// Emitted when a driver forces route completion with pending evidence gaps.
+/// Forensic negligence anchor (INV-3).
+class CompletedWithGapsEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final DateTime completedAtUtc;
+
+  const CompletedWithGapsEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.completedAtUtc,
+  });
+}
+
+class ExecutionInhibitedEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final String reason;
+
+  const ExecutionInhibitedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.reason,
   });
 }

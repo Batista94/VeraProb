@@ -11,16 +11,7 @@ void main() {
       expect(container, isNotNull);
     });
 
-    test('provider initial state test structure', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
-      expect(
-        container.exists(stressScenarioProvider),
-        isFalse,
-      ); // Initially false before being read
-    });
+    // stressScenarioProvider removed — Stress Mode concept eliminated (2026-04-22).
 
     test('provider initial state test structure', () {
       final container = ProviderContainer();

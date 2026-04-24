@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_providers.dart';
-import 'package:veraprob/application/adapters/simulation_data_provider.dart';
 import 'package:veraprob/application/intelligence/situation_engine.dart';
 import 'package:veraprob/application/operational_control_service.dart';
 import 'package:veraprob/application/simulation_control_service.dart';
@@ -14,7 +13,6 @@ import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/application/normalization/operational_state_normalizer.dart';
 import 'package:veraprob/application/adapters/operational_data_provider.dart';
 import 'package:veraprob/application/adapters/realtime_data_provider.dart';
-import 'package:veraprob/application/adapters/stress_scenario_config.dart';
 import 'package:veraprob/application/projections/providers/command_center_filter_provider.dart';
 import 'package:veraprob/application/projections/providers/fleet_attention_projection_provider.dart';
 import 'package:veraprob/application/projections/models/attention_state.dart';
@@ -23,22 +21,8 @@ import 'sla_providers.dart';
 
 // ── Core Services ──────────────────────────────────────
 
-/// Optional stress scenario configuration. When set, forces the simulation into stress mode.
-/// Can be enabled via passing --dart-define=STRESS_MODE=true
-final stressScenarioProvider = StateProvider<StressScenarioConfig?>((ref) {
-  const isStressEnabled = bool.fromEnvironment(
-    'STRESS_MODE',
-    defaultValue: true,
-  );
-  if (isStressEnabled) {
-    return StressScenarioConfig.extreme250();
-  }
-  return null;
-});
-
 final fleetSimulationProvider = Provider<FleetSimulationService>((ref) {
-  final config = ref.watch(stressScenarioProvider);
-  return FleetSimulationService(config: config);
+  return FleetSimulationService(config: null);
 });
 
 final operationalControlProvider = Provider<OperationalControlService>((ref) {
@@ -119,13 +103,9 @@ final activeTripsProvider = Provider<List<OperationalTrip>>((ref) {
 
 // ── Data Adapter ─────────────────────────────────────────
 
-/// The operational data adapter.
-/// FASE 10: Switched dynamically between Realtime and Simulation.
+/// The operational data adapter — always uses the Realtime (Supabase) adapter.
+/// Stress Mode concept has been removed (WS-4 simplification, 2026-04-22).
 final operationalDataProvider = Provider<IOperationalDataProvider>((ref) {
-  final stressConfig = ref.watch(stressScenarioProvider);
-  if (stressConfig != null) {
-    return SimulationDataProvider(ref.watch(fleetSimulationProvider));
-  }
   return RealtimeDataProvider(
     ref.watch(dateTimeProviderProvider),
     ref.watch(supabaseClientProvider),

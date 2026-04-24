@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/projections/dashboard_risk_feed_node.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
@@ -34,7 +34,7 @@ void main() {
   group('DashboardRiskFeedNode.evaluate severity', () {
     test('noShow status → critical severity', () {
       final node = DashboardRiskFeedNode.evaluate(
-        makeExecution(ExecutionStatus.noShow),
+        makeExecution(ExecutionStatus.failed),
         [],
       );
       expect(node.severity, DashboardFeedSeverity.critical);
@@ -42,7 +42,7 @@ void main() {
 
     test('evidenceGap status → critical severity', () {
       final node = DashboardRiskFeedNode.evaluate(
-        makeExecution(ExecutionStatus.evidenceGap),
+        makeExecution(ExecutionStatus.completedWithGaps),
         [],
       );
       expect(node.severity, DashboardFeedSeverity.critical);
@@ -50,7 +50,7 @@ void main() {
 
     test('pending execution + CRITICAL alert → critical severity', () {
       final node = DashboardRiskFeedNode.evaluate(
-        makeExecution(ExecutionStatus.pending),
+        makeExecution(ExecutionStatus.planned),
         [makeAlert('CRITICAL')],
       );
       expect(node.severity, DashboardFeedSeverity.critical);
@@ -58,7 +58,7 @@ void main() {
 
     test('pending execution + WARNING alert → warning severity', () {
       final node = DashboardRiskFeedNode.evaluate(
-        makeExecution(ExecutionStatus.pending),
+        makeExecution(ExecutionStatus.planned),
         [makeAlert('WARNING')],
       );
       expect(node.severity, DashboardFeedSeverity.warning);
@@ -66,7 +66,7 @@ void main() {
 
     test('pending execution + no alerts → pending severity', () {
       final node = DashboardRiskFeedNode.evaluate(
-        makeExecution(ExecutionStatus.pending),
+        makeExecution(ExecutionStatus.planned),
         [],
       );
       expect(node.severity, DashboardFeedSeverity.pending);
@@ -74,14 +74,14 @@ void main() {
 
     test('executed + no alerts → onTime severity', () {
       final node = DashboardRiskFeedNode.evaluate(
-        makeExecution(ExecutionStatus.executed),
+        makeExecution(ExecutionStatus.completed),
         [],
       );
       expect(node.severity, DashboardFeedSeverity.onTime);
     });
 
     test('stores execution and alerts on the node', () {
-      final exec = makeExecution(ExecutionStatus.executed);
+      final exec = makeExecution(ExecutionStatus.completed);
       final alert = makeAlert('WARNING');
       final node = DashboardRiskFeedNode.evaluate(exec, [alert]);
       expect(node.execution, exec);

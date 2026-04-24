@@ -33,10 +33,10 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
     final rows = await query.order('created_at_utc', ascending: false);
 
     int pending = 0;
+    int inTransit = 0;
     int executed = 0;
     int noShow = 0;
     int evidenceGap = 0;
-
     Money protectedRevenue = const Money(0);
     Money revenueAtRisk = const Money(0);
     Money lostRevenue = const Money(0);
@@ -63,27 +63,33 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
 
       final val = Money(cents);
 
-      if (statusStr == ExecutionStatus.pending.name) {
+      if (statusStr == ExecutionStatus.planned.name) {
         pending++;
         revenueAtRisk = revenueAtRisk + val;
-      } else if (statusStr == ExecutionStatus.executed.name) {
+      } else if (statusStr == ExecutionStatus.completed.name) {
         executed++;
         protectedRevenue = protectedRevenue + val;
-      } else if (statusStr == ExecutionStatus.noShow.name) {
+      } else if (statusStr == ExecutionStatus.failed.name) {
         noShow++;
         lostRevenue = lostRevenue + val.multiplyByBps(penaltyBps);
-      } else if (statusStr == ExecutionStatus.evidenceGap.name) {
+      } else if (statusStr == ExecutionStatus.completedWithGaps.name) {
         evidenceGap++;
         lostRevenue = lostRevenue + val;
+      } else if (statusStr == ExecutionStatus.inTransit.name) {
+        inTransit++;
+        revenueAtRisk = revenueAtRisk + val;
+      } else if (statusStr == ExecutionStatus.inhibited.name) {
+        // inhibited: obligation suppressed — no financial impact
       }
     }
 
     return SlaExecutionSummary(
       contractId: contractId,
-      totalPending: pending,
-      totalExecuted: executed,
-      totalNoShow: noShow,
-      totalEvidenceGap: evidenceGap,
+      totalPlanned: pending,
+      totalInTransit: inTransit,
+      totalCompleted: executed,
+      totalFailed: noShow,
+      totalCompletedWithGaps: evidenceGap,
       generatedAtUtc: _dateTimeProvider.nowUtc(),
       protectedRevenue: protectedRevenue.cents,
       revenueAtRisk: revenueAtRisk.cents,

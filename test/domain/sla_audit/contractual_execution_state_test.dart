@@ -46,7 +46,7 @@ void main() {
       expect(state.id, isNotEmpty);
       expect(state.setId, 'set-1');
       expect(state.contractId, 'contract-1');
-      expect(state.status, ExecutionStatus.pending);
+      expect(state.status, ExecutionStatus.planned);
       expect(state.boundVehicleId, isNull);
       expect(state.bindingTimestampUtc, isNull);
       expect(state.bindingLatitude, isNull);
@@ -104,7 +104,7 @@ void main() {
         timestampUtc: bindTime,
       );
 
-      expect(state.status, ExecutionStatus.executed);
+      expect(state.status, ExecutionStatus.completed);
       expect(state.boundVehicleId, 'v-42');
       expect(state.bindingLatitude, -23.55);
       expect(state.bindingLongitude, -46.63);
@@ -157,9 +157,9 @@ void main() {
       final state = makeState(windowEnd: DateTime.utc(2026, 3, 1, 7, 0));
       final afterWindow = DateTime.utc(2026, 3, 1, 7, 1);
 
-      state.markNoShow(afterWindow);
+      state.markFailed(afterWindow);
 
-      expect(state.status, ExecutionStatus.noShow);
+      expect(state.status, ExecutionStatus.failed);
       expect(state.finalizedAtUtc, afterWindow);
       expect(state.boundVehicleId, isNull);
     });
@@ -168,7 +168,7 @@ void main() {
       final state = makeState();
       final afterWindow = DateTime.utc(2026, 3, 1, 7, 1);
 
-      state.markNoShow(afterWindow);
+      state.markFailed(afterWindow);
 
       expect(state.domainEvents, hasLength(1));
       expect(state.domainEvents.first, isA<NoShowDeclaredEvent>());
@@ -179,29 +179,35 @@ void main() {
       final beforeWindow = DateTime.utc(2026, 3, 1, 6, 59);
 
       expect(
-        () => state.markNoShow(beforeWindow),
+        () => state.markFailed(beforeWindow),
         throwsA(isA<DomainException>()),
       );
-      expect(state.status, ExecutionStatus.pending);
+      expect(state.status, ExecutionStatus.planned);
     });
 
-    test('markEvidenceGap works correctly', () {
+    test('completeWithGaps works correctly', () {
       final state = makeState();
       final now = DateTime.utc(2026, 3, 1, 6, 45);
 
-      state.markEvidenceGap(now);
+      state.startTransit(timestampUtc: now, source: 'telegram');
+      state.completeWithGaps(now);
 
-      expect(state.status, ExecutionStatus.evidenceGap);
+      expect(state.status, ExecutionStatus.completedWithGaps);
       expect(state.finalizedAtUtc, now);
     });
 
-    test('markEvidenceGap emits EvidenceGapDeclaredEvent', () {
+    test('completeWithGaps emits CompletedWithGapsEvent', () {
       final state = makeState();
+      final t = DateTime.utc(2026, 3, 1, 6, 45);
 
-      state.markEvidenceGap(DateTime.utc(2026, 3, 1, 6, 45));
+      state.startTransit(timestampUtc: t, source: 'telegram');
+      state.completeWithGaps(t);
 
-      expect(state.domainEvents, hasLength(1));
-      expect(state.domainEvents.first, isA<EvidenceGapDeclaredEvent>());
+      expect(
+        state.domainEvents,
+        hasLength(2),
+      ); // TransitStartedEvent + CompletedWithGapsEvent
+      expect(state.domainEvents.last, isA<CompletedWithGapsEvent>());
     });
 
     test('no transitions allowed after finalization (executed)', () {
@@ -214,11 +220,11 @@ void main() {
       );
 
       expect(
-        () => state.markNoShow(DateTime.utc(2026, 3, 1, 8, 0)),
+        () => state.markFailed(DateTime.utc(2026, 3, 1, 8, 0)),
         throwsA(isA<DomainException>()),
       );
       expect(
-        () => state.markEvidenceGap(DateTime.utc(2026, 3, 1, 8, 0)),
+        () => state.completeWithGaps(DateTime.utc(2026, 3, 1, 8, 0)),
         throwsA(isA<DomainException>()),
       );
     });
@@ -227,7 +233,7 @@ void main() {
       'bindExecution allowed after finalization (noShow) for late arrival re-evaluation (INV-12)',
       () {
         final state = makeState();
-        state.markNoShow(DateTime.utc(2026, 3, 1, 7, 1));
+        state.markFailed(DateTime.utc(2026, 3, 1, 7, 1));
 
         // Should not throw, but successfully update status to executed
         state.bindExecution(
@@ -237,7 +243,7 @@ void main() {
           timestampUtc: DateTime.utc(2026, 3, 1, 7, 5),
         );
 
-        expect(state.status, ExecutionStatus.executed);
+        expect(state.status, ExecutionStatus.completed);
         expect(state.boundVehicleId, 'v-1');
       },
     );
@@ -249,7 +255,7 @@ void main() {
       state.updateEvaluationTimestamp(t);
 
       expect(state.lastEvaluatedAtUtc, t);
-      expect(state.status, ExecutionStatus.pending);
+      expect(state.status, ExecutionStatus.planned);
       expect(state.domainEvents, isEmpty);
     });
 
@@ -314,7 +320,7 @@ void main() {
       await repo.save(state);
 
       final found = await repo.findBySetId('set-x');
-      expect(found!.status, ExecutionStatus.executed);
+      expect(found!.status, ExecutionStatus.completed);
     });
 
     test('findPendingByContractAndTime filters correctly', () async {
@@ -360,7 +366,7 @@ void main() {
       );
       await repo.save(executed);
 
-      final results = await repo.findPendingByContractAndTime(
+      final results = await repo.findPlannedByContractAndTime(
         'c-1',
         DateTime.utc(2026, 3, 1, 6, 30),
         organizationId: 'org-1',
@@ -368,6 +374,123 @@ void main() {
 
       expect(results, hasLength(1));
       expect(results.first.setId, 'in-window');
+    });
+  });
+  // ── FSM Adversarial Transition Tests ─────────────────────────────────────
+  group('FSM adversarial transitions', () {
+    test('startTransit: planned → inTransit emits TransitStartedEvent', () {
+      final state = makeState();
+      final t = DateTime.utc(2026, 3, 1, 6, 5);
+      state.startTransit(timestampUtc: t, source: 'geofence');
+      expect(state.status, ExecutionStatus.inTransit);
+      expect(state.domainEvents, hasLength(1));
+      expect(state.domainEvents.first, isA<TransitStartedEvent>());
+    });
+
+    test('startTransit: idempotent — second call is no-op', () {
+      final state = makeState();
+      final t = DateTime.utc(2026, 3, 1, 6, 5);
+      state.startTransit(timestampUtc: t, source: 'geofence');
+      state.startTransit(timestampUtc: t, source: 'telegram');
+      expect(state.status, ExecutionStatus.inTransit);
+      expect(state.domainEvents, hasLength(1));
+    });
+
+    test('startTransit: throws from completed (terminal)', () {
+      final state = makeState();
+      state.bindExecution(
+        vehicleId: 'v-1',
+        latitude: -23.55,
+        longitude: -46.63,
+        timestampUtc: DateTime.utc(2026, 3, 1, 6, 30),
+      );
+      expect(
+        () => state.startTransit(
+          timestampUtc: DateTime.utc(2026, 3, 1, 6, 35),
+          source: 'test',
+        ),
+        throwsA(isA<DomainException>()),
+      );
+    });
+
+    test('markFailed: inTransit → failed after window', () {
+      final state = makeState();
+      state.startTransit(
+        timestampUtc: DateTime.utc(2026, 3, 1, 6, 5),
+        source: 'geofence',
+      );
+      state.markFailed(DateTime.utc(2026, 3, 1, 7, 1));
+      expect(state.status, ExecutionStatus.failed);
+    });
+
+    test('bindExecution: inTransit → completed (normal dwell path)', () {
+      final state = makeState();
+      state.startTransit(
+        timestampUtc: DateTime.utc(2026, 3, 1, 6, 5),
+        source: 'geofence',
+      );
+      state.bindExecution(
+        vehicleId: 'v-1',
+        latitude: -23.55,
+        longitude: -46.63,
+        timestampUtc: DateTime.utc(2026, 3, 1, 6, 35),
+      );
+      expect(state.status, ExecutionStatus.completed);
+      expect(state.boundVehicleId, 'v-1');
+    });
+
+    test(
+      'bindExecution: completedWithGaps → completed (INV-12 late arrival upgrade)',
+      () {
+        final state = makeState();
+        state.startTransit(
+          timestampUtc: DateTime.utc(2026, 3, 1, 6, 5),
+          source: 'geofence',
+        );
+        state.completeWithGaps(DateTime.utc(2026, 3, 1, 6, 45));
+        state.bindExecution(
+          vehicleId: 'v-1',
+          latitude: -23.55,
+          longitude: -46.63,
+          timestampUtc: DateTime.utc(2026, 3, 1, 7, 0),
+        );
+        expect(state.status, ExecutionStatus.completed);
+      },
+    );
+
+    test('completeWithGaps: throws from planned (must be inTransit first)', () {
+      final state = makeState();
+      expect(
+        () => state.completeWithGaps(DateTime.utc(2026, 3, 1, 6, 45)),
+        throwsA(isA<DomainException>()),
+      );
+    });
+
+    test('inhibit: planned → inhibited emits ExecutionInhibitedEvent', () {
+      final state = makeState();
+      state.inhibit(
+        timestampUtc: DateTime.utc(2026, 3, 1, 6, 10),
+        reason: 'JUSTIFICATION_APPROVED',
+      );
+      expect(state.status, ExecutionStatus.inhibited);
+      expect(state.domainEvents.last, isA<ExecutionInhibitedEvent>());
+    });
+
+    test('inhibit: throws from completed (terminal)', () {
+      final state = makeState();
+      state.bindExecution(
+        vehicleId: 'v-1',
+        latitude: -23.55,
+        longitude: -46.63,
+        timestampUtc: DateTime.utc(2026, 3, 1, 6, 30),
+      );
+      expect(
+        () => state.inhibit(
+          timestampUtc: DateTime.utc(2026, 3, 1, 6, 35),
+          reason: 'test',
+        ),
+        throwsA(isA<DomainException>()),
+      );
     });
   });
 }

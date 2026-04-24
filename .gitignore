@@ -25,6 +25,7 @@ app.*.map.json
 .env*
 .env
 .dev.env
+docs/governance/dev_environment.md
 *.secret
 *.jks
 *.keystore
@@ -40,6 +41,7 @@ test_output.txt
 *.exe
 *.bak
 *.tmp
+*.original.md
 *.swp
 .DS_Store
 Thumbs.db

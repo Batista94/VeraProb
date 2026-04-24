@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -163,12 +163,12 @@ void main() {
         // the outcomes perfectly match the historical Rule Snapshots embedded in their respective plans.
         expect(
           stateV1.status,
-          ExecutionStatus.pending,
+          ExecutionStatus.inTransit,
           reason: 'v1 requires 30s, vehicle left at 10s',
         );
         expect(
           stateV2.status,
-          ExecutionStatus.executed,
+          ExecutionStatus.completed,
           reason: 'v2 only requires 5s, vehicle stayed 10s',
         );
       },
@@ -226,12 +226,12 @@ void main() {
       // Verification of tenant boundary isolation inside identical compute pipeline
       expect(
         stateA.status,
-        ExecutionStatus.pending,
+        ExecutionStatus.inTransit,
         reason: 'Org A strict threshold (60) not met',
       );
       expect(
         stateB.status,
-        ExecutionStatus.executed,
+        ExecutionStatus.completed,
         reason: 'Org B lax threshold (10) was met',
       );
     });

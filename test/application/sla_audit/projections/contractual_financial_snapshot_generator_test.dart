@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
 import 'package:veraprob/core/time/brazil_time.dart';
@@ -129,7 +129,7 @@ void main() {
         windowStart: DateTime.utc(2026, 3, 1, 13, 0),
         windowEnd: DateTime.utc(2026, 3, 1, 14, 0),
       );
-      noShow.markNoShow(DateTime.utc(2026, 3, 1, 14, 1));
+      noShow.markFailed(DateTime.utc(2026, 3, 1, 14, 1));
       await executionRepo.save(noShow);
 
       await generator.generateDailySnapshot('org-1', DateTime.utc(2026, 3, 1));

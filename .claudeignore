@@ -33,6 +33,7 @@ linux/
 # Backups
 .claude_backup_*/
 *.bak
+*.original.md
 
 # Kiro
 .kiro/

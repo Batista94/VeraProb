@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
@@ -131,7 +131,7 @@ class PostgresContractualExecutionStateRepository
   }
 
   @override
-  Future<List<ContractualExecutionState>> findPendingByContractAndTime(
+  Future<List<ContractualExecutionState>> findPlannedByContractAndTime(
     String contractId,
     DateTime nowUtc, {
     required String organizationId,
@@ -143,7 +143,7 @@ class PostgresContractualExecutionStateRepository
           .select()
           .eq('organization_id', organizationId)
           .eq('contract_id', contractId)
-          .eq('status', ExecutionStatus.pending.name)
+          .eq('status', ExecutionStatus.planned.name)
           .lte('window_start_utc', now)
           .gte('window_end_utc', now);
 
@@ -158,7 +158,7 @@ class PostgresContractualExecutionStateRepository
   }
 
   @override
-  Future<List<ContractualExecutionState>> findPendingInWindow(
+  Future<List<ContractualExecutionState>> findPlannedInWindow(
     DateTime nowUtc, {
     required String organizationId,
   }) async {
@@ -168,7 +168,7 @@ class PostgresContractualExecutionStateRepository
           .from('execution_states')
           .select()
           .eq('organization_id', organizationId)
-          .eq('status', ExecutionStatus.pending.name)
+          .eq('status', ExecutionStatus.planned.name)
           .lte('window_start_utc', now)
           .gte('window_end_utc', now);
 
@@ -192,7 +192,7 @@ class PostgresContractualExecutionStateRepository
           .filter(
             'status',
             'in',
-            '(${ExecutionStatus.pending.name},${ExecutionStatus.noShow.name},${ExecutionStatus.evidenceGap.name})',
+            '(planned,inTransit,failed,completedWithGaps)',
           )
           .lte('window_start_utc', now)
           .gte('window_end_utc', now);
@@ -204,7 +204,7 @@ class PostgresContractualExecutionStateRepository
   }
 
   @override
-  Future<List<ContractualExecutionState>> findExpiredPending(
+  Future<List<ContractualExecutionState>> findExpiredPlanned(
     DateTime nowUtc, {
     required String organizationId,
   }) async {
@@ -214,7 +214,10 @@ class PostgresContractualExecutionStateRepository
           .from('execution_states')
           .select()
           .eq('organization_id', organizationId)
-          .eq('status', ExecutionStatus.pending.name)
+          .inFilter('status', [
+            ExecutionStatus.planned.name,
+            ExecutionStatus.inTransit.name,
+          ])
           .lt('window_end_utc', now);
 
       return data.map((d) => _mapToEntity(d)).toList();

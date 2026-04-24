@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/telemetry_ingestion_pipeline.dart';
@@ -96,7 +96,7 @@ void main() {
 
       final sweptStatus = (await execRepo.findBySetId(setId))?.status;
       assert(
-        sweptStatus == ExecutionStatus.noShow,
+        sweptStatus == ExecutionStatus.failed,
         'Pre-condition: state must be noShow after sweep',
       );
     }
@@ -147,7 +147,7 @@ void main() {
         final finalState = await execRepo.findBySetId(setId);
         expect(
           finalState?.status,
-          equals(ExecutionStatus.executed),
+          equals(ExecutionStatus.completed),
           reason: 'Fact within 48h window must overturn noShow',
         );
       },
@@ -167,7 +167,7 @@ void main() {
         final finalState = await execRepo.findBySetId(setId);
         expect(
           finalState?.status,
-          equals(ExecutionStatus.executed),
+          equals(ExecutionStatus.completed),
           reason: 'Fact at exactly 48h boundary must still overturn noShow',
         );
       },
@@ -187,7 +187,7 @@ void main() {
         final finalState = await execRepo.findBySetId(setId);
         expect(
           finalState?.status,
-          equals(ExecutionStatus.noShow),
+          equals(ExecutionStatus.failed),
           reason: 'Fact past 48h boundary must NOT overturn noShow',
         );
       },
@@ -210,7 +210,7 @@ void main() {
         final afterFirst = await execRepo.findBySetId(setId);
         expect(
           afterFirst?.status,
-          equals(ExecutionStatus.executed),
+          equals(ExecutionStatus.completed),
           reason: 'First fact (24h) must upgrade noShow to executed',
         );
 
@@ -223,7 +223,7 @@ void main() {
         final finalState = await execRepo.findBySetId(setId);
         expect(
           finalState?.status,
-          equals(ExecutionStatus.executed),
+          equals(ExecutionStatus.completed),
           reason:
               'Executed state must not be disturbed by a subsequent late fact',
         );
@@ -313,7 +313,7 @@ void main() {
         final sweptStatus = (await execRepo.findBySetId(setId))?.status;
         expect(
           sweptStatus,
-          equals(ExecutionStatus.noShow),
+          equals(ExecutionStatus.failed),
           reason: 'SET should be marked as NO_SHOW after sweep',
         );
 
@@ -359,7 +359,7 @@ void main() {
         // CHALLENGE: If the protocol is working correctly, the NO_SHOW should be resolved or countered.
         expect(
           finalState?.status,
-          equals(ExecutionStatus.executed),
+          equals(ExecutionStatus.completed),
           reason:
               'A latent fact that arrives within the window should eventually mark the obligation as EXECUTED (INV-12)',
         );

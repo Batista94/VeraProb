@@ -6,6 +6,7 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/shared/providers.dart';
 import 'package:veraprob/features/admin/providers/drivers_provider.dart';
 import 'widgets/driver_form_drawer.dart';
+import 'widgets/telegram_binding_dialog.dart';
 
 class DriversScreen extends ConsumerStatefulWidget {
   const DriversScreen({super.key});
@@ -372,7 +373,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 80), // Actions space
+                const SizedBox(width: 116), // Actions space
               ],
             ),
           ),
@@ -386,11 +387,23 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                 final driver = drivers[index];
                 final isHighlighted = _highlightedDriverId == driver.id;
 
+                final orgId = ref.read(currentOrganizationIdProvider) ?? '';
                 return _DriverRow(
                   driver: driver,
                   isHighlighted: isHighlighted,
+                  organizationId: orgId,
                   onDelete: userRole.hasPermission(UserRole.admin)
                       ? () => _confirmDelete(context, driver)
+                      : null,
+                  onTelegramBind: userRole.hasPermission(UserRole.operator)
+                      ? () => showDialog<void>(
+                          context: context,
+                          builder: (_) => TelegramBindingDialog(
+                            driverId: driver.id,
+                            driverName: driver.name,
+                            organizationId: orgId,
+                          ),
+                        )
                       : null,
                 );
               },
@@ -457,12 +470,16 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
 class _DriverRow extends StatefulWidget {
   final Driver driver;
   final bool isHighlighted;
+  final String organizationId;
   final VoidCallback? onDelete;
+  final VoidCallback? onTelegramBind;
 
   const _DriverRow({
     required this.driver,
     required this.isHighlighted,
+    required this.organizationId,
     required this.onDelete,
+    required this.onTelegramBind,
   });
 
   @override
@@ -535,10 +552,20 @@ class _DriverRowState extends State<_DriverRow> {
             ),
             // Actions
             SizedBox(
-              width: 80,
+              width: 116,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  if (widget.onTelegramBind != null)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.telegram,
+                        size: 20,
+                        color: Color(0xFF0D47A1),
+                      ),
+                      tooltip: 'Vincular Telegram',
+                      onPressed: widget.onTelegramBind,
+                    ),
                   if (widget.onDelete != null)
                     IconButton(
                       icon: Icon(

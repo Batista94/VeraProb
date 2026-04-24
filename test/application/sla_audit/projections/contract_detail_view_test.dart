@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
@@ -26,7 +26,7 @@ void main() {
   SlaExecutionItemView makeExecution() => SlaExecutionItemView(
     setId: 'set-1',
     contractId: 'contract-abc',
-    status: ExecutionStatus.executed,
+    status: ExecutionStatus.completed,
     windowStartUtc: now,
     windowEndUtc: now.add(const Duration(hours: 1)),
     startLatitude: -23.5,
@@ -38,10 +38,10 @@ void main() {
 
   SlaExecutionSummary makeSummaryFinancial() => SlaExecutionSummary(
     contractId: 'contract-abc',
-    totalPending: 0,
-    totalExecuted: 1,
-    totalNoShow: 0,
-    totalEvidenceGap: 0,
+    totalPlanned: 0,
+    totalCompleted: 1,
+    totalFailed: 0,
+    totalCompletedWithGaps: 0,
     generatedAtUtc: now,
     protectedRevenue: 50000,
     revenueAtRisk: 0,

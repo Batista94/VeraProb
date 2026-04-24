@@ -1,4 +1,4 @@
-﻿import 'dart:collection';
+import 'dart:collection';
 
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -12,59 +12,49 @@ import 'execution_status.dart';
 /// Aggregate Root tracking the lifecycle and judgment of a single
 /// contractual service execution obligation.
 ///
-/// Unlike [PlanDeclaration] (immutable), this aggregate is **mutable** â€”
-/// it transitions through states as the evaluation engine processes
-/// telemetry evidence.
-///
-/// **Identity**: Equality is based exclusively on [id].
-/// Does NOT use Equatable (mutable entity).
-///
-/// **Creation**: Use [ContractualExecutionState.create]. Direct
-/// construction is prohibited (private constructor).
-///
 /// **State machine**:
 /// ```
-/// pending â†’ executed   (via bindExecution)
-/// pending â†’ noShow     (via markNoShow, only after window expires)
-/// pending â†’ evidenceGap (via markEvidenceGap)
-/// noShow â†’ executed    (via bindExecution â€” INV-12: Late Arrival Re-evaluation)
+/// planned → inTransit        (startTransit — Telegram button OR geofence entry)
+/// planned → completed        (bindExecution — engine dwell confirmed)
+/// planned → failed           (markFailed — sweep expired OR pg_cron 24h)
+/// inTransit → completed      (bindExecution — engine dwell OR complete)
+/// inTransit → completedWithGaps (completeWithGaps — /finish forced)
+/// inTransit → failed         (markFailed — sweep expired)
+/// failed → completed         (bindExecution — INV-12 late arrival)
+/// completedWithGaps → completed (bindExecution — INV-12 late arrival)
+/// planned/inTransit → inhibited (justification approved — INV-15)
 /// ```
-/// Transitions to 'executed' are final. Transitions to 'noShow' or 'evidenceGap'
-/// can be re-evaluated if older facts arrive (INV-12).
+/// Transitions to 'completed' from terminal states are final.
+/// Guard: completed/failed cannot revert to inTransit.
 class ContractualExecutionState {
-  // â”€â”€ Identity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Identity ──────────────────────────────────────────────
   final String id;
   final String organizationId;
   final String setId;
   final String contractId;
   final int planVersion;
 
-  // â”€â”€ Geofence (denormalized from ContractualServiceExecution) â”€â”€â”€
-  /// Start geofence center latitude. Immutable after creation.
+  // ── Geofence (denormalized) ───────────────────────────────
   final double startLatitude; // Physical Metric - Double Required
   final double startLongitude; // Physical Metric - Double Required
   final int startRadiusMeters;
 
-  // â”€â”€ Vehicle Planning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  /// Planned vehicle for this obligation. Null means any vehicle can fulfill it.
+  // ── Vehicle Planning ──────────────────────────────────────
   final String? plannedVehicleId;
 
-  // â”€â”€ Financial â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  /// Contractual value of this service obligation.
+  // ── Financial ─────────────────────────────────────────────
   final Money contractualValue;
-
-  /// Multiplier applied to contractualValue on NoShow. In bps (e.g. 15000 = 1.5x).
   final int noShowPenaltyBps;
 
-  // â”€â”€ Time Window â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Time Window ───────────────────────────────────────────
   final DateTime windowStartUtc;
   final DateTime windowEndUtc;
 
-  // â”€â”€ Status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Status ────────────────────────────────────────────────
   ExecutionStatus _status;
   ExecutionStatus get status => _status;
 
-  // â”€â”€ Binding Evidence (only when executed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Binding Evidence ──────────────────────────────────────
   String? _boundVehicleId;
   DateTime? _bindingTimestampUtc;
   double? _bindingLatitude; // Physical Metric - Double Required
@@ -77,7 +67,7 @@ class ContractualExecutionState {
   double? get bindingLongitude =>
       _bindingLongitude; // Physical Metric - Double Required
 
-  // â”€â”€ Lifecycle Timestamps â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Lifecycle Timestamps ──────────────────────────────────
   final DateTime createdAtUtc;
   DateTime _lastEvaluatedAtUtc;
   DateTime _statusLastUpdatedAtUtc;
@@ -87,11 +77,15 @@ class ContractualExecutionState {
   DateTime get statusLastUpdatedAtUtc => _statusLastUpdatedAtUtc;
   DateTime? get finalizedAtUtc => _finalizedAtUtc;
 
-  // â”€â”€ Domain Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Domain Events ─────────────────────────────────────────
   final List<DomainEvent> _domainEvents = [];
   List<DomainEvent> get domainEvents => UnmodifiableListView(_domainEvents);
 
-  // â”€â”€ Private Constructor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /// Drains all pending domain events. Call after persisting events to
+  /// prevent duplicate writes when the aggregate is reused across ticks.
+  void clearDomainEvents() => _domainEvents.clear();
+
+  // ── Private Constructor ───────────────────────────────────
   ContractualExecutionState._({
     required this.id,
     required this.organizationId,
@@ -114,14 +108,8 @@ class ContractualExecutionState {
        _lastEvaluatedAtUtc = lastEvaluatedAtUtc,
        _statusLastUpdatedAtUtc = statusLastUpdatedAtUtc;
 
-  // â”€â”€ Factory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  /// Creates a new [ContractualExecutionState] in [ExecutionStatus.pending].
-  ///
-  /// Validates the time window invariant.
-  /// Generates a UUID v4 for identity.
-  /// No binding fields are set at creation.
-  ///
-  /// Throws [DomainException] if [windowEndUtc] is not after [windowStartUtc].
+  // ── Factory ───────────────────────────────────────────────
+  /// Creates a new [ContractualExecutionState] in [ExecutionStatus.planned].
   static ContractualExecutionState create({
     required String organizationId,
     required String setId,
@@ -141,11 +129,9 @@ class ContractualExecutionState {
         'windowEndUtc must be strictly after windowStartUtc',
       );
     }
-
     if (contractualValue.cents <= 0) {
       throw const DomainException('contractualValue must be greater than 0');
     }
-
     if (noShowPenaltyBps < 10000) {
       throw const DomainException('noShowPenaltyBps must be >= 10000 (1.0x)');
     }
@@ -167,37 +153,63 @@ class ContractualExecutionState {
       noShowPenaltyBps: noShowPenaltyBps,
       windowStartUtc: windowStartUtc,
       windowEndUtc: windowEndUtc,
-      status: ExecutionStatus.pending,
+      status: ExecutionStatus.planned,
       createdAtUtc: now,
       lastEvaluatedAtUtc: now,
       statusLastUpdatedAtUtc: now,
     );
   }
 
-  // â”€â”€ State Transitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── State Transitions ─────────────────────────────────────
 
-  /// Binds a vehicle to this obligation, marking it as [ExecutionStatus.executed].
+  /// Initiates transit for this obligation.
   ///
-  /// Allowed only when [status] is [ExecutionStatus.pending], [ExecutionStatus.noShow],
-  /// or [ExecutionStatus.evidenceGap].
-  /// Transitions from noShow/evidenceGap represent late-arrival re-evaluations (INV-12).
+  /// Allowed from [ExecutionStatus.planned] only.
+  /// Idempotent: if already [ExecutionStatus.inTransit], no-op (first-wins rule).
+  /// [source]: 'telegram' | 'geofence'
+  void startTransit({required DateTime timestampUtc, required String source}) {
+    if (_status == ExecutionStatus.inTransit) return; // first-wins idempotency
+    if (_status != ExecutionStatus.planned) {
+      throw DomainException(
+        'Cannot call startTransit: current status is $_status '
+        '(only planned allows transition to inTransit)',
+      );
+    }
+    _status = ExecutionStatus.inTransit;
+    _lastEvaluatedAtUtc = timestampUtc;
+    _statusLastUpdatedAtUtc = timestampUtc;
+
+    _domainEvents.add(
+      TransitStartedEvent(
+        organizationId: organizationId,
+        occurredAtUtc: timestampUtc,
+        setId: setId,
+        contractId: contractId,
+        planVersion: planVersion,
+        startedAtUtc: timestampUtc,
+        source: source,
+      ),
+    );
+  }
+
+  /// Binds a vehicle to this obligation, marking it as [ExecutionStatus.completed].
   ///
-  /// Throws [DomainException] if the transition is invalid.
+  /// Allowed from: [planned] (engine auto-dwell), [inTransit] (engine after start),
+  /// [failed] (INV-12 late arrival), [completedWithGaps] (INV-12 upgrade).
+  /// Guard: [completed] and [inhibited] are terminal — throws.
   void bindExecution({
     required String vehicleId,
     required double latitude, // Physical Metric - Double Required
     required double longitude, // Physical Metric - Double Required
     required DateTime timestampUtc,
   }) {
-    if (_status != ExecutionStatus.pending &&
-        _status != ExecutionStatus.noShow &&
-        _status != ExecutionStatus.evidenceGap) {
+    if (_status == ExecutionStatus.completed ||
+        _status == ExecutionStatus.inhibited) {
       throw DomainException(
-        'Cannot call bindExecution: current status is $_status '
-        '(only pending, noShow or evidenceGap allow transitions to executed)',
+        'Cannot call bindExecution: current status is $_status (terminal)',
       );
     }
-    _status = ExecutionStatus.executed;
+    _status = ExecutionStatus.completed;
     _boundVehicleId = vehicleId;
     _bindingTimestampUtc = timestampUtc;
     _bindingLatitude = latitude;
@@ -221,23 +233,24 @@ class ContractualExecutionState {
     );
   }
 
-  /// Marks this obligation as [ExecutionStatus.noShow].
+  /// Marks this obligation as [ExecutionStatus.failed].
   ///
-  /// Allowed only when:
-  /// - [status] == [ExecutionStatus.pending]
-  /// - [nowUtc] is after [windowEndUtc] (window has expired)
-  ///
-  /// Throws [DomainException] if the transition is invalid.
-  void markNoShow(DateTime nowUtc) {
-    _assertPending('markNoShow');
-
-    if (!nowUtc.isAfter(windowEndUtc)) {
-      throw const DomainException(
-        'Cannot mark noShow before the time window has expired',
+  /// Allowed from [planned] or [inTransit].
+  /// Requires [nowUtc] to be after [windowEndUtc].
+  void markFailed(DateTime nowUtc) {
+    if (_status != ExecutionStatus.planned &&
+        _status != ExecutionStatus.inTransit) {
+      throw DomainException(
+        'Cannot call markFailed: current status is $_status '
+        '(only planned or inTransit allow transition to failed)',
       );
     }
-
-    _status = ExecutionStatus.noShow;
+    if (!nowUtc.isAfter(windowEndUtc)) {
+      throw const DomainException(
+        'Cannot mark failed before the time window has expired',
+      );
+    }
+    _status = ExecutionStatus.failed;
     _lastEvaluatedAtUtc = nowUtc;
     _statusLastUpdatedAtUtc = nowUtc;
     _finalizedAtUtc = nowUtc;
@@ -254,26 +267,56 @@ class ContractualExecutionState {
     );
   }
 
-  /// Marks this obligation as [ExecutionStatus.evidenceGap].
+  /// Marks this obligation as [ExecutionStatus.completedWithGaps].
   ///
-  /// Allowed only when [status] == [ExecutionStatus.pending].
-  /// Throws [DomainException] if the transition is invalid.
-  void markEvidenceGap(DateTime nowUtc) {
-    _assertPending('markEvidenceGap');
-
-    _status = ExecutionStatus.evidenceGap;
+  /// Allowed from [inTransit] only (driver used /finish with pending evidence).
+  void completeWithGaps(DateTime nowUtc) {
+    if (_status != ExecutionStatus.inTransit) {
+      throw DomainException(
+        'Cannot call completeWithGaps: current status is $_status '
+        '(only inTransit allows transition to completedWithGaps)',
+      );
+    }
+    _status = ExecutionStatus.completedWithGaps;
     _lastEvaluatedAtUtc = nowUtc;
     _statusLastUpdatedAtUtc = nowUtc;
     _finalizedAtUtc = nowUtc;
 
     _domainEvents.add(
-      EvidenceGapDeclaredEvent(
+      CompletedWithGapsEvent(
         organizationId: organizationId,
         occurredAtUtc: nowUtc,
         setId: setId,
         contractId: contractId,
         planVersion: planVersion,
-        declaredAtUtc: nowUtc,
+        completedAtUtc: nowUtc,
+      ),
+    );
+  }
+
+  /// Suppresses this obligation — [ExecutionStatus.inhibited].
+  ///
+  /// Allowed from any non-terminal state (planned, inTransit, failed, completedWithGaps).
+  /// [completed] and [inhibited] are terminal and cannot be inhibited.
+  void inhibit({required DateTime timestampUtc, required String reason}) {
+    if (_status == ExecutionStatus.completed ||
+        _status == ExecutionStatus.inhibited) {
+      throw DomainException(
+        'Cannot call inhibit: current status is $_status (terminal)',
+      );
+    }
+    _status = ExecutionStatus.inhibited;
+    _statusLastUpdatedAtUtc = timestampUtc;
+    _finalizedAtUtc = timestampUtc;
+
+    _domainEvents.add(
+      ExecutionInhibitedEvent(
+        organizationId: organizationId,
+        occurredAtUtc: timestampUtc,
+        setId: setId,
+        contractId: contractId,
+        planVersion: planVersion,
+        reason: reason,
       ),
     );
   }
@@ -283,21 +326,7 @@ class ContractualExecutionState {
     _lastEvaluatedAtUtc = nowUtc;
   }
 
-  // â”€â”€ Guards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-  void _assertPending(String method) {
-    if (_status != ExecutionStatus.pending) {
-      throw DomainException(
-        'Cannot call $method: current status is $_status '
-        '(only pending allows transitions)',
-      );
-    }
-  }
-
-  /// Reconstitutes a [ContractualExecutionState] from persistence.
-  ///
-  /// Restores the full state of the aggregate, including identity,
-  /// status, and binder evidence. Does NOT emit domain events.
+  // ── Reconstitution ────────────────────────────────────────
   static ContractualExecutionState reconstitute({
     required String id,
     required String organizationId,
@@ -341,18 +370,15 @@ class ContractualExecutionState {
       lastEvaluatedAtUtc: lastEvaluatedAtUtc,
       statusLastUpdatedAtUtc: statusLastUpdatedAtUtc,
     );
-
     state._finalizedAtUtc = finalizedAtUtc;
     state._boundVehicleId = boundVehicleId;
     state._bindingTimestampUtc = bindingTimestampUtc;
     state._bindingLatitude = bindingLatitude;
     state._bindingLongitude = bindingLongitude;
-
     return state;
   }
 
-  // â”€â”€ Identity Equality â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
+  // ── Identity Equality ─────────────────────────────────────
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

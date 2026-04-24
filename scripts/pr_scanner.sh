@@ -222,7 +222,7 @@ else
   while IFS= read -r migration_file; do
     if [[ -f "$migration_file" ]]; then
       DB_HITS=$(grep -niE \
-        "DROP TABLE|DELETE FROM|TRUNCATE|ALTER COLUMN.+TYPE" \
+        "DROP TABLE|DELETE FROM|DELETE\s+FROM|TRUNCATE|ALTER COLUMN.+TYPE|ALTER COLUMN.+SET NOT NULL" \
         "$migration_file" 2>/dev/null \
         | grep -v "pr_scanner: ignore" \
         || true)
