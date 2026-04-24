@@ -197,7 +197,12 @@ BEGIN
   -- Authorize this transaction for test cleanup (scoped to this TX only)
   SET LOCAL vera.authorized_test_cleanup = 'on';
 
-  -- Delete in reverse FK order
+  -- Delete in reverse FK order (Shadow Mode cleanup first)
+  DELETE FROM public.shadow_execution_transitions  WHERE organization_id = p_org_id; -- pr_scanner: ignore
+  DELETE FROM public.shadow_executions             WHERE organization_id = p_org_id; -- pr_scanner: ignore
+  DELETE FROM public.shadow_verdicts               WHERE organization_id = p_org_id; -- pr_scanner: ignore
+
+  -- Telegram evidence chain
   DELETE FROM public.telegram_evidence_links       WHERE organization_id = p_org_id; -- pr_scanner: ignore (test-only SECURITY DEFINER RPC)
   DELETE FROM public.telegram_evidence_metadata    WHERE organization_id = p_org_id; -- pr_scanner: ignore (test-only SECURITY DEFINER RPC)
   DELETE FROM public.telegram_evidence_categories  WHERE organization_id = p_org_id; -- pr_scanner: ignore (test-only SECURITY DEFINER RPC)

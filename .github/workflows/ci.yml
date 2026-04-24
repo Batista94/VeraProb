@@ -235,3 +235,57 @@ jobs:
           name: wasm-build-${{ github.sha }}
           path: build/web/
           retention-days: 3
+
+  chaos-audit:
+    name: Forensic Chaos & Resilience Audit
+    runs-on: ubuntu-latest
+    # Only run on PRs to main to ensure forensic integrity before merge
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    needs: test
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js (for bootstrap)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Bootstrap Forensic Data
+        run: |
+          npm install @supabase/supabase-js
+          node scripts/bootstrap_dev.mjs
+        env:
+          SUPABASE_URL: "http://127.0.0.1:54321"
+
+      - name: Apply Stress Limits (INV-16)
+        run: bash scripts/chaos/apply_stress_limits.sh
+
+      - name: Run Chaos & Resilience Suite
+        run: |
+          # Capture keys dynamically from local stack
+          SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          
+          export SERVICE_ROLE_KEY
+          export SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_URL="http://127.0.0.1:54321"
+          export ORG_ID="00000000-0000-0000-0000-000000000001"
+          export CONTRACT_ID="00000000-0000-0000-0000-ca0000000001"
+          export BOUND_CHAT_ID="908453789"
+          export WEBHOOK_SECRET="VeraProb_Secret_Local_2026"
+          
+          bash scripts/chaos/run_chaos_suite.sh
