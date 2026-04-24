@@ -14,6 +14,7 @@ This document centralizes the instructions and credentials for testing the **For
 ## 2. Local Setup
 
 1. **Serve the Edge Function:**
+
    ```bash
    supabase functions serve telegram-webhook --no-verify-jwt --env-file .env
    ```
@@ -21,16 +22,18 @@ This document centralizes the instructions and credentials for testing the **For
 2. **Environment Variables:**
    Ensure your `.env` has:
    - `TELEGRAM_BOT_TOKEN`: Your real bot token (or a dummy one for simulation).
-   - `SUPABASE_URL`: http://127.0.0.1:54321
+   - `SUPABASE_URL`: <http://127.0.0.1:54321>
    - `SUPABASE_SERVICE_ROLE_KEY`: Your local service role key.
 
 3. **Expose Localhost (Optional - for real Telegram Bot):**
    If you need to test with a real Telegram bot instead of simulated `curl` commands, expose your local server:
+
    ```bash
    npx localtunnel --port 54321
    ```
+
    *Copy the URL provided (e.g., `https://brave-goats-jump.loca.lt`) and set it as your webhook:*
-   `https://api.telegram.org/bot<TOKEN>/setWebhook?url=<LT_URL>/functions/v1/telegram-webhook`
+   `https://api.telegram.org/bot8601559006:AAEU4Pk2fjlFez77FFgIR9c5ivnTarnteNE/setWebhook?url=<SUA_URL_LOCALTUNNEL>/functions/v1/telegram-webhook&secret_token=VeraProb_Secret_Local_2026`
 
 ## 3. Simulation Commands (Webhook)
 
@@ -39,6 +42,7 @@ Use these `curl` commands to simulate Telegram messages being sent to your local
 ### A. Simulate Text Message (Binding Request)
 
 **Bash:**
+
 ```bash
 curl -X POST http://127.0.0.1:54321/functions/v1/telegram-webhook \
 -H "Content-Type: application/json" \
@@ -54,6 +58,7 @@ curl -X POST http://127.0.0.1:54321/functions/v1/telegram-webhook \
 ```
 
 **PowerShell:**
+
 ```powershell
 $unixTime = [int][double]::Parse((Get-Date -UFormat %s))
 
@@ -66,6 +71,7 @@ curl -X POST http://127.0.0.1:54321/functions/v1/telegram-webhook `
 ### B. Simulate Photo Message (Evidence Ingestion)
 
 **Bash:**
+
 ```bash
 curl -X POST http://127.0.0.1:54321/functions/v1/telegram-webhook \
 -H "Content-Type: application/json" \
@@ -84,6 +90,7 @@ curl -X POST http://127.0.0.1:54321/functions/v1/telegram-webhook \
 ```
 
 **PowerShell:**
+
 ```powershell
 # Dica: Para gerar um timestamp válido no PowerShell e salvar em uma variável:
 $unixTime = [int][double]::Parse((Get-Date -UFormat %s))

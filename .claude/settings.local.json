@@ -84,7 +84,9 @@
       "Read(//c/Users/wes_b/AppData/Local/deno/**)",
       "Read(//c/Users/wes_b/.deno/bin/**)",
       "Bash(/c/Users/wes_b/.deno/bin/deno test *)",
-      "Bash(npx deno *)"
+      "Bash(npx deno *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(supabase deno *)"
     ]
   },
   "model": "sonnet"
