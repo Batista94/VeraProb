@@ -50,6 +50,7 @@ class ShadowExecution extends Equatable {
 
   bool get isTerminal =>
       status == ShadowExecutionStatus.reconciled ||
+      status == ShadowExecutionStatus.reconciledAsNewRevenue ||
       status == ShadowExecutionStatus.dismissed;
 
   @override

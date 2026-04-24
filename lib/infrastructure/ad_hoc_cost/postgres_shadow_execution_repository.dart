@@ -96,6 +96,31 @@ class PostgresShadowExecutionRepository extends BasePostgresRepository {
     }
   }
 
+  /// Promotes a shadow to a new ad-hoc billable execution (RECONCILED_AS_NEW_REVENUE).
+  /// Transition audit log is auto-inserted by DB trigger (INV-3/INV-21).
+  Future<void> reconcileAsNewRevenue({
+    required String id,
+    required String organizationId,
+    required String reconciledExecutionId,
+    required String reconciledByUserId,
+    required DateTime atUtc,
+  }) async {
+    try {
+      await client
+          .from('shadow_executions')
+          .update({
+            'status': ShadowExecutionStatus.reconciledAsNewRevenue.dbValue,
+            'reconciled_execution_id': reconciledExecutionId,
+            'reconciled_at_utc': atUtc.toUtc().toIso8601String(), // INV-6
+            'reconciled_by_user_id': reconciledByUserId,
+          })
+          .eq('id', id)
+          .eq('organization_id', organizationId); // INV-1
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'shadow_execution');
+    }
+  }
+
   static ShadowExecution _fromRow(Map<String, dynamic> row) {
     return ShadowExecution(
       id: row['id'] as String,

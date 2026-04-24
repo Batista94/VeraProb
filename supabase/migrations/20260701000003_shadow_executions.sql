@@ -33,8 +33,9 @@ CREATE TABLE IF NOT EXISTS public.shadow_executions (
   counted_from_utc        TIMESTAMPTZ NOT NULL DEFAULT NOW(),      -- DB-set trusted time anchor
   status                  TEXT        NOT NULL DEFAULT 'UNLINKED_SHADOW'
     CONSTRAINT chk_se_status CHECK (
-      status IN ('UNLINKED_SHADOW', 'RECONCILED', 'DISMISSED')
+      status IN ('UNLINKED_SHADOW', 'RECONCILED', 'RECONCILED_AS_NEW_REVENUE', 'DISMISSED')
     ),
+  -- RECONCILED_AS_NEW_REVENUE: no matching planned execution → ad-hoc billing row created
   reconciled_execution_id TEXT,                                    -- set_id of target execution
   reconciled_at_utc       TIMESTAMPTZ,                             -- NULL → timestamp once
   reconciled_by_user_id   UUID,
@@ -68,7 +69,7 @@ BEGIN
     RAISE EXCEPTION 'shadow_executions: dismissed_at_utc is immutable (INV-3)'
       USING ERRCODE = 'P0001';
   END IF;
-  IF OLD.status IN ('RECONCILED', 'DISMISSED') THEN
+  IF OLD.status IN ('RECONCILED', 'RECONCILED_AS_NEW_REVENUE', 'DISMISSED') THEN
     RAISE EXCEPTION 'shadow_executions: terminal status % cannot transition (INV-3)', OLD.status
       USING ERRCODE = 'P0001';
   END IF;
@@ -112,6 +113,34 @@ CREATE TRIGGER trg_set_no_delete
   BEFORE DELETE ON public.shadow_execution_transitions
   FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_update();
 
+-- ── 3b. Auto-log transitions (INV-3, INV-21) ─────────────────────────────────
+-- Trigger fires AFTER UPDATE on shadow_executions to auto-insert a transition
+-- row. This makes it impossible for the application layer to skip the audit log.
+
+CREATE OR REPLACE FUNCTION public.auto_log_shadow_transition()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO shadow_execution_transitions (
+      shadow_id, organization_id, from_status, to_status,
+      transitioned_by, reason
+    ) VALUES (
+      NEW.id, NEW.organization_id, OLD.status, NEW.status,
+      COALESCE(NEW.reconciled_by_user_id, NEW.dismissed_by_user_id),
+      NEW.dismissed_reason
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_auto_log_shadow_transition ON public.shadow_executions;
+CREATE TRIGGER trg_auto_log_shadow_transition
+  AFTER UPDATE ON public.shadow_executions
+  FOR EACH ROW EXECUTE FUNCTION public.auto_log_shadow_transition();
+
 -- ── 4. RLS ────────────────────────────────────────────────────────────────────
 -- Uses app_metadata path (post-20260317000001_rls_jwt_path_unification convention).
 -- SELECT: OPERATOR (OCC triage), AUDITOR (financial audit), TENANT_ADMIN.
@@ -134,9 +163,10 @@ CREATE POLICY se_select_super_admin ON public.shadow_executions
     (auth.jwt() -> 'app_metadata' ->> 'super_admin')::boolean IS TRUE
   );
 
+-- INSERT: service_role only (webhook + reconciliation RPC). service_role bypasses RLS by design.
+-- No INSERT policy needed — absence of policy = deny for authenticated users (INV-22).
+
 DROP POLICY IF EXISTS se_insert_service ON public.shadow_executions;
-CREATE POLICY se_insert_service ON public.shadow_executions
-  FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS se_update_service ON public.shadow_executions;
 CREATE POLICY se_update_service ON public.shadow_executions
@@ -152,9 +182,8 @@ CREATE POLICY set_select_org ON public.shadow_execution_transitions
     AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('TENANT_ADMIN', 'OPERATOR', 'AUDITOR')
   );
 
+-- INSERT: service_role only. No INSERT policy = deny for authenticated (INV-22).
 DROP POLICY IF EXISTS set_insert_service ON public.shadow_execution_transitions;
-CREATE POLICY set_insert_service ON public.shadow_execution_transitions
-  FOR INSERT WITH CHECK (true);
 
 -- ── 5. create_shadow_execution RPC ───────────────────────────────────────────
 -- INV-1/INV-26: Verifies evidence belongs to org before inserting.
