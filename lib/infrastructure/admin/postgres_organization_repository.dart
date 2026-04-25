@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/domain/admin/org_capabilities.dart';
 import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/admin/organization_repository.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
@@ -20,6 +21,11 @@ class PostgresOrganizationRepository
           .eq('id', id)
           .single();
 
+      final rawCaps = data['capabilities'];
+      final capabilities = rawCaps is Map<String, dynamic>
+          ? OrgCapabilities.fromJson(rawCaps)
+          : OrgCapabilities.defaults;
+
       return Organization(
         id: data['id'] as String,
         name: data['name'] as String,
@@ -33,6 +39,8 @@ class PostgresOrganizationRepository
         planType: data['plan_type'] as String?,
         maxVehicles: data['max_vehicles'] as int?,
         maxActiveContracts: data['max_active_contracts'] as int?,
+        organizationType: data['organization_type'] as String?,
+        capabilities: capabilities,
       );
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'organization');
@@ -52,6 +60,8 @@ class PostgresOrganizationRepository
             'timezone': organization.timezone,
             'currency_code': organization.currencyCode,
             'logo_url': organization.logoUrl,
+            'organization_type': organization.organizationType,
+            'capabilities': organization.capabilities.toJson(),
           })
           .eq('id', organization.id);
     } on PostgrestException catch (e) {

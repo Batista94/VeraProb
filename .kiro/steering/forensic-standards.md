@@ -13,7 +13,7 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
 | INV-3 | Ledger Integrity | Financial/Verdict tables are APPEND-ONLY. NO `UPDATE` or `DELETE`. |
 | INV-4 | Money Type | Use `BIGINT` (cents) for DB; `int` for DTOs; `Money` VO for Domain. |
 | INV-5 | BPS Precision | Symmetric Rounding: (cents * bps + 5000) ~/ 10000. Forbid raw truncation. |
-| INV-6 | UTC Mandatory | `DateTime.now().toUtc()` on ONE LINE. Regex-enforced. |
+| INV-6 | UTC Mandatory | TIMESTAMPTZ mandatory DB-wide. PROHIBIT timestamp without time zone. IDateTimeProvider.nowUtc() ALL layers. Device-clock columns MUST DROP DEFAULT (prevent server-clock substitution). clock_drift sealed at ingest (INV-15). |
 | INV-7 | Null Safety | No `dynamic` in application code. Strict types only. |
 | INV-8 | Repo Isolation | Repositories must enforce `organization_id` on ALL read/write ops. |
 | INV-9 | Evidence Sealing | Shaft-256 hashing at ingestion for ALL raw telemetry and files. |

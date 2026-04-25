@@ -61,8 +61,9 @@ class UpdateOrgSettingsHandler {
       name: command.name ?? org.name,
       timezone: command.timezone ?? org.timezone,
       currencyCode: command.currencyCode ?? org.currencyCode,
-      logoUrl:
-          command.logoUrl, // Always allow logo change if authorized to handle
+      logoUrl: command.logoUrl,
+      organizationType: command.organizationType ?? org.organizationType,
+      capabilities: command.capabilities ?? org.capabilities,
     );
 
     // 5. Persist

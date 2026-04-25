@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/projections/providers/audit_filter_provider.dart';
-import 'package:veraprob/state/providers/audit_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/command_center/widgets/roi_guardian_strip.dart';
+import 'package:veraprob/features/admin/presentation/screens/create_execution_dialog.dart';
 import 'package:veraprob/features/shared/mappers/incident_status_ui_mapper.dart';
+import 'package:veraprob/state/providers/audit_providers.dart';
 
 class OperationalAuditScreen extends ConsumerWidget {
   const OperationalAuditScreen({super.key});
@@ -31,26 +33,45 @@ class OperationalAuditScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      // FAB: Nova Viagem — Phase 10 UX/OPS
+      floatingActionButton: FloatingActionButton.extended(
+        icon: const Icon(Icons.add_road_outlined),
+        label: const Text('Nova Viagem'),
+        backgroundColor: VeraProbColors.primary,
+        onPressed: () => showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const CreateExecutionDialog(),
+        ),
+      ),
+      body: Column(
         children: [
-          // Left Side: Dense Table
+          // ROI Guardian strip — Phase 10 SENIOR
+          const RoiGuardianStrip(),
           Expanded(
-            flex: 7,
-            child: Column(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildFilterBar(context, ref),
-                const Divider(height: 1, color: VeraProbColors.border),
-                _buildTableHeader(),
-                const Divider(height: 1, color: VeraProbColors.border),
-                Expanded(child: _buildLogTable(ref)),
+                // Left Side: Dense Table
+                Expanded(
+                  flex: 7,
+                  child: Column(
+                    children: [
+                      _buildFilterBar(context, ref),
+                      const Divider(height: 1, color: VeraProbColors.border),
+                      _buildTableHeader(),
+                      const Divider(height: 1, color: VeraProbColors.border),
+                      Expanded(child: _buildLogTable(ref)),
+                    ],
+                  ),
+                ),
+
+                // Right Side: Master/Detail Panel
+                const VerticalDivider(width: 1, color: VeraProbColors.border),
+                const Expanded(flex: 3, child: _AuditSidePanel()),
               ],
             ),
           ),
-
-          // Right Side: Master/Detail Panel
-          const VerticalDivider(width: 1, color: VeraProbColors.border),
-          const Expanded(flex: 3, child: _AuditSidePanel()),
         ],
       ),
     );

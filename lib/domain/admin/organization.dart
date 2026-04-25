@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:veraprob/domain/admin/org_capabilities.dart';
 
 /// Represents an organization (tenant) in the veraprob system.
 class Organization extends Equatable {
@@ -17,6 +18,10 @@ class Organization extends Equatable {
   final int? maxVehicles;
   final int? maxActiveContracts;
 
+  // Phase 10: cosmetic label + operational capability flags (INV-14: agnostic flags, not enum)
+  final String? organizationType;
+  final OrgCapabilities capabilities;
+
   const Organization({
     required this.id,
     required this.name,
@@ -30,6 +35,8 @@ class Organization extends Equatable {
     this.planType,
     this.maxVehicles,
     this.maxActiveContracts,
+    this.organizationType,
+    this.capabilities = OrgCapabilities.defaults,
   });
 
   Organization copyWith({
@@ -42,6 +49,8 @@ class Organization extends Equatable {
     String? planType,
     int? maxVehicles,
     int? maxActiveContracts,
+    String? organizationType,
+    OrgCapabilities? capabilities,
   }) {
     return Organization(
       id: id,
@@ -56,6 +65,8 @@ class Organization extends Equatable {
       planType: planType ?? this.planType,
       maxVehicles: maxVehicles ?? this.maxVehicles,
       maxActiveContracts: maxActiveContracts ?? this.maxActiveContracts,
+      organizationType: organizationType ?? this.organizationType,
+      capabilities: capabilities ?? this.capabilities,
     );
   }
 
@@ -73,5 +84,7 @@ class Organization extends Equatable {
     planType,
     maxVehicles,
     maxActiveContracts,
+    organizationType,
+    capabilities,
   ];
 }

@@ -127,6 +127,93 @@ const CATEGORY_MAP: Record<string, { emoji: string; label: string }> = {
 
 const TRANSIT_TRIGGER_CATEGORIES = new Set(["lacre", "chk_saida", "carregamento"]);
 
+// ── Org Capabilities (Phase 10 — INV-14: agnostic flags, not enum) ───────────
+
+interface OrgCapabilities {
+  allows_sealing:     boolean;
+  allows_loading:     boolean;
+  allows_cargo_check: boolean;
+  allows_incident:    boolean;
+  allows_doc:         boolean;
+  smart_classify:     boolean;
+}
+
+const DEFAULT_CAPABILITIES: OrgCapabilities = {
+  allows_sealing:     true,
+  allows_loading:     true,
+  allows_cargo_check: true,
+  allows_incident:    true,
+  allows_doc:         true,
+  smart_classify:     true,
+};
+
+function buildCategoryMenu(
+  evidenceId: string,
+  cap: OrgCapabilities,
+): { text: string; callback_data: string }[][] {
+  const rows: { text: string; callback_data: string }[][] = [];
+
+  // Row 1: always visible
+  rows.push([
+    { text: "📸 Estado / Visual", callback_data: `tg_tag:${evidenceId}:estado` },
+    { text: "🔍 Outros / Info",   callback_data: `tg_tag:${evidenceId}:outros` },
+  ]);
+  // Row 2: incident + doc (conditional)
+  const row2: { text: string; callback_data: string }[] = [];
+  if (cap.allows_incident) row2.push({ text: "🚨 Incidente / SLA", callback_data: `tg_tag:${evidenceId}:incidente` });
+  if (cap.allows_doc)      row2.push({ text: "📑 Documental / NF", callback_data: `tg_tag:${evidenceId}:doc` });
+  if (row2.length) rows.push(row2);
+  // Row 3: operational — always visible
+  rows.push([{ text: "🛠️ Operacional", callback_data: `tg_tag:${evidenceId}:oper` }]);
+  // Row 4+: sealing/loading (conditional)
+  if (cap.allows_sealing) {
+    rows.push([
+      { text: "▶️🔒 Lacre",           callback_data: `tg_tag:${evidenceId}:lacre` },
+      { text: "▶️📋 Checklist Saída", callback_data: `tg_tag:${evidenceId}:chk_saida` },
+    ]);
+  }
+  if (cap.allows_loading) {
+    rows.push([{ text: "▶️📦 Carregamento", callback_data: `tg_tag:${evidenceId}:carregamento` }]);
+  }
+  return rows;
+}
+
+// ── Haversine geofence (INV-18: no PostGIS; GPS from EXIF only) ──────────────
+
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6_371_000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ── Ledger helper (INV-3: APPEND-ONLY) ───────────────────────────────────────
+
+async function insertAuditLedger(
+  supabase: Supabase,
+  type: string,
+  setId: string | null,
+  contractId: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await supabase.from("sla_audit_ledger").insert({
+      type,
+      set_id: setId,
+      contract_id: contractId,
+      plan_version: 1,
+      payload,
+      occurred_at_utc: new Date().toISOString(),
+    });
+  } catch (e) {
+    // Non-blocking — ledger failure never affects evidence processing
+    console.warn(`[telegram-webhook] ledger insert failed type=${type}:`, e);
+  }
+}
+
 const LGPD_TERMS = `
 ⚖️ <b>Termos de Uso e Privacidade (LGPD)</b>
 
@@ -323,11 +410,81 @@ Deno.serve(async (req: Request): Promise<Response> => {
                   `✅ Classificado como: ${cat.emoji} <b>${cat.label}</b>${transitSuffix}`,
                 );
               }
-              await sendMessageWithKeyboard(botToken, cbChatId,
-                "📋 Quer verificar o checklist de conformidade da sua rota?",
-                [[{ text: "📋 Ver Checklist Atual", callback_data: "tg_status" }]]);
+
+              // Auto-suggest finish if execution reaches 100% compliance (Phase 10 — MAVERICK)
+              let suggestedFinish = false;
+              try {
+                const { data: evidRow } = await supabase
+                  .from("telegram_evidence_uploads")
+                  .select("linked_set_id")
+                  .eq("id", evidenceId)
+                  .eq("organization_id", cbBinding.organization_id)
+                  .maybeSingle();
+                const taggedSetId = evidRow?.linked_set_id as string | null;
+                if (taggedSetId) {
+                  const { data: compliance } = await supabase.rpc("check_execution_compliance", {
+                    p_org_id: cbBinding.organization_id,
+                    p_set_id: taggedSetId,
+                  });
+                  if (compliance === true) {
+                    await sendMessageWithKeyboard(botToken, cbChatId,
+                      "✅ <b>Viagem em conformidade!</b>\nTodas as evidências obrigatórias recebidas.",
+                      [[
+                        { text: "📋 Ver Resumo",    callback_data: "tg_status" },
+                        { text: "🏁 Encerrar Viagem", callback_data: `tg_finish_confirm:${taggedSetId}` },
+                      ]],
+                    );
+                    // INV-3: append-only ledger
+                    await insertAuditLedger(supabase, "BOT_AUTO_SUGGESTED_FINISH", taggedSetId, "TELEGRAM_BOT", {
+                      trigger: "compliance_100pct", org_id: cbBinding.organization_id,
+                    });
+                    suggestedFinish = true;
+                  }
+                }
+              } catch (e) {
+                console.warn(`[telegram-webhook] auto-suggest finish failed correlationId=${correlationId}:`, e);
+              }
+
+              if (!suggestedFinish) {
+                await sendMessageWithKeyboard(botToken, cbChatId,
+                  "📋 Quer verificar o checklist de conformidade da sua rota?",
+                  [[{ text: "📋 Ver Checklist Atual", callback_data: "tg_status" }]]);
+              }
             }
           }
+        }
+      }
+      // ── tg_alt_cat:{evidenceId} — Driver overrides auto-classify suggestion ──
+      else if (cb.data?.startsWith("tg_alt_cat:")) {
+        const altEvidenceId = cb.data.substring(11); // "tg_alt_cat:".length === 11
+        const altBinding = await getActiveBinding(supabase, cbChatId);
+        if (!altBinding) {
+          await answerCallbackQuery(botToken, cb.id, "⚠️ Chat não vinculado.");
+        } else {
+          // Load capabilities to show filtered menu
+          let altCaps: OrgCapabilities = DEFAULT_CAPABILITIES;
+          try {
+            const { data: orgRow } = await supabase
+              .from("organizations")
+              .select("capabilities")
+              .eq("id", altBinding.organization_id)
+              .maybeSingle();
+            if (orgRow?.capabilities && typeof orgRow.capabilities === "object") {
+              altCaps = { ...DEFAULT_CAPABILITIES, ...(orgRow.capabilities as Partial<OrgCapabilities>) };
+            }
+          } catch { /* use defaults */ }
+
+          // Clear the pending suggestion so pg_cron won't auto-seal it
+          await supabase.from("telegram_evidence_uploads").update({
+            suggested_category: null,
+            suggestion_expires_at_utc: null,
+          }).eq("id", altEvidenceId).eq("organization_id", altBinding.organization_id);
+
+          await answerCallbackQuery(botToken, cb.id, "✏️ Escolha a categoria.");
+          await sendMessageWithKeyboard(botToken, cbChatId,
+            "🏷️ <b>Selecione a categoria correta:</b>",
+            buildCategoryMenu(altEvidenceId, altCaps),
+          );
         }
       }
       // ── tg_lnk_skip — Driver chose not to link ──────────────────────────
@@ -400,26 +557,60 @@ Deno.serve(async (req: Request): Promise<Response> => {
           await handleStatusCheck(supabase, botToken, cbChatId, cbBinding, correlationId, "tg_status_button");
         }
       }
-      // ── tg_finish_confirm:{set_id} — Driver confirms finish with gaps ────
+      // ── tg_finish_confirm:{set_id} — Driver confirms finish (may have gaps) ─
       else if (cb.data?.startsWith("tg_finish_confirm:")) {
         const setId = cb.data.substring(18); // "tg_finish_confirm:".length === 18
         const cbBinding = await getActiveBinding(supabase, cbChatId);
         if (!cbBinding) {
           await answerCallbackQuery(botToken, cb.id, "⚠️ Chat não vinculado.");
         } else {
-          // Log forced completion with gaps (forensic negligence audit)
+          // Check if finish has gaps (forced completion)
+          let hasGaps = false;
+          try {
+            const { data: compliance } = await supabase.rpc("check_execution_compliance", {
+              p_org_id: cbBinding.organization_id,
+              p_set_id: setId,
+            });
+            hasGaps = compliance !== true;
+          } catch { hasGaps = false; }
+
+          // Log forced completion — forensic negligence audit (INV-3)
           supabase.from("telegram_status_queries").insert({
             organization_id: cbBinding.organization_id,
             driver_id: cbBinding.driver_id,
             chat_id: cbChatId,
             set_id: setId,
-            compliance_snapshot: { query_type: "finish_forced", forced_completion_with_gaps: true },
+            compliance_snapshot: { query_type: "finish_forced", forced_completion_with_gaps: hasGaps },
           }).then(() => {}, () => {});
+
+          if (hasGaps) {
+            // INV-3: CRITICAL alert — operator must act (Silent OCC Risk Radar, Phase 10)
+            supabase.from("operational_alerts").insert({
+              organization_id: cbBinding.organization_id,
+              entity_id: setId,
+              contract_id: setId,
+              alert_type: "IGNORED_PENDING_FINISH_ATTEMPT",
+              severity: "CRITICAL",
+              status: "ACTIVE",
+              source: "telegram",
+              triggering_event_id: correlationId,
+              context: {
+                driver_id: cbBinding.driver_id, chat_id: cbChatId, set_id: setId,
+                correlation_id: correlationId,
+              },
+            }).then(() => {}, () => {});
+            // Ledger entry (INV-3)
+            await insertAuditLedger(supabase, "IGNORED_PENDING_FINISH_ATTEMPT", setId, setId, {
+              driver_id: cbBinding.driver_id, org_id: cbBinding.organization_id, has_gaps: true,
+            });
+          }
 
           await answerCallbackQuery(botToken, cb.id, "✅ Encerrado.");
           if (cb.message?.message_id) {
             await editMessageText(botToken, cbChatId, cb.message.message_id,
-              "✅ <b>Rota encerrada.</b>\n⚠️ Evidências pendentes foram registradas no sistema.");
+              hasGaps
+                ? "✅ <b>Rota encerrada.</b>\n⚠️ Evidências pendentes foram registradas no sistema."
+                : "✅ <b>Rota encerrada.</b>\n🔐 Todas as evidências confirmadas.");
           }
         }
       }
@@ -660,6 +851,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
       [[{ text: "❓ Ajuda", callback_data: "help" }]],
     );
     return new Response("OK", { status: 200 });
+  }
+
+  // 6b.post: Load org capabilities — determines category menu + smart_classify gate (INV-14).
+  //          NULL in DB defaults to all-true (safe migration, no client breakage).
+  let capabilities: OrgCapabilities = DEFAULT_CAPABILITIES;
+  try {
+    const { data: orgRow } = await supabase
+      .from("organizations")
+      .select("capabilities")
+      .eq("id", binding.organization_id)
+      .maybeSingle();
+    if (orgRow?.capabilities && typeof orgRow.capabilities === "object") {
+      capabilities = { ...DEFAULT_CAPABILITIES, ...(orgRow.capabilities as Partial<OrgCapabilities>) };
+    }
+  } catch (e) {
+    console.warn(`[telegram-webhook] capabilities load failed, using defaults correlationId=${correlationId}:`, e);
   }
 
   // 6c. Pre-download size check.
@@ -903,35 +1110,78 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // 6n. Menu Pai Universal: category tagging (fire-and-forget, never blocks evidence).
-    //     Sent as a SEPARATE message so the forensic receipt above stays clean.
-    //     callback_data format: tg_tag:{UUID}:{key} — max 50 bytes, within 64-byte limit.
-    // 6n. Menu Pai Universal: 8 categories (5 rows). ▶️ prefix = auto-starts transit.
-    //     callback_data: tg_tag:{UUID}:{key} — max 53 bytes (chk_saida), within 64-byte limit.
-    await sendMessageWithKeyboard(
-      botToken, chatId,
-      "🏷️ <b>Como você classifica esta evidência?</b>",
-      [
-        [
-          { text: "📸 Estado / Visual", callback_data: `tg_tag:${evidenceId}:estado` },
-          { text: "📑 Documental / NF", callback_data: `tg_tag:${evidenceId}:doc` },
-        ],
-        [
-          { text: "🛠️ Operacional", callback_data: `tg_tag:${evidenceId}:oper` },
-          { text: "🚨 Incidente / SLA", callback_data: `tg_tag:${evidenceId}:incidente` },
-        ],
-        [
-          { text: "🔍 Outros / Info", callback_data: `tg_tag:${evidenceId}:outros` },
-        ],
-        [
-          { text: "▶️🔒 Lacre", callback_data: `tg_tag:${evidenceId}:lacre` },
-          { text: "▶️📋 Checklist Saída", callback_data: `tg_tag:${evidenceId}:chk_saida` },
-        ],
-        [
-          { text: "▶️📦 Carregamento", callback_data: `tg_tag:${evidenceId}:carregamento` },
-        ],
-      ],
-    );
+    // 6n. Smart auto-classify via GPS (EXIF) + geofence (INV-18: EXIF only, no Telegram GPS).
+    //     If suggestion found: store in DB + send feedback with [Alterar] button.
+    //     If no GPS or smart_classify disabled: fall through to standard menu.
+    let autoClassified = false;
+    if (capabilities.smart_classify && exifData?.gps_latitude != null && exifData?.gps_longitude != null && linkedSetId) {
+      try {
+        const { data: execRow } = await supabase
+          .from("execution_states")
+          .select("origin_zone_id, destination_zone_id")
+          .eq("set_id", linkedSetId)
+          .eq("organization_id", binding.organization_id)
+          .maybeSingle();
+
+        if (execRow) {
+          let originZone: { latitude: number; longitude: number; radius_meters: number } | null = null;
+          let destZone: { latitude: number; longitude: number; radius_meters: number } | null = null;
+
+          if (execRow.origin_zone_id) {
+            const { data: oz } = await supabase
+              .from("operational_zones")
+              .select("latitude, longitude, radius_meters")
+              .eq("id", execRow.origin_zone_id)
+              .maybeSingle();
+            originZone = oz ?? null;
+          }
+          if (execRow.destination_zone_id) {
+            const { data: dz } = await supabase
+              .from("operational_zones")
+              .select("latitude, longitude, radius_meters")
+              .eq("id", execRow.destination_zone_id)
+              .maybeSingle();
+            destZone = dz ?? null;
+          }
+
+          let suggested: string | null = null;
+          if (originZone && haversineMeters(exifData.gps_latitude!, exifData.gps_longitude!, originZone.latitude, originZone.longitude) <= originZone.radius_meters) {
+            suggested = "carregamento";
+          } else if (destZone && haversineMeters(exifData.gps_latitude!, exifData.gps_longitude!, destZone.latitude, destZone.longitude) <= destZone.radius_meters) {
+            suggested = "lacre";
+          }
+
+          if (suggested && capabilities[`allows_${suggested === "lacre" ? "sealing" : "loading"}` as keyof OrgCapabilities] !== false) {
+            const expiresAt = new Date(Date.now() + 30_000).toISOString(); // 30s window
+            await supabase.from("telegram_evidence_uploads").update({
+              suggested_category: suggested,
+              suggestion_expires_at_utc: expiresAt,
+            }).eq("id", evidenceId);
+
+            const catLabel = CATEGORY_MAP[suggested]?.label ?? suggested;
+            await sendMessageWithKeyboard(botToken, chatId,
+              `🤖 <b>Classificação sugerida:</b> ${CATEGORY_MAP[suggested]?.emoji} <b>${catLabel}</b>\n` +
+              `<i>Selada automaticamente em 30s. Toque para alterar.</i>`,
+              [[{ text: "✏️ Alterar Classificação", callback_data: `tg_alt_cat:${evidenceId}` }]],
+            );
+            autoClassified = true;
+          }
+        }
+      } catch (e) {
+        console.warn(`[telegram-webhook] auto-classify failed correlationId=${correlationId}:`, e);
+      }
+    }
+
+    // 6n. Menu Pai Universal: category tagging — filtered by org capabilities (Phase 10).
+    //     Sent as SEPARATE message. callback_data: tg_tag:{UUID}:{key} (max 53 bytes).
+    //     Skipped if GPS auto-classify already suggested a category.
+    if (!autoClassified) {
+      await sendMessageWithKeyboard(
+        botToken, chatId,
+        "🏷️ <b>Como você classifica esta evidência?</b>",
+        buildCategoryMenu(evidenceId, capabilities),
+      );
+    }
   } catch (e) {
     console.error(`[telegram-webhook] evidence processing error correlationId=${correlationId}:`, e);
     await sendMessageWithKeyboard(botToken, chatId, "Erro ao processar evidência. Tente novamente.");
@@ -1096,6 +1346,15 @@ async function fireFraudAlert(
         driver_id: driverId,
         chat_id: chatId,
       },
+    });
+    // INV-3: stealth ledger entry — operator-only; driver never sees this (Silent Judge, Phase 10)
+    await insertAuditLedger(supabase, "STEALTH_FRAUD_DETECTED", null, "POTENTIAL_TIME_FRAUD", {
+      alert_type: "POTENTIAL_TIME_FRAUD",
+      clock_drift_seconds: driftSeconds,
+      evidence_id: evidenceId,
+      driver_id: driverId,
+      org_id: orgId,
+      correlation_id: correlationId,
     });
   } catch (e) {
     console.warn(`[telegram-webhook] fraud alert insert failed correlationId=${correlationId}:`, e);

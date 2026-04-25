@@ -1,47 +1,12 @@
 {
     "name": "senior-engineer",
     "description": "Implementation authority for Flutter, Riverpod, and Supabase.",
+    "prompt": "file://../../.claude/agents/senior-engineer.md",
+    "tools": ["@builtin"],
+    "allowedTools": ["@builtin"],
     "resources": [
-        "file://.kiro/steering/forensic-standards.md",
-        "file://.kiro/powers/supabase.md",
-        "file://.kiro/powers/iot-chaos.md",
-        "file://.claude/agents/senior-engineer.md",
-        "file://CLAUDE.md"
-    ],
-    "model": "claude-3-5-sonnet-latest",
-    "tools": [
-        "read",
-        "write",
-        "shell",
-        "grep",
-        "glob",
-        "code",
-        "aws",
-        "web_search",
-        "web_fetch",
-        "knowledge",
-        "use_subagent",
-        "session_settings",
-        "introspect",
-        "dummy",
-        "@builtin"
-    ],
-    "allowedTools": [
-        "read",
-        "write",
-        "shell",
-        "grep",
-        "glob",
-        "code",
-        "aws",
-        "web_search",
-        "web_fetch",
-        "knowledge",
-        "use_subagent",
-        "session_settings",
-        "introspect",
-        "dummy",
-        "@builtin"
-    ],
-    "prompt": "You are the senior-engineer. Follow the core protocols and forensic invariants strictly. Your specific persona rules are loaded as resources."
+        "file://../../.kiro/steering/forensic-standards.md",
+        "file://../../CLAUDE.md",
+        "skill://.kiro/skills/**/SKILL.md"
+    ]
 }

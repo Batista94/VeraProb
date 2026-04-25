@@ -10,7 +10,7 @@
 --
 -- INV-1:  org_id validated inside RPC via SECURITY DEFINER + JWT check.
 -- INV-3:  No DELETE. Evidence rows preserved. Ledger append-only.
--- INV-6:  archived_at_utc is TIMESTAMPTZ. No timestamp without time zone.
+-- INV-6:  archived_at_utc is TIMESTAMPTZ (UTC mandatory — bare timestamp prohibited).
 -- INV-10: Raises P0003 if driver not found in org (INV-26: 404 parity).
 -- INV-22: Tenant-A cannot archive Tenant-B's driver.
 -- =============================================================================

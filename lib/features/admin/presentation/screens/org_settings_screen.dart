@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/domain/admin/org_capabilities.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/application/admin/update_org_settings_command.dart';
@@ -20,7 +21,9 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
   final _timezoneController = TextEditingController();
   final _currencyController = TextEditingController();
   final _logoUrlController = TextEditingController();
+  final _orgTypeController = TextEditingController();
 
+  OrgCapabilities _capabilities = OrgCapabilities.defaults;
   bool _isSaving = false;
 
   @override
@@ -29,6 +32,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
     _timezoneController.dispose();
     _currencyController.dispose();
     _logoUrlController.dispose();
+    _orgTypeController.dispose();
     super.dispose();
   }
 
@@ -89,6 +93,8 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                     _timezoneController.text = org.timezone;
                     _currencyController.text = org.currencyCode;
                     _logoUrlController.text = org.logoUrl ?? '';
+                    _orgTypeController.text = org.organizationType ?? '';
+                    _capabilities = org.capabilities;
                   }
 
                   return Form(
@@ -158,7 +164,95 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                                     'Link para imagem SVG ou PNG da marca.',
                               ),
                             ),
-                            const SizedBox(height: 48),
+                            const SizedBox(height: 24),
+                            TextFormField(
+                              controller: _orgTypeController,
+                              decoration: const InputDecoration(
+                                labelText: 'Tipo de Operação (cosmético)',
+                                prefixIcon: Icon(Icons.label_outline, size: 20),
+                                helperText:
+                                    'Rótulo visual. Ex: CARGO, PASSENGER, URBAN_LOGISTICS. Não afeta regras do motor.',
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            // ── Capacidades Operacionais (Phase 10 — INV-14) ──
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.tune_outlined,
+                                  size: 18,
+                                  color: VeraProbColors.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Capacidades Operacionais',
+                                  style: VeraProbTypography.sectionTitle
+                                      .copyWith(fontSize: 14),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'Controla quais categorias de evidência aparecem no bot Telegram para motoristas desta organização.',
+                              style: VeraProbTypography.bodyMedium.copyWith(
+                                color: VeraProbColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _CapabilityTile(
+                              title: 'Lacre & Checklist Saída',
+                              subtitle:
+                                  'Categorias: lacre, chk_saida. Auto-inicia trânsito.',
+                              value: _capabilities.allowsSealing,
+                              onChanged: (v) => setState(
+                                () => _capabilities = _capabilities.copyWith(
+                                  allowsSealing: v,
+                                ),
+                              ),
+                            ),
+                            _CapabilityTile(
+                              title: 'Carregamento',
+                              subtitle:
+                                  'Categoria: carregamento. Auto-inicia trânsito.',
+                              value: _capabilities.allowsLoading,
+                              onChanged: (v) => setState(
+                                () => _capabilities = _capabilities.copyWith(
+                                  allowsLoading: v,
+                                ),
+                              ),
+                            ),
+                            _CapabilityTile(
+                              title: 'Incidente / SLA',
+                              subtitle: 'Categoria: incidente.',
+                              value: _capabilities.allowsIncident,
+                              onChanged: (v) => setState(
+                                () => _capabilities = _capabilities.copyWith(
+                                  allowsIncident: v,
+                                ),
+                              ),
+                            ),
+                            _CapabilityTile(
+                              title: 'Documental / NF',
+                              subtitle: 'Categoria: doc.',
+                              value: _capabilities.allowsDoc,
+                              onChanged: (v) => setState(
+                                () => _capabilities = _capabilities.copyWith(
+                                  allowsDoc: v,
+                                ),
+                              ),
+                            ),
+                            _CapabilityTile(
+                              title: 'Auto-Classificação por GPS',
+                              subtitle:
+                                  'Classifica foto automaticamente pelo EXIF GPS vs. zonas operacionais.',
+                              value: _capabilities.smartClassify,
+                              onChanged: (v) => setState(
+                                () => _capabilities = _capabilities.copyWith(
+                                  smartClassify: v,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
                             SizedBox(
                               width: double.infinity,
                               height: 48,
@@ -213,6 +307,10 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
         logoUrl: _logoUrlController.text.trim().isEmpty
             ? null
             : _logoUrlController.text.trim(),
+        organizationType: _orgTypeController.text.trim().isEmpty
+            ? null
+            : _orgTypeController.text.trim(),
+        capabilities: _capabilities,
         sessionId: sessionId,
       );
 
@@ -239,5 +337,38 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+}
+
+class _CapabilityTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _CapabilityTile({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      title: Text(title, style: VeraProbTypography.bodyMedium),
+      subtitle: Text(
+        subtitle,
+        style: VeraProbTypography.bodyMedium.copyWith(
+          color: VeraProbColors.textSecondary,
+          fontSize: 11,
+        ),
+      ),
+      value: value,
+      onChanged: onChanged,
+      activeThumbColor: VeraProbColors.primary,
+    );
   }
 }

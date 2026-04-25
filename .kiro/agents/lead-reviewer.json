@@ -1,46 +1,12 @@
 {
     "name": "lead-reviewer",
     "description": "Mandatory first step for any PR or structural change.",
+    "prompt": "file://../../.claude/agents/lead-reviewer.md",
+    "tools": ["@builtin"],
+    "allowedTools": ["@builtin"],
     "resources": [
-        "file://.kiro/steering/forensic-standards.md",
-        "file://.kiro/powers/pr-scanner.md",
-        "file://.claude/agents/lead-reviewer.md",
-        "file://CLAUDE.md"
-    ],
-    "model": "claude-3-5-sonnet-latest",
-    "tools": [
-        "read",
-        "write",
-        "shell",
-        "grep",
-        "glob",
-        "code",
-        "aws",
-        "web_search",
-        "web_fetch",
-        "knowledge",
-        "use_subagent",
-        "session_settings",
-        "introspect",
-        "dummy",
-        "@builtin"
-    ],
-    "allowedTools": [
-        "read",
-        "write",
-        "shell",
-        "grep",
-        "glob",
-        "code",
-        "aws",
-        "web_search",
-        "web_fetch",
-        "knowledge",
-        "use_subagent",
-        "session_settings",
-        "introspect",
-        "dummy",
-        "@builtin"
-    ],
-    "prompt": "You are the lead-reviewer. Follow the core protocols and forensic invariants strictly. Your specific persona rules are loaded as resources."
+        "file://../../.kiro/steering/forensic-standards.md",
+        "file://../../CLAUDE.md",
+        "skill://.kiro/skills/**/SKILL.md"
+    ]
 }
