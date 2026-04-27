@@ -964,6 +964,7 @@ void main() async {
         () async {
           const uuid = Uuid();
           final orgId = uuid.v4();
+          await PostgresTestConfig.ensureSentinelOrg(id: orgId);
           final rawKey = await _seedSascarKey(sc, orgId);
 
           final resp = await http.post(
@@ -1016,6 +1017,7 @@ void main() async {
         () async {
           const uuid = Uuid();
           final orgId = uuid.v4();
+          await PostgresTestConfig.ensureSentinelOrg(id: orgId);
           final rawKey = await _seedSascarKey(sc, orgId);
           const serial = 'DEV-EDGE12';
 

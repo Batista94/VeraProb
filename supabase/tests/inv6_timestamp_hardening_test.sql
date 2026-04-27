@@ -30,11 +30,14 @@ SELECT is(
 -- ── Test 3: INSERT without telegram_message_date fails ────────────────────────
 SELECT throws_ok(
   $$INSERT INTO telegram_evidence_uploads (
-    id, organization_id, chat_id, telegram_user_id, file_type, storage_path
+    id, organization_id, driver_id, chat_id, telegram_message_id,
+    file_name, forensic_hash, storage_path
   ) VALUES (
     gen_random_uuid(),
     '00000000-0000-0000-0000-000000000001',
-    1, 1, 'photo', '/test'
+    '00000000-0000-0000-0000-000000000001',
+    1, 1, 'test.jpg',
+    repeat('a', 64), '/test'
   )$$,
   '23502', -- NOT NULL violation error code
   NULL,

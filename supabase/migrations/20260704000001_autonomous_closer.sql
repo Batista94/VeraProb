@@ -23,6 +23,9 @@
 
 SET client_min_messages TO 'WARNING';
 
+-- PostGIS required for ST_MakePoint / ST_Distance / geography casts.
+CREATE EXTENSION IF NOT EXISTS postgis SCHEMA public;
+
 -- ── Part 1: Schema ────────────────────────────────────────────────────────────
 
 -- C3: actor columns on sla_audit_ledger (service_role calls have auth.uid()=NULL)
@@ -46,7 +49,7 @@ COMMENT ON COLUMN public.execution_states.destination_zone_entered_at_utc IS
 -- C2: GIST index for PostGIS spatial queries on operational_zones.
 CREATE INDEX IF NOT EXISTS idx_operational_zones_geog
   ON public.operational_zones USING GIST (
-    ST_MakePoint(longitude, latitude)::geography
+    CAST(ST_MakePoint(longitude, latitude) AS geography)
   );
 
 -- C4: ingestion_alerts — operator-visible INV-6/INV-10 violations from ingest functions.

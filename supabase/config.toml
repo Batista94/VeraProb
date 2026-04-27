@@ -79,6 +79,14 @@ enabled    = true
 policy     = "oneshot"
 inspector_port = 8083
 
+# ── Per-function overrides ──────────────────────────────────────────────────
+# ingest-sascar uses its own API key auth (provider_api_keys table lookup),
+# not Supabase JWT. Disable gateway JWT verification so the raw Bearer token
+# reaches the function handler (INV-17).
+[functions.ingest-sascar]
+verify_jwt = false
+
+
 [analytics]
 enabled          = false
 port             = 54327

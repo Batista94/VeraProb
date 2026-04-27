@@ -199,6 +199,8 @@ async function insertAuditLedger(
   setId: string | null,
   contractId: string,
   payload: Record<string, unknown>,
+  actorType: "system" | "user" | "admin" = "system",
+  actorId: string | null = null,
 ): Promise<void> {
   try {
     const payloadHmac = await signPayload(payload); // INV-31
@@ -210,6 +212,8 @@ async function insertAuditLedger(
       payload,
       occurred_at_utc: new Date().toISOString(),
       payload_hmac: payloadHmac,
+      actor_type: actorType,
+      actor_id: actorId,
     });
   } catch (e) {
     // Non-blocking — ledger failure never affects evidence processing
@@ -609,10 +613,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
                 correlation_id: correlationId,
               },
             }).then(() => {}, () => {});
-            // Ledger entry (INV-3)
+            // Ledger entry (INV-3): driver-initiated action — actor_type='user'
             await insertAuditLedger(supabase, "IGNORED_PENDING_FINISH_ATTEMPT", setId, setId, {
               driver_id: cbBinding.driver_id, org_id: cbBinding.organization_id, has_gaps: true,
-            });
+            }, "user", cbBinding.driver_id);
           }
 
           await answerCallbackQuery(botToken, cb.id, "✅ Encerrado.");
