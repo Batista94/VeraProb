@@ -9,6 +9,7 @@ import 'package:veraprob/features/admin/presentation/command_center/widgets/roi_
 import 'package:veraprob/features/admin/presentation/screens/create_execution_dialog.dart';
 import 'package:veraprob/features/shared/mappers/incident_status_ui_mapper.dart';
 import 'package:veraprob/state/providers/audit_providers.dart';
+import 'package:veraprob/state/providers/shadow_providers.dart';
 
 class OperationalAuditScreen extends ConsumerWidget {
   const OperationalAuditScreen({super.key});

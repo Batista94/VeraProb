@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:veraprob/application/ad_hoc_cost/shadow_execution_summary.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/ad_hoc_cost/shadow_execution.dart';
 import 'package:veraprob/state/providers/shadow_providers.dart';
 
 // ── Widget ────────────────────────────────────────────────────────────────────
@@ -60,7 +60,7 @@ class OrphanTriageTab extends ConsumerWidget {
 }
 
 class _ShadowCard extends ConsumerWidget {
-  final ShadowExecution shadow;
+  final ShadowExecutionSummary shadow;
   const _ShadowCard({required this.shadow});
 
   @override

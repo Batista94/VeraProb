@@ -6,6 +6,7 @@ import 'package:veraprob/application/admin/invitation_command_service.dart';
 import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/application/admin/remove_member_handler.dart';
 import 'package:veraprob/application/admin/revoke_invitation_handler.dart';
+import 'package:veraprob/application/admin/create_execution_handler.dart';
 import 'package:veraprob/application/admin/update_org_settings_handler.dart';
 import 'package:veraprob/application/admin/user_management_command_service.dart';
 import 'package:veraprob/domain/admin/data_seeding_repository.dart';
@@ -131,6 +132,13 @@ final updateOrgSettingsHandlerProvider = Provider<UpdateOrgSettingsHandler>((
   return UpdateOrgSettingsHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(organizationRepositoryProvider),
+  );
+});
+
+final createExecutionHandlerProvider = Provider<CreateExecutionHandler>((ref) {
+  return CreateExecutionHandler(
+    client: ref.watch(supabaseClientProvider),
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
   );
 });
 

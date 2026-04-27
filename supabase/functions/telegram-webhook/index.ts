@@ -18,6 +18,7 @@ import { extractExifMetadata } from "../shared/exif_extractor.ts";
 import { validateImageQuality, type QualityWarning } from "../shared/image_quality_validator.ts";
 import { formatStatusMessage, formatFinishWarning, type ComplianceRpcResult } from "../shared/compliance_formatter.ts";
 import { calculateClockDrift, FRAUD_DRIFT_THRESHOLD_S } from "../shared/clock_drift_helper.ts";
+import { signPayload } from "../shared/hmac_signer.ts";
 
 // Single type alias used by all helper functions — avoids JSR/npm generic mismatch.
 // deno-lint-ignore no-explicit-any
@@ -200,6 +201,7 @@ async function insertAuditLedger(
   payload: Record<string, unknown>,
 ): Promise<void> {
   try {
+    const payloadHmac = await signPayload(payload); // INV-31
     await supabase.from("sla_audit_ledger").insert({
       type,
       set_id: setId,
@@ -207,6 +209,7 @@ async function insertAuditLedger(
       plan_version: 1,
       payload,
       occurred_at_utc: new Date().toISOString(),
+      payload_hmac: payloadHmac,
     });
   } catch (e) {
     // Non-blocking — ledger failure never affects evidence processing
@@ -952,24 +955,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // 6k. Insert evidence record — idempotent via UNIQUE (chat_id, telegram_message_id).
     //     telegram_message_date = device timestamp (INV-6 audit anchor).
+    const evidencePayload = {
+      organization_id: binding.organization_id,
+      driver_id: binding.driver_id,
+      chat_id: chatId,
+      telegram_message_id: message.message_id,
+      file_name: serverFileName,
+      forensic_hash: hashHex,
+      storage_path: storagePath,
+      source: "telegram",
+      linked_set_id: linkedSetId ?? null,
+      telegram_message_date: new Date(message.date * 1000).toISOString(),
+      requires_manual_link: requiresManualLink,
+      mime_type: mimeFromExt(ext),
+      clock_drift_seconds: clockDriftS,
+    };
+    const evidenceHmac = await signPayload(evidencePayload); // INV-31
     const { data: insertedRow, error: insertError } = await supabase
       .from("telegram_evidence_uploads")
-      .insert({
-        organization_id: binding.organization_id,
-        driver_id: binding.driver_id,
-        chat_id: chatId,
-        telegram_message_id: message.message_id,
-        file_name: serverFileName,
-        forensic_hash: hashHex,
-        storage_path: storagePath,
-        source: "telegram",
-        linked_set_id: linkedSetId ?? null,
-        telegram_message_date: new Date(message.date * 1000).toISOString(), // INV-6: device clock
-        requires_manual_link: requiresManualLink,
-        mime_type: mimeFromExt(ext), // INV-18: server-authoritative from magic bytes
-        clock_drift_seconds: clockDriftS, // INV-15: sealed at ingest, never recomputed
-        // uploaded_at_utc: omitted — DB DEFAULT NOW() is the ingest anchor for discrepancy audit
-      })
+      .insert({ ...evidencePayload, payload_hmac: evidenceHmac })
       .select("id")
       .single();
 

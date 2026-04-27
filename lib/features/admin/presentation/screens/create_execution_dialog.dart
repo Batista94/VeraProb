@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/application/admin/create_execution_command.dart';
 import 'package:veraprob/presentation/widgets/skeleton_list_loader.dart';
+import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/assets_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -281,28 +281,28 @@ class _CreateExecutionDialogState extends ConsumerState<CreateExecutionDialog> {
 
     setState(() => _isSaving = true);
     try {
-      final client = ref.read(supabaseClientProvider);
       final orgId = ref.read(currentOrganizationIdProvider);
       if (orgId == null) {
-        throw const DomainException('org_id not found in session — INV-1');
+        throw StateError('org_id not found in session — INV-1');
       }
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
-      // INV-6: windows sent as UTC ISO-8601
-      final data = await client.rpc(
-        'create_execution_for_operator',
-        params: {
-          'p_organization_id': orgId,
-          'p_contract_id': _selectedContractId!,
-          'p_driver_id': _selectedDriverId!,
-          'p_vehicle_id': null, // optional — TODO: add vehicle picker
-          'p_origin_zone_id': _selectedOriginZoneId,
-          'p_destination_zone_id': _selectedDestinationZoneId,
-          'p_window_start_utc': _windowStart.toUtc().toIso8601String(),
-          'p_window_end_utc': _windowEnd.toUtc().toIso8601String(),
-        },
-      );
+      final setId = await ref
+          .read(createExecutionHandlerProvider)
+          .handle(
+            CreateExecutionCommand(
+              organizationId: orgId,
+              sessionId: sessionId,
+              contractId: _selectedContractId!,
+              driverId: _selectedDriverId!,
+              originZoneId: _selectedOriginZoneId,
+              destinationZoneId: _selectedDestinationZoneId,
+              windowStartUtc: _windowStart.toUtc(),
+              windowEndUtc: _windowEnd.toUtc(),
+            ),
+          );
 
-      setState(() => _resultSetId = data as String?);
+      setState(() => _resultSetId = setId);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -363,8 +363,8 @@ class _DateTimeButton extends StatelessWidget {
         final date = await showDatePicker(
           context: context,
           initialDate: value,
-          firstDate: DateTime.now().subtract(const Duration(days: 1)),
-          lastDate: DateTime.now().add(const Duration(days: 30)),
+          firstDate: DateTime.now().toUtc().subtract(const Duration(days: 1)),
+          lastDate: DateTime.now().toUtc().add(const Duration(days: 30)),
         );
         if (date == null || !context.mounted) return;
         final time = await showTimePicker(
