@@ -90,8 +90,19 @@ final auditLogProjectionProvider = FutureProvider<AuditLogProjection>((
     );
   }).toList();
 
+  // Silent mode: show only exceptions (open/inProgress lifecycle)
+  final displayEntries = filters.silentMode
+      ? projectionEntries
+            .where(
+              (e) =>
+                  e.lifecycleStatus == IncidentLifecycleStatus.open ||
+                  e.lifecycleStatus == IncidentLifecycleStatus.inProgress,
+            )
+            .toList()
+      : projectionEntries;
+
   return AuditLogProjection(
-    entries: projectionEntries,
+    entries: displayEntries,
     isLoading: false,
     hasMore: rawLogs.length == 200,
   );

@@ -9,6 +9,8 @@ class AuditFilterState {
   final String? eventType;
   final String? category;
   final String? entityId; // e.g. Specific vehicle or driver
+  final bool
+  silentMode; // true = show only exceptions (management by exception)
 
   const AuditFilterState({
     this.startDate,
@@ -16,6 +18,7 @@ class AuditFilterState {
     this.eventType,
     this.category,
     this.entityId,
+    this.silentMode = true,
   });
 
   AuditFilterState copyWith({
@@ -24,6 +27,7 @@ class AuditFilterState {
     String? eventType,
     String? category,
     String? entityId,
+    bool? silentMode,
     bool clearDates = false,
     bool clearEventType = false,
     bool clearCategory = false,
@@ -35,6 +39,7 @@ class AuditFilterState {
       eventType: clearEventType ? null : (eventType ?? this.eventType),
       category: clearCategory ? null : (category ?? this.category),
       entityId: clearEntityId ? null : (entityId ?? this.entityId),
+      silentMode: silentMode ?? this.silentMode,
     );
   }
 }
@@ -61,6 +66,10 @@ class AuditFilterNotifier extends StateNotifier<AuditFilterState> {
 
   void setEntity(String entityId) {
     state = state.copyWith(entityId: entityId);
+  }
+
+  void toggleSilentMode() {
+    state = state.copyWith(silentMode: !state.silentMode);
   }
 
   void clearAll() {

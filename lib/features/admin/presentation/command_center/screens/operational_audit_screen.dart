@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/projections/providers/audit_filter_provider.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/command_center/widgets/orphan_triage_tab.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/roi_guardian_strip.dart';
 import 'package:veraprob/features/admin/presentation/screens/create_execution_dialog.dart';
 import 'package:veraprob/features/shared/mappers/incident_status_ui_mapper.dart';
@@ -14,66 +15,97 @@ class OperationalAuditScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: VeraProbColors.background,
-      appBar: AppBar(
-        title: const Text(
-          'OCC - Centro de Auditoria Integrada',
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1),
-        ),
-        backgroundColor: VeraProbColors.surface,
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              // Usually handled automatically by the provider, but good for UX
-              ref.invalidate(auditServiceProvider);
-            },
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: VeraProbColors.background,
+        appBar: AppBar(
+          title: const Text(
+            'OCC - Centro de Auditoria Integrada',
+            style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1),
           ),
-        ],
-      ),
-      // FAB: Nova Viagem — Phase 10 UX/OPS
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add_road_outlined),
-        label: const Text('Nova Viagem'),
-        backgroundColor: VeraProbColors.primary,
-        onPressed: () => showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const CreateExecutionDialog(),
-        ),
-      ),
-      body: Column(
-        children: [
-          // ROI Guardian strip — Phase 10 SENIOR
-          const RoiGuardianStrip(),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Left Side: Dense Table
-                Expanded(
-                  flex: 7,
-                  child: Column(
-                    children: [
-                      _buildFilterBar(context, ref),
-                      const Divider(height: 1, color: VeraProbColors.border),
-                      _buildTableHeader(),
-                      const Divider(height: 1, color: VeraProbColors.border),
-                      Expanded(child: _buildLogTable(ref)),
-                    ],
-                  ),
-                ),
-
-                // Right Side: Master/Detail Panel
-                const VerticalDivider(width: 1, color: VeraProbColors.border),
-                const Expanded(flex: 3, child: _AuditSidePanel()),
-              ],
+          backgroundColor: VeraProbColors.surface,
+          centerTitle: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref.invalidate(auditServiceProvider);
+                ref.invalidate(unlinkedShadowsProvider);
+              },
             ),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          icon: const Icon(Icons.add_road_outlined),
+          label: const Text('Nova Viagem'),
+          backgroundColor: VeraProbColors.primary,
+          onPressed: () => showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const CreateExecutionDialog(),
           ),
-        ],
+        ),
+        body: Column(
+          children: [
+            const RoiGuardianStrip(),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Left: tabbed content (audit + orphan triage)
+                  Expanded(
+                    flex: 7,
+                    child: Column(
+                      children: [
+                        Container(
+                          color: VeraProbColors.surface,
+                          child: const TabBar(
+                            indicatorColor: VeraProbColors.primary,
+                            labelColor: VeraProbColors.primary,
+                            unselectedLabelColor: VeraProbColors.textSecondary,
+                            labelStyle: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            tabs: [
+                              Tab(text: '📋 Fila de Exceções'),
+                              Tab(text: '🔗 Triagem de Órfãos'),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: TabBarView(
+                            children: [_AuditTab(), const OrphanTriageTab()],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const VerticalDivider(width: 1, color: VeraProbColors.border),
+                  const Expanded(flex: 3, child: _AuditSidePanel()),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// The original audit log tab — extracted for TabBarView.
+class _AuditTab extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      children: [
+        _buildFilterBar(context, ref),
+        const Divider(height: 1, color: VeraProbColors.border),
+        _buildTableHeader(),
+        const Divider(height: 1, color: VeraProbColors.border),
+        Expanded(child: _buildLogTable(ref)),
+      ],
     );
   }
 
@@ -85,7 +117,14 @@ class OperationalAuditScreen extends ConsumerWidget {
       color: VeraProbColors.surface,
       child: Row(
         children: [
-          // Just a mockup of OCC dense filters
+          _FilterChip(
+            label: filters.silentMode ? '🔇 Modo Silencioso' : '📢 Ver Tudo',
+            isActive: filters.silentMode,
+            onTap: () =>
+                ref.read(auditFilterProvider.notifier).toggleSilentMode(),
+            onClear: null,
+          ),
+          const SizedBox(width: 8),
           _FilterChip(
             label: filters.category ?? 'Todas Categorias',
             isActive: filters.category != null,
@@ -104,7 +143,7 @@ class OperationalAuditScreen extends ConsumerWidget {
             label: 'Hoje',
             isActive: true,
             onTap: () {},
-            onClear: null, // Immutable for now
+            onClear: null,
           ),
           const Spacer(),
           TextButton.icon(
@@ -144,6 +183,7 @@ class OperationalAuditScreen extends ConsumerWidget {
   Widget _buildLogTable(WidgetRef ref) {
     final projectionAsync = ref.watch(auditLogProjectionProvider);
     final selectedLog = ref.watch(selectedAuditLogProvider);
+    final filters = ref.watch(auditFilterProvider);
 
     return projectionAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -156,6 +196,37 @@ class OperationalAuditScreen extends ConsumerWidget {
       ),
       data: (projection) {
         if (projection.entries.isEmpty) {
+          if (filters.silentMode) {
+            return const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 48,
+                    color: VeraProbColors.success,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    '✅ Nenhuma exceção ativa',
+                    style: TextStyle(
+                      color: VeraProbColors.success,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Todas as viagens estão dentro dos parâmetros',
+                    style: TextStyle(
+                      color: VeraProbColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
           return const Center(
             child: Text(
               'Nenhum registro encontrado',
@@ -410,7 +481,6 @@ class _AuditSidePanel extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-
           _DetailRow(label: 'ID', value: log.id, isMonospace: true),
           _DetailRow(
             label: 'Carimbo de Tempo',
@@ -421,7 +491,6 @@ class _AuditSidePanel extends ConsumerWidget {
             label: 'Autor',
             value: '${log.actorName ?? 'N/D'} (${log.actorId})',
           ),
-
           const Divider(height: 32, color: VeraProbColors.border),
           const Text(
             'Contexto da Entidade',
@@ -432,7 +501,6 @@ class _AuditSidePanel extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-
           _DetailRow(
             label: 'Veículo/Placa',
             value: log.vehiclePlate ?? 'Não aplicável',
@@ -447,7 +515,6 @@ class _AuditSidePanel extends ConsumerWidget {
               label: 'Ciclo de Vida',
               value: log.lifecycleStatus!.label,
             ),
-
           if (log.details != null) ...[
             const Divider(height: 32, color: VeraProbColors.border),
             const Text(

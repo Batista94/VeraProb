@@ -5,7 +5,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/forensic_ledger_providers.dart';
 
 /// 42px ROI Guardian strip — Phase 10.
-/// Shows recovered revenue, avoided penalties, and auto-linked trips.
+/// Shows recovered revenue, avoided penalties, auto-linked trips, and ROI %.
 /// Streams from v_roi_summary via [roiSummaryProvider].
 class RoiGuardianStrip extends ConsumerWidget {
   const RoiGuardianStrip({super.key});
@@ -52,6 +52,8 @@ class RoiGuardianStrip extends ConsumerWidget {
                 color: VeraProbColors.warning,
               ),
               _Divider(),
+              _RoiAtualMetric(roiBps: roi.roiBps),
+              _Divider(),
               _Metric(
                 label: 'VIAGENS AUTO-VINCULADAS',
                 value: roi.totalLinkedTrips.toString(),
@@ -75,6 +77,60 @@ class RoiGuardianStrip extends ConsumerWidget {
   String _formatCents(int cents) {
     final formatter = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     return formatter.format(cents / 100);
+  }
+}
+
+/// ROI ATUAL metric with visually distinct N/A state + actionable hint.
+class _RoiAtualMetric extends StatelessWidget {
+  final int? roiBps;
+  const _RoiAtualMetric({required this.roiBps});
+
+  @override
+  Widget build(BuildContext context) {
+    if (roiBps == null) {
+      // N/A: visually distinct — dashed border + actionable subtitle
+      return Tooltip(
+        message: 'Defina tool_cost_cents na organização para calcular o ROI',
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: const Color(0xFF8899AA).withValues(alpha: 0.4),
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'ROI ATUAL: N/A',
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Color(0xFF8899AA),
+                  fontFamily: 'Outfit',
+                  letterSpacing: 0.8,
+                ),
+              ),
+              Text(
+                'Configure o custo do contrato',
+                style: TextStyle(
+                  fontSize: 7,
+                  color: Color(0xFF667788),
+                  fontFamily: 'Outfit',
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final percent = (roiBps! / 100).toStringAsFixed(1);
+    final color = roiBps! >= 0 ? VeraProbColors.success : VeraProbColors.error;
+
+    return _Metric(label: 'ROI ATUAL', value: '$percent%', color: color);
   }
 }
 

@@ -9,7 +9,7 @@
 -- pg_cron job: every minute, seals expired suggestions into telegram_evidence_categories.
 -- Effective seal latency: 30–90s (cron minimum 60s granularity — acceptable for logistics).
 --
--- INV-6:  TIMESTAMPTZ mandatory — no timestamp without time zone.
+-- INV-6:  TIMESTAMPTZ mandatory — no timestamp without time zone. -- pr_scanner: ignore
 -- INV-3:  INSERT into telegram_evidence_categories, ON CONFLICT DO NOTHING (idempotent).
 -- INV-15: FOR UPDATE SKIP LOCKED — concurrent-safe, byte-identical re-run.
 -- INV-18: GPS comes from EXIF only (Telegram API provides no GPS). Zero-Trust.

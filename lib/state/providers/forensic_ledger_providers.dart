@@ -17,6 +17,8 @@ class RoiSummary {
   final int totalAvoidedPenaltyCents; // INV-4: BIGINT cents
   final int totalLinkedTrips;
   final int pendingOrphans;
+  final int? toolCostCents; // INV-4: NULL = not configured → ROI N/A
+  final int? roiBps; // INV-5: basis points (10000 = 100%)
 
   const RoiSummary({
     required this.recoveredTrips,
@@ -24,6 +26,8 @@ class RoiSummary {
     required this.totalAvoidedPenaltyCents,
     required this.totalLinkedTrips,
     required this.pendingOrphans,
+    this.toolCostCents,
+    this.roiBps,
   });
 
   factory RoiSummary.fromRow(Map<String, dynamic> row) {
@@ -34,6 +38,8 @@ class RoiSummary {
           (row['total_avoided_penalty_cents'] as int?) ?? 0,
       totalLinkedTrips: (row['total_linked_trips'] as int?) ?? 0,
       pendingOrphans: (row['pending_orphans'] as int?) ?? 0,
+      toolCostCents: row['tool_cost_cents'] as int?,
+      roiBps: row['roi_bps'] as int?,
     );
   }
 }

@@ -39,6 +39,7 @@ const patterns = JSON.parse(fs.readFileSync(patternsPath, "utf8"));
 const changedFiles = fs
   .readFileSync(0, "utf8")
   .split("\n")
+  .map((f) => f.trim())
   .filter((f) => f.length > 0);
 
 if (changedFiles.length === 0) {

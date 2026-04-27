@@ -3,7 +3,7 @@
 # run_chaos_suite.sh â€” Phase 10 Full Chaos Test Orchestrator
 # =============================================================================
 #
-# Runs all 4 chaos scenarios in sequence. Each scenario must pass before
+# Runs all 5 chaos scenarios in sequence. Each scenario must pass before
 # the next begins. Produces a combined governance report.
 #
 # SCENARIOS:
@@ -12,6 +12,8 @@
 #   3. Multi-Tenant Isolation 10x   (k6_multitenant_scale.js)
 #   4. Fluid FSM Shadow Auto-Link   (k6_fluid_fsm_autolink.js)
 #
+#   5. INV-6 Timestamp Hardening    (scenario5_inv6_validation.sh)
+
 # PREREQUISITES:
 #   - k6 installed: https://k6.io/docs/get-started/installation/
 #   - supabase start (local Supabase with Docker)
@@ -208,6 +210,20 @@ fi
 
 # â”€â”€ Final Report â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+# ── Scenario 5: INV-6 Timestamp Hardening + pg_cron Seal (Phase 10.4) ────────
+
+if [[ -z "$ONLY_SCENARIO" || "$ONLY_SCENARIO" == "5" ]]; then
+  header "Scenario 5: INV-6 Timestamp Hardening + pg_cron Seal Validation"
+  log "Tests: NOT NULL guard, Edge Function graceful error, pg_cron concurrency, schema assertion"
+
+  if bash "${SCRIPT_DIR}/scenario5_inv6_validation.sh"; then
+    ok "INV-6 Hardening PASSED"
+  else
+    err "INV-6 Hardening FAILED"
+  fi
+fi
+
+
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
@@ -227,6 +243,8 @@ if [[ $FAILED -eq 0 ]]; then
   echo "  INV-11 (idempotency/shadow):     âœ… SIGKILL + Telegram retry = no orphan rows"
   echo "  INV-15 (determinism):            âœ… concurrent race â†’ exactly 1 completion"
   echo "  Phase 10.3 (Fluid FSM):          âœ… retroactive auto-link without hash collision"
+  echo "  INV-6  (TIMESTAMPTZ hardening):  ✅ NOT NULL guard + graceful Edge Function + pg_cron safe"
+
 else
   echo -e "${RED}ðŸ”´ ${FAILED} SCENARIO(S) FAILED â€” Review output above${NC}"
   echo ""
