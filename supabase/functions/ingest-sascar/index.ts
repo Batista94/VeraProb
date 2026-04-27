@@ -192,12 +192,27 @@ async function handleRequest(req: Request): Promise<Response> {
     );
   }
 
-  // Schema validation — required fields
+  // C4: INV-6 — event_time (device clock) REQUIRED. Missing → alert operator immediately.
+  if (typeof payload.event_time !== "string" || !payload.event_time) {
+    await supabase.from("ingestion_alerts").insert({
+      organization_id: organizationId,
+      device_serial: typeof payload.device_serial === "string"
+        ? payload.device_serial
+        : null,
+      alert_type: "INGESTION_INTEGRITY_ERROR",
+      detail: "event_time absent — clock source unknown; INV-6 violation",
+      created_at_utc: new Date().toISOString(),
+    });
+    return Response.json(
+      { status: "rejected", reason: "missing_event_time" } as IngestResult,
+      { status: 422 },
+    );
+  }
+
+  // Schema validation — remaining required fields
   if (
     typeof payload.device_serial !== "string" ||
     !payload.device_serial ||
-    typeof payload.event_time !== "string" ||
-    !payload.event_time ||
     typeof payload.latitude !== "number" ||
     typeof payload.longitude !== "number" ||
     typeof payload.speed_kmh !== "number"
@@ -206,7 +221,7 @@ async function handleRequest(req: Request): Promise<Response> {
       {
         status: "rejected",
         reason:
-          "Missing required fields: device_serial, event_time, latitude, longitude, speed_kmh",
+          "Missing required fields: device_serial, latitude, longitude, speed_kmh",
       } as IngestResult,
       { status: 422 },
     );
@@ -323,6 +338,16 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 
   // ── Step 7: Respond ──────────────────────────────────────────────────────
+  // C1: waitUntil — GPS transition RPC must complete even after response is sent.
+  EdgeRuntime.waitUntil(
+    supabase.rpc("process_gps_for_execution_transitions", {
+      p_org_id: organizationId,
+      p_device_serial: payload.device_serial,
+      p_lat: payload.latitude,
+      p_lng: payload.longitude,
+    }).catch((e) => console.warn("[ingest-sascar] gps_transition:", e)),
+  );
+
   return Response.json(
     {
       status: "accepted",

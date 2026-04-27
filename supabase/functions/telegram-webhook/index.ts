@@ -414,7 +414,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
                 );
               }
 
-              // Auto-suggest finish if execution reaches 100% compliance (Phase 10 — MAVERICK)
+              // Workstream A: proactive closure alert when 100% compliance reached.
+              // No "Encerrar Viagem" button — system closes automatically on arrival at dest.
+              // C1: EdgeRuntime.waitUntil — RPC must finish even after response is sent.
               let suggestedFinish = false;
               try {
                 const { data: evidRow } = await supabase
@@ -431,16 +433,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
                   });
                   if (compliance === true) {
                     await sendMessageWithKeyboard(botToken, cbChatId,
-                      "✅ <b>Viagem em conformidade!</b>\nTodas as evidências obrigatórias recebidas.",
-                      [[
-                        { text: "📋 Ver Resumo",    callback_data: "tg_status" },
-                        { text: "🏁 Encerrar Viagem", callback_data: `tg_finish_confirm:${taggedSetId}` },
-                      ]],
+                      "✅ Checklist completo. A viagem será encerrada automaticamente assim que você chegar ao destino.",
+                      [[{ text: "📋 Ver Resumo", callback_data: "tg_status" }]],
                     );
                     // INV-3: append-only ledger
-                    await insertAuditLedger(supabase, "BOT_AUTO_SUGGESTED_FINISH", taggedSetId, "TELEGRAM_BOT", {
+                    await insertAuditLedger(supabase, "BOT_NOTIFIED_AUTO_CLOSE", taggedSetId, "TELEGRAM_BOT", {
                       trigger: "compliance_100pct", org_id: cbBinding.organization_id,
                     });
+                    // C1: attempt close now in case vehicle already at destination
+                    EdgeRuntime.waitUntil(
+                      supabase.rpc("check_and_close_execution_autonomously", {
+                        p_org_id: cbBinding.organization_id,
+                        p_set_id: taggedSetId,
+                        // no GPS params — RPC resolves via canonical_facts
+                      }).catch((e) => console.warn("[webhook] post-tag autonomous-closer:", e)),
+                    );
                     suggestedFinish = true;
                   }
                 }
@@ -1115,14 +1122,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // 6n. Smart auto-classify via GPS (EXIF) + geofence (INV-18: EXIF only, no Telegram GPS).
-    //     If suggestion found: store in DB + send feedback with [Alterar] button.
-    //     If no GPS or smart_classify disabled: fall through to standard menu.
+    //     Two-tier confidence: < 50m → passive ack only; ≥ 50m → suggestion dialog.
+    //     Workstream C: auto-start transit when photo is from origin zone + planned.
+    //     Workstream A: C1 EdgeRuntime.waitUntil autonomous closer after classification.
     let autoClassified = false;
     if (capabilities.smart_classify && exifData?.gps_latitude != null && exifData?.gps_longitude != null && linkedSetId) {
       try {
         const { data: execRow } = await supabase
           .from("execution_states")
-          .select("origin_zone_id, destination_zone_id")
+          .select("origin_zone_id, destination_zone_id, status")
           .eq("set_id", linkedSetId)
           .eq("organization_id", binding.organization_id)
           .maybeSingle();
@@ -1148,11 +1156,29 @@ Deno.serve(async (req: Request): Promise<Response> => {
             destZone = dz ?? null;
           }
 
+          const distToOrigin = originZone
+            ? haversineMeters(exifData.gps_latitude!, exifData.gps_longitude!, originZone.latitude, originZone.longitude)
+            : Infinity;
+          const distToDest = destZone
+            ? haversineMeters(exifData.gps_latitude!, exifData.gps_longitude!, destZone.latitude, destZone.longitude)
+            : Infinity;
+
+          // Workstream C: GPS in origin zone + planned → invisible auto-start
+          // C1: EdgeRuntime.waitUntil prevents Deno suspension before RPC completes
+          if (originZone && distToOrigin <= originZone.radius_meters && execRow.status === "planned") {
+            EdgeRuntime.waitUntil(
+              supabase.rpc("start_transit_for_execution", {
+                p_org_id: binding.organization_id,
+                p_set_id: linkedSetId,
+              }).catch((e) => console.warn("[webhook] auto-start non-blocking:", e)),
+            );
+          }
+
           let suggested: string | null = null;
-          if (originZone && haversineMeters(exifData.gps_latitude!, exifData.gps_longitude!, originZone.latitude, originZone.longitude) <= originZone.radius_meters) {
-            suggested = "carregamento";
-          } else if (destZone && haversineMeters(exifData.gps_latitude!, exifData.gps_longitude!, destZone.latitude, destZone.longitude) <= destZone.radius_meters) {
+          if (destZone && distToDest <= destZone.radius_meters) {
             suggested = "lacre";
+          } else if (originZone && distToOrigin <= originZone.radius_meters) {
+            suggested = "carregamento";
           }
 
           if (suggested && capabilities[`allows_${suggested === "lacre" ? "sealing" : "loading"}` as keyof OrgCapabilities] !== false) {
@@ -1162,13 +1188,34 @@ Deno.serve(async (req: Request): Promise<Response> => {
               suggestion_expires_at_utc: expiresAt,
             }).eq("id", evidenceId);
 
-            const catLabel = CATEGORY_MAP[suggested]?.label ?? suggested;
-            await sendMessageWithKeyboard(botToken, chatId,
-              `🤖 <b>Classificação sugerida:</b> ${CATEGORY_MAP[suggested]?.emoji} <b>${catLabel}</b>\n` +
-              `<i>Selada automaticamente em 30s. Toque para alterar.</i>`,
-              [[{ text: "✏️ Alterar Classificação", callback_data: `tg_alt_cat:${evidenceId}` }]],
-            );
+            const cat = CATEGORY_MAP[suggested];
+            const isHighConfidence = (suggested === "lacre" && distToDest < 50) ||
+              (suggested === "carregamento" && distToOrigin < 50);
+
+            if (isHighConfidence) {
+              // Passive ack — no suggestion dialog, driver action not required
+              await sendMessageWithKeyboard(botToken, chatId,
+                `📸 ${cat?.emoji} <b>${cat?.label}</b> registrada.`,
+                [[{ text: "✏️ Alterar", callback_data: `tg_alt_cat:${evidenceId}` }]],
+              );
+            } else {
+              await sendMessageWithKeyboard(botToken, chatId,
+                `🤖 <b>Classificação sugerida:</b> ${cat?.emoji} <b>${cat?.label}</b>\n` +
+                `<i>Selada automaticamente em 30s. Toque para alterar.</i>`,
+                [[{ text: "✏️ Alterar Classificação", callback_data: `tg_alt_cat:${evidenceId}` }]],
+              );
+            }
             autoClassified = true;
+
+            // Workstream A: C1 — autonomous closer non-blocking
+            EdgeRuntime.waitUntil(
+              supabase.rpc("check_and_close_execution_autonomously", {
+                p_org_id:      binding.organization_id,
+                p_set_id:      linkedSetId,
+                p_current_lat: exifData.gps_latitude,
+                p_current_lng: exifData.gps_longitude,
+              }).catch((e) => console.warn("[webhook] autonomous-closer:", e)),
+            );
           }
         }
       } catch (e) {

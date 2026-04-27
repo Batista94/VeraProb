@@ -168,11 +168,25 @@ async function handleRequest(req: Request): Promise<Response> {
     );
   }
 
+  // C4: INV-6 — utcTime (device clock) REQUIRED. Missing → alert operator immediately.
+  if (typeof payload.utcTime !== "string" || !payload.utcTime) {
+    await supabase.from("ingestion_alerts").insert({
+      organization_id: organizationId,
+      device_serial: typeof payload.unitId === "string" ? payload.unitId : null,
+      alert_type: "INGESTION_INTEGRITY_ERROR",
+      detail: "utcTime absent — clock source unknown; INV-6 violation",
+      created_at_utc: new Date().toISOString(),
+    });
+    return Response.json(
+      { status: "rejected", reason: "missing_utcTime" } as IngestResult,
+      { status: 422 },
+    );
+  }
+
+  // Schema validation — remaining required fields
   if (
     typeof payload.unitId !== "string" ||
     !payload.unitId ||
-    typeof payload.utcTime !== "string" ||
-    !payload.utcTime ||
     typeof payload.lat !== "number" ||
     typeof payload.lon !== "number" ||
     typeof payload.speedMph !== "number"
@@ -180,8 +194,7 @@ async function handleRequest(req: Request): Promise<Response> {
     return Response.json(
       {
         status: "rejected",
-        reason:
-          "Missing required fields: unitId, utcTime, lat, lon, speedMph",
+        reason: "Missing required fields: unitId, lat, lon, speedMph",
       } as IngestResult,
       { status: 422 },
     );
@@ -295,6 +308,16 @@ async function handleRequest(req: Request): Promise<Response> {
       { status: 200 },
     );
   }
+
+  // C1: waitUntil — GPS transition RPC must complete even after response is sent.
+  EdgeRuntime.waitUntil(
+    supabase.rpc("process_gps_for_execution_transitions", {
+      p_org_id: organizationId,
+      p_device_serial: payload.unitId,
+      p_lat: payload.lat,
+      p_lng: payload.lon,
+    }).catch((e) => console.warn("[ingest-omnitracs] gps_transition:", e)),
+  );
 
   return Response.json(
     {
