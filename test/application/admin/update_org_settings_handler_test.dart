@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/admin/update_org_settings_command.dart';
 import 'package:veraprob/application/admin/update_org_settings_handler.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/admin/organization_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
@@ -25,7 +26,7 @@ void main() {
         name: '',
         timezone: '',
         currencyCode: '',
-        isActive: true,
+        status: OrgStatus.active,
         createdAt: DateTime.now().toUtc(),
       ),
     );
@@ -36,7 +37,7 @@ void main() {
     name: 'Old Name',
     timezone: 'UTC',
     currencyCode: 'BRL',
-    isActive: true,
+    status: OrgStatus.active,
     createdAt: DateTime.now().toUtc(),
   );
 

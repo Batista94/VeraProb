@@ -11,6 +11,9 @@ class UpdateOrgSettingsCommand {
   final String? organizationType;
   final OrgCapabilities? capabilities;
 
+  /// Mandatory justification for governance changes (capabilities, status, plan_type).
+  final String? reason;
+
   /// Session ID for tenant validation.
   final String sessionId;
 
@@ -23,6 +26,7 @@ class UpdateOrgSettingsCommand {
     this.logoUrl,
     this.organizationType,
     this.capabilities,
+    this.reason,
     required this.sessionId,
   });
 }

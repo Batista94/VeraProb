@@ -25,6 +25,7 @@ enum UserPermission {
   canManageTenants,
   canViewAllTenants,
   canViewSystemAuditLog,
+  canImpersonateTenant,
 }
 
 /// Centralized RBAC mapping.
@@ -57,4 +58,5 @@ const Map<UserPermission, Set<UserRole>> rolePermissions = {
   UserPermission.canManageTenants: {UserRole.superAdmin},
   UserPermission.canViewAllTenants: {UserRole.superAdmin},
   UserPermission.canViewSystemAuditLog: {UserRole.superAdmin},
+  UserPermission.canImpersonateTenant: {UserRole.superAdmin},
 };

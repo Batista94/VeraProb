@@ -201,8 +201,13 @@ class _LogList extends StatelessWidget {
               ? IconButton(
                   icon: const Icon(Icons.data_object, size: 18),
                   tooltip: 'Ver detalhes',
-                  onPressed: () =>
-                      _showPayload(context, log.payload!, log.source),
+                  onPressed: () => _showPayload(
+                    context,
+                    log.payload!,
+                    log.source,
+                    log.actorType,
+                    log.reason,
+                  ),
                 )
               : null,
         );
@@ -214,6 +219,8 @@ class _LogList extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> payload,
     String? source,
+    String? actorType,
+    String? reason,
   ) {
     showDialog(
       context: context,
@@ -225,6 +232,8 @@ class _LogList extends StatelessWidget {
             child: AuditPayloadDiffView(
               payload: payload.cast<String, Object?>(),
               source: source,
+              actorType: actorType,
+              reason: reason,
             ),
           ),
         ),

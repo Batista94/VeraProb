@@ -25,7 +25,7 @@ UpdateOrganizationQuotaCommand _validCmd({
   int? newMaxVehicles = 100,
   int? newMaxActiveContracts = 50,
   String superAdminUserId = 'super-admin-uuid-456',
-  String? reason,
+  String? reason = 'Ajuste de cota conforme contrato atualizado',
   String sessionId = 'session-uuid-789',
   int? toolCostCents = 50000,
 }) => UpdateOrganizationQuotaCommand(
@@ -223,6 +223,7 @@ void main() {
           newMaxVehicles: 100,
           newMaxActiveContracts: 50,
           superAdminUserId: 'super-admin-uuid-456',
+          reason: 'Teste de validacao de toolCostCents',
           sessionId: 'session-uuid-789',
           toolCostCents: null,
         );

@@ -28,6 +28,7 @@ import 'package:veraprob/infrastructure/admin/supabase_data_seeding_repository.d
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
+import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'auth_providers.dart';
@@ -132,6 +133,7 @@ final updateOrgSettingsHandlerProvider = Provider<UpdateOrgSettingsHandler>((
   return UpdateOrgSettingsHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(organizationRepositoryProvider),
+    auditLogService: ref.watch(systemAuditLogServiceProvider),
   );
 });
 

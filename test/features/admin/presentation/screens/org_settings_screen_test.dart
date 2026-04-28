@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
+import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -19,7 +20,7 @@ void main() {
         cnpj: '12.345.678/0001-90',
         timezone: 'UTC',
         currencyCode: 'USD',
-        isActive: true,
+        status: OrgStatus.active,
         createdAt: DateTime.now().toUtc(),
       );
     });

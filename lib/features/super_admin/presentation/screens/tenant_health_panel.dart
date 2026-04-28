@@ -9,239 +9,63 @@ import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
 import 'package:veraprob/domain/admin/org_capabilities.dart';
 import 'package:veraprob/domain/super_admin/org_vertical_preset.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/tenant_list_panel.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/tenant_detail_panel.dart';
 import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 
 /// Cross-tenant health dashboard for SuperAdmin.
 ///
-/// Displays one row per organization with key health indicators.
-/// Critical alert count shown with a red badge.
-class TenantHealthPanel extends ConsumerWidget {
+/// Stage H: Split-view layout with TenantListPanel (320px) + TenantDetailPanel.
+class TenantHealthPanel extends ConsumerStatefulWidget {
   const TenantHealthPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final snapshot = ref.watch(tenantHealthSnapshotProvider);
-
-    return snapshot.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 48,
-              color: VeraProbColors.error,
-            ),
-            const SizedBox(height: 12),
-            Text('Erro ao carregar tenants: $err'),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () => ref.invalidate(tenantHealthSnapshotProvider),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Tentar novamente'),
-            ),
-          ],
-        ),
-      ),
-      data: (tenants) => _TenantTable(tenants: tenants, ref: ref),
-    );
-  }
+  ConsumerState<TenantHealthPanel> createState() => _TenantHealthPanelState();
 }
 
-class _TenantTable extends StatelessWidget {
-  final List<TenantHealthView> tenants;
-  final WidgetRef ref;
-
-  const _TenantTable({required this.tenants, required this.ref});
+class _TenantHealthPanelState extends ConsumerState<TenantHealthPanel> {
+  TenantHealthView? _selectedTenant;
 
   @override
   Widget build(BuildContext context) {
-    if (tenants.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.business_outlined,
-              size: 64,
-              color: VeraProbColors.textDisabled,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Nenhum tenant cadastrado.',
-              style: TextStyle(
-                fontSize: 16,
-                color: VeraProbColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Text(
-                'Tenants (${tenants.length})',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: () => ref.invalidate(tenantHealthSnapshotProvider),
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Atualizar',
-              ),
-            ],
-          ),
+        TenantListPanel(
+          selectedOrgId: _selectedTenant?.id,
+          onOrgSelected: (tenant) => setState(() => _selectedTenant = tenant),
         ),
+        const VerticalDivider(width: 1),
         Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  VeraProbColors.superAdminSurface.withValues(alpha: 0.3),
-                ),
-                columns: const [
-                  DataColumn(label: Text('Organização')),
-                  DataColumn(label: Text('Plano')),
-                  DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Contratos Ativos'), numeric: true),
-                  DataColumn(label: Text('Veículos'), numeric: true),
-                  DataColumn(label: Text('Último Telemetria')),
-                  DataColumn(label: Text('Alertas Críticos')),
-                  DataColumn(label: Text('Ações')),
-                ],
-                rows: tenants.map((t) => _buildRow(context, t)).toList(),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  DataRow _buildRow(BuildContext context, TenantHealthView t) {
-    return DataRow(
-      cells: [
-        DataCell(
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(t.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-              if (t.legalName != null)
-                Text(
-                  t.legalName!,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: VeraProbColors.textDisabled,
-                  ),
-                ),
-            ],
-          ),
-        ),
-        DataCell(Text(t.planType?.toUpperCase() ?? '—')),
-        DataCell(
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: t.isActive
-                  ? VeraProbColors.success.withValues(alpha: 0.15)
-                  : VeraProbColors.error.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              t.isActive ? 'Ativo' : 'Inativo',
-              style: TextStyle(
-                color: t.isActive
-                    ? VeraProbColors.success
-                    : VeraProbColors.error,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        DataCell(
-          Text(
-            t.maxActiveContracts == 0
-                ? '${t.activeContractCount}/∞'
-                : '${t.activeContractCount}/${t.maxActiveContracts}',
-            style: TextStyle(
-              color: _quotaColor(t.activeContractCount, t.maxActiveContracts),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        DataCell(Text(t.maxVehicles == 0 ? '∞' : '${t.maxVehicles}')),
-        DataCell(
-          Text(
-            t.lastTelemetryAt != null
-                ? _formatDateTime(t.lastTelemetryAt!)
-                : '—',
-            style: TextStyle(
-              color: t.lastTelemetryAt == null
-                  ? VeraProbColors.textDisabled
-                  : null,
-            ),
-          ),
-        ),
-        DataCell(
-          t.hasCriticalAlerts
-              ? Badge(
-                  label: Text('${t.openCriticalAlertCount}'),
-                  backgroundColor: VeraProbColors.error,
-                  child: const Icon(
-                    Icons.warning_amber,
-                    color: VeraProbColors.error,
-                    size: 20,
-                  ),
+          child: _selectedTenant != null
+              ? TenantDetailPanel(
+                  key: ValueKey(_selectedTenant!.id),
+                  tenant: _selectedTenant!,
                 )
-              : const Icon(
-                  Icons.check_circle_outline,
-                  color: VeraProbColors.success,
-                  size: 20,
+              : const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.touch_app_outlined,
+                        size: 64,
+                        color: VeraProbColors.textDisabled,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Selecione uma organização na lista ao lado.',
+                        style: TextStyle(
+                          color: VeraProbColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-        ),
-        DataCell(
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            tooltip: 'Editar cotas',
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (_) => _EditQuotaDialog(snapshot: t),
-            ),
-          ),
         ),
       ],
     );
-  }
-
-  Color _quotaColor(int current, int max) {
-    if (max == 0) return VeraProbColors.success;
-    final ratioBps = (current * 10000) ~/ max;
-    if (ratioBps >= 10000) return VeraProbColors.error;
-    if (ratioBps >= 8000) return Colors.orange;
-    return VeraProbColors.success;
-  }
-
-  String _formatDateTime(DateTime dt) {
-    final local = dt.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/'
-        '${local.month.toString().padLeft(2, '0')}/'
-        '${local.year} '
-        '${local.hour.toString().padLeft(2, '0')}:'
-        '${local.minute.toString().padLeft(2, '0')}';
   }
 }
 
@@ -346,6 +170,21 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
       return;
     }
 
+    // Stage C: Mandatory reason for governance changes
+    final reason = _reasonCtrl.text.trim();
+    if (reason.isEmpty) {
+      setState(() {
+        _errorMessage = 'Motivo da alteração é obrigatório.';
+      });
+      return;
+    }
+    if (reason.length < 10) {
+      setState(() {
+        _errorMessage = 'Motivo deve ter pelo menos 10 caracteres.';
+      });
+      return;
+    }
+
     final superAdminId = ref.read(currentSuperAdminIdProvider);
     if (superAdminId == null) {
       setState(() {
@@ -365,7 +204,7 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
       newMaxVehicles: maxVehicles,
       newMaxActiveContracts: maxContracts,
       superAdminUserId: superAdminId,
-      reason: _reasonCtrl.text.trim().isEmpty ? null : _reasonCtrl.text.trim(),
+      reason: _reasonCtrl.text.trim(),
       capabilities: _capabilities,
       toolCostCents: toolCostCents,
       dwellTimeSeconds: _dwellTimeSeconds,
@@ -442,7 +281,12 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
             TextField(
               controller: _reasonCtrl,
               enabled: !_isSaving,
-              decoration: const InputDecoration(labelText: 'Motivo (opcional)'),
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Motivo da Alteração *',
+                hintText: 'Mínimo 10 caracteres',
+                helperText: 'Obrigatório para mudanças de governança',
+              ),
             ),
             const SizedBox(height: 16),
             const Divider(),

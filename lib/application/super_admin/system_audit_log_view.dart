@@ -13,6 +13,12 @@ class SystemAuditLogView {
   /// Origin of the event: 'system', 'flutter_web', 'edge_function', etc.
   final String? source;
 
+  /// Stage C: Actor type — HUMAN, IMPERSONATOR, SYSTEM.
+  final String? actorType;
+
+  /// Stage C: Governance justification reason.
+  final String? reason;
+
   const SystemAuditLogView({
     required this.severity,
     required this.eventType,
@@ -20,6 +26,8 @@ class SystemAuditLogView {
     this.organizationId,
     this.payload,
     this.source,
+    this.actorType,
+    this.reason,
   });
 
   factory SystemAuditLogView.fromDomain(SystemAuditLogEntry domain) {
@@ -30,6 +38,8 @@ class SystemAuditLogView {
       organizationId: domain.organizationId,
       payload: domain.payload?.cast<String, Object?>(),
       source: domain.source,
+      actorType: domain.actorType,
+      reason: domain.reason,
     );
   }
 
@@ -46,6 +56,8 @@ class SystemAuditLogView {
           ? Map<String, Object?>.from(rawPayload)
           : null,
       source: json['source'] as String?,
+      actorType: json['actor_type'] as String?,
+      reason: json['reason'] as String?,
     );
   }
 }

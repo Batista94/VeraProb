@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:veraprob/domain/admin/org_capabilities.dart';
+import 'package:veraprob/domain/admin/org_status.dart';
 
 /// Represents an organization (tenant) in the veraprob system.
 class Organization extends Equatable {
@@ -8,7 +9,7 @@ class Organization extends Equatable {
   final String timezone;
   final String currencyCode;
   final String? logoUrl;
-  final bool isActive;
+  final OrgStatus status;
   final DateTime createdAt;
 
   // Phase 9.2 SuperAdmin fields (nullable — added via migration, may be absent in legacy rows)
@@ -22,13 +23,18 @@ class Organization extends Equatable {
   final String? organizationType;
   final OrgCapabilities capabilities;
 
+  // Phase 10.2: billing & contact fields
+  final int? billingDay;
+  final String? contactEmail;
+  final String? externalId;
+
   const Organization({
     required this.id,
     required this.name,
     required this.timezone,
     required this.currencyCode,
     this.logoUrl,
-    required this.isActive,
+    required this.status,
     required this.createdAt,
     this.legalName,
     this.cnpj,
@@ -37,13 +43,23 @@ class Organization extends Equatable {
     this.maxActiveContracts,
     this.organizationType,
     this.capabilities = OrgCapabilities.defaults,
+    this.billingDay,
+    this.contactEmail,
+    this.externalId,
   });
+
+  /// Retro-compatible getter: true only when status is ACTIVE.
+  bool get isActive => status == OrgStatus.active;
+
+  /// Whether the org can operate (receive telemetry, run evaluations).
+  bool get isOperational => status.isOperational;
 
   Organization copyWith({
     String? name,
     String? timezone,
     String? currencyCode,
     String? logoUrl,
+    OrgStatus? status,
     String? legalName,
     String? cnpj,
     String? planType,
@@ -51,6 +67,9 @@ class Organization extends Equatable {
     int? maxActiveContracts,
     String? organizationType,
     OrgCapabilities? capabilities,
+    int? billingDay,
+    String? contactEmail,
+    String? externalId,
   }) {
     return Organization(
       id: id,
@@ -58,7 +77,7 @@ class Organization extends Equatable {
       timezone: timezone ?? this.timezone,
       currencyCode: currencyCode ?? this.currencyCode,
       logoUrl: logoUrl ?? this.logoUrl,
-      isActive: isActive,
+      status: status ?? this.status,
       createdAt: createdAt,
       legalName: legalName ?? this.legalName,
       cnpj: cnpj ?? this.cnpj,
@@ -67,6 +86,9 @@ class Organization extends Equatable {
       maxActiveContracts: maxActiveContracts ?? this.maxActiveContracts,
       organizationType: organizationType ?? this.organizationType,
       capabilities: capabilities ?? this.capabilities,
+      billingDay: billingDay ?? this.billingDay,
+      contactEmail: contactEmail ?? this.contactEmail,
+      externalId: externalId ?? this.externalId,
     );
   }
 
@@ -77,7 +99,7 @@ class Organization extends Equatable {
     timezone,
     currencyCode,
     logoUrl,
-    isActive,
+    status,
     createdAt,
     legalName,
     cnpj,
@@ -86,5 +108,8 @@ class Organization extends Equatable {
     maxActiveContracts,
     organizationType,
     capabilities,
+    billingDay,
+    contactEmail,
+    externalId,
   ];
 }

@@ -11,6 +11,12 @@ class SystemAuditLogEntry {
   /// Origin of the event: 'system', 'flutter_web', 'edge_function', etc.
   final String? source;
 
+  /// Stage C: Actor type — HUMAN, IMPERSONATOR, SYSTEM.
+  final String? actorType;
+
+  /// Stage C: Governance justification reason.
+  final String? reason;
+
   const SystemAuditLogEntry({
     required this.severity,
     required this.eventType,
@@ -18,6 +24,8 @@ class SystemAuditLogEntry {
     this.organizationId,
     this.payload,
     this.source,
+    this.actorType,
+    this.reason,
   });
 
   factory SystemAuditLogEntry.fromJson(Map<String, dynamic> json) {
@@ -28,6 +36,8 @@ class SystemAuditLogEntry {
       organizationId: json['organization_id'] as String?,
       payload: json['payload'] as Map<String, dynamic>?,
       source: json['source'] as String?,
+      actorType: json['actor_type'] as String?,
+      reason: json['reason'] as String?,
     );
   }
 }
