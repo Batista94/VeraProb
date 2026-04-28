@@ -42,6 +42,7 @@ class PostgresOrganizationRepository
             'logo_url': organization.logoUrl,
             'organization_type': organization.organizationType,
             'capabilities': organization.capabilities.toJson(),
+            'dwell_time_seconds': organization.dwellTimeSeconds,
           })
           .eq('id', organization.id);
     } on PostgrestException catch (e) {
@@ -135,6 +136,7 @@ class PostgresOrganizationRepository
       billingDay: data['billing_day'] as int?,
       contactEmail: data['contact_email'] as String?,
       externalId: data['external_id'] as String?,
+      dwellTimeSeconds: data['dwell_time_seconds'] as int? ?? 300,
     );
   }
 }

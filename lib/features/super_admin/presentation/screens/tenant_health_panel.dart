@@ -8,9 +8,9 @@ import 'package:veraprob/application/super_admin/org_capabilities_view_model.dar
 import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
-import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/tenant_list_panel.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/tenant_detail_panel.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
 import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
@@ -342,7 +342,32 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
                 ),
                 if (_selectedPreset != null) ...[
                   const SizedBox(height: 8),
-                  OrgCapabilitiesChips(capabilities: _capabilities),
+                  OrgCapabilitiesEditor(
+                    capabilities: _capabilities,
+                    onToggled: (key, value) => setState(() {
+                      _capabilities = switch (key) {
+                        'allows_sealing' => _capabilities.copyWith(
+                          allowsSealing: value,
+                        ),
+                        'allows_loading' => _capabilities.copyWith(
+                          allowsLoading: value,
+                        ),
+                        'allows_cargo_check' => _capabilities.copyWith(
+                          allowsCargoCheck: value,
+                        ),
+                        'allows_incident' => _capabilities.copyWith(
+                          allowsIncident: value,
+                        ),
+                        'allows_doc' => _capabilities.copyWith(
+                          allowsDoc: value,
+                        ),
+                        'smart_classify' => _capabilities.copyWith(
+                          smartClassify: value,
+                        ),
+                        _ => _capabilities,
+                      };
+                    }),
+                  ),
                 ],
                 const SizedBox(height: 16),
                 TextFormField(

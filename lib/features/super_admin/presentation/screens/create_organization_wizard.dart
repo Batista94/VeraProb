@@ -18,7 +18,8 @@ import 'package:veraprob/features/super_admin/presentation/screens/widgets/organ
 /// 3-step wizard for creating a new tenant organization.
 ///
 /// Step 1 — Dados Fiscais: legal/trade name, CNPJ, plan, timezone, currency.
-/// Step 2 — Limites de Uso: max vehicles, max active contracts.
+/// Step 2 — Limites & Config: max vehicles, max contracts, capabilities editor,
+///          speed/dwell defaults (labelled "Inicial (Padrão)"), reason field.
 /// Step 3 — Convite Admin: initial admin email.
 ///
 /// Pattern: ConsumerStatefulWidget + _currentStep + _highestStepReached
@@ -65,6 +66,7 @@ class _CreateOrganizationWizardState
   final _maxVehiclesCtrl = TextEditingController(text: '50');
   final _maxContractsCtrl = TextEditingController(text: '10');
   final _toolCostCtrl = TextEditingController();
+  final _reasonCtrl = TextEditingController();
 
   // Step 2 operational config state — held as application-layer ViewModel,
   // never as OrgCapabilities (domain).
@@ -96,6 +98,7 @@ class _CreateOrganizationWizardState
     _maxVehiclesCtrl.dispose();
     _maxContractsCtrl.dispose();
     _toolCostCtrl.dispose();
+    _reasonCtrl.dispose();
     _adminEmailCtrl.dispose();
     super.dispose();
   }
@@ -105,7 +108,38 @@ class _CreateOrganizationWizardState
   void _onPresetChanged(String? preset) {
     setState(() {
       _selectedPreset = preset;
-      _capabilities = OrgPresetViewModel.resolveCapabilities(preset);
+      if (preset == null) {
+        _capabilities = OrgCapabilitiesViewModel.defaults;
+      } else {
+        // Apply preset as a template — existing manual overrides are replaced
+        // by the template but remain editable afterwards.
+        _capabilities = OrgPresetViewModel.resolveCapabilities(preset);
+      }
+    });
+  }
+
+  /// Toggles a single capability flag by key name.
+  /// The preset is used as a template — SuperAdmin can override freely.
+  void _onCapabilityToggled(String key, bool value) {
+    setState(() {
+      _capabilities = switch (key) {
+        'allows_sealing' => _capabilities.copyWith(allowsSealing: value),
+        'allows_loading' => _capabilities.copyWith(allowsLoading: value),
+        'allows_cargo_check' => _capabilities.copyWith(allowsCargoCheck: value),
+        'allows_incident' => _capabilities.copyWith(allowsIncident: value),
+        'allows_doc' => _capabilities.copyWith(allowsDoc: value),
+        'smart_classify' => _capabilities.copyWith(smartClassify: value),
+        _ => _capabilities,
+      };
+    });
+  }
+
+  /// Updates the kinematic speed initial default.
+  void _onSpeedChanged(double value) {
+    setState(() {
+      _capabilities = _capabilities.copyWith(
+        maxKinematicSpeedKmh: value, // Physical Metric - Double Required
+      );
     });
   }
 
@@ -249,6 +283,7 @@ class _CreateOrganizationWizardState
         capabilities: _capabilities,
         toolCostCents: BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text),
         dwellTimeSeconds: _dwellTimeSeconds,
+        reason: _reasonCtrl.text.trim(),
       ).toCommand();
 
       final result = await handler.handle(cmd);
@@ -439,6 +474,7 @@ class _CreateOrganizationWizardState
             maxVehiclesCtrl: _maxVehiclesCtrl,
             maxContractsCtrl: _maxContractsCtrl,
             toolCostCtrl: _toolCostCtrl,
+            reasonCtrl: _reasonCtrl,
             tradeName: _tradeNameCtrl.text,
             planLabel: _selectedPlan.label,
             selectedPreset: _selectedPreset,
@@ -446,6 +482,8 @@ class _CreateOrganizationWizardState
             dwellTimeSeconds: _dwellTimeSeconds,
             onPresetChanged: _onPresetChanged,
             onDwellChanged: (v) => setState(() => _dwellTimeSeconds = v),
+            onCapabilityToggled: _onCapabilityToggled,
+            onSpeedChanged: _onSpeedChanged,
           ),
         ),
         Step(

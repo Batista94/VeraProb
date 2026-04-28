@@ -37,6 +37,7 @@ CreateOrganizationCommand _validCmd({
   initialAdminEmail: email,
   superAdminUserId: 'super-admin-uuid-123',
   toolCostCents: 50000,
+  reason: 'Motivo válido de teste de auditoria',
 );
 
 void main() {
@@ -226,6 +227,7 @@ void main() {
           initialAdminEmail: 'admin@empresa.com.br',
           superAdminUserId: 'super-admin-uuid-123',
           toolCostCents: null, // must be rejected
+          reason: 'Motivo válido de teste de auditoria',
         );
 
         await expectLater(
@@ -259,6 +261,7 @@ void main() {
           initialAdminEmail: 'admin@empresa.com.br',
           superAdminUserId: 'super-admin-uuid-123',
           toolCostCents: 0,
+          reason: 'Motivo válido de teste de auditoria',
         );
 
         await expectLater(
@@ -305,6 +308,7 @@ void main() {
             initialAdminEmail: 'admin@empresa.com.br',
             superAdminUserId: 'super-admin-uuid-123',
             toolCostCents: 50000,
+            reason: 'Motivo válido de teste de auditoria',
           );
 
           await expectLater(

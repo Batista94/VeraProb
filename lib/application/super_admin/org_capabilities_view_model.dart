@@ -75,6 +75,7 @@ class OrgCapabilitiesViewModel {
     bool? allowsDoc,
     bool? smartClassify,
     double? maxKinematicSpeedKmh, // Physical Metric - Double Required
+    bool clearMaxSpeed = false,
   }) {
     return OrgCapabilitiesViewModel(
       allowsSealing: allowsSealing ?? this.allowsSealing,
@@ -83,8 +84,22 @@ class OrgCapabilitiesViewModel {
       allowsIncident: allowsIncident ?? this.allowsIncident,
       allowsDoc: allowsDoc ?? this.allowsDoc,
       smartClassify: smartClassify ?? this.smartClassify,
-      maxKinematicSpeedKmh: maxKinematicSpeedKmh ?? this.maxKinematicSpeedKmh,
+      maxKinematicSpeedKmh: clearMaxSpeed
+          ? null
+          : (maxKinematicSpeedKmh ?? this.maxKinematicSpeedKmh),
     );
+  }
+
+  /// Returns `true` when this VM differs from [template] in any capability flag
+  /// or kinematic speed. Used by the wizard to detect preset customization.
+  bool isCustomized(OrgCapabilitiesViewModel template) {
+    return allowsSealing != template.allowsSealing ||
+        allowsLoading != template.allowsLoading ||
+        allowsCargoCheck != template.allowsCargoCheck ||
+        allowsIncident != template.allowsIncident ||
+        allowsDoc != template.allowsDoc ||
+        smartClassify != template.smartClassify ||
+        maxKinematicSpeedKmh != template.maxKinematicSpeedKmh;
   }
 
   @override

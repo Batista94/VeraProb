@@ -219,6 +219,7 @@ class Step2Limits extends StatelessWidget {
   final TextEditingController maxVehiclesCtrl;
   final TextEditingController maxContractsCtrl;
   final TextEditingController toolCostCtrl;
+  final TextEditingController reasonCtrl;
   final String tradeName;
   final String planLabel;
   final String? selectedPreset;
@@ -231,12 +232,20 @@ class Step2Limits extends StatelessWidget {
   final ValueChanged<String?> onPresetChanged;
   final ValueChanged<int> onDwellChanged;
 
+  /// Called when a capability flag is toggled by the SuperAdmin.
+  /// Key is the capability identifier (e.g. 'allows_sealing').
+  final void Function(String key, bool value) onCapabilityToggled;
+
+  /// Called when the kinematic speed slider changes.
+  final ValueChanged<double> onSpeedChanged;
+
   const Step2Limits({
     super.key,
     required this.formKey,
     required this.maxVehiclesCtrl,
     required this.maxContractsCtrl,
     required this.toolCostCtrl,
+    required this.reasonCtrl,
     required this.tradeName,
     required this.planLabel,
     this.selectedPreset,
@@ -244,6 +253,8 @@ class Step2Limits extends StatelessWidget {
     required this.dwellTimeSeconds,
     required this.onPresetChanged,
     required this.onDwellChanged,
+    required this.onCapabilityToggled,
+    required this.onSpeedChanged,
   });
 
   @override
@@ -312,12 +323,19 @@ class Step2Limits extends StatelessWidget {
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 12),
+
+          // ── Tipo de Operação (Template Disparador) ─────────────────────────
           Text(
             'Tipo de Operação',
             style: Theme.of(context).textTheme.titleSmall,
           ),
+          const SizedBox(height: 4),
+          const Text(
+            'Selecione um preset para pré-configurar os módulos abaixo. '
+            'Todos os campos permanecem editáveis.',
+            style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
+          ),
           const SizedBox(height: 8),
-          // OrgPresetViewModel.labels replaces OrgVerticalPreset.labels
           SegmentedButton<String>(
             segments: OrgPresetViewModel.labels.entries
                 .map(
@@ -330,10 +348,51 @@ class Step2Limits extends StatelessWidget {
             onSelectionChanged: (s) =>
                 onPresetChanged(s.isEmpty ? null : s.first),
           ),
+
+          // ── Banner de preset aplicado ──────────────────────────────────────
           if (selectedPreset != null) ...[
-            const SizedBox(height: 12),
-            OrgCapabilitiesChips(capabilities: capabilities),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: VeraProbColors.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: VeraProbColors.warning.withValues(alpha: 0.5),
+                ),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.tune, size: 15, color: VeraProbColors.warning),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Preset aplicado. Você pode customizar os módulos abaixo '
+                      'conforme o contrato específico.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: VeraProbColors.warning,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
+
+          // ── Módulos operacionais (FilterChips editáveis) ───────────────────
+          const SizedBox(height: 16),
+          Text(
+            'Módulos Operacionais',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          OrgCapabilitiesEditor(
+            capabilities: capabilities,
+            onToggled: onCapabilityToggled,
+          ),
+
           const SizedBox(height: 20),
           TextFormField(
             controller: toolCostCtrl,
@@ -355,10 +414,24 @@ class Step2Limits extends StatelessWidget {
               return null;
             },
           ),
+
+          // ── Tempo de Parada Inicial (Padrão) ──────────────────────────────
           const SizedBox(height: 20),
-          Text(
-            'Tempo de Parada Padrão',
-            style: Theme.of(context).textTheme.titleSmall,
+          Row(
+            children: [
+              Text(
+                'Tempo de Parada Inicial (Padrão)',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(width: 6),
+              const InfoTooltip(
+                message:
+                    'Valor inicial padrão para fechamento automático de parada. '
+                    'O Admin da Org poderá alterar este valor após o onboarding '
+                    'nas configurações de negócio.',
+                variant: InfoTooltipVariant.info,
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
@@ -386,60 +459,164 @@ class Step2Limits extends StatelessWidget {
               onChanged: (v) => onDwellChanged(v.round()),
             ),
           ),
+
+          // ── Velocidade Máx. Inicial (Padrão) — sempre visível ─────────────
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                'Velocidade Máx. Inicial (Padrão)',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(width: 6),
+              const InfoTooltip(
+                message:
+                    'Limite de velocidade que gera alerta no monitor. '
+                    'O Admin da Org poderá ajustar este valor nas configurações '
+                    'de negócio após o onboarding.',
+                variant: InfoTooltipVariant.info,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            capabilities.maxKinematicSpeedKmh != null
+                ? '${capabilities.maxKinematicSpeedKmh!.toStringAsFixed(0)} km/h'
+                : '—  (sem limite configurado)',
+            style: const TextStyle(
+              fontSize: 13,
+              color: VeraProbColors.textSecondary,
+            ),
+          ),
+          SliderTheme(
+            data: const SliderThemeData(
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
+              trackHeight: 2,
+              activeTrackColor: VeraProbColors.secondary,
+              inactiveTrackColor: VeraProbColors.border,
+              thumbColor: VeraProbColors.secondary,
+            ),
+            child: Slider(
+              value: (capabilities.maxKinematicSpeedKmh ?? 80.0).clamp(
+                10.0,
+                200.0,
+              ),
+              min: 10,
+              max: 200,
+              divisions: 38,
+              label:
+                  '${(capabilities.maxKinematicSpeedKmh ?? 80.0).toStringAsFixed(0)} km/h',
+              onChanged: (v) => onSpeedChanged(v),
+            ),
+          ),
+
+          // ── Justificativa (obrigatória em todo cadastro) ───────────────────
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 12),
+          Text(
+            'Justificativa *',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Obrigatória para rastreabilidade no log de auditoria.',
+            style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: reasonCtrl,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              hintText:
+                  'Ex: Criação de novo tenant conforme contrato comercial #123',
+              alignLabelWithHint: true,
+            ),
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) {
+                return 'Justificativa é obrigatória';
+              }
+              if (v.trim().length < 10) {
+                return 'Mínimo de 10 caracteres';
+              }
+              return null;
+            },
+          ),
         ],
       ),
     );
   }
 }
 
-/// Renders capability flags from an [OrgCapabilitiesViewModel] as chips.
+// ── OrgCapabilitiesEditor (FilterChips interativos) ───────────────────────────
+
+/// Renders capability flags from an [OrgCapabilitiesViewModel] as interactive
+/// [FilterChip] widgets. The SuperAdmin can toggle any flag freely — the preset
+/// acts as a template, not a blocking state.
 ///
 /// **INV-4 / Lens 2:** This widget only knows about [OrgCapabilitiesViewModel]
 /// (application layer) — never about [OrgCapabilities] (domain).
-class OrgCapabilitiesChips extends StatelessWidget {
-  const OrgCapabilitiesChips({super.key, required this.capabilities});
+class OrgCapabilitiesEditor extends StatelessWidget {
+  const OrgCapabilitiesEditor({
+    super.key,
+    required this.capabilities,
+    required this.onToggled,
+  });
 
   /// Presentation-safe capabilities ViewModel. No domain type here.
   final OrgCapabilitiesViewModel capabilities;
 
+  /// Called when a capability is toggled. [key] maps to the capability name
+  /// (e.g. 'allows_sealing') and [value] is the new boolean state.
+  final void Function(String key, bool value) onToggled;
+
   @override
   Widget build(BuildContext context) {
-    final chips = <_CapChip>[
-      _CapChip('Lacre', capabilities.allowsSealing, Icons.lock_outline),
-      _CapChip(
+    final chips = <_EditorChip>[
+      _EditorChip(
+        'Lacre',
+        'allows_sealing',
+        capabilities.allowsSealing,
+        Icons.lock_outline,
+      ),
+      _EditorChip(
         'Carregamento',
+        'allows_loading',
         capabilities.allowsLoading,
         Icons.inventory_2_outlined,
       ),
-      _CapChip(
+      _EditorChip(
         'Cargo Check',
+        'allows_cargo_check',
         capabilities.allowsCargoCheck,
         Icons.fact_check_outlined,
       ),
-      _CapChip(
+      _EditorChip(
         'Incidente',
+        'allows_incident',
         capabilities.allowsIncident,
         Icons.warning_amber_outlined,
       ),
-      _CapChip('Doc', capabilities.allowsDoc, Icons.description_outlined),
-      _CapChip(
+      _EditorChip(
+        'Doc',
+        'allows_doc',
+        capabilities.allowsDoc,
+        Icons.description_outlined,
+      ),
+      _EditorChip(
         'Smart Classify',
+        'smart_classify',
         capabilities.smartClassify,
         Icons.auto_awesome_outlined,
       ),
-      if (capabilities.maxKinematicSpeedKmh != null)
-        _CapChip(
-          '${capabilities.maxKinematicSpeedKmh!.toStringAsFixed(0)} km/h',
-          true,
-          Icons.speed_outlined,
-        ),
     ];
 
     return Wrap(
       spacing: 6,
       runSpacing: 4,
       children: chips.map((c) {
-        return Chip(
+        return FilterChip(
           avatar: Icon(
             c.icon,
             size: 14,
@@ -456,9 +633,11 @@ class OrgCapabilitiesChips extends StatelessWidget {
                   : VeraProbColors.textDisabled,
             ),
           ),
-          backgroundColor: c.enabled
-              ? VeraProbColors.success.withValues(alpha: 0.1)
-              : VeraProbColors.border.withValues(alpha: 0.3),
+          selected: c.enabled,
+          onSelected: (v) => onToggled(c.key, v),
+          selectedColor: VeraProbColors.success.withValues(alpha: 0.1),
+          backgroundColor: VeraProbColors.border.withValues(alpha: 0.3),
+          checkmarkColor: VeraProbColors.success,
           side: BorderSide(
             color: c.enabled
                 ? VeraProbColors.success.withValues(alpha: 0.4)
@@ -467,15 +646,17 @@ class OrgCapabilitiesChips extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 4),
           visualDensity: VisualDensity.compact,
+          showCheckmark: true,
         );
       }).toList(),
     );
   }
 }
 
-class _CapChip {
-  const _CapChip(this.label, this.enabled, this.icon);
+class _EditorChip {
+  const _EditorChip(this.label, this.key, this.enabled, this.icon);
   final String label;
+  final String key;
   final bool enabled;
   final IconData icon;
 }

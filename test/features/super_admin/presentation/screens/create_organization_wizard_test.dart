@@ -192,6 +192,15 @@ void main() {
         ),
         '50000',
       );
+      await tester.enterText(
+        find.ancestor(
+          of: find.text(
+            'Ex: Criação de novo tenant conforme contrato comercial #123',
+          ),
+          matching: find.byType(TextFormField),
+        ),
+        'Criação de novo tenant conforme contrato #123',
+      );
 
       await tester.tap(find.text('Próximo'));
       await tester.pumpAndSettle();
@@ -292,6 +301,15 @@ void main() {
             matching: find.byType(TextFormField),
           ),
           '50000',
+        );
+        await tester.enterText(
+          find.ancestor(
+            of: find.text(
+              'Ex: Criação de novo tenant conforme contrato comercial #123',
+            ),
+            matching: find.byType(TextFormField),
+          ),
+          'Criação de novo tenant conforme contrato #123',
         );
         await tester.tap(find.text('Próximo'));
         await tester.pumpAndSettle();

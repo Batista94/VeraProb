@@ -87,7 +87,7 @@ class UpdateOrgOperationalParamsHandler {
 
     // ── Step 6: Build old snapshot
     final oldSnapshot = <String, Object?>{
-      'dwell_time_seconds': org.capabilities.toJson(),
+      'dwell_time_seconds': org.dwellTimeSeconds,
       'max_kinematic_speed_kmh': org.capabilities.maxKinematicSpeedKmh,
     };
 
@@ -96,7 +96,10 @@ class UpdateOrgOperationalParamsHandler {
       maxKinematicSpeedKmh: cmd.maxKinematicSpeedKmh,
     );
 
-    final updatedOrg = org.copyWith(capabilities: updatedCapabilities);
+    final updatedOrg = org.copyWith(
+      capabilities: updatedCapabilities,
+      dwellTimeSeconds: cmd.dwellTimeSeconds,
+    );
 
     // ── Step 8: Persist
     await _repository.update(updatedOrg);

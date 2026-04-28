@@ -32,6 +32,10 @@ class CreateOrganizationCommand {
   /// Default stop dwell threshold in seconds.
   final int dwellTimeSeconds;
 
+  /// Mandatory justification recorded in system_audit_log for ORG_CREATED.
+  /// Null is only valid for programmatic/test callers; the UI always requires it.
+  final String? reason;
+
   const CreateOrganizationCommand({
     required this.legalName,
     required this.tradeName,
@@ -46,5 +50,6 @@ class CreateOrganizationCommand {
     this.capabilities,
     this.toolCostCents,
     this.dwellTimeSeconds = 300,
+    this.reason,
   });
 }

@@ -1,10 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/application/admin/invite_user_command.dart';
+import 'package:veraprob/application/audit/system_audit_log_service.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/domain/admin/actor_type.dart';
 import 'package:veraprob/domain/super_admin/plan_limits.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
@@ -21,13 +23,15 @@ class CreateOrganizationHandler {
   final ISuperAdminRepository _repository;
   final SupabaseClient _authenticatedClient;
   final IDateTimeProvider _dateTimeProvider;
+  final SystemAuditLogService? _auditLogService;
   final RbacService _rbac = RbacService();
 
   CreateOrganizationHandler(
     this._repository,
     this._authenticatedClient,
-    this._dateTimeProvider,
-  );
+    this._dateTimeProvider, {
+    SystemAuditLogService? auditLogService,
+  }) : _auditLogService = auditLogService;
 
   Future<CreateOrganizationResult> handle(CreateOrganizationCommand cmd) async {
     // 1. RBAC — before any I/O
@@ -61,6 +65,18 @@ class CreateOrganizationHandler {
       );
     }
 
+    // 4b. reason required — every ORG_CREATED must have a justification in the audit log.
+    if (cmd.reason == null || cmd.reason!.trim().isEmpty) {
+      throw const DomainException(
+        'Justificativa de criação é obrigatória para o log de auditoria.',
+      );
+    }
+    if (cmd.reason!.trim().length < 10) {
+      throw const DomainException(
+        'Justificativa deve ter pelo menos 10 caracteres.',
+      );
+    }
+
     // 5. Auto-fill quota limits from PlanLimits defaults when not explicitly provided
     final planType = cmd.planType;
     final effectiveCmd =
@@ -80,6 +96,7 @@ class CreateOrganizationHandler {
             capabilities: cmd.capabilities,
             toolCostCents: cmd.toolCostCents,
             dwellTimeSeconds: cmd.dwellTimeSeconds,
+            reason: cmd.reason,
           )
         : cmd;
 
@@ -123,7 +140,28 @@ class CreateOrganizationHandler {
       ),
     );
 
-    // 8. Return immutable result
+    // 8. Log ORG_CREATED governance event (INV-3: audit trail)
+    if (_auditLogService != null) {
+      await _auditLogService.logGovernanceChange(
+        eventType: 'ORG_CREATED',
+        reason: cmd.reason!.trim(),
+        actorType: ActorType.human,
+        organizationId: orgId,
+        organizationName: effectiveCmd.tradeName,
+        oldSnapshot: const <String, Object?>{},
+        newSnapshot: <String, Object?>{
+          'legal_name': effectiveCmd.legalName,
+          'trade_name': effectiveCmd.tradeName,
+          'cnpj': effectiveCmd.cnpj,
+          'plan_type': effectiveCmd.planType.dbValue,
+          'max_vehicles': effectiveCmd.maxVehicles,
+          'max_active_contracts': effectiveCmd.maxActiveContracts,
+          'dwell_time_seconds': effectiveCmd.dwellTimeSeconds,
+        },
+      );
+    }
+
+    // 9. Return immutable result
     return CreateOrganizationResult(orgId: orgId, invitationToken: token);
   }
 

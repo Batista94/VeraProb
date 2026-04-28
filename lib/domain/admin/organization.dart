@@ -28,6 +28,10 @@ class Organization extends Equatable {
   final String? contactEmail;
   final String? externalId;
 
+  // Phase 10.3: operational business defaults (INV-14 — config, not hard limit)
+  /// Stop dwell threshold in seconds. Org Admin can override this after onboarding.
+  final int dwellTimeSeconds;
+
   const Organization({
     required this.id,
     required this.name,
@@ -46,6 +50,7 @@ class Organization extends Equatable {
     this.billingDay,
     this.contactEmail,
     this.externalId,
+    this.dwellTimeSeconds = 300,
   });
 
   /// Retro-compatible getter: true only when status is ACTIVE.
@@ -70,6 +75,7 @@ class Organization extends Equatable {
     int? billingDay,
     String? contactEmail,
     String? externalId,
+    int? dwellTimeSeconds,
   }) {
     return Organization(
       id: id,
@@ -89,6 +95,7 @@ class Organization extends Equatable {
       billingDay: billingDay ?? this.billingDay,
       contactEmail: contactEmail ?? this.contactEmail,
       externalId: externalId ?? this.externalId,
+      dwellTimeSeconds: dwellTimeSeconds ?? this.dwellTimeSeconds,
     );
   }
 
@@ -111,5 +118,6 @@ class Organization extends Equatable {
     billingDay,
     contactEmail,
     externalId,
+    dwellTimeSeconds,
   ];
 }

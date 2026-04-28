@@ -56,6 +56,7 @@ final createOrganizationHandlerProvider = Provider<CreateOrganizationHandler>((
     repo,
     ref.watch(supabaseClientProvider),
     ref.watch(dateTimeProviderProvider),
+    auditLogService: ref.watch(systemAuditLogServiceProvider),
   );
 });
 

@@ -10,6 +10,7 @@ import 'package:veraprob/application/admin/remove_member_handler.dart';
 import 'package:veraprob/application/admin/revoke_invitation_handler.dart';
 import 'package:veraprob/application/admin/create_execution_handler.dart';
 import 'package:veraprob/application/admin/update_org_settings_handler.dart';
+import 'package:veraprob/application/admin/update_org_operational_params_handler.dart';
 import 'package:veraprob/application/admin/user_management_command_service.dart';
 import 'package:veraprob/domain/admin/data_seeding_repository.dart';
 import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
@@ -138,6 +139,15 @@ final updateOrgSettingsHandlerProvider = Provider<UpdateOrgSettingsHandler>((
     auditLogService: ref.watch(systemAuditLogServiceProvider),
   );
 });
+
+final updateOrgOperationalParamsHandlerProvider =
+    Provider<UpdateOrgOperationalParamsHandler>((ref) {
+      return UpdateOrgOperationalParamsHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
+        repository: ref.watch(organizationRepositoryProvider),
+        auditLogService: ref.watch(systemAuditLogServiceProvider),
+      );
+    });
 
 final createExecutionHandlerProvider = Provider<CreateExecutionHandler>((ref) {
   return CreateExecutionHandler(

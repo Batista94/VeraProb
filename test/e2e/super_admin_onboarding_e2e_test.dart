@@ -112,6 +112,7 @@ void main() async {
             initialAdminEmail: adminEmail,
             superAdminUserId: superAdminUserId,
             toolCostCents: 50000,
+            reason: 'Onboarding E2E test',
           );
 
           // Fluxo completo: RBAC → validação → createOrg → billingEvent → convite

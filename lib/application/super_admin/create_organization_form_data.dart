@@ -30,6 +30,10 @@ class CreateOrganizationFormData {
   final int? toolCostCents;
   final int dwellTimeSeconds;
 
+  /// Mandatory justification for the ORG_CREATED audit log entry.
+  /// The UI always requires this; null is only valid for test callers.
+  final String? reason;
+
   const CreateOrganizationFormData({
     required this.legalName,
     required this.tradeName,
@@ -44,6 +48,7 @@ class CreateOrganizationFormData {
     this.capabilities = OrgCapabilitiesViewModel.defaults,
     this.toolCostCents,
     this.dwellTimeSeconds = 300,
+    this.reason,
   });
 
   CreateOrganizationCommand toCommand() {
@@ -62,6 +67,7 @@ class CreateOrganizationFormData {
       capabilities: capabilities.toDomain(),
       toolCostCents: toolCostCents,
       dwellTimeSeconds: dwellTimeSeconds,
+      reason: reason,
     );
   }
 }
