@@ -1,3 +1,5 @@
+import 'package:veraprob/domain/admin/org_capabilities.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
 
 /// Mutable form DTO for the Update Quota dialog.
@@ -11,6 +13,9 @@ class UpdateQuotaFormData {
   final int? newMaxActiveContracts;
   final String superAdminUserId;
   final String? reason;
+  final OrgCapabilities? capabilities;
+  final int? toolCostCents;
+  final int? dwellTimeSeconds;
 
   const UpdateQuotaFormData({
     required this.organizationId,
@@ -19,9 +24,17 @@ class UpdateQuotaFormData {
     this.newMaxActiveContracts,
     required this.superAdminUserId,
     this.reason,
+    this.capabilities,
+    this.toolCostCents,
+    this.dwellTimeSeconds,
   });
 
   UpdateOrganizationQuotaCommand toCommand() {
+    if (toolCostCents == null) {
+      throw const DomainException(
+        'Custo mensal da ferramenta é obrigatório para calcular o ROI.',
+      );
+    }
     return UpdateOrganizationQuotaCommand(
       organizationId: organizationId,
       newPlanType: newPlanType,
@@ -30,6 +43,9 @@ class UpdateQuotaFormData {
       superAdminUserId: superAdminUserId,
       reason: reason,
       sessionId: '', // super-admin context — no regular session
+      capabilities: capabilities,
+      toolCostCents: toolCostCents,
+      dwellTimeSeconds: dwellTimeSeconds,
     );
   }
 }

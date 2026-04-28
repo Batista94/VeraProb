@@ -1,3 +1,4 @@
+import 'package:veraprob/domain/admin/org_capabilities.dart';
 import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
 
 /// Read model for [TenantHealthSnapshot] used in presentation layer.
@@ -12,6 +13,9 @@ class TenantHealthView {
   final int activeContractCount;
   final DateTime? lastTelemetryAt;
   final int openCriticalAlertCount;
+  final OrgCapabilities capabilities;
+  final int? toolCostCents;
+  final int dwellTimeSeconds;
 
   const TenantHealthView({
     required this.id,
@@ -24,6 +28,9 @@ class TenantHealthView {
     required this.activeContractCount,
     this.lastTelemetryAt,
     required this.openCriticalAlertCount,
+    this.capabilities = OrgCapabilities.defaults,
+    this.toolCostCents,
+    this.dwellTimeSeconds = 300,
   });
 
   bool get hasCriticalAlerts => openCriticalAlertCount > 0;
@@ -44,6 +51,14 @@ class TenantHealthView {
   }
 
   factory TenantHealthView.fromJson(Map<String, Object?> json) {
+    final rawCaps = json['capabilities'];
+    OrgCapabilities caps = OrgCapabilities.defaults;
+    if (rawCaps is Map<String, dynamic>) {
+      caps = OrgCapabilities.fromJson(rawCaps);
+    } else if (rawCaps is Map) {
+      caps = OrgCapabilities.fromJson(Map<String, dynamic>.from(rawCaps));
+    }
+
     return TenantHealthView(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -59,6 +74,9 @@ class TenantHealthView {
           : null,
       openCriticalAlertCount:
           (json['open_critical_alert_count'] as num?)?.toInt() ?? 0,
+      capabilities: caps,
+      toolCostCents: (json['tool_cost_cents'] as num?)?.toInt(),
+      dwellTimeSeconds: (json['dwell_time_seconds'] as num?)?.toInt() ?? 300,
     );
   }
 }

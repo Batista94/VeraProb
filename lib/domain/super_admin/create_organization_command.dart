@@ -1,3 +1,4 @@
+import 'package:veraprob/domain/admin/org_capabilities.dart';
 import 'package:veraprob/domain/super_admin/plan_type.dart';
 
 /// Immutable command DTO for creating a new tenant organization.
@@ -11,7 +12,7 @@ class CreateOrganizationCommand {
   final String cnpj;
   final String timezone;
   final String currencyCode;
-  final PlanType planType; // Changed from String to PlanType
+  final PlanType planType;
 
   /// Max vehicles quota. `null` means "derive from [planType] defaults at handler time".
   final int? maxVehicles;
@@ -21,6 +22,15 @@ class CreateOrganizationCommand {
 
   final String initialAdminEmail;
   final String superAdminUserId;
+
+  /// Operational capability flags. Defaults to [OrgCapabilities.defaults] if null.
+  final OrgCapabilities? capabilities;
+
+  /// Monthly SaaS cost in cents (INV-4). Required for ROI Guardian calculation.
+  final int? toolCostCents;
+
+  /// Default stop dwell threshold in seconds.
+  final int dwellTimeSeconds;
 
   const CreateOrganizationCommand({
     required this.legalName,
@@ -33,5 +43,8 @@ class CreateOrganizationCommand {
     this.maxActiveContracts,
     required this.initialAdminEmail,
     required this.superAdminUserId,
+    this.capabilities,
+    this.toolCostCents,
+    this.dwellTimeSeconds = 300,
   });
 }

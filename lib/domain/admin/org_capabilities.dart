@@ -10,6 +10,7 @@ class OrgCapabilities extends Equatable {
   final bool allowsIncident; // incidente category
   final bool allowsDoc; // doc category
   final bool smartClassify; // GPS auto-classify via EXIF geofence
+  final double? maxKinematicSpeedKmh; // Physical Metric - Double Required
 
   const OrgCapabilities({
     this.allowsSealing = true,
@@ -18,6 +19,7 @@ class OrgCapabilities extends Equatable {
     this.allowsIncident = true,
     this.allowsDoc = true,
     this.smartClassify = true,
+    this.maxKinematicSpeedKmh,
   });
 
   static const OrgCapabilities defaults = OrgCapabilities();
@@ -30,6 +32,8 @@ class OrgCapabilities extends Equatable {
       allowsIncident: json['allows_incident'] as bool? ?? true,
       allowsDoc: json['allows_doc'] as bool? ?? true,
       smartClassify: json['smart_classify'] as bool? ?? true,
+      maxKinematicSpeedKmh: (json['max_kinematic_speed_kmh'] as num?)
+          ?.toDouble(),
     );
   }
 
@@ -40,6 +44,8 @@ class OrgCapabilities extends Equatable {
     'allows_incident': allowsIncident,
     'allows_doc': allowsDoc,
     'smart_classify': smartClassify,
+    if (maxKinematicSpeedKmh != null)
+      'max_kinematic_speed_kmh': maxKinematicSpeedKmh,
   };
 
   /// Category keys that should be hidden from the evidence menu for this org.
@@ -59,6 +65,7 @@ class OrgCapabilities extends Equatable {
     bool? allowsIncident,
     bool? allowsDoc,
     bool? smartClassify,
+    double? maxKinematicSpeedKmh, // Physical Metric - Double Required
   }) {
     return OrgCapabilities(
       allowsSealing: allowsSealing ?? this.allowsSealing,
@@ -67,6 +74,7 @@ class OrgCapabilities extends Equatable {
       allowsIncident: allowsIncident ?? this.allowsIncident,
       allowsDoc: allowsDoc ?? this.allowsDoc,
       smartClassify: smartClassify ?? this.smartClassify,
+      maxKinematicSpeedKmh: maxKinematicSpeedKmh ?? this.maxKinematicSpeedKmh,
     );
   }
 
@@ -78,5 +86,6 @@ class OrgCapabilities extends Equatable {
     allowsIncident,
     allowsDoc,
     smartClassify,
+    maxKinematicSpeedKmh,
   ];
 }

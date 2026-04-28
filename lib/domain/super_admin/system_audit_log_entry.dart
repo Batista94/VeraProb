@@ -8,12 +8,16 @@ class SystemAuditLogEntry {
   final String? organizationId;
   final Map<String, dynamic>? payload;
 
+  /// Origin of the event: 'system', 'flutter_web', 'edge_function', etc.
+  final String? source;
+
   const SystemAuditLogEntry({
     required this.severity,
     required this.eventType,
     required this.occurredAt,
     this.organizationId,
     this.payload,
+    this.source,
   });
 
   factory SystemAuditLogEntry.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,7 @@ class SystemAuditLogEntry {
       occurredAt: json['occurred_at'] as String? ?? '',
       organizationId: json['organization_id'] as String?,
       payload: json['payload'] as Map<String, dynamic>?,
+      source: json['source'] as String?,
     );
   }
 }

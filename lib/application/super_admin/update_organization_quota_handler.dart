@@ -54,6 +54,13 @@ class UpdateOrganizationQuotaHandler {
       );
     }
 
+    // ── Step 4a: tool_cost_cents required — ROI Guardian cannot function without it
+    if (cmd.toolCostCents == null) {
+      throw const DomainException(
+        'Custo mensal da ferramenta é obrigatório para calcular o ROI.',
+      );
+    }
+
     // ── Step 5: Delegate to repository ───────────────────────────────────
     try {
       await _repository.updateOrganizationQuota(cmd);

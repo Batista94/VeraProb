@@ -5,9 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/create_organization_form_data.dart';
+import 'package:veraprob/domain/admin/org_capabilities.dart';
+import 'package:veraprob/domain/super_admin/org_vertical_preset.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
@@ -57,6 +60,12 @@ class _CreateOrganizationWizardState
   // Step 2 controllers
   final _maxVehiclesCtrl = TextEditingController(text: '50');
   final _maxContractsCtrl = TextEditingController(text: '10');
+  final _toolCostCtrl = TextEditingController();
+
+  // Step 2 operational config state
+  String? _selectedPreset;
+  OrgCapabilities _capabilities = OrgCapabilities.defaults;
+  int _dwellTimeSeconds = 300;
 
   // Step 3 controllers
   final _adminEmailCtrl = TextEditingController();
@@ -81,8 +90,18 @@ class _CreateOrganizationWizardState
     _cnpjCtrl.dispose();
     _maxVehiclesCtrl.dispose();
     _maxContractsCtrl.dispose();
+    _toolCostCtrl.dispose();
     _adminEmailCtrl.dispose();
     super.dispose();
+  }
+
+  void _onPresetChanged(String? preset) {
+    setState(() {
+      _selectedPreset = preset;
+      _capabilities = preset != null
+          ? (OrgVerticalPreset.defaults[preset] ?? OrgCapabilities.defaults)
+          : OrgCapabilities.defaults;
+    });
   }
 
   void _onCnpjChanged() {
@@ -172,7 +191,10 @@ class _CreateOrganizationWizardState
     return true;
   }
 
-  bool _validateStep2() => _step2Key.currentState?.validate() ?? false;
+  bool _validateStep2() {
+    if (!(_step2Key.currentState?.validate() ?? false)) return false;
+    return BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text) != null;
+  }
 
   bool _validateStep3() => _step3Key.currentState?.validate() ?? false;
 
@@ -218,6 +240,9 @@ class _CreateOrganizationWizardState
         maxActiveContracts: int.parse(_maxContractsCtrl.text.trim()),
         initialAdminEmail: _adminEmailCtrl.text.trim().toLowerCase(),
         superAdminUserId: superAdminId,
+        capabilities: _capabilities,
+        toolCostCents: BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text),
+        dwellTimeSeconds: _dwellTimeSeconds,
       ).toCommand();
 
       final result = await handler.handle(cmd);
@@ -407,9 +432,14 @@ class _CreateOrganizationWizardState
             formKey: _step2Key,
             maxVehiclesCtrl: _maxVehiclesCtrl,
             maxContractsCtrl: _maxContractsCtrl,
-            // Read-only summary from Step 1
+            toolCostCtrl: _toolCostCtrl,
             tradeName: _tradeNameCtrl.text,
             planLabel: _selectedPlan.label,
+            selectedPreset: _selectedPreset,
+            capabilities: _capabilities,
+            dwellTimeSeconds: _dwellTimeSeconds,
+            onPresetChanged: _onPresetChanged,
+            onDwellChanged: (v) => setState(() => _dwellTimeSeconds = v),
           ),
         ),
         Step(

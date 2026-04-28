@@ -40,6 +40,9 @@ class SupabaseSuperAdminRepository
           'p_max_vehicles': cmd.maxVehicles,
           'p_max_active_contracts': cmd.maxActiveContracts,
           'p_super_admin_user_id': cmd.superAdminUserId,
+          'p_capabilities': cmd.capabilities?.toJson(),
+          'p_tool_cost_cents': cmd.toolCostCents,
+          'p_dwell_time_seconds': cmd.dwellTimeSeconds,
         },
       );
       return result as String;
@@ -152,6 +155,9 @@ class SupabaseSuperAdminRepository
           'p_new_max_contracts': cmd.newMaxActiveContracts,
           'p_super_admin_user_id': cmd.superAdminUserId,
           'p_reason': cmd.reason,
+          'p_capabilities': cmd.capabilities?.toJson(),
+          'p_tool_cost_cents': cmd.toolCostCents,
+          'p_dwell_time_seconds': cmd.dwellTimeSeconds,
         },
       );
     } on PostgrestException catch (e) {

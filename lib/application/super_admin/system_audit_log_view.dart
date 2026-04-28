@@ -10,12 +10,16 @@ class SystemAuditLogView {
   final String? organizationId;
   final Map<String, Object?>? payload;
 
+  /// Origin of the event: 'system', 'flutter_web', 'edge_function', etc.
+  final String? source;
+
   const SystemAuditLogView({
     required this.severity,
     required this.eventType,
     required this.occurredAt,
     this.organizationId,
     this.payload,
+    this.source,
   });
 
   factory SystemAuditLogView.fromDomain(SystemAuditLogEntry domain) {
@@ -25,6 +29,7 @@ class SystemAuditLogView {
       occurredAt: domain.occurredAt,
       organizationId: domain.organizationId,
       payload: domain.payload?.cast<String, Object?>(),
+      source: domain.source,
     );
   }
 
@@ -40,6 +45,7 @@ class SystemAuditLogView {
           : rawPayload is Map
           ? Map<String, Object?>.from(rawPayload)
           : null,
+      source: json['source'] as String?,
     );
   }
 }

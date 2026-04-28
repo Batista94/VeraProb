@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/core/config/environment.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
@@ -28,21 +29,18 @@ final currentSuperAdminIdProvider = Provider<String?>((ref) {
   return authState?.session?.user.id;
 });
 
-/// Returns true if the current SuperAdmin has completed MFA (AAL2).
-///
-/// Relaxed in development: returns true if ENV=dev even if AAL1 (INV-6 relaxation).
 final isSuperAdminAal2Provider = Provider<bool>((ref) {
   final isSuperAdmin = ref.watch(isSuperAdminProvider);
   if (!isSuperAdmin) return false;
 
-  // Relax MFA requirement in development environment.
-  const isDev = String.fromEnvironment('ENV') == 'dev';
+  // Relax MFA requirement in development environment if SKIP_MFA_DEV is set.
+  if (EnvironmentConfig.skipMfaForSuperAdmin) return true;
 
   final session = ref.watch(authStateProvider).valueOrNull?.session;
   if (session == null) return false;
   final claims = decodeJwtPayload(session.accessToken);
 
-  return isDev || claims['aal'] == 'aal2';
+  return claims['aal'] == 'aal2';
 });
 
 /// Convenience alias — derives [UserRole.superAdmin] for RBAC use in handlers.

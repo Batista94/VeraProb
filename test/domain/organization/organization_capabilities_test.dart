@@ -100,5 +100,138 @@ void main() {
         isEmpty,
       ); // smartClassify doesn't hide menu items
     });
+
+    test('maxKinematicSpeedKmh parsed as double from int JSON value', () {
+      final caps = OrgCapabilities.fromJson({'max_kinematic_speed_kmh': 80});
+      expect(caps.maxKinematicSpeedKmh, 80.0);
+      expect(caps.maxKinematicSpeedKmh, isA<double>());
+    });
+
+    test('maxKinematicSpeedKmh parsed as double from double JSON value', () {
+      final caps = OrgCapabilities.fromJson({'max_kinematic_speed_kmh': 88.5});
+      expect(caps.maxKinematicSpeedKmh, 88.5);
+      expect(caps.maxKinematicSpeedKmh, isA<double>());
+    });
+
+    test(
+      'maxKinematicSpeedKmh absent from JSON → null (not truncated to 0)',
+      () {
+        final caps = OrgCapabilities.fromJson({});
+        expect(caps.maxKinematicSpeedKmh, isNull);
+      },
+    );
+  });
+
+  group('OrgCapabilities.toJson (INV-12: physical metric as double)', () {
+    test('default caps serializes flags correctly', () {
+      const caps = OrgCapabilities.defaults;
+      final json = caps.toJson();
+      expect(json['allows_sealing'], isTrue);
+      expect(json['allows_loading'], isTrue);
+      expect(json['allows_cargo_check'], isTrue);
+      expect(json['allows_incident'], isTrue);
+      expect(json['allows_doc'], isTrue);
+      expect(json['smart_classify'], isTrue);
+      expect(json.containsKey('max_kinematic_speed_kmh'), isFalse);
+    });
+
+    test('maxKinematicSpeedKmh included in JSON when set', () {
+      const caps = OrgCapabilities(maxKinematicSpeedKmh: 120.0);
+      final json = caps.toJson();
+      expect(json['max_kinematic_speed_kmh'], 120.0);
+      expect(json['max_kinematic_speed_kmh'], isA<double>());
+    });
+
+    test('maxKinematicSpeedKmh absent from JSON when null', () {
+      const caps = OrgCapabilities();
+      final json = caps.toJson();
+      expect(json.containsKey('max_kinematic_speed_kmh'), isFalse);
+    });
+
+    test('fromJson(toJson()) roundtrip preserves all fields', () {
+      const original = OrgCapabilities(
+        allowsSealing: false,
+        allowsLoading: true,
+        allowsCargoCheck: false,
+        allowsIncident: true,
+        allowsDoc: false,
+        smartClassify: false,
+        maxKinematicSpeedKmh: 95.5,
+      );
+      final restored = OrgCapabilities.fromJson(original.toJson());
+      expect(restored, equals(original));
+    });
+
+    test('roundtrip with null maxKinematicSpeedKmh', () {
+      const original = OrgCapabilities(allowsSealing: false);
+      final restored = OrgCapabilities.fromJson(original.toJson());
+      expect(restored, equals(original));
+      expect(restored.maxKinematicSpeedKmh, isNull);
+    });
+  });
+
+  group('OrgCapabilities.copyWith', () {
+    test('copyWith returns same values when no args passed', () {
+      const original = OrgCapabilities(
+        allowsSealing: false,
+        maxKinematicSpeedKmh: 80.0,
+      );
+      final copy = original.copyWith();
+      expect(copy, equals(original));
+    });
+
+    test('copyWith overrides single field', () {
+      const original = OrgCapabilities(allowsSealing: false);
+      final copy = original.copyWith(allowsSealing: true);
+      expect(copy.allowsSealing, isTrue);
+      expect(copy.allowsLoading, original.allowsLoading);
+    });
+
+    test('copyWith overrides maxKinematicSpeedKmh', () {
+      const original = OrgCapabilities(maxKinematicSpeedKmh: 80.0);
+      final copy = original.copyWith(maxKinematicSpeedKmh: 120.0);
+      expect(copy.maxKinematicSpeedKmh, 120.0);
+      expect(original.maxKinematicSpeedKmh, 80.0); // original unchanged
+    });
+
+    test('copyWith does not mutate original', () {
+      const original = OrgCapabilities(
+        allowsSealing: false,
+        maxKinematicSpeedKmh: 80.0,
+      );
+      original.copyWith(allowsSealing: true, maxKinematicSpeedKmh: 99.0);
+      expect(original.allowsSealing, isFalse);
+      expect(original.maxKinematicSpeedKmh, 80.0);
+    });
+  });
+
+  group('OrgCapabilities — Equatable (INV-7)', () {
+    test('identical instances are equal', () {
+      const a = OrgCapabilities(
+        allowsSealing: false,
+        maxKinematicSpeedKmh: 80.0,
+      );
+      const b = OrgCapabilities(
+        allowsSealing: false,
+        maxKinematicSpeedKmh: 80.0,
+      );
+      expect(a, equals(b));
+    });
+
+    test('instances differ on maxKinematicSpeedKmh', () {
+      const a = OrgCapabilities(maxKinematicSpeedKmh: 80.0);
+      const b = OrgCapabilities(maxKinematicSpeedKmh: 120.0);
+      expect(a, isNot(equals(b)));
+    });
+
+    test('instance with null maxKinematicSpeedKmh != instance with value', () {
+      const a = OrgCapabilities();
+      const b = OrgCapabilities(maxKinematicSpeedKmh: 80.0);
+      expect(a, isNot(equals(b)));
+    });
+
+    test('defaults == OrgCapabilities() with no args', () {
+      expect(OrgCapabilities.defaults, equals(const OrgCapabilities()));
+    });
   });
 }

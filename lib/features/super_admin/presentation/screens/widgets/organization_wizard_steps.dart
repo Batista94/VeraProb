@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/domain/admin/org_capabilities.dart';
+import 'package:veraprob/domain/super_admin/org_vertical_preset.dart';
+import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 
 const kBrTimezones = [
   'America/Sao_Paulo',
@@ -208,22 +212,34 @@ class Step1FiscalData extends StatelessWidget {
   }
 }
 
-// ── Step 2: Limits ─────────────────────────────────────────────────────────────
+// ── Step 2: Limits + Operational Config ───────────────────────────────────────
 
 class Step2Limits extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController maxVehiclesCtrl;
   final TextEditingController maxContractsCtrl;
+  final TextEditingController toolCostCtrl;
   final String tradeName;
   final String planLabel;
+  final String? selectedPreset;
+  final OrgCapabilities capabilities;
+  final int dwellTimeSeconds;
+  final ValueChanged<String?> onPresetChanged;
+  final ValueChanged<int> onDwellChanged;
 
   const Step2Limits({
     super.key,
     required this.formKey,
     required this.maxVehiclesCtrl,
     required this.maxContractsCtrl,
+    required this.toolCostCtrl,
     required this.tradeName,
     required this.planLabel,
+    this.selectedPreset,
+    required this.capabilities,
+    required this.dwellTimeSeconds,
+    required this.onPresetChanged,
+    required this.onDwellChanged,
   });
 
   @override
@@ -289,10 +305,168 @@ class Step2Limits extends StatelessWidget {
               return null;
             },
           ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 12),
+          Text(
+            'Tipo de Operação',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: OrgVerticalPreset.labels.entries
+                .map(
+                  (e) =>
+                      ButtonSegment<String>(value: e.key, label: Text(e.value)),
+                )
+                .toList(),
+            selected: selectedPreset != null ? {selectedPreset!} : {},
+            emptySelectionAllowed: true,
+            onSelectionChanged: (s) =>
+                onPresetChanged(s.isEmpty ? null : s.first),
+          ),
+          if (selectedPreset != null) ...[
+            const SizedBox(height: 12),
+            OrgCapabilitiesChips(capabilities: capabilities),
+          ],
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: toolCostCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Custo Mensal da Ferramenta *',
+              hintText: 'R\$ 0,00',
+              suffixIcon: InfoTooltip(
+                message:
+                    'Este valor é o divisor base para o cálculo do ROI Guardian no dashboard do cliente.',
+                variant: InfoTooltipVariant.info,
+              ),
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [BrlCurrencyInputFormatter()],
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
+              final cents = BrlCurrencyInputFormatter.toCents(v);
+              if (cents == null) return 'Valor inválido';
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Tempo de Parada Padrão',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${dwellTimeSeconds}s (~${(dwellTimeSeconds / 60).round()} min)',
+            style: const TextStyle(
+              fontSize: 13,
+              color: VeraProbColors.textSecondary,
+            ),
+          ),
+          SliderTheme(
+            data: const SliderThemeData(
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
+              trackHeight: 2,
+              activeTrackColor: VeraProbColors.secondary,
+              inactiveTrackColor: VeraProbColors.border,
+              thumbColor: VeraProbColors.secondary,
+            ),
+            child: Slider(
+              value: dwellTimeSeconds.toDouble(),
+              min: 60,
+              max: 1800,
+              divisions: 29,
+              label: '${dwellTimeSeconds}s',
+              onChanged: (v) => onDwellChanged(v.round()),
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+class OrgCapabilitiesChips extends StatelessWidget {
+  const OrgCapabilitiesChips({super.key, required this.capabilities});
+  final OrgCapabilities capabilities;
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <_CapChip>[
+      _CapChip('Lacre', capabilities.allowsSealing, Icons.lock_outline),
+      _CapChip(
+        'Carregamento',
+        capabilities.allowsLoading,
+        Icons.inventory_2_outlined,
+      ),
+      _CapChip(
+        'Cargo Check',
+        capabilities.allowsCargoCheck,
+        Icons.fact_check_outlined,
+      ),
+      _CapChip(
+        'Incidente',
+        capabilities.allowsIncident,
+        Icons.warning_amber_outlined,
+      ),
+      _CapChip('Doc', capabilities.allowsDoc, Icons.description_outlined),
+      _CapChip(
+        'Smart Classify',
+        capabilities.smartClassify,
+        Icons.auto_awesome_outlined,
+      ),
+      if (capabilities.maxKinematicSpeedKmh != null)
+        _CapChip(
+          '${capabilities.maxKinematicSpeedKmh!.toStringAsFixed(0)} km/h',
+          true,
+          Icons.speed_outlined,
+        ),
+    ];
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: chips.map((c) {
+        return Chip(
+          avatar: Icon(
+            c.icon,
+            size: 14,
+            color: c.enabled
+                ? VeraProbColors.success
+                : VeraProbColors.textDisabled,
+          ),
+          label: Text(
+            c.label,
+            style: TextStyle(
+              fontSize: 11,
+              color: c.enabled
+                  ? VeraProbColors.textPrimary
+                  : VeraProbColors.textDisabled,
+            ),
+          ),
+          backgroundColor: c.enabled
+              ? VeraProbColors.success.withValues(alpha: 0.1)
+              : VeraProbColors.border.withValues(alpha: 0.3),
+          side: BorderSide(
+            color: c.enabled
+                ? VeraProbColors.success.withValues(alpha: 0.4)
+                : VeraProbColors.border,
+            width: 0.5,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          visualDensity: VisualDensity.compact,
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _CapChip {
+  const _CapChip(this.label, this.enabled, this.icon);
+  final String label;
+  final bool enabled;
+  final IconData icon;
 }
 
 // ── Step 3: Admin Invite ───────────────────────────────────────────────────────

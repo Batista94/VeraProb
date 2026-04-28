@@ -36,6 +36,7 @@ CreateOrganizationCommand _validCmd({
   maxActiveContracts: 10,
   initialAdminEmail: email,
   superAdminUserId: 'super-admin-uuid-123',
+  toolCostCents: 50000,
 );
 
 void main() {
@@ -211,6 +212,73 @@ void main() {
       });
     });
 
+    group('toolCostCents validation (INV-10)', () {
+      test('throws DomainException when toolCostCents is null', () async {
+        const cmd = CreateOrganizationCommand(
+          legalName: 'Transportes Silva Ltda.',
+          tradeName: 'Silva Logística',
+          cnpj: '11222333000181',
+          timezone: 'America/Sao_Paulo',
+          currencyCode: 'BRL',
+          planType: PlanType.starter,
+          maxVehicles: 50,
+          maxActiveContracts: 10,
+          initialAdminEmail: 'admin@empresa.com.br',
+          superAdminUserId: 'super-admin-uuid-123',
+          toolCostCents: null, // must be rejected
+        );
+
+        await expectLater(
+          handler.handle(cmd),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains('ROI'),
+            ),
+          ),
+        );
+
+        verifyNever(() => mockRepo.createOrganization(any()));
+      });
+
+      test('accepts toolCostCents = 0 (free tier)', () async {
+        when(
+          () => mockRepo.createOrganization(any()),
+        ).thenThrow(Exception('stop here'));
+
+        const cmd = CreateOrganizationCommand(
+          legalName: 'Transportes Silva Ltda.',
+          tradeName: 'Silva Logística',
+          cnpj: '11222333000181',
+          timezone: 'America/Sao_Paulo',
+          currencyCode: 'BRL',
+          planType: PlanType.starter,
+          maxVehicles: 50,
+          maxActiveContracts: 10,
+          initialAdminEmail: 'admin@empresa.com.br',
+          superAdminUserId: 'super-admin-uuid-123',
+          toolCostCents: 0,
+        );
+
+        await expectLater(
+          handler.handle(cmd),
+          throwsA(isNot(isA<DomainException>())),
+        );
+      });
+
+      test('accepts toolCostCents > 0', () async {
+        when(
+          () => mockRepo.createOrganization(any()),
+        ).thenThrow(Exception('stop here'));
+
+        await expectLater(
+          handler.handle(_validCmd()),
+          throwsA(isNot(isA<DomainException>())),
+        );
+      });
+    });
+
     group('quota auto-fill from PlanType', () {
       // These tests verify what the handler passes to the repo.
       // createOrganization throws a sentinel Exception so the invite step is
@@ -236,6 +304,7 @@ void main() {
             // maxVehicles and maxActiveContracts intentionally omitted (null)
             initialAdminEmail: 'admin@empresa.com.br',
             superAdminUserId: 'super-admin-uuid-123',
+            toolCostCents: 50000,
           );
 
           await expectLater(

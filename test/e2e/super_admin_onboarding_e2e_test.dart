@@ -111,6 +111,7 @@ void main() async {
             maxActiveContracts: 20,
             initialAdminEmail: adminEmail,
             superAdminUserId: superAdminUserId,
+            toolCostCents: 50000,
           );
 
           // Fluxo completo: RBAC → validação → createOrg → billingEvent → convite

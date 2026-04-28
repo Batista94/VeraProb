@@ -116,6 +116,9 @@ void main() {
     testWidgets('Wizard Completion: Full 3-Step Flow and Success Dialog', (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       const orgId = 'new-org-id';
       var successCalled = false;
 
@@ -182,6 +185,13 @@ void main() {
         ),
         '50',
       );
+      await tester.enterText(
+        find.ancestor(
+          of: find.text('Custo Mensal da Ferramenta *'),
+          matching: find.byType(TextFormField),
+        ),
+        '50000',
+      );
 
       await tester.tap(find.text('Próximo'));
       await tester.pumpAndSettle();
@@ -220,6 +230,9 @@ void main() {
     testWidgets(
       'Wizard Error: Repository failure displays forensic error snackbar',
       (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
         // thenThrow fires synchronously — the async wrapper never completes,
         // so Flutter's runner intercepts it before the wizard's try/catch.
         // thenAnswer with an async throw produces a rejected Future that
@@ -272,6 +285,13 @@ void main() {
             matching: find.byType(TextFormField),
           ),
           '5',
+        );
+        await tester.enterText(
+          find.ancestor(
+            of: find.text('Custo Mensal da Ferramenta *'),
+            matching: find.byType(TextFormField),
+          ),
+          '50000',
         );
         await tester.tap(find.text('Próximo'));
         await tester.pumpAndSettle();

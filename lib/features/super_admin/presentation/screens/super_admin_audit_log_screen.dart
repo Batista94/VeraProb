@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/widgets/audit_payload_diff_view.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 const _kSeverities = ['debug', 'info', 'warning', 'error', 'critical'];
@@ -199,8 +200,9 @@ class _LogList extends StatelessWidget {
           trailing: log.payload != null
               ? IconButton(
                   icon: const Icon(Icons.data_object, size: 18),
-                  tooltip: 'Ver payload',
-                  onPressed: () => _showPayload(context, log.payload!),
+                  tooltip: 'Ver detalhes',
+                  onPressed: () =>
+                      _showPayload(context, log.payload!, log.source),
                 )
               : null,
         );
@@ -208,13 +210,23 @@ class _LogList extends StatelessWidget {
     );
   }
 
-  void _showPayload(BuildContext context, Map<String, dynamic> payload) {
+  void _showPayload(
+    BuildContext context,
+    Map<String, dynamic> payload,
+    String? source,
+  ) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Payload'),
-        content: SingleChildScrollView(
-          child: SelectableText(payload.toString()),
+        title: const Text('Detalhes do Evento'),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: AuditPayloadDiffView(
+              payload: payload.cast<String, Object?>(),
+              source: source,
+            ),
+          ),
         ),
         actions: [
           TextButton(

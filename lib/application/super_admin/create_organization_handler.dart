@@ -54,6 +54,13 @@ class CreateOrganizationHandler {
       throw const DomainException('E-mail inválido.');
     }
 
+    // 4a. tool_cost_cents required — ROI Guardian cannot function without it (INV-10)
+    if (cmd.toolCostCents == null) {
+      throw const DomainException(
+        'Custo mensal da ferramenta é obrigatório para calcular o ROI.',
+      );
+    }
+
     // 5. Auto-fill quota limits from PlanLimits defaults when not explicitly provided
     final planType = cmd.planType;
     final effectiveCmd =
@@ -70,6 +77,9 @@ class CreateOrganizationHandler {
                 cmd.maxActiveContracts ?? PlanLimits.maxContracts(planType),
             initialAdminEmail: cmd.initialAdminEmail,
             superAdminUserId: cmd.superAdminUserId,
+            capabilities: cmd.capabilities,
+            toolCostCents: cmd.toolCostCents,
+            dwellTimeSeconds: cmd.dwellTimeSeconds,
           )
         : cmd;
 

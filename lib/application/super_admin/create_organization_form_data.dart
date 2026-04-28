@@ -1,4 +1,5 @@
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/domain/admin/org_capabilities.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 
 /// Mutable form DTO for the Create Organization wizard.
@@ -10,11 +11,14 @@ class CreateOrganizationFormData {
   final String cnpj;
   final String timezone;
   final String currencyCode;
-  final PlanType planType; // Changed from String to PlanType
+  final PlanType planType;
   final int? maxVehicles;
   final int? maxActiveContracts;
   final String initialAdminEmail;
   final String superAdminUserId;
+  final OrgCapabilities capabilities;
+  final int? toolCostCents;
+  final int dwellTimeSeconds;
 
   const CreateOrganizationFormData({
     required this.legalName,
@@ -27,6 +31,9 @@ class CreateOrganizationFormData {
     this.maxActiveContracts,
     required this.initialAdminEmail,
     required this.superAdminUserId,
+    this.capabilities = OrgCapabilities.defaults,
+    this.toolCostCents,
+    this.dwellTimeSeconds = 300,
   });
 
   CreateOrganizationCommand toCommand() {
@@ -36,11 +43,14 @@ class CreateOrganizationFormData {
       cnpj: cnpj,
       timezone: timezone,
       currencyCode: currencyCode,
-      planType: planType, // Pure enum
+      planType: planType,
       maxVehicles: maxVehicles,
       maxActiveContracts: maxActiveContracts,
       initialAdminEmail: initialAdminEmail,
       superAdminUserId: superAdminUserId,
+      capabilities: capabilities,
+      toolCostCents: toolCostCents,
+      dwellTimeSeconds: dwellTimeSeconds,
     );
   }
 }

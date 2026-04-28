@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
+import 'package:veraprob/domain/admin/org_capabilities.dart';
+import 'package:veraprob/domain/super_admin/org_vertical_preset.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
+import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 
@@ -256,7 +261,11 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
   late PlanType _selectedPlan;
   late final TextEditingController _maxVehiclesCtrl;
   late final TextEditingController _maxContractsCtrl;
+  late final TextEditingController _toolCostCtrl;
   final TextEditingController _reasonCtrl = TextEditingController();
+  String? _selectedPreset;
+  late OrgCapabilities _capabilities;
+  late int _dwellTimeSeconds;
   bool _isSaving = false;
   String? _errorMessage;
 
@@ -276,17 +285,34 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
           ? ''
           : '${widget.snapshot.maxActiveContracts}',
     );
+    _capabilities = widget.snapshot.capabilities;
+    _dwellTimeSeconds = widget.snapshot.dwellTimeSeconds;
+    _toolCostCtrl = TextEditingController(
+      text: widget.snapshot.toolCostCents != null
+          ? BrlCurrencyInputFormatter.fromCents(widget.snapshot.toolCostCents!)
+          : '',
+    );
   }
 
   @override
   void dispose() {
     _maxVehiclesCtrl.dispose();
     _maxContractsCtrl.dispose();
+    _toolCostCtrl.dispose();
     _reasonCtrl.dispose();
     super.dispose();
   }
 
   bool get _isEnterprise => _selectedPlan == PlanType.enterprise;
+
+  void _onPresetChanged(String? preset) {
+    setState(() {
+      _selectedPreset = preset;
+      _capabilities = preset != null
+          ? (OrgVerticalPreset.defaults[preset] ?? _capabilities)
+          : _capabilities;
+    });
+  }
 
   Future<void> _submit() async {
     if (_isSaving) return;
@@ -312,6 +338,14 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
       return;
     }
 
+    final toolCostCents = BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text);
+    if (toolCostCents == null) {
+      setState(() {
+        _errorMessage = 'Informe o custo mensal da ferramenta.';
+      });
+      return;
+    }
+
     final superAdminId = ref.read(currentSuperAdminIdProvider);
     if (superAdminId == null) {
       setState(() {
@@ -332,6 +366,9 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
       newMaxActiveContracts: maxContracts,
       superAdminUserId: superAdminId,
       reason: _reasonCtrl.text.trim().isEmpty ? null : _reasonCtrl.text.trim(),
+      capabilities: _capabilities,
+      toolCostCents: toolCostCents,
+      dwellTimeSeconds: _dwellTimeSeconds,
     ).toCommand();
 
     try {
@@ -406,6 +443,90 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
               controller: _reasonCtrl,
               enabled: !_isSaving,
               decoration: const InputDecoration(labelText: 'Motivo (opcional)'),
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            ExpansionTile(
+              title: const Text(
+                'Configuração Operacional',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: 12),
+              children: [
+                const SizedBox(height: 8),
+                Text(
+                  'Tipo de Operação',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+                const SizedBox(height: 8),
+                SegmentedButton<String>(
+                  segments: OrgVerticalPreset.labels.entries
+                      .map(
+                        (e) => ButtonSegment<String>(
+                          value: e.key,
+                          label: Text(
+                            e.value,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  selected: _selectedPreset != null ? {_selectedPreset!} : {},
+                  emptySelectionAllowed: true,
+                  onSelectionChanged: _isSaving
+                      ? null
+                      : (s) => _onPresetChanged(s.isEmpty ? null : s.first),
+                ),
+                if (_selectedPreset != null) ...[
+                  const SizedBox(height: 8),
+                  OrgCapabilitiesChips(capabilities: _capabilities),
+                ],
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _toolCostCtrl,
+                  enabled: !_isSaving,
+                  decoration: const InputDecoration(
+                    labelText: 'Custo Mensal da Ferramenta *',
+                    hintText: 'R\$ 0,00',
+                    suffixIcon: InfoTooltip(
+                      message:
+                          'Este valor é o divisor base para o cálculo do ROI Guardian no dashboard do cliente.',
+                      variant: InfoTooltipVariant.info,
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [BrlCurrencyInputFormatter()],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Tempo de Parada Padrão: ${_dwellTimeSeconds}s (~${(_dwellTimeSeconds / 60).round()} min)',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: VeraProbColors.textSecondary,
+                  ),
+                ),
+                SliderTheme(
+                  data: const SliderThemeData(
+                    thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
+                    trackHeight: 2,
+                    activeTrackColor: VeraProbColors.secondary,
+                    inactiveTrackColor: VeraProbColors.border,
+                    thumbColor: VeraProbColors.secondary,
+                  ),
+                  child: Slider(
+                    value: _dwellTimeSeconds.toDouble(),
+                    min: 60,
+                    max: 1800,
+                    divisions: 29,
+                    label: '${_dwellTimeSeconds}s',
+                    onChanged: _isSaving
+                        ? null
+                        : (v) => setState(() => _dwellTimeSeconds = v.round()),
+                  ),
+                ),
+              ],
             ),
             if (_errorMessage != null) ...[
               const SizedBox(height: 12),

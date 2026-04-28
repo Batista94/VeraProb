@@ -27,6 +27,7 @@ UpdateOrganizationQuotaCommand _validCmd({
   String superAdminUserId = 'super-admin-uuid-456',
   String? reason,
   String sessionId = 'session-uuid-789',
+  int? toolCostCents = 50000,
 }) => UpdateOrganizationQuotaCommand(
   organizationId: organizationId,
   newPlanType: newPlanType,
@@ -35,6 +36,7 @@ UpdateOrganizationQuotaCommand _validCmd({
   superAdminUserId: superAdminUserId,
   reason: reason,
   sessionId: sessionId,
+  toolCostCents: toolCostCents,
 );
 
 void main() {
@@ -210,6 +212,52 @@ void main() {
         expect(captured.newMaxActiveContracts, 80);
         expect(captured.superAdminUserId, 'admin-xyz');
         expect(captured.reason, 'Upgrade requested');
+      });
+    });
+
+    group('toolCostCents validation (INV-10)', () {
+      test('throws DomainException when toolCostCents is null', () async {
+        const cmd = UpdateOrganizationQuotaCommand(
+          organizationId: 'org-uuid-123',
+          newPlanType: 'professional',
+          newMaxVehicles: 100,
+          newMaxActiveContracts: 50,
+          superAdminUserId: 'super-admin-uuid-456',
+          sessionId: 'session-uuid-789',
+          toolCostCents: null,
+        );
+
+        await expectLater(
+          handler.handle(cmd),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains('ROI'),
+            ),
+          ),
+        );
+
+        verifyNever(() => mockRepo.updateOrganizationQuota(any()));
+      });
+
+      test('accepts toolCostCents = 0', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+
+        await expectLater(
+          handler.handle(_validCmd(toolCostCents: 0)),
+          completes,
+        );
+      });
+
+      test('accepts positive toolCostCents', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+
+        await expectLater(handler.handle(_validCmd()), completes);
       });
     });
 
