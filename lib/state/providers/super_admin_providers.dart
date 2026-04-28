@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/audit/system_audit_log_service.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/super_admin/create_organization_handler.dart';
+import 'package:veraprob/application/super_admin/generate_org_secret_handler.dart';
+import 'package:veraprob/application/super_admin/revoke_impersonation_handler.dart';
 import 'package:veraprob/application/super_admin/update_organization_quota_handler.dart';
 import 'package:veraprob/application/super_admin/system_audit_log_view.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
@@ -106,6 +108,28 @@ class AuditLogParams {
 
 final cnpjLookupServiceProvider = Provider<ICnpjLookupService>(
   (_) => ReceitaWsCnpjService(),
+);
+
+final generateOrgSecretHandlerProvider = Provider<GenerateOrgSecretHandler>((
+  ref,
+) {
+  return GenerateOrgSecretHandler(
+    ref.watch(supabaseClientProvider),
+    tenantValidator: TenantValidationService(
+      authRepository: ref.watch(authRepositoryProvider),
+    ),
+  );
+});
+
+final revokeImpersonationHandlerProvider = Provider<RevokeImpersonationHandler>(
+  (ref) {
+    return RevokeImpersonationHandler(
+      ref.watch(supabaseClientProvider),
+      tenantValidator: TenantValidationService(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );
+  },
 );
 
 AuditLogParams auditLogParams({

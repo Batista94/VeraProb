@@ -1,19 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/application/super_admin/quota_warning_service.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/admin/quota_warning.dart';
-import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
-import 'package:veraprob/state/providers/auth_providers.dart';
-
-/// Provider for active quota warnings for the current org.
-final activeQuotaWarningsProvider =
-    FutureProvider.autoDispose<List<QuotaWarning>>((ref) async {
-      final orgId = ref.watch(currentOrganizationIdProvider);
-      if (orgId == null) return const [];
-      final service = QuotaWarningService(ref.watch(supabaseClientProvider));
-      return service.getActiveWarnings(orgId);
-    });
+import 'package:veraprob/state/providers/admin_providers.dart';
 
 /// Banner displayed in the admin dashboard when the org has active quota warnings.
 ///

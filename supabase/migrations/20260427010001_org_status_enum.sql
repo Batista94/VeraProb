@@ -24,14 +24,45 @@ UPDATE public.organizations
   WHERE status = 'ACTIVE' AND is_active = FALSE;
 
 -- ── Step 3: Replace is_active with a generated column ────────────────────────
--- First drop the old column, then recreate as generated.
--- This is safe because all existing code reads is_active, which will now
--- be derived from status.
+-- super_admin_tenant_health_view depends on is_active → must drop view first,
+-- then drop the column, then recreate both. The view definition is unchanged
+-- because is_active will still exist (as a GENERATED column).
+DROP VIEW IF EXISTS public.super_admin_tenant_health_view;
+
 ALTER TABLE public.organizations
   DROP COLUMN IF EXISTS is_active;
 
 ALTER TABLE public.organizations
   ADD COLUMN is_active BOOLEAN GENERATED ALWAYS AS (status = 'ACTIVE') STORED;
+
+-- Recreate the view — now reads generated is_active (retro-compatible).
+CREATE OR REPLACE VIEW public.super_admin_tenant_health_view AS
+SELECT
+  o.id,
+  o.name,
+  o.legal_name,
+  o.plan_type,
+  o.is_active,
+  o.status,
+  o.max_vehicles,
+  o.max_active_contracts,
+  COUNT(DISTINCT c.id)
+    FILTER (WHERE c.status = 'active')                     AS active_contract_count,
+  MAX(cf.gps_timestamp)                                    AS last_telemetry_at,
+  COUNT(DISTINCT a.id)
+    FILTER (WHERE a.severity = 'CRITICAL' AND a.resolved_at_utc IS NULL)
+                                                           AS open_critical_alert_count
+FROM public.organizations o
+LEFT JOIN public.contracts c
+  ON c.organization_id = o.id
+LEFT JOIN public.canonical_facts cf
+  ON cf.organization_id = o.id
+LEFT JOIN public.operational_alerts a
+  ON a.organization_id = o.id
+GROUP BY o.id;
+
+-- Intentionally NO GRANT to authenticated or anon.
+-- service_role bypasses RLS and view-level grants automatically.
 
 -- ── Step 4: Index for status filtering (SuperAdmin dashboard) ────────────────
 CREATE INDEX IF NOT EXISTS idx_organizations_status

@@ -21,8 +21,10 @@ CREATE TABLE IF NOT EXISTS public.org_quota_warnings (
   current_count    INT         NOT NULL,
   max_allowed      INT         NOT NULL,
   triggered_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- NULL = active warning; NOT NULL = resolved (append-only, INV-3)
+  resolved_at      TIMESTAMPTZ NULL,
 
-  -- Prevent duplicate warnings for the same org/resource/threshold
+  -- One warning record per org/resource/threshold (re-activated on conflict)
   CONSTRAINT uq_org_quota_warning_active
     UNIQUE (organization_id, resource, threshold)
 );
@@ -76,7 +78,8 @@ BEGIN
         usage_pct = EXCLUDED.usage_pct,
         current_count = EXCLUDED.current_count,
         max_allowed = EXCLUDED.max_allowed,
-        triggered_at = EXCLUDED.triggered_at;
+        triggered_at = EXCLUDED.triggered_at,
+        resolved_at = NULL;
     END IF;
   END LOOP;
 
@@ -118,11 +121,13 @@ BEGIN
 
     v_usage_pct := (v_current_count * 100) / v_max_vehicles;
 
-    -- Remove warnings for thresholds no longer exceeded
-    DELETE FROM public.org_quota_warnings
+    -- Resolve warnings for thresholds no longer exceeded (append-only, INV-3)
+    UPDATE public.org_quota_warnings
+    SET resolved_at = NOW()
     WHERE organization_id = NEW.organization_id
       AND resource = 'vehicles'
-      AND threshold > v_usage_pct;
+      AND threshold > v_usage_pct
+      AND resolved_at IS NULL;
   END IF;
 
   RETURN NEW;

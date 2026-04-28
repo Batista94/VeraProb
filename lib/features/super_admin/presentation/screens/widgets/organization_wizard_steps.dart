@@ -6,8 +6,8 @@ import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/domain/admin/org_capabilities.dart';
-import 'package:veraprob/domain/super_admin/org_vertical_preset.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
+import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
 import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 
 const kBrTimezones = [
@@ -222,7 +222,11 @@ class Step2Limits extends StatelessWidget {
   final String tradeName;
   final String planLabel;
   final String? selectedPreset;
-  final OrgCapabilities capabilities;
+
+  /// Capabilities as a presentation-safe ViewModel.
+  /// This widget never imports [OrgCapabilities] from domain.
+  final OrgCapabilitiesViewModel capabilities;
+
   final int dwellTimeSeconds;
   final ValueChanged<String?> onPresetChanged;
   final ValueChanged<int> onDwellChanged;
@@ -313,8 +317,9 @@ class Step2Limits extends StatelessWidget {
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 8),
+          // OrgPresetViewModel.labels replaces OrgVerticalPreset.labels
           SegmentedButton<String>(
-            segments: OrgVerticalPreset.labels.entries
+            segments: OrgPresetViewModel.labels.entries
                 .map(
                   (e) =>
                       ButtonSegment<String>(value: e.key, label: Text(e.value)),
@@ -387,9 +392,15 @@ class Step2Limits extends StatelessWidget {
   }
 }
 
+/// Renders capability flags from an [OrgCapabilitiesViewModel] as chips.
+///
+/// **INV-4 / Lens 2:** This widget only knows about [OrgCapabilitiesViewModel]
+/// (application layer) — never about [OrgCapabilities] (domain).
 class OrgCapabilitiesChips extends StatelessWidget {
   const OrgCapabilitiesChips({super.key, required this.capabilities});
-  final OrgCapabilities capabilities;
+
+  /// Presentation-safe capabilities ViewModel. No domain type here.
+  final OrgCapabilitiesViewModel capabilities;
 
   @override
   Widget build(BuildContext context) {

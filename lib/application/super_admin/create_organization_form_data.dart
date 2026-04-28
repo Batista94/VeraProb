@@ -1,10 +1,16 @@
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/domain/admin/org_capabilities.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 
 /// Mutable form DTO for the Create Organization wizard.
 ///
-/// Pilar INV-18: Use domain types (PlanType) instead of raw strings.
+/// **INV-4 / Lens 2 boundary enforcement:**
+/// - The `capabilities` field is typed as [OrgCapabilitiesViewModel] — a
+///   primitive-only projection that the presentation layer can hold safely.
+/// - The conversion to the domain type [OrgCapabilities] happens inside
+///   [toCommand], keeping domain types entirely within the application layer.
+///
+/// INV-18: Use typed values (PlanType) instead of raw strings for plan type.
 class CreateOrganizationFormData {
   final String legalName;
   final String tradeName;
@@ -16,7 +22,11 @@ class CreateOrganizationFormData {
   final int? maxActiveContracts;
   final String initialAdminEmail;
   final String superAdminUserId;
-  final OrgCapabilities capabilities;
+
+  /// Capabilities as a presentation-safe ViewModel.
+  /// Converted to [OrgCapabilities] inside [toCommand].
+  final OrgCapabilitiesViewModel capabilities;
+
   final int? toolCostCents;
   final int dwellTimeSeconds;
 
@@ -31,7 +41,7 @@ class CreateOrganizationFormData {
     this.maxActiveContracts,
     required this.initialAdminEmail,
     required this.superAdminUserId,
-    this.capabilities = OrgCapabilities.defaults,
+    this.capabilities = OrgCapabilitiesViewModel.defaults,
     this.toolCostCents,
     this.dwellTimeSeconds = 300,
   });
@@ -48,7 +58,8 @@ class CreateOrganizationFormData {
       maxActiveContracts: maxActiveContracts,
       initialAdminEmail: initialAdminEmail,
       superAdminUserId: superAdminUserId,
-      capabilities: capabilities,
+      // Domain conversion at the application boundary — not in features/
+      capabilities: capabilities.toDomain(),
       toolCostCents: toolCostCents,
       dwellTimeSeconds: dwellTimeSeconds,
     );

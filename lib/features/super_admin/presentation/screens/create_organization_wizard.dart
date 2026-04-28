@@ -9,8 +9,8 @@ import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/create_organization_form_data.dart';
-import 'package:veraprob/domain/admin/org_capabilities.dart';
-import 'package:veraprob/domain/super_admin/org_vertical_preset.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
+import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
@@ -23,6 +23,10 @@ import 'package:veraprob/features/super_admin/presentation/screens/widgets/organ
 ///
 /// Pattern: ConsumerStatefulWidget + _currentStep + _highestStepReached
 /// (mirrors declare_contract_plan_form.dart — INV-19: overlay modal).
+///
+/// **INV-4 / Lens 2:** No domain types are imported here.
+/// - Capabilities are held as [OrgCapabilitiesViewModel] (application layer).
+/// - Preset resolution goes through [OrgPresetViewModel] (application layer).
 class CreateOrganizationWizard extends ConsumerStatefulWidget {
   /// Called when the wizard completes successfully (navigates to Tenants panel).
   final VoidCallback onSuccess;
@@ -62,15 +66,16 @@ class _CreateOrganizationWizardState
   final _maxContractsCtrl = TextEditingController(text: '10');
   final _toolCostCtrl = TextEditingController();
 
-  // Step 2 operational config state
+  // Step 2 operational config state — held as application-layer ViewModel,
+  // never as OrgCapabilities (domain).
   String? _selectedPreset;
-  OrgCapabilities _capabilities = OrgCapabilities.defaults;
+  OrgCapabilitiesViewModel _capabilities = OrgCapabilitiesViewModel.defaults;
   int _dwellTimeSeconds = 300;
 
   // Step 3 controllers
   final _adminEmailCtrl = TextEditingController();
 
-  // Step 1 key
+  // Form keys
   final _step1Key = GlobalKey<FormState>();
   final _step2Key = GlobalKey<FormState>();
   final _step3Key = GlobalKey<FormState>();
@@ -95,12 +100,12 @@ class _CreateOrganizationWizardState
     super.dispose();
   }
 
+  /// Resolves capabilities from the selected preset via the application-layer
+  /// façade [OrgPresetViewModel], without importing any domain type.
   void _onPresetChanged(String? preset) {
     setState(() {
       _selectedPreset = preset;
-      _capabilities = preset != null
-          ? (OrgVerticalPreset.defaults[preset] ?? OrgCapabilities.defaults)
-          : OrgCapabilities.defaults;
+      _capabilities = OrgPresetViewModel.resolveCapabilities(preset);
     });
   }
 
@@ -240,6 +245,7 @@ class _CreateOrganizationWizardState
         maxActiveContracts: int.parse(_maxContractsCtrl.text.trim()),
         initialAdminEmail: _adminEmailCtrl.text.trim().toLowerCase(),
         superAdminUserId: superAdminId,
+        // _capabilities is OrgCapabilitiesViewModel — toCommand() converts to domain
         capabilities: _capabilities,
         toolCostCents: BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text),
         dwellTimeSeconds: _dwellTimeSeconds,

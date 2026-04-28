@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/application/super_admin/generate_org_secret_handler.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/admin/org_api_secret.dart';
-import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
-import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/application/super_admin/org_api_secret_view_model.dart';
+import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 /// Widget for managing per-org HMAC secrets (INV-28).
 ///
 /// Displays the current secret version and provides a button to generate
 /// a new secret. The plain-text secret is shown ONCE after generation.
+///
+/// **INV-4 / Lens 2:** The [currentSecret] parameter uses
+/// [OrgApiSecretViewModel] (application layer) instead of [OrgApiSecret]
+/// (domain). All fields are primitives — no domain logic in the widget.
 class OrgSecretCard extends ConsumerStatefulWidget {
   final String organizationId;
   final String organizationName;
-  final OrgApiSecret? currentSecret;
+  final OrgApiSecretViewModel? currentSecret;
 
   const OrgSecretCard({
     super.key,
@@ -70,10 +72,7 @@ class _OrgSecretCardState extends ConsumerState<OrgSecretCard> {
     });
 
     try {
-      final handler = GenerateOrgSecretHandler(
-        ref.read(supabaseClientProvider),
-        tenantValidator: ref.read(tenantValidationServiceProvider),
-      );
+      final handler = ref.read(generateOrgSecretHandlerProvider);
       final result = await handler.handle(
         organizationId: widget.organizationId,
         sessionId: 'super-admin-session', // SuperAdmin cross-tenant

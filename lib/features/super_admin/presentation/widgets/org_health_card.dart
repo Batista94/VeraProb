@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/admin/quota_warning.dart';
+import 'package:veraprob/application/super_admin/quota_warning_view_model.dart';
 
 /// Health card for a tenant organization.
 ///
 /// Displays connection status, ROI, telemetry volume, and quota warnings.
+///
+/// **INV-4 / Lens 2:** The [warning] parameter uses [QuotaWarningViewModel]
+/// (application layer) instead of [QuotaWarning] (domain).
 class OrgHealthCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
   final Color? valueColor;
-  final QuotaWarning? warning;
+  final QuotaWarningViewModel? warning;
 
   const OrgHealthCard({
     super.key,
@@ -76,7 +79,7 @@ class OrgHealthCard extends StatelessWidget {
 }
 
 class _QuotaWarningBadge extends StatelessWidget {
-  final QuotaWarning warning;
+  final QuotaWarningViewModel warning;
 
   const _QuotaWarningBadge({required this.warning});
 

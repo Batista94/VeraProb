@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:veraprob/domain/admin/org_status.dart';
 
 /// Read model for one row in `super_admin_tenant_health_view`.
 ///
@@ -9,6 +10,7 @@ class TenantHealthSnapshot extends Equatable {
   final String? legalName;
   final String? planType;
   final bool isActive;
+  final OrgStatus? status;
   final int maxVehicles;
   final int maxActiveContracts;
   final int activeContractCount;
@@ -21,6 +23,7 @@ class TenantHealthSnapshot extends Equatable {
     this.legalName,
     this.planType,
     required this.isActive,
+    this.status,
     required this.maxVehicles,
     required this.maxActiveContracts,
     required this.activeContractCount,
@@ -29,12 +32,14 @@ class TenantHealthSnapshot extends Equatable {
   });
 
   factory TenantHealthSnapshot.fromJson(Map<String, dynamic> json) {
+    final rawStatus = json['status'] as String?;
     return TenantHealthSnapshot(
       id: json['id'] as String,
       name: json['name'] as String,
       legalName: json['legal_name'] as String?,
       planType: json['plan_type'] as String?,
       isActive: json['is_active'] as bool? ?? false,
+      status: rawStatus != null ? OrgStatus.fromString(rawStatus) : null,
       maxVehicles: (json['max_vehicles'] as num?)?.toInt() ?? 0,
       maxActiveContracts: (json['max_active_contracts'] as num?)?.toInt() ?? 0,
       activeContractCount:
@@ -56,6 +61,7 @@ class TenantHealthSnapshot extends Equatable {
     legalName,
     planType,
     isActive,
+    status,
     maxVehicles,
     maxActiveContracts,
     activeContractCount,

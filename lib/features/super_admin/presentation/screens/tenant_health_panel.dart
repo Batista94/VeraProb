@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
+import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
-import 'package:veraprob/domain/admin/org_capabilities.dart';
-import 'package:veraprob/domain/super_admin/org_vertical_preset.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/tenant_list_panel.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/tenant_detail_panel.dart';
@@ -18,6 +18,10 @@ import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 /// Cross-tenant health dashboard for SuperAdmin.
 ///
 /// Stage H: Split-view layout with TenantListPanel (320px) + TenantDetailPanel.
+///
+/// **INV-4 / Lens 2:** No domain types are imported in this file.
+/// - Capabilities are held as [OrgCapabilitiesViewModel] (application layer).
+/// - Preset resolution goes through [OrgPresetViewModel] (application layer).
 class TenantHealthPanel extends ConsumerStatefulWidget {
   const TenantHealthPanel({super.key});
 
@@ -72,6 +76,10 @@ class _TenantHealthPanelState extends ConsumerState<TenantHealthPanel> {
 /// Overlay modal for editing an organization's plan type and quota limits.
 ///
 /// INV-24: Uses showDialog (overlay modal) for nested edit flows.
+///
+/// **INV-4 / Lens 2:** Internal state uses [OrgCapabilitiesViewModel]
+/// (application layer). Preset resolution goes through [OrgPresetViewModel].
+/// Domain conversion happens exclusively inside [UpdateQuotaFormData.toCommand].
 class _EditQuotaDialog extends ConsumerStatefulWidget {
   final TenantHealthView snapshot;
 
@@ -88,7 +96,12 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
   late final TextEditingController _toolCostCtrl;
   final TextEditingController _reasonCtrl = TextEditingController();
   String? _selectedPreset;
-  late OrgCapabilities _capabilities;
+
+  /// Internal capabilities state held as a presentation-safe ViewModel.
+  /// No [OrgCapabilities] (domain) here — it lives entirely in the
+  /// application layer.
+  late OrgCapabilitiesViewModel _capabilities;
+
   late int _dwellTimeSeconds;
   bool _isSaving = false;
   String? _errorMessage;
@@ -109,6 +122,7 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
           ? ''
           : '${widget.snapshot.maxActiveContracts}',
     );
+    // snapshot.capabilities is already OrgCapabilitiesViewModel — no conversion needed
     _capabilities = widget.snapshot.capabilities;
     _dwellTimeSeconds = widget.snapshot.dwellTimeSeconds;
     _toolCostCtrl = TextEditingController(
@@ -129,11 +143,13 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
 
   bool get _isEnterprise => _selectedPlan == PlanType.enterprise;
 
+  /// Resolves capabilities from the selected preset via the application-layer
+  /// façade [OrgPresetViewModel], without importing any domain type.
   void _onPresetChanged(String? preset) {
     setState(() {
       _selectedPreset = preset;
       _capabilities = preset != null
-          ? (OrgVerticalPreset.defaults[preset] ?? _capabilities)
+          ? OrgPresetViewModel.resolveCapabilities(preset)
           : _capabilities;
     });
   }
@@ -205,6 +221,7 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
       newMaxActiveContracts: maxContracts,
       superAdminUserId: superAdminId,
       reason: _reasonCtrl.text.trim(),
+      // _capabilities is OrgCapabilitiesViewModel — toCommand() converts to domain
       capabilities: _capabilities,
       toolCostCents: toolCostCents,
       dwellTimeSeconds: _dwellTimeSeconds,
@@ -304,8 +321,9 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
                   style: Theme.of(context).textTheme.labelMedium,
                 ),
                 const SizedBox(height: 8),
+                // OrgPresetViewModel.labels replaces OrgVerticalPreset.labels
                 SegmentedButton<String>(
-                  segments: OrgVerticalPreset.labels.entries
+                  segments: OrgPresetViewModel.labels.entries
                       .map(
                         (e) => ButtonSegment<String>(
                           value: e.key,

@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/application/super_admin/tenant_status_filter.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 /// Left panel: filterable list of tenant organizations.
 ///
 /// Stage H: Split-view layout — this panel is 320px wide.
+///
+/// **INV-4 / Lens 2:** No domain types are imported here.
+/// - Status filtering uses [TenantStatusFilter] (application layer) instead of
+///   [OrgStatus] (domain). The enum's [TenantStatusFilter.matches] method
+///   evaluates the primitive [TenantHealthView.isActive] flag, so no domain
+///   enum comparison is needed in the presentation layer.
 class TenantListPanel extends ConsumerStatefulWidget {
   final String? selectedOrgId;
   final ValueChanged<TenantHealthView> onOrgSelected;
@@ -24,7 +30,9 @@ class TenantListPanel extends ConsumerStatefulWidget {
 
 class _TenantListPanelState extends ConsumerState<TenantListPanel> {
   final _searchController = TextEditingController();
-  OrgStatus? _statusFilter;
+
+  /// Active filter. Defaults to [TenantStatusFilter.all].
+  TenantStatusFilter _statusFilter = TenantStatusFilter.all;
 
   @override
   void dispose() {
@@ -35,13 +43,12 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
   List<TenantHealthView> _filter(List<TenantHealthView> all) {
     var filtered = all;
 
-    // Status filter
-    if (_statusFilter != null) {
-      filtered = filtered.where((t) {
-        if (_statusFilter == OrgStatus.active) return t.isActive;
-        if (_statusFilter == OrgStatus.suspended) return !t.isActive;
-        return true;
-      }).toList();
+    // Status filter — delegated to TenantStatusFilter.matches() so no OrgStatus
+    // comparison is needed here.
+    if (_statusFilter != TenantStatusFilter.all) {
+      filtered = filtered
+          .where((t) => _statusFilter.matches(isActive: t.isActive))
+          .toList();
     }
 
     // Search filter
@@ -103,24 +110,27 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
               child: Row(
                 children: [
                   _StatusChip(
-                    label: 'Todos',
-                    selected: _statusFilter == null,
-                    onSelected: () => setState(() => _statusFilter = null),
+                    label: TenantStatusFilter.all.label,
+                    selected: _statusFilter == TenantStatusFilter.all,
+                    onSelected: () =>
+                        setState(() => _statusFilter = TenantStatusFilter.all),
                   ),
                   const SizedBox(width: 6),
                   _StatusChip(
-                    label: 'Ativos',
-                    selected: _statusFilter == OrgStatus.active,
-                    onSelected: () =>
-                        setState(() => _statusFilter = OrgStatus.active),
+                    label: TenantStatusFilter.active.label,
+                    selected: _statusFilter == TenantStatusFilter.active,
+                    onSelected: () => setState(
+                      () => _statusFilter = TenantStatusFilter.active,
+                    ),
                     color: VeraProbColors.success,
                   ),
                   const SizedBox(width: 6),
                   _StatusChip(
-                    label: 'Suspensos',
-                    selected: _statusFilter == OrgStatus.suspended,
-                    onSelected: () =>
-                        setState(() => _statusFilter = OrgStatus.suspended),
+                    label: TenantStatusFilter.suspended.label,
+                    selected: _statusFilter == TenantStatusFilter.suspended,
+                    onSelected: () => setState(
+                      () => _statusFilter = TenantStatusFilter.suspended,
+                    ),
                     color: VeraProbColors.error,
                   ),
                 ],

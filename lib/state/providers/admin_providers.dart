@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/application/super_admin/quota_warning_service.dart';
+import 'package:veraprob/domain/admin/quota_warning.dart';
 import 'package:veraprob/application/admin/accept_invitation_handler.dart';
 import 'package:veraprob/application/admin/change_user_role_handler.dart';
 import 'package:veraprob/application/admin/invitation_command_service.dart';
@@ -143,6 +145,19 @@ final createExecutionHandlerProvider = Provider<CreateExecutionHandler>((ref) {
     tenantValidator: ref.watch(tenantValidationServiceProvider),
   );
 });
+
+// ── Quota Warning Providers ───────────────────────────────────────────────────
+
+final quotaWarningServiceProvider = Provider<QuotaWarningService>((ref) {
+  return QuotaWarningService(ref.watch(supabaseClientProvider));
+});
+
+final activeQuotaWarningsProvider =
+    FutureProvider.autoDispose<List<QuotaWarning>>((ref) async {
+      final orgId = ref.watch(currentOrganizationIdProvider);
+      if (orgId == null) return const [];
+      return ref.watch(quotaWarningServiceProvider).getActiveWarnings(orgId);
+    });
 
 // ── UI Data Providers ────────────────────────────────────────────────────────
 

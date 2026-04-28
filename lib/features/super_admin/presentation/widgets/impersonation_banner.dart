@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/application/super_admin/revoke_impersonation_handler.dart';
 import 'package:veraprob/application/super_admin/start_impersonation_handler.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
-import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 /// Persistent, inescapable banner displayed during impersonation sessions.
 ///
@@ -65,10 +63,7 @@ class _ImpersonationBannerState extends ConsumerState<ImpersonationBanner> {
     setState(() => _isRevoking = true);
 
     try {
-      final handler = RevokeImpersonationHandler(
-        ref.read(supabaseClientProvider),
-        tenantValidator: ref.read(tenantValidationServiceProvider),
-      );
+      final handler = ref.read(revokeImpersonationHandlerProvider);
       await handler.handle(
         impersonationSessionId: widget.session.sessionId,
         targetOrgId: widget.session.targetOrgId,

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
 
 void main() {
@@ -11,6 +12,7 @@ void main() {
           'legal_name': 'Transportes Silva Ltda.',
           'plan_type': 'professional',
           'is_active': true,
+          'status': 'ACTIVE',
           'max_vehicles': 100,
           'max_active_contracts': 25,
           'active_contract_count': 5,
@@ -25,12 +27,59 @@ void main() {
         expect(snapshot.legalName, equals('Transportes Silva Ltda.'));
         expect(snapshot.planType, equals('professional'));
         expect(snapshot.isActive, isTrue);
+        expect(snapshot.status, equals(OrgStatus.active));
         expect(snapshot.maxVehicles, equals(100));
         expect(snapshot.maxActiveContracts, equals(25));
         expect(snapshot.activeContractCount, equals(5));
         expect(snapshot.lastTelemetryAt, isNotNull);
         expect(snapshot.lastTelemetryAt!.isUtc, isTrue);
         expect(snapshot.openCriticalAlertCount, equals(2));
+      });
+
+      test('maps TRIAL status correctly', () {
+        final json = {
+          'id': 'org-trial',
+          'name': 'Trial Org',
+          'is_active': true,
+          'status': 'TRIAL',
+          'max_vehicles': 5,
+          'max_active_contracts': 2,
+          'active_contract_count': 0,
+          'open_critical_alert_count': 0,
+        };
+        final snapshot = TenantHealthSnapshot.fromJson(json);
+        expect(snapshot.status, equals(OrgStatus.trial));
+        expect(snapshot.isActive, isTrue);
+      });
+
+      test('maps SUSPENDED status correctly', () {
+        final json = {
+          'id': 'org-suspended',
+          'name': 'Suspended Org',
+          'is_active': false,
+          'status': 'SUSPENDED',
+          'max_vehicles': 10,
+          'max_active_contracts': 5,
+          'active_contract_count': 0,
+          'open_critical_alert_count': 0,
+        };
+        final snapshot = TenantHealthSnapshot.fromJson(json);
+        expect(snapshot.status, equals(OrgStatus.suspended));
+        expect(snapshot.isActive, isFalse);
+      });
+
+      test('status is null when absent from JSON (retro-compat)', () {
+        final json = {
+          'id': 'org-legacy',
+          'name': 'Legacy Org',
+          'is_active': true,
+          'max_vehicles': 10,
+          'max_active_contracts': 5,
+          'active_contract_count': 0,
+          'open_critical_alert_count': 0,
+        };
+        final snapshot = TenantHealthSnapshot.fromJson(json);
+        expect(snapshot.status, isNull);
       });
 
       test('handles null nullable fields gracefully', () {

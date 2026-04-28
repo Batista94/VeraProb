@@ -15,6 +15,7 @@ class QuotaWarningService {
         .from('org_quota_warnings')
         .select()
         .eq('organization_id', orgId)
+        .isFilter('resolved_at', null)
         .order('threshold', ascending: false);
 
     return (data as List)
@@ -29,6 +30,7 @@ class QuotaWarningService {
         .select()
         .eq('organization_id', orgId)
         .eq('resource', resource)
+        .isFilter('resolved_at', null)
         .order('threshold', ascending: false)
         .limit(1)
         .maybeSingle();
