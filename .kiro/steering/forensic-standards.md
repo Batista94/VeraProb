@@ -35,6 +35,8 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
 | INV-25 | Tech Stack | Supabase | MapTiler | Sentry | PostHog | Resend. SOC 2 compliant. |
 | INV-26 | Error Parity | Security-sensitive endpoints MUST return identical status codes (404) for 'Not Found' and 'Other Org' to prevent data inference (Oracle Attacks). |
 | INV-27 | Origin Ownership | Operations involving source-to-destination logic (Cloning/Transfers) MUST verify source ownership, treating unauthorized IDs as non-existent (404). |
+| INV-28 | Org Secret Isolation | Each organization has a unique HMAC secret for telemetry signing. Append-only rotation. Only SHA-256 hash stored. |
+
 
 ---
 

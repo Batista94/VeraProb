@@ -32,7 +32,8 @@ Details: .claude/rules/forensic-standards.original.md
 | 24| Sec: Mandatory Security Audit Signature for instructions. |
 | 25| Stack: Supabase, MapTiler, Sentry, PostHog, Resend. SOC 2. |
 | 26| Parity: 404 for Not Found AND Wrong Org (Anti-Oracle). |
-| 27| Origin: Verify source ownership on Clone/Transfer. |
+| 27 | Origin: Verify source ownership on Clone/Transfer. |
+| 28 | Secret: Org Secret Isolation (HMAC per org). |
 
 ## 🔄 EXECUTION PROTOCOLS
 1. **Step 0:** State Skill Insight + Relevant INV-X.

@@ -11,7 +11,10 @@ CREATE OR REPLACE FUNCTION public.super_admin_create_organization(
   p_plan_type             TEXT,
   p_max_vehicles          INT,
   p_max_active_contracts  INT,
-  p_super_admin_user_id   UUID
+  p_super_admin_user_id   UUID,
+  p_capabilities          JSONB    DEFAULT NULL,
+  p_tool_cost_cents       BIGINT   DEFAULT NULL,
+  p_dwell_time_seconds    INT      DEFAULT 300
 )
 RETURNS UUID
 LANGUAGE plpgsql
@@ -50,11 +53,15 @@ BEGIN
   IF p_plan_type NOT IN ('starter', 'professional', 'enterprise') THEN
     RAISE EXCEPTION 'Invalid plan_type: %. Must be starter, professional, or enterprise', p_plan_type;
   END IF;
-  IF p_max_vehicles < 1 THEN
+  IF p_max_vehicles IS NOT NULL AND p_max_vehicles < 1 THEN
     RAISE EXCEPTION 'max_vehicles must be >= 1';
   END IF;
-  IF p_max_active_contracts < 1 THEN
+  IF p_max_active_contracts IS NOT NULL AND p_max_active_contracts < 1 THEN
     RAISE EXCEPTION 'max_active_contracts must be >= 1';
+  END IF;
+  IF p_tool_cost_cents IS NULL OR p_tool_cost_cents < 0 THEN
+    RAISE EXCEPTION 'tool_cost_cents is required and must be >= 0'
+      USING ERRCODE = 'P0001';
   END IF;
 
   -- 3. Insert organization
@@ -68,7 +75,10 @@ BEGIN
     plan_type,
     max_vehicles,
     max_active_contracts,
-    is_active
+    capabilities,
+    tool_cost_cents,
+    dwell_time_seconds,
+    status
   )
   VALUES (
     v_org_id,
@@ -80,7 +90,17 @@ BEGIN
     p_plan_type,
     p_max_vehicles,
     p_max_active_contracts,
-    true
+    COALESCE(p_capabilities, '{
+      "allows_sealing": true,
+      "allows_loading": true,
+      "allows_cargo_check": true,
+      "allows_incident": true,
+      "allows_doc": true,
+      "smart_classify": true
+    }'::jsonb),
+    p_tool_cost_cents,
+    COALESCE(p_dwell_time_seconds, 300),
+    'ACTIVE'
   );
 
   -- 4. Record billing event (append-only — triggers block UPDATE/DELETE)
@@ -143,3 +163,12 @@ BEGIN
   RETURN v_org_id;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.super_admin_create_organization(
+  TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INT, INT, UUID, JSONB, BIGINT, INT
+) FROM PUBLIC;
+
+GRANT EXECUTE ON FUNCTION public.super_admin_create_organization(
+  TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INT, INT, UUID, JSONB, BIGINT, INT
+) TO authenticated;
+

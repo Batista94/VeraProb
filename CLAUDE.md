@@ -39,6 +39,7 @@ Details: .claude/rules/forensic-standards.md
 | 25| Stack: Supabase, MapTiler, PostHog, Resend, Sentry. |
 | 26| Parity: 404 for Not Found/Wrong Org. |
 | 27| Origin: Verify source ownership. |
+| 28 | Secrets: Org Secret Isolation (HMAC per org). |
 
 ---
 ## CMDS
