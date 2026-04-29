@@ -135,8 +135,8 @@ class _FilterBar extends StatelessWidget {
             icon: const Icon(Icons.date_range, size: 18),
             label: Text(
               dateRange == null
-                  ? 'Período'
-                  : '${_fmtDate(dateRange!.start)} — ${_fmtDate(dateRange!.end)}',
+                  ? 'Periodo'
+                  : '${_fmtDate(dateRange!.start)} - ${_fmtDate(dateRange!.end)}',
             ),
           ),
           const SizedBox(width: 8),
@@ -198,10 +198,29 @@ class _LogList extends StatelessWidget {
           title: Row(
             children: [
               Expanded(child: Text(log.eventType)),
-              _ActorIcon(actorType: log.actorType),
+              _ActorIcon(
+                actorType: log.actorType,
+                impersonatorId: log.impersonatorId,
+              ),
             ],
           ),
-          subtitle: Text(log.occurredAt.isNotEmpty ? log.occurredAt : '—'),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(log.occurredAt.isNotEmpty ? log.occurredAt : '-'),
+              if (log.reason != null && log.reason!.isNotEmpty)
+                Text(
+                  log.reason!,
+                  style: const TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: VeraProbColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
           trailing: log.payload != null
               ? IconButton(
                   icon: const Icon(Icons.data_object, size: 18),
@@ -281,12 +300,13 @@ class _LogList extends StatelessWidget {
 
 /// Actor type icon shown next to each audit event title.
 ///
-/// SYSTEM → robot icon (automated action)
-/// HUMAN → shield icon (super admin action)
-/// IMPERSONATOR → manage_accounts icon (impersonation session)
+/// SYSTEM: robot icon (automated action)
+/// HUMAN: shield icon (super admin action)
+/// IMPERSONATOR: manage_accounts icon (impersonation session)
 class _ActorIcon extends StatelessWidget {
   final String? actorType;
-  const _ActorIcon({this.actorType});
+  final String? impersonatorId;
+  const _ActorIcon({this.actorType, this.impersonatorId});
 
   @override
   Widget build(BuildContext context) {
@@ -301,9 +321,9 @@ class _ActorIcon extends StatelessWidget {
           ),
         );
       case 'IMPERSONATOR':
-        return const Tooltip(
-          message: 'Impersonação',
-          child: Icon(
+        return Tooltip(
+          message: 'Impersonacao (${impersonatorId ?? "?"})',
+          child: const Icon(
             Icons.manage_accounts,
             size: 14,
             color: VeraProbColors.warning,

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/audit/system_audit_log_service.dart';
+import 'package:veraprob/application/shared/super_admin_bypass_tenant_validator.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/super_admin/archive_organization_handler.dart';
 import 'package:veraprob/application/super_admin/create_organization_handler.dart';
@@ -41,9 +42,7 @@ final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthView>>((
 final updateOrganizationQuotaHandlerProvider =
     Provider<UpdateOrganizationQuotaHandler>((ref) {
       return UpdateOrganizationQuotaHandler(
-        tenantValidator: TenantValidationService(
-          authRepository: ref.watch(authRepositoryProvider),
-        ),
+        tenantValidator: const SuperAdminBypassTenantValidator(),
         repository: ref.watch(superAdminRepositoryProvider),
         auditLogService: ref.watch(systemAuditLogServiceProvider),
       );
@@ -57,7 +56,6 @@ final createOrganizationHandlerProvider = Provider<CreateOrganizationHandler>((
     repo,
     ref.watch(supabaseClientProvider),
     ref.watch(dateTimeProviderProvider),
-    auditLogService: ref.watch(systemAuditLogServiceProvider),
   );
 });
 
@@ -127,9 +125,7 @@ final archiveOrganizationHandlerProvider = Provider<ArchiveOrganizationHandler>(
   (ref) {
     return ArchiveOrganizationHandler(
       repository: ref.watch(superAdminRepositoryProvider),
-      tenantValidator: TenantValidationService(
-        authRepository: ref.watch(authRepositoryProvider),
-      ),
+      tenantValidator: const SuperAdminBypassTenantValidator(),
     );
   },
 );

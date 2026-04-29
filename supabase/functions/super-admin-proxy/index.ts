@@ -188,7 +188,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const { data, error } = await serviceClient
         .from("super_admin_tenant_health_view")
         .select(
-          "id, name, legal_name, plan_type, is_active, max_vehicles, max_active_contracts, active_contract_count, last_telemetry_at, open_critical_alert_count"
+          "id,name,legal_name,plan_type,is_active,status,max_vehicles,max_active_contracts,capabilities,tool_cost_cents,dwell_time_seconds,billing_day,contact_email,external_id,active_contract_count,last_telemetry_at,open_critical_alert_count"
         );
 
       if (error) throw error;
@@ -201,7 +201,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // Builder: Filters must be applied BEFORE order/limit (PostgrestTransformBuilder bug fix)
       let query = serviceClient
         .from("system_audit_log")
-        .select("severity, event_type, occurred_at, organization_id, payload");
+        .select("severity,event_type,occurred_at,organization_id,payload,source,actor_type,reason,impersonator_id");
 
       if (params.organization_id) {
         query = query.eq("organization_id", params.organization_id);

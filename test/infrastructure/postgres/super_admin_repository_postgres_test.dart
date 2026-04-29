@@ -39,7 +39,7 @@ CreateOrganizationCommand _testCmd(String cnpj) => CreateOrganizationCommand(
   planType: PlanType.starter,
   maxVehicles: 10,
   maxActiveContracts: 5,
-  initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+  adminEmails: ['admin-${_uuid.v4()}@test.com'],
   superAdminUserId: _uuid.v4(),
 );
 
@@ -308,7 +308,7 @@ void main() async {
               planType: PlanType.starter,
               maxVehicles: 10,
               maxActiveContracts: 5,
-              initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+              adminEmails: ['admin-${_uuid.v4()}@test.com'],
               superAdminUserId: superAdminId,
             ),
           );
@@ -349,7 +349,7 @@ void main() async {
               planType: PlanType.starter,
               maxVehicles: 10,
               maxActiveContracts: 5,
-              initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+              adminEmails: ['admin-${_uuid.v4()}@test.com'],
               superAdminUserId: superAdminId,
             ),
           );
@@ -391,7 +391,7 @@ void main() async {
               planType: PlanType.starter,
               maxVehicles: 5,
               maxActiveContracts: 2,
-              initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+              adminEmails: ['admin-${_uuid.v4()}@test.com'],
               superAdminUserId: superAdminId,
             ),
           );
@@ -440,7 +440,7 @@ void main() async {
               planType: PlanType.starter,
               maxVehicles: 1,
               maxActiveContracts: 5,
-              initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+              adminEmails: ['admin-${_uuid.v4()}@test.com'],
               superAdminUserId: superAdminId,
             ),
           );
@@ -482,7 +482,7 @@ void main() async {
                 planType: PlanType.starter,
                 maxVehicles: 10,
                 maxActiveContracts: 1,
-                initialAdminEmail: 'admin-${_uuid.v4()}@test.com',
+                adminEmails: ['admin-${_uuid.v4()}@test.com'],
                 superAdminUserId: superAdminId,
               ),
             );

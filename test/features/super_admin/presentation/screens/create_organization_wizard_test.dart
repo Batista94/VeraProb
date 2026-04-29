@@ -208,14 +208,14 @@ void main() {
       await tester.tap(find.text('Próximo'));
       await tester.pumpAndSettle();
 
-      // --- STEP 3: Admin Invite ---
-      await tester.enterText(
-        find.ancestor(
-          of: find.text('E-mail do Admin Inicial *'),
-          matching: find.byType(TextFormField),
-        ),
-        'admin@omni.com',
+      // --- STEP 3: Admin Invite (chip-based) ---
+      final emailField1 = find.ancestor(
+        of: find.text('E-mails dos Admins *'),
+        matching: find.byType(TextField),
       );
+      await tester.enterText(emailField1, 'admin@omni.com');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
 
       // FINAL SUBMIT (Find the button that says 'Criar e Enviar Convite')
       final submitButton = find.widgetWithText(
@@ -317,13 +317,13 @@ void main() {
         await tester.tap(find.text('Próximo'));
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.ancestor(
-            of: find.text('E-mail do Admin Inicial *'),
-            matching: find.byType(TextFormField),
-          ),
-          'bad@email.com',
+        final emailField2 = find.ancestor(
+          of: find.text('E-mails dos Admins *'),
+          matching: find.byType(TextField),
         );
+        await tester.enterText(emailField2, 'bad@email.com');
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
 
         // Submit
         final submitButton = find.widgetWithText(

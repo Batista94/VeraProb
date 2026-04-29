@@ -19,6 +19,9 @@ class SystemAuditLogView {
   /// Stage C: Governance justification reason.
   final String? reason;
 
+  /// Stage C: Impersonator SuperAdmin ID when actor_type is IMPERSONATOR.
+  final String? impersonatorId;
+
   const SystemAuditLogView({
     required this.severity,
     required this.eventType,
@@ -28,6 +31,7 @@ class SystemAuditLogView {
     this.source,
     this.actorType,
     this.reason,
+    this.impersonatorId,
   });
 
   factory SystemAuditLogView.fromDomain(SystemAuditLogEntry domain) {
@@ -40,6 +44,7 @@ class SystemAuditLogView {
       source: domain.source,
       actorType: domain.actorType,
       reason: domain.reason,
+      impersonatorId: domain.impersonatorId,
     );
   }
 
@@ -58,6 +63,7 @@ class SystemAuditLogView {
       source: json['source'] as String?,
       actorType: json['actor_type'] as String?,
       reason: json['reason'] as String?,
+      impersonatorId: json['impersonator_id'] as String?,
     );
   }
 }

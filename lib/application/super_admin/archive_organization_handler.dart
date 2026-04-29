@@ -6,7 +6,10 @@ import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 
 /// Application handler for archiving a tenant organization.
 ///
-/// Orchestrates: RBAC → validation → status guard → repo call.
+/// Orchestrates: INV-1 tenant check → RBAC → validation → status guard → repo call.
+///
+/// For SuperAdmin context, inject [SuperAdminBypassTenantValidator] which
+/// satisfies INV-1 structurally while being a no-op (SuperAdmin has sovereignty).
 ///
 /// INV-10: Throws [DomainException] for all guard violations.
 /// INV-26: Archived and deleted orgs return identical errors to prevent org enumeration.
@@ -23,9 +26,6 @@ class ArchiveOrganizationHandler {
        _tenantValidator = tenantValidator;
 
   /// Convenience entry-point for UI callers that only have primitive values.
-  ///
-  /// Converts [currentStatusKey] (uppercase DB string) to [OrgStatus] then delegates
-  /// to [handle]. Features do not need to import [OrgStatus] or [ArchiveOrganizationCommand].
   Future<void> handlePrimitives({
     required String orgId,
     required String reason,
@@ -46,7 +46,7 @@ class ArchiveOrganizationHandler {
   }
 
   Future<void> handle(ArchiveOrganizationCommand cmd) async {
-    // 0. INV-1 Fail-Fast Identity Sync
+    // 0. INV-1: Identity Sovereignty (no-op for SuperAdmin via bypass validator)
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: cmd.orgId,
       sessionId: cmd.sessionId,

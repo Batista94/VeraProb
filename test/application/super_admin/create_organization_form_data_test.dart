@@ -21,7 +21,7 @@ CreateOrganizationFormData _makeFormData({
     planType: PlanType.starter,
     maxVehicles: 10,
     maxActiveContracts: 5,
-    initialAdminEmail: 'admin@silva.com.br',
+    adminEmails: ['admin@silva.com.br'],
     superAdminUserId: '00000000-0000-0000-0000-000000000001',
     capabilities: capabilities ?? OrgCapabilitiesViewModel.defaults,
     toolCostCents: 50000,

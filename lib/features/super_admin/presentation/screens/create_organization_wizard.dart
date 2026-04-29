@@ -78,7 +78,7 @@ class _CreateOrganizationWizardState
   int _dwellTimeSeconds = 300;
 
   // Step 3 controllers
-  final _adminEmailCtrl = TextEditingController();
+  List<String> _adminEmails = [];
 
   // Form keys
   final _step1Key = GlobalKey<FormState>();
@@ -105,7 +105,6 @@ class _CreateOrganizationWizardState
     _maxContractsCtrl.dispose();
     _toolCostCtrl.dispose();
     _reasonCtrl.dispose();
-    _adminEmailCtrl.dispose();
     super.dispose();
   }
 
@@ -241,7 +240,7 @@ class _CreateOrganizationWizardState
     return BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text) != null;
   }
 
-  bool _validateStep3() => _step3Key.currentState?.validate() ?? false;
+  bool _validateStep3() => _adminEmails.isNotEmpty;
 
   void _goToStep(int step) {
     if (step > _currentStep) {
@@ -284,7 +283,7 @@ class _CreateOrganizationWizardState
         planType: _selectedPlan,
         maxVehicles: int.parse(_maxVehiclesCtrl.text.trim()),
         maxActiveContracts: int.parse(_maxContractsCtrl.text.trim()),
-        initialAdminEmail: _adminEmailCtrl.text.trim().toLowerCase(),
+        adminEmails: _adminEmails,
         superAdminUserId: superAdminId,
         // _capabilities is OrgCapabilitiesViewModel — toCommand() converts to domain
         capabilities: _capabilities,
@@ -317,14 +316,18 @@ class _CreateOrganizationWizardState
       final inviteUrl =
           '$baseUrl/accept-invite?token=${result.invitationToken}';
 
-      // Fire invitation email — silent failure (link in dialog is the fallback)
-      unawaited(
-        handler.sendInviteNotification(
-          email: cmd.initialAdminEmail,
-          inviteUrl: inviteUrl,
-          orgName: cmd.tradeName,
-        ),
-      );
+      // Fire invitation emails — silent failure (link in dialog is the fallback)
+      for (final adminEmail in _adminEmails) {
+        final emailUrl =
+            '$baseUrl/accept-invite?token=${result.invitationToken}';
+        unawaited(
+          handler.sendInviteNotification(
+            email: adminEmail,
+            inviteUrl: emailUrl,
+            orgName: _tradeNameCtrl.text.trim(),
+          ),
+        );
+      }
 
       // Stop loader before showing dialog, otherwise pumpAndSettle times out
       if (mounted) {
@@ -380,7 +383,7 @@ class _CreateOrganizationWizardState
         children: [
           Text('Organização: ${_tradeNameCtrl.text.trim()}'),
           const SizedBox(height: 8),
-          Text('Admin convidado para: ${_adminEmailCtrl.text.trim()}'),
+          Text('Admin convidado para: ${_adminEmails.join(", ")}'),
           const SizedBox(height: 16),
           const Text(
             'Link de convite do Admin:',
@@ -517,7 +520,8 @@ class _CreateOrganizationWizardState
           state: StepState.indexed,
           content: Step3AdminInvite(
             formKey: _step3Key,
-            adminEmailCtrl: _adminEmailCtrl,
+            adminEmails: _adminEmails,
+            onEmailsChanged: (emails) => setState(() => _adminEmails = emails),
             tradeName: _tradeNameCtrl.text,
             planLabel: _selectedPlan.label,
             maxVehicles: _maxVehiclesCtrl.text,

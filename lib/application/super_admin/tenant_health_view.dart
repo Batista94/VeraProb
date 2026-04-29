@@ -83,6 +83,14 @@ class TenantHealthView {
       activeContractCount: snapshot.activeContractCount,
       lastTelemetryAt: snapshot.lastTelemetryAt,
       openCriticalAlertCount: snapshot.openCriticalAlertCount,
+      capabilities: OrgCapabilitiesViewModel.fromDomain(
+        OrgCapabilities.fromJson(snapshot.capabilities ?? {}),
+      ),
+      toolCostCents: snapshot.toolCostCents,
+      dwellTimeSeconds: snapshot.dwellTimeSeconds,
+      billingDay: snapshot.billingDay,
+      contactEmail: snapshot.contactEmail,
+      externalId: snapshot.externalId,
     );
   }
 

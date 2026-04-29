@@ -15,7 +15,7 @@ void main() {
         planType: PlanType.starter,
         maxVehicles: 50,
         maxActiveContracts: 10,
-        initialAdminEmail: 'admin@empresa.com.br',
+        adminEmails: ['admin@empresa.com.br'],
         superAdminUserId: 'super-admin-uuid-123',
         toolCostCents: 50000,
         reason: 'Motivo válido para o log de auditoria',

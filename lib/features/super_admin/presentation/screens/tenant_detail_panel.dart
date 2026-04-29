@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/org_health_card.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/org_secret_card.dart';
@@ -255,12 +257,91 @@ class _MetricsTab extends StatelessWidget {
   }
 }
 
-class _ConfigTab extends StatelessWidget {
+class _ConfigTab extends ConsumerStatefulWidget {
   final TenantHealthView tenant;
   const _ConfigTab({required this.tenant});
 
   @override
+  ConsumerState<_ConfigTab> createState() => _ConfigTabState();
+}
+
+class _ConfigTabState extends ConsumerState<_ConfigTab> {
+  late OrgCapabilitiesViewModel _capabilities;
+
+  @override
+  void initState() {
+    super.initState();
+    _capabilities = widget.tenant.capabilities;
+  }
+
+  @override
+  void didUpdateWidget(covariant _ConfigTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tenant.id != widget.tenant.id) {
+      _capabilities = widget.tenant.capabilities;
+    }
+  }
+
+  bool get _isDirty => _capabilities != widget.tenant.capabilities;
+
+  Future<void> _save() async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => const _ReasonConfirmationDialog(),
+    );
+    if (reason == null || !mounted) return;
+
+    try {
+      final t = widget.tenant;
+      final cmd = UpdateQuotaFormData(
+        organizationId: t.id,
+        newPlanType: t.planType ?? 'starter',
+        newMaxVehicles: t.maxVehicles == 0 ? null : t.maxVehicles,
+        newMaxActiveContracts: t.maxActiveContracts == 0
+            ? null
+            : t.maxActiveContracts,
+        superAdminUserId:
+            ref.read(authStateProvider).valueOrNull?.session?.user.id ?? '',
+        reason: reason,
+        capabilities: _capabilities,
+        toolCostCents: t.toolCostCents,
+        dwellTimeSeconds: t.dwellTimeSeconds,
+      ).toCommand();
+
+      await ref.read(updateOrganizationQuotaHandlerProvider).handle(cmd);
+      ref.invalidate(tenantHealthSnapshotProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Capabilities atualizadas com sucesso.'),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
+      }
+    } on DomainException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: $e'),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final t = widget.tenant;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -268,55 +349,162 @@ class _ConfigTab extends StatelessWidget {
         children: [
           const _SectionTitle('Plano & Limites'),
           const SizedBox(height: 8),
-          _DetailRow('Plano', tenant.planType?.toUpperCase() ?? '—'),
+          _DetailRow('Plano', t.planType?.toUpperCase() ?? '-'),
           _DetailRow(
-            'Max Veículos',
-            tenant.maxVehicles == 0 ? 'Ilimitado' : '${tenant.maxVehicles}',
+            'Max Veiculos',
+            t.maxVehicles == 0 ? 'Ilimitado' : '${t.maxVehicles}',
           ),
           _DetailRow(
             'Max Contratos',
-            tenant.maxActiveContracts == 0
-                ? 'Ilimitado'
-                : '${tenant.maxActiveContracts}',
+            t.maxActiveContracts == 0 ? 'Ilimitado' : '${t.maxActiveContracts}',
           ),
           _DetailRow(
             'Custo Ferramenta',
-            tenant.toolCostCents != null
-                ? 'R\$ ${(tenant.toolCostCents! / 100).toStringAsFixed(2)}'
-                : '—',
+            t.toolCostCents != null
+                ? 'R\$ ${(t.toolCostCents! / 100).toStringAsFixed(2)}'
+                : '-',
           ),
-          _DetailRow('Dwell Time', '${tenant.dwellTimeSeconds}s'),
+          _DetailRow('Dwell Time', '${t.dwellTimeSeconds}s'),
           const SizedBox(height: 24),
-          const _SectionTitle('Faturamento & Integração'),
+          const _SectionTitle('Faturamento & Integracao'),
           const SizedBox(height: 8),
           _DetailRow(
             'Dia de Faturamento',
-            tenant.billingDay != null ? 'Dia ${tenant.billingDay}' : '—',
+            t.billingDay != null ? 'Dia ${t.billingDay}' : '-',
           ),
-          _DetailRow('E-mail de Contato', tenant.contactEmail ?? '—'),
-          _DetailRow('ID Externo', tenant.externalId ?? '—'),
+          _DetailRow('E-mail de Contato', t.contactEmail ?? '-'),
+          _DetailRow('ID Externo', t.externalId ?? '-'),
           const SizedBox(height: 24),
           const _SectionTitle('Capabilities'),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              _CapChip('Lacre', tenant.capabilities.allowsSealing),
-              _CapChip('Carregamento', tenant.capabilities.allowsLoading),
-              _CapChip('Cargo Check', tenant.capabilities.allowsCargoCheck),
-              _CapChip('Incidente', tenant.capabilities.allowsIncident),
-              _CapChip('Doc', tenant.capabilities.allowsDoc),
-              _CapChip('Smart Classify', tenant.capabilities.smartClassify),
-              if (tenant.capabilities.maxKinematicSpeedKmh != null)
-                _CapChip(
-                  'Speed: ${tenant.capabilities.maxKinematicSpeedKmh} km/h',
-                  true,
-                ),
-            ],
+          SwitchListTile(
+            title: const Text('Lacre'),
+            value: _capabilities.allowsSealing,
+            onChanged: (v) => setState(
+              () => _capabilities = _capabilities.copyWith(allowsSealing: v),
+            ),
+            dense: true,
           ),
+          SwitchListTile(
+            title: const Text('Carregamento'),
+            value: _capabilities.allowsLoading,
+            onChanged: (v) => setState(
+              () => _capabilities = _capabilities.copyWith(allowsLoading: v),
+            ),
+            dense: true,
+          ),
+          SwitchListTile(
+            title: const Text('Cargo Check'),
+            value: _capabilities.allowsCargoCheck,
+            onChanged: (v) => setState(
+              () => _capabilities = _capabilities.copyWith(allowsCargoCheck: v),
+            ),
+            dense: true,
+          ),
+          SwitchListTile(
+            title: const Text('Incidente'),
+            value: _capabilities.allowsIncident,
+            onChanged: (v) => setState(
+              () => _capabilities = _capabilities.copyWith(allowsIncident: v),
+            ),
+            dense: true,
+          ),
+          SwitchListTile(
+            title: const Text('Doc'),
+            value: _capabilities.allowsDoc,
+            onChanged: (v) => setState(
+              () => _capabilities = _capabilities.copyWith(allowsDoc: v),
+            ),
+            dense: true,
+          ),
+          SwitchListTile(
+            title: const Text('Smart Classify'),
+            value: _capabilities.smartClassify,
+            onChanged: (v) => setState(
+              () => _capabilities = _capabilities.copyWith(smartClassify: v),
+            ),
+            dense: true,
+          ),
+          if (_isDirty) ...[
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: _save,
+              icon: const Icon(Icons.save_outlined, size: 18),
+              label: const Text('Salvar Alteracoes'),
+              style: FilledButton.styleFrom(
+                backgroundColor: VeraProbColors.superAdminSurface,
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// Confirmation dialog requiring a reason (min 10 chars) before saving.
+class _ReasonConfirmationDialog extends StatefulWidget {
+  const _ReasonConfirmationDialog();
+
+  @override
+  State<_ReasonConfirmationDialog> createState() =>
+      _ReasonConfirmationDialogState();
+}
+
+class _ReasonConfirmationDialogState extends State<_ReasonConfirmationDialog> {
+  final _reasonCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonCtrl.dispose();
+    super.dispose();
+  }
+
+  bool get _isValid => _reasonCtrl.text.trim().length >= 10;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Justificativa'),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Informe o motivo da alteracao de capabilities. '
+              'Este registro sera gravado no log de auditoria.',
+              style: TextStyle(
+                fontSize: 13,
+                color: VeraProbColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _reasonCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Motivo *',
+                hintText: 'Minimo 10 caracteres',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _isValid
+              ? () => Navigator.of(context).pop(_reasonCtrl.text.trim())
+              : null,
+          child: const Text('Confirmar'),
+        ),
+      ],
     );
   }
 }
@@ -557,31 +745,6 @@ class _DetailRow extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _CapChip extends StatelessWidget {
-  final String label;
-  final bool enabled;
-  const _CapChip(this.label, this.enabled);
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      label: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          color: enabled ? VeraProbColors.success : VeraProbColors.textDisabled,
-        ),
-      ),
-      backgroundColor: enabled
-          ? VeraProbColors.success.withValues(alpha: 0.1)
-          : VeraProbColors.border.withValues(alpha: 0.3),
-      side: BorderSide.none,
-      visualDensity: VisualDensity.compact,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
     );
   }
 }

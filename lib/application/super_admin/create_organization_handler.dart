@@ -1,12 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/application/admin/invite_user_command.dart';
-import 'package:veraprob/application/audit/system_audit_log_service.dart';
-import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/application/shared/super_admin_bypass_tenant_validator.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/domain/admin/actor_type.dart';
 import 'package:veraprob/domain/super_admin/plan_limits.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
@@ -23,15 +21,13 @@ class CreateOrganizationHandler {
   final ISuperAdminRepository _repository;
   final SupabaseClient _authenticatedClient;
   final IDateTimeProvider _dateTimeProvider;
-  final SystemAuditLogService? _auditLogService;
   final RbacService _rbac = RbacService();
 
   CreateOrganizationHandler(
     this._repository,
     this._authenticatedClient,
-    this._dateTimeProvider, {
-    SystemAuditLogService? auditLogService,
-  }) : _auditLogService = auditLogService;
+    this._dateTimeProvider,
+  );
 
   Future<CreateOrganizationResult> handle(CreateOrganizationCommand cmd) async {
     // 1. RBAC — before any I/O
@@ -53,9 +49,16 @@ class CreateOrganizationHandler {
     }
 
     // 4. Email validation
-    final email = cmd.initialAdminEmail.trim().toLowerCase();
-    if (email.isEmpty || !email.contains('@')) {
-      throw const DomainException('E-mail inválido.');
+    if (cmd.adminEmails.isEmpty) {
+      throw const DomainException(
+        'Pelo menos um e-mail de admin e obrigatorio.',
+      );
+    }
+    for (final email in cmd.adminEmails) {
+      final trimmed = email.trim().toLowerCase();
+      if (trimmed.isEmpty || !trimmed.contains('@')) {
+        throw DomainException('E-mail invalido: $email');
+      }
     }
 
     // 4a. tool_cost_cents required — ROI Guardian cannot function without it (INV-10)
@@ -104,7 +107,7 @@ class CreateOrganizationHandler {
             maxVehicles: cmd.maxVehicles ?? PlanLimits.maxVehicles(planType),
             maxActiveContracts:
                 cmd.maxActiveContracts ?? PlanLimits.maxContracts(planType),
-            initialAdminEmail: cmd.initialAdminEmail,
+            adminEmails: cmd.adminEmails,
             superAdminUserId: cmd.superAdminUserId,
             capabilities: cmd.capabilities,
             toolCostCents: cmd.toolCostCents,
@@ -131,53 +134,35 @@ class CreateOrganizationHandler {
       rethrow;
     }
 
-    // 7. Invite first admin via SuperAdminInvitationCommandService (D4: bypasses TENANT_ADMIN check)
+    // 7. Invite admins via SuperAdminInvitationCommandService (D4: bypasses TENANT_ADMIN check)
     //    IDs generated in Dart by InviteUserHandler — satisfies INV-7.
     final invitationService = SuperAdminInvitationCommandService(
       _authenticatedClient,
       orgId: orgId,
       superAdminUserId: cmd.superAdminUserId,
     );
-    // Super-admin context: use a bypass tenant validator that always passes
     final inviteHandler = InviteUserHandler(
-      tenantValidator: const _BypassTenantValidator(),
+      tenantValidator: const SuperAdminBypassTenantValidator(),
       commandService: invitationService,
       dateTimeProvider: _dateTimeProvider,
     );
 
-    final token = await inviteHandler.handle(
-      InviteUserCommand(
-        organizationId: orgId,
-        callerRole: UserRole.superAdmin,
-        invitedByUserId: cmd.superAdminUserId,
-        email: email,
-        roleToAssign: UserRole.admin,
-        sessionId: '', // super-admin context — no regular session
-      ),
-    );
-
-    // 8. Log ORG_CREATED governance event (INV-3: audit trail)
-    if (_auditLogService != null) {
-      await _auditLogService.logGovernanceChange(
-        eventType: 'ORG_CREATED',
-        reason: cmd.reason!.trim(),
-        actorType: ActorType.human,
-        organizationId: orgId,
-        organizationName: effectiveCmd.tradeName,
-        oldSnapshot: const <String, Object?>{},
-        newSnapshot: <String, Object?>{
-          'legal_name': effectiveCmd.legalName,
-          'trade_name': effectiveCmd.tradeName,
-          'cnpj': effectiveCmd.cnpj,
-          'plan_type': effectiveCmd.planType.dbValue,
-          'max_vehicles': effectiveCmd.maxVehicles,
-          'max_active_contracts': effectiveCmd.maxActiveContracts,
-          'dwell_time_seconds': effectiveCmd.dwellTimeSeconds,
-        },
+    final tokens = <String>[];
+    for (final adminEmail in cmd.adminEmails) {
+      final token = await inviteHandler.handle(
+        InviteUserCommand(
+          organizationId: orgId,
+          callerRole: UserRole.superAdmin,
+          invitedByUserId: cmd.superAdminUserId,
+          email: adminEmail.trim().toLowerCase(),
+          roleToAssign: UserRole.admin,
+          sessionId: '',
+        ),
       );
+      tokens.add(token);
     }
 
-    // 9. Generate org API secret (INV-28) — one-time plain-text, silent on failure
+    // 8. Generate org API secret (INV-28) — one-time plain-text, silent on failure
     String? orgApiSecret;
     try {
       final secretResponse = await _authenticatedClient.functions.invoke(
@@ -189,10 +174,10 @@ class CreateOrganizationHandler {
       // Silent degradation — wizard shows a warning if secret is null.
     }
 
-    // 10. Return immutable result
+    // 9. Return immutable result
     return CreateOrganizationResult(
       orgId: orgId,
-      invitationToken: token,
+      invitationToken: tokens.first,
       orgApiSecret: orgApiSecret,
     );
   }
@@ -213,31 +198,5 @@ class CreateOrganizationHandler {
     } catch (_) {
       // Silent — the invite link in the dialog is the primary delivery path.
     }
-  }
-}
-
-/// Bypass tenant validator for super-admin operations.
-///
-/// Super-admin creates organizations outside the normal tenant flow —
-/// there is no JWT session with an organization_id to validate against.
-class _BypassTenantValidator implements TenantValidationService {
-  const _BypassTenantValidator();
-
-  @override
-  Future<void> assertTenantMatches({
-    required String payloadOrgId,
-    required String sessionId,
-  }) async {
-    // No-op: super-admin context has no tenant session to validate.
-  }
-
-  @override
-  void verifySourceOwnership({
-    required String resourceOrgId,
-    required String requesterOrgId,
-    String? resourceType,
-    String? resourceId,
-  }) {
-    // No-op: super-admin owns all resources.
   }
 }

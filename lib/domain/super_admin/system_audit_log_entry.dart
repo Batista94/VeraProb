@@ -17,6 +17,9 @@ class SystemAuditLogEntry {
   /// Stage C: Governance justification reason.
   final String? reason;
 
+  /// Stage C: Impersonator SuperAdmin ID when actor_type is IMPERSONATOR.
+  final String? impersonatorId;
+
   const SystemAuditLogEntry({
     required this.severity,
     required this.eventType,
@@ -26,6 +29,7 @@ class SystemAuditLogEntry {
     this.source,
     this.actorType,
     this.reason,
+    this.impersonatorId,
   });
 
   factory SystemAuditLogEntry.fromJson(Map<String, dynamic> json) {
@@ -38,6 +42,7 @@ class SystemAuditLogEntry {
       source: json['source'] as String?,
       actorType: json['actor_type'] as String?,
       reason: json['reason'] as String?,
+      impersonatorId: json['impersonator_id'] as String?,
     );
   }
 }

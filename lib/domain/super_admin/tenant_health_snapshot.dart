@@ -16,6 +16,12 @@ class TenantHealthSnapshot extends Equatable {
   final int activeContractCount;
   final DateTime? lastTelemetryAt;
   final int openCriticalAlertCount;
+  final Map<String, dynamic>? capabilities;
+  final int? toolCostCents;
+  final int dwellTimeSeconds;
+  final int? billingDay;
+  final String? contactEmail;
+  final String? externalId;
 
   const TenantHealthSnapshot({
     required this.id,
@@ -29,10 +35,17 @@ class TenantHealthSnapshot extends Equatable {
     required this.activeContractCount,
     this.lastTelemetryAt,
     required this.openCriticalAlertCount,
+    this.capabilities,
+    this.toolCostCents,
+    this.dwellTimeSeconds = 300,
+    this.billingDay,
+    this.contactEmail,
+    this.externalId,
   });
 
   factory TenantHealthSnapshot.fromJson(Map<String, dynamic> json) {
     final rawStatus = json['status'] as String?;
+    final rawCaps = json['capabilities'];
     return TenantHealthSnapshot(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -49,6 +62,16 @@ class TenantHealthSnapshot extends Equatable {
           : null,
       openCriticalAlertCount:
           (json['open_critical_alert_count'] as num?)?.toInt() ?? 0,
+      capabilities: rawCaps is Map<String, dynamic>
+          ? rawCaps
+          : rawCaps is Map
+          ? Map<String, dynamic>.from(rawCaps)
+          : null,
+      toolCostCents: (json['tool_cost_cents'] as num?)?.toInt(),
+      dwellTimeSeconds: (json['dwell_time_seconds'] as num?)?.toInt() ?? 300,
+      billingDay: (json['billing_day'] as num?)?.toInt(),
+      contactEmail: json['contact_email'] as String?,
+      externalId: json['external_id'] as String?,
     );
   }
 
@@ -67,5 +90,11 @@ class TenantHealthSnapshot extends Equatable {
     activeContractCount,
     lastTelemetryAt,
     openCriticalAlertCount,
+    capabilities,
+    toolCostCents,
+    dwellTimeSeconds,
+    billingDay,
+    contactEmail,
+    externalId,
   ];
 }

@@ -723,9 +723,10 @@ class _EditorChip {
 
 // ── Step 3: Admin Invite ───────────────────────────────────────────────────────
 
-class Step3AdminInvite extends StatelessWidget {
+class Step3AdminInvite extends StatefulWidget {
   final GlobalKey<FormState> formKey;
-  final TextEditingController adminEmailCtrl;
+  final List<String> adminEmails;
+  final ValueChanged<List<String>> onEmailsChanged;
   final String tradeName;
   final String planLabel;
   final String maxVehicles;
@@ -735,7 +736,8 @@ class Step3AdminInvite extends StatelessWidget {
   const Step3AdminInvite({
     super.key,
     required this.formKey,
-    required this.adminEmailCtrl,
+    required this.adminEmails,
+    required this.onEmailsChanged,
     required this.tradeName,
     required this.planLabel,
     required this.maxVehicles,
@@ -744,9 +746,45 @@ class Step3AdminInvite extends StatelessWidget {
   });
 
   @override
+  State<Step3AdminInvite> createState() => _Step3AdminInviteState();
+}
+
+class _Step3AdminInviteState extends State<Step3AdminInvite> {
+  final _emailCtrl = TextEditingController();
+  String? _inputError;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    super.dispose();
+  }
+
+  void _addEmail(String raw) {
+    final email = raw.trim().toLowerCase();
+    if (email.isEmpty) return;
+    if (!email.contains('@')) {
+      setState(() => _inputError = 'E-mail invalido');
+      return;
+    }
+    if (widget.adminEmails.contains(email)) {
+      setState(() => _inputError = 'E-mail duplicado');
+      return;
+    }
+    widget.onEmailsChanged([...widget.adminEmails, email]);
+    _emailCtrl.clear();
+    setState(() => _inputError = null);
+  }
+
+  void _removeEmail(String email) {
+    widget.onEmailsChanged(
+      widget.adminEmails.where((e) => e != email).toList(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Form(
-      key: formKey,
+      key: widget.formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -762,41 +800,62 @@ class Step3AdminInvite extends StatelessWidget {
                 WizardSummaryRow(
                   icon: Icons.business,
                   label: 'Empresa',
-                  value: tradeName,
+                  value: widget.tradeName,
                 ),
                 WizardSummaryRow(
                   icon: Icons.star_outline,
                   label: 'Plano',
-                  value: planLabel,
+                  value: widget.planLabel,
                 ),
                 WizardSummaryRow(
                   icon: Icons.directions_car,
-                  label: 'Máx. Veículos',
-                  value: maxVehicles,
+                  label: 'Max. Veiculos',
+                  value: widget.maxVehicles,
                 ),
                 WizardSummaryRow(
                   icon: Icons.description_outlined,
-                  label: 'Máx. Contratos',
-                  value: maxContracts,
+                  label: 'Max. Contratos',
+                  value: widget.maxContracts,
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          TextFormField(
-            controller: adminEmailCtrl,
-            decoration: const InputDecoration(
-              labelText: 'E-mail do Admin Inicial *',
-              hintText: 'admin@empresa.com.br',
-              prefixIcon: Icon(Icons.email_outlined),
+          if (widget.adminEmails.isNotEmpty) ...[
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: widget.adminEmails
+                  .map(
+                    (email) => InputChip(
+                      label: Text(email, style: const TextStyle(fontSize: 12)),
+                      onDeleted: () => _removeEmail(email),
+                      deleteIconColor: VeraProbColors.error,
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 12),
+          ],
+          TextField(
+            controller: _emailCtrl,
+            decoration: InputDecoration(
+              labelText: 'E-mails dos Admins *',
+              hintText: 'Digite e pressione Enter',
+              prefixIcon: const Icon(Icons.email_outlined),
+              errorText: _inputError,
             ),
             keyboardType: TextInputType.emailAddress,
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
-              if (!v.trim().contains('@')) return 'E-mail inválido';
-              return null;
-            },
+            onSubmitted: _addEmail,
           ),
+          if (widget.adminEmails.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 4, left: 12),
+              child: Text(
+                'Adicione pelo menos um e-mail.',
+                style: TextStyle(fontSize: 12, color: VeraProbColors.error),
+              ),
+            ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(10),
@@ -817,7 +876,7 @@ class Step3AdminInvite extends StatelessWidget {
                   color: VeraProbColors.warning,
                 ),
                 Text(
-                  'Um convite válido por 7 dias será enviado para este e-mail com permissão de Administrador.',
+                  'Convites validos por 7 dias serao enviados para cada e-mail com permissao de Administrador.',
                   style: TextStyle(fontSize: 12),
                 ),
               ],

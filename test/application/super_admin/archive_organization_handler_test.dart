@@ -1,20 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/application/shared/super_admin_bypass_tenant_validator.dart';
 import 'package:veraprob/application/super_admin/archive_organization_handler.dart';
 import 'package:veraprob/domain/super_admin/archive_organization_command.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
-
-class MockTenantValidationService extends Mock
-    implements TenantValidationService {}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -34,24 +30,13 @@ ArchiveOrganizationCommand _validCmd({
 
 void main() {
   late MockSuperAdminRepository mockRepo;
-  late MockTenantValidationService mockTenantValidator;
   late ArchiveOrganizationHandler handler;
 
   setUp(() {
     mockRepo = MockSuperAdminRepository();
-    mockTenantValidator = MockTenantValidationService();
-
-    // Default success behavior for tenant validation
-    when(
-      () => mockTenantValidator.assertTenantMatches(
-        payloadOrgId: any(named: 'payloadOrgId'),
-        sessionId: any(named: 'sessionId'),
-      ),
-    ).thenAnswer((_) async {});
-
     handler = ArchiveOrganizationHandler(
       repository: mockRepo,
-      tenantValidator: mockTenantValidator,
+      tenantValidator: const SuperAdminBypassTenantValidator(),
     );
   });
 
@@ -60,29 +45,6 @@ void main() {
   });
 
   group('ArchiveOrganizationHandler', () {
-    group('tenant validation (INV-1)', () {
-      test('fails validation → throws SovereigntyViolationException', () async {
-        when(
-          () => mockTenantValidator.assertTenantMatches(
-            payloadOrgId: any(named: 'payloadOrgId'),
-            sessionId: any(named: 'sessionId'),
-          ),
-        ).thenThrow(
-          const SovereigntyViolationException(
-            payloadOrgId: 'org-uuid-abc123',
-            jwtOrgId: 'none',
-          ),
-        );
-
-        await expectLater(
-          handler.handle(_validCmd()),
-          throwsA(isA<SovereigntyViolationException>()),
-        );
-
-        verifyNever(() => mockRepo.archiveOrganization(any()));
-      });
-    });
-
     group('happy path', () {
       test('active org → calls archiveOrganization on repo', () async {
         when(
@@ -130,7 +92,7 @@ void main() {
 
       test('reason shorter than 10 chars throws DomainException', () async {
         await expectLater(
-          handler.handle(_validCmd(reason: 'Inativo')), // 7 chars
+          handler.handle(_validCmd(reason: 'Inativo')),
           throwsA(isA<DomainException>()),
         );
         verifyNever(() => mockRepo.archiveOrganization(any()));

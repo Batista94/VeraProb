@@ -20,7 +20,8 @@ class CreateOrganizationCommand {
   /// Max active contracts quota. `null` means "derive from [planType] defaults at handler time".
   final int? maxActiveContracts;
 
-  final String initialAdminEmail;
+  /// List of admin emails to invite. At least one required.
+  final List<String> adminEmails;
   final String superAdminUserId;
 
   /// Operational capability flags. Defaults to [OrgCapabilities.defaults] if null.
@@ -36,7 +37,7 @@ class CreateOrganizationCommand {
   /// Null is only valid for programmatic/test callers; the UI always requires it.
   final String? reason;
 
-  /// Preferred billing day of month (1–28). Null = platform default.
+  /// Preferred billing day of month (1-28). Null = platform default.
   final int? billingDay;
 
   /// Primary billing/ops contact email for this org. Null = use admin email.
@@ -54,7 +55,7 @@ class CreateOrganizationCommand {
     required this.planType,
     this.maxVehicles,
     this.maxActiveContracts,
-    required this.initialAdminEmail,
+    required this.adminEmails,
     required this.superAdminUserId,
     this.capabilities,
     this.toolCostCents,

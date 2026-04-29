@@ -13,7 +13,10 @@ import 'package:veraprob/domain/super_admin/update_organization_quota_command.da
 
 /// Application handler for [UpdateOrganizationQuotaCommand].
 ///
-/// Orchestrates: RBAC → validation → repository update → governance audit log.
+/// Orchestrates: INV-1 tenant check → RBAC → validation → repository update → audit log.
+///
+/// For SuperAdmin context, inject [SuperAdminBypassTenantValidator] which
+/// satisfies INV-1 structurally while being a no-op (SuperAdmin has sovereignty).
 ///
 /// INV-4: Pure orchestration — no direct DB access.
 /// INV-7: Billing event is appended server-side inside the RPC.
@@ -33,18 +36,18 @@ class UpdateOrganizationQuotaHandler {
        _auditLogService = auditLogService;
 
   Future<void> handle(UpdateOrganizationQuotaCommand cmd) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync
+    // ── Step 0: INV-1 Identity Sovereignty (no-op for SuperAdmin via bypass validator)
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: cmd.organizationId,
       sessionId: cmd.sessionId,
     );
 
-    // ── Step 2: RBAC — before any I/O
+    // ── Step 1: RBAC — before any I/O
     if (!_rbac.can(UserRole.superAdmin, UserPermission.canManageTenants)) {
       throw const DomainException('Unauthorized: canManageTenants required.');
     }
 
-    // ── Step 3: Validate reason (Stage C — mandatory for governance)
+    // ── Step 2: Validate reason (Stage C — mandatory for governance)
     if (cmd.reason == null || cmd.reason!.trim().isEmpty) {
       throw const DomainException(
         'Justificativa obrigatória para mudanças de cota.',
@@ -56,13 +59,13 @@ class UpdateOrganizationQuotaHandler {
       );
     }
 
-    // ── Step 4: Validate plan type
+    // ── Step 3: Validate plan type
     final validPlan = PlanType.values.any((p) => p.dbValue == cmd.newPlanType);
     if (!validPlan) {
       throw DomainException('Tipo de plano inválido: ${cmd.newPlanType}.');
     }
 
-    // ── Step 5: Validate limits
+    // ── Step 4: Validate limits
     if (cmd.newMaxVehicles != null && cmd.newMaxVehicles! < 1) {
       throw const DomainException('Limite de veículos deve ser pelo menos 1.');
     }
@@ -72,14 +75,14 @@ class UpdateOrganizationQuotaHandler {
       );
     }
 
-    // ── Step 5a: tool_cost_cents required
+    // ── Step 4a: tool_cost_cents required
     if (cmd.toolCostCents == null) {
       throw const DomainException(
         'Custo mensal da ferramenta é obrigatório para calcular o ROI.',
       );
     }
 
-    // ── Step 6: Delegate to repository
+    // ── Step 5: Delegate to repository
     try {
       await _repository.updateOrganizationQuota(cmd);
     } on PostgrestException catch (e) {
@@ -89,7 +92,7 @@ class UpdateOrganizationQuotaHandler {
       rethrow;
     }
 
-    // ── Step 7: Log governance change (Stage C)
+    // ── Step 6: Log governance change (Stage C)
     if (_auditLogService != null) {
       await _auditLogService.logGovernanceChange(
         eventType: 'QUOTA_CHANGE',

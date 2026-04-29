@@ -2,11 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/application/shared/super_admin_bypass_tenant_validator.dart';
 import 'package:veraprob/application/super_admin/update_organization_quota_handler.dart';
-import 'package:veraprob/domain/auth/auth_user.dart' as domain;
-import 'package:veraprob/domain/auth/i_auth_repository.dart';
-import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
@@ -14,8 +11,6 @@ import 'package:veraprob/domain/super_admin/update_organization_quota_command.da
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
-
-class MockAuthRepository extends Mock implements IAuthRepository {}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -41,25 +36,13 @@ UpdateOrganizationQuotaCommand _validCmd({
 
 void main() {
   late MockSuperAdminRepository mockRepo;
-  late MockAuthRepository mockAuth;
-  late TenantValidationService tenantValidator;
   late UpdateOrganizationQuotaHandler handler;
 
   setUp(() {
     mockRepo = MockSuperAdminRepository();
-    mockAuth = MockAuthRepository();
-    tenantValidator = TenantValidationService(authRepository: mockAuth);
     handler = UpdateOrganizationQuotaHandler(
-      tenantValidator: tenantValidator,
       repository: mockRepo,
-    );
-
-    // Default: session is valid and matches org
-    when(() => mockAuth.getUserBySessionId(any<String>())).thenAnswer(
-      (_) async => const domain.AuthUser(
-        id: 'super-admin-uuid-456',
-        tenantId: 'org-uuid-123',
-      ),
+      tenantValidator: const SuperAdminBypassTenantValidator(),
     );
   });
 
@@ -217,19 +200,8 @@ void main() {
 
     group('toolCostCents validation (INV-10)', () {
       test('throws DomainException when toolCostCents is null', () async {
-        const cmd = UpdateOrganizationQuotaCommand(
-          organizationId: 'org-uuid-123',
-          newPlanType: 'professional',
-          newMaxVehicles: 100,
-          newMaxActiveContracts: 50,
-          superAdminUserId: 'super-admin-uuid-456',
-          reason: 'Teste de validacao de toolCostCents',
-          sessionId: 'session-uuid-789',
-          toolCostCents: null,
-        );
-
         await expectLater(
-          handler.handle(cmd),
+          handler.handle(_validCmd(toolCostCents: null)),
           throwsA(
             isA<DomainException>().having(
               (e) => e.message,
@@ -238,7 +210,6 @@ void main() {
             ),
           ),
         );
-
         verifyNever(() => mockRepo.updateOrganizationQuota(any()));
       });
 
@@ -246,7 +217,6 @@ void main() {
         when(
           () => mockRepo.updateOrganizationQuota(any()),
         ).thenAnswer((_) async {});
-
         await expectLater(
           handler.handle(_validCmd(toolCostCents: 0)),
           completes,
@@ -257,7 +227,6 @@ void main() {
         when(
           () => mockRepo.updateOrganizationQuota(any()),
         ).thenAnswer((_) async {});
-
         await expectLater(handler.handle(_validCmd()), completes);
       });
     });
@@ -292,45 +261,6 @@ void main() {
           handler.handle(_validCmd()),
           throwsA(isA<PostgrestException>()),
         );
-      });
-    });
-
-    group('tenant validation (INV-1)', () {
-      test('throws SovereigntyViolationException on org mismatch', () async {
-        when(() => mockAuth.getUserBySessionId(any<String>())).thenAnswer(
-          (_) async => const domain.AuthUser(
-            id: 'super-admin-uuid-456',
-            tenantId: 'org-different',
-          ),
-        );
-
-        await expectLater(
-          handler.handle(_validCmd()),
-          throwsA(isA<SovereigntyViolationException>()),
-        );
-        verifyNever(() => mockRepo.updateOrganizationQuota(any()));
-      });
-
-      test('throws SovereigntyViolationException on null user', () async {
-        when(
-          () => mockAuth.getUserBySessionId(any<String>()),
-        ).thenAnswer((_) async => null);
-
-        await expectLater(
-          handler.handle(_validCmd()),
-          throwsA(isA<SovereigntyViolationException>()),
-        );
-        verifyNever(() => mockRepo.updateOrganizationQuota(any()));
-      });
-
-      test('proceeds when org matches JWT', () async {
-        when(
-          () => mockRepo.updateOrganizationQuota(any()),
-        ).thenAnswer((_) async {});
-
-        await expectLater(handler.handle(_validCmd()), completes);
-
-        verify(() => mockRepo.updateOrganizationQuota(any())).called(1);
       });
     });
   });

@@ -15,9 +15,7 @@ class PostgresUserManagementCommandService
     required String targetUserId,
     required UserRole newRole,
   }) async {
-    // Role mapping for SQL: admin -> TENANT_ADMIN, operator -> OPERATOR, auditor -> AUDITOR
     final dbRole = _mapRoleToDb(newRole);
-
     await _client.rpc(
       'update_member_role',
       params: {'p_target_user_id': targetUserId, 'p_new_role': dbRole},
@@ -31,6 +29,17 @@ class PostgresUserManagementCommandService
   }) async {
     await _client.rpc(
       'remove_member',
+      params: {'p_target_user_id': targetUserId},
+    );
+  }
+
+  @override
+  Future<void> deactivateMember({
+    required String organizationId,
+    required String targetUserId,
+  }) async {
+    await _client.rpc(
+      'deactivate_member',
       params: {'p_target_user_id': targetUserId},
     );
   }

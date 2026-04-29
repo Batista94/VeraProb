@@ -47,6 +47,7 @@ class SupabaseSuperAdminRepository
           'p_billing_day': cmd.billingDay,
           'p_contact_email': cmd.contactEmail,
           'p_external_id': cmd.externalId,
+          'p_reason': cmd.reason,
         },
       );
       return result as String;

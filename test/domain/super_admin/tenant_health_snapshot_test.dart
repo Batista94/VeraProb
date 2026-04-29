@@ -18,6 +18,12 @@ void main() {
           'active_contract_count': 5,
           'last_telemetry_at': '2026-03-19T10:30:00.000Z',
           'open_critical_alert_count': 2,
+          'capabilities': {'allows_sealing': true, 'allows_loading': false},
+          'tool_cost_cents': 50000,
+          'dwell_time_seconds': 600,
+          'billing_day': 15,
+          'contact_email': 'billing@silva.com',
+          'external_id': 'CRM-001',
         };
 
         final snapshot = TenantHealthSnapshot.fromJson(json);
@@ -34,6 +40,15 @@ void main() {
         expect(snapshot.lastTelemetryAt, isNotNull);
         expect(snapshot.lastTelemetryAt!.isUtc, isTrue);
         expect(snapshot.openCriticalAlertCount, equals(2));
+        expect(snapshot.capabilities, {
+          'allows_sealing': true,
+          'allows_loading': false,
+        });
+        expect(snapshot.toolCostCents, equals(50000));
+        expect(snapshot.dwellTimeSeconds, equals(600));
+        expect(snapshot.billingDay, equals(15));
+        expect(snapshot.contactEmail, equals('billing@silva.com'));
+        expect(snapshot.externalId, equals('CRM-001'));
       });
 
       test('maps TRIAL status correctly', () {
@@ -135,6 +150,35 @@ void main() {
         expect(snapshot.maxVehicles, equals(50));
         expect(snapshot.activeContractCount, equals(3));
         expect(snapshot.openCriticalAlertCount, equals(1));
+      });
+
+      test('new fields default when absent from JSON (legacy orgs)', () {
+        final json = {
+          'id': 'org-legacy',
+          'name': 'Legacy Org',
+          'is_active': true,
+        };
+
+        final snapshot = TenantHealthSnapshot.fromJson(json);
+
+        expect(snapshot.capabilities, isNull);
+        expect(snapshot.toolCostCents, isNull);
+        expect(snapshot.dwellTimeSeconds, equals(300));
+        expect(snapshot.billingDay, isNull);
+        expect(snapshot.contactEmail, isNull);
+        expect(snapshot.externalId, isNull);
+      });
+
+      test('capabilities as empty map parses without error', () {
+        final json = {
+          'id': 'org-empty-caps',
+          'name': 'Empty Caps Org',
+          'is_active': true,
+          'capabilities': <String, dynamic>{},
+        };
+
+        final snapshot = TenantHealthSnapshot.fromJson(json);
+        expect(snapshot.capabilities, equals(<String, dynamic>{}));
       });
     });
 
