@@ -1,5 +1,6 @@
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 
 /// Mutable form DTO for the Create Organization wizard.
@@ -34,6 +35,15 @@ class CreateOrganizationFormData {
   /// The UI always requires this; null is only valid for test callers.
   final String? reason;
 
+  /// Preferred billing day of month (1–28). Null = platform default.
+  final int? billingDay;
+
+  /// Primary billing/ops contact email. Null = use admin email.
+  final String? contactEmail;
+
+  /// External reference ID from a 3rd-party system (CRM, ERP). Max 100 chars.
+  final String? externalId;
+
   const CreateOrganizationFormData({
     required this.legalName,
     required this.tradeName,
@@ -49,9 +59,28 @@ class CreateOrganizationFormData {
     this.toolCostCents,
     this.dwellTimeSeconds = 300,
     this.reason,
+    this.billingDay,
+    this.contactEmail,
+    this.externalId,
   });
 
   CreateOrganizationCommand toCommand() {
+    // billingDay must be 1–28 (all months guarantee day 28 exists — INV-10)
+    if (billingDay != null && (billingDay! < 1 || billingDay! > 28)) {
+      throw IntegrityException(
+        'billingDay must be between 1 and 28, got $billingDay',
+        field: 'billing_day',
+      );
+    }
+
+    // externalId is an opaque reference — length cap prevents DB overflow (INV-10)
+    if (externalId != null && externalId!.length > 100) {
+      throw IntegrityException(
+        'externalId must not exceed 100 characters, got ${externalId!.length}',
+        field: 'external_id',
+      );
+    }
+
     return CreateOrganizationCommand(
       legalName: legalName,
       tradeName: tradeName,
@@ -68,6 +97,9 @@ class CreateOrganizationFormData {
       toolCostCents: toolCostCents,
       dwellTimeSeconds: dwellTimeSeconds,
       reason: reason,
+      billingDay: billingDay,
+      contactEmail: contactEmail,
+      externalId: externalId,
     );
   }
 }

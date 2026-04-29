@@ -72,6 +72,9 @@ void main() {
     testWidgets('Wizard Step 1: Structural CNPJ validation blocks progression', (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.pumpWidget(createWizard(mockRepo, mockLookup));
       await tester.pumpAndSettle();
 

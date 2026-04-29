@@ -58,8 +58,8 @@ Deno.serve(async (req) => {
       .eq("id", target_org_id)
       .single();
 
-    // INV-26: Error Parity — same 404 for not found, wrong org, and deleted
-    if (orgError || !org || org.status === "DELETED") {
+    // INV-26: Error Parity — same 404 for not found, wrong org, deleted, and archived (INV-22)
+    if (orgError || !org || ["DELETED", "ARCHIVED"].includes(org.status)) {
       return new Response(
         JSON.stringify({ error: "Not found" }),
         { status: 404, headers: { "Content-Type": "application/json" } },

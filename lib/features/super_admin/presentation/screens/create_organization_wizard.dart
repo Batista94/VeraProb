@@ -50,6 +50,9 @@ class _CreateOrganizationWizardState
   final _legalNameCtrl = TextEditingController();
   final _tradeNameCtrl = TextEditingController();
   final _cnpjCtrl = TextEditingController();
+  final _contactEmailCtrl = TextEditingController();
+  final _externalIdCtrl = TextEditingController();
+  final _billingDayCtrl = TextEditingController();
   PlanType _selectedPlan = PlanType.starter;
   String _timezone = 'America/Sao_Paulo';
   String _currency = 'BRL';
@@ -95,6 +98,9 @@ class _CreateOrganizationWizardState
     _legalNameCtrl.dispose();
     _tradeNameCtrl.dispose();
     _cnpjCtrl.dispose();
+    _contactEmailCtrl.dispose();
+    _externalIdCtrl.dispose();
+    _billingDayCtrl.dispose();
     _maxVehiclesCtrl.dispose();
     _maxContractsCtrl.dispose();
     _toolCostCtrl.dispose();
@@ -268,6 +274,7 @@ class _CreateOrganizationWizardState
     try {
       final handler = ref.read(createOrganizationHandlerProvider);
 
+      final billingDayText = _billingDayCtrl.text.trim();
       final cmd = CreateOrganizationFormData(
         legalName: _legalNameCtrl.text.trim(),
         tradeName: _tradeNameCtrl.text.trim(),
@@ -284,6 +291,15 @@ class _CreateOrganizationWizardState
         toolCostCents: BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text),
         dwellTimeSeconds: _dwellTimeSeconds,
         reason: _reasonCtrl.text.trim(),
+        contactEmail: _contactEmailCtrl.text.trim().isEmpty
+            ? null
+            : _contactEmailCtrl.text.trim(),
+        externalId: _externalIdCtrl.text.trim().isEmpty
+            ? null
+            : _externalIdCtrl.text.trim(),
+        billingDay: billingDayText.isEmpty
+            ? null
+            : int.tryParse(billingDayText),
       ).toCommand();
 
       final result = await handler.handle(cmd);
@@ -319,7 +335,8 @@ class _CreateOrganizationWizardState
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => _buildSuccessDialog(inviteUrl, messenger),
+        builder: (_) =>
+            _buildSuccessDialog(inviteUrl, messenger, result.orgApiSecret),
       );
 
       // Invalidate health snapshot to refresh the tenant list
@@ -348,6 +365,7 @@ class _CreateOrganizationWizardState
   Widget _buildSuccessDialog(
     String inviteUrl,
     ScaffoldMessengerState messenger,
+    String? orgApiSecret,
   ) {
     return AlertDialog(
       icon: const Icon(
@@ -418,6 +436,10 @@ class _CreateOrganizationWizardState
               ],
             ),
           ),
+          if (orgApiSecret != null) ...[
+            const SizedBox(height: 16),
+            _SecretRevealSection(secret: orgApiSecret, messenger: messenger),
+          ],
         ],
       ),
       actions: [
@@ -463,6 +485,9 @@ class _CreateOrganizationWizardState
             onPlanChanged: (p) => setState(() => _selectedPlan = p),
             onTimezoneChanged: (t) => setState(() => _timezone = t),
             onCurrencyChanged: (c) => setState(() => _currency = c),
+            contactEmailCtrl: _contactEmailCtrl,
+            externalIdCtrl: _externalIdCtrl,
+            billingDayCtrl: _billingDayCtrl,
           ),
         ),
         Step(
@@ -539,6 +564,79 @@ class _CreateOrganizationWizardState
                     ),
                   )
                 : Text(isLast ? 'Criar e Enviar Convite' : 'Próximo'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One-time HMAC secret reveal section (INV-28).
+///
+/// Displayed in the success dialog when [CreateOrganizationResult.orgApiSecret]
+/// is non-null. The plain-text secret is shown exactly once and never stored.
+class _SecretRevealSection extends StatelessWidget {
+  final String secret;
+  final ScaffoldMessengerState messenger;
+
+  const _SecretRevealSection({required this.secret, required this.messenger});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: VeraProbColors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.warning_amber, size: 16, color: VeraProbColors.error),
+              SizedBox(width: 6),
+              Text(
+                'Chave de API da Organização (única exibição)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: VeraProbColors.error,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: SelectableText(
+                  secret,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    color: VeraProbColors.textPrimary,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy_all, size: 16),
+                tooltip: 'Copiar chave',
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: secret));
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Chave copiada!')),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Copie agora. Este segredo não será exibido novamente.',
+            style: TextStyle(fontSize: 11, color: VeraProbColors.error),
           ),
         ],
       ),

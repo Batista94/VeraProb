@@ -43,6 +43,11 @@ class Step1FiscalData extends StatelessWidget {
   final ValueChanged<String> onTimezoneChanged;
   final ValueChanged<String> onCurrencyChanged;
 
+  // Optional billing / integration fields
+  final TextEditingController? contactEmailCtrl;
+  final TextEditingController? externalIdCtrl;
+  final TextEditingController? billingDayCtrl;
+
   const Step1FiscalData({
     super.key,
     required this.formKey,
@@ -59,6 +64,9 @@ class Step1FiscalData extends StatelessWidget {
     required this.onPlanChanged,
     required this.onTimezoneChanged,
     required this.onCurrencyChanged,
+    this.contactEmailCtrl,
+    this.externalIdCtrl,
+    this.billingDayCtrl,
   });
 
   @override
@@ -206,6 +214,58 @@ class Step1FiscalData extends StatelessWidget {
                 .toList(),
             onChanged: (v) => onCurrencyChanged(v!),
           ),
+          if (contactEmailCtrl != null) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: contactEmailCtrl,
+              decoration: const InputDecoration(
+                labelText: 'E-mail de Cobrança',
+                hintText: 'financeiro@empresa.com.br',
+              ),
+              keyboardType: TextInputType.emailAddress,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return null;
+                if (!v.trim().contains('@')) return 'E-mail inválido';
+                return null;
+              },
+            ),
+          ],
+          if (externalIdCtrl != null) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: externalIdCtrl,
+              decoration: const InputDecoration(
+                labelText: 'ID Externo (CRM/ERP)',
+                hintText: 'Ex: CRM-00123',
+              ),
+              maxLength: 100,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return null;
+                if (v.trim().length > 100) return 'Máximo 100 caracteres';
+                return null;
+              },
+            ),
+          ],
+          if (billingDayCtrl != null) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: billingDayCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Dia de Faturamento (1–28)',
+                hintText: 'Ex: 5',
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return null;
+                final day = int.tryParse(v.trim());
+                if (day == null || day < 1 || day > 28) {
+                  return 'Deve ser entre 1 e 28';
+                }
+                return null;
+              },
+            ),
+          ],
         ],
       ),
     );

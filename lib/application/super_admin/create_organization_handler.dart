@@ -77,6 +77,19 @@ class CreateOrganizationHandler {
       );
     }
 
+    // 4c. billingDay must be 1–28 if provided (defense-in-depth; form data validates first)
+    if (cmd.billingDay != null &&
+        (cmd.billingDay! < 1 || cmd.billingDay! > 28)) {
+      throw const DomainException('Dia de faturamento deve ser entre 1 e 28.');
+    }
+
+    // 4d. externalId length cap (defense-in-depth)
+    if (cmd.externalId != null && cmd.externalId!.length > 100) {
+      throw const DomainException(
+        'ID externo não pode exceder 100 caracteres.',
+      );
+    }
+
     // 5. Auto-fill quota limits from PlanLimits defaults when not explicitly provided
     final planType = cmd.planType;
     final effectiveCmd =
@@ -97,6 +110,9 @@ class CreateOrganizationHandler {
             toolCostCents: cmd.toolCostCents,
             dwellTimeSeconds: cmd.dwellTimeSeconds,
             reason: cmd.reason,
+            billingDay: cmd.billingDay,
+            contactEmail: cmd.contactEmail,
+            externalId: cmd.externalId,
           )
         : cmd;
 
@@ -161,8 +177,24 @@ class CreateOrganizationHandler {
       );
     }
 
-    // 9. Return immutable result
-    return CreateOrganizationResult(orgId: orgId, invitationToken: token);
+    // 9. Generate org API secret (INV-28) — one-time plain-text, silent on failure
+    String? orgApiSecret;
+    try {
+      final secretResponse = await _authenticatedClient.functions.invoke(
+        'generate-org-secret',
+        body: {'organization_id': orgId},
+      );
+      orgApiSecret = secretResponse.data?['secret'] as String?;
+    } catch (_) {
+      // Silent degradation — wizard shows a warning if secret is null.
+    }
+
+    // 10. Return immutable result
+    return CreateOrganizationResult(
+      orgId: orgId,
+      invitationToken: token,
+      orgApiSecret: orgApiSecret,
+    );
   }
 
   /// Fires the invite notification Edge Function — silent failure by design.

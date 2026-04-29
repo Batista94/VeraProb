@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Operational capability flags for an organization.
 /// INV-14: capability flags, not enum — transport-agnostic core.
@@ -26,14 +27,47 @@ class OrgCapabilities extends Equatable {
 
   factory OrgCapabilities.fromJson(Map<String, dynamic> json) {
     return OrgCapabilities(
-      allowsSealing: json['allows_sealing'] as bool? ?? true,
-      allowsLoading: json['allows_loading'] as bool? ?? true,
-      allowsCargoCheck: json['allows_cargo_check'] as bool? ?? true,
-      allowsIncident: json['allows_incident'] as bool? ?? true,
-      allowsDoc: json['allows_doc'] as bool? ?? true,
-      smartClassify: json['smart_classify'] as bool? ?? true,
-      maxKinematicSpeedKmh: (json['max_kinematic_speed_kmh'] as num?)
-          ?.toDouble(),
+      allowsSealing: _parseBool(json, 'allows_sealing', defaultValue: true),
+      allowsLoading: _parseBool(json, 'allows_loading', defaultValue: true),
+      allowsCargoCheck: _parseBool(
+        json,
+        'allows_cargo_check',
+        defaultValue: true,
+      ),
+      allowsIncident: _parseBool(json, 'allows_incident', defaultValue: true),
+      allowsDoc: _parseBool(json, 'allows_doc', defaultValue: true),
+      smartClassify: _parseBool(json, 'smart_classify', defaultValue: true),
+      maxKinematicSpeedKmh: _parseSpeed(
+        json,
+        'max_kinematic_speed_kmh',
+      )?.toDouble(),
+    );
+  }
+
+  /// Strict bool parser — throws [IntegrityException] if field exists but is not bool.
+  static bool _parseBool(
+    Map<String, dynamic> json,
+    String key, {
+    required bool defaultValue,
+  }) {
+    final value = json[key];
+    if (value == null) return defaultValue;
+    if (value is bool) return value;
+    throw IntegrityException(
+      'Field "$key" must be bool, got ${value.runtimeType}',
+      field: key,
+    );
+  }
+
+  /// Strict numeric parser for kinematic speed — throws [IntegrityException]
+  /// if field exists but is not a num.
+  static num? _parseSpeed(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    if (value == null) return null;
+    if (value is num) return value;
+    throw IntegrityException(
+      'Field "$key" must be num, got ${value.runtimeType}',
+      field: key,
     );
   }
 

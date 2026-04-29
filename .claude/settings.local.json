@@ -86,7 +86,8 @@
       "Bash(/c/Users/wes_b/.deno/bin/deno test *)",
       "Bash(npx deno *)",
       "PowerShell(Get-ChildItem *)",
-      "PowerShell(supabase deno *)"
+      "PowerShell(supabase deno *)",
+      "Bash(claude mcp *)"
     ]
   },
   "model": "sonnet"

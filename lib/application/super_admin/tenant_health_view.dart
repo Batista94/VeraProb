@@ -20,7 +20,6 @@ class TenantHealthView {
   final String name;
   final String? legalName;
   final String? planType;
-  final bool isActive;
   final OrgStatus? status;
   final int maxVehicles;
   final int maxActiveContracts;
@@ -35,12 +34,16 @@ class TenantHealthView {
   final int? toolCostCents;
   final int dwellTimeSeconds;
 
+  // Billing / integration fields (added in Phase 10 Tier-S)
+  final int? billingDay;
+  final String? contactEmail;
+  final String? externalId;
+
   const TenantHealthView({
     required this.id,
     required this.name,
     this.legalName,
     this.planType,
-    required this.isActive,
     this.status,
     required this.maxVehicles,
     required this.maxActiveContracts,
@@ -50,7 +53,21 @@ class TenantHealthView {
     this.capabilities = OrgCapabilitiesViewModel.defaults,
     this.toolCostCents,
     this.dwellTimeSeconds = 300,
+    this.billingDay,
+    this.contactEmail,
+    this.externalId,
   });
+
+  /// Derived from [status] — ACTIVE orgs are operational.
+  bool get isActive => status == OrgStatus.active;
+
+  /// True when org can receive telemetry and run evaluations (ACTIVE or TRIAL).
+  bool get isOperational => status?.isOperational ?? false;
+
+  bool get isArchived => status == OrgStatus.archived;
+
+  /// Uppercase DB key (e.g. 'ACTIVE') — pass to handlers that accept primitive status strings.
+  String get statusKey => status?.dbValue ?? 'UNKNOWN';
 
   bool get hasCriticalAlerts => openCriticalAlertCount > 0;
 
@@ -60,7 +77,6 @@ class TenantHealthView {
       name: snapshot.name,
       legalName: snapshot.legalName,
       planType: snapshot.planType,
-      isActive: snapshot.isActive,
       status: snapshot.status,
       maxVehicles: snapshot.maxVehicles,
       maxActiveContracts: snapshot.maxActiveContracts,
@@ -85,7 +101,6 @@ class TenantHealthView {
       name: json['name'] as String,
       legalName: json['legal_name'] as String?,
       planType: json['plan_type'] as String?,
-      isActive: json['is_active'] as bool? ?? false,
       status: rawStatus != null ? OrgStatus.fromString(rawStatus) : null,
       maxVehicles: (json['max_vehicles'] as num?)?.toInt() ?? 0,
       maxActiveContracts: (json['max_active_contracts'] as num?)?.toInt() ?? 0,
@@ -100,6 +115,9 @@ class TenantHealthView {
       capabilities: OrgCapabilitiesViewModel.fromDomain(domainCaps),
       toolCostCents: (json['tool_cost_cents'] as num?)?.toInt(),
       dwellTimeSeconds: (json['dwell_time_seconds'] as num?)?.toInt() ?? 300,
+      billingDay: (json['billing_day'] as num?)?.toInt(),
+      contactEmail: json['contact_email'] as String?,
+      externalId: json['external_id'] as String?,
     );
   }
 }

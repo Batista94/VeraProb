@@ -1,3 +1,4 @@
+import 'archive_organization_command.dart';
 import 'create_organization_command.dart';
 import 'system_audit_log_entry.dart';
 import 'tenant_health_snapshot.dart';
@@ -47,4 +48,11 @@ abstract class ISuperAdminRepository {
   /// Atomically updates the organizations row and appends a 'PLAN_CHANGED'
   /// billing factEvent (INV-7). NULL limits = unlimited (enterprise tier).
   Future<void> updateOrganizationQuota(UpdateOrganizationQuotaCommand command);
+
+  /// Archives an organization: sets status=ARCHIVED, revokes API secrets,
+  /// appends ORG_ARCHIVED audit record.
+  ///
+  /// INV-3: Secrets revoked via revoked_at, never deleted.
+  /// INV-26: Returns error for not-found AND wrong-org (404 parity).
+  Future<void> archiveOrganization(ArchiveOrganizationCommand command);
 }

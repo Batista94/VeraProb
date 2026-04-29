@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/super_admin/archive_organization_command.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
@@ -43,6 +44,9 @@ class SupabaseSuperAdminRepository
           'p_capabilities': cmd.capabilities?.toJson(),
           'p_tool_cost_cents': cmd.toolCostCents,
           'p_dwell_time_seconds': cmd.dwellTimeSeconds,
+          'p_billing_day': cmd.billingDay,
+          'p_contact_email': cmd.contactEmail,
+          'p_external_id': cmd.externalId,
         },
       );
       return result as String;
@@ -158,6 +162,22 @@ class SupabaseSuperAdminRepository
           'p_capabilities': cmd.capabilities?.toJson(),
           'p_tool_cost_cents': cmd.toolCostCents,
           'p_dwell_time_seconds': cmd.dwellTimeSeconds,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<void> archiveOrganization(ArchiveOrganizationCommand cmd) async {
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_archive_organization',
+        params: {
+          'p_org_id': cmd.orgId,
+          'p_reason': cmd.reason,
+          'p_super_admin_id': cmd.superAdminUserId,
         },
       );
     } on PostgrestException catch (e) {

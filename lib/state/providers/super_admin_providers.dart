@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/audit/system_audit_log_service.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/application/super_admin/archive_organization_handler.dart';
 import 'package:veraprob/application/super_admin/create_organization_handler.dart';
 import 'package:veraprob/application/super_admin/generate_org_secret_handler.dart';
 import 'package:veraprob/application/super_admin/revoke_impersonation_handler.dart';
@@ -121,6 +122,17 @@ final generateOrgSecretHandlerProvider = Provider<GenerateOrgSecretHandler>((
     ),
   );
 });
+
+final archiveOrganizationHandlerProvider = Provider<ArchiveOrganizationHandler>(
+  (ref) {
+    return ArchiveOrganizationHandler(
+      repository: ref.watch(superAdminRepositoryProvider),
+      tenantValidator: TenantValidationService(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );
+  },
+);
 
 final revokeImpersonationHandlerProvider = Provider<RevokeImpersonationHandler>(
   (ref) {

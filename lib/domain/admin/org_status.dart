@@ -2,7 +2,8 @@ import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Organization lifecycle status.
 ///
-/// Lifecycle: TRIAL → ACTIVE → SUSPENDED → CHURNED → DELETED
+/// Lifecycle: TRIAL → ACTIVE → SUSPENDED → CHURNED → ARCHIVED → DELETED
+/// ARCHIVED = data preserved read-only. DELETED = GDPR hard-remove.
 ///
 /// INV-10: Invalid status strings throw [IntegrityException].
 enum OrgStatus {
@@ -10,6 +11,7 @@ enum OrgStatus {
   active,
   suspended,
   churned,
+  archived,
   deleted;
 
   /// Whether the organization can operate (receive telemetry, run evaluations).
@@ -37,6 +39,8 @@ enum OrgStatus {
         return 'Suspenso';
       case OrgStatus.churned:
         return 'Churned';
+      case OrgStatus.archived:
+        return 'Arquivado';
       case OrgStatus.deleted:
         return 'Excluído';
     }

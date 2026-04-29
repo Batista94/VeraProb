@@ -36,6 +36,15 @@ class CreateOrganizationCommand {
   /// Null is only valid for programmatic/test callers; the UI always requires it.
   final String? reason;
 
+  /// Preferred billing day of month (1–28). Null = platform default.
+  final int? billingDay;
+
+  /// Primary billing/ops contact email for this org. Null = use admin email.
+  final String? contactEmail;
+
+  /// External reference ID from a 3rd-party system (CRM, ERP). Max 100 chars.
+  final String? externalId;
+
   const CreateOrganizationCommand({
     required this.legalName,
     required this.tradeName,
@@ -51,5 +60,8 @@ class CreateOrganizationCommand {
     this.toolCostCents,
     this.dwellTimeSeconds = 300,
     this.reason,
+    this.billingDay,
+    this.contactEmail,
+    this.externalId,
   });
 }

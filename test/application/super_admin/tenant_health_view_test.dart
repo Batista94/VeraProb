@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/domain/admin/org_status.dart';
 
 void main() {
   group('TenantHealthView', () {
@@ -7,21 +8,111 @@ void main() {
       const view = TenantHealthView(
         id: 'org-1',
         name: 'Empresa Teste',
-        isActive: true,
         maxVehicles: 50,
         maxActiveContracts: 10,
         activeContractCount: 4,
         openCriticalAlertCount: 2,
       );
       expect(view.id, 'org-1');
-      expect(view.isActive, isTrue);
+      expect(view.isActive, isFalse);
+    });
+
+    test('isActive derived from status == OrgStatus.active', () {
+      const active = TenantHealthView(
+        id: 'org-a',
+        name: 'Ativa',
+        status: OrgStatus.active,
+        maxVehicles: 50,
+        maxActiveContracts: 10,
+        activeContractCount: 4,
+        openCriticalAlertCount: 0,
+      );
+      const trial = TenantHealthView(
+        id: 'org-t',
+        name: 'Trial',
+        status: OrgStatus.trial,
+        maxVehicles: 10,
+        maxActiveContracts: 5,
+        activeContractCount: 0,
+        openCriticalAlertCount: 0,
+      );
+      expect(active.isActive, isTrue);
+      expect(trial.isActive, isFalse);
+    });
+
+    test('isOperational true for ACTIVE and TRIAL', () {
+      const active = TenantHealthView(
+        id: 'o1',
+        name: 'A',
+        status: OrgStatus.active,
+        maxVehicles: 0,
+        maxActiveContracts: 0,
+        activeContractCount: 0,
+        openCriticalAlertCount: 0,
+      );
+      const trial = TenantHealthView(
+        id: 'o2',
+        name: 'T',
+        status: OrgStatus.trial,
+        maxVehicles: 0,
+        maxActiveContracts: 0,
+        activeContractCount: 0,
+        openCriticalAlertCount: 0,
+      );
+      const archived = TenantHealthView(
+        id: 'o3',
+        name: 'Ar',
+        status: OrgStatus.archived,
+        maxVehicles: 0,
+        maxActiveContracts: 0,
+        activeContractCount: 0,
+        openCriticalAlertCount: 0,
+      );
+      expect(active.isOperational, isTrue);
+      expect(trial.isOperational, isTrue);
+      expect(archived.isOperational, isFalse);
+    });
+
+    test('isArchived true only for ARCHIVED status', () {
+      const archived = TenantHealthView(
+        id: 'o1',
+        name: 'Ar',
+        status: OrgStatus.archived,
+        maxVehicles: 0,
+        maxActiveContracts: 0,
+        activeContractCount: 0,
+        openCriticalAlertCount: 0,
+      );
+      const active = TenantHealthView(
+        id: 'o2',
+        name: 'Act',
+        status: OrgStatus.active,
+        maxVehicles: 0,
+        maxActiveContracts: 0,
+        activeContractCount: 0,
+        openCriticalAlertCount: 0,
+      );
+      expect(archived.isArchived, isTrue);
+      expect(active.isArchived, isFalse);
+    });
+
+    test('statusKey returns uppercase DB value', () {
+      const view = TenantHealthView(
+        id: 'o1',
+        name: 'A',
+        status: OrgStatus.archived,
+        maxVehicles: 0,
+        maxActiveContracts: 0,
+        activeContractCount: 0,
+        openCriticalAlertCount: 0,
+      );
+      expect(view.statusKey, 'ARCHIVED');
     });
 
     test('legalName, planType, lastTelemetryAt are optional', () {
       const view = TenantHealthView(
         id: 'org-2',
         name: 'Empresa Sem Plano',
-        isActive: false,
         maxVehicles: 0,
         maxActiveContracts: 0,
         activeContractCount: 0,
@@ -36,7 +127,6 @@ void main() {
       const view = TenantHealthView(
         id: 'org-3',
         name: 'Empresa Crítica',
-        isActive: true,
         maxVehicles: 100,
         maxActiveContracts: 20,
         activeContractCount: 18,
@@ -49,7 +139,6 @@ void main() {
       const view = TenantHealthView(
         id: 'org-4',
         name: 'Empresa',
-        isActive: true,
         maxVehicles: 10,
         maxActiveContracts: 5,
         activeContractCount: 3,

@@ -26,25 +26,25 @@ const ROOT = join(__dirname, '..');
 // ── Usuários provisionados ─────────────────────────────────────────────────────
 const USERS = [
   {
-    id:       '00000000-0000-0000-0000-ffffffffffff',
-    email:    'master@veraprob.dev',
+    id: '00000000-0000-0000-0000-ffffffffffff',
+    email: 'master@veraprob.dev',
     password: 'veraprob123!',
-    label:    'SuperAdmin',
-    isSuper:  true,
+    label: 'SuperAdmin',
+    isSuper: true,
   },
   {
-    id:       '09d00994-6b32-4df3-b08f-3d722f28f4d0',
-    email:    'admin-a@veraprob.dev',
+    id: '09d00994-6b32-4df3-b08f-3d722f28f4d0',
+    email: 'admin-a@veraprob.dev',
     password: 'veraprob123!',
-    label:    'Admin — Org Alpha',
-    org_id:   '00000000-0000-0000-0000-000000000001',
+    label: 'Admin — Org Alpha',
+    org_id: '00000000-0000-0000-0000-000000000001',
   },
   {
-    id:       '210b892e-2f05-4eff-bb45-c3664141022b',
-    email:    'admin-b@veraprob.dev',
+    id: '210b892e-2f05-4eff-bb45-c3664141022b',
+    email: 'admin-b@veraprob.dev',
     password: 'veraprob123!',
-    label:    'Admin — Org Beta',
-    org_id:   '00000000-0000-0000-0000-000000000002',
+    label: 'Admin — Org Beta',
+    org_id: '00000000-0000-0000-0000-000000000002',
   },
 ];
 
@@ -82,8 +82,8 @@ function readSupabaseStatus() {
       return null;
     };
     return {
-      url:        get('API URL', 'Project URL'),
-      anonKey:    get('Publishable', 'anon key'),
+      url: get('API URL', 'Project URL'),
+      anonKey: get('Publishable', 'anon key'),
       serviceKey: get('Secret', 'service_role key'),
     };
   } catch {
@@ -92,7 +92,7 @@ function readSupabaseStatus() {
 }
 
 function resolveConfig() {
-  const env    = loadDotEnv();
+  const env = loadDotEnv();
   const status = readSupabaseStatus();
 
   const url = process.env.SUPABASE_URL
@@ -127,9 +127,9 @@ function resolveConfig() {
 
 async function post(url, headers, body) {
   const res = await fetch(url, {
-    method:  'POST',
+    method: 'POST',
     headers: { 'Content-Type': 'application/json', ...headers },
-    body:    JSON.stringify(body),
+    body: JSON.stringify(body),
   });
   const text = await res.text();
   let data;
@@ -139,9 +139,9 @@ async function post(url, headers, body) {
 
 async function patch(url, headers, body) {
   const res = await fetch(url, {
-    method:  'PATCH',
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...headers },
-    body:    JSON.stringify(body),
+    body: JSON.stringify(body),
   });
   const text = await res.text();
   let data;
@@ -151,9 +151,9 @@ async function patch(url, headers, body) {
 
 async function put(url, headers, body) {
   const res = await fetch(url, {
-    method:  'PUT',
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...headers },
-    body:    JSON.stringify(body),
+    body: JSON.stringify(body),
   });
   const text = await res.text();
   let data;
@@ -214,17 +214,17 @@ async function ensureTestData(url, serviceKey) {
   process.stdout.write('  ── Provisionando Dados de Teste (Motorista + Token Telegram)\n');
 
   const driverId = '00000000-0000-0000-0000-d00000000001';
-  const orgId    = '00000000-0000-0000-0000-000000000001';
+  const orgId = '00000000-0000-0000-0000-000000000001';
 
   // 1. Criar Motorista
   process.stdout.write('      [1/2] Criar motorista de teste... ');
   const resDriver = await post(
     `${url}/rest/v1/drivers`,
     { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    { 
-      id: driverId, 
-      organization_id: orgId, 
-      full_name: 'Motorista de Teste Telegram', 
+    {
+      id: driverId,
+      organization_id: orgId,
+      full_name: 'Motorista de Teste Telegram',
       status: 'active',
       license_number: 'CNH123456789'
     }
@@ -242,7 +242,7 @@ async function ensureTestData(url, serviceKey) {
       driver_id: driverId,
       created_by_user_id: '00000000-0000-0000-0000-ffffffffffff',
       code: 'VERAPR22',
-      expires_at_utc: new Date(Date.now() + 14 * 60 * 1000).toISOString() 
+      expires_at_utc: new Date(Date.now() + 14 * 60 * 1000).toISOString()
     }
   );
 
@@ -250,7 +250,7 @@ async function ensureTestData(url, serviceKey) {
     console.log('FALHOU');
     throw new Error(`Erro ao criar token: ${resToken.status} - ${JSON.stringify(resToken.data)}`);
   }
-  
+
   // Se o token já existia (ignore-duplicates), pegamos o ID dele via GET
   let tokenId = resToken.data?.[0]?.id;
   if (!tokenId) {
@@ -354,10 +354,10 @@ async function signIn(url, anonKey, email, password) {
 }
 
 function cleanupZombies(userIds) {
-  const ids  = userIds.map(id => `'${id}'`).join(', ');
-  const sql  = `DELETE FROM auth.users WHERE id IN (${ids});`;
+  const ids = userIds.map(id => `'${id}'`).join(', ');
+  const sql = `DELETE FROM auth.users WHERE id IN (${ids});`;
   const opts = { cwd: ROOT, timeout: 15000, encoding: 'utf8' };
-  const r    = spawnSync('supabase', ['db', 'execute', '--local', `--sql=${sql}`], opts);
+  const r = spawnSync('supabase', ['db', 'execute', '--local', `--sql=${sql}`], opts);
   return r.status === 0;
 }
 
@@ -452,7 +452,7 @@ async function main() {
   console.log('  ambiente local de desenvolvimento. Nunca use em produção.');
   console.log('');
   console.log('  Inicie o app:');
-  console.log('    flutter run -d chrome');
+  console.log('    flutter run --dart-define=SKIP_MFA_DEV=true');
   console.log('');
 }
 

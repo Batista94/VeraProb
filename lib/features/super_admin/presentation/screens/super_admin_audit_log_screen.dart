@@ -195,7 +195,12 @@ class _LogList extends StatelessWidget {
             color: _severityColor(log.severity),
             size: 20,
           ),
-          title: Text(log.eventType),
+          title: Row(
+            children: [
+              Expanded(child: Text(log.eventType)),
+              _ActorIcon(actorType: log.actorType),
+            ],
+          ),
           subtitle: Text(log.occurredAt.isNotEmpty ? log.occurredAt : '—'),
           trailing: log.payload != null
               ? IconButton(
@@ -270,6 +275,51 @@ class _LogList extends StatelessWidget {
         return VeraProbColors.delayed;
       default:
         return VeraProbColors.info;
+    }
+  }
+}
+
+/// Actor type icon shown next to each audit event title.
+///
+/// SYSTEM → robot icon (automated action)
+/// HUMAN → shield icon (super admin action)
+/// IMPERSONATOR → manage_accounts icon (impersonation session)
+class _ActorIcon extends StatelessWidget {
+  final String? actorType;
+  const _ActorIcon({this.actorType});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (actorType) {
+      case 'SYSTEM':
+        return const Tooltip(
+          message: 'Sistema',
+          child: Icon(
+            Icons.smart_toy_outlined,
+            size: 14,
+            color: VeraProbColors.textSecondary,
+          ),
+        );
+      case 'IMPERSONATOR':
+        return const Tooltip(
+          message: 'Impersonação',
+          child: Icon(
+            Icons.manage_accounts,
+            size: 14,
+            color: VeraProbColors.warning,
+          ),
+        );
+      case 'HUMAN':
+        return const Tooltip(
+          message: 'Admin',
+          child: Icon(
+            Icons.shield_outlined,
+            size: 14,
+            color: VeraProbColors.textPrimary,
+          ),
+        );
+      default:
+        return const SizedBox.shrink();
     }
   }
 }
