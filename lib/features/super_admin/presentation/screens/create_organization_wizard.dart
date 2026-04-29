@@ -78,6 +78,7 @@ class _CreateOrganizationWizardState
   int _dwellTimeSeconds = 300;
 
   // Step 3 controllers
+  final _adminEmailCtrl = TextEditingController();
   List<String> _adminEmails = [];
 
   // Form keys
@@ -105,6 +106,7 @@ class _CreateOrganizationWizardState
     _maxContractsCtrl.dispose();
     _toolCostCtrl.dispose();
     _reasonCtrl.dispose();
+    _adminEmailCtrl.dispose();
     super.dispose();
   }
 
@@ -255,6 +257,15 @@ class _CreateOrganizationWizardState
   }
 
   Future<void> _submit() async {
+    // If the user typed an email but forgot to press Enter, add it automatically
+    final pendingEmail = _adminEmailCtrl.text.trim().toLowerCase();
+    if (pendingEmail.isNotEmpty &&
+        pendingEmail.contains('@') &&
+        !_adminEmails.contains(pendingEmail)) {
+      setState(() => _adminEmails.add(pendingEmail));
+      _adminEmailCtrl.clear();
+    }
+
     if (!_validateStep3()) return;
 
     final superAdminId = ref.read(currentSuperAdminIdProvider);
@@ -546,6 +557,7 @@ class _CreateOrganizationWizardState
           state: StepState.indexed,
           content: Step3AdminInvite(
             formKey: _step3Key,
+            emailCtrl: _adminEmailCtrl,
             adminEmails: _adminEmails,
             onEmailsChanged: (emails) => setState(() => _adminEmails = emails),
             tradeName: _tradeNameCtrl.text,

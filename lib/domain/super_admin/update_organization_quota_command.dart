@@ -36,6 +36,18 @@ class UpdateOrganizationQuotaCommand {
   /// Default stop dwell threshold in seconds. `null` = keep existing in DB.
   final int? dwellTimeSeconds;
 
+  /// Preferred billing day of month (1-28).
+  final int? billingDay;
+
+  /// Primary billing/ops contact email for this org.
+  final String? contactEmail;
+
+  /// External reference ID from a 3rd-party system (CRM, ERP). Max 100 chars.
+  final String? externalId;
+
+  /// Classification of the organization's business (e.g. CARGO, PASSENGER, URBAN_LOGISTICS).
+  final String? organizationType;
+
   const UpdateOrganizationQuotaCommand({
     required this.organizationId,
     required this.newPlanType,
@@ -47,5 +59,9 @@ class UpdateOrganizationQuotaCommand {
     this.capabilities,
     this.toolCostCents,
     this.dwellTimeSeconds,
+    this.billingDay,
+    this.contactEmail,
+    this.externalId,
+    this.organizationType,
   });
 }

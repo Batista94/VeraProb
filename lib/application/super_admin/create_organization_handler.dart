@@ -116,6 +116,7 @@ class CreateOrganizationHandler {
             billingDay: cmd.billingDay,
             contactEmail: cmd.contactEmail,
             externalId: cmd.externalId,
+            organizationType: cmd.organizationType,
           )
         : cmd;
 

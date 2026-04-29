@@ -38,6 +38,7 @@ class TenantHealthView {
   final int? billingDay;
   final String? contactEmail;
   final String? externalId;
+  final String? organizationType;
 
   const TenantHealthView({
     required this.id,
@@ -56,6 +57,7 @@ class TenantHealthView {
     this.billingDay,
     this.contactEmail,
     this.externalId,
+    this.organizationType,
   });
 
   /// Derived from [status] — ACTIVE orgs are operational.
@@ -91,6 +93,7 @@ class TenantHealthView {
       billingDay: snapshot.billingDay,
       contactEmail: snapshot.contactEmail,
       externalId: snapshot.externalId,
+      organizationType: snapshot.organizationType,
     );
   }
 
@@ -126,6 +129,7 @@ class TenantHealthView {
       billingDay: (json['billing_day'] as num?)?.toInt(),
       contactEmail: json['contact_email'] as String?,
       externalId: json['external_id'] as String?,
+      organizationType: json['organization_type'] as String?,
     );
   }
 }

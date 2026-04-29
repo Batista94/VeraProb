@@ -46,6 +46,9 @@ class CreateOrganizationCommand {
   /// External reference ID from a 3rd-party system (CRM, ERP). Max 100 chars.
   final String? externalId;
 
+  /// Classification of the organization's business (e.g. CARGO, PASSENGER, URBAN_LOGISTICS).
+  final String? organizationType;
+
   const CreateOrganizationCommand({
     required this.legalName,
     required this.tradeName,
@@ -64,5 +67,6 @@ class CreateOrganizationCommand {
     this.billingDay,
     this.contactEmail,
     this.externalId,
+    this.organizationType,
   });
 }

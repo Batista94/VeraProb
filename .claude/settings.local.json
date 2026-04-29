@@ -90,5 +90,13 @@
       "Bash(claude mcp *)"
     ]
   },
-  "model": "sonnet"
+  "model": "sonnet",
+  "disabledMcpjsonServers": [
+    "puppeteer",
+    "sequential-thinking",
+    "docker",
+    "supabase",
+    "github",
+    "fetch"
+  ]
 }

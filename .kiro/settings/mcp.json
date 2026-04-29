@@ -1,0 +1,42 @@
+{
+  "mcpServers": {
+    "fetch": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "uvx mcp-server-fetch"],
+      "env": {}
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx -y @playwright/mcp@latest"],
+      "env": {}
+    },
+    "supabase": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "set maptiler_key= && set environment= && set service_role_key= && supabase-mcp-server"
+      ],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
+      }
+    },
+    "github": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx -y @modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${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}"
+      }
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx -y @modelcontextprotocol/server-sequential-thinking"],
+      "env": {}
+    }
+  }
+}

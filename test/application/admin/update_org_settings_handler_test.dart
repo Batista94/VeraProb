@@ -152,10 +152,10 @@ void main() {
       });
 
       test('capability change sem reason lança DomainException', () async {
-        final cmd = UpdateOrgSettingsCommand(
+        const cmd = UpdateOrgSettingsCommand(
           organizationId: 'org-1',
           callerRole: UserRole.admin,
-          capabilities: const OrgCapabilities(allowsSealing: false),
+          capabilities: OrgCapabilities(allowsSealing: false),
           sessionId: 'session-1',
         );
         expect(() => handler.handle(cmd), throwsA(isA<DomainException>()));
@@ -165,10 +165,10 @@ void main() {
       test(
         'capability change com reason < 10 chars lança DomainException',
         () async {
-          final cmd = UpdateOrgSettingsCommand(
+          const cmd = UpdateOrgSettingsCommand(
             organizationId: 'org-1',
             callerRole: UserRole.admin,
-            capabilities: const OrgCapabilities(allowsSealing: false),
+            capabilities: OrgCapabilities(allowsSealing: false),
             reason: 'curto',
             sessionId: 'session-1',
           );
@@ -180,10 +180,10 @@ void main() {
       test(
         'capability change com reason válida persiste e loga audit',
         () async {
-          final cmd = UpdateOrgSettingsCommand(
+          const cmd = UpdateOrgSettingsCommand(
             organizationId: 'org-1',
             callerRole: UserRole.admin,
-            capabilities: const OrgCapabilities(allowsSealing: false),
+            capabilities: OrgCapabilities(allowsSealing: false),
             reason: 'Desativando lacre por solicitação operacional',
             sessionId: 'session-1',
           );
@@ -207,7 +207,7 @@ void main() {
       );
 
       test('sem capability change não exige reason e não loga audit', () async {
-        final cmd = UpdateOrgSettingsCommand(
+        const cmd = UpdateOrgSettingsCommand(
           organizationId: 'org-1',
           callerRole: UserRole.admin,
           logoUrl: 'https://example.com/logo.png',

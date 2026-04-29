@@ -22,6 +22,7 @@ class TenantHealthSnapshot extends Equatable {
   final int? billingDay;
   final String? contactEmail;
   final String? externalId;
+  final String? organizationType;
 
   const TenantHealthSnapshot({
     required this.id,
@@ -41,6 +42,7 @@ class TenantHealthSnapshot extends Equatable {
     this.billingDay,
     this.contactEmail,
     this.externalId,
+    this.organizationType,
   });
 
   factory TenantHealthSnapshot.fromJson(Map<String, dynamic> json) {
@@ -72,6 +74,7 @@ class TenantHealthSnapshot extends Equatable {
       billingDay: (json['billing_day'] as num?)?.toInt(),
       contactEmail: json['contact_email'] as String?,
       externalId: json['external_id'] as String?,
+      organizationType: json['organization_type'] as String?,
     );
   }
 
@@ -96,5 +99,6 @@ class TenantHealthSnapshot extends Equatable {
     billingDay,
     contactEmail,
     externalId,
+    organizationType,
   ];
 }

@@ -48,6 +48,7 @@ class SupabaseSuperAdminRepository
           'p_contact_email': cmd.contactEmail,
           'p_external_id': cmd.externalId,
           'p_reason': cmd.reason,
+          'p_organization_type': cmd.organizationType,
         },
       );
       return result as String;
@@ -163,6 +164,10 @@ class SupabaseSuperAdminRepository
           'p_capabilities': cmd.capabilities?.toJson(),
           'p_tool_cost_cents': cmd.toolCostCents,
           'p_dwell_time_seconds': cmd.dwellTimeSeconds,
+          'p_billing_day': cmd.billingDay,
+          'p_contact_email': cmd.contactEmail,
+          'p_external_id': cmd.externalId,
+          'p_organization_type': cmd.organizationType,
         },
       );
     } on PostgrestException catch (e) {
@@ -183,6 +188,79 @@ class SupabaseSuperAdminRepository
       );
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<void> unarchiveOrganization({
+    required String orgId,
+    required String reason,
+    required String superAdminId,
+  }) async {
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_unarchive_organization',
+        params: {
+          'p_org_id': orgId,
+          'p_reason': reason,
+          'p_super_admin_id': superAdminId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getTenantMembers(String orgId) async {
+    try {
+      final response = await _authenticatedClient.rpc(
+        'super_admin_get_org_members',
+        params: {'p_org_id': orgId},
+      );
+      return (response as List).cast<Map<String, dynamic>>();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<void> toggleTenantMemberStatus({
+    required String orgId,
+    required String userId,
+    required bool isActive,
+  }) async {
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_toggle_member_status',
+        params: {
+          'p_org_id': orgId,
+          'p_user_id': userId,
+          'p_is_active': isActive,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<void> resendInvitation({
+    required String email,
+    required String orgName,
+  }) async {
+    try {
+      await _authenticatedClient.functions.invoke(
+        'notify-invite',
+        body: {
+          'email': email,
+          'inviteUrl': 'Entre em contato com o suporte para um novo link',
+          'orgName': orgName,
+        },
+      );
+    } catch (e) {
+      // Se não for possível usar as exceptions do postgrest, mapeamos genérico ou deixamos subir
+      rethrow;
     }
   }
 }

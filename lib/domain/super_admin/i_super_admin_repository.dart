@@ -55,4 +55,27 @@ abstract class ISuperAdminRepository {
   /// INV-3: Secrets revoked via revoked_at, never deleted.
   /// INV-26: Returns error for not-found AND wrong-org (404 parity).
   Future<void> archiveOrganization(ArchiveOrganizationCommand command);
+
+  /// Unarchives an organization: sets status=ACTIVE, and unbans users.
+  Future<void> unarchiveOrganization({
+    required String orgId,
+    required String reason,
+    required String superAdminId,
+  });
+
+  /// Lists all members of a specific organization for SuperAdmin visibility.
+  Future<List<Map<String, dynamic>>> getTenantMembers(String orgId);
+
+  /// Toggles the active status of a tenant member.
+  Future<void> toggleTenantMemberStatus({
+    required String orgId,
+    required String userId,
+    required bool isActive,
+  });
+
+  /// Resends an invitation email to a tenant member.
+  Future<void> resendInvitation({
+    required String email,
+    required String orgName,
+  });
 }

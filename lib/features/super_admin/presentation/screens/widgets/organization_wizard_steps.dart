@@ -732,6 +732,7 @@ class Step3AdminInvite extends StatefulWidget {
   final String maxVehicles;
   final String maxContracts;
   final bool isSubmitting;
+  final TextEditingController emailCtrl;
 
   const Step3AdminInvite({
     super.key,
@@ -743,6 +744,7 @@ class Step3AdminInvite extends StatefulWidget {
     required this.maxVehicles,
     required this.maxContracts,
     required this.isSubmitting,
+    required this.emailCtrl,
   });
 
   @override
@@ -750,12 +752,10 @@ class Step3AdminInvite extends StatefulWidget {
 }
 
 class _Step3AdminInviteState extends State<Step3AdminInvite> {
-  final _emailCtrl = TextEditingController();
   String? _inputError;
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
     super.dispose();
   }
 
@@ -771,7 +771,7 @@ class _Step3AdminInviteState extends State<Step3AdminInvite> {
       return;
     }
     widget.onEmailsChanged([...widget.adminEmails, email]);
-    _emailCtrl.clear();
+    widget.emailCtrl.clear();
     setState(() => _inputError = null);
   }
 
@@ -838,12 +838,16 @@ class _Step3AdminInviteState extends State<Step3AdminInvite> {
             const SizedBox(height: 12),
           ],
           TextField(
-            controller: _emailCtrl,
+            controller: widget.emailCtrl,
             decoration: InputDecoration(
               labelText: 'E-mails dos Admins *',
-              hintText: 'Digite e pressione Enter',
+              hintText: 'Digite e pressione Enter ou clique em +',
               prefixIcon: const Icon(Icons.email_outlined),
               errorText: _inputError,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => _addEmail(widget.emailCtrl.text),
+              ),
             ),
             keyboardType: TextInputType.emailAddress,
             onSubmitted: _addEmail,

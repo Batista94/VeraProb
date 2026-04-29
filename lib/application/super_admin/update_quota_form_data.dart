@@ -25,6 +25,10 @@ class UpdateQuotaFormData {
 
   final int? toolCostCents;
   final int? dwellTimeSeconds;
+  final int? billingDay;
+  final String? contactEmail;
+  final String? externalId;
+  final String? organizationType;
 
   const UpdateQuotaFormData({
     required this.organizationId,
@@ -36,6 +40,10 @@ class UpdateQuotaFormData {
     this.capabilities,
     this.toolCostCents,
     this.dwellTimeSeconds,
+    this.billingDay,
+    this.contactEmail,
+    this.externalId,
+    this.organizationType,
   });
 
   UpdateOrganizationQuotaCommand toCommand() {
@@ -56,6 +64,10 @@ class UpdateQuotaFormData {
       capabilities: capabilities?.toDomain(),
       toolCostCents: toolCostCents,
       dwellTimeSeconds: dwellTimeSeconds,
+      billingDay: billingDay,
+      contactEmail: contactEmail,
+      externalId: externalId,
+      organizationType: organizationType,
     );
   }
 }

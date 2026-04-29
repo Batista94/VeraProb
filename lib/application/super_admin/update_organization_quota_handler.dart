@@ -106,6 +106,10 @@ class UpdateOrganizationQuotaHandler {
           'max_active_contracts': cmd.newMaxActiveContracts,
           'tool_cost_cents': cmd.toolCostCents,
           'dwell_time_seconds': cmd.dwellTimeSeconds,
+          'billing_day': cmd.billingDay,
+          'contact_email': cmd.contactEmail,
+          'external_id': cmd.externalId,
+          'organization_type': cmd.organizationType,
         },
       );
     }
