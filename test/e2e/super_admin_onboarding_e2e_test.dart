@@ -167,7 +167,7 @@ void main() async {
           // 5. Token do convite corresponde ao resultado do handler
           expect(
             (invitations.first as Map)['token'],
-            equals(result.invitationToken),
+            equals(result.invitationTokens.first),
             reason: 'Token do handler deve coincidir com o token no banco',
           );
 

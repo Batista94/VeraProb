@@ -30,6 +30,8 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
   final _orgTypeController = TextEditingController();
 
   OrgCapabilities _capabilities = OrgCapabilities.defaults;
+  OrgCapabilities? _originalCapabilities;
+  final _capReasonController = TextEditingController();
   bool _isSaving = false;
 
   // ── Parâmetros Operacionais (editáveis pelo Admin da Org) ──────────────────
@@ -47,6 +49,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
     _currencyController.dispose();
     _logoUrlController.dispose();
     _orgTypeController.dispose();
+    _capReasonController.dispose();
     _opReasonController.dispose();
     super.dispose();
   }
@@ -110,6 +113,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                     _logoUrlController.text = org.logoUrl ?? '';
                     _orgTypeController.text = org.organizationType ?? '';
                     _capabilities = org.capabilities;
+                    _originalCapabilities ??= org.capabilities;
                   }
 
                   // Initialize operational params once
@@ -277,6 +281,32 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                                     () => _capabilities = _capabilities
                                         .copyWith(smartClassify: v),
                                   ),
+                                ),
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: _capReasonController,
+                                  maxLines: 2,
+                                  decoration: const InputDecoration(
+                                    labelText:
+                                        'Justificativa para mudança de capacidades',
+                                    hintText:
+                                        'Ex: Desativando lacre por solicitação da área operacional',
+                                    helperText:
+                                        'Obrigatória apenas quando capacidades forem alteradas (auditoria).',
+                                  ),
+                                  validator: (v) {
+                                    final changed =
+                                        _originalCapabilities != null &&
+                                        _capabilities != _originalCapabilities;
+                                    if (!changed) return null;
+                                    if (v == null || v.trim().isEmpty) {
+                                      return 'Justificativa obrigatória ao alterar capacidades';
+                                    }
+                                    if (v.trim().length < 10) {
+                                      return 'Mínimo de 10 caracteres';
+                                    }
+                                    return null;
+                                  },
                                 ),
                                 const SizedBox(height: 32),
                                 SizedBox(
@@ -505,6 +535,10 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
       final role = ref.read(currentUserRoleProvider);
       final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
+      final capabilitiesChanged =
+          _originalCapabilities != null &&
+          _capabilities != _originalCapabilities;
+
       final command = UpdateOrgSettingsCommand(
         organizationId: orgId!,
         callerRole: role,
@@ -521,12 +555,17 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
         organizationType: _orgTypeController.text.trim().isEmpty
             ? null
             : _orgTypeController.text.trim(),
-        capabilities: _capabilities,
+        capabilities: capabilitiesChanged ? _capabilities : null,
+        reason: capabilitiesChanged ? _capReasonController.text.trim() : null,
         sessionId: sessionId,
       );
 
       await ref.read(updateOrgSettingsHandlerProvider).handle(command);
 
+      if (capabilitiesChanged) {
+        _originalCapabilities = _capabilities;
+        _capReasonController.clear();
+      }
       ref.invalidate(orgSettingsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

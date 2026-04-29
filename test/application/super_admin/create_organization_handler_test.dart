@@ -409,7 +409,7 @@ void main() {
       test('result type carries orgApiSecret — null for missing secret', () {
         const result = CreateOrganizationResult(
           orgId: 'test-org-id',
-          invitationToken: 'test-token',
+          invitationTokens: ['test-token'],
           orgApiSecret: null,
         );
         expect(result.orgApiSecret, isNull);
@@ -422,7 +422,7 @@ void main() {
               'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'; // 64 hex chars
           const result = CreateOrganizationResult(
             orgId: 'test-org-id',
-            invitationToken: 'test-token',
+            invitationTokens: ['test-token'],
             orgApiSecret: secret,
           );
           expect(result.orgApiSecret, isNotNull);
@@ -430,5 +430,47 @@ void main() {
         },
       );
     });
+
+    group(
+      'CreateOrganizationResult — per-email invitation tokens (INV-27)',
+      () {
+        test('invitationTokens stores one token per admin email', () {
+          const result = CreateOrganizationResult(
+            orgId: 'org-1',
+            invitationTokens: [
+              'token-a@admin1',
+              'token-b@admin2',
+              'token-c@admin3',
+            ],
+          );
+          expect(result.invitationTokens.length, 3);
+          expect(result.invitationTokens[0], 'token-a@admin1');
+          expect(result.invitationTokens[1], 'token-b@admin2');
+          expect(result.invitationTokens[2], 'token-c@admin3');
+        });
+
+        test(
+          'firstInvitationToken returns first token (single-admin convenience)',
+          () {
+            const result = CreateOrganizationResult(
+              orgId: 'org-1',
+              invitationTokens: ['only-token'],
+            );
+            expect(result.firstInvitationToken, 'only-token');
+          },
+        );
+
+        test(
+          'each admin gets distinct token — no token reuse across emails',
+          () {
+            const result = CreateOrganizationResult(
+              orgId: 'org-1',
+              invitationTokens: ['token-alpha', 'token-beta'],
+            );
+            expect(result.invitationTokens.toSet().length, 2);
+          },
+        );
+      },
+    );
   });
 }

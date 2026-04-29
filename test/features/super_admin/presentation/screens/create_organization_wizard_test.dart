@@ -129,7 +129,7 @@ void main() {
       when(() => mockHandler.handle(any())).thenAnswer(
         (_) async => const CreateOrganizationResult(
           orgId: orgId,
-          invitationToken: 'mock-token',
+          invitationTokens: ['mock-token'],
         ),
       );
 

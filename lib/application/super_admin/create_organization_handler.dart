@@ -177,7 +177,7 @@ class CreateOrganizationHandler {
     // 9. Return immutable result
     return CreateOrganizationResult(
       orgId: orgId,
-      invitationToken: tokens.first,
+      invitationTokens: tokens,
       orgApiSecret: orgApiSecret,
     );
   }

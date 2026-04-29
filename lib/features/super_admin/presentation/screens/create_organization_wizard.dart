@@ -313,17 +313,21 @@ class _CreateOrganizationWizardState
         baseUrl = Uri.base.origin;
       } catch (_) {}
 
-      final inviteUrl =
-          '$baseUrl/accept-invite?token=${result.invitationToken}';
+      // Build per-email invite URLs — one token per admin (INV-27 per-identity).
+      final inviteUrls = <String, String>{};
+      for (var i = 0; i < _adminEmails.length; i++) {
+        final token = i < result.invitationTokens.length
+            ? result.invitationTokens[i]
+            : result.firstInvitationToken;
+        inviteUrls[_adminEmails[i]] = '$baseUrl/accept-invite?token=$token';
+      }
 
       // Fire invitation emails — silent failure (link in dialog is the fallback)
-      for (final adminEmail in _adminEmails) {
-        final emailUrl =
-            '$baseUrl/accept-invite?token=${result.invitationToken}';
+      for (final entry in inviteUrls.entries) {
         unawaited(
           handler.sendInviteNotification(
-            email: adminEmail,
-            inviteUrl: emailUrl,
+            email: entry.key,
+            inviteUrl: entry.value,
             orgName: _tradeNameCtrl.text.trim(),
           ),
         );
@@ -339,7 +343,7 @@ class _CreateOrganizationWizardState
         context: context,
         barrierDismissible: false,
         builder: (_) =>
-            _buildSuccessDialog(inviteUrl, messenger, result.orgApiSecret),
+            _buildSuccessDialog(inviteUrls, messenger, result.orgApiSecret),
       );
 
       // Invalidate health snapshot to refresh the tenant list
@@ -366,7 +370,7 @@ class _CreateOrganizationWizardState
   }
 
   Widget _buildSuccessDialog(
-    String inviteUrl,
+    Map<String, String> inviteUrls,
     ScaffoldMessengerState messenger,
     String? orgApiSecret,
   ) {
@@ -383,33 +387,55 @@ class _CreateOrganizationWizardState
         children: [
           Text('Organização: ${_tradeNameCtrl.text.trim()}'),
           const SizedBox(height: 8),
-          Text('Admin convidado para: ${_adminEmails.join(", ")}'),
+          Text('Admin(s) convidado(s): ${inviteUrls.keys.join(", ")}'),
           const SizedBox(height: 16),
           const Text(
-            'Link de convite do Admin:',
+            'Links de convite (um por admin):',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: SelectableText(
-                  inviteUrl,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
+          ...inviteUrls.entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          entry.key,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SelectableText(
+                          entry.value,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy_all, size: 16),
+                    tooltip: 'Copiar link de ${entry.key}',
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: entry.value));
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Link de ${entry.key} copiado!'),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.copy_all, size: 18),
-                tooltip: 'Copiar link',
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: inviteUrl));
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Link copiado!')),
-                  );
-                },
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 12),
           Container(
