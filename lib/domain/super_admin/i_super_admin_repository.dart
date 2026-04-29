@@ -78,4 +78,18 @@ abstract class ISuperAdminRepository {
     required String email,
     required String orgName,
   });
+
+  /// Adds a new admin invitation to an existing organization (CT06).
+  ///
+  /// Inserts a new row in [invitations] via [super_admin_add_org_admin] RPC.
+  /// Throws [DomainException] if the email already has a pending invite (P0005)
+  /// or is already an active member (P0006).
+  Future<void> addAdminToOrganization({
+    required String orgId,
+    required String email,
+    required String invitationId,
+    required String token,
+    required DateTime expiresAtUtc,
+    required String superAdminUserId,
+  });
 }

@@ -263,4 +263,40 @@ class SupabaseSuperAdminRepository
       rethrow;
     }
   }
+
+  @override
+  Future<void> addAdminToOrganization({
+    required String orgId,
+    required String email,
+    required String invitationId,
+    required String token,
+    required DateTime expiresAtUtc,
+    required String superAdminUserId,
+  }) async {
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_add_org_admin',
+        params: {
+          'p_org_id': orgId,
+          'p_email': email,
+          'p_invitation_id': invitationId,
+          'p_token': token,
+          'p_expires_at': expiresAtUtc.toIso8601String(),
+          'p_invited_by': superAdminUserId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      if (e.code == 'P0005') {
+        throw DomainException(
+          'Já existe um convite pendente para $email nesta organização.',
+        );
+      }
+      if (e.code == 'P0006') {
+        throw DomainException(
+          '$email já possui um perfil ativo nesta organização.',
+        );
+      }
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
 }

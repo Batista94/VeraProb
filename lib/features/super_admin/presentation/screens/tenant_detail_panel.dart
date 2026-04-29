@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
@@ -1056,23 +1057,156 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
     }
   }
 
+  Future<void> _addAdmin() async {
+    final emailCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Adicionar Administrador'),
+        content: SizedBox(
+          width: 400,
+          child: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: emailCtrl,
+              decoration: const InputDecoration(
+                labelText: 'E-mail do Administrador',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'E-mail obrigatório.';
+                final emailRegex = RegExp(r'^[\w.+\-]+@[\w\-]+\.[a-z]{2,}');
+                if (!emailRegex.hasMatch(v.trim())) return 'E-mail inválido.';
+                return null;
+              },
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(context).pop(true);
+              }
+            },
+            child: const Text('Convidar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repo = ref.read(superAdminRepositoryProvider);
+      final userId =
+          ref.read(authStateProvider).valueOrNull?.session?.user.id ?? '';
+      const uuid = Uuid();
+      await repo.addAdminToOrganization(
+        orgId: widget.tenant.id,
+        email: emailCtrl.text.trim(),
+        invitationId: uuid.v4(),
+        token: uuid.v4(),
+        expiresAtUtc: DateTime.now().toUtc().add(const Duration(days: 7)),
+        superAdminUserId: userId,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Convite enviado para ${emailCtrl.text.trim()}.'),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
+      }
+      await _loadMembers();
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: $e'),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // ── Header: Adicionar Admin button ──────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Administradores',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              FilledButton.icon(
+                onPressed: _addAdmin,
+                icon: const Icon(Icons.person_add_outlined, size: 16),
+                label: const Text('Adicionar Administrador'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  textStyle: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // ── Content ────────────────────────────────────────
+        Expanded(child: _buildContent()),
+      ],
+    );
+  }
+
+  Widget _buildContent() {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
       return Center(
-        child: Text(
-          'Erro: $_error',
-          style: const TextStyle(color: VeraProbColors.error),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Erro ao carregar usuários',
+              style: TextStyle(color: VeraProbColors.error),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _loadMembers,
+              child: const Text('Tentar novamente'),
+            ),
+          ],
         ),
       );
     }
     if (_members == null || _members!.isEmpty) {
-      return const Center(child: Text('Nenhum usuário encontrado.'));
+      return const Center(
+        child: Text(
+          'Nenhum usuário ou convite pendente encontrado.\nUse o botão acima para adicionar um administrador.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: VeraProbColors.textSecondary),
+        ),
+      );
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       itemCount: _members!.length,
       separatorBuilder: (_, _) => const Divider(),
       itemBuilder: (context, index) {
@@ -1080,55 +1214,100 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
         final bool isActive = m['is_active'] as bool? ?? false;
         final String email = m['email'] as String? ?? '';
         final String role = m['role'] as String? ?? '';
+        final String status = m['status'] as String? ?? 'inactive';
         final hasSignedIn = m['last_sign_in'] != null;
+        final bool isPending = status == 'pending';
+        final userId = m['user_id'] as String?;
 
         return ListTile(
+          leading: CircleAvatar(
+            radius: 16,
+            backgroundColor: isPending
+                ? VeraProbColors.warning.withValues(alpha: 0.15)
+                : isActive
+                ? VeraProbColors.success.withValues(alpha: 0.15)
+                : VeraProbColors.error.withValues(alpha: 0.1),
+            child: Icon(
+              isPending
+                  ? Icons.schedule_outlined
+                  : isActive
+                  ? Icons.person_outlined
+                  : Icons.person_off_outlined,
+              size: 16,
+              color: isPending
+                  ? VeraProbColors.warning
+                  : isActive
+                  ? VeraProbColors.success
+                  : VeraProbColors.error,
+            ),
+          ),
           title: Row(
             children: [
-              Text(email),
+              Flexible(child: Text(email, overflow: TextOverflow.ellipsis)),
               const SizedBox(width: 8),
-              if (!isActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: VeraProbColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Inativo',
-                    style: TextStyle(fontSize: 10, color: VeraProbColors.error),
-                  ),
-                ),
+              _StatusChip(status: status),
             ],
           ),
           subtitle: Text(
-            'Role: $role | Último login: ${hasSignedIn ? 'Sim' : 'Nunca'}',
+            'Role: $role | Login: ${hasSignedIn ? 'Sim' : 'Nunca'}',
+            style: const TextStyle(fontSize: 11),
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (!hasSignedIn)
+              // Reenviar convite: para pendentes ou quem nunca logou
+              if (isPending || !hasSignedIn)
                 IconButton(
                   icon: const Icon(Icons.send_outlined, size: 18),
                   tooltip: 'Reenviar Convite',
                   onPressed: () => _resendInvite(email),
                 ),
-              IconButton(
-                icon: Icon(
-                  isActive ? Icons.block : Icons.check_circle_outline,
-                  size: 18,
+              // Ativar/Inativar: apenas para membros já registrados
+              if (!isPending && userId != null)
+                IconButton(
+                  icon: Icon(
+                    isActive ? Icons.block : Icons.check_circle_outline,
+                    size: 18,
+                  ),
+                  tooltip: isActive ? 'Inativar Usuário' : 'Reativar Usuário',
+                  color: isActive
+                      ? VeraProbColors.error
+                      : VeraProbColors.success,
+                  onPressed: () => _toggleStatus(userId, isActive),
                 ),
-                tooltip: isActive ? 'Inativar Usuário' : 'Reativar Usuário',
-                color: isActive ? VeraProbColors.error : VeraProbColors.success,
-                onPressed: () => _toggleStatus(m['user_id'], isActive),
-              ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String status;
+  const _StatusChip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (status) {
+      'active' => ('Ativo', VeraProbColors.success),
+      'pending' => ('Pendente', VeraProbColors.warning),
+      _ => ('Inativo', VeraProbColors.error),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
