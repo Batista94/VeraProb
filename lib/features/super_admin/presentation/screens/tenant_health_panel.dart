@@ -34,6 +34,20 @@ class _TenantHealthPanelState extends ConsumerState<TenantHealthPanel> {
 
   @override
   Widget build(BuildContext context) {
+    // INV-11: Mantém _selectedTenant sincronizado quando o provider é invalidado
+    // (ex: após archive/unarchive, o painel filho reflete o novo status sem cache local).
+    ref.listen<AsyncValue<List<TenantHealthView>>>(
+      tenantHealthSnapshotProvider,
+      (_, next) {
+        next.whenData((snapshots) {
+          if (_selectedTenant == null || !mounted) return;
+          final updated = snapshots
+              .where((t) => t.id == _selectedTenant!.id)
+              .firstOrNull;
+          if (updated != null) setState(() => _selectedTenant = updated);
+        });
+      },
+    );
     return Row(
       children: [
         TenantListPanel(

@@ -1,12 +1,13 @@
 {
-    "name": "lead-reviewer",
-    "description": "Mandatory first step for any PR or structural change.",
-    "prompt": "file://../../.claude/agents/lead-reviewer.md",
-    "tools": ["@builtin"],
-    "allowedTools": ["@builtin"],
-    "resources": [
-        "file://../../.kiro/steering/forensic-standards.md",
-        "file://../../CLAUDE.md",
-        "skill://.kiro/skills/**/SKILL.md"
-    ]
+  "name": "Lead Reviewer",
+  "persona": "file://../../.claude/agents/lead-reviewer.md",
+  "capabilities": ["bash", "read_workspace", "mcp:postgres"],
+  "steering": [
+    "file://../steering/forensic-standards.md",
+    "file://../AGENTS.md"
+  ],
+  "env": {
+    "STRICT_MODE": "1",
+    "BASE_BRANCH": "main"
+  }
 }

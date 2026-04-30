@@ -24,12 +24,18 @@ class PostgresSystemAuditLogService implements SystemAuditLogService {
     String? organizationName,
     required Map<String, Object?> oldSnapshot,
     required Map<String, Object?> newSnapshot,
+    Map<String, Object?>? context,
     String? source,
   }) async {
     await _client.from('system_audit_log').insert({
       'event_type': eventType,
       'severity': 'info',
-      'payload': {'before': oldSnapshot, 'after': newSnapshot},
+      'payload': {
+        'before': oldSnapshot,
+        'after': newSnapshot,
+        // ignore: use_null_aware_elements
+        if (context != null) 'context': context,
+      },
       'source': source ?? 'flutter_web',
       'organization_id': organizationId,
       'organization_name': organizationName,

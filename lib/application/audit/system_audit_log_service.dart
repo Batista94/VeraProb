@@ -21,6 +21,10 @@ abstract class SystemAuditLogService {
     String? organizationName,
     required Map<String, Object?> oldSnapshot,
     required Map<String, Object?> newSnapshot,
+
+    /// Campos de contexto fixo exibidos no viewer mas excluídos do diff.
+    /// Use para identificadores que não mudam (ex: email, user_id).
+    Map<String, Object?>? context,
     String? source,
   });
 }

@@ -37,6 +37,8 @@ class AuditPayloadDiffView extends StatelessWidget {
 
     final hasDiff =
         payload!.containsKey('before') && payload!.containsKey('after');
+    final contextMap = payload!['context'];
+    final hasContext = contextMap is Map && contextMap.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,6 +48,15 @@ class AuditPayloadDiffView extends StatelessWidget {
         if (reason != null && reason!.isNotEmpty) ...[
           const SizedBox(height: 8),
           _ReasonBanner(reason: reason!),
+        ],
+        if (hasContext) ...[
+          const SizedBox(height: 12),
+          _ContextView(
+            context: Map<String, Object?>.from(
+              // pr_scanner: ignore
+              contextMap as Map<Object?, Object?>,
+            ),
+          ),
         ],
         const SizedBox(height: 12),
         if (hasDiff)
@@ -154,6 +165,87 @@ class _ReasonBanner extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Exibe campos de contexto fixo (não entram no diff porque são imutáveis).
+///
+/// Exemplos: email do usuário afetado, user_id, org_id.
+class _ContextView extends StatelessWidget {
+  const _ContextView({required this.context});
+  final Map<String, Object?> context;
+
+  static const _labels = {
+    'email': 'E-mail',
+    'user_id': 'User ID',
+    'org_id': 'Org ID',
+  };
+
+  @override
+  Widget build(BuildContext buildContext) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: VeraProbColors.superAdminSurface.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: VeraProbColors.border.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.fingerprint,
+                size: 13,
+                color: VeraProbColors.textSecondary,
+              ),
+              SizedBox(width: 5),
+              Text(
+                'Contexto',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: VeraProbColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...context.entries.map((e) {
+            final label = _labels[e.key] ?? e.key;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 80,
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: VeraProbColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: SelectableText(
+                      e.value?.toString() ?? '—',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: VeraProbColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );

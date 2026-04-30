@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/audit/system_audit_log_service.dart';
@@ -37,6 +38,18 @@ final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthView>>((
   final repo = ref.watch(superAdminRepositoryProvider);
   final snapshots = await repo.getAllTenantHealth();
   return snapshots.map(TenantHealthView.fromDomain).toList();
+});
+
+/// Semantic alias — consumers that need the tenant list use this name.
+final tenantsListProvider = tenantHealthSnapshotProvider;
+
+/// Per-tenant detail lookup, derived from the list via firstWhereOrNull.
+final tenantDetailProvider = FutureProvider.family<TenantHealthView?, String>((
+  ref,
+  orgId,
+) async {
+  final tenants = await ref.watch(tenantsListProvider.future);
+  return tenants.firstWhereOrNull((t) => t.id == orgId);
 });
 
 final updateOrganizationQuotaHandlerProvider =

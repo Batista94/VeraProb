@@ -19,6 +19,8 @@ import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync, spawnSync } from 'child_process';
+import crypto from 'crypto';
+
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -340,7 +342,76 @@ async function ensureTestData(url, serviceKey) {
       start_latitude: -23.55, start_longitude: -46.63, start_radius_meters: 500
     }
   );
-  console.log('ok\n');
+  console.log('ok');
+
+  // 5. Cenários Avançados (INV-6 Backdating + Anti-Flood)
+  await ensureAntiFloodScenario(url, serviceKey, orgId);
+  await ensureBackdatingScenarios(url, serviceKey, orgId, planId, driverId);
+
+  console.log('');
+}
+
+async function ensureAntiFloodScenario(url, serviceKey, orgId) {
+  process.stdout.write('      [5.1] Cenário Anti-Flood (Alertas)... ');
+  // Simula 5 alertas idênticos para testar o debounce do sistema
+  const alerts = Array.from({ length: 5 }, (_, i) => ({
+    organization_id: orgId,
+    entity_id: '999999999',
+    alert_type: 'TELEGRAM_ORPHAN',
+    severity: 'CRITICAL',
+    status: 'ACTIVE',
+    source: 'telegram',
+    triggering_event_id: crypto.randomUUID(),
+    context: { iteration: i, note: 'Teste de supressão de flood' }
+  }));
+
+  for (const alert of alerts) {
+    await post(`${url}/rest/v1/operational_alerts`, { ...authHeaders(serviceKey) }, alert);
+  }
+  console.log('ok');
+}
+
+async function ensureBackdatingScenarios(url, serviceKey, orgId, planId, driverId) {
+  process.stdout.write('      [5.2] Cenários Backdating (INV-6)... ');
+  const now = new Date();
+  
+  // Casos de uso do pgTAP portados para o bootstrap
+  const scenarios = [
+    { id: 'BDT-SET-01', note: '10 min ago (Closed)' },
+    { id: 'BDT-SET-02', note: 'NULL fallback (Pending)' },
+    { id: 'BDT-SET-05', note: 'Pre-set entered_at (CAS)' }
+  ];
+
+  for (const sc of scenarios) {
+    await post(
+      `${url}/rest/v1/contractual_service_executions`,
+      { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      {
+        set_id: sc.id,
+        plan_declaration_id: planId,
+        scheduled_start_time_utc: now.toISOString(),
+        scheduled_end_time_utc: new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString(),
+        planned_vehicle_id: driverId,
+        start_latitude: 0, start_longitude: 0, start_radius_meters: 500,
+        end_latitude: 0, end_longitude: 0, end_radius_meters: 500
+      }
+    );
+
+    await post(
+      `${url}/rest/v1/execution_states`,
+      { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      {
+        set_id: sc.id,
+        organization_id: orgId,
+        contract_id: 'BDT-CONTRACT',
+        status: 'inTransit',
+        window_start_utc: now.toISOString(),
+        window_end_utc: new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString(),
+        destination_zone_entered_at_utc: sc.id === 'BDT-SET-05' ? '2000-01-01T10:00:00Z' : null
+      }
+    );
+  }
+  console.log('ok');
 }
 
 async function signIn(url, anonKey, email, password) {

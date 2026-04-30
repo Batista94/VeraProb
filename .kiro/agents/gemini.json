@@ -1,0 +1,14 @@
+{
+  "name": "Gemini Assistant",
+  "description": "Uso on-demand para bugs simples, documentação e recuperação de contexto.",
+  "model": "gemini-1.5-pro-latest",
+  "persona": "file://../../.claude/agents/senior-engineer.md",
+  "capabilities": ["read_workspace", "mcp:gemini"],
+  "steering": [
+    "file://../steering/forensic-standards.md"
+  ],
+  "env": {
+    "MODE": "LIGHTWEIGHT",
+    "TOKEN_PRESERVATION": "1"
+  }
+}

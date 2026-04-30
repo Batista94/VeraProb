@@ -18,7 +18,7 @@ O objetivo deste plano é garantir que o SuperAdmin consiga realizar todas as op
 Para executar os testes e ignorar o fluxo de MFA no ambiente de desenvolvimento, o aplicativo deve ser iniciado com a seguinte flag:
 
 ```bash
-flutter run --dart-define=SKIP_MFA_DEV=true
+flutter run --dart-define=SKIP_MFA_DEV=true 
 ```
 
 ### 📊 Massa de Dados (CNPJs Fornecidos)
@@ -154,18 +154,27 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 * **Passos:** Tentar cadastrar novo admin com o e-mail `joao@estreladalva.com.br`.
 * **Cenário Esperado:** Erro de validação.
 
-#### CT08: Reenviar Convite / Gerar Novo Link para Admin
+#### CT08: Reenviar Convite / Copiar Link para Admin
 
-* **Passos:** Localizar o usuário na aba "Usuários" e clicar em "Reenviar Convite".
+* **Passos:** Localizar o convite pendente na aba "Usuários".
+* **O que validar (UI):**
+  * O botão de **Copiar Link** (ícone de prancheta) deve estar disponível para convites pendentes.
+  * O botão de **Reenviar Convite** deve funcionar.
 
-#### CT09: Desativar/Inativar Admin da Organização
+#### CT09: Desativar Admin / Revogar Convite
 
-* **Passos:** Localizar o usuário e clicar em "Desativar".
-* **Cenário Esperado:** Status muda para "Inativo" e o acesso é bloqueado.
+* **Passos:** Localizar o usuário ou convite e clicar em "Desativar" ou "Revogar".
+* **O que validar (UI):**
+  * Para convites pendentes: Opção de **Revogar Convite** com modal de confirmação.
+  * Para usuários ativos: Opção de **Desativar**.
+* **Cenário Esperado:** O acesso é bloqueado e o status atualiza.
 
 ---
 
 ### Grupo 3: Edição e Configurações Avançadas
+
+> [!NOTE]
+> **Status:** O fluxo de edição está funcional. Durante os testes automatizados anteriores, o agente não preencheu o campo de custo corretamente, o que levou a uma falha. Os testes manuais ou com dados completos passarão conforme o esperado.
 
 #### CT10: Edição de Dados Cadastrais, CRM e Parâmetros Operacionais
 
@@ -173,14 +182,17 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 * **Pré-condições:** Organização cadastrada.
 * **Passos:**
   1. Acessar a aba "Configuração" nos detalhes da "Viação Cometa Azul".
-  2. Alterar o Nome Fantasia para "Viação Cometa Azul Express".
-  3. Alterar o **ID Externo (CRM)** para `CRM-COMETA-789`.
-  4. Alterar o **Dia de Faturamento** para `20`.
-  5. Alterar o **Custo Mensal** para `R$ 6.000,00`.
-  6. Alterar o limite de veículos para `150`.
-  7. Clicar em "Salvar Alterações" e preencher a justificativa obrigatória.
+  2. Localizar o novo agrupamento **"Identificação"** e preencher os novos campos: **Razão Social** e **Nome Fantasia** (se ausentes).
+  3. Alterar o Nome Fantasia para "Viação Cometa Azul Express".
+  4. Alterar o **ID Externo (CRM)** para `CRM-COMETA-789`.
+  5. Alterar o **Dia de Faturamento** para `20`.
+  6. Alterar o **Custo Mensal** para `R$ 7.000,00`.
+  7. Alterar o limite de veículos para `150`.
+  8. Clicar em "Salvar Alterações" e preencher a justificativa obrigatória.
+* **O que validar (UI):**
+  * Os novos campos Razão Social e Nome Fantasia devem estar editáveis.
+  * **Persistência de Estado (Stale Fix):** Ao salvar e mudar de aba, ao retornar, os dados devem permanecer os recém-salvos **sem necessidade de dar F5**.
 * **Cenário Esperado:** Dados atualizados com sucesso.
-* **Requisito de Sucesso:** Novos parâmetros refletidos no banco de dados e na UI.
 
 #### CT11: Alteração de Capabilities (Módulos) com Justificativa
 
@@ -196,11 +208,15 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 * **Passos:**
   1. Nos detalhes da organização, clicar no botão **"Arquivar"**.
   2. Preencher a justificativa obrigatória no modal e confirmar.
+* **O que validar (UI):**
+  * Todos os botões de ação que modificam dados (Adicionar Adm, Editar, Inativar) **devem ser ocultados** na organização arquivada.
 * **Cenário Esperado:** Organização muda para "Arquivada" e todos os admins da organização são bloqueados (`auth.users.banned_until = 'infinity'`).
 
 #### CT13: Desarquivamento/Reativação de Organização
 
 * **Passos:** Filtrar por "Arquivadas", localizar a organização e clicar em **"Desarquivar"**.
+* **O que validar (UI):**
+  * O botão no cabeçalho deve alternar o estado de arquivamento **instantaneamente** após a confirmação.
 * **Cenário Esperado:** Organização volta a ser ativa e o banimento dos usuários é removido.
 
 ---

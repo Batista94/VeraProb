@@ -57,6 +57,16 @@ test-output/
 *.ico
 *.mp4
 
+
 # Supabase Local State
 supabase/.temp/
 supabase/.branches/
+
+# Agent Memory & Scratch
+brain/
+scratch/
+package.json
+package-lock.json
+tmp_*.dart
+devtools_options.yaml
+

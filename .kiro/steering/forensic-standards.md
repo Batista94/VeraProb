@@ -1,10 +1,14 @@
+---
+inclusion: auto
+---
+
 # VeraProb — FORENSIC STANDARDS & ORCHESTRATION
 
 This document is the **Single Source of Truth** for the VeraProb Council. It consolidates all invariants, protocols, and technical standards to ensure maximum instruction density and token efficiency.
 
 ---
 
-## ⚖️ THE 27 FORENSIC INVARIANTS (INV-1 to INV-27)
+## ⚖️ THE 28 FORENSIC INVARIANTS (INV-1 to INV-28)
 
 | ID | Category | Rule |
 |----|----------|------|

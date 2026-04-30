@@ -1,0 +1,31 @@
+{
+  "hooks": [
+    {
+      "event": "onFileSave",
+      "action": "skill://forensic-scanner/fast-scan",
+      "filter": "lib/**/*.dart",
+      "description": "Validação instantânea de Invariantes Estáticas."
+    },
+    {
+      "event": "preCommit",
+      "agent": "lead-reviewer",
+      "action": "bash scripts/pr_full_scanner.sh",
+      "condition": "branch == 'main' || branch == 'master' || is_pr == true",
+      "blocking": true,
+      "description": "Veto Forense obrigatório para branches protegidas e PRs."
+    },
+    {
+      "event": "onTestFail",
+      "agent": "senior-engineer",
+      "context": ["last_error_log", "active_spec"],
+      "description": "Auto-correção imediata após falha de TDD."
+    },
+    {
+      "event": "onTestRun",
+      "agent": "qa-security",
+      "filter": "test/integration/iot/**",
+      "action": "skill://iot-chaos-simulator/auto-suggest",
+      "description": "Sugere ou ativa o simulador de caos para testes de resiliência IoT."
+    }
+  ]
+}

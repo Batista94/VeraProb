@@ -40,6 +40,9 @@ class TenantHealthView {
   final String? externalId;
   final String? organizationType;
 
+  /// Timestamp of last update — used for OCC on quota edits (CT15).
+  final DateTime? updatedAt;
+
   const TenantHealthView({
     required this.id,
     required this.name,
@@ -58,6 +61,7 @@ class TenantHealthView {
     this.contactEmail,
     this.externalId,
     this.organizationType,
+    this.updatedAt,
   });
 
   /// Derived from [status] — ACTIVE orgs are operational.
@@ -94,6 +98,7 @@ class TenantHealthView {
       contactEmail: snapshot.contactEmail,
       externalId: snapshot.externalId,
       organizationType: snapshot.organizationType,
+      updatedAt: snapshot.updatedAt,
     );
   }
 
@@ -130,6 +135,9 @@ class TenantHealthView {
       contactEmail: json['contact_email'] as String?,
       externalId: json['external_id'] as String?,
       organizationType: json['organization_type'] as String?,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
     );
   }
 }

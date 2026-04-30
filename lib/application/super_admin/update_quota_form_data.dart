@@ -29,6 +29,9 @@ class UpdateQuotaFormData {
   final String? contactEmail;
   final String? externalId;
   final String? organizationType;
+  final String? tradeName;
+  final String? legalName;
+  final DateTime? expectedUpdatedAt;
 
   const UpdateQuotaFormData({
     required this.organizationId,
@@ -44,6 +47,9 @@ class UpdateQuotaFormData {
     this.contactEmail,
     this.externalId,
     this.organizationType,
+    this.tradeName,
+    this.legalName,
+    this.expectedUpdatedAt,
   });
 
   UpdateOrganizationQuotaCommand toCommand() {
@@ -68,6 +74,9 @@ class UpdateQuotaFormData {
       contactEmail: contactEmail,
       externalId: externalId,
       organizationType: organizationType,
+      tradeName: tradeName,
+      legalName: legalName,
+      expectedUpdatedAt: expectedUpdatedAt,
     );
   }
 }

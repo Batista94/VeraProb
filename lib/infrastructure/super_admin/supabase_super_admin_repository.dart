@@ -168,6 +168,9 @@ class SupabaseSuperAdminRepository
           'p_contact_email': cmd.contactEmail,
           'p_external_id': cmd.externalId,
           'p_organization_type': cmd.organizationType,
+          'p_trade_name': cmd.tradeName,
+          'p_legal_name': cmd.legalName,
+          'p_expected_updated_at': cmd.expectedUpdatedAt?.toIso8601String(),
         },
       );
     } on PostgrestException catch (e) {
@@ -294,6 +297,31 @@ class SupabaseSuperAdminRepository
       if (e.code == 'P0006') {
         throw DomainException(
           '$email já possui um perfil ativo nesta organização.',
+        );
+      }
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<void> revokeInvitation({
+    required String orgId,
+    required String email,
+    required String superAdminUserId,
+  }) async {
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_revoke_invitation',
+        params: {
+          'p_org_id': orgId,
+          'p_email': email,
+          'p_super_admin_id': superAdminUserId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      if (e.code == 'P0008') {
+        throw DomainException(
+          'Nenhum convite pendente encontrado para $email nesta organização.',
         );
       }
       throw mapPostgrestToDomainException(e, resourceType: 'super_admin');

@@ -92,4 +92,13 @@ abstract class ISuperAdminRepository {
     required DateTime expiresAtUtc,
     required String superAdminUserId,
   });
+
+  /// Revokes a pending invitation (CT09 — INV-3: sets revoked_at_utc, never DELETE).
+  ///
+  /// Throws [DomainException] P0008 if no matching pending invitation found.
+  Future<void> revokeInvitation({
+    required String orgId,
+    required String email,
+    required String superAdminUserId,
+  });
 }

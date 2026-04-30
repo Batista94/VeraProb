@@ -23,6 +23,7 @@ class TenantHealthSnapshot extends Equatable {
   final String? contactEmail;
   final String? externalId;
   final String? organizationType;
+  final DateTime? updatedAt;
 
   const TenantHealthSnapshot({
     required this.id,
@@ -43,6 +44,7 @@ class TenantHealthSnapshot extends Equatable {
     this.contactEmail,
     this.externalId,
     this.organizationType,
+    this.updatedAt,
   });
 
   factory TenantHealthSnapshot.fromJson(Map<String, dynamic> json) {
@@ -75,6 +77,9 @@ class TenantHealthSnapshot extends Equatable {
       contactEmail: json['contact_email'] as String?,
       externalId: json['external_id'] as String?,
       organizationType: json['organization_type'] as String?,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
     );
   }
 
@@ -100,5 +105,6 @@ class TenantHealthSnapshot extends Equatable {
     contactEmail,
     externalId,
     organizationType,
+    updatedAt,
   ];
 }

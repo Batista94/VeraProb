@@ -59,7 +59,23 @@ Thumbs.db
 .claude/*.log
 !.claude/skills/
 
+
 # Supabase Local Infrastructure
 supabase/.temp/
 supabase/.branches/
+supabase/snippets/
+
+
+# Agent & Tooling
+node_modules/
+package.json
+package-lock.json
+brain/
+scratch/
+tmp_*.dart
+test_output.txt
+devtools_options.yaml
+
+# Kiro
+.kiro/specs/
 

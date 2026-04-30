@@ -48,6 +48,16 @@ class UpdateOrganizationQuotaCommand {
   /// Classification of the organization's business (e.g. CARGO, PASSENGER, URBAN_LOGISTICS).
   final String? organizationType;
 
+  /// Display name / trade name of the organization.
+  final String? tradeName;
+
+  /// Legal name (razão social) of the organization.
+  final String? legalName;
+
+  /// OCC guard: snapshot of organizations.updated_at at form load time.
+  /// Null = skip concurrency check (backwards compat).
+  final DateTime? expectedUpdatedAt;
+
   const UpdateOrganizationQuotaCommand({
     required this.organizationId,
     required this.newPlanType,
@@ -63,5 +73,8 @@ class UpdateOrganizationQuotaCommand {
     this.contactEmail,
     this.externalId,
     this.organizationType,
+    this.tradeName,
+    this.legalName,
+    this.expectedUpdatedAt,
   });
 }
