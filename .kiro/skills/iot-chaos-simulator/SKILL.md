@@ -1,6 +1,6 @@
 ---
 name: iot-chaos-simulator
-description: >
+description: Interroga o sistema através de vetores de caos cronológico, ruído de hardware e conformidade de timestamps físicos para garantir resiliência em telemetria.
 ---
 
 # IoT Chaos Simulator

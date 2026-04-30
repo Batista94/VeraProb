@@ -144,5 +144,5 @@ Deno.serve(async (req) => {
         headers: { "Content-Type": "application/json" },
       },
     );
-  });
+  }, true, true);
 });

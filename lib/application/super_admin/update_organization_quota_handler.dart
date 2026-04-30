@@ -74,6 +74,11 @@ class UpdateOrganizationQuotaHandler {
         'Limite de contratos ativos deve ser pelo menos 1.',
       );
     }
+    if (cmd.dwellTimeSeconds != null && cmd.dwellTimeSeconds! < 300) {
+      throw const DomainException(
+        'Tempo de permanência deve ser pelo menos 300 segundos (5 minutos).',
+      );
+    }
 
     // ── Step 4a: tool_cost_cents required
     if (cmd.toolCostCents == null) {

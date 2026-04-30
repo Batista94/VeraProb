@@ -1,0 +1,12 @@
+{
+  "name": "Fast Scan Forense",
+  "description": "Validação instantânea de Invariantes Estáticas ao salvar.",
+  "version": "1",
+  "when": {
+    "type": "fileSaved"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Execute o skill forensic-scanner/fast-scan e verifique as INV-1 a INV-28."
+  }
+}

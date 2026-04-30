@@ -23,7 +23,7 @@
       "command": "cmd",
       "args": [
         "/c",
-        "set maptiler_key= && set environment= && set service_role_key= && supabase-mcp-server"
+        "set maptiler_key= && set environment= && set service_role_key= && set google_api_key= && set GOOGLE_API_KEY= && set github_personal_access_token= && set GITHUB_PERSONAL_ACCESS_TOKEN= && set supabase_key= && set SUPABASE_KEY= && set supabase_anon_key= && set SUPABASE_ANON_KEY= && supabase-mcp-server"
       ],
       "env": {
         "SUPABASE_URL": "${SUPABASE_URL}",
@@ -38,7 +38,7 @@
         "npx -y @modelcontextprotocol/server-github"
       ],
       "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${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}"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
       },
       "disabledTools": [
         "create_issue",
@@ -80,6 +80,26 @@
       "autoApprove": [
         "sequentialthinking"
       ]
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-memory"
+      ],
+      "env": {}
+    },
+    "gemini": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-google-search"
+      ],
+      "env": {
+        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}"
+      }
     }
   }
 }

@@ -82,5 +82,5 @@ Deno.serve(async (req) => {
       JSON.stringify({ status: "revoked", session_id }),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
-  });
+  }, true, true);
 });

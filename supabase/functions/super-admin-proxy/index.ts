@@ -21,6 +21,7 @@
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -93,7 +94,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // ── Auth: verify JWT and super_admin claim ──────────────────────────────────
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    console.error("[super-admin-proxy] Unauthorized: Missing or malformed Bearer token");
+    return sovereigntyErrorResponse();
   }
 
   // Authenticated client to verify the caller's identity
@@ -105,7 +107,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     const { data: authData, error: authError } = await authClient.auth.getUser();
     if (authError || !authData.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      console.error("[super-admin-proxy] Auth verification failed:", authError);
+      return sovereigntyErrorResponse();
     }
     user = authData.user;
   } catch (err) {
@@ -115,7 +118,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   const isSuperAdmin = user.app_metadata?.super_admin === true;
   if (!isSuperAdmin) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+    console.error(`[super-admin-proxy] Forbidden: User ${user.id} lacks super_admin claim`);
+    return sovereigntyErrorResponse();
   }
 
   // ── AAL2 enforcement (INV-6: SuperAdmin requires MFA) ─────────────────────
@@ -134,10 +138,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const isLocal = environment === "development" || environment === "dev";
 
   if (!isLocal && jwtPayload.aal !== "aal2") {
-    return Response.json(
-      { error: "MFA verification required (AAL2)" },
-      { status: 403 }
-    );
+    console.error(`[super-admin-proxy] MFA Required: User ${user.id} attempted access with AAL1`);
+    return sovereigntyErrorResponse();
   }
 
   // ── Service-role client initialization ─────────────────────────────────────
@@ -151,10 +153,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     );
     if (lockoutError) throw lockoutError;
     if (lockoutData?.is_locked === true) {
-      return Response.json(
-        { error: "Account temporarily locked due to failed MFA attempts" },
-        { status: 429 }
-      );
+      console.error(`[super-admin-proxy] MFA Lockout: User ${user.id} is temporarily locked`);
+      return sovereigntyErrorResponse();
     }
   } catch (err) {
     console.error("[super-admin-proxy] Lockout check exception:", err);

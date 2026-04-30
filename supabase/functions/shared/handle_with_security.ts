@@ -133,6 +133,7 @@ export async function handleWithSecurity(
   edgeFunction: string,
   handler: SecurityHandler,
   requireAuth: boolean = true,
+  requireSuperAdmin: boolean = false,
 ): Promise<Response> {
   // Step 1: Generate correlation ID
   const correlationId = generateCorrelationId();
@@ -182,6 +183,25 @@ export async function handleWithSecurity(
     ctx.userId = authResult.userId;
     ctx.orgId = authResult.orgId;
     ctx.sessionId = authResult.sessionId;
+
+    // Step 5.1: SuperAdmin + AAL2 Enforcement (FIX-02, INV-6)
+    if (requireSuperAdmin) {
+      const isSuperAdmin = authResult.jwtPayload.app_metadata?.super_admin === true || 
+                          authResult.jwtPayload.app_metadata?.super_admin === "true";
+      
+      const aal = authResult.jwtPayload.aal as string | undefined;
+      
+      // In production, AAL2 is mandatory for SuperAdmin. 
+      // ENVIRONMENT=dev skips AAL2 check to facilitate local testing.
+      const isDev = Deno.env.get("ENVIRONMENT") === "development" || 
+                    Deno.env.get("ENVIRONMENT") === "dev";
+
+      if (!isSuperAdmin || (!isDev && aal !== "aal2")) {
+        // INV-26: Return canonical 404 to prevent inference of SuperAdmin status
+        console.error(`[handleWithSecurity] SuperAdmin/AAL2 violation by user ${ctx.userId}`);
+        return sovereigntyErrorResponse();
+      }
+    }
   }
 
   // Step 6: Initialize Supabase service_role client

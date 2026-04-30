@@ -1,0 +1,12 @@
+{
+  "name": "Veto Forense Pre-Commit",
+  "description": "Veto Forense obrigatório para branches protegidas e PRs.",
+  "version": "1",
+  "when": {
+    "type": "manualTrigger"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Execute o Veto Forense obrigatório rodando o script 'bash scripts/pr_full_scanner.sh'. Se houver falhas de Invariantes, impeça o commit e reporte as violações."
+  }
+}

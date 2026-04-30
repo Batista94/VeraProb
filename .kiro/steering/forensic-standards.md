@@ -1,4 +1,6 @@
 ---
+name: forensic-standards
+description: Consolida os 28 Invariantes Forenses e os protocolos de execução para garantir a integridade do ecossistema VeraProb.
 inclusion: auto
 ---
 

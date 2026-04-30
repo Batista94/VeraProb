@@ -9,6 +9,7 @@ import 'package:veraprob/features/super_admin/presentation/widgets/tenant_config
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_metrics_tab.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_panel_badges.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_security_tab.dart';
+import 'package:veraprob/features/super_admin/presentation/widgets/tenant_audit_tab.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_users_tab.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
@@ -29,7 +30,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -221,6 +222,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
             Tab(text: 'Configuração'),
             Tab(text: 'Segurança'),
             Tab(text: 'Usuários'),
+            Tab(text: 'Auditoria'),
           ],
         ),
         const Divider(height: 1),
@@ -232,6 +234,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
               TenantConfigTab(tenant: t),
               TenantSecurityTab(tenant: t),
               TenantUsersTab(tenant: t),
+              TenantAuditTab(organizationId: t.id),
             ],
           ),
         ),

@@ -94,6 +94,14 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
       final n = int.tryParse(_maxVehiclesCtrl.text);
       if (n == null || n < 1) return false;
     }
+    if (_maxContractsCtrl.text.isNotEmpty) {
+      final n = int.tryParse(_maxContractsCtrl.text);
+      if (n == null || n < 1) return false;
+    }
+    if (_dwellTimeCtrl.text.isNotEmpty) {
+      final n = int.tryParse(_dwellTimeCtrl.text);
+      if (n == null || n < 300) return false;
+    }
     return true;
   }
 
@@ -292,6 +300,12 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
                     ),
                     keyboardType: TextInputType.number,
                     onChanged: (_) => setState(() {}),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return null;
+                      final n = int.tryParse(v);
+                      if (n == null || n < 1) return 'Mínimo: 1';
+                      return null;
+                    },
                   ),
                 ),
               ],
@@ -330,6 +344,12 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
                     ),
                     keyboardType: TextInputType.number,
                     onChanged: (_) => setState(() {}),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Obrigatório';
+                      final n = int.tryParse(v);
+                      if (n == null || n < 300) return 'Mínimo: 300s (5min)';
+                      return null;
+                    },
                   ),
                 ),
               ],
