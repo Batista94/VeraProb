@@ -535,11 +535,14 @@ class _KpiCard extends StatelessWidget {
                 children: [
                   Icon(icon, size: 16, color: color),
                   const SizedBox(width: 6),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: VeraProbColors.textSecondary,
+                  Expanded(
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: VeraProbColors.textSecondary,
+                      ),
                     ),
                   ),
                 ],

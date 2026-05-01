@@ -101,4 +101,25 @@ abstract class ISuperAdminRepository {
     required String email,
     required String superAdminUserId,
   });
+
+  /// Returns technical health data for a tenant (replication status, schema
+  /// integrity) as a raw JSON map.
+  ///
+  /// The caller is responsible for parsing the map into a presentation-layer
+  /// ViewModel. Data is fetched via the Edge Function proxy (INV-14).
+  Future<Map<String, dynamic>> getTenantTechnicalHealth(String orgId);
+
+  /// Returns evidence volume metrics for a tenant (historical total and
+  /// current-month count) as a raw JSON map.
+  ///
+  /// Backed by a materialized view to avoid expensive COUNT() aggregations
+  /// on the transactional database during UI builds.
+  Future<Map<String, dynamic>> getEvidenceVolume(String orgId);
+
+  /// Triggers an on-demand schema integrity check for a tenant and returns
+  /// the result as a raw JSON map.
+  ///
+  /// Invoked exclusively through the Edge Function proxy so the
+  /// `service_role` key stays as a Deno secret (INV-14).
+  Future<Map<String, dynamic>> checkSchemaIntegrity(String orgId);
 }

@@ -327,4 +327,72 @@ class SupabaseSuperAdminRepository
       throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
     }
   }
+
+  /// Returns technical health data for a tenant (replication status, schema
+  /// integrity) as a raw JSON map.
+  ///
+  /// Fetched via the `super-admin-proxy` Edge Function (INV-14).
+  /// The `service_role` key stays as a Deno secret — never in the Flutter
+  /// WASM bundle.
+  @override
+  Future<Map<String, dynamic>> getTenantTechnicalHealth(String orgId) async {
+    try {
+      final response = await _authenticatedClient.functions.invoke(
+        'super-admin-proxy',
+        body: {
+          'action': 'get_tenant_technical_health',
+          'params': {'organization_id': orgId},
+        },
+      );
+      return (response.data as Map<String, dynamic>)['data']
+          as Map<String, dynamic>;
+    } on Exception catch (e) {
+      throw DomainException('Edge Function super-admin-proxy unavailable: $e');
+    }
+  }
+
+  /// Returns evidence volume metrics for a tenant (historical total and
+  /// current-month count) as a raw JSON map.
+  ///
+  /// Backed by the `mv_evidence_volume` materialized view to avoid expensive
+  /// COUNT() aggregations on the transactional database during UI builds.
+  /// Fetched via the `super-admin-proxy` Edge Function (INV-14).
+  @override
+  Future<Map<String, dynamic>> getEvidenceVolume(String orgId) async {
+    try {
+      final response = await _authenticatedClient.functions.invoke(
+        'super-admin-proxy',
+        body: {
+          'action': 'get_evidence_volume',
+          'params': {'organization_id': orgId},
+        },
+      );
+      return (response.data as Map<String, dynamic>)['data']
+          as Map<String, dynamic>;
+    } on Exception catch (e) {
+      throw DomainException('Edge Function super-admin-proxy unavailable: $e');
+    }
+  }
+
+  /// Triggers an on-demand schema integrity check for a tenant and returns
+  /// the result as a raw JSON map.
+  ///
+  /// Invoked as a POST action through the `super-admin-proxy` Edge Function
+  /// which calls the `check_schema_integrity` RPC server-side (INV-14).
+  @override
+  Future<Map<String, dynamic>> checkSchemaIntegrity(String orgId) async {
+    try {
+      final response = await _authenticatedClient.functions.invoke(
+        'super-admin-proxy',
+        body: {
+          'action': 'check_schema_integrity',
+          'params': {'organization_id': orgId},
+        },
+      );
+      return (response.data as Map<String, dynamic>)['data']
+          as Map<String, dynamic>;
+    } on Exception catch (e) {
+      throw DomainException('Edge Function super-admin-proxy unavailable: $e');
+    }
+  }
 }

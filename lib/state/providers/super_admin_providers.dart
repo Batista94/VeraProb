@@ -9,8 +9,10 @@ import 'package:veraprob/application/super_admin/create_organization_handler.dar
 import 'package:veraprob/application/super_admin/generate_org_secret_handler.dart';
 import 'package:veraprob/application/super_admin/revoke_impersonation_handler.dart';
 import 'package:veraprob/application/super_admin/update_organization_quota_handler.dart';
+import 'package:veraprob/application/super_admin/evidence_volume_view.dart';
 import 'package:veraprob/application/super_admin/system_audit_log_view.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/application/super_admin/tenant_technical_health_view.dart';
 import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/infrastructure/audit/postgres_system_audit_log_service.dart';
@@ -153,6 +155,33 @@ final revokeImpersonationHandlerProvider = Provider<RevokeImpersonationHandler>(
     );
   },
 );
+
+/// Provider de saúde técnica por tenant (Req 9.1, 9.2).
+///
+/// Retorna [TenantTechnicalHealthView] com status de replicação, integridade
+/// de schema, versão e timestamp da última verificação.
+/// Dados obtidos via Edge Function proxy (INV-14).
+final tenantTechnicalHealthProvider =
+    FutureProvider.family<TenantTechnicalHealthView, String>((
+      ref,
+      orgId,
+    ) async {
+      final repo = ref.watch(superAdminRepositoryProvider);
+      final data = await repo.getTenantTechnicalHealth(orgId);
+      return TenantTechnicalHealthView.fromJson(data);
+    });
+
+/// Provider de volumetria de evidências por tenant (Req 9.3, 9.4).
+///
+/// Retorna [EvidenceVolumeView] com total histórico e total mensal.
+/// Consome dados de materialized view `mv_evidence_volume` via Edge Function
+/// proxy (INV-14, Req 5.5).
+final evidenceVolumeProvider =
+    FutureProvider.family<EvidenceVolumeView, String>((ref, orgId) async {
+      final repo = ref.watch(superAdminRepositoryProvider);
+      final data = await repo.getEvidenceVolume(orgId);
+      return EvidenceVolumeView.fromJson(data);
+    });
 
 AuditLogParams auditLogParams({
   String? organizationId,

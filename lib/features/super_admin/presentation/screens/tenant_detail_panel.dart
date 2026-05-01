@@ -6,6 +6,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/archive_confirmation_dialog.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/reason_confirmation_dialog.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_config_tab.dart';
+import 'package:veraprob/features/super_admin/presentation/widgets/tenant_health_tab.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_metrics_tab.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_panel_badges.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_security_tab.dart';
@@ -30,7 +31,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -219,6 +220,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
           indicatorColor: VeraProbColors.secondary,
           tabs: const [
             Tab(text: 'Métricas'),
+            Tab(text: 'Saúde Técnica'),
             Tab(text: 'Configuração'),
             Tab(text: 'Segurança'),
             Tab(text: 'Usuários'),
@@ -231,6 +233,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
             controller: _tabController,
             children: [
               TenantMetricsTab(tenant: t),
+              TenantHealthTab(organizationId: t.id),
               TenantConfigTab(tenant: t),
               TenantSecurityTab(tenant: t),
               TenantUsersTab(tenant: t),
