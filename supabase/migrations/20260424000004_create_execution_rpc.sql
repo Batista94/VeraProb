@@ -71,7 +71,7 @@ BEGIN
     p_contract_id,
     1,
     jsonb_build_object(
-      'created_by',        auth.uid(),
+      'created_by',        (auth.jwt() ->> 'sub')::uuid,
       'org_id',            p_organization_id,
       'driver_id',         p_driver_id,
       'vehicle_id',        p_vehicle_id,

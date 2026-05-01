@@ -1,15 +1,27 @@
-# Protocolo de Consciência Coletiva (VeraProb Council)
+# Council Protocol (VeraProb)
+Collective Consciousness logic.
 
-## 1. HIERARQUIA DE CONTEXTO
-1.  **PERSONAS (.claude/agents/)**: A lógica base e o tom de voz. São os "Prompts Mestres".
-2.  **MANIFESTOS (.kiro/agents/)**: A configuração ativa. Definem quais ferramentas e dogmas cada persona carrega para a missão atual.
-3.  **DOGMA (.kiro/steering/)**: As Invariantes INV-1 a INV-28. São injetadas automaticamente em todos os agentes.
+## 1. CONTEXT HIERARCHY
+1. PERSONAS (.claude/agents/): Base logic & tone.
+2. MANIFESTOS (.kiro/agents/): Active mission config.
+3. DOGMA (Memory Server): Invariants INV-1 to INV-28.
 
-## 2. FLUXO DE CONSENSO
-Nenhuma alteração de código é aceita sem o **Veredito Triplo**:
-1.  **Deterministic Pass**: Sucesso no `pr_full_scanner.sh` (Saída 0).
-2.  **Neural Review**: Aprovação do `Lead Reviewer` contra as Invariantes.
-3.  **Security Audit**: Assinatura do `QA/Security` validando que não há riscos de injeção ou vazamento de tenant.
+## 2. CONSENSUS FLOW
+Local work unrestricted. **Triple Verdict** mandatory for:
+1. Merge to **main** / PR open.
+2. Domain/Infra task finalization.
+3. Fast-Track: UI/Doc skip Council (Scanner recommended).
 
-## 3. ESTADO DA MISSÃO
-As `specs/` são a única fonte de verdade para o progresso. Se uma task não está no `tasks.md`, ela não existe no backlog da IA.
+**VERDICT CRITERIA:**
+1.  **Deterministic Pass**: Sucesso no `scripts/security/pr_full_scanner.sh`.
+2. Neural: `Lead Reviewer` approval (Invariants).
+3. Security: `QA/Security` sign-off (RLS/Isolation).
+
+## 3. ORCHESTRATION
+Categorized `scripts/`: `dev/`, `security/`, `qa/`.
+Master: `Makefile`.
+- `make setup`: Environment build.
+- `make check`: Security/Audit gate.
+
+## 4. MISSION STATE
+`specs/` is source of truth. Task must exist in `tasks.md`.

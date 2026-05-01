@@ -43,6 +43,12 @@ class TenantHealthView {
   /// Timestamp of last update — used for OCC on quota edits (CT15).
   final DateTime? updatedAt;
 
+  /// CNPJ da organização — campo de identidade core imutável.
+  final String? cnpj;
+
+  /// Data de criação da organização — campo de identidade core imutável.
+  final DateTime? createdAt;
+
   const TenantHealthView({
     required this.id,
     required this.name,
@@ -62,6 +68,8 @@ class TenantHealthView {
     this.externalId,
     this.organizationType,
     this.updatedAt,
+    this.cnpj,
+    this.createdAt,
   });
 
   /// Derived from [status] — ACTIVE orgs are operational.
@@ -99,6 +107,8 @@ class TenantHealthView {
       externalId: snapshot.externalId,
       organizationType: snapshot.organizationType,
       updatedAt: snapshot.updatedAt,
+      cnpj: snapshot.cnpj,
+      createdAt: snapshot.createdAt,
     );
   }
 
@@ -137,6 +147,10 @@ class TenantHealthView {
       organizationType: json['organization_type'] as String?,
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
+          : null,
+      cnpj: json['cnpj'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
           : null,
     );
   }

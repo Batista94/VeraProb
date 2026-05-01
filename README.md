@@ -61,6 +61,6 @@ flutter run -d chrome --web-renderer wasm
 
 ### 3. Testing & Quality
 - **Unit/Integration:** `flutter test`
-- **Forensic Scanning:** `bash scripts/pr_full_scanner.sh` (Mandatory before PR).
+- **Forensic Scanning:** `bash scripts/security/pr_full_scanner.sh` (Mandatory before PR).
 
 For the complete list of **28 Forensic Invariants**, refer to [CLAUDE.md](CLAUDE.md).

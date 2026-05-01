@@ -4,9 +4,17 @@
       "event": "preCommit",
       "agent": "lead-reviewer",
       "condition": "git.branch == 'main' || git.hasOpenPR == true",
-      "action": "bash scripts/pr_full_scanner.sh",
+      "action": "bash scripts/security/pr_full_scanner.sh",
       "blocking": true,
       "description": "Veto Forense (Main/PR): O scanner só bloqueia a integração final. Branches de dev têm fluxo livre."
+    },
+    {
+      "event": "preCommit",
+      "agent": "security-auditor",
+      "condition": "git.branch == 'main' || git.hasOpenPR == true",
+      "action": "python scripts/security/scan_secrets.py",
+      "blocking": true,
+      "description": "Scanner Forense de Segredos (INV-28): Detecta chaves, tokens e strings de alta entropia nos arquivos staged. Não exibe segredos reais. Gera log em .veraprob/security_audit.log."
     },
     {
       "event": "onTestFail",

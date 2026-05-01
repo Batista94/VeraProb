@@ -28,7 +28,7 @@ CREATE EXTENSION IF NOT EXISTS postgis SCHEMA public;
 
 -- ── Part 1: Schema ────────────────────────────────────────────────────────────
 
--- C3: actor columns on sla_audit_ledger (service_role calls have auth.uid()=NULL)
+-- C3: actor columns on sla_audit_ledger (service_role calls have (auth.jwt() ->> 'sub')=NULL)
 ALTER TABLE public.sla_audit_ledger
   ADD COLUMN IF NOT EXISTS actor_type TEXT DEFAULT 'system'
     CHECK (actor_type IN ('system', 'user', 'admin')),
@@ -37,7 +37,7 @@ ALTER TABLE public.sla_audit_ledger
 COMMENT ON COLUMN public.sla_audit_ledger.actor_type IS
   'C3: system=RPC/cron, user=driver, admin=operator. INV-26: system rows have actor_id=NULL.';
 COMMENT ON COLUMN public.sla_audit_ledger.actor_id IS
-  'NULL for system-triggered rows (service_role has auth.uid()=NULL). INV-26.';
+  'NULL for system-triggered rows (service_role has (auth.jwt() ->> 'sub')=NULL). INV-26.';
 
 -- First-write-wins dwell tracker for destination zone (INV-6: TIMESTAMPTZ).
 ALTER TABLE public.execution_states

@@ -128,7 +128,62 @@ changedFiles.forEach((file) => {
       return;
     }
 
-    // ── Line-by-line check ──
+      // ── SQL RLS Integrity Check (INV-2 Specialized) ──
+      if (config.type === "sql_rls_integrity" && file.endsWith(".sql")) {
+        const sql = content.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--.*$/gm, "");
+        
+        // Match CREATE TABLE [IF NOT EXISTS] [schema.]name
+        const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)/gi;
+        let match;
+        
+        while ((match = createTableRegex.exec(sql)) !== null) {
+          const schemaName = match[1]; // undefined if no schema
+          const tableName = match[2];
+          
+          // Ignore tables in system schemas (auth, extensions, etc.)
+          if (schemaName && schemaName.toLowerCase() !== "public") continue;
+          
+          // 1. Check ENABLE RLS for THIS specific table
+          const rlsRegex = new RegExp(`ALTER\\s+TABLE\\s+(?:public\\.)?${tableName}\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, "i");
+          if (!rlsRegex.test(sql)) {
+            violations.push({
+              file,
+              line: null,
+              rule: "INV-2-RLS-MANDATORY",
+              description: `Table '${tableName}' created but 'ENABLE ROW LEVEL SECURITY' not found in the same file.`,
+              severity: "BLOCK"
+            });
+          } else {
+            // 2. Check for Policy existence (WARNING)
+            const policyRegex = new RegExp(`CREATE\\s+POLICY.+ON\\s+(?:public\\.)?${tableName}`, "i");
+            if (!policyRegex.test(sql)) {
+              violations.push({
+                file,
+                line: null,
+                rule: "INV-2-POLICY-MISSING",
+                description: `Table '${tableName}' has RLS enabled but no policies found. (Warning: Ensure policies are defined or intended to be restrictive).`,
+                severity: "WARN"
+              });
+            } else {
+              // 3. Check for mandatory isolation pattern (WARNING)
+              // (auth.jwt() ->> 'organization_id')::uuid
+              const patternRegex = /\(auth\.jwt\(\)\s*->>\s*'organization_id'\)::uuid/i;
+              if (!patternRegex.test(sql)) {
+                violations.push({
+                  file,
+                  line: null,
+                  rule: "INV-2-ISOLATION-PATTERN",
+                  description: `Policy on '${tableName}' might not be using the mandatory VeraProb isolation pattern: (auth.jwt() ->> 'organization_id')::uuid`,
+                  severity: "WARN"
+                });
+              }
+            }
+          }
+        }
+        return;
+      }
+
+      // ── Line-by-line check ──
     lines.forEach((line, index) => {
       // Ignore full-line comments and strip end-of-line comments for matching
       const strippedLine = file.endsWith(".sql")

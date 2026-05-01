@@ -24,14 +24,14 @@ AS $$
 DECLARE
   v_is_super      TEXT;
   v_org_id        UUID := gen_random_uuid();
-  v_actor_id      UUID := auth.uid();
+  v_actor_id      UUID := (auth.jwt() ->> 'sub')::uuid;
   v_actor_email   TEXT := auth.jwt() ->> 'email';
   v_actor_role    TEXT := 'super_admin'; -- Default for this RPC
 BEGIN
   -- 1. Validate super_admin claim
-  -- Service-role connections (migrations, Edge Functions) have auth.uid() = NULL;
+  -- Service-role connections (migrations, Edge Functions) have (auth.jwt() ->> 'sub') = NULL;
   -- skip the claim check so integration tests using the service key work correctly.
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     v_is_super := auth.jwt() -> 'app_metadata' ->> 'super_admin';
     IF v_is_super IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'

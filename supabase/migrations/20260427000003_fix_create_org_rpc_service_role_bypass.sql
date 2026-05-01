@@ -31,12 +31,12 @@ SET search_path = public, auth
 AS $$
 DECLARE
   v_org_id      UUID := gen_random_uuid();
-  v_actor_id    UUID := auth.uid();
+  v_actor_id    UUID := (auth.jwt() ->> 'sub')::uuid;
   v_actor_email TEXT := auth.jwt() ->> 'email';
 BEGIN
   -- 1. Validate super_admin claim (only for authenticated users — service_role bypasses).
-  --    auth.uid() IS NULL → service_role call → bypass permitted (Supabase-trusted).
-  IF auth.uid() IS NOT NULL THEN
+  --    (auth.jwt() ->> 'sub') IS NULL → service_role call → bypass permitted (Supabase-trusted).
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';

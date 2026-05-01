@@ -117,5 +117,18 @@
     "path_filter": "supabase/migrations/",
     "description": "INV-6: Device-clock column has DEFAULT NOW(). Server clock silently substitutes device anchor. DROP DEFAULT and force explicit insert.",
     "severity": "WARN"
+  },
+  "INV-2-AUTH-UID": {
+    "pattern": "auth\\.uid\\(\\)",
+    "path_filter": "supabase/migrations/",
+    "description": "INV-2: auth.uid() is forbidden. Use auth.jwt() -> 'organization_id' claim for tenant isolation.",
+    "severity": "BLOCK"
+  },
+  "INV-2-RLS-INTEGRITY": {
+    "type": "sql_rls_integrity",
+    "pattern": "CREATE\\s+TABLE",
+    "path_filter": "supabase/migrations/",
+    "description": "INV-2: Mandatory RLS and Policy pattern verification for new tables.",
+    "severity": "BLOCK"
   }
 }

@@ -96,7 +96,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 DECLARE
-  v_user  UUID := auth.uid();
+  v_user  UUID := (auth.jwt() ->> 'sub')::uuid;
   v_claim UUID := (auth.jwt() ->> 'organization_id')::UUID;
   v_next  TIMESTAMPTZ;
 BEGIN
@@ -131,7 +131,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 DECLARE
-  v_user  UUID := auth.uid();
+  v_user  UUID := (auth.jwt() ->> 'sub')::uuid;
   v_claim UUID := (auth.jwt() ->> 'organization_id')::UUID;
 BEGIN
   IF v_claim IS NULL OR v_claim <> p_org_id THEN
@@ -171,7 +171,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 DECLARE
-  v_user  UUID := auth.uid();
+  v_user  UUID := (auth.jwt() ->> 'sub')::uuid;
   v_claim UUID := (auth.jwt() ->> 'organization_id')::UUID;
 BEGIN
   IF v_claim IS NULL OR v_claim <> p_org_id THEN

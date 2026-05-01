@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/super_admin/presentation/widgets/locked_field_tile.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/reason_confirmation_dialog.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
@@ -129,6 +132,18 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
         _externalIdCtrl.text != (t.externalId ?? '');
   }
 
+  Future<void> _copyToClipboard(String value) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Copiado para a área de transferência'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -207,6 +222,42 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const _SectionTitle('Identidade Imutável'),
+            const SizedBox(height: 16),
+            LockedFieldTile(
+              label: 'Slug',
+              value: widget.tenant.id,
+              onCopy: () => _copyToClipboard(widget.tenant.id),
+            ),
+            const SizedBox(height: 12),
+            LockedFieldTile(
+              label: 'CNPJ',
+              value: widget.tenant.cnpj,
+              placeholder: 'Não informado',
+              onCopy: widget.tenant.cnpj != null
+                  ? () => _copyToClipboard(widget.tenant.cnpj!)
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            LockedFieldTile(
+              label: 'Data de Criação',
+              value: widget.tenant.createdAt != null
+                  ? DateFormat(
+                      'dd/MM/yyyy HH:mm',
+                    ).format(widget.tenant.createdAt!)
+                  : null,
+              placeholder: 'Não disponível',
+              onCopy: widget.tenant.createdAt != null
+                  ? () => _copyToClipboard(
+                      DateFormat(
+                        'dd/MM/yyyy HH:mm',
+                      ).format(widget.tenant.createdAt!),
+                    )
+                  : null,
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 24),
             const _SectionTitle('Identificação'),
             const SizedBox(height: 16),
             TextFormField(

@@ -1,14 +1,5 @@
 {
   "mcpServers": {
-    "fetch": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": [
-        "/c",
-        "uvx mcp-server-fetch"
-      ],
-      "env": {}
-    },
     "playwright": {
       "type": "stdio",
       "command": "cmd",
@@ -16,31 +7,7 @@
         "/c",
         "npx -y @playwright/mcp@latest"
       ],
-      "env": {},
-      "autoApprove": [
-        "browser_wait_for"
-      ]
-    },
-    "supabase": {
-      "type": "stdio",
-      "command": "C:\\Users\\wes_b\\.local\\bin\\supabase-mcp-server.exe",
-      "args": [],
-      "env": {
-        "SUPABASE_PROJECT_REF": "127.0.0.1:54321",
-        "SUPABASE_DB_PASSWORD": "postgres",
-        "SUPABASE_REGION": "sa-east-1"
-      },
-      "autoApprove": [
-        "get_table_schema",
-        "retrieve_logs",
-        "get_schemas",
-        "retrieve_migrations",
-        "execute_postgresql",
-        "get_tables",
-        "get_management_api_spec",
-        "get_auth_admin_methods_spec"
-      ],
-      "disabled": true
+      "env": {}
     },
     "github": {
       "type": "stdio",
@@ -52,46 +19,35 @@
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
       },
-      "disabledTools": [
-        "create_issue",
-        "create_pull_request",
-        "list_issues",
-        "update_issue",
-        "add_issue_comment",
-        "search_issues",
-        "search_users",
-        "get_issue",
-        "create_or_update_file",
-        "search_repositories",
-        "create_repository",
-        "get_file_contents",
-        "push_files",
-        "fork_repository",
-        "create_branch",
-        "list_commits",
-        "search_code",
-        "get_pull_request",
-        "list_pull_requests",
-        "create_pull_request_review",
-        "merge_pull_request",
-        "get_pull_request_files",
-        "get_pull_request_status",
-        "update_pull_request_branch",
-        "get_pull_request_comments",
-        "get_pull_request_reviews"
-      ]
+      "disabled": true
     },
-    "sequential-thinking": {
+    "postgres": {
       "type": "stdio",
       "command": "cmd",
       "args": [
         "/c",
-        "npx -y @modelcontextprotocol/server-sequential-thinking"
+        "npx -y @modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
       ],
-      "env": {},
-      "autoApprove": [
-        "sequentialthinking"
-      ]
+      "env": {}
+    },
+    "docker": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-docker"
+      ],
+      "env": {}
+    },
+    "fetch": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-fetch"
+      ],
+      "env": {}
     },
     "memory": {
       "type": "stdio",
@@ -100,23 +56,16 @@
         "/c",
         "npx -y @modelcontextprotocol/server-memory"
       ],
-      "env": {},
-      "autoApprove": [
-        "create_entities",
-        "add_observations"
-      ]
+      "env": {}
     },
-    "gemini": {
+    "sequential-thinking": {
       "type": "stdio",
       "command": "cmd",
       "args": [
         "/c",
-        "npx -y @modelcontextprotocol/server-google-search"
+        "npx -y @modelcontextprotocol/server-sequential-thinking"
       ],
-      "env": {
-        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}"
-      },
-      "disabled": true
+      "env": {}
     }
   }
 }

@@ -1,20 +1,32 @@
 {
   "mcpServers": {
-    "puppeteer": {
+    "playwright": {
       "type": "stdio",
       "command": "cmd",
       "args": [
         "/c",
-        "npx -y @modelcontextprotocol/server-puppeteer"
+        "npx -y @playwright/mcp@latest"
       ],
       "env": {}
     },
-    "sequential-thinking": {
+    "github": {
       "type": "stdio",
       "command": "cmd",
       "args": [
         "/c",
-        "npx -y @modelcontextprotocol/server-sequential-thinking"
+        "npx -y @modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "postgres": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
       ],
       "env": {}
     },
@@ -27,30 +39,30 @@
       ],
       "env": {}
     },
-    "postgres": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx -y @modelcontextprotocol/server-postgres postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-      ],
-      "env": {}
-    },
-    "github": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx -y @modelcontextprotocol/server-github"
-      ],
-      "env": {}
-    },
     "fetch": {
       "type": "stdio",
       "command": "cmd",
       "args": [
         "/c",
-        "uvx mcp-server-fetch"
+        "npx -y @modelcontextprotocol/server-fetch"
+      ],
+      "env": {}
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-memory"
+      ],
+      "env": {}
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-sequential-thinking"
       ],
       "env": {}
     }

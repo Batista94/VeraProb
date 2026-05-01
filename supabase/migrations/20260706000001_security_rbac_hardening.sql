@@ -17,7 +17,7 @@ SET search_path = public, auth
 AS $$
 BEGIN
   -- FIX-01: JWT guard (prohibits bypass via direct RPC call with valid non-SA JWT)
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';
@@ -77,7 +77,7 @@ SET search_path = public, auth
 AS $$
 BEGIN
   -- FIX-01: JWT guard
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';

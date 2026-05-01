@@ -99,7 +99,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth
 AS $$
 BEGIN
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required' USING ERRCODE = 'insufficient_privilege';
     END IF;
@@ -131,7 +131,7 @@ RETURNS VOID
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth
 AS $$
 BEGIN
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required' USING ERRCODE = 'insufficient_privilege';
     END IF;
@@ -178,10 +178,10 @@ SET search_path = public, auth
 AS $$
 DECLARE
   v_org_id      UUID := gen_random_uuid();
-  v_actor_id    UUID := auth.uid();
+  v_actor_id    UUID := (auth.jwt() ->> 'sub')::uuid;
   v_actor_email TEXT := auth.jwt() ->> 'email';
 BEGIN
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required' USING ERRCODE = 'insufficient_privilege';
     END IF;
@@ -303,7 +303,7 @@ DECLARE
   v_old_max_vehicles  INT;
   v_old_max_contracts INT;
 BEGIN
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required' USING ERRCODE = 'insufficient_privilege';
     END IF;

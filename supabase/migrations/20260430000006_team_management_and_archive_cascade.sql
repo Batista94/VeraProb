@@ -109,7 +109,7 @@ BEGIN
   END IF;
 
   -- Cannot deactivate self
-  IF p_target_user_id = auth.uid() THEN
+  IF p_target_user_id = (auth.jwt() ->> 'sub')::uuid THEN
     RAISE EXCEPTION 'Cannot deactivate yourself' USING ERRCODE = 'P0001';
   END IF;
 

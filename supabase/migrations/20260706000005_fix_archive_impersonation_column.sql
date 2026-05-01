@@ -23,7 +23,7 @@ SET search_path = public, auth
 AS $$
 BEGIN
   -- JWT guard (INV-6)
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';
@@ -89,7 +89,7 @@ BEGIN
   VALUES
     ('ORG_ARCHIVED', 'warning', p_org_id, p_reason, 'HUMAN', 'rpc', 
      jsonb_build_object(
-       'super_admin_id', p_super_admin_id, 
+       'super_admin_id', (auth.jwt() ->> 'sub')::uuid, 
        'reason', p_reason,
        'cascade_count', (SELECT count(*) FROM user_roles WHERE organization_id = p_org_id)
      ));

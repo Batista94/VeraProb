@@ -30,9 +30,9 @@ DECLARE
   v_old_max_contracts INT;
 BEGIN
   -- ── JWT validation ──────────────────────────────────────────────────────────
-  -- auth.uid() IS NULL indicates a service_role call (trusted, bypass allowed).
+  -- (auth.jwt() ->> 'sub') IS NULL indicates a service_role call (trusted, bypass allowed).
   -- When a real SuperAdmin session is present, validate the super_admin claim.
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';

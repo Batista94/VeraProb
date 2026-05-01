@@ -80,7 +80,7 @@ SECURITY DEFINER
 SET search_path TO 'public', 'auth'
 AS $$
 BEGIN
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';
@@ -149,7 +149,7 @@ AS $$
 DECLARE
   v_invitation_id uuid;
 BEGIN
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';
@@ -230,7 +230,7 @@ DECLARE
   v_current_updated_at  timestamptz;
 BEGIN
   -- JWT guard
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';
@@ -380,7 +380,7 @@ DECLARE
   v_org_status text;
 BEGIN
   -- JWT guard
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';
@@ -459,7 +459,7 @@ AS $$
 DECLARE
   v_org_status text;
 BEGIN
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';

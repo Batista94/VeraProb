@@ -79,3 +79,5 @@ devtools_options.yaml
 # Kiro
 .kiro/specs/
 
+# Security Audit (INV-28 — local forensic logs, never commit)
+.veraprob/
