@@ -87,7 +87,7 @@ BEGIN
     lower(trim(p_email)),
     p_role,
     p_token,
-    auth.uid(),
+    (auth.jwt() ->> 'sub')::uuid,
     p_expires_at
   );
 END;

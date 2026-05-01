@@ -3,7 +3,7 @@
 -- ============================================================
 -- REASON:
 --   contractual_service_executions tinha bootstrap antipattern:
---   RLS usava auth.uid() — Org UUID ≠ User UUID com ≥ 2 usuários
+--   RLS usava (auth.jwt() ->> 'sub') — Org UUID ≠ User UUID com ≥ 2 usuários
 --   por tenant → erro 42501 em todo publish B2B.
 --
 -- FIX:
@@ -14,8 +14,8 @@
 --
 -- INVARIANT ENFORCED: INV-10
 --   All RLS tenant isolation policies must use
---   auth.jwt() ->> 'organization_id', never auth.uid().
---   The pattern organization_id = auth.uid() is a bootstrap
+--   auth.jwt() ->> 'organization_id', never (auth.jwt() ->> 'sub').
+--   The pattern organization_id = (auth.jwt() ->> 'sub') is a bootstrap
 --   antipattern that breaks with >= 2 users per organization.
 -- ============================================================
 
@@ -28,7 +28,7 @@ ALTER TABLE public.contractual_service_executions
 ALTER TABLE public.contractual_service_executions ENABLE ROW LEVEL SECURITY;
 
 -- 3. Dropar TODAS as policies existentes na tabela
---    (independente do nome — elimina qualquer policy auth.uid() residual)
+--    (independente do nome — elimina qualquer policy (auth.jwt() ->> 'sub') residual)
 DO $$
 DECLARE
   pol RECORD;

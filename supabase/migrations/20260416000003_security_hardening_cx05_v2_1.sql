@@ -63,7 +63,7 @@ DECLARE
   v_rows        INT;
 BEGIN
   -- INV-1: derive identity from session JWT — never trust caller claims
-  v_caller_uid := auth.uid();
+  v_caller_uid := (auth.jwt() ->> 'sub')::uuid;
   IF v_caller_uid IS NULL THEN
     RAISE EXCEPTION 'insufficient_privilege'
       USING DETAIL = 'Unauthenticated caller cannot update justification status.';

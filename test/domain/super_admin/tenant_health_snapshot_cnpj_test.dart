@@ -54,9 +54,7 @@ void main() {
     });
 
     test('fromJson maps created_at null', () {
-      final snapshot = TenantHealthSnapshot.fromJson(
-        baseJson(createdAt: null),
-      );
+      final snapshot = TenantHealthSnapshot.fromJson(baseJson(createdAt: null));
       expect(snapshot.createdAt, isNull);
     });
 

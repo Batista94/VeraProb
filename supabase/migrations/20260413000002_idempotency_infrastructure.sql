@@ -85,7 +85,7 @@ CREATE POLICY idempotency_keys_select_own
   ON public.idempotency_keys
   FOR SELECT
   USING (
-    user_id = auth.uid()
+    user_id = (auth.jwt() ->> 'sub')::uuid
   );
 
 -- Users can only insert their own keys (status = 'processing' on creation).
@@ -95,7 +95,7 @@ CREATE POLICY idempotency_keys_insert_own
   ON public.idempotency_keys
   FOR INSERT
   WITH CHECK (
-    user_id = auth.uid()
+    user_id = (auth.jwt() ->> 'sub')::uuid
     AND status = 'processing'
   );
 
@@ -105,9 +105,9 @@ DROP POLICY IF EXISTS idempotency_keys_update_own
 CREATE POLICY idempotency_keys_update_own
   ON public.idempotency_keys
   FOR UPDATE
-  USING (user_id = auth.uid())
+  USING (user_id = (auth.jwt() ->> 'sub')::uuid)
   WITH CHECK (
-    user_id = auth.uid()
+    user_id = (auth.jwt() ->> 'sub')::uuid
     AND status IN ('completed', 'error')
   );
 
