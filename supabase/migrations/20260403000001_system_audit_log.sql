@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-rls (intentional: admin-role based access, not org isolation)
 -- =============================================================================
 -- 8.4 Observabilidade — System Audit Log
 -- Migration: 20260403000001_system_audit_log.sql

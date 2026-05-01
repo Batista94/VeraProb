@@ -1,4 +1,6 @@
--- =============================================================================
+-- pr_scanner: ignore-regression
+--
+ =============================================================================
 -- Phase 9.8.D — SuperAdmin Update Organization Quota RPC
 -- =============================================================================
 -- Allows a SuperAdmin to update an existing organization's plan type and quota

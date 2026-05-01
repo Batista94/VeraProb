@@ -2,6 +2,13 @@
   "hooks": [
     {
       "event": "preCommit",
+      "agent": "senior-engineer",
+      "action": "bash scripts/sync_db_types.sh",
+      "blocking": false,
+      "description": "Sincronização de Tipos (Type-Safe Database): Garante que PRs com migrations incluam os tipos Dart atualizados. Bloqueia em main/PR se falhar."
+    },
+    {
+      "event": "preCommit",
       "agent": "lead-reviewer",
       "condition": "git.branch == 'main' || git.hasOpenPR == true",
       "action": "bash scripts/security/pr_full_scanner.sh",
@@ -15,6 +22,13 @@
       "action": "python scripts/security/scan_secrets.py",
       "blocking": true,
       "description": "Scanner Forense de Segredos (INV-28): Detecta chaves, tokens e strings de alta entropia nos arquivos staged. Não exibe segredos reais. Gera log em .veraprob/security_audit.log."
+    },
+    {
+      "event": "preCommit",
+      "agent": "architect",
+      "action": "python scripts/validate_barrel_files.py",
+      "blocking": true,
+      "description": "Validador de Arquivos Barrel (INV-13): Previne dependências circulares e importações desordenadas no core e features."
     },
     {
       "event": "onTestFail",
@@ -32,6 +46,22 @@
       "agent": "architect",
       "action": "mcp:memory/sync_project_state",
       "description": "Sincroniza automaticamente Invariantes e decisões arquiteturais com o Knowledge Graph."
+    },
+    {
+      "event": "postSave",
+      "condition": "file.extension == '.sql' && file.path.includes('supabase/migrations/')",
+      "agent": "senior-engineer",
+      "action": "bash scripts/refresh_schema_cache.sh",
+      "blocking": false,
+      "description": "Sincronização de Cache (INV-15): Recarrega o PostgREST automaticamente ao salvar uma migration."
+    },
+    {
+      "event": "postMerge",
+      "agent": "senior-engineer",
+      "action": "bash scripts/refresh_schema_cache.sh",
+      "blocking": false,
+      "description": "Sincronização de Cache (Post-Merge): Recarrega o PostgREST após atualizações de branch que tragam migrations."
     }
+
   ]
 }

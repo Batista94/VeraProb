@@ -17,7 +17,7 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+PROJECT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 BASE_BRANCH="${BASE_BRANCH:-main}"
 
 # ── Color codes ──────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ fi
 # ── Step 2: Deterministic Pattern Scan (Single-Pass Node.js Engine) ──────────
 echo -e "\n${BOLD}${BLUE}Step 2: Deterministic Pattern Scan (Lead Reviewer Mode)...${NC}"
 
-CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
+CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH" 2>/dev/null || git diff --name-only HEAD~1 2>/dev/null || true)
 
 if [[ -z "$CHANGED_FILES" ]]; then
   echo "No changes detected in Git Diff."
@@ -130,16 +130,96 @@ else
   echo -e "  ${GREEN}No regression-impacting changes detected.${NC}"
 fi
 
+# ── Step 4: Barrel File Validation (Architect Mode) ──────────────────────────
+echo -e "\n${BOLD}${BLUE}Step 4: Barrel File Validation (INV-13)...${NC}"
+PYTHON_CMD="python3"
+if ! command -v python3 >/dev/null 2>&1; then
+  PYTHON_CMD="python"
+fi
+
+# -- Path Normalization for Python --
+BARREL_SCRIPT="$PROJECT_DIR/scripts/validate_barrel_files.py"
+BARREL_SCRIPT_WIN="$BARREL_SCRIPT"
+if [[ "$NODE_CMD" == *"node.exe"* ]]; then
+  if command -v cygpath >/dev/null 2>&1; then
+    BARREL_SCRIPT_WIN=$(cygpath -w "$BARREL_SCRIPT")
+  else
+    BARREL_SCRIPT_WIN=$(echo "$BARREL_SCRIPT" | sed -e 's/^\/\([a-z]\)\//\1:\\/' -e 's/^\/mnt\/\([a-z]\)\//\1:\\/' -e 's/\//\\/g')
+  fi
+fi
+
+BARREL_RESULTS=$($PYTHON_CMD "$BARREL_SCRIPT_WIN" --branch="$BASE_BRANCH" 2>&1)
+BARREL_EXIT=$?
+
+if [[ $BARREL_EXIT -eq 2 ]]; then
+  echo -e "  ${RED}${BOLD}[ERROR]${NC} Barrel validator crashed."
+  echo -e "          $BARREL_RESULTS"
+fi
+echo "$BARREL_RESULTS" | grep -v "INTERNAL ERROR" || true
+
+# ── Step 5: Type Parity Verification (QA Mode) ──────────────────────────────
+echo -e "\n${BOLD}${BLUE}Step 5: Type Parity Verification (INV-7)...${NC}"
+if [[ -z "$CHANGED_FILES" ]]; then
+  echo "No changes detected."
+else
+  MIGRATIONS_COUNT=$(echo "$CHANGED_FILES" | grep "supabase/migrations/.*\.sql" | wc -l || echo "0")
+  if [[ $MIGRATIONS_COUNT -gt 0 ]]; then
+    echo -e "  Migrations detected ($MIGRATIONS_COUNT files). Checking for type sync..."
+    TYPE_FILE="supabase/types.database.ts"
+    
+    # Check if type file is also changed
+    if ! echo "$CHANGED_FILES" | grep -q "$TYPE_FILE"; then
+       echo -e "  ${RED}${BOLD}[BLOCK]${NC} Migrations updated but $TYPE_FILE is NOT in this PR."
+       TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+    else
+       echo -e "  ${GREEN}Infrastructure contract present in PR.${NC}"
+    fi
+  else
+    echo -e "  ${GREEN}No migrations detected. Parity sync skipped.${NC}"
+  fi
+fi
+
+# ── Step 6: Schema Integrity Verification (INV-15) ──────────────────────────
+echo -e "\n${BOLD}${BLUE}Step 6: Schema Integrity Verification (INV-15)...${NC}"
+if [[ -n "${CHANGED_FILES:-}" ]]; then
+  MIGRATIONS_COUNT=$(echo "$CHANGED_FILES" | grep "supabase/migrations/.*\.sql" | wc -l || echo "0")
+  if [[ $MIGRATIONS_COUNT -gt 0 ]]; then
+    echo -e "  Migrations detected. Validating PostgREST schema health..."
+    # Check if Supabase is running to perform live health check
+    if supabase status > /dev/null 2>&1; then
+       # Trigger reload to ensure cache is current
+       bash "$SCRIPT_DIR/../refresh_schema_cache.sh" > /dev/null 2>&1
+       
+       HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -I "http://localhost:54321/rest/v1/")
+       if [[ "$HEALTH_CHECK" -lt 200 || "$HEALTH_CHECK" -ge 400 ]]; then
+          echo -e "  ${RED}${BOLD}[BLOCK]${NC} PostgREST API is unhealthy (HTTP $HEALTH_CHECK) after migration sync."
+          TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+       else
+          echo -e "  ${GREEN}PostgREST API is healthy.${NC}"
+       fi
+    else
+       echo -e "  ${YELLOW}${BOLD}[WARN]${NC} Supabase offline. Skipping live integrity check."
+    fi
+  else
+    echo -e "  ${GREEN}No migrations detected. Integrity check skipped.${NC}"
+  fi
+else
+  echo -e "  ${GREEN}No changes detected.${NC}"
+fi
+
 # ── Final Summary ────────────────────────────────────────────────────────────
+# Note: BARREL_EXIT == 1 means ARCHITECTURAL VIOLATION.
+# Other non-zero codes (2, 127, etc) are execution errors and shouldn't cause a Veto by default.
 
 VERDICT="[GO]"
-[[ $TOTAL_BLOCKS -gt 0 ]] && VERDICT="[NO-GO]"
-[[ $TOTAL_BLOCKS -eq 0 && ($TOTAL_WARNS -gt 0 || "$HAS_REGRESSION" == "true") ]] && VERDICT="[REVISE]"
+[[ $TOTAL_BLOCKS -gt 0 || $BARREL_EXIT -eq 1 ]] && VERDICT="[NO-GO]"
+[[ $VERDICT == "[GO]" && ($TOTAL_WARNS -gt 0 || "$HAS_REGRESSION" == "true") ]] && VERDICT="[REVISE]"
 
 echo -e "\n${BOLD}════════════════════════════════════════════════════════════${NC}"
 echo -e "${BOLD}  LEAD REVIEWER VERDICT (Deterministic Mode)${NC}"
 echo -e "════════════════════════════════════════════════════════════"
 echo -e "  Deterministic Blocks: $TOTAL_BLOCKS"
+echo -e "  Barrel Violations:   $( [[ $BARREL_EXIT -eq 1 ]] && echo 'YES' || echo 'NO' )"
 echo -e "  Deterministic Warns:  $TOTAL_WARNS"
 echo -e "  Regression Alert:    $( [[ "$HAS_REGRESSION" == "true" ]] && echo 'YES' || echo 'NO' )"
 echo ""

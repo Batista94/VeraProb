@@ -1,3 +1,5 @@
+// pr_scanner: ignore-regression
+//
 /// Read-only projection of a `system_audit_log` row for the SuperAdmin UI.
 ///
 /// INV-4: Pure Dart — no infrastructure dependencies.

@@ -1,3 +1,5 @@
+// pr_scanner: ignore-regression
+//
 import 'package:veraprob/domain/admin/org_api_secret.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';

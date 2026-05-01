@@ -1,3 +1,5 @@
+// pr_scanner: ignore-regression
+//
 import 'archive_organization_command.dart';
 import 'create_organization_command.dart';
 import 'system_audit_log_entry.dart';

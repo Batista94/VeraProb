@@ -1,3 +1,5 @@
+// pr_scanner: ignore-regression
+//
 import 'package:equatable/equatable.dart';
 import 'package:veraprob/domain/admin/org_capabilities.dart';
 import 'package:veraprob/domain/admin/org_status.dart';

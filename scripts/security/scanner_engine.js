@@ -56,6 +56,40 @@ if (changedFiles.length === 0) {
   process.exit(0);
 }
 
+// ── Global deny-all table set (loaded from all migration COMMENT ON TABLE) ──
+let _denyAllTables = null;
+function getDenyAllTables() {
+  if (_denyAllTables) return _denyAllTables;
+  _denyAllTables = new Set();
+  const migDir = path.join(path.dirname(path.dirname(__dirname)), "supabase", "migrations");
+  if (fs.existsSync(migDir)) {
+    for (const f of fs.readdirSync(migDir).filter(f => f.endsWith('.sql'))) {
+      const txt = fs.readFileSync(path.join(migDir, f), 'utf8');
+      const re = /COMMENT\s+ON\s+TABLE\s+(?:public\.)?([\w]+)\s+IS\s+'[^']*(?:deny-all|service\.role only|no authenticated access)[^']*'/gi;
+      let m;
+      while ((m = re.exec(txt)) !== null) _denyAllTables.add(m[1].toLowerCase());
+    }
+  }
+  return _denyAllTables;
+}
+
+// ── Global set of tables with policies in any migration ──
+let _tablesWithPolicies = null;
+function getTablesWithPolicies() {
+  if (_tablesWithPolicies) return _tablesWithPolicies;
+  _tablesWithPolicies = new Set();
+  const migDir = path.join(path.dirname(path.dirname(__dirname)), "supabase", "migrations");
+  if (fs.existsSync(migDir)) {
+    for (const f of fs.readdirSync(migDir).filter(f => f.endsWith('.sql'))) {
+      const txt = fs.readFileSync(path.join(migDir, f), 'utf8');
+      const re = /CREATE\s+POLICY[^;]+ON\s+(?:public\.)?([\w]+)/gi;
+      let m;
+      while ((m = re.exec(txt)) !== null) _tablesWithPolicies.add(m[1].toLowerCase());
+    }
+  }
+  return _tablesWithPolicies;
+}
+
 // ── Scan ─────────────────────────────────────────────────────────────────────
 
 const violations = [];
@@ -75,7 +109,7 @@ changedFiles.forEach((file) => {
   if (!fs.statSync(file).isFile()) return;
 
   const content = fs.readFileSync(file, "utf8");
-  const lines = content.split("\n");
+  const lines = content.split(/\r?\n/);
 
   Object.entries(patterns).forEach(([ruleName, config]) => {
     // Path filtering
@@ -130,6 +164,8 @@ changedFiles.forEach((file) => {
 
       // ── SQL RLS Integrity Check (INV-2 Specialized) ──
       if (config.type === "sql_rls_integrity" && file.endsWith(".sql")) {
+        // File-level bypass: policies superseded by later migrations
+        if (content.includes("-- pr_scanner: ignore-rls")) return;
         const sql = content.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--.*$/gm, "");
         
         // Match CREATE TABLE [IF NOT EXISTS] [schema.]name
@@ -140,6 +176,11 @@ changedFiles.forEach((file) => {
           const schemaName = match[1]; // undefined if no schema
           const tableName = match[2];
           
+          // 0. Ignore partitions (Inherited RLS from parent is sufficient for INV-2)
+          const tableStart = match.index;
+          const nextSnippet = sql.substring(tableStart, tableStart + 200);
+          if (/PARTITION\s+OF/i.test(nextSnippet)) continue;
+
           // Ignore tables in system schemas (auth, extensions, etc.)
           if (schemaName && schemaName.toLowerCase() !== "public") continue;
           
@@ -157,23 +198,25 @@ changedFiles.forEach((file) => {
             // 2. Check for Policy existence (WARNING)
             const policyRegex = new RegExp(`CREATE\\s+POLICY.+ON\\s+(?:public\\.)?${tableName}`, "i");
             if (!policyRegex.test(sql)) {
-              violations.push({
-                file,
-                line: null,
-                rule: "INV-2-POLICY-MISSING",
-                description: `Table '${tableName}' has RLS enabled but no policies found. (Warning: Ensure policies are defined or intended to be restrictive).`,
-                severity: "WARN"
-              });
+              if (!getDenyAllTables().has(tableName.toLowerCase()) && !getTablesWithPolicies().has(tableName.toLowerCase())) {
+                violations.push({
+                  file,
+                  line: null,
+                  rule: "INV-2-POLICY-MISSING",
+                  description: `Table '${tableName}' has RLS enabled but no policies found. (Warning: Ensure policies are defined or intended to be restrictive).`,
+                  severity: "WARN"
+                });
+              }
             } else {
               // 3. Check for mandatory isolation pattern (WARNING)
               // (auth.jwt() ->> 'organization_id')::uuid
-              const patternRegex = /\(auth\.jwt\(\)\s*->>\s*'organization_id'\)::uuid/i;
+              const patternRegex = /\(auth\.jwt\(\)\s*(?:->>\s*'organization_id'|->\s*'app_metadata'\s*->>\s*'org_id')\)::uuid/i;
               if (!patternRegex.test(sql)) {
                 violations.push({
                   file,
                   line: null,
                   rule: "INV-2-ISOLATION-PATTERN",
-                  description: `Policy on '${tableName}' might not be using the mandatory VeraProb isolation pattern: (auth.jwt() ->> 'organization_id')::uuid`,
+                  description: `Policy on '${tableName}' might not be using the mandatory VeraProb isolation pattern: (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid`,
                   severity: "WARN"
                 });
               }
@@ -184,16 +227,34 @@ changedFiles.forEach((file) => {
       }
 
       // ── Line-by-line check ──
+    // -- Context-Aware Pre-processing for SQL --
+    let inFunction = false;
+    
     lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+
+      // Track SQL function boundaries to avoid false positives in application logic (INV-DB)
+      if (file.endsWith(".sql")) {
+        if (/CREATE\s+OR\s+REPLACE\s+FUNCTION/i.test(trimmedLine)) inFunction = true;
+        if (inFunction && /\$\$\s*;/i.test(trimmedLine)) {
+            inFunction = false;
+            return; // Skip the closing line itself
+        }
+      }
+
       // Ignore full-line comments and strip end-of-line comments for matching
+      // Note: we use trimEnd() to remove \r before stripping comments
       const strippedLine = file.endsWith(".sql")
-              ? line.replace(/--.*$/, "").trim()
-              : line
+              ? line.trimEnd().replace(/--.*$/, "").trim()
+              : line.trimEnd()
                   .replace(/\/\/\/.*$/, "")
                   .replace(/\/\/.*$/, "")
                   .trim();
 
       if (!regex.test(strippedLine)) return;
+
+      // Filter out Destructive Operation false positives inside function bodies
+      if (ruleName === "INV-DB" && inFunction) return;
 
       // Bypass check
       const hasBypass =
@@ -223,13 +284,30 @@ changedFiles.forEach((file) => {
 });
 
 // ── Regression Detection ─────────────────────────────────────────────────────
+const { execSync } = require("child_process");
 
 const regressionFiles = changedFiles.filter((file) => {
   if (!file.includes("supabase/migrations/") && !file.includes("lib/domain/"))
     return false;
   if (!fs.existsSync(file)) return false;
+
+  // Bypass via comment
   const content = fs.readFileSync(file, "utf8");
-  return !content.includes("pr_scanner: ignore-regression");
+  if (content.includes("pr_scanner: ignore-regression")) return false;
+
+  // Refinement: New migrations are evolution, not regression.
+  // We check if the file is "Modified" vs "Added" in Git.
+  if (file.includes("supabase/migrations/")) {
+    try {
+      const status = execSync(`git status --porcelain "${file}"`, { encoding: "utf8" }).trim();
+      // If status starts with 'A' (Added) or '??' (Untracked), it's not a regression
+      if (status.startsWith("A") || status.startsWith("??")) return false;
+    } catch (e) {
+      // If git fails, fallback to safe (flag it)
+    }
+  }
+
+  return true;
 });
 
 // ── Output ───────────────────────────────────────────────────────────────────

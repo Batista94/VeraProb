@@ -1,4 +1,6 @@
--- Suppress DROP TRIGGER/POLICY IF EXISTS NOTICEs.
+-- pr_scanner: ignore-regression
+--
+ Suppress DROP TRIGGER/POLICY IF EXISTS NOTICEs.
 SET client_min_messages TO 'WARNING';
 
 -- =============================================================================

@@ -38,16 +38,18 @@
         "/c",
         "npx -y @modelcontextprotocol/server-docker"
       ],
-      "env": {}
+      "env": {},
+      "disabled": true
     },
     "fetch": {
       "type": "stdio",
       "command": "cmd",
       "args": [
         "/c",
-        "npx -y @modelcontextprotocol/server-fetch"
+        "npx -y @anthropic-ai/mcp-fetch"
       ],
-      "env": {}
+      "env": {},
+      "disabled": true
     },
     "memory": {
       "type": "stdio",
@@ -65,7 +67,10 @@
         "/c",
         "npx -y @modelcontextprotocol/server-sequential-thinking"
       ],
-      "env": {}
+      "env": {},
+      "autoApprove": [
+        "sequentialthinking"
+      ]
     }
   }
 }

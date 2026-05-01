@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+import os
+import re
+import sys
+import subprocess
+import argparse
+
+# ── Configuration ────────────────────────────────────────────────────────────
+LIB_DIR = "lib"
+IGNORE_PATTERNS = [".g.dart", ".freezed.dart"]
+EXPORT_PATTERN = re.compile(r"export\s+['\"](.+?)['\"];")
+IMPORT_PATTERN = re.compile(r"import\s+['\"](.+?)['\"];")
+PROVIDER_PATTERN = re.compile(r"@riverpod|Provider|NotifierProvider|StateNotifierProvider")
+
+# ── Color codes ──────────────────────────────────────────────────────────────
+RED = '\033[0;31m'
+YELLOW = '\033[1;33m'
+GREEN = '\033[0;32m'
+BLUE = '\033[0;34m'
+BOLD = '\033[1m'
+NC = '\033[0m'
+
+def get_staged_files():
+    try:
+        output = subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True)
+        files = [f.replace("\\", "/").strip() for f in output.splitlines()]
+        files = [f for f in files if f.startswith(LIB_DIR) and f.endswith(".dart")]
+        return [f for f in files if not any(p in f for p in IGNORE_PATTERNS)]
+    except Exception as e:
+        print(f"{YELLOW}Warning: Failed to get staged files via git: {e}{NC}")
+        return []
+
+def resolve_path(current_file, target_path):
+    current_file = current_file.replace("\\", "/")
+    if target_path.startswith("package:veraprob/"):
+        path = os.path.join(LIB_DIR, target_path.replace("package:veraprob/", ""))
+        return path.replace("\\", "/")
+    if target_path.startswith("dart:"):
+        return None
+    if target_path.startswith("package:"):
+        return None
+    
+    # Relative path
+    dirname = os.path.dirname(current_file)
+    resolved = os.path.normpath(os.path.join(dirname, target_path))
+    return resolved.replace("\\", "/")
+
+def build_graph(files_to_scan):
+    export_graph = {}
+    import_map = {}
+    provider_map = {}
+
+    for file_path in files_to_scan:
+        file_path = file_path.replace("\\", "/")
+        if not os.path.exists(file_path):
+            continue
+            
+        try:
+            with open(file_path, "rb") as f:
+                raw_content = f.read()
+                # Robust decoding sequence
+                for encoding in ["utf-8-sig", "utf-8", "latin-1"]:
+                    try:
+                        content = raw_content.decode(encoding)
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                else:
+                    content = raw_content.decode("utf-8", errors="ignore")
+        except Exception:
+            continue
+            
+        # Exports
+        exports = EXPORT_PATTERN.findall(content)
+        export_graph[file_path] = []
+        for exp in exports:
+            resolved = resolve_path(file_path, exp)
+            if resolved:
+                export_graph[file_path].append(resolved)
+        
+        # Imports
+        imports = IMPORT_PATTERN.findall(content)
+        import_map[file_path] = []
+        for imp in imports:
+            resolved = resolve_path(file_path, imp)
+            if resolved:
+                import_map[file_path].append(resolved)
+        
+        # Providers
+        if PROVIDER_PATTERN.search(content):
+            provider_map[file_path] = True
+                
+    return export_graph, import_map, provider_map
+
+def find_cycle(graph):
+    visited = set()
+    recursion_stack = []
+    
+    def visit(node):
+        if node in recursion_stack:
+            idx = recursion_stack.index(node)
+            return recursion_stack[idx:] + [node]
+        if node in visited:
+            return None
+            
+        visited.add(node)
+        recursion_stack.append(node)
+        
+        for neighbor in graph.get(node, []):
+            res = visit(neighbor)
+            if res: return res
+            
+        recursion_stack.pop()
+        return None
+
+    # Sort nodes to ensure deterministic behavior
+    for node in sorted(graph.keys()):
+        cycle = visit(node)
+        if cycle: return cycle
+    return None
+
+def check_internal_barrel_import(file_path, imports):
+    # Rule: features/auth/domain/x.dart cannot import features/auth/auth.dart
+    parts = file_path.replace("\\", "/").split("/")
+    if len(parts) > 3 and parts[0] == "lib" and parts[1] == "features":
+        feature_name = parts[2]
+        barrel_file = f"lib/features/{feature_name}/{feature_name}.dart"
+        
+        # Don't check the barrel file itself
+        if file_path == barrel_file:
+            return None
+            
+        for imp in imports:
+            if imp == barrel_file:
+                return barrel_file
+    return None
+
+def main():
+    # Fix for Windows console encoding
+    try:
+        if sys.stdout.encoding != 'utf-8':
+            import io
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    except Exception:
+        pass
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--branch", default="dev")
+    args = parser.parse_args()
+    
+    # is_strict is true only on main/CI
+    is_strict = args.branch == "main" or os.getenv("GITHUB_ACTIONS") == "true"
+    
+    try:
+        staged_files = get_staged_files()
+        if not staged_files:
+            # Silent success if no files to check
+            sys.exit(0)
+            
+        export_graph, import_map, provider_map = build_graph(staged_files)
+        
+        violations = []
+        warnings = []
+        
+        # 1. Detect Cycles in Exports
+        cycle = find_cycle(export_graph)
+        if cycle:
+            graph_str = " -> ".join(cycle)
+            violations.append(f"[VETO ARQUITETURAL - INV-13]: Dependência circular detectada em arquivos barrel.\n   Grafo: {graph_str}")
+
+        # 2. Veto Internal Barrel Import
+        for file_path, imports in import_map.items():
+            bad_barrel = check_internal_barrel_import(file_path, imports)
+            if bad_barrel:
+                violations.append(f"[VETO ARQUITETURAL - INV-13]: Importação circular de barrel interno.\n   Arquivo: {file_path} importa seu próprio barrel {bad_barrel}")
+
+        # 3. Riverpod Provider Isolation (INV-11)
+        for barrel, exports in export_graph.items():
+            providers_exported = [e for e in exports if provider_map.get(e)]
+            if len(providers_exported) > 1:
+                for p1 in providers_exported:
+                    for p2 in providers_exported:
+                        if p1 == p2: continue
+                        if p2 in import_map.get(p1, []):
+                            warnings.append(f"[INV-11]: Possível circularidade de Providers no barrel {barrel}.\n   {p1} importa {p2}, ambos exportados pelo mesmo barrel.")
+
+        # Output Results
+        if violations:
+            for v in violations:
+                print(f"{RED}{BOLD}❌ {v}{NC}")
+            if is_strict:
+                sys.exit(1) # Hard failure in strict mode
+            else:
+                print(f"{YELLOW}Aviso: Bloqueio ignorado em branch de desenvolvimento.{NC}")
+                
+        if warnings:
+            for w in warnings:
+                print(f"{YELLOW}{BOLD}⚠️ {w}{NC}")
+                
+        if not violations and not warnings:
+            print(f"{GREEN}✔ Estrutura de exportação limpa e sem ciclos.{NC}")
+            
+        sys.exit(0)
+    except Exception as e:
+        # Internal script error should NOT cause a Veto by default, but should be visible
+        print(f"{RED}{BOLD}[INTERNAL ERROR] Barrel Validator failed: {e}{NC}")
+        # Return 2 to distinguish from "Violations Found (1)"
+        sys.exit(2)
+
+if __name__ == "__main__":
+    main()

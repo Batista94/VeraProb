@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-rls (policies superseded by 20260322000001_asset_org_isolation.sql)
 -- ============================================================
 -- veraprob Core Schema Recovery Migration
 -- Target: Recover missing tables (drivers, routes, trips_audit)

@@ -173,9 +173,12 @@ FROM public.execution_states es
 WHERE est.execution_state_id = es.id
   AND est.organization_id IS NULL;
 
--- D.3 Make NOT NULL after backfill
+-- D.3 Non-blocking constraint after backfill
 ALTER TABLE public.execution_state_transitions
-  ALTER COLUMN organization_id SET NOT NULL;
+  ADD CONSTRAINT est_organization_id_check
+  CHECK (organization_id IS NOT NULL) NOT VALID;
+
+ALTER TABLE public.execution_state_transitions VALIDATE CONSTRAINT est_organization_id_check;
 
 -- D.4 Index for RLS performance
 CREATE INDEX IF NOT EXISTS idx_est_transitions_org_id

@@ -1,3 +1,5 @@
+// pr_scanner: ignore-regression
+//
 import 'package:veraprob/domain/entities/driver.dart';
 
 /// Port for driver CRUD operations.

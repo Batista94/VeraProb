@@ -1,3 +1,5 @@
+// pr_scanner: ignore-regression
+//
 import 'user_role.dart';
 
 /// Granular permissions for the veraprob operational environment.

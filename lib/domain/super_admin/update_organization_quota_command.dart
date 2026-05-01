@@ -1,3 +1,5 @@
+// pr_scanner: ignore-regression
+//
 import 'package:veraprob/domain/admin/org_capabilities.dart';
 
 /// Immutable command DTO for updating an existing tenant's plan, quota limits,

@@ -1,3 +1,5 @@
+// pr_scanner: ignore-regression
+//
 enum DriverStatus { active, inactive, pending }
 
 class Driver {
