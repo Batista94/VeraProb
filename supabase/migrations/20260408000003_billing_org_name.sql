@@ -1,6 +1,6 @@
 -- pr_scanner: ignore-regression
 --
- =============================================================================
+-- =============================================================================
 -- Phase 9 — tenant_billing_events: add organization_name for human traceability
 -- =============================================================================
 -- Adds organization_name TEXT so the billing table is human-readable without

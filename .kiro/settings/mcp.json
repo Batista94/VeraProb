@@ -32,24 +32,22 @@
       "env": {}
     },
     "docker": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx -y @modelcontextprotocol/server-docker"
-      ],
-      "env": {},
-      "disabled": true
+    "command": "uvx",
+    "args": [
+      "mcp-server-docker"
+    ],
+    "env": {},
+    "disabled": false,
+    "autoApprove": []
     },
     "fetch": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx -y @anthropic-ai/mcp-fetch"
-      ],
-      "env": {},
-      "disabled": true
+        "command": "uvx",
+        "args": [
+          "mcp-server-fetch"
+        ],
+        "env": {},
+        "disabled": false,
+        "autoApprove": []
     },
     "memory": {
       "type": "stdio",
