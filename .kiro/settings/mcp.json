@@ -20,15 +20,24 @@
     },
     "supabase": {
       "type": "stdio",
-      "command": "cmd",
-      "args": [
-        "/c",
-        "set maptiler_key= && set environment= && set service_role_key= && set google_api_key= && set GOOGLE_API_KEY= && set github_personal_access_token= && set GITHUB_PERSONAL_ACCESS_TOKEN= && set supabase_key= && set SUPABASE_KEY= && set supabase_anon_key= && set SUPABASE_ANON_KEY= && supabase-mcp-server"
-      ],
+      "command": "C:\\Users\\wes_b\\.local\\bin\\supabase-mcp-server.exe",
+      "args": [],
       "env": {
-        "SUPABASE_URL": "${SUPABASE_URL}",
-        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
-      }
+        "SUPABASE_PROJECT_REF": "127.0.0.1:54321",
+        "SUPABASE_DB_PASSWORD": "postgres",
+        "SUPABASE_REGION": "sa-east-1"
+      },
+      "autoApprove": [
+        "get_table_schema",
+        "retrieve_logs",
+        "get_schemas",
+        "retrieve_migrations",
+        "execute_postgresql",
+        "get_tables",
+        "get_management_api_spec",
+        "get_auth_admin_methods_spec"
+      ],
+      "disabled": true
     },
     "github": {
       "type": "stdio",
@@ -88,7 +97,11 @@
         "/c",
         "npx -y @modelcontextprotocol/server-memory"
       ],
-      "env": {}
+      "env": {},
+      "autoApprove": [
+        "create_entities",
+        "add_observations"
+      ]
     },
     "gemini": {
       "type": "stdio",
