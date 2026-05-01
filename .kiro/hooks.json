@@ -61,6 +61,13 @@
       "action": "bash scripts/refresh_schema_cache.sh",
       "blocking": false,
       "description": "Sincronização de Cache (Post-Merge): Recarrega o PostgREST após atualizações de branch que tragam migrations."
+    },
+    {
+      "event": "preToolUse",
+      "agent": "*",
+      "action": "bash .kiro/scripts/pre-tool-use.sh",
+      "blocking": true,
+      "description": "Token Guard (INV-40): Bloqueia ferramentas caras/redundantes e acessos proibidos para economizar 40-60% de tokens."
     }
 
   ]
