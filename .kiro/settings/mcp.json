@@ -16,7 +16,10 @@
         "/c",
         "npx -y @playwright/mcp@latest"
       ],
-      "env": {}
+      "env": {},
+      "autoApprove": [
+        "browser_wait_for"
+      ]
     },
     "supabase": {
       "type": "stdio",

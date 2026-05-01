@@ -5,5 +5,8 @@
   "compilerOptions": {
     "allowJs": true,
     "lib": ["deno.window", "deno.ns"]
+  },
+  "imports": {
+    "fast-check": "npm:fast-check@3.22.0"
   }
 }

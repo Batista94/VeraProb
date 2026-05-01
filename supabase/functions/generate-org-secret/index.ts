@@ -19,6 +19,8 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handleWithSecurity, type SecurityContext } from "../shared/handle_with_security.ts";
+import { validateTenantId } from "../shared/tenant_id_validator.ts";
+import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
 
 Deno.serve(async (req) => {
   return await handleWithSecurity(req, "generate_org_secret", async (ctx: SecurityContext, supabase) => {
@@ -33,27 +35,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── 2. Verify organization exists and is not DELETED ─────────────────
-    const { data: org, error: orgError } = await supabase
-      .from("organizations")
-      .select("id, name, status")
-      .eq("id", organizationId)
-      .single();
-
-    if (orgError || !org) {
-      // INV-26: Error Parity — same 404 for not found and wrong org
-      return new Response(
-        JSON.stringify({ error: "Not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } },
-      );
+    // ── 2. Validate Tenant_ID (UUID v4 format + existence) ──────────────
+    // INV-26: Invalid UUIDs return sovereigntyErrorResponse() without DB query.
+    // Valid UUIDs are checked against the organizations table.
+    const tenantResult = await validateTenantId(organizationId, supabase);
+    if (!tenantResult.valid) {
+      return sovereigntyErrorResponse();
     }
+    const org = tenantResult.org;
 
     // INV-22: ARCHIVED orgs cannot generate new secrets (INV-26: same 404 for parity)
-    if (org.status === "DELETED" || org.status === "ARCHIVED") {
-      return new Response(
-        JSON.stringify({ error: "Not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } },
-      );
+    if (org.status === "ARCHIVED") {
+      return sovereigntyErrorResponse();
     }
 
     // ── 3. Generate 256-bit cryptographic secret ─────────────────────────
@@ -144,5 +137,5 @@ Deno.serve(async (req) => {
         headers: { "Content-Type": "application/json" },
       },
     );
-  }, true, true);
+  }, true, true, true);
 });

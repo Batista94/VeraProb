@@ -21,6 +21,8 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handleWithSecurity, type SecurityContext } from "../shared/handle_with_security.ts";
+import { validateTenantId } from "../shared/tenant_id_validator.ts";
+import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
 
 const SESSION_DURATION_MINUTES = 30;
 
@@ -51,19 +53,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── 2. Verify target org exists and is operational ───────────────────
-    const { data: org, error: orgError } = await supabase
-      .from("organizations")
-      .select("id, name, status")
-      .eq("id", target_org_id)
-      .single();
+    // ── 2. Validate target org (UUID v4 format + existence) ─────────────
+    // INV-26: Invalid UUIDs return sovereigntyErrorResponse() without DB query.
+    // Valid UUIDs are checked against the organizations table.
+    const tenantResult = await validateTenantId(target_org_id, supabase);
+    if (!tenantResult.valid) {
+      return sovereigntyErrorResponse();
+    }
+    const org = tenantResult.org;
 
-    // INV-26: Error Parity — same 404 for not found, wrong org, deleted, and archived (INV-22)
-    if (orgError || !org || ["DELETED", "ARCHIVED"].includes(org.status)) {
-      return new Response(
-        JSON.stringify({ error: "Not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } },
-      );
+    // INV-22/INV-26: ARCHIVED orgs cannot be impersonated (same 404 for parity)
+    if (org.status === "ARCHIVED") {
+      return sovereigntyErrorResponse();
     }
 
     // ── 3. Extract impersonator ID from JWT ──────────────────────────────
@@ -146,5 +147,5 @@ Deno.serve(async (req) => {
         headers: { "Content-Type": "application/json" },
       },
     );
-  }, true, true);
+  }, true, true, true);
 });
