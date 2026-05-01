@@ -8,7 +8,7 @@
 #   make help
 # =============================================================================
 
-.PHONY: help setup run scan-secrets test-security pr-scan load-tokens
+.PHONY: help setup run scan-secrets test-security pr-scan load-tokens index-advisor
 
 help: ## Mostra este menu de ajuda
 	@echo "VeraProb — Comandos Disponíveis:"
@@ -40,6 +40,9 @@ pr-scan: ## [Lead Reviewer] Executa o scanner determinístico completo de PR
 
 # ── QA & Performance ──────────────────────────────────────────────────────────
 
+index-advisor: ## [INV-12] Analisa queries staged para Seq Scans e índices faltantes
+	python scripts/index_advisor.py
+
 load-tokens: ## Gera tokens JWT para testes de estresse (K6)
 	node scripts/qa/generate_load_test_tokens.mjs
 
@@ -51,4 +54,4 @@ chaos-test: ## Executa a suite de testes de caos (resiliência)
 
 # ── Atalhos ───────────────────────────────────────────────────────────────────
 
-check: scan-secrets pr-scan ## Roda todas as verificações de segurança locais
+check: scan-secrets pr-scan index-advisor ## Roda todas as verificações de segurança locais

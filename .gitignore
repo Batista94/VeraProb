@@ -81,3 +81,6 @@ devtools_options.yaml
 
 # Security Audit (INV-28 — local forensic logs, never commit)
 .veraprob/
+
+# Performance Guardian (INV-12 — query plan cache)
+.index_advisor_cache.json

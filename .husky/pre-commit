@@ -8,3 +8,7 @@ else
   echo ">>> [FEATURE BRANCH: $BRANCH] Running Fast Pattern Scanner..."
   FAST_SCAN=1 bash scripts/security/pr_full_scanner.sh
 fi
+
+# ── INV-12: Performance Guardian (Index Advisor) ─────────────────────────────
+echo ">>> Running Index Advisor (INV-12)..."
+python scripts/index_advisor.py
