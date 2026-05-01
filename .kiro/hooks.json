@@ -1,29 +1,23 @@
 {
   "hooks": [
     {
-      "event": "onFileSave",
-      "agent": "lead-reviewer",
-      "action": "skill://forensic-scanner/fast-scan",
-      "condition": "file.extension == 'dart'",
-      "description": "Validação instantânea de Invariantes Estáticas ao salvar."
-    },
-    {
       "event": "preCommit",
       "agent": "lead-reviewer",
+      "condition": "git.branch == 'main' || git.hasOpenPR == true",
       "action": "bash scripts/pr_full_scanner.sh",
       "blocking": true,
-      "description": "Veto Forense obrigatório para branches protegidas e PRs."
+      "description": "Veto Forense (Main/PR): O scanner só bloqueia a integração final. Branches de dev têm fluxo livre."
     },
     {
       "event": "onTestFail",
       "agent": "senior-engineer",
-      "description": "Auto-correção imediata após falha de TDD."
+      "description": "Auxílio em modo TDD: Sugere correções apenas quando o teste falha explicitamente."
     },
     {
       "event": "onTestRun",
       "agent": "qa-security",
       "action": "skill://iot-chaos-simulator/auto-suggest",
-      "description": "Sugere ou ativa o simulador de caos para testes de resiliência IoT."
+      "description": "Sugere testes de resiliência em cenários críticos de telemetria."
     },
     {
       "event": "onMissionComplete",
