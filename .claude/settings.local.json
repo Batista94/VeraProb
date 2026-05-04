@@ -100,5 +100,9 @@
     "supabase",
     "github",
     "fetch"
+  ],
+  "enabledMcpjsonServers": [
+    "playwright",
+    "postgres"
   ]
 }

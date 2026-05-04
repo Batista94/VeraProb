@@ -20,7 +20,7 @@ class MockMutatorService implements OperationalControlService {
   Future<TripEvent> resolveAlert(String tripId) async {
     callCount++;
     if (shouldThrowError) {
-      throw DomainException('Mock Runtime Crash during Mutation');
+      throw const DomainException('Mock Runtime Crash during Mutation');
     }
     return _dummyEvent(tripId);
   }
@@ -28,7 +28,7 @@ class MockMutatorService implements OperationalControlService {
   @override
   Future<void> updateContract(String contractId, int newValueCents) async {
     callCount++;
-    if (shouldThrowError) throw DomainException('Crash');
+    if (shouldThrowError) throw const DomainException('Crash');
   }
 
   @override
@@ -39,7 +39,7 @@ class MockMutatorService implements OperationalControlService {
     String? notes,
   }) async {
     callCount++;
-    if (shouldThrowError) throw DomainException('Crash');
+    if (shouldThrowError) throw const DomainException('Crash');
     return _dummyEvent(tripId);
   }
 
@@ -50,7 +50,7 @@ class MockMutatorService implements OperationalControlService {
     String? reason,
   }) async {
     callCount++;
-    if (shouldThrowError) throw DomainException('Crash');
+    if (shouldThrowError) throw const DomainException('Crash');
     return _dummyEvent(tripId);
   }
 

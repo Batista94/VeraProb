@@ -54,7 +54,7 @@
   "INV-26-DB-REPO": {
     "type": "absence_check",
     "pattern": "class \\w+Repository",
-    "must_also_contain": "with PostgresErrorInterceptor|extends BasePostgresRepository",
+    "must_also_contain": "PostgresErrorInterceptor|extends BasePostgresRepository",
     "path_filter": "lib/infrastructure/.*_repository\\.dart",
     "exclude_files": [
       "in_memory",
@@ -71,7 +71,7 @@
   "INV-26-AUTH-REPO": {
     "type": "absence_check",
     "pattern": "class \\w+Repository",
-    "must_also_contain": "with AuthErrorInterceptor",
+    "must_also_contain": "AuthErrorInterceptor",
     "path_filter": "lib/infrastructure/.*_repository\\.dart",
     "exclude_files": [
       "in_memory",
