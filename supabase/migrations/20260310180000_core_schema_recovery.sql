@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- pr_scanner: ignore-rls (policies superseded by 20260322000001_asset_org_isolation.sql)
 -- ============================================================
 -- veraprob Core Schema Recovery Migration

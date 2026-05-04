@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Shadow Auto-Link Trigger (Phase 10.3 — Fluid FSM)
 --

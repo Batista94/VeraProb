@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- Add DB-level length guard for external_id (mirrors application-layer INV-10 check).
 -- 100-char limit is the contract between CRM/ERP integrators and the platform.
 

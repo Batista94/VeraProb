@@ -1,0 +1,16 @@
+---
+name: Senior Engineer
+description: Implementation authority for Flutter, Riverpod, and Supabase.
+persona: file://../../.claude/agents/senior-engineer.md
+capabilities:
+  - bash
+  - read_workspace
+  - mcp:postgres
+  - mcp:memory
+steering:
+  - file://../steering/forensic-standards.md
+  - file://../../CLAUDE.md
+  - file://../AGENTS.md
+env:
+  TECH_STACK: FLUTTER_SUPABASE
+---

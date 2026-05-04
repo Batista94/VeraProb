@@ -1,0 +1,18 @@
+---
+name: QA & Security
+description: Protector of tenant data and ledger integrity.
+persona: file://../../.claude/agents/qa-security.md
+capabilities:
+  - bash
+  - read_workspace
+  - mcp:postgres
+  - mcp:playwright
+  - mcp:docker
+steering:
+  - file://../steering/forensic-standards.md
+  - file://../../CLAUDE.md
+  - file://../AGENTS.md
+env:
+  SECURITY_LEVEL: HIGH
+  RLS_AUDIT: "1"
+---

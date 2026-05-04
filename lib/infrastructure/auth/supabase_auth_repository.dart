@@ -6,6 +6,7 @@ import 'package:veraprob/domain/auth/auth_failure_exception.dart';
 import 'package:veraprob/domain/auth/auth_user.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/infrastructure/auth/supabase_user_mapper.dart';
+import 'package:veraprob/infrastructure/shared/auth_error_interceptor.dart';
 
 /// Supabase implementation of [IAuthRepository].
 ///
@@ -19,7 +20,9 @@ import 'package:veraprob/infrastructure/auth/supabase_user_mapper.dart';
 ///   connection error.
 /// - [signOut] uses [sb.SignOutScope.global] to invalidate tokens on
 ///   all devices (session replay prevention).
-class SupabaseAuthRepository implements IAuthRepository {
+class SupabaseAuthRepository
+    with AuthErrorInterceptor
+    implements IAuthRepository {
   final sb.SupabaseClient _client;
 
   /// INV-30: SupabaseClient must be injected — no fallback to singleton.
@@ -53,7 +56,7 @@ class SupabaseAuthRepository implements IAuthRepository {
         );
       }
       if (e is sb.AuthException) {
-        throw _mapAuthException(e);
+        throw mapAuthExceptionToDomain(e);
       }
       rethrow;
     }
@@ -77,7 +80,7 @@ class SupabaseAuthRepository implements IAuthRepository {
         );
       }
       if (e is sb.AuthException) {
-        throw _mapAuthException(e);
+        throw mapAuthExceptionToDomain(e);
       }
       rethrow;
     }
@@ -195,7 +198,7 @@ class SupabaseAuthRepository implements IAuthRepository {
         );
       }
       if (e is sb.AuthException) {
-        throw _mapAuthException(e);
+        throw mapAuthExceptionToDomain(e);
       }
       rethrow;
     }
@@ -214,33 +217,11 @@ class SupabaseAuthRepository implements IAuthRepository {
         );
       }
       if (e is sb.AuthException) {
-        throw _mapAuthException(e);
+        throw mapAuthExceptionToDomain(e);
       }
       rethrow;
     }
   }
 
   // ── Error Mapping ──────────────────────────────────────────────────────
-
-  /// Maps Supabase auth error codes to domain-level messages.
-  ///
-  /// Security: `invalid_credentials` and `user_not_found` return the SAME
-  /// message to prevent user enumeration attacks.
-  AuthFailureException _mapAuthException(sb.AuthException e) {
-    return switch (e.code) {
-      'invalid_credentials' ||
-      'user_not_found' => const AuthFailureException('Credenciais inválidas.'),
-      'email_not_confirmed' => const AuthFailureException(
-        'E-mail pendente de confirmação.',
-      ),
-      'weak_password' => const AuthFailureException(
-        'A senha não atende os requisitos de segurança.',
-      ),
-      'rate_limit_exceeded' ||
-      'over_request_rate_limit' => const AuthFailureException(
-        'Muitas tentativas. Tente novamente mais tarde.',
-      ),
-      _ => const AuthFailureException('Erro de autenticação. Tente novamente.'),
-    };
-  }
 }

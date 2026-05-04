@@ -106,8 +106,8 @@ jobs:
 
       - name: VeraProb Forensic Scan
         run: |
-          chmod +x scripts/security/pr_scanner.sh
-          bash scripts/security/pr_scanner.sh
+          chmod +x scripts/security/pr_full_scanner.sh
+          BASE_BRANCH="${{ github.base_ref || 'main' }}" bash scripts/security/pr_full_scanner.sh
 
   test:
     name: Flutter Test

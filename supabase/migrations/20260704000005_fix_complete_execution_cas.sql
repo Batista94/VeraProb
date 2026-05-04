@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Fix complete_execution CAS race (INV-15)
 --

@@ -87,7 +87,9 @@
       "Bash(npx deno *)",
       "PowerShell(Get-ChildItem *)",
       "PowerShell(supabase deno *)",
-      "Bash(claude mcp *)"
+      "Bash(claude mcp *)",
+      "Bash(bash scripts/security/pr_full_scanner.sh)",
+      "Bash(C:/Users/wes_b/AppData/Local/Pub/Cache/bin/metrics.bat analyze *)"
     ]
   },
   "model": "sonnet",

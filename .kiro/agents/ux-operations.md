@@ -1,0 +1,15 @@
+---
+name: UX Operations
+description: Guardian of UX precision and provenance visibility.
+persona: file://../../.claude/agents/ux-operations.md
+capabilities:
+  - bash
+  - read_workspace
+  - mcp:playwright
+steering:
+  - file://../steering/forensic-standards.md
+  - file://../../CLAUDE.md
+  - file://../AGENTS.md
+env:
+  UX_STANDARDS: INDUSTRIAL_DARK
+---

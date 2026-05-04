@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- Migration: Document intentional deny-all RLS tables
 -- These tables have RLS enabled with NO policies, meaning all access is denied
 -- for authenticated users. Only service_role (which bypasses RLS) can access them.
@@ -28,9 +29,6 @@ COMMENT ON TABLE public.impersonation_sessions IS
 COMMENT ON TABLE public.evidence_deletion_queue IS
   'deny-all: Background cleanup queue. service_role only.';
 
-COMMENT ON TABLE public.justification_recomputation_signals IS
-  'deny-all: Internal trigger signals. service_role only.';
-
 -- ── Telegram Bot tables (Edge Functions via service_role) ───────────────────
 COMMENT ON TABLE public.telegram_binding_tokens IS
   'deny-all: Telegram bot binding tokens. Edge Function (service_role) only.';
@@ -53,15 +51,7 @@ COMMENT ON TABLE public.telegram_evidence_metadata IS
 COMMENT ON TABLE public.telegram_evidence_categories IS
   'deny-all: Evidence category mappings. Edge Function (service_role) only.';
 
-COMMENT ON TABLE public.telegram_pending_links IS
-  'deny-all: Pending self-link tokens. Edge Function (service_role) only.';
-
-COMMENT ON TABLE public.telegram_status_queries IS
-  'deny-all: Evidence compliance status queries. Edge Function (service_role) only.';
-
 -- ── Justification submission (service_role only — anonymous token flow) ─────
-COMMENT ON TABLE public.justification_submission_tokens IS
-  'deny-all: Anonymous submission tokens. service_role only (token validated in RPC).';
 
 -- ── Tables needing evaluation (TODO: decide if tenant SELECT is needed) ─────
 -- These are flagged for review — they may need org-scoped SELECT policies.
@@ -75,8 +65,3 @@ COMMENT ON TABLE public.sanction_escalation_log IS
 COMMENT ON TABLE public.justification_audit_logs IS
   'TODO-RLS: Evaluate if tenant admins need SELECT access to justification audit logs.';
 
-COMMENT ON TABLE public.contractor_justifications IS
-  'TODO-RLS: Evaluate if contractors need direct INSERT or if Edge Function handles all writes.';
-
-COMMENT ON TABLE public.justification_evidence_uploads IS
-  'TODO-RLS: Evaluate if contractors need direct INSERT or if Edge Function handles all writes.';

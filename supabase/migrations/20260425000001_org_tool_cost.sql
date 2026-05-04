@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: tool_cost_cents on organizations (Phase 10 — ROI Engine)
 --

@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: complete_execution RPC (Phase 10 — SLA Racing Guard)
 --

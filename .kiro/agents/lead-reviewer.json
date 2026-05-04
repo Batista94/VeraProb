@@ -1,7 +1,13 @@
 {
   "name": "Lead Reviewer",
   "persona": "file://../../.claude/agents/lead-reviewer.md",
-  "capabilities": ["bash", "read_workspace", "mcp:postgres"],
+  "capabilities": [
+    "bash",
+    "read_workspace",
+    "mcp:postgres",
+    "mcp:memory",
+    "mcp:sequential-thinking"
+  ],
   "steering": [
     "file://../steering/forensic-standards.md",
     "file://../AGENTS.md"

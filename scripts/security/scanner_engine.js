@@ -34,6 +34,13 @@ if (!fs.existsSync(patternsPath)) {
 }
 const patterns = JSON.parse(fs.readFileSync(patternsPath, "utf8"));
 
+Object.entries(patterns).forEach(([name, config]) => {
+  if (config.pattern.includes("\n") || config.pattern.includes("\r")) {
+    console.error(`[ERROR] Pattern '${name}' contains illegal JSON escapes. Fix pr_patterns.json.`);
+    process.exit(1);
+  }
+});
+
 // ── Read Changed Files from stdin ────────────────────────────────────────────
 
 const changedFiles = fs
@@ -131,7 +138,19 @@ changedFiles.forEach((file) => {
     )
       return;
 
-    const regex = new RegExp(config.pattern);
+    function safeRegExp(p) {
+      if (!p) return { test: () => true };
+      try {
+        // Enterprise fix: JSON \b is backspace (0x08). Regex \b is word boundary.
+        // We sanitize the pattern to ensure \b always means word boundary.
+        const sanitized = String(p).replace(/\x08/g, "\\b");
+        return new RegExp(sanitized);
+      } catch (e) {
+        console.error(`[ERROR] Invalid regex pattern: ${p} (Rule: ${ruleName})`);
+        return { test: () => false };
+      }
+    }
+    const regex = safeRegExp(config.pattern);
 
     // ── Absence Check (INV-1 / INV-26-REPO / INV-30) ──
     if (config.type === "absence_check") {
@@ -144,12 +163,12 @@ changedFiles.forEach((file) => {
 
       if (config.requires_supabase_content) {
         const hasSupabaseCall = config.requires_supabase_content.some(
-          (supaPattern) => new RegExp(supaPattern).test(strippedContent),
+          (supaPattern) => safeRegExp(supaPattern).test(strippedContent),
         );
         if (!hasSupabaseCall) return;
       }
 
-      const mustAlsoContain = new RegExp(config.must_also_contain);
+      const mustAlsoContain = safeRegExp(config.must_also_contain);
       if (!mustAlsoContain.test(strippedContent)) {
         violations.push({
           file,
@@ -295,16 +314,14 @@ const regressionFiles = changedFiles.filter((file) => {
   const content = fs.readFileSync(file, "utf8");
   if (content.includes("pr_scanner: ignore-regression")) return false;
 
-  // Refinement: New migrations are evolution, not regression.
-  // We check if the file is "Modified" vs "Added" in Git.
-  if (file.includes("supabase/migrations/")) {
-    try {
-      const status = execSync(`git status --porcelain "${file}"`, { encoding: "utf8" }).trim();
-      // If status starts with 'A' (Added) or '??' (Untracked), it's not a regression
-      if (status.startsWith("A") || status.startsWith("??")) return false;
-    } catch (e) {
-      // If git fails, fallback to safe (flag it)
-    }
+  // Refinement: New migrations/domain files are evolution, not regression.
+  // We check if the file is "Modified" vs "Added" relative to the base branch.
+  try {
+    const status = execSync(`git diff --name-status "${baseBranch}" -- "${file}"`, { encoding: "utf8" }).trim();
+    // If status starts with 'A' (Added), it's not a regression
+    if (status.startsWith("A")) return false;
+  } catch (e) {
+    // If git fails, fallback to safe (flag it)
   }
 
   return true;

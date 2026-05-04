@@ -56,7 +56,7 @@ linter:
     # when a new enum value is added later.
     exhaustive_cases: true
 
-    # ── SRP & Architecture Enforcement (feeds Pillar B1 + C4 of pr_scanner.sh) ──
+    # ── SRP & Architecture Enforcement (feeds Pillar B1 + C4 of pr_full_scanner.sh) ──
     #
     # These rules offload basic SRP and presentation-layer hygiene to the static
     # analyzer, so the LLM neural review (Step 1) can focus on deeper reasoning.

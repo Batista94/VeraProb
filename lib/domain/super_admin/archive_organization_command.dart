@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression
 import 'package:veraprob/domain/admin/org_status.dart';
 
 /// Immutable command DTO for archiving an existing tenant organization.

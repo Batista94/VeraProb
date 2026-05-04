@@ -54,4 +54,4 @@
 ---
 
 > [!TIP]
-> **Enforcement**: These rules are automatically verified by the `scripts/pr_scanner.sh` and enforced by the `lead-reviewer` agent.
+> **Enforcement**: These rules are automatically verified by the `scripts/security/pr_full_scanner.sh` and enforced by the `lead-reviewer` agent.

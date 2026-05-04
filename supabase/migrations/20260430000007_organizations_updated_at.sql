@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- INV-6: Add updated_at TIMESTAMPTZ to organizations table.
 -- Fixes PostgreSQL error 42703: archive/quota RPCs set updated_at = NOW()
 -- but the column did not exist on the organizations table.

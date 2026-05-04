@@ -65,6 +65,12 @@ if ! "$SUPABASE_CMD" gen types typescript --local > "$OUTPUT_FILE" 2>"$TEMP_ERR"
 fi
 rm -f "$TEMP_ERR"
 
+# -- Step 4: Linting (Aesthetic Guard) --
+if command -v npx > /dev/null 2>&1; then
+    echo -e "\033[1;34m[Type-Sync]\033[0m Formatting contract with Prettier..."
+    npx prettier --write "$OUTPUT_FILE" > /dev/null 2>&1 || true
+fi
+
 # -- Step 5: Self-Healing (Git Re-staging) --
 # Stage the generated file automatically to ensure atomic commit
 git add "$OUTPUT_FILE"

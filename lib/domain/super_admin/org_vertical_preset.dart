@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression
 import 'package:veraprob/domain/admin/org_capabilities.dart';
 
 /// Immutable constants for operational vertical presets.

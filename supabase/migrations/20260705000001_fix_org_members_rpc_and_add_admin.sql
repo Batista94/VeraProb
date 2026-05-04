@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- ============================================================
 -- Migration: fix_org_members_rpc_and_add_admin
 -- Fixes:

@@ -1,11 +1,18 @@
 {
   "name": "Gemini Assistant",
-  "description": "Uso on-demand para bugs simples, documentação e recuperação de contexto.",
+  "description": "On-demand usage for simple bugs, documentation and context recovery.",
   "model": "gemini-1.5-pro-latest",
   "persona": "file://../../.claude/agents/senior-engineer.md",
-  "capabilities": ["read_workspace", "mcp:gemini"],
+  "capabilities": [
+    "bash",
+    "read_workspace",
+    "mcp:gemini",
+    "mcp:memory",
+    "mcp:sequential-thinking"
+  ],
   "steering": [
-    "file://../steering/forensic-standards.md"
+    "file://../steering/forensic-standards.md",
+    "file://../AGENTS.md"
   ],
   "env": {
     "MODE": "LIGHTWEIGHT",

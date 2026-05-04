@@ -10,8 +10,7 @@ import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 
 /// Interpolates between two [LatLng] values for smooth camera flight.
 class LatLngTween extends Tween<LatLng> {
-  LatLngTween({required LatLng begin, required LatLng end})
-    : super(begin: begin, end: end);
+  LatLngTween({required super.begin, required super.end});
 
   @override
   LatLng lerp(double t) {

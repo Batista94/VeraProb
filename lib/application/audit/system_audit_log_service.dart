@@ -15,7 +15,7 @@ abstract class SystemAuditLogService {
   Future<void> logGovernanceChange({
     required String eventType,
     required String reason,
-    required ActorType actorType,
+    ActorType? actorType,
     String? impersonatorId,
     required String organizationId,
     String? organizationName,

@@ -1,4 +1,5 @@
 import 'package:veraprob/application/operational_control_service.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 /// A pure Spy Service that intercepts Mutator calls.
 ///
@@ -19,7 +20,7 @@ class MockMutatorService implements OperationalControlService {
   Future<TripEvent> resolveAlert(String tripId) async {
     callCount++;
     if (shouldThrowError) {
-      throw Exception('Mock Runtime Crash during Mutation');
+      throw DomainException('Mock Runtime Crash during Mutation');
     }
     return _dummyEvent(tripId);
   }
@@ -27,7 +28,7 @@ class MockMutatorService implements OperationalControlService {
   @override
   Future<void> updateContract(String contractId, int newValueCents) async {
     callCount++;
-    if (shouldThrowError) throw Exception('Crash');
+    if (shouldThrowError) throw DomainException('Crash');
   }
 
   @override
@@ -38,7 +39,7 @@ class MockMutatorService implements OperationalControlService {
     String? notes,
   }) async {
     callCount++;
-    if (shouldThrowError) throw Exception('Crash');
+    if (shouldThrowError) throw DomainException('Crash');
     return _dummyEvent(tripId);
   }
 
@@ -49,7 +50,7 @@ class MockMutatorService implements OperationalControlService {
     String? reason,
   }) async {
     callCount++;
-    if (shouldThrowError) throw Exception('Crash');
+    if (shouldThrowError) throw DomainException('Crash');
     return _dummyEvent(tripId);
   }
 

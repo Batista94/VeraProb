@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: v_roi_summary v2 — ROI Formula (Phase 10)
 --

@@ -25,6 +25,13 @@
     },
     {
       "event": "preCommit",
+      "agent": "security-auditor",
+      "action": "skill://prompt-injection-auditor/audit-batch .agents/skills",
+      "blocking": true,
+      "description": "Auditoria de Prompt Injection (INV-41): Escaneia todas as skills e instruções em busca de vulnerabilidades de injeção e jailbreaks."
+    },
+    {
+      "event": "preCommit",
       "agent": "architect",
       "action": "python scripts/validate_barrel_files.py",
       "blocking": true,
@@ -68,7 +75,13 @@
       "action": "bash .kiro/scripts/pre-tool-use.sh",
       "blocking": true,
       "description": "Token Guard (INV-40): Bloqueia ferramentas caras/redundantes e acessos proibidos para economizar 40-60% de tokens."
+    },
+    {
+      "event": "preCommit",
+      "agent": "senior-engineer",
+      "action": "python scripts/index_advisor.py",
+      "blocking": false,
+      "description": "Index Advisor (INV-12): Sugere índices para queries SQL identificadas no código Dart ou migrations."
     }
-
   ]
 }

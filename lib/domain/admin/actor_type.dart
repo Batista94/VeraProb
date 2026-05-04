@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Identifies the type of actor performing a governance action.

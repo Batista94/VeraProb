@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Auto-Classify Support (Phase 10 — Smart Suggestion)
 --

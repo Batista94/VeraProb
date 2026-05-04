@@ -18,7 +18,7 @@ class PostgresSystemAuditLogService implements SystemAuditLogService {
   Future<void> logGovernanceChange({
     required String eventType,
     required String reason,
-    required ActorType actorType,
+    ActorType? actorType,
     String? impersonatorId,
     required String organizationId,
     String? organizationName,
@@ -40,7 +40,7 @@ class PostgresSystemAuditLogService implements SystemAuditLogService {
       'organization_id': organizationId,
       'organization_name': organizationName,
       'reason': reason,
-      'actor_type': actorType.dbValue,
+      'actor_type': (actorType ?? ActorType.human).dbValue,
       // ignore: use_null_aware_elements
       if (impersonatorId != null) 'impersonator_id': impersonatorId,
     });

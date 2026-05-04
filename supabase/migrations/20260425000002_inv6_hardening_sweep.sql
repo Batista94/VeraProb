@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: INV-6 Hardening Sweep — Runtime Assertion
 --

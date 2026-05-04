@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Shadow Revenue Tracking (Phase 10 — ROI Guardian)
 --

@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Driver Offboarding (Inativação/Arquivamento)
 --

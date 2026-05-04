@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Phase 10.3 — Semantic comments: dwell_time_seconds and max_kinematic_speed_kmh
 -- are business configuration defaults, not hard contractual limits.

@@ -51,9 +51,10 @@
     "description": "Every Handler must inject TenantValidationService and call assertTenantMatches() (INV-1: Identity Sovereignty).",
     "severity": "BLOCK"
   },
-  "INV-26-REPO": {
+  "INV-26-DB-REPO": {
     "type": "absence_check",
-    "pattern": "with PostgresErrorInterceptor|extends BasePostgresRepository",
+    "pattern": "class \\w+Repository",
+    "must_also_contain": "with PostgresErrorInterceptor|extends BasePostgresRepository",
     "path_filter": "lib/infrastructure/.*_repository\\.dart",
     "exclude_files": [
       "in_memory",
@@ -62,11 +63,25 @@
     ],
     "requires_supabase_content": [
       "_client\\.from\\(",
-      "SupabaseClient",
-      "\\.rpc\\(",
-      "auth\\.(getUser|signIn|signUp|signOut)"
+      "\\.rpc\\("
     ],
-    "description": "Every file making Supabase calls MUST implement PostgresErrorInterceptor (INV-26: Error Parity).",
+    "description": "Repositories performing Database/RPC calls MUST implement PostgresErrorInterceptor (INV-26: Error Parity).",
+    "severity": "BLOCK"
+  },
+  "INV-26-AUTH-REPO": {
+    "type": "absence_check",
+    "pattern": "class \\w+Repository",
+    "must_also_contain": "with AuthErrorInterceptor",
+    "path_filter": "lib/infrastructure/.*_repository\\.dart",
+    "exclude_files": [
+      "in_memory",
+      "mock",
+      "_test"
+    ],
+    "requires_supabase_content": [
+      "auth\\.(getUser|signIn|signUp|signOut|refreshSession|mfa)"
+    ],
+    "description": "Repositories performing Auth calls MUST implement AuthErrorInterceptor (INV-26: Error Parity).",
     "severity": "BLOCK"
   },
   "INV-30-CHECK": {

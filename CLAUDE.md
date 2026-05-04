@@ -29,14 +29,20 @@ Must check before structural/domain edits.
 Architect, Senior, QA/Sec, UX/Ops, Reviewer.
 
 ---
-## GUARDRAILS (HOOKS) - Mandatory for ALL Agents (Claude/Gemini/Kiro)
-1. **TOKEN GUARD (INV-40):** 
-   - **BLOCK:** Acesso a `node_modules`, `build`, `dist` ou paths no `.kiroignore`.
-   - **BLOCK:** `playwright`/`docker` SEM `--headless` ou com `<1GB` RAM.
-   - **BLOCK:** Comandos `shell`/`fetch` > 800 chars. Use MCP memory se precisar de contexto longo.
-   - **BLOCK:** `github`/`postgres` tools via CLI (Use MCP direto).
-2. **SYNC TYPES:** Sempre rode `bash scripts/sync_db_types.sh` ao alterar migrations SQL.
-3. **SECURITY:** `bash scripts/security/pr_full_scanner.sh` é veto final em Main/PR.
-4. **BARRELS:** Previne loops via `python scripts/validate_barrel_files.py`.
+## GUARDRAILS & HOOKS (Source: `hooks.json`)
+Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
 
-Consult `hooks.json` for full lifecycle event logic.
+| ID | Hook | Trigger | Action |
+|---|---|---|---|
+| H-01 | **TOKEN GUARD** | `preToolUse` | `.kiro/scripts/pre-tool-use.sh` (Auto-block >800 chars, node_modules). |
+| H-02 | **TYPE SYNC** | `preCommit` | `bash scripts/sync_db_types.sh` (Dart/SQL Parity). |
+| H-03 | **FORENSIC SCAN** | `preCommit` | `bash scripts/security/pr_full_scanner.sh` (Veto Gatekeeper). |
+| H-04 | **SECRET SCAN** | `preCommit` | `python scripts/security/scan_secrets.py` (INV-28). |
+| H-05 | **BARREL SCAN** | `preCommit` | `python scripts/validate_barrel_files.py` (INV-13). |
+| H-06 | **PROMPT AUDIT** | `preCommit` | `skill://prompt-injection-auditor/audit-batch` (INV-41). |
+| H-07 | **TDD ASSIST** | `onTestFail` | Senior Persona suggestion for fix. |
+| H-08 | **CHAOS SUGGEST**| `onTestRun` | `skill://iot-chaos-simulator/auto-suggest`. |
+| H-09 | **CACHE REFRESH**| `postSave` | `bash scripts/refresh_schema_cache.sh` (PostgREST sync). |
+| H-10 | **MISSION SYNC**| `onMissionComplete` | `mcp:memory/sync_project_state` (Memory persistence). |
+| H-11 | **INDEX ADVISOR**| `preCommit` | `python scripts/index_advisor.py` (INV-12). |
+

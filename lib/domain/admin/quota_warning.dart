@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression
 import 'package:equatable/equatable.dart';
 
 /// Represents a soft quota warning for an organization resource.

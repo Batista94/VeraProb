@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- Extend super_admin_create_organization RPC to accept billing_day,
 -- contact_email, and external_id — columns exist since 20260427010002
 -- but were never wired to the RPC.

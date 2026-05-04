@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/admin/actor_type.dart';
+
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
@@ -83,7 +83,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
         reason: newStatus
             ? 'Admin reativado pelo SuperAdmin'
             : 'Admin inativado pelo SuperAdmin',
-        actorType: ActorType.human,
+
         organizationId: widget.tenant.id,
         organizationName: widget.tenant.name,
         context: {'user_id': userId, 'email': email},

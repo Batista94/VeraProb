@@ -1,12 +1,21 @@
 {
-    "name": "architect",
-    "description": "Guardian of structural integrity and domain purity.",
-    "prompt": "file://../../.claude/agents/architect.md",
-    "tools": ["@builtin"],
-    "allowedTools": ["@builtin"],
-    "resources": [
-        "file://../../.kiro/steering/forensic-standards.md",
-        "file://../../CLAUDE.md",
-        "skill://.kiro/skills/**/SKILL.md"
-    ]
+  "name": "Architect",
+  "description": "Guardian of structural integrity and domain purity.",
+  "persona": "file://../../.claude/agents/architect.md",
+  "capabilities": [
+    "bash",
+    "read_workspace",
+    "mcp:postgres",
+    "mcp:memory",
+    "mcp:sequential-thinking"
+  ],
+  "steering": [
+    "file://../steering/forensic-standards.md",
+    "file://../../CLAUDE.md",
+    "file://../AGENTS.md"
+  ],
+  "env": {
+    "MODE": "STRICT",
+    "DOMAIN_LOCK": "1"
+  }
 }

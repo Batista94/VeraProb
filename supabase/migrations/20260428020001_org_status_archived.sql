@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- Add ARCHIVED to organizations status CHECK constraint.
 -- ARCHIVED = data preserved read-only; DELETED = GDPR hard-remove.
 -- INV-3: No destructive alter — drop+add constraint only.

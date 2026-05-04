@@ -9,18 +9,6 @@
       ],
       "env": {}
     },
-    "github": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx -y @modelcontextprotocol/server-github"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      },
-      "disabled": true
-    },
     "postgres": {
       "type": "stdio",
       "command": "cmd",
@@ -32,31 +20,22 @@
       "env": {}
     },
     "docker": {
-    "command": "uvx",
-    "args": [
-      "mcp-server-docker"
-    ],
-    "env": {},
-    "disabled": false,
-    "autoApprove": []
+      "command": "uvx",
+      "args": [
+        "mcp-server-docker"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
     },
     "fetch": {
-        "command": "uvx",
-        "args": [
-          "mcp-server-fetch"
-        ],
-        "env": {},
-        "disabled": false,
-        "autoApprove": []
-    },
-    "memory": {
-      "type": "stdio",
-      "command": "cmd",
+      "command": "uvx",
       "args": [
-        "/c",
-        "npx -y @modelcontextprotocol/server-memory"
+        "mcp-server-fetch"
       ],
-      "env": {}
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
     },
     "sequential-thinking": {
       "type": "stdio",

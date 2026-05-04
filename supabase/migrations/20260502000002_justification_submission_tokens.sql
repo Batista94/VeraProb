@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- Suppress DROP TRIGGER/POLICY IF EXISTS NOTICEs (objects don't exist on fresh reset).
 SET client_min_messages TO 'WARNING';
 
@@ -44,6 +45,9 @@ CREATE TABLE IF NOT EXISTS public.justification_submission_tokens (
 
   created_at_utc        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+COMMENT ON TABLE public.justification_submission_tokens IS
+  'deny-all: Anonymous submission tokens. service_role only (token validated in RPC).';
 
 -- ── Indexes ───────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_jst_token

@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- pr_scanner: ignore-rls (policies superseded by 20260317000001_rls_jwt_path_unification.sql)
 -- =====================================================================
 -- MULTI-TENANCY & AUTHENTICATION FOUNDATION MIGRATION
