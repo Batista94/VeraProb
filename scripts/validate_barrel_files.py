@@ -7,10 +7,14 @@ import argparse
 
 # ── Configuration ────────────────────────────────────────────────────────────
 LIB_DIR = "lib"
+DOMAIN_DIR = "lib/domain"
 IGNORE_PATTERNS = [".g.dart", ".freezed.dart"]
 EXPORT_PATTERN = re.compile(r"export\s+['\"](.+?)['\"];")
 IMPORT_PATTERN = re.compile(r"import\s+['\"](.+?)['\"];")
 PROVIDER_PATTERN = re.compile(r"@riverpod|Provider|NotifierProvider|StateNotifierProvider")
+
+# LEI DO ENCAPSULAMENTO (Anti-Leak)
+ENCAPSULATION_PATTERN = re.compile(r"_internal\.dart|/private/|/src/")
 
 # ── Color codes ──────────────────────────────────────────────────────────────
 RED = '\033[0;31m'
@@ -49,6 +53,7 @@ def build_graph(files_to_scan):
     export_graph = {}
     import_map = {}
     provider_map = {}
+    raw_exports = {}
 
     for file_path in files_to_scan:
         file_path = file_path.replace("\\", "/")
@@ -73,6 +78,7 @@ def build_graph(files_to_scan):
         # Exports
         exports = EXPORT_PATTERN.findall(content)
         export_graph[file_path] = []
+        raw_exports[file_path] = exports
         for exp in exports:
             resolved = resolve_path(file_path, exp)
             if resolved:
@@ -90,7 +96,7 @@ def build_graph(files_to_scan):
         if PROVIDER_PATTERN.search(content):
             provider_map[file_path] = True
                 
-    return export_graph, import_map, provider_map
+    return export_graph, import_map, provider_map, raw_exports
 
 def find_cycle(graph):
     visited = set()
@@ -135,6 +141,10 @@ def check_internal_barrel_import(file_path, imports):
                 return barrel_file
     return None
 
+def check_encapsulation(export_path):
+    """Verifica se a exportação viola detalhes internos (INV-13)."""
+    return ENCAPSULATION_PATTERN.search(export_path) is not None
+
 def main():
     # Fix for Windows console encoding
     try:
@@ -157,24 +167,48 @@ def main():
             # Silent success if no files to check
             sys.exit(0)
             
-        export_graph, import_map, provider_map = build_graph(staged_files)
+        export_graph, import_map, provider_map, raw_exports = build_graph(staged_files)
         
         violations = []
         warnings = []
         
-        # 1. Detect Cycles in Exports
+        # ── 1. LEI DO DOMÍNIO EXPLÍCITO (No-Barrel-in-Domain) ───────────────
+        for file_path in staged_files:
+            if file_path.startswith(DOMAIN_DIR):
+                is_barrel = (
+                    file_path.endswith("index.dart") or 
+                    file_path.endswith(f"{os.path.basename(os.path.dirname(file_path))}.dart")
+                )
+                if is_barrel and export_graph.get(file_path):
+                    violations.append(
+                        f"[VETO ARQUITETURAL - INV-13]: Barrel file PROIBIDO no Domínio.\n"
+                        f"   Arquivo: {file_path}\n"
+                        f"   Justificativa: Dependências de domínio devem ser explícitas para evitar acoplamento invisível."
+                    )
+
+        # ── 2. LEI DO ENCAPSULAMENTO (Anti-Leak) ──────────────────────────────
+        for file_path, exports in raw_exports.items():
+            for exp in exports:
+                if check_encapsulation(exp):
+                    violations.append(
+                        f"[VETO ARQUITETURAL - INV-13]: Vazamento de escopo detectado (Anti-Leak).\n"
+                        f"   Arquivo: {file_path} exporta {exp}\n"
+                        f"   Justificativa: Proibido exportar detalhes internos (_internal, private, src)."
+                    )
+
+        # ── 3. LEI DA ACICLICIDADE (Cycles) ──────────────────────────────────
         cycle = find_cycle(export_graph)
         if cycle:
             graph_str = " -> ".join(cycle)
             violations.append(f"[VETO ARQUITETURAL - INV-13]: Dependência circular detectada em arquivos barrel.\n   Grafo: {graph_str}")
 
-        # 2. Veto Internal Barrel Import
+        # 4. Veto Internal Barrel Import
         for file_path, imports in import_map.items():
             bad_barrel = check_internal_barrel_import(file_path, imports)
             if bad_barrel:
                 violations.append(f"[VETO ARQUITETURAL - INV-13]: Importação circular de barrel interno.\n   Arquivo: {file_path} importa seu próprio barrel {bad_barrel}")
 
-        # 3. Riverpod Provider Isolation (INV-11)
+        # 5. Riverpod Provider Isolation (INV-11)
         for barrel, exports in export_graph.items():
             providers_exported = [e for e in exports if provider_map.get(e)]
             if len(providers_exported) > 1:
@@ -198,7 +232,7 @@ def main():
                 print(f"{YELLOW}{BOLD}⚠️ {w}{NC}")
                 
         if not violations and not warnings:
-            print(f"{GREEN}✔ Estrutura de exportação limpa e sem ciclos.{NC}")
+            print(f"{GREEN}✔ Estrutura de exportação limpa e em conformidade com INV-13.{NC}")
             
         sys.exit(0)
     except Exception as e:

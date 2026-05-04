@@ -16,18 +16,20 @@ mixin AuthErrorInterceptor {
       // Security: `invalid_credentials` and `user_not_found` return the SAME
       // message to prevent user enumeration attacks (INV-1 / INV-26).
       'invalid_credentials' ||
-      'user_not_found' =>
-        const AuthFailureException('Credenciais inválidas.'),
+      'user_not_found' => const AuthFailureException('Credenciais inválidas.'),
 
-      'email_not_confirmed' =>
-        const AuthFailureException('E-mail pendente de confirmação.'),
+      'email_not_confirmed' => const AuthFailureException(
+        'E-mail pendente de confirmação.',
+      ),
 
-      'weak_password' =>
-        const AuthFailureException('A senha não atende os requisitos de segurança.'),
+      'weak_password' => const AuthFailureException(
+        'A senha não atende os requisitos de segurança.',
+      ),
 
       'rate_limit_exceeded' ||
-      'over_request_rate_limit' =>
-        const AuthFailureException('Muitas tentativas. Tente novamente mais tarde.'),
+      'over_request_rate_limit' => const AuthFailureException(
+        'Muitas tentativas. Tente novamente mais tarde.',
+      ),
 
       // Fail-safe default message for unknown auth codes
       _ => const AuthFailureException('Erro de autenticação. Tente novamente.'),

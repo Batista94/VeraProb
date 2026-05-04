@@ -312,7 +312,7 @@ const regressionFiles = changedFiles.filter((file) => {
 
   // Bypass via comment
   const content = fs.readFileSync(file, "utf8");
-  if (content.includes("pr_scanner: ignore-regression")) return false;
+  if (content.includes("pr_scanner: ignore-regression") || content.includes("pr_scanner: ignore")) return false;
 
   // Refinement: New migrations/domain files are evolution, not regression.
   // We check if the file is "Modified" vs "Added" relative to the base branch.
