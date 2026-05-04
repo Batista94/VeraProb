@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 --
 -- Phase 9 — Enterprise Audit Log Refactor (Point-in-Time Identity)
 -- Refactors ORGANIZATION_CREATE payload to include full actor snapshot.

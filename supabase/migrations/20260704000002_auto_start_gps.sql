@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Auto-Start GPS (Phase 10 — Workstream C)
 --

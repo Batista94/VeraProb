@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Backdating Support (Phase 10 — Workstream D)
 --

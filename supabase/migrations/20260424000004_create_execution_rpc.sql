@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: create_execution_for_operator RPC (Phase 10 — UX/OPS)
 --

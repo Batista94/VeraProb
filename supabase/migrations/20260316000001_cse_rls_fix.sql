@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 --
 -- ============================================================
 -- veraprob — Sprint 5.13 Bloco 5.1: CSE RLS Fix (INV-10)

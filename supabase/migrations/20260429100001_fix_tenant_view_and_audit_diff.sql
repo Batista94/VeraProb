@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Fix: Tenant Health View missing fields + Audit Diff payload + Governance
 -- =============================================================================

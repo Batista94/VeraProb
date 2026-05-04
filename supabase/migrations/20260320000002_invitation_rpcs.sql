@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 --
 -- ============================================================
 -- veraprob — Phase 6: User Invitation RPCs

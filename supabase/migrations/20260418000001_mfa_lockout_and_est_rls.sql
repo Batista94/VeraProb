@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- Phase 9.6.A.2: MFA Circuit Breaker + execution_state_transitions RLS fix
 --
 -- Creates:

@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Phase 10 — Fix super_admin_create_organization: restore service_role bypass
 -- =============================================================================

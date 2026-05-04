@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Fix: Correct column reference in super_admin_archive_organization step E
 -- =============================================================================

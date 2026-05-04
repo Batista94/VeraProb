@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Evidence Compliance Status (/status command)
 --

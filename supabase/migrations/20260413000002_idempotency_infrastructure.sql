@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 --
 -- Suppress DROP TRIGGER/POLICY IF EXISTS NOTICEs (objects don't exist on fresh reset).
 SET client_min_messages TO 'WARNING';

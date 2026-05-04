@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 --
 -- Suppress DROP/CREATE NOTICEs
 SET client_min_messages TO 'WARNING';

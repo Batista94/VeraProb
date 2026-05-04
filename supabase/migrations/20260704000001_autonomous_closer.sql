@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Autonomous Closer (Phase 10 — Workstream A)
 --

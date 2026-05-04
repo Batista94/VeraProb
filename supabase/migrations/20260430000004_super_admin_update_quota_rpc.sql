@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 --
 -- =============================================================================
 -- Phase 9.8.D — SuperAdmin Update Organization Quota RPC

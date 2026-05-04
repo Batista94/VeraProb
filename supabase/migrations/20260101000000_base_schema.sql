@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- ============================================================
 -- veraprob Operational Control Center — SLA Audit Schema
 -- ============================================================

@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Organization Capabilities (Phase 10 — Enterprise Intelligence Layer)
 --

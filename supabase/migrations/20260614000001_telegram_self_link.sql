@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Telegram Self-Link — Vinculação Manual de Evidência Órfã
 --

@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- ─────────────────────────────────────────────────────────────────────────────
 -- INV-31: HMAC Zero-Knowledge — add payload_hmac to canonical_facts.
 -- Signed exclusively in ingest Edge Functions (Deno); DB is "blind" to the key.

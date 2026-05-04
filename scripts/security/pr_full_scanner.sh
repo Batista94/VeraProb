@@ -339,7 +339,7 @@ if [[ -n "$DART_CHANGED" ]]; then
     while IFS= read -r f; do
       [[ -z "$f" ]] && continue
       if [[ -f "$f" ]]; then
-        # Skip entire file if the ignore directive is present
+        if grep -q "pr_scanner: ignore" "$f"; then
           continue
         fi
         FILE_LEAKS=$(grep -nE "import 'package:veraprob/domain/" "$f" \
@@ -371,7 +371,7 @@ if [[ -n "$DART_CHANGED" ]]; then
     # Skip test files
     [[ "$f" == *_test.dart ]] && continue
     if [[ -f "$f" ]]; then
-      # Skip entire file if the ignore directive is present
+      if grep -q "pr_scanner: ignore" "$f"; then
         continue
       fi
       # Strip multiline block comments, then single-line comments and imports
@@ -534,17 +534,18 @@ fi
 # If there is a regression alert that is NOT ignored, it becomes a NO-GO.
 # [FLEXIBILIZADO PARA DEV]
 STRICT_REGRESSION="false"
-# if [[ "$HAS_REGRESSION" == "true" ]]; then
-#   # Check if all regression files have the ignore comment
-#   while IFS= read -r rf; do
-#     [[ -z "$rf" ]] && continue
-#     if [[ -f "$rf" ]]; then
-#           STRICT_REGRESSION="true"
-#           break
-#        fi
-#     fi
-#   done <<< "$REGRESSION_FILES"
-# fi
+if [[ "$HAS_REGRESSION" == "true" ]]; then
+  # Check if all regression files have the ignore comment
+  while IFS= read -r rf; do
+    [[ -z "$rf" ]] && continue
+    if [[ -f "$rf" ]]; then
+      if ! grep -q "pr_scanner: ignore-regression" "$rf"; then
+        STRICT_REGRESSION="true"
+        break
+      fi
+    fi
+  done <<< "$REGRESSION_FILES"
+fi
 
 VERDICT="[GO]"
 # [FLEXIBILIZADO PARA DEV] Somente TOTAL_BLOCKS ou BARREL_EXIT bloqueiam. Regressão e Testes geram apenas [REVISE].

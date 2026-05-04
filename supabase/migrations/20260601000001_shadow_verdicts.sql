@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- pr_scanner: ignore-rls (intentional: super_admin cross-tenant analytics, no org isolation)
 -- Phase 10.3 — Shadow Verdict Validation System
 -- INV-1:  organization_id present for tenant-scoped analytics

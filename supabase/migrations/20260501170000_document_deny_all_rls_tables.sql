@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- Migration: Document intentional deny-all RLS tables
 -- These tables have RLS enabled with NO policies, meaning all access is denied
 -- for authenticated users. Only service_role (which bypasses RLS) can access them.

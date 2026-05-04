@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- RPC: super_admin_archive_organization
 -- Atomically sets status=ARCHIVED, revokes API secrets, appends audit record.
 -- INV-3: Secrets revoked via revoked_at — never deleted.

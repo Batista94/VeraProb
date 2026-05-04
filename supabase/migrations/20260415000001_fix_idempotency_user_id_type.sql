@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 --
 -- =============================================================================
 -- Migration: 20260415000001 — Fix idempotency_keys.user_id: UUID → TEXT

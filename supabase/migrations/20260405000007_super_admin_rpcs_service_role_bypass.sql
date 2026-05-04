@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 --
 -- =============================================================================
 -- Phase 9.2 — SuperAdmin RPCs: service_role bypass (CREATE OR REPLACE)

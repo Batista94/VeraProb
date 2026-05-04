@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 --
 -- =============================================================================
 -- Migration: Forensic Test Hardening — Definitive Fix

@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- ============================================================
 -- veraprob — Bloco 8: Asset Organization Isolation
 -- Adds organization_id to drivers, routes, trips_audit

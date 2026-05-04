@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Shadow Executions (Ad-hoc Cost Capture)
 --

@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 --
 -- =============================================================================
 -- Phase 8.5 — RLS Dual-Key Audit & Hardening (INV-20 completion)

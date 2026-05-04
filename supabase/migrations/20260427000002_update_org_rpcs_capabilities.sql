@@ -1,4 +1,3 @@
--- pr_scanner: ignore-regression
 -- =============================================================================
 -- Phase 10 — Update SuperAdmin RPCs: capabilities, tool_cost_cents, dwell_time_seconds
 -- =============================================================================
