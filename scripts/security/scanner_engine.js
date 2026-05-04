@@ -102,8 +102,6 @@ function getTablesWithPolicies() {
 const violations = [];
 const bypassKeywords = [
   "// Physical Metric",
-  "// pr_scanner: ignore",
-    "-- pr_scanner: ignore",
   "- Double Required",
   "Bridge Conversion",
   "Probability Score",
@@ -184,7 +182,6 @@ changedFiles.forEach((file) => {
       // ── SQL RLS Integrity Check (INV-2 Specialized) ──
       if (config.type === "sql_rls_integrity" && file.endsWith(".sql")) {
         // File-level bypass: policies superseded by later migrations
-        if (content.includes("-- pr_scanner: ignore-rls")) return;
         const sql = content.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--.*$/gm, "");
         
         // Match CREATE TABLE [IF NOT EXISTS] [schema.]name
@@ -312,7 +309,6 @@ const regressionFiles = changedFiles.filter((file) => {
 
   // Bypass via comment
   const content = fs.readFileSync(file, "utf8");
-  if (content.includes("pr_scanner: ignore-regression") || content.includes("pr_scanner: ignore")) return false;
 
   // Refinement: New migrations/domain files are evolution, not regression.
   // We check if the file is "Modified" vs "Added" relative to the base branch.

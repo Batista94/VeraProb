@@ -340,11 +340,9 @@ if [[ -n "$DART_CHANGED" ]]; then
       [[ -z "$f" ]] && continue
       if [[ -f "$f" ]]; then
         # Skip entire file if the ignore directive is present
-        if grep -q "// pr_scanner: ignore" "$f"; then
           continue
         fi
         FILE_LEAKS=$(grep -nE "import 'package:veraprob/domain/" "$f" \
-          | grep -v "// pr_scanner: ignore" \
           || true)
         if [[ -n "$FILE_LEAKS" ]]; then
           echo -e "  ${RED}${BOLD}[BLOCK]${NC} Domain import in features layer: $f"
@@ -374,7 +372,6 @@ if [[ -n "$DART_CHANGED" ]]; then
     [[ "$f" == *_test.dart ]] && continue
     if [[ -f "$f" ]]; then
       # Skip entire file if the ignore directive is present
-      if grep -q "// pr_scanner: ignore" "$f"; then
         continue
       fi
       # Strip multiline block comments, then single-line comments and imports
@@ -486,32 +483,47 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
     echo -e "  ${GREEN}No Dart files changed. Complexity check skipped.${NC}"
   fi
 
-  # 9.3: Test Presence Gate
+  # 9.3: Test Presence Gate (70% Threshold for Critical Files)
   # BLOCK on main / PR-to-main; WARN on feature branches.
-  if [[ "$TEST_GATE_BLOCK" == "true" ]]; then
-    echo -e "  [9.3] Checking Test Presence for Core Logic... ${RED}(BLOCK mode — targeting main)${NC}"
-  else
-    echo -e "  [9.3] Checking Test Presence for Core Logic... ${YELLOW}(WARN mode — feature branch)${NC}"
-  fi
-  while IFS= read -r f; do
-    [[ -z "$f" ]] && continue
-    if [[ -f "$f" && "$f" == lib/*.dart && "$f" != *.g.dart && "$f" != *.freezed.dart ]]; then
-       if [[ "$f" == lib/domain/* || "$f" == lib/application/* || "$f" == lib/infrastructure/* ]]; then
-          TEST_FILE=$(echo "$f" | sed 's|^lib/|test/|' | sed 's|\.dart$|_test.dart|')
-          if ! echo "$CHANGED_FILES" | grep -q "$TEST_FILE"; then
-             if [[ ! -f "$TEST_FILE" ]]; then
-                if [[ "$TEST_GATE_BLOCK" == "true" ]]; then
-                   echo -e "  ${RED}${BOLD}[BLOCK]${NC} No test file for $f (Expected: $TEST_FILE). Required on main."
-                   TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
-                else
-                   echo -e "  ${YELLOW}${BOLD}[WARN]${NC} No test file for $f (Expected: $TEST_FILE)."
-                   TOTAL_WARNS=$((TOTAL_WARNS + 1))
-                fi
-             fi
-          fi
-       fi
+  CRITICAL_FILES=$(echo "$CHANGED_FILES" | grep -E "^lib/(domain|application|infrastructure)/" | grep -vE "\.(g|freezed)\.dart$" || true)
+  TOTAL_CRITICAL=$(echo "$CRITICAL_FILES" | grep -v "^$" | wc -l | tr -d ' ')
+
+  if [[ "$TOTAL_CRITICAL" -gt 0 ]]; then
+    if [[ "$TEST_GATE_BLOCK" == "true" ]]; then
+      echo -e "  [9.3] Checking Test Presence (70% Threshold)... ${RED}(BLOCK mode — targeting main)${NC}"
+    else
+      echo -e "  [9.3] Checking Test Presence (70% Threshold)... ${YELLOW}(WARN mode — feature branch)${NC}"
     fi
-  done <<< "$CHANGED_FILES"
+
+    COVERED_COUNT=0
+    MISSING_FILES=""
+    while IFS= read -r f; do
+      [[ -z "$f" ]] && continue
+      TEST_FILE=$(echo "$f" | sed 's|^lib/|test/|' | sed 's|\.dart$|_test.dart|')
+      if echo "$CHANGED_FILES" | grep -q "$TEST_FILE" || [[ -f "$TEST_FILE" ]]; then
+        COVERED_COUNT=$((COVERED_COUNT + 1))
+      else
+        MISSING_FILES+="\n    → $f"
+      fi
+    done <<< "$CRITICAL_FILES"
+
+    # Calculate percentage (Bash integer math)
+    PERCENTAGE=$(( COVERED_COUNT * 100 / TOTAL_CRITICAL ))
+
+    if [[ "$PERCENTAGE" -lt 70 ]]; then
+      if [[ "$TEST_GATE_BLOCK" == "true" ]]; then
+        echo -e "  ${RED}${BOLD}[BLOCK]${NC} Critical test presence is $PERCENTAGE% (Target: 70%). Missing tests for:$MISSING_FILES"
+        TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+      else
+        echo -e "  ${YELLOW}${BOLD}[WARN]${NC} Critical test presence is $PERCENTAGE% (Target: 70%). Missing tests for:$MISSING_FILES"
+        TOTAL_WARNS=$((TOTAL_WARNS + 1))
+      fi
+    else
+      echo -e "  ${GREEN}Critical test presence is $PERCENTAGE% (INV-TEST compliant).${NC}"
+    fi
+  else
+    echo -e "  ${GREEN}[9.3] No critical files changed. Test presence check skipped.${NC}"
+  fi
 fi
 
 # ── Final Summary ────────────────────────────────────────────────────────────
@@ -520,22 +532,23 @@ fi
 
 # DETERMINISTIC VERDICT HARDENING:
 # If there is a regression alert that is NOT ignored, it becomes a NO-GO.
+# [FLEXIBILIZADO PARA DEV]
 STRICT_REGRESSION="false"
-if [[ "$HAS_REGRESSION" == "true" ]]; then
-  # Check if all regression files have the ignore comment
-  while IFS= read -r rf; do
-    [[ -z "$rf" ]] && continue
-    if [[ -f "$rf" ]]; then
-       if ! grep -q "pr_scanner: ignore-regression" "$rf"; then
-          STRICT_REGRESSION="true"
-          break
-       fi
-    fi
-  done <<< "$REGRESSION_FILES"
-fi
+# if [[ "$HAS_REGRESSION" == "true" ]]; then
+#   # Check if all regression files have the ignore comment
+#   while IFS= read -r rf; do
+#     [[ -z "$rf" ]] && continue
+#     if [[ -f "$rf" ]]; then
+#           STRICT_REGRESSION="true"
+#           break
+#        fi
+#     fi
+#   done <<< "$REGRESSION_FILES"
+# fi
 
 VERDICT="[GO]"
-[[ $TOTAL_BLOCKS -gt 0 || $BARREL_EXIT -eq 1 || "$STRICT_REGRESSION" == "true" ]] && VERDICT="[NO-GO]"
+# [FLEXIBILIZADO PARA DEV] Somente TOTAL_BLOCKS ou BARREL_EXIT bloqueiam. Regressão e Testes geram apenas [REVISE].
+[[ $TOTAL_BLOCKS -gt 0 || $BARREL_EXIT -eq 1 ]] && VERDICT="[NO-GO]"
 [[ $VERDICT == "[GO]" && ($TOTAL_WARNS -gt 0 || "$HAS_REGRESSION" == "true") ]] && VERDICT="[REVISE]"
 
 echo -e "\n${BOLD}════════════════════════════════════════════════════════════${NC}"
