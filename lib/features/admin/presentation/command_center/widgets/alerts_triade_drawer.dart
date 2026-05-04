@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/evidence_dossier_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/core/config/environment.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/command_center/logic/alert_grouping.dart';
@@ -14,6 +13,7 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 
 /// State to control the visibility of the Alerts Triade Drawer.
 final isAlertsDrawerOpenProvider = StateProvider<bool>((ref) => false);
@@ -780,6 +780,7 @@ class _EvidencePeekWidget extends ConsumerWidget {
         children: [
           for (int i = 0; i < visible.length; i++) ...[
             _buildThumb(
+              ref: ref,
               id: visible[i],
               accessToken: accessToken,
               // Last thumb gets overflow badge when there are more than 3
@@ -795,13 +796,13 @@ class _EvidencePeekWidget extends ConsumerWidget {
   }
 
   Widget _buildThumb({
+    required WidgetRef ref,
     required String id,
     required String accessToken,
     required int overflowCount,
   }) {
     // INV-26: images MUST flow through secure-evidence-proxy only
-    final url =
-        '${EnvironmentConfig.supabaseUrl}/functions/v1/secure-evidence-proxy?evidence_id=$id'; // pr_scanner: ignore
+    final url = ref.read(evidenceUrlServiceProvider).getProxyUrl(id);
 
     final thumb = ClipRRect(
       borderRadius: BorderRadius.circular(8),

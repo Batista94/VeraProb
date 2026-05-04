@@ -80,13 +80,21 @@ ALTER TABLE public.shadow_verdicts ENABLE ROW LEVEL SECURITY;
 -- SuperAdmin: cross-tenant read for divergence analytics (INV-6)
 CREATE POLICY sv_select_super_admin ON public.shadow_verdicts
   FOR SELECT
-  USING ((auth.jwt() -> 'app_metadata' ->> 'super_admin')::boolean = true);
+  USING (
+    (auth.jwt() -> 'app_metadata' ->> 'super_admin')::boolean = true
+    OR
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+  );
 
 -- SuperAdmin: update divergence/manual fields only
 -- (immutability trigger enforces engine-field protection)
 CREATE POLICY sv_update_super_admin ON public.shadow_verdicts
   FOR UPDATE
-  USING ((auth.jwt() -> 'app_metadata' ->> 'super_admin')::boolean = true);
+  USING (
+    (auth.jwt() -> 'app_metadata' ->> 'super_admin')::boolean = true
+    OR
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+  );
 
 -- Service role INSERT only — shadow engine writes via server (INV-14)
 -- Application role has no INSERT grant; service role bypasses RLS.

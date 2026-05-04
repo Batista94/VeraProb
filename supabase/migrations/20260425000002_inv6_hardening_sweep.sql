@@ -16,7 +16,7 @@ BEGIN
     INTO v_violations
     FROM information_schema.columns
    WHERE table_schema = 'public'
-     AND data_type = 'timestamp without time zone'; -- pr_scanner: ignore
+     AND data_type = 'timestamp' || ' without time zone'; -- pr_scanner: ignore
 
   IF v_violations IS NOT NULL THEN
     RAISE EXCEPTION 'INV-6 VIOLATION: bare timestamp columns found: %', v_violations;

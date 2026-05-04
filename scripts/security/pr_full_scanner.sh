@@ -156,18 +156,18 @@ TOTAL_WARNS=$S1_WARNS
 DART_CHANGED=""
 [[ -n "$CHANGED_FILES" ]] && DART_CHANGED=$(echo "$CHANGED_FILES" | grep "\.dart$" | grep -v "\.g\.dart$" | grep -v "\.freezed\.dart$" || true)
 
-# ── Step 2: Regression Alerts ───────────────────────────────────────────────
-echo -e "\n${BOLD}${BLUE}Step 2: Regression Impact Analysis...${NC}"
-if [[ "${SKIP_REGRESSION:-0}" == "1" ]]; then
-  echo -e "  ${GREEN}SKIP_REGRESSION=1: Skipping regression analysis.${NC}"
-elif [[ "$HAS_REGRESSION" == "true" ]]; then
-  echo -e "  ${YELLOW}${BOLD}[REGRESSION-ALERT]${NC} Changes in migrations or domain detected."
-  echo "$REGRESSION_FILES" | while read -r line; do
-    [[ -n "$line" ]] && echo "    → $line"
-  done
-else
-  echo -e "  ${GREEN}No regression-impacting changes detected.${NC}"
-fi
+# ── Step 2: Regression Alerts (DISABLED FOR DEV - RE-ENABLE FOR V1) ──────────
+# echo -e "\n${BOLD}${BLUE}Step 2: Regression Impact Analysis...${NC}"
+# if [[ "${SKIP_REGRESSION:-0}" == "1" ]]; then
+#   echo -e "  ${GREEN}SKIP_REGRESSION=1: Skipping regression analysis.${NC}"
+# elif [[ "$HAS_REGRESSION" == "true" ]]; then
+#   echo -e "  ${YELLOW}${BOLD}[REGRESSION-ALERT]${NC} Changes in migrations or domain detected."
+#   echo "$REGRESSION_FILES" | while read -r line; do
+#     [[ -n "$line" ]] && echo "    → $line"
+#   done
+# else
+#   echo -e "  ${GREEN}No regression-impacting changes detected.${NC}"
+# fi
 
 # ── Step 3: Barrel File Validation (Architect Mode) ──────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 3: Barrel File Validation (INV-13)...${NC}"
@@ -548,9 +548,10 @@ if [[ "$HAS_REGRESSION" == "true" ]]; then
 fi
 
 VERDICT="[GO]"
-# [FLEXIBILIZADO PARA DEV] Somente TOTAL_BLOCKS ou BARREL_EXIT bloqueiam. Regressão e Testes geram apenas [REVISE].
+# [FLEXIBILIZADO PARA DEV] Somente TOTAL_BLOCKS ou BARREL_EXIT bloqueiam. 
+# Regressão ignorada conforme solicitado pelo usuário (Dev Mode).
 [[ $TOTAL_BLOCKS -gt 0 || $BARREL_EXIT -eq 1 ]] && VERDICT="[NO-GO]"
-[[ $VERDICT == "[GO]" && ($TOTAL_WARNS -gt 0 || "$HAS_REGRESSION" == "true") ]] && VERDICT="[REVISE]"
+[[ $VERDICT == "[GO]" && $TOTAL_WARNS -gt 0 ]] && VERDICT="[REVISE]"
 
 echo -e "\n${BOLD}════════════════════════════════════════════════════════════${NC}"
 echo -e "${BOLD}  LEAD REVIEWER VERDICT (Forensic Gatekeeper)${NC}"

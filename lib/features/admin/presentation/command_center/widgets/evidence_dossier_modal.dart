@@ -3,13 +3,13 @@ import 'dart:developer' as dev;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/core/config/environment.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/shared/compliance_widgets.dart';
 import 'package:veraprob/features/admin/presentation/shared/evidence_category_chip.dart';
 import 'package:veraprob/features/admin/presentation/shared/forensic_audio_player.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 
 /// Full evidence photo dossier — shown via [showModalBottomSheet].
 ///
@@ -188,8 +188,9 @@ class _EvidenceDossierModalState extends ConsumerState<EvidenceDossierModal> {
               itemBuilder: (context, index) {
                 final id = items[index];
                 // INV-26: ALL files MUST go through secure-evidence-proxy
-                final url =
-                    '${EnvironmentConfig.supabaseUrl}/functions/v1/secure-evidence-proxy?evidence_id=$id'; // pr_scanner: ignore
+                final url = ref
+                    .read(evidenceUrlServiceProvider)
+                    .getProxyUrl(id);
 
                 // ── Audio evidence → ForensicAudioPlayer ──
                 if (_isAudio(id)) {

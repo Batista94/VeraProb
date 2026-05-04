@@ -24,14 +24,20 @@ BLUE = '\033[0;34m'
 BOLD = '\033[1m'
 NC = '\033[0m'
 
-def get_staged_files():
+def get_changed_files(branch="main"):
     try:
-        output = subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True)
+        # Check both staged and unstaged files relative to branch
+        output = subprocess.check_output(["git", "diff", "--name-only", branch], text=True)
         files = [f.replace("\\", "/").strip() for f in output.splitlines()]
+        
+        # Also include untracked files in the check
+        untracked = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard"], text=True)
+        files.extend([f.replace("\\", "/").strip() for f in untracked.splitlines()])
+        
         files = [f for f in files if f.startswith(LIB_DIR) and f.endswith(".dart")]
-        return [f for f in files if not any(p in f for p in IGNORE_PATTERNS)]
+        return list(set([f for f in files if not any(p in f for p in IGNORE_PATTERNS)]))
     except Exception as e:
-        print(f"{YELLOW}Warning: Failed to get staged files via git: {e}{NC}")
+        print(f"{YELLOW}Warning: Failed to get changed files via git: {e}{NC}")
         return []
 
 def resolve_path(current_file, target_path):
@@ -162,18 +168,18 @@ def main():
     is_strict = args.branch == "main" or os.getenv("GITHUB_ACTIONS") == "true"
     
     try:
-        staged_files = get_staged_files()
-        if not staged_files:
+        changed_files = get_changed_files(args.branch)
+        if not changed_files:
             # Silent success if no files to check
             sys.exit(0)
             
-        export_graph, import_map, provider_map, raw_exports = build_graph(staged_files)
+        export_graph, import_map, provider_map, raw_exports = build_graph(changed_files)
         
         violations = []
         warnings = []
         
         # ── 1. LEI DO DOMÍNIO EXPLÍCITO (No-Barrel-in-Domain) ───────────────
-        for file_path in staged_files:
+        for file_path in changed_files:
             if file_path.startswith(DOMAIN_DIR):
                 is_barrel = (
                     file_path.endswith("index.dart") or 

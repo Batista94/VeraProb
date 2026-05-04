@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/super_admin/audit_log_payload.dart';
 
 /// Structured audit log payload viewer.
 ///
@@ -28,17 +29,14 @@ class AuditPayloadDiffView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (payload == null || payload!.isEmpty) {
+    final auditPayload = AuditLogPayload.fromRaw(payload);
+
+    if (auditPayload.isEmpty) {
       return const Text(
         'Sem payload.',
         style: TextStyle(color: VeraProbColors.textSecondary),
       );
     }
-
-    final hasDiff =
-        payload!.containsKey('before') && payload!.containsKey('after');
-    final contextMap = payload!['context'];
-    final hasContext = contextMap is Map && contextMap.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,18 +47,13 @@ class AuditPayloadDiffView extends StatelessWidget {
           const SizedBox(height: 8),
           _ReasonBanner(reason: reason!),
         ],
-        if (hasContext) ...[
+        if (auditPayload.hasContext) ...[
           const SizedBox(height: 12),
-          _ContextView(
-            context: Map<String, Object?>.from(
-              // pr_scanner: ignore
-              contextMap as Map<Object?, Object?>,
-            ),
-          ),
+          _ContextView(context: auditPayload.context),
         ],
         const SizedBox(height: 12),
-        if (hasDiff)
-          _DiffView(payload: payload!)
+        if (auditPayload.hasDiff)
+          _DiffView(auditPayload: auditPayload)
         else
           _RawView(payload: payload!),
       ],
@@ -253,29 +246,12 @@ class _ContextView extends StatelessWidget {
 }
 
 class _DiffView extends StatelessWidget {
-  const _DiffView({required this.payload});
-  final Map<String, Object?> payload;
+  const _DiffView({required this.auditPayload});
+  final AuditLogPayload auditPayload;
 
   @override
   Widget build(BuildContext context) {
-    final before = payload['before'];
-    final after = payload['after'];
-    final beforeMap = before is Map
-        ? Map<String, Object?>.from(before) // pr_scanner: ignore
-        : <String, Object?>{};
-    final afterMap = after is Map
-        ? Map<String, Object?>.from(after) // pr_scanner: ignore
-        : <String, Object?>{};
-    final allKeys = {...beforeMap.keys, ...afterMap.keys};
-
-    if (allKeys.isEmpty) {
-      return const Text('Nenhuma alteração registrada.');
-    }
-
-    // Stage C: Only show fields that actually changed
-    final changedKeys = allKeys.where((key) {
-      return beforeMap[key]?.toString() != afterMap[key]?.toString();
-    }).toList();
+    final changedKeys = auditPayload.changedKeys;
 
     if (changedKeys.isEmpty) {
       return const Text(
@@ -303,8 +279,8 @@ class _DiffView extends StatelessWidget {
           ],
         ),
         ...changedKeys.map((key) {
-          final oldVal = beforeMap[key];
-          final newVal = afterMap[key];
+          final oldVal = auditPayload.before[key];
+          final newVal = auditPayload.after[key];
           return TableRow(
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.08),
