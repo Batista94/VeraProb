@@ -25,12 +25,22 @@ BOLD = '\033[1m'
 NC = '\033[0m'
 
 def get_changed_files(branch="main"):
+    # Priority: Stdin (passed from bash wrapper)
+    if not sys.stdin.isatty():
+        try:
+            stdin_data = sys.stdin.read().strip()
+            if stdin_data:
+                files = [f.replace("\\", "/").strip() for f in stdin_data.splitlines() if f.strip()]
+                files = [f for f in files if f.startswith(LIB_DIR) and f.endswith(".dart")]
+                return list(set([f for f in files if not any(p in f for p in IGNORE_PATTERNS)]))
+        except Exception:
+            pass
+
     try:
-        # Check both staged and unstaged files relative to branch
+        # Fallback to manual git check if not piped
         output = subprocess.check_output(["git", "diff", "--name-only", branch], text=True)
         files = [f.replace("\\", "/").strip() for f in output.splitlines()]
         
-        # Also include untracked files in the check
         untracked = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard"], text=True)
         files.extend([f.replace("\\", "/").strip() for f in untracked.splitlines()])
         
@@ -173,6 +183,7 @@ def main():
             # Silent success if no files to check
             sys.exit(0)
             
+        print(f"  Scanning {len(changed_files)} files for barrel violations...")
         export_graph, import_map, provider_map, raw_exports = build_graph(changed_files)
         
         violations = []

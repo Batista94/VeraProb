@@ -1,7 +1,7 @@
 {
   "name": "UX Operations",
   "description": "Guardian of UX precision and provenance visibility.",
-  "persona": "file://../../.claude/agents/ux-operations.md",
+  "persona": "file://./ux-operations.md",
   "capabilities": [
     "bash",
     "read_workspace",

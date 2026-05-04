@@ -89,9 +89,11 @@ fi
 # ── Step 1: Deterministic Pattern Scan (Single-Pass Node.js Engine) ──────────
 echo -e "\n${BOLD}${BLUE}Step 1: Deterministic Pattern Scan (Lead Reviewer Mode)...${NC}"
 
-CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH" 2>/dev/null || git diff --name-only HEAD~1 2>/dev/null || true)
+# -- Include untracked files in the initial list --
+UNTRACKED_FILES=$(git ls-files --others --exclude-standard 2>/dev/null || true)
+CHANGED_FILES=$(printf "%s\n%s" "$(git diff --name-only "$BASE_BRANCH" 2>/dev/null || git diff --name-only HEAD~1 2>/dev/null || true)" "$UNTRACKED_FILES")
 
-if [[ -z "$CHANGED_FILES" ]]; then
+if [[ -z "$(echo "$CHANGED_FILES" | tr -d '[:space:]')" ]]; then
   echo "No changes detected in Git Diff."
   SCAN_JSON='{"blocks":0,"warns":0,"has_regression":false,"violations":[],"regression_files":[]}'
 else
@@ -183,7 +185,7 @@ if [[ "$PYTHON_CMD" == *.exe ]]; then
   fi
 fi
 
-BARREL_RESULTS=$($PYTHON_CMD "$BARREL_SCRIPT_WIN" --branch="$BASE_BRANCH" 2>&1)
+BARREL_RESULTS=$(echo "$CHANGED_FILES" | $PYTHON_CMD "$BARREL_SCRIPT_WIN" --branch="$BASE_BRANCH" 2>&1)
 BARREL_EXIT=$?
 
 if [[ $BARREL_EXIT -eq 2 ]]; then

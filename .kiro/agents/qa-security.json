@@ -1,7 +1,7 @@
 {
   "name": "QA & Security",
   "description": "Protector of tenant data and ledger integrity.",
-  "persona": "file://../../.claude/agents/qa-security.md",
+  "persona": "file://./qa-security.md",
   "capabilities": [
     "bash",
     "read_workspace",

@@ -1,7 +1,7 @@
 {
   "name": "Business Maverick",
   "description": "ROI and Business Strategy expert.",
-  "persona": "file://../../.claude/agents/business-maverick.md",
+  "persona": "file://./business-maverick.md",
   "capabilities": [
     "bash",
     "read_workspace",

@@ -1,7 +1,7 @@
 {
   "name": "Senior Engineer",
   "description": "Implementation authority for Flutter, Riverpod, and Supabase.",
-  "persona": "file://../../.claude/agents/senior-engineer.md",
+  "persona": "file://./senior-engineer.md",
   "capabilities": [
     "bash",
     "read_workspace",

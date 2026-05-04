@@ -9,6 +9,18 @@
       ],
       "env": {}
     },
+    "github": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "disabled": true
+    },
     "postgres": {
       "type": "stdio",
       "command": "cmd",
@@ -36,6 +48,15 @@
       "env": {},
       "disabled": false,
       "autoApprove": []
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-memory"
+      ],
+      "env": {}
     },
     "sequential-thinking": {
       "type": "stdio",

@@ -26,7 +26,7 @@
     {
       "event": "preCommit",
       "agent": "security-auditor",
-      "action": "skill://prompt-injection-auditor/audit-batch .kiro/skills",
+      "action": "skill://prompt-injection-auditor/audit-batch .agents/skills",
       "blocking": true,
       "description": "Auditoria de Prompt Injection (INV-41): Escaneia todas as skills e instruções em busca de vulnerabilidades de injeção e jailbreaks."
     },

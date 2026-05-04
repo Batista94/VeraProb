@@ -1,6 +1,6 @@
 {
   "name": "Lead Reviewer",
-  "persona": "file://../../.claude/agents/lead-reviewer.md",
+  "persona": "file://./lead-reviewer.md",
   "capabilities": [
     "bash",
     "read_workspace",

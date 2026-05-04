@@ -35,7 +35,7 @@ if (!fs.existsSync(patternsPath)) {
 const patterns = JSON.parse(fs.readFileSync(patternsPath, "utf8"));
 
 Object.entries(patterns).forEach(([name, config]) => {
-  if (config.pattern.includes("\n") || config.pattern.includes("\r")) {
+  if (config.pattern && (config.pattern.includes("\n") || config.pattern.includes("\r"))) {
     console.error(`[ERROR] Pattern '${name}' contains illegal JSON escapes. Fix pr_patterns.json.`);
     process.exit(1);
   }
@@ -97,6 +97,29 @@ function getTablesWithPolicies() {
   return _tablesWithPolicies;
 }
 
+// ── Pre-compile Patterns ─────────────────────────────────────────────────────
+
+function safeRegExp(p) {
+  if (!p) return { test: () => true };
+  try {
+    const sanitized = String(p).replace(/\x08/g, "\\b");
+    return new RegExp(sanitized);
+  } catch (e) {
+    console.error(`[ERROR] Invalid regex pattern: ${p}`);
+    return { test: () => false };
+  }
+}
+
+const compiledPatterns = Object.entries(patterns).map(([name, config]) => ({
+  name,
+  config,
+  regex: safeRegExp(config.pattern),
+  mustAlsoContain: config.type === "absence_check" ? safeRegExp(config.must_also_contain) : null,
+  requiresSupabaseContent: config.requires_supabase_content ? config.requires_supabase_content.map(safeRegExp) : null,
+  pathFilter: config.path_filter ? new RegExp(config.path_filter) : null,
+  excludePathPattern: config.exclude_path_pattern ? new RegExp(config.exclude_path_pattern, "i") : null
+}));
+
 // ── Scan ─────────────────────────────────────────────────────────────────────
 
 const violations = [];
@@ -116,39 +139,16 @@ changedFiles.forEach((file) => {
   const content = fs.readFileSync(file, "utf8");
   const lines = content.split(/\r?\n/);
 
-  Object.entries(patterns).forEach(([ruleName, config]) => {
+  compiledPatterns.forEach(({name, config, regex, mustAlsoContain, requiresSupabaseContent, pathFilter, excludePathPattern}) => {
     // Path filtering
-    if (config.path_filter && !new RegExp(config.path_filter).test(file))
+    if (pathFilter && !pathFilter.test(file))
       return;
-    if (
-      config.exclude_path_pattern &&
-      new RegExp(config.exclude_path_pattern, "i").test(file)
-    )
+    if (excludePathPattern && excludePathPattern.test(file))
       return;
-    if (
-      config.exclude_files &&
-      config.exclude_files.some((exclude) => file.includes(exclude))
-    )
+    if (config.exclude_files && config.exclude_files.some((exclude) => file.includes(exclude)))
       return;
-    if (
-      config.files_containing &&
-      !config.files_containing.some((term) => file.includes(term))
-    )
+    if (config.files_containing && !config.files_containing.some((term) => file.includes(term)))
       return;
-
-    function safeRegExp(p) {
-      if (!p) return { test: () => true };
-      try {
-        // Enterprise fix: JSON \b is backspace (0x08). Regex \b is word boundary.
-        // We sanitize the pattern to ensure \b always means word boundary.
-        const sanitized = String(p).replace(/\x08/g, "\\b");
-        return new RegExp(sanitized);
-      } catch (e) {
-        console.error(`[ERROR] Invalid regex pattern: ${p} (Rule: ${ruleName})`);
-        return { test: () => false };
-      }
-    }
-    const regex = safeRegExp(config.pattern);
 
     // ── Absence Check (INV-1 / INV-26-REPO / INV-30) ──
     if (config.type === "absence_check") {
@@ -159,19 +159,16 @@ changedFiles.forEach((file) => {
 
       if (!regex.test(strippedContent)) return;
 
-      if (config.requires_supabase_content) {
-        const hasSupabaseCall = config.requires_supabase_content.some(
-          (supaPattern) => safeRegExp(supaPattern).test(strippedContent),
-        );
+      if (requiresSupabaseContent) {
+        const hasSupabaseCall = requiresSupabaseContent.some((supaRegex) => supaRegex.test(strippedContent));
         if (!hasSupabaseCall) return;
       }
 
-      const mustAlsoContain = safeRegExp(config.must_also_contain);
       if (!mustAlsoContain.test(strippedContent)) {
         violations.push({
           file,
           line: null,
-          rule: ruleName,
+          rule: name,
           description: config.description,
           severity: "BLOCK",
         });
@@ -179,119 +176,87 @@ changedFiles.forEach((file) => {
       return;
     }
 
-      // ── SQL RLS Integrity Check (INV-2 Specialized) ──
-      if (config.type === "sql_rls_integrity" && file.endsWith(".sql")) {
-        // File-level bypass: policies superseded by later migrations
-        const sql = content.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--.*$/gm, "");
+    // ── SQL RLS Integrity Check (INV-2 Specialized) ──
+    if (config.type === "sql_rls_integrity" && file.endsWith(".sql")) {
+      const sql = content.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--.*$/gm, "");
+      const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)/gi;
+      let match;
+      
+      while ((match = createTableRegex.exec(sql)) !== null) {
+        const schemaName = match[1];
+        const tableName = match[2];
+        const tableStart = match.index;
+        const nextSnippet = sql.substring(tableStart, tableStart + 200);
+        if (/PARTITION\s+OF/i.test(nextSnippet)) continue;
+        if (schemaName && schemaName.toLowerCase() !== "public") continue;
         
-        // Match CREATE TABLE [IF NOT EXISTS] [schema.]name
-        const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)/gi;
-        let match;
-        
-        while ((match = createTableRegex.exec(sql)) !== null) {
-          const schemaName = match[1]; // undefined if no schema
-          const tableName = match[2];
-          
-          // 0. Ignore partitions (Inherited RLS from parent is sufficient for INV-2)
-          const tableStart = match.index;
-          const nextSnippet = sql.substring(tableStart, tableStart + 200);
-          if (/PARTITION\s+OF/i.test(nextSnippet)) continue;
-
-          // Ignore tables in system schemas (auth, extensions, etc.)
-          if (schemaName && schemaName.toLowerCase() !== "public") continue;
-          
-          // 1. Check ENABLE RLS for THIS specific table
-          const rlsRegex = new RegExp(`ALTER\\s+TABLE\\s+(?:public\\.)?${tableName}\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, "i");
-          if (!rlsRegex.test(sql)) {
-            violations.push({
-              file,
-              line: null,
-              rule: "INV-2-RLS-MANDATORY",
-              description: `Table '${tableName}' created but 'ENABLE ROW LEVEL SECURITY' not found in the same file.`,
-              severity: "BLOCK"
-            });
+        const rlsRegex = new RegExp(`ALTER\\s+TABLE\\s+(?:public\\.)?${tableName}\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, "i");
+        if (!rlsRegex.test(sql)) {
+          violations.push({
+            file,
+            line: null,
+            rule: "INV-2-RLS-MANDATORY",
+            description: `Table '${tableName}' created but 'ENABLE ROW LEVEL SECURITY' not found in the same file.`,
+            severity: "BLOCK"
+          });
+        } else {
+          const policyRegex = new RegExp(`CREATE\\s+POLICY.+ON\\s+(?:public\\.)?${tableName}`, "i");
+          if (!policyRegex.test(sql)) {
+            if (!getDenyAllTables().has(tableName.toLowerCase()) && !getTablesWithPolicies().has(tableName.toLowerCase())) {
+              violations.push({
+                file,
+                line: null,
+                rule: "INV-2-POLICY-MISSING",
+                description: `Table '${tableName}' has RLS enabled but no policies found.`,
+                severity: "WARN"
+              });
+            }
           } else {
-            // 2. Check for Policy existence (WARNING)
-            const policyRegex = new RegExp(`CREATE\\s+POLICY.+ON\\s+(?:public\\.)?${tableName}`, "i");
-            if (!policyRegex.test(sql)) {
-              if (!getDenyAllTables().has(tableName.toLowerCase()) && !getTablesWithPolicies().has(tableName.toLowerCase())) {
-                violations.push({
-                  file,
-                  line: null,
-                  rule: "INV-2-POLICY-MISSING",
-                  description: `Table '${tableName}' has RLS enabled but no policies found. (Warning: Ensure policies are defined or intended to be restrictive).`,
-                  severity: "WARN"
-                });
-              }
-            } else {
-              // 3. Check for mandatory isolation pattern (WARNING)
-              // (auth.jwt() ->> 'organization_id')::uuid
-              const patternRegex = /\(auth\.jwt\(\)\s*(?:->>\s*'organization_id'|->\s*'app_metadata'\s*->>\s*'org_id')\)::uuid/i;
-              if (!patternRegex.test(sql)) {
-                violations.push({
-                  file,
-                  line: null,
-                  rule: "INV-2-ISOLATION-PATTERN",
-                  description: `Policy on '${tableName}' might not be using the mandatory VeraProb isolation pattern: (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid`,
-                  severity: "WARN"
-                });
-              }
+            const patternRegex = /\(auth\.jwt\(\)\s*(?:->>\s*'organization_id'|->\s*'app_metadata'\s*->>\s*'org_id')\)::uuid/i;
+            if (!patternRegex.test(sql)) {
+              violations.push({
+                file,
+                line: null,
+                rule: "INV-2-ISOLATION-PATTERN",
+                description: `Policy on '${tableName}' might not be using the mandatory VeraProb isolation pattern.`,
+                severity: "WARN"
+              });
             }
           }
         }
-        return;
       }
+      return;
+    }
 
-      // ── Line-by-line check ──
-    // -- Context-Aware Pre-processing for SQL --
+    // ── Line-by-line check ──
     let inFunction = false;
-    
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
-
-      // Track SQL function boundaries to avoid false positives in application logic (INV-DB)
       if (file.endsWith(".sql")) {
         if (/CREATE\s+OR\s+REPLACE\s+FUNCTION/i.test(trimmedLine)) inFunction = true;
         if (inFunction && /\$\$\s*;/i.test(trimmedLine)) {
-            inFunction = false;
-            return; // Skip the closing line itself
+          inFunction = false;
+          return;
         }
       }
-
-      // Ignore full-line comments and strip end-of-line comments for matching
-      // Note: we use trimEnd() to remove \r before stripping comments
       const strippedLine = file.endsWith(".sql")
               ? line.trimEnd().replace(/--.*$/, "").trim()
-              : line.trimEnd()
-                  .replace(/\/\/\/.*$/, "")
-                  .replace(/\/\/.*$/, "")
-                  .trim();
+              : line.trimEnd().replace(/\/\/\/.*$/, "").replace(/\/\/.*$/, "").trim();
 
       if (!regex.test(strippedLine)) return;
+      if (name === "INV-DB" && inFunction) return;
 
-      // Filter out Destructive Operation false positives inside function bodies
-      if (ruleName === "INV-DB" && inFunction) return;
-
-      // Bypass check
-      const hasBypass =
-        bypassKeywords.some((kw) => line.includes(kw)) ||
-        (lines[index + 1] &&
-          bypassKeywords.some((kw) => lines[index + 1].includes(kw)));
+      const hasBypass = bypassKeywords.some((kw) => line.includes(kw)) || (lines[index + 1] && bypassKeywords.some((kw) => lines[index + 1].includes(kw)));
       if (hasBypass) return;
 
-      // UTC special case
-      if (ruleName === "UTC-BLOCK") {
-        const hasUtcOnSameLine = line.includes(".toUtc()");
-        const hasUtcOnNextLine = (lines[index + 1] || "")
-          .trim()
-          .startsWith(".toUtc()");
-        if (hasUtcOnSameLine || hasUtcOnNextLine) return;
+      if (name === "UTC-BLOCK") {
+        if (line.includes(".toUtc()") || (lines[index + 1] || "").trim().startsWith(".toUtc()")) return;
       }
 
       violations.push({
         file,
         line: index + 1,
-        rule: ruleName,
+        rule: name,
         description: config.description,
         severity: config.severity || "BLOCK",
       });
@@ -299,27 +264,28 @@ changedFiles.forEach((file) => {
   });
 });
 
-// ── Regression Detection ─────────────────────────────────────────────────────
+// ── Regression Detection (Single Git Call Optimization) ──────────────────────
 const { execSync } = require("child_process");
 
+let fileStatuses = new Map();
+try {
+  const diffOutput = execSync(`git diff --name-status "${baseBranch}"`, { encoding: "utf8" });
+  diffOutput.split("\n").forEach(line => {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      const status = parts[0];
+      const file = parts[1].replace(/\\/g, "/");
+      fileStatuses.set(file, status);
+    }
+  });
+} catch (e) {}
+
 const regressionFiles = changedFiles.filter((file) => {
-  if (!file.includes("supabase/migrations/") && !file.includes("lib/domain/"))
-    return false;
+  const normalizedFile = file.replace(/\\/g, "/");
+  if (!normalizedFile.includes("supabase/migrations/") && !normalizedFile.includes("lib/domain/")) return false;
   if (!fs.existsSync(file)) return false;
-
-  // Bypass via comment
-  const content = fs.readFileSync(file, "utf8");
-
-  // Refinement: New migrations/domain files are evolution, not regression.
-  // We check if the file is "Modified" vs "Added" relative to the base branch.
-  try {
-    const status = execSync(`git diff --name-status "${baseBranch}" -- "${file}"`, { encoding: "utf8" }).trim();
-    // If status starts with 'A' (Added), it's not a regression
-    if (status.startsWith("A")) return false;
-  } catch (e) {
-    // If git fails, fallback to safe (flag it)
-  }
-
+  const status = fileStatuses.get(normalizedFile);
+  if (status && status.startsWith("A")) return false;
   return true;
 });
 

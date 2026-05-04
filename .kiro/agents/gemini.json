@@ -2,7 +2,7 @@
   "name": "Gemini Assistant",
   "description": "On-demand usage for simple bugs, documentation and context recovery.",
   "model": "gemini-1.5-pro-latest",
-  "persona": "file://../../.claude/agents/senior-engineer.md",
+  "persona": "file://./senior-engineer.md",
   "capabilities": [
     "bash",
     "read_workspace",

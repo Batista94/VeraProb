@@ -1,7 +1,7 @@
 {
   "name": "Architect",
   "description": "Guardian of structural integrity and domain purity.",
-  "persona": "file://../../.claude/agents/architect.md",
+  "persona": "file://./architect.md",
   "capabilities": [
     "bash",
     "read_workspace",
