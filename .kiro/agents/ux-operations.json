@@ -5,11 +5,15 @@
   "capabilities": [
     "bash",
     "read_workspace",
-    "mcp:sequential-thinking",
-    "mcp:memory"
+    "mcp:playwright",
+    "mcp:sequential-thinking"
   ],
   "steering": [
     "file://../../CLAUDE.md",
     "file://../steering/ux-standards.md"
-  ]
+  ],
+  "env": {
+    "UX_STANDARDS": "INDUSTRIAL_DARK",
+    "MODE": "STRICT"
+  }
 }

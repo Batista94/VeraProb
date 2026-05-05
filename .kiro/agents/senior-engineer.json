@@ -1,16 +1,20 @@
 {
   "name": "Senior Engineer",
-  "description": "Implementation expert and performance optimizer.",
+  "description": "Implementation authority for Flutter, Riverpod, and Supabase.",
   "persona": "file://./senior-engineer.md",
   "capabilities": [
     "bash",
     "read_workspace",
     "mcp:postgres",
-    "mcp:sequential-thinking",
-    "mcp:memory"
+    "mcp:sequential-thinking"
   ],
   "steering": [
+    "file://../steering/forensic-standards.md",
     "file://../../CLAUDE.md",
-    "file://../steering/forensic-standards.md"
-  ]
+    "file://../AGENTS.md",
+    "file://../rules.md"
+  ],
+  "env": {
+    "TECH_STACK": "FLUTTER_SUPABASE"
+  }
 }

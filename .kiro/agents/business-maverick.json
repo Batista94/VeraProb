@@ -5,8 +5,7 @@
   "capabilities": [
     "bash",
     "read_workspace",
-    "mcp:fetch",
-    "mcp:memory"
+    "mcp:fetch"
   ],
   "steering": [
     "file://../steering/forensic-standards.md",

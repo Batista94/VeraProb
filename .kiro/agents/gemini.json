@@ -5,7 +5,6 @@
   "capabilities": [
     "bash",
     "read_workspace",
-    "mcp:memory",
     "mcp:sequential-thinking"
   ],
   "steering": [
