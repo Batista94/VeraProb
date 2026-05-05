@@ -6,6 +6,9 @@
 
 $ErrorActionPreference = "Stop"
 
+# Cleanup any previous background jobs
+Get-Job | Remove-Job -Force -ErrorAction SilentlyContinue
+
 if (-not (Test-Path ".env")) {
     Write-Error @"
 ❌ Arquivo .env não encontrado.
@@ -16,8 +19,9 @@ Depois preencha com as credenciais do projeto veraprob-dev no Supabase.
 }
 
 # 0. Kill lingering processes to prevent file locks (INV-28)
-Write-Host "[VeraProb] Verificando processos órfãos (dart, flutter)..." -ForegroundColor DarkGray
-Get-Process -Name "dart", "flutter" -ErrorAction SilentlyContinue | Stop-Process -Force
+Write-Host "[VeraProb] Verificando processos órfãos (dart, flutter, analysis_server)..." -ForegroundColor DarkGray
+Get-Process -Name "dart", "flutter", "analysis_server", "gen_snapshot", "frontend_server" -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Seconds 2 # Aguarda a liberação dos descritores de arquivo
 
 Write-Host "[DEV] Iniciando veraprob com credenciais de desenvolvimento..." -ForegroundColor Cyan
 Write-Host "   Credenciais lidas de: .env" -ForegroundColor DarkGray
@@ -47,7 +51,11 @@ Write-Host "   Edge Functions job ID: $($efJob.Id)" -ForegroundColor DarkGray
 
 # 4. Clean and get dependencies.
 Write-Host "FLUTTER: Limpando cache e baixando dependências..." -ForegroundColor Cyan
-flutter clean
+try {
+    flutter clean
+} catch {
+    Write-Host "⚠️ Aviso: 'flutter clean' falhou parcialmente devido a arquivos travados. Continuando mesmo assim..." -ForegroundColor Yellow
+}
 flutter pub get
 
 # 5. Run on Web Server (Port 8080).
