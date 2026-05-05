@@ -1,8 +1,14 @@
+param (
+    [switch]$FullVisual,
+    [switch]$Clean
+)
+
 # veraprob — Run DEV Environment
-# Usage: .\scripts\dev\run_dev.ps1
+# Usage: .\scripts\dev\run_dev.ps1 [-FullVisual] [-Clean]
 #
-# Reads credentials from .env (local dev file, never committed).
-# If .env doesn't exist, copy .env.example and fill in your credentials first.
+# -FullVisual: Use CanvasKit renderer for pixel-perfect UI validation.
+# -Clean: Force 'flutter clean' before starting (use when build is broken).
+# Default: Uses HTML renderer for 5x faster load times.
 
 $ErrorActionPreference = "Stop"
 
@@ -10,64 +16,52 @@ $ErrorActionPreference = "Stop"
 Get-Job | Remove-Job -Force -ErrorAction SilentlyContinue
 
 if (-not (Test-Path ".env")) {
-    Write-Error @"
-❌ Arquivo .env não encontrado.
-Execute: copy .env.example .env
-Depois preencha com as credenciais do projeto veraprob-dev no Supabase.
-"@
+    Write-Error "❌ Arquivo .env não encontrado. Execute: copy .env.example .env"
     exit 1
 }
 
-# 0. Kill lingering processes to prevent file locks (INV-28)
-Write-Host "[VeraProb] Verificando processos órfãos (dart, flutter, analysis_server)..." -ForegroundColor DarkGray
-Get-Process -Name "dart", "flutter", "analysis_server", "gen_snapshot", "frontend_server" -ErrorAction SilentlyContinue | Stop-Process -Force
-Start-Sleep -Seconds 2 # Aguarda a liberação dos descritores de arquivo
+# 0. Kill lingering processes (INV-28)
+Write-Host "[VeraProb] Verificando processos órfãos..." -ForegroundColor DarkGray
+Get-Process -Name "dart", "flutter", "analysis_server" -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Seconds 1
 
-Write-Host "[DEV] Iniciando veraprob com credenciais de desenvolvimento..." -ForegroundColor Cyan
-Write-Host "   Credenciais lidas de: .env" -ForegroundColor DarkGray
+Write-Host "[DEV] Iniciando veraprob..." -ForegroundColor Cyan
 
-# 1. Garante que o Supabase local está rodando e reseta o banco.
-Write-Host "Supabase: Iniciando serviços (supabase start)..." -ForegroundColor Green
+# 1. Supabase & DB
+Write-Host "Supabase: Iniciando e resetando banco..." -ForegroundColor Green
 supabase start
-
-# Pequena pausa para garantir que o proxy está aceitando conexões antes do reset
-Write-Host "⏳ Aguardando serviços estabilizarem..." -ForegroundColor DarkGray
-Start-Sleep -Seconds 2
-
-Write-Host "DB: Resetando banco local (supabase db reset)..." -ForegroundColor Green
+Start-Sleep -Seconds 1
 supabase db reset
 
-# 2. Seed the DB with test data.
-Write-Host "SEED: Populando banco com dados de teste..." -ForegroundColor Green
+# 2. Seed
+Write-Host "SEED: Populando banco..." -ForegroundColor Green
 node scripts/dev/bootstrap_dev.mjs
 
-# 3. Start Edge Functions in a background job.
-Write-Host "EDGE: Iniciando Edge Functions localmente..." -ForegroundColor Yellow
+# 3. Edge Functions
+Write-Host "EDGE: Iniciando Edge Functions..." -ForegroundColor Yellow
 $efJob = Start-Job -ScriptBlock {
     Set-Location $using:PWD
-    supabase functions serve --env-file .env 2>&1
+    supabase functions serve --env-file .env
 }
-Write-Host "   Edge Functions job ID: $($efJob.Id)" -ForegroundColor DarkGray
 
-# 4. Clean and get dependencies.
-Write-Host "FLUTTER: Limpando cache e baixando dependências..." -ForegroundColor Cyan
-try {
+# 4. Flutter Prep
+if ($Clean) {
+    Write-Host "FLUTTER: Limpando cache..." -ForegroundColor Cyan
     flutter clean
-} catch {
-    Write-Host "⚠️ Aviso: 'flutter clean' falhou parcialmente devido a arquivos travados. Continuando mesmo assim..." -ForegroundColor Yellow
 }
+Write-Host "FLUTTER: Baixando dependências..." -ForegroundColor Cyan
 flutter pub get
 
-# 5. Run on Chrome (Port 8080).
-# Note: --dart-define=SKIP_MFA_DEV=true is used to bypass 2FA locally.
-Write-Host "RUN: Iniciando Flutter Web (Chrome na porta 8080)..." -ForegroundColor Cyan
-flutter run -d chrome `
-    --web-port=8080 `
-    --dart-define=ENV=dev `
-    --dart-define=SKIP_MFA_DEV=true
+# 5. Run
+$renderer = if ($FullVisual) { "canvaskit" } else { "html" }
+$modeText = if ($FullVisual) { "🎨 VISUAL (CanvasKit)" } else { "🚀 SPEED (HTML)" }
 
-# Cleanup Edge Function job when Flutter exits
-Write-Host "STOP: Encerrando serviços de fundo..." -ForegroundColor DarkGray
+Write-Host "RUN: Iniciando Flutter Web ($modeText na porta 8080)..." -ForegroundColor Cyan
+
+# Execução direta para evitar problemas de parsing de argumentos
+flutter run -d chrome --web-port=8080 --web-renderer $renderer --dart-define=ENV=dev --dart-define=SKIP_MFA_DEV=true
+
+# Cleanup
+Write-Host "STOP: Encerrando serviços..." -ForegroundColor DarkGray
 Stop-Job $efJob -ErrorAction SilentlyContinue
 Remove-Job $efJob -ErrorAction SilentlyContinue
-Write-Host "DONE: Ambiente encerrado." -ForegroundColor DarkGray

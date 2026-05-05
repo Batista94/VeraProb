@@ -21,6 +21,9 @@ Para executar os testes e ignorar o fluxo de MFA no ambiente de desenvolvimento,
 flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 ```
 
+> [!IMPORTANT]
+> **Não use o IP/URL manualmente ainda**: O comando `flutter run -d chrome` vai abrir uma janela nova do Chrome automaticamente quando estiver pronto. Se você tentar acessar `127.0.0.1:8080` antes dessa janela abrir, dará "Conexão Recusada".
+
 ### 📊 Massa de Dados (CNPJs Fornecidos)
 
 1. `45.518.855/0001-47` (Viação Estrela Dalva)
