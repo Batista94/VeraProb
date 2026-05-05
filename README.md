@@ -56,7 +56,7 @@ node scripts/dev/bootstrap_dev.mjs
 cp .env.example .env
 
 # Run app
-flutter run -d web-server --web-port=8080 --dart-define=SKIP_MFA_DEV=true --web-renderer wasm
+flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 ```
 
 ### 3. Testing & Quality

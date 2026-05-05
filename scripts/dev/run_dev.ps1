@@ -58,10 +58,10 @@ try {
 }
 flutter pub get
 
-# 5. Run on Web Server (Port 8080).
+# 5. Run on Chrome (Port 8080).
 # Note: --dart-define=SKIP_MFA_DEV=true is used to bypass 2FA locally.
-Write-Host "RUN: Iniciando Flutter Web (Server na porta 8080)..." -ForegroundColor Cyan
-flutter run -d web-server `
+Write-Host "RUN: Iniciando Flutter Web (Chrome na porta 8080)..." -ForegroundColor Cyan
+flutter run -d chrome `
     --web-port=8080 `
     --dart-define=ENV=dev `
     --dart-define=SKIP_MFA_DEV=true
