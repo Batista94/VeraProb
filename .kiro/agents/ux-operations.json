@@ -1,19 +1,15 @@
 {
   "name": "UX Operations",
-  "description": "Guardian of UX precision and provenance visibility.",
+  "description": "Interface expert and friction eliminator.",
   "persona": "file://./ux-operations.md",
   "capabilities": [
     "bash",
     "read_workspace",
-    "mcp:playwright"
+    "mcp:sequential-thinking",
+    "mcp:memory"
   ],
   "steering": [
-    "file://../steering/forensic-standards.md",
     "file://../../CLAUDE.md",
-    "file://../AGENTS.md",
-    "file://../rules.md"
-  ],
-  "env": {
-    "UX_STANDARDS": "INDUSTRIAL_DARK"
-  }
+    "file://../steering/ux-standards.md"
+  ]
 }

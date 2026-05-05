@@ -1,21 +1,19 @@
 {
   "name": "Lead Reviewer",
+  "description": "Ultimate gatekeeper and Clean Code auditor.",
   "persona": "file://./lead-reviewer.md",
   "capabilities": [
     "bash",
     "read_workspace",
-    "mcp:postgres",
+    "mcp:sequential-thinking",
     "mcp:memory",
-    "mcp:sequential-thinking"
+    "mcp:postgres"
+  ],
+  "skills": [
+    "veraprob-pr-scanner"
   ],
   "steering": [
-    "file://../steering/forensic-standards.md",
     "file://../../CLAUDE.md",
-    "file://../AGENTS.md",
-    "file://../rules.md"
-  ],
-  "env": {
-    "STRICT_MODE": "1",
-    "BASE_BRANCH": "main"
-  }
+    "file://../steering/forensic-standards.md"
+  ]
 }

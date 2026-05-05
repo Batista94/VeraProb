@@ -1,63 +1,24 @@
 {
   "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest"
-      ],
-      "env": {},
-      "disabled": false
-    },
+    "playwright": { "command": "cmd", "args": ["/c", "npx -y @playwright/mcp@latest"] },
     "github": {
-      "type": "stdio",
       "command": "cmd",
-      "args": [
-        "/c",
-        "npx -y @modelcontextprotocol/server-github"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      },
+      "args": ["/c", "npx -y @modelcontextprotocol/server-github"],
+      "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}" },
       "disabled": true
     },
     "postgres": {
-      "type": "stdio",
       "command": "cmd",
       "args": [
         "/c",
         "npx -y @modelcontextprotocol/server-postgres",
         "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
       ],
-      "env": {},
-      "autoApprove": [
-        "query",
-        "query"
-      ],
+      "autoApprove": ["query"],
       "disabled": true
     },
-    "docker": {
-      "command": "uvx",
-      "args": [
-        "mcp-server-docker"
-      ],
-      "env": {},
-      "disabled": false,
-      "autoApprove": [
-        "list_containers"
-      ]
-    },
-    "fetch": {
-      "command": "uvx",
-      "args": [
-        "mcp-server-fetch"
-      ],
-      "env": {},
-      "disabled": false,
-      "autoApprove": [
-        "fetch"
-      ]
-    },
+    "docker": { "command": "uvx", "args": ["mcp-server-docker"], "autoApprove": ["list_containers"] },
+    "fetch": { "command": "uvx", "args": ["mcp-server-fetch"], "autoApprove": ["fetch"] },
     "memory": {
       "command": "powershell.exe",
       "args": [
@@ -66,20 +27,12 @@
         "Bypass",
         "-File",
         "./.agents/scripts/memory-proxy.ps1"
-      ],
-      "env": {}
+      ]
     },
     "sequential-thinking": {
-      "type": "stdio",
       "command": "cmd",
-      "args": [
-        "/c",
-        "npx -y @modelcontextprotocol/server-sequential-thinking"
-      ],
-      "env": {},
-      "autoApprove": [
-        "sequentialthinking"
-      ]
+      "args": ["/c", "npx -y @modelcontextprotocol/server-sequential-thinking"],
+      "autoApprove": ["sequentialthinking"]
     }
   }
 }

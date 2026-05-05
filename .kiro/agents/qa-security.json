@@ -1,22 +1,19 @@
 {
-  "name": "QA & Security",
-  "description": "Protector of tenant data and ledger integrity.",
+  "name": "QA Security",
+  "description": "Red Team operator and vulnerability scanner.",
   "persona": "file://./qa-security.md",
   "capabilities": [
     "bash",
     "read_workspace",
     "mcp:postgres",
-    "mcp:playwright",
-    "mcp:docker"
+    "mcp:sequential-thinking",
+    "mcp:memory"
+  ],
+  "skills": [
+    "forensic-scanner"
   ],
   "steering": [
-    "file://../steering/forensic-standards.md",
     "file://../../CLAUDE.md",
-    "file://../AGENTS.md",
-    "file://../rules.md"
-  ],
-  "env": {
-    "SECURITY_LEVEL": "HIGH",
-    "RLS_AUDIT": "1"
-  }
+    "file://../steering/forensic-standards.md"
+  ]
 }

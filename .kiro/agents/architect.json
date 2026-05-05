@@ -7,7 +7,8 @@
     "read_workspace",
     "mcp:postgres",
     "mcp:memory",
-    "mcp:sequential-thinking"
+    "mcp:sequential-thinking",
+    "mcp:fetch"
   ],
   "steering": [
     "file://../steering/forensic-standards.md",
