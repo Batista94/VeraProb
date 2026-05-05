@@ -15,13 +15,13 @@ O objetivo deste plano é garantir que o SuperAdmin consiga realizar todas as op
 
 ### 🚀 Inicialização do Ambiente
 
+NAO TENTE DEDUZIR A PORTA. EM CDA EXECUCAO O APLICATIVO É ABERTO EM UMA PORTA DIFERENTE. VA SEMPRE VIA O FLUTTER RUN.
+
 Para executar os testes e ignorar o fluxo de MFA no ambiente de desenvolvimento, o aplicativo deve ser iniciado com a seguinte flag:
 
 ```bash
 flutter run --dart-define=SKIP_MFA_DEV=true 
 ```
-
-NAO TENTE DEDUZIR A PORTA. EM CDA EXECUCAO O APLICATIVO É ABERTO EM UMA PORTA DIFERENTE. VA SEMPRE VIA O FLUTTER RUN.
 
 ### 📊 Massa de Dados (CNPJs Fornecidos)
 
