@@ -7,7 +7,8 @@
         "/c",
         "npx -y @playwright/mcp@latest"
       ],
-      "env": {}
+      "env": {},
+      "disabled": true
     },
     "github": {
       "type": "stdio",
@@ -33,7 +34,8 @@
       "autoApprove": [
         "query",
         "query"
-      ]
+      ],
+      "disabled": true
     },
     "docker": {
       "command": "uvx",

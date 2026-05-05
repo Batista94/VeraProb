@@ -23,7 +23,7 @@ app.*.map.json
 
 # Secrets & Environment (OWASP A01:2025/INV-2 Mitigation)
 .env*
-.env
+!.env.example
 .dev.env
 docs/governance/dev_environment.md
 *.secret
@@ -76,8 +76,16 @@ tmp_*.dart
 test_output.txt
 devtools_options.yaml
 
-# Kiro
+# Kiro (local settings — OS-specific MCP configs)
 .kiro/specs/
+.kiro/settings/mcp.json
+
+# MCP configs (OS-specific, each dev configures locally)
+.mcp.json
+
+# Vendored MCP server repos (install via tooling, not vendored)
+.docker-mcp/
+.mcp-servers-archived/
 
 # Security Audit (INV-28 — local forensic logs, never commit)
 .veraprob/

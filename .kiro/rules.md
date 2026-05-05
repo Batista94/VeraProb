@@ -12,7 +12,7 @@ Este arquivo define as regras inegociáveis e o contexto estático global para t
 
 ## 2. INVARIANTES FORENSES (INV-1 a INV-28)
 As Invariantes são as leis fundamentais do VeraProb. Nenhuma alteração de código pode violá-las.
-- **Fonte Única de Verdade (SSOT)**: Consulte sempre o arquivo [forensic_manifesto.md](file:///c:/Users/wes_b/Projects/VeraProb/docs/governance/forensic_manifesto.md).
+- **Fonte Única de Verdade (SSOT)**: Consulte sempre o arquivo [forensic_manifesto.md](docs/governance/forensic_manifesto.md).
 - **Verificação Automática**: O gatilho `preCommit` aciona o `forensic-scanner`, que valida deterministicamente as regras INV-1 a 28 via regex e análise estática.
 - **Principais Invariantes**:
   - **INV-1 (Identity Sovereignty)**: Todo fluxo deve validar `organization_id`.
