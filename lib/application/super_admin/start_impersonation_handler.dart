@@ -84,16 +84,20 @@ class StartImpersonationHandler {
         );
       }
 
-      final data = response.data as Map<String, dynamic>;
-      return ImpersonationSessionInfo(
-        sessionId: data['session_id'] as String,
-        targetOrgId: data['target_org_id'] as String,
-        targetOrgName: data['target_org_name'] as String,
-        impersonatorId: data['impersonator_id'] as String,
-        issuedAt: DateTime.parse(data['issued_at'] as String).toUtc(),
-        expiresAt: DateTime.parse(data['expires_at'] as String).toUtc(),
-        dateTimeProvider: _dateTimeProvider,
-      );
+      try {
+        final data = response.data as Map<String, dynamic>;
+        return ImpersonationSessionInfo(
+          sessionId: data['session_id'] as String,
+          targetOrgId: data['target_org_id'] as String,
+          targetOrgName: data['target_org_name'] as String,
+          impersonatorId: data['impersonator_id'] as String,
+          issuedAt: DateTime.parse(data['issued_at'] as String).toUtc(),
+          expiresAt: DateTime.parse(data['expires_at'] as String).toUtc(),
+          dateTimeProvider: _dateTimeProvider,
+        );
+      } catch (e) {
+        throw DomainException('Resposta inválida da Edge Function: $e');
+      }
     } on FunctionException catch (e) {
       throw DomainException(
         'Falha ao iniciar impersonation: ${e.details ?? e.reasonPhrase}',

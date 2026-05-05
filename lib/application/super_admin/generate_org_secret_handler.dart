@@ -44,15 +44,41 @@ class GenerateOrgSecretHandler {
         throw DomainException('Falha ao gerar secret: $error');
       }
 
-      final data = response.data as Map<String, dynamic>;
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        throw const DomainException(
+          'Falha ao gerar secret: resposta inválida do servidor',
+        );
+      }
+
+      final secret = data['secret'];
+      final version = data['version'];
+      final orgId = data['organization_id'];
+
+      if (secret is! String || version is! int || orgId is! String) {
+        throw const DomainException(
+          'Falha ao gerar secret: campos obrigatórios ausentes ou inválidos',
+        );
+      }
+
       return GenerateOrgSecretResult(
-        secret: data['secret'] as String,
-        version: data['version'] as int,
-        organizationId: data['organization_id'] as String,
+        secret: secret,
+        version: version,
+        organizationId: orgId,
       );
     } on FunctionException catch (e) {
-      throw DomainException(
-        'Falha ao gerar secret: ${e.details ?? e.reasonPhrase}',
+      // Sanitize details: only use string details or reasonPhrase.
+      // Complex objects (Map, List) may contain sensitive internal data.
+      final details = e.details;
+      final sanitized = details is String && details.isNotEmpty
+          ? details
+          : (e.reasonPhrase ?? 'erro desconhecido');
+      throw DomainException('Falha ao gerar secret: $sanitized');
+    } on DomainException {
+      rethrow;
+    } on Exception catch (_) {
+      throw const DomainException(
+        'Falha ao gerar secret: erro inesperado no mapeamento da resposta',
       );
     }
   }
