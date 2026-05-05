@@ -12,7 +12,7 @@
 //   3. Node.js >= 18
 //
 // USO:
-//   node scripts/bootstrap_dev.mjs
+//   node scripts/dev/bootstrap_dev.mjs
 // =============================================================================
 
 import { readFileSync, existsSync } from 'fs';
@@ -23,7 +23,7 @@ import crypto from 'crypto';
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..');
+const ROOT = join(__dirname, '..', '..');
 
 // ── Usuários provisionados ─────────────────────────────────────────────────────
 const USERS = [
@@ -185,7 +185,9 @@ async function ensureSuperAdmin(url, serviceKey, user) {
     { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
     { user_id: user.id, email: user.email },
   );
-  if (res.status !== 200 && res.status !== 201 && res.status !== 204) {
+  
+  // Handle 409 Conflict if resolution=ignore-duplicates fails or if user already exists
+  if (res.status !== 200 && res.status !== 201 && res.status !== 204 && res.status !== 409) {
     throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
   }
 
@@ -208,7 +210,8 @@ async function ensureTenantAdmin(url, serviceKey, user) {
     { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
     { user_id: user.id, organization_id: user.org_id, role: 'TENANT_ADMIN' },
   );
-  if (res.status === 200 || res.status === 201 || res.status === 204) return;
+  // Handle 409 Conflict gracefully
+  if (res.status === 200 || res.status === 201 || res.status === 204 || res.status === 409) return;
   throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
 }
 
@@ -231,7 +234,7 @@ async function ensureTestData(url, serviceKey) {
       license_number: 'CNH123456789'
     }
   );
-  if (!resDriver.ok) throw new Error(`Erro ao criar motorista: ${resDriver.status}`);
+  if (!resDriver.ok && resDriver.status !== 409) throw new Error(`Erro ao criar motorista: ${resDriver.status}`);
   console.log('ok');
 
   // 2. Criar Token de Vinculação
@@ -248,7 +251,7 @@ async function ensureTestData(url, serviceKey) {
     }
   );
 
-  if (!resToken.ok) {
+  if (!resToken.ok && resToken.status !== 409) {
     console.log('FALHOU');
     throw new Error(`Erro ao criar token: ${resToken.status} - ${JSON.stringify(resToken.data)}`);
   }
@@ -277,7 +280,7 @@ async function ensureTestData(url, serviceKey) {
       binding_token_id: tokenId
     }
   );
-  if (!resBind.ok) throw new Error(`Erro ao pré-vincular: ${resBind.status} - ${JSON.stringify(resBind.data)}`);
+  if (!resBind.ok && resBind.status !== 409) throw new Error(`Erro ao pré-vincular: ${resBind.status} - ${JSON.stringify(resBind.data)}`);
   console.log('ok');
 
   // 4. Criar Viagem de Teste (TRIP-8H-TEST) para Heurística WS-4
@@ -426,10 +429,20 @@ async function signIn(url, anonKey, email, password) {
 
 function cleanupZombies(userIds) {
   const ids = userIds.map(id => `'${id}'`).join(', ');
-  const sql = `DELETE FROM auth.users WHERE id IN (${ids});`;
-  const opts = { cwd: ROOT, timeout: 15000, encoding: 'utf8' };
-  const r = spawnSync('supabase', ['db', 'execute', '--local', `--sql=${sql}`], opts);
-  return r.status === 0;
+  // Clean up both auth and public tables to ensure a clean state
+  const sql = `
+    DELETE FROM auth.users WHERE id IN (${ids});
+    DELETE FROM public.super_admin_users WHERE user_id IN (${ids});
+    DELETE FROM public.user_roles WHERE user_id IN (${ids});
+  `.replace(/\s+/g, ' ').trim();
+
+  const opts = { cwd: ROOT, timeout: 15000, encoding: 'utf8', shell: true };
+  try {
+    const r = spawnSync('supabase', ['db', 'execute', '--local', `--sql=${sql}`], opts);
+    return r.status === 0;
+  } catch {
+    return false;
+  }
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
