@@ -485,7 +485,7 @@ async function main() {
     } catch (e) {
       console.log('FALHOU');
       console.error(`\n  ERRO: ${e.message}`);
-      console.error('  Tente: supabase db reset && node scripts/bootstrap_dev.mjs\n');
+      console.error('  Tente: supabase db reset && node scripts/dev/bootstrap_dev.mjs\n');
       process.exit(1);
     }
 

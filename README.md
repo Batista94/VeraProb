@@ -50,13 +50,13 @@ supabase start
 supabase db reset
 
 # Provision test data
-node scripts/bootstrap_dev.mjs
+node scripts/dev/bootstrap_dev.mjs
 
 # Setup environment
 cp .env.example .env
 
 # Run app
-flutter run -d chrome --web-renderer wasm
+flutter run -d web-server --web-port=8080 --dart-define=SKIP_MFA_DEV=true --web-renderer wasm
 ```
 
 ### 3. Testing & Quality

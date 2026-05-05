@@ -1,5 +1,5 @@
 # veraprob — Run DEV Environment
-# Usage: .\scripts\run_dev.ps1
+# Usage: .\scripts\dev\run_dev.ps1
 #
 # Reads credentials from .env (local dev file, never committed).
 # If .env doesn't exist, copy .env.example and fill in your credentials first.
@@ -50,10 +50,11 @@ Write-Host "FLUTTER: Limpando cache e baixando dependências..." -ForegroundColo
 flutter clean
 flutter pub get
 
-# 5. Run on Chrome (Flutter Web). 
-# Note: --dart-define=SKIP_MFA_DEV=true can be added to bypass 2FA locally.
-Write-Host "RUN: Iniciando Flutter Web..." -ForegroundColor Cyan
-flutter run -d chrome `
+# 5. Run on Web Server (Port 8080).
+# Note: --dart-define=SKIP_MFA_DEV=true is used to bypass 2FA locally.
+Write-Host "RUN: Iniciando Flutter Web (Server na porta 8080)..." -ForegroundColor Cyan
+flutter run -d web-server `
+    --web-port=8080 `
     --dart-define=ENV=dev `
     --dart-define=SKIP_MFA_DEV=true
 

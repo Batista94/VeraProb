@@ -115,7 +115,7 @@ Para conformidade com as fases 10.3+ e os invariantes INV-1, INV-11 e INV-15, ut
 4.  **Fluid FSM Auto-Link (Fase 10.3)**: Vinculação retroativa de evidências órfãs.
 
 ### B. Como Executar
-Certifique-se que o Supabase está rodando (`supabase start`) e o banco está provisionado (`node scripts/bootstrap_dev.mjs`).
+Certifique-se que o Supabase está rodando (`supabase start`) e o banco está provisionado (`node scripts/dev/bootstrap_dev.mjs`).
 
 ```bash
 # 1. Aplicar limites de stress (simula pressão de produção)
