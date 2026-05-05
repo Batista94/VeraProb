@@ -77,4 +77,7 @@ doc/
 
 # Security Audit Logs (INV-28 — local only, never index)
 .veraprob/
+
+# Playwright MCP (Screenshots and local infra)
+.playwright-mcp/
 

@@ -86,6 +86,7 @@ devtools_options.yaml
 # Vendored MCP server repos (install via tooling, not vendored)
 .docker-mcp/
 .mcp-servers-archived/
+.playwright-mcp/
 
 # Security Audit (INV-28 — local forensic logs, never commit)
 .veraprob/

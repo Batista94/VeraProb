@@ -1,5 +1,5 @@
 # veraprob — Run DEV Environment (Optimized for E2E Tests)
-# Usage: .\scripts\dev\run_dev.ps1
+# Usage: .\scripts\dev\run_dev.ps1 (from project root)
 
 $ErrorActionPreference = "Stop"
 

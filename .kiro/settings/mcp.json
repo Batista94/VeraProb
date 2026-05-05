@@ -15,7 +15,8 @@
         "browser_tabs",
         "browser_close",
         "browser_take_screenshot",
-        "browser_console_messages"
+        "browser_console_messages",
+        "browser_resize"
       ]
     },
     "github": {
@@ -40,7 +41,7 @@
       "autoApprove": [
         "query"
       ],
-      "disabled": true
+      "disabled": false
     },
     "docker": {
       "command": "uvx",
@@ -50,7 +51,9 @@
       "env": {},
       "disabled": false,
       "autoApprove": [
-        "list_containers"
+        "list_containers",
+        "fetch_container_logs",
+        "fetch_container_logs"
       ]
     },
     "fetch": {

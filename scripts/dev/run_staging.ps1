@@ -1,5 +1,5 @@
 # veraprob — Run STAGING Environment
-# Usage: .\scripts\run_staging.ps1
+# Usage: .\scripts\dev\run_staging.ps1 (from project root)
 #
 # Requires environment variables to be set before running:
 #   $env:SUPABASE_URL_STAGING    = "https://..."
