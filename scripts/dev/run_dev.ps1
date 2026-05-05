@@ -1,73 +1,52 @@
-# veraprob — Run DEV Environment
+# veraprob — Run DEV Environment (Optimized for E2E Tests)
 # Usage: .\scripts\dev\run_dev.ps1
-#
-# Reads credentials from .env (local dev file, never committed).
-# If .env doesn't exist, copy .env.example and fill in your credentials first.
 
 $ErrorActionPreference = "Stop"
 
-# Cleanup any previous background jobs
+# Limpeza de jobs anteriores
 Get-Job | Remove-Job -Force -ErrorAction SilentlyContinue
 
 if (-not (Test-Path ".env")) {
-    Write-Error @"
-❌ Arquivo .env não encontrado.
-Execute: copy .env.example .env
-Depois preencha com as credenciais do projeto veraprob-dev no Supabase.
-"@
+    Write-Error "❌ Arquivo .env não encontrado. Copie o .env.example e preencha as credenciais."
     exit 1
 }
 
-# 0. Kill lingering processes to prevent file locks (INV-28)
-Write-Host "[VeraProb] Verificando processos órfãos (dart, flutter, analysis_server)..." -ForegroundColor DarkGray
-Get-Process -Name "dart", "flutter", "analysis_server", "gen_snapshot", "frontend_server" -ErrorAction SilentlyContinue | Stop-Process -Force
-Start-Sleep -Seconds 2 # Aguarda a liberação dos descritores de arquivo
+# 1. Kill lingering processes (INV-28) - Focado em performance
+Write-Host "[VeraProb] Liberando descritores de arquivo..." -ForegroundColor DarkGray
+Get-Process -Name "dart", "flutter", "analysis_server" -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Seconds 1
 
-Write-Host "[DEV] Iniciando veraprob com credenciais de desenvolvimento..." -ForegroundColor Cyan
-Write-Host "   Credenciais lidas de: .env" -ForegroundColor DarkGray
+Write-Host "[DEV] Iniciando ambiente VeraProb..." -ForegroundColor Cyan
 
-# 1. Garante que o Supabase local está rodando e reseta o banco.
-Write-Host "Supabase: Iniciando serviços (supabase start)..." -ForegroundColor Green
+# 2. Supabase & DB Reset
+Write-Host "Supabase: Iniciando e resetando banco..." -ForegroundColor Green
 supabase start
-
-# Pequena pausa para garantir que o proxy está aceitando conexões antes do reset
-Write-Host "⏳ Aguardando serviços estabilizarem..." -ForegroundColor DarkGray
-Start-Sleep -Seconds 2
-
-Write-Host "DB: Resetando banco local (supabase db reset)..." -ForegroundColor Green
 supabase db reset
 
-# 2. Seed the DB with test data.
-Write-Host "SEED: Populando banco com dados de teste..." -ForegroundColor Green
+# 3. Seed/Bootstrap
+Write-Host "SEED: Populando banco (bootstrap_dev.mjs)..." -ForegroundColor Green
 node scripts/dev/bootstrap_dev.mjs
 
-# 3. Start Edge Functions in a background job.
-Write-Host "EDGE: Iniciando Edge Functions localmente..." -ForegroundColor Yellow
+# 4. Edge Functions em Background (INV-31)
+Write-Host "EDGE: Iniciando Edge Functions..." -ForegroundColor Yellow
 $efJob = Start-Job -ScriptBlock {
     Set-Location $using:PWD
     supabase functions serve --env-file .env 2>&1
 }
-Write-Host "   Edge Functions job ID: $($efJob.Id)" -ForegroundColor DarkGray
 
-# 4. Clean and get dependencies.
-Write-Host "FLUTTER: Limpando cache e baixando dependências..." -ForegroundColor Cyan
-try {
-    flutter clean
-    flutter pub get
-}
-catch {
-    Write-Host "⚠️ 'flutter clean' falhou parcialmente devido a arquivos travados. Continuando mesmo assim..." -ForegroundColor Yellow
-}
+# 5. Flutter Web Server (Porta Fixa 50185)
+# Removido 'flutter clean' para acelerar o boot. Use manualmente se necessário.
+Write-Host "FLUTTER: Baixando dependências..." -ForegroundColor Cyan
+flutter pub get
 
-# 5. Run Flutter Web (Chrome on fixed port 50185).
-Write-Host "RUN: Iniciando Flutter Web (Chrome na porta 50185)..." -ForegroundColor Cyan
-flutter run -d chrome `
+Write-Host "RUN: Servindo portal em http://localhost:50185..." -ForegroundColor Cyan
+# Usando -d web-server para evitar abrir janela do Chrome local e poupar RAM para o Playwright
+flutter run -d web-server `
     --web-port=50185 `
     --dart-define=SKIP_MFA_DEV=true
 
-# Cleanup Edge Function job when Flutter exits
-Write-Host "STOP: Encerrando serviços de fundo..." -ForegroundColor DarkGray
+# Cleanup ao encerrar
+Write-Host "STOP: Encerrando Edge Functions..." -ForegroundColor DarkGray
 Stop-Job $efJob -ErrorAction SilentlyContinue
 Remove-Job $efJob -ErrorAction SilentlyContinue
-Write-Host "DONE: Ambiente encerrado." -ForegroundColor DarkGray
 Write-Host "DONE: Ambiente encerrado." -ForegroundColor DarkGray

@@ -7,7 +7,16 @@
         "npx -y @playwright/mcp@latest"
       ],
       "env": {},
-      "disabled": false
+      "disabled": false,
+      "autoApprove": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_wait_for",
+        "browser_tabs",
+        "browser_close",
+        "browser_take_screenshot",
+        "browser_console_messages"
+      ]
     },
     "github": {
       "command": "cmd",

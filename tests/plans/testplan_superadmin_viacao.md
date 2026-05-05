@@ -18,7 +18,7 @@ O objetivo deste plano é garantir que o SuperAdmin consiga realizar todas as op
 Para executar os testes e ignorar o fluxo de MFA no ambiente de desenvolvimento, o aplicativo deve ser iniciado com a seguinte flag:
 
 ```bash
-flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
+flutter run -d chrome --web-port=50185 --dart-define=SKIP_MFA_DEV=true
 ```
 
 > [!IMPORTANT]
