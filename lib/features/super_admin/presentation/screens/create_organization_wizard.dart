@@ -14,6 +14,7 @@ import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
+import 'package:veraprob/presentation/shared/widgets/domain_chip_input.dart';
 
 /// 3-step wizard for creating a new tenant organization.
 ///
@@ -76,6 +77,9 @@ class _CreateOrganizationWizardState
   String? _selectedPreset;
   OrgCapabilitiesViewModel _capabilities = OrgCapabilitiesViewModel.defaults;
   int _dwellTimeSeconds = 300;
+
+  // Step 2 — Allowed Domains
+  List<String> _allowedDomains = [];
 
   // Step 3 controllers
   final _adminEmailCtrl = TextEditingController();
@@ -310,6 +314,7 @@ class _CreateOrganizationWizardState
         billingDay: billingDayText.isEmpty
             ? null
             : int.tryParse(billingDayText),
+        allowedDomains: _allowedDomains,
       ).toCommand();
 
       final result = await handler.handle(cmd);
@@ -534,21 +539,46 @@ class _CreateOrganizationWizardState
           title: const Text('Limites'),
           isActive: _currentStep >= 1,
           state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-          content: Step2Limits(
-            formKey: _step2Key,
-            maxVehiclesCtrl: _maxVehiclesCtrl,
-            maxContractsCtrl: _maxContractsCtrl,
-            toolCostCtrl: _toolCostCtrl,
-            reasonCtrl: _reasonCtrl,
-            tradeName: _tradeNameCtrl.text,
-            planLabel: _selectedPlan.label,
-            selectedPreset: _selectedPreset,
-            capabilities: _capabilities,
-            dwellTimeSeconds: _dwellTimeSeconds,
-            onPresetChanged: _onPresetChanged,
-            onDwellChanged: (v) => setState(() => _dwellTimeSeconds = v),
-            onCapabilityToggled: _onCapabilityToggled,
-            onSpeedChanged: _onSpeedChanged,
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Step2Limits(
+                formKey: _step2Key,
+                maxVehiclesCtrl: _maxVehiclesCtrl,
+                maxContractsCtrl: _maxContractsCtrl,
+                toolCostCtrl: _toolCostCtrl,
+                reasonCtrl: _reasonCtrl,
+                tradeName: _tradeNameCtrl.text,
+                planLabel: _selectedPlan.label,
+                selectedPreset: _selectedPreset,
+                capabilities: _capabilities,
+                dwellTimeSeconds: _dwellTimeSeconds,
+                onPresetChanged: _onPresetChanged,
+                onDwellChanged: (v) => setState(() => _dwellTimeSeconds = v),
+                onCapabilityToggled: _onCapabilityToggled,
+                onSpeedChanged: _onSpeedChanged,
+              ),
+              const SizedBox(height: VeraProbSpacing.md),
+              const Divider(color: VeraProbColors.border),
+              const SizedBox(height: VeraProbSpacing.sm),
+              Text(
+                'Segurança · Domínios Permitidos',
+                style: VeraProbTypography.sectionTitle,
+              ),
+              const SizedBox(height: VeraProbSpacing.xs),
+              Text(
+                'E-mails de acesso restritos a estes domínios (opcional).',
+                style: VeraProbTypography.bodySmall,
+              ),
+              const SizedBox(height: VeraProbSpacing.sm),
+              DomainChipInput(
+                initialDomains: _allowedDomains,
+                onChanged: (domains) =>
+                    setState(() => _allowedDomains = domains),
+                hintText: 'ex: empresa.com.br',
+              ),
+              const SizedBox(height: VeraProbSpacing.sm),
+            ],
           ),
         ),
         Step(

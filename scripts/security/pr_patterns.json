@@ -19,7 +19,7 @@
     "severity": "BLOCK"
   },
   "SRP-UI-LEAK": {
-    "pattern": "supabase|\\.from\\(|\\.insert\\(|\\.upsert\\(|\\.query\\(",
+    "pattern": "supabase|(?<!\\b(?:List|Map|Set|Iterable|Duration|DateTime|Double|Int|num|String|TextEditingController|FocusNode|ScrollController|AnimationController|Color|Theme|FocusScope|Navigator|ScaffoldMessenger|MediaQuery)(?:<[^>]+>)?)\\.from\\(|(?<!\\b(?:[Ll]ist|[Mm]ap|[Ss]et|[Cc]ollection|[Qq]ueue))\\.insert\\(|\\.upsert\\(|\\.query\\(",
     "path_filter": "lib/features/.*(presentation|screens|widgets|providers)/",
     "description": "Supabase calls leaked into UI layer. Use a Repository/Handler.",
     "severity": "BLOCK"

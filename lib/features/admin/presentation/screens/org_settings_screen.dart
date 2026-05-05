@@ -7,6 +7,9 @@ import 'package:veraprob/application/admin/update_org_operational_params_command
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/application/admin/update_org_settings_command.dart';
+import 'package:veraprob/presentation/shared/widgets/domain_chip_input.dart';
+import 'package:veraprob/state/providers/super_admin_providers.dart';
+import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 
 /// Screen for editing organization-wide settings.
 ///
@@ -41,6 +44,11 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
   double _maxKinematicSpeedKmh = 80.0; // Physical Metric - Double Required
   bool _opParamsInitialized = false;
   bool _isSavingOpParams = false;
+
+  // ── Domínios Permitidos (SuperAdmin only) ──────────────────────────────────
+  List<String> _allowedDomains = [];
+  bool _domainsInitialized = false;
+  bool _savingDomains = false;
 
   @override
   void dispose() {
@@ -123,6 +131,11 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                         org.capabilities.maxKinematicSpeedKmh ??
                         80.0; // Physical Metric - Double Required
                     _opParamsInitialized = true;
+                  }
+
+                  if (!_domainsInitialized) {
+                    _allowedDomains = List<String>.from(org.allowedDomains);
+                    _domainsInitialized = true;
                   }
 
                   return SingleChildScrollView(
@@ -513,6 +526,57 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                               ],
                             ),
                           ),
+                          if (isSuperAdmin) ...[
+                            const SizedBox(height: VeraProbSpacing.lg),
+                            const Divider(color: VeraProbColors.border),
+                            const SizedBox(height: VeraProbSpacing.md),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.security_outlined,
+                                  size: 20,
+                                  color: VeraProbColors.primary,
+                                ),
+                                const SizedBox(width: VeraProbSpacing.sm),
+                                Text(
+                                  'Domínios Permitidos',
+                                  style: VeraProbTypography.sectionTitle,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: VeraProbSpacing.xs),
+                            Text(
+                              'Acesso restrito a e-mails destes domínios (SSO e prevenção de identity injection).',
+                              style: VeraProbTypography.bodySmall,
+                            ),
+                            const SizedBox(height: VeraProbSpacing.sm),
+                            DomainChipInput(
+                              initialDomains: _allowedDomains,
+                              onChanged: (domains) =>
+                                  setState(() => _allowedDomains = domains),
+                              hintText: 'ex: empresa.com.br',
+                            ),
+                            const SizedBox(height: VeraProbSpacing.md),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: FilledButton.icon(
+                                icon: _savingDomains
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.save_outlined),
+                                label: const Text('Salvar Domínios'),
+                                onPressed: _savingDomains
+                                    ? null
+                                    : _saveAllowedDomains,
+                              ),
+                            ),
+                            const SizedBox(height: VeraProbSpacing.md),
+                          ],
                         ],
                       ),
                     ),
@@ -631,6 +695,40 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
       }
     } finally {
       if (mounted) setState(() => _isSavingOpParams = false);
+    }
+  }
+
+  Future<void> _saveAllowedDomains() async {
+    setState(() => _savingDomains = true);
+    try {
+      final orgId = ref.read(currentOrganizationIdProvider);
+      final superAdminId = ref.read(currentSuperAdminIdProvider);
+      if (orgId == null || superAdminId == null) return;
+
+      await ref
+          .read(superAdminRepositoryProvider)
+          .updateAllowedDomains(orgId, _allowedDomains, superAdminId);
+
+      ref.invalidate(orgSettingsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Domínios atualizados com sucesso!'),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar domínios: $e'),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingDomains = false);
     }
   }
 }

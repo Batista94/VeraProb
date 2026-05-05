@@ -2,7 +2,6 @@
 name: ux-operations
 description: Invoke when designing OCC screens, penalty display flows, forensic export reports, or any UI where dispatchers or CFOs interact with Engine verdicts. Guards cognitive load reduction, provenance visibility (verdict traceable to raw telemetry in 1 click), and the "silence a contestation in 10 seconds" standard. Invoke proactively without being asked when the task involves OCC screens, verdict display, penalty flows, or any UI where dispatchers or CFOs interact with engine output.
 tools: ["Read", "Grep", "Glob", "Write"]
-model: sonnet
 ---
 
 # UX & OPERATIONS DIRECTOR (DESIGN GUARDIAN)

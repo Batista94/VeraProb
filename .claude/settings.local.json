@@ -89,10 +89,19 @@
       "PowerShell(supabase deno *)",
       "Bash(claude mcp *)",
       "Bash(bash scripts/security/pr_full_scanner.sh)",
-      "Bash(C:/Users/wes_b/AppData/Local/Pub/Cache/bin/metrics.bat analyze *)"
+      "Bash(C:/Users/wes_b/AppData/Local/Pub/Cache/bin/metrics.bat analyze *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(Select-Object -First 20)",
+      "Bash(Format-Table FullName)",
+      "Bash(Get-ChildItem *)"
     ]
   },
   "model": "sonnet",
+  "enabledMcpjsonServers": [
+    "playwright",
+    "postgres"
+  ],
   "disabledMcpjsonServers": [
     "puppeteer",
     "sequential-thinking",
@@ -100,9 +109,5 @@
     "supabase",
     "github",
     "fetch"
-  ],
-  "enabledMcpjsonServers": [
-    "playwright",
-    "postgres"
   ]
 }

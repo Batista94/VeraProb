@@ -10,7 +10,9 @@
   ],
   "steering": [
     "file://../steering/forensic-standards.md",
-    "file://../AGENTS.md"
+    "file://../../CLAUDE.md",
+    "file://../AGENTS.md",
+    "file://../rules.md"
   ],
   "env": {
     "STRICT_MODE": "1",

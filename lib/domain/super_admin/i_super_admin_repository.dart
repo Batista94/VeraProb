@@ -124,4 +124,15 @@ abstract class ISuperAdminRepository {
   /// Invoked exclusively through the Edge Function proxy so the
   /// `service_role` key stays as a Deno secret (INV-14).
   Future<Map<String, dynamic>> checkSchemaIntegrity(String orgId);
+
+  /// Updates the allowed email domain whitelist for an org.
+  ///
+  /// Input is normalized (lowercase + deduplicated) before RPC call.
+  /// Server-side SECURITY DEFINER RPC also normalizes as defense-in-depth.
+  /// INV-2: 42501 from Postgres → SovereigntyViolationException via PostgresErrorInterceptor.
+  Future<void> updateAllowedDomains(
+    String orgId,
+    List<String> domains,
+    String superAdminUserId,
+  );
 }

@@ -29,25 +29,29 @@
         "npx -y @modelcontextprotocol/server-postgres",
         "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
       ],
-      "env": {}
+      "env": {},
+      "autoApprove": [
+        "query",
+        "query"
+      ]
     },
     "docker": {
-    "command": "uvx",
-    "args": [
-      "mcp-server-docker"
-    ],
-    "env": {},
-    "disabled": false,
-    "autoApprove": []
+      "command": "uvx",
+      "args": [
+        "mcp-server-docker"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
     },
     "fetch": {
-        "command": "uvx",
-        "args": [
-          "mcp-server-fetch"
-        ],
-        "env": {},
-        "disabled": false,
-        "autoApprove": []
+      "command": "uvx",
+      "args": [
+        "mcp-server-fetch"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
     },
     "memory": {
       "type": "stdio",
@@ -56,7 +60,11 @@
         "/c",
         "npx -y @modelcontextprotocol/server-memory"
       ],
-      "env": {}
+      "env": {},
+      "autoApprove": [
+        "add_observations",
+        "create_entities"
+      ]
     },
     "sequential-thinking": {
       "type": "stdio",

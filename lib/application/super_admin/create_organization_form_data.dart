@@ -27,6 +27,7 @@ class CreateOrganizationFormData {
   final int? billingDay;
   final String? contactEmail;
   final String? externalId;
+  final List<String> allowedDomains;
 
   const CreateOrganizationFormData({
     required this.legalName,
@@ -46,6 +47,7 @@ class CreateOrganizationFormData {
     this.billingDay,
     this.contactEmail,
     this.externalId,
+    this.allowedDomains = const [],
   });
 
   CreateOrganizationCommand toCommand() {
@@ -80,6 +82,7 @@ class CreateOrganizationFormData {
       billingDay: billingDay,
       contactEmail: contactEmail,
       externalId: externalId,
+      allowedDomains: allowedDomains,
     );
   }
 }

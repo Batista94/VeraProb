@@ -10,7 +10,8 @@
   "steering": [
     "file://../steering/forensic-standards.md",
     "file://../../CLAUDE.md",
-    "file://../AGENTS.md"
+    "file://../AGENTS.md",
+    "file://../rules.md"
   ],
   "env": {
     "UX_STANDARDS": "INDUSTRIAL_DARK"

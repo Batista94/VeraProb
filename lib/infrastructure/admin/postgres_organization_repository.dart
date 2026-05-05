@@ -118,6 +118,11 @@ class PostgresOrganizationRepository
           : OrgStatus.suspended;
     }
 
+    final allowedDomainsRaw = data['allowed_domains'];
+    final allowedDomains = allowedDomainsRaw is List
+        ? allowedDomainsRaw.cast<String>()
+        : <String>[];
+
     return Organization(
       id: data['id'] as String,
       name: data['name'] as String,
@@ -137,6 +142,7 @@ class PostgresOrganizationRepository
       contactEmail: data['contact_email'] as String?,
       externalId: data['external_id'] as String?,
       dwellTimeSeconds: data['dwell_time_seconds'] as int? ?? 300,
+      allowedDomains: allowedDomains,
     );
   }
 }

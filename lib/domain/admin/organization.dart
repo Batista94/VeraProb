@@ -34,6 +34,9 @@ class Organization extends Equatable {
   /// Stop dwell threshold in seconds. Org Admin can override this after onboarding.
   final int dwellTimeSeconds;
 
+  // Phase 10: email domain whitelist (SSO routing, identity injection prevention)
+  final List<String> allowedDomains;
+
   const Organization({
     required this.id,
     required this.name,
@@ -53,6 +56,7 @@ class Organization extends Equatable {
     this.contactEmail,
     this.externalId,
     this.dwellTimeSeconds = 300,
+    this.allowedDomains = const [],
   });
 
   /// Retro-compatible getter: true only when status is ACTIVE.
@@ -78,6 +82,7 @@ class Organization extends Equatable {
     String? contactEmail,
     String? externalId,
     int? dwellTimeSeconds,
+    List<String>? allowedDomains,
   }) {
     return Organization(
       id: id,
@@ -98,6 +103,7 @@ class Organization extends Equatable {
       contactEmail: contactEmail ?? this.contactEmail,
       externalId: externalId ?? this.externalId,
       dwellTimeSeconds: dwellTimeSeconds ?? this.dwellTimeSeconds,
+      allowedDomains: allowedDomains ?? this.allowedDomains,
     );
   }
 
@@ -121,5 +127,6 @@ class Organization extends Equatable {
     contactEmail,
     externalId,
     dwellTimeSeconds,
+    allowedDomains,
   ];
 }

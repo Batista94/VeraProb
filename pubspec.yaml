@@ -49,6 +49,7 @@ dependencies:
 
   # ── Alert Command Center: Evidence Thumbnail (INV-26: proxy-only) ──
   cached_network_image: ^3.4.1
+  glados: ^1.1.7
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.1
@@ -64,7 +65,6 @@ dev_dependencies:
 
   fake_async: any
   test: ^1.25.0
-  glados: ^1.1.1
 flutter:
   uses-material-design: true
   # 8.4 Observabilidade

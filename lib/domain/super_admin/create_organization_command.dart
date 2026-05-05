@@ -51,6 +51,9 @@ class CreateOrganizationCommand {
   /// Classification of the organization's business (e.g. CARGO, PASSENGER, URBAN_LOGISTICS).
   final String? organizationType;
 
+  /// Email domain whitelist for SSO routing and identity injection prevention.
+  final List<String> allowedDomains;
+
   const CreateOrganizationCommand({
     required this.legalName,
     required this.tradeName,
@@ -70,5 +73,6 @@ class CreateOrganizationCommand {
     this.contactEmail,
     this.externalId,
     this.organizationType,
+    this.allowedDomains = const [],
   });
 }

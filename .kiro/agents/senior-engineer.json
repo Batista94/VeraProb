@@ -11,7 +11,8 @@
   "steering": [
     "file://../steering/forensic-standards.md",
     "file://../../CLAUDE.md",
-    "file://../AGENTS.md"
+    "file://../AGENTS.md",
+    "file://../rules.md"
   ],
   "env": {
     "TECH_STACK": "FLUTTER_SUPABASE"

@@ -49,6 +49,7 @@ class SupabaseSuperAdminRepository
           'p_external_id': cmd.externalId,
           'p_reason': cmd.reason,
           'p_organization_type': cmd.organizationType,
+          'p_allowed_domains': cmd.allowedDomains,
         },
       );
       return result as String;
@@ -371,6 +372,30 @@ class SupabaseSuperAdminRepository
           as Map<String, dynamic>;
     } on Exception catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
+    }
+  }
+
+  @override
+  Future<void> updateAllowedDomains(
+    String orgId,
+    List<String> domains,
+    String superAdminUserId,
+  ) async {
+    final normalized = domains
+        .map((d) => d.toLowerCase().trim())
+        .toSet()
+        .toList();
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_update_allowed_domains',
+        params: {
+          'p_org_id': orgId,
+          'p_allowed_domains': normalized,
+          'p_super_admin_user_id': superAdminUserId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
     }
   }
 

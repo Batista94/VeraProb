@@ -108,7 +108,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // 3. Attempt to go to next step
-      await tester.tap(find.text('Próximo'));
+      final nextButton1 = find.text('Próximo');
+      await tester.ensureVisible(nextButton1);
+      await tester.tap(nextButton1);
       await tester.pumpAndSettle();
 
       // Verify it stays on step 1 due to validation error
@@ -119,7 +121,7 @@ void main() {
     testWidgets('Wizard Completion: Full 3-Step Flow and Success Dialog', (
       tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await tester.binding.setSurfaceSize(const Size(800, 1500));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       const orgId = 'new-org-id';
@@ -170,7 +172,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 800)); // Debounce
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Próximo'));
+      final nextButtonStep1 = find.text('Próximo');
+      await tester.ensureVisible(nextButtonStep1);
+      await tester.tap(nextButtonStep1);
       await tester.pumpAndSettle();
 
       // --- STEP 2: Limits ---
@@ -205,7 +209,9 @@ void main() {
         'Criação de novo tenant conforme contrato #123',
       );
 
-      await tester.tap(find.text('Próximo'));
+      final nextButtonStep2 = find.text('Próximo');
+      await tester.ensureVisible(nextButtonStep2);
+      await tester.tap(nextButtonStep2);
       await tester.pumpAndSettle();
 
       // --- STEP 3: Admin Invite (chip-based) ---
@@ -222,6 +228,7 @@ void main() {
         ElevatedButton,
         'Criar e Enviar Convite',
       );
+      await tester.ensureVisible(submitButton);
       await tester.tap(submitButton);
       await tester.pump(); // Start submission
 
@@ -242,7 +249,7 @@ void main() {
     testWidgets(
       'Wizard Error: Repository failure displays forensic error snackbar',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await tester.binding.setSurfaceSize(const Size(800, 1500));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
         // thenThrow fires synchronously — the async wrapper never completes,
@@ -281,7 +288,9 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 800));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Próximo'));
+        final nextButtonErr1 = find.text('Próximo');
+        await tester.ensureVisible(nextButtonErr1);
+        await tester.tap(nextButtonErr1);
         await tester.pumpAndSettle();
 
         await tester.enterText(
@@ -314,7 +323,9 @@ void main() {
           ),
           'Criação de novo tenant conforme contrato #123',
         );
-        await tester.tap(find.text('Próximo'));
+        final nextButtonErr2 = find.text('Próximo');
+        await tester.ensureVisible(nextButtonErr2);
+        await tester.tap(nextButtonErr2);
         await tester.pumpAndSettle();
 
         final emailField2 = find.ancestor(
@@ -330,6 +341,7 @@ void main() {
           ElevatedButton,
           'Criar e Enviar Convite',
         );
+        await tester.ensureVisible(submitButton);
         await tester.tap(submitButton);
         await tester.pump(const Duration(seconds: 2));
         await tester.pumpAndSettle();
