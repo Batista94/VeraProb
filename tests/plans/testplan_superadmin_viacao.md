@@ -21,6 +21,8 @@ Para executar os testes e ignorar o fluxo de MFA no ambiente de desenvolvimento,
 flutter run --dart-define=SKIP_MFA_DEV=true 
 ```
 
+NAO TENTE DEDUZIR A PORTA. EM CDA EXECUCAO O APLICATIVO É ABERTO EM UMA PORTA DIFERENTE. VA SEMPRE VIA O FLUTTER RUN.
+
 ### 📊 Massa de Dados (CNPJs Fornecidos)
 
 1. `45.518.855/0001-47` (Viação Estrela Dalva)
@@ -467,7 +469,6 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * O sistema deve exibir a contagem regressiva de tentativas restantes.
   * Ao atingir o limite, a tela de **"Conta Temporariamente Bloqueada"** deve aparecer com um cronômetro de lockout.
   * O botão de verificação deve ficar desabilitado durante o lockout.
-
 
 ---
 
