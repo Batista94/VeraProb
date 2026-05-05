@@ -1,14 +1,13 @@
 {
   "mcpServers": {
     "playwright": {
-      "type": "stdio",
-      "command": "cmd",
+      "command": "npx",
       "args": [
-        "/c",
-        "npx -y @playwright/mcp@latest"
+        "-y",
+        "@playwright/mcp@latest"
       ],
       "env": {},
-      "disabled": true
+      "disabled": false
     },
     "github": {
       "type": "stdio",
@@ -44,7 +43,9 @@
       ],
       "env": {},
       "disabled": false,
-      "autoApprove": []
+      "autoApprove": [
+        "list_containers"
+      ]
     },
     "fetch": {
       "command": "uvx",
@@ -53,20 +54,20 @@
       ],
       "env": {},
       "disabled": false,
-      "autoApprove": []
+      "autoApprove": [
+        "fetch"
+      ]
     },
     "memory": {
-      "type": "stdio",
-      "command": "cmd",
+      "command": "powershell.exe",
       "args": [
-        "/c",
-        "npx -y @modelcontextprotocol/server-memory"
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "./.agents/scripts/memory-proxy.ps1"
       ],
-      "env": {},
-      "autoApprove": [
-        "add_observations",
-        "create_entities"
-      ]
+      "env": {}
     },
     "sequential-thinking": {
       "type": "stdio",
