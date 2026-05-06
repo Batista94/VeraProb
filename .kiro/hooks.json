@@ -82,6 +82,20 @@
       "action": "python scripts/index_advisor.py",
       "blocking": false,
       "description": "Index Advisor (INV-12): Sugere índices para queries SQL identificadas no código Dart ou migrations."
+    },
+    {
+    "event": "preReview",
+    "agent": "lead-reviewer",
+    "action": "git diff --staged > .veraprob/temp_diff.txt && skill://context-optimizer/apply-diff-only .veraprob/temp_diff.txt",
+    "description": "Revisão Diferencial: Força o agente a olhar apenas para o que mudou, evitando o re-processamento de código legado inalterado."
+    },
+    {
+      "event": "onMissionStep",
+      "agent": "*",
+      "condition": "env.SCRATCHPAD_CONTENT != ''",
+      "action": "bash scripts/sync_scratchpad.sh",
+      "blocking": false,
+      "description": "Sync Scratchpad (INV-42): Sincroniza estado operacional entre 11 personas. Ambiente deve definir SCRATCHPAD_PERSONA, SCRATCHPAD_SECTION, SCRATCHPAD_ACTION, SCRATCHPAD_CONTENT."
     }
   ]
 }
