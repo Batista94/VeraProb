@@ -215,7 +215,7 @@ abstract class SuperAdminDataFactory {
   /// Combina `DateTime.now().microsecondsSinceEpoch` com um componente
   /// aleatório para garantir unicidade entre execuções paralelas.
   static String generateUniqueCnpj() {
-    final timestamp = DateTime.now().microsecondsSinceEpoch;
+    final timestamp = DateTime.now().toUtc().microsecondsSinceEpoch;
     final randomPart = _random.nextInt(99999).toString().padLeft(5, '0');
     final raw = '$timestamp$randomPart';
     // Pegar os últimos 14 dígitos para garantir formato correto
