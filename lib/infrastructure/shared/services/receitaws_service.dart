@@ -1,13 +1,16 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+
+import 'package:veraprob/domain/super_admin/cnpj_exceptions.dart';
+import 'package:veraprob/infrastructure/super_admin/cnpj_infrastructure_exceptions.dart';
 
 /// @deprecated Use [cnpjLookupServiceProvider] from super_admin_providers.dart instead.
-/// This service makes DIRECT HTTP calls to ReceitaWS from the browser, which is
-/// blocked by CORS in web environments. The proxy-based [ReceitaWsCnpjService]
-/// routes through the `super-admin-proxy` Edge Function (INV-14).
-///
-/// Retained only for unit test compatibility. Will be removed in a future cleanup.
+/// Direct HTTP calls are blocked by CORS in browser context (INV-14).
 @Deprecated('Use cnpjLookupServiceProvider (proxy-based) instead. See INV-14.')
 class ReceitaCompanyData {
   final String cnpj;
@@ -21,10 +24,24 @@ class ReceitaCompanyData {
   });
 
   factory ReceitaCompanyData.fromJson(Map<String, dynamic> json) {
+    final nome = json['nome'];
+    final fantasia = json['fantasia'];
+    if (nome is! String?) {
+      throw const DataParsingException(
+        'Contract drift in registry response',
+        field: 'nome',
+      );
+    }
+    if (fantasia is! String?) {
+      throw const DataParsingException(
+        'Contract drift in registry response',
+        field: 'fantasia',
+      );
+    }
     return ReceitaCompanyData(
-      cnpj: json['cnpj'] ?? '',
-      nome: json['nome'] ?? '',
-      fantasia: json['fantasia'] ?? '',
+      cnpj: json['cnpj'] as String? ?? '',
+      nome: nome ?? '',
+      fantasia: fantasia ?? '',
     );
   }
 }
@@ -38,31 +55,78 @@ class ReceitaWsService {
 
   ReceitaWsService({http.Client? client}) : _client = client ?? http.Client();
 
-  /// Busca os dados do CNPJ. Em caso de qualquer erro (Timeout, 500, Payload Invalido),
-  /// retorna nulo para garantir a degradação graciosa da UI (Hostile Defense Attorney).
+  /// Throws typed [CnpjLookupException] subtypes on all fault paths.
+  ///
+  /// Returns `null` only when the registry definitively has no record.
   Future<ReceitaCompanyData?> fetchCompanyByCnpj(String cnpj) async {
-    try {
-      final sanitizedCnpj = cnpj.replaceAll(RegExp(r'[^0-9]'), '');
+    final sanitizedCnpj = cnpj.trim().replaceAll(RegExp(r'[^0-9]'), '');
 
-      final response = await _client
+    if (sanitizedCnpj.length != 14) {
+      throw InvalidCnpjException(
+        'CNPJ inválido ou não encontrado',
+        reason: 'invalid_format',
+        cnpj: sanitizedCnpj,
+      );
+    }
+
+    final http.Response response;
+    try {
+      response = await _client
           .get(Uri.parse('$_baseUrl/$sanitizedCnpj'))
           .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode != 200) {
-        return null;
-      }
-
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-
-      if (decoded['status'] == 'ERROR') {
-        return null;
-      }
-
-      return ReceitaCompanyData.fromJson(decoded);
-    } catch (e) {
-      // Catch all exceptions including SocketException, FormatException (jsonDecode), etc.
-      return null;
+    } on TimeoutException {
+      throw ServiceTimeoutException(
+        'CNPJ lookup timed out',
+        cnpj: sanitizedCnpj,
+      );
+    } on SocketException {
+      throw ExternalApiException(
+        'Upstream request failed',
+        sanitizedCode: 'upstream_server_error',
+        cnpj: sanitizedCnpj,
+      );
     }
+
+    if (response.statusCode == 429) {
+      throw RateLimitExceededException(
+        'Registry rate limit reached',
+        cnpj: sanitizedCnpj,
+      );
+    }
+
+    if (response.statusCode != 200) {
+      throw ExternalApiException.fromStatusCode(
+        response.statusCode,
+        cnpj: sanitizedCnpj,
+      );
+    }
+
+    final Map<String, dynamic> decoded;
+    try {
+      final raw = jsonDecode(response.body);
+      if (raw is! Map<String, dynamic>) {
+        throw DataParsingException(
+          'Unexpected response shape from registry',
+          cnpj: sanitizedCnpj,
+        );
+      }
+      decoded = raw;
+    } on FormatException {
+      throw DataParsingException(
+        'Malformed JSON from registry',
+        cnpj: sanitizedCnpj,
+      );
+    }
+
+    if (decoded['status'] == 'ERROR') {
+      throw InvalidCnpjException(
+        'CNPJ inválido ou não encontrado',
+        reason: 'api_status_error',
+        cnpj: sanitizedCnpj,
+      );
+    }
+
+    return ReceitaCompanyData.fromJson(decoded);
   }
 }
 

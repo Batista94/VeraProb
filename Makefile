@@ -8,7 +8,7 @@
 #   make help
 # =============================================================================
 
-.PHONY: help setup run scan-secrets test-security pr-scan load-tokens index-advisor
+.PHONY: help setup run scan-secrets test-security pr-scan load-tokens index-advisor test test-db test-all full-check
 
 help: ## Mostra este menu de ajuda
 	@echo "VeraProb — Comandos Disponíveis:"
@@ -52,6 +52,16 @@ coverage: ## Gera relatório de cobertura de testes Dart/Flutter
 chaos-test: ## Executa a suite de testes de caos (resiliência)
 	bash scripts/qa/chaos/run_chaos_suite.sh
 
+test: ## Executa a suite completa de testes unitários (Dart/Flutter)
+	flutter test
+
+test-db: ## [INV-28] Executa testes forenses de integridade no PostgreSQL (pgTap)
+	supabase test db
+
+test-all: test test-db ## Roda todos os testes (Flutter + DB)
+
 # ── Atalhos ───────────────────────────────────────────────────────────────────
 
 check: scan-secrets pr-scan index-advisor ## Roda todas as verificações de segurança locais
+
+full-check: check test-all ## O "Veredito Supremo": Scanner forense + Execução de todos os testes
