@@ -11,16 +11,9 @@ if [ -z "$CONTENT" ]; then
     exit 0
 fi
 
-# Hardcoded path to Python script (for Windows compatibility)
-# In Bash on Windows, C:\Users -> /c/Users
-SCRATCHPAD_PY="/c/Users/wes_b/.claude/plugins/cache/scratchpad-manager/scripts/sync_scratchpad.py"
-
-# Fallback to relative path if absolute doesn't exist
-if [ ! -f "$SCRATCHPAD_PY" ]; then
-    # Try relative to scripts dir
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    SCRATCHPAD_PY="${SCRIPT_DIR}/../.claude/plugins/cache/scratchpad-manager/scripts/sync_scratchpad.py"
-fi
+# Script lives alongside this wrapper in scripts/
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRATCHPAD_PY="${SCRIPT_DIR}/sync_scratchpad.py"
 
 if [ ! -f "$SCRATCHPAD_PY" ]; then
     echo "[INV-42] Error: sync_scratchpad.py not found" >&2
