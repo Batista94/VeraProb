@@ -1,46 +1,41 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/super_admin/cnpj_company_data.dart';
 import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
 
 /// ReceitaWS implementation of [ICnpjLookupService].
 ///
-/// Calls the free public API at receitaws.com.br.
-/// Rate-limited to ~3 req/min on the free tier — acceptable for
-/// interactive onboarding (one call per CNPJ typed by a SuperAdmin).
-///
-/// **INV-25:** ReceitaWS is free, no auth required, Brazilian government data.
-/// **INV-4:** All domain types; no Supabase dependency.
+/// Calls the free public API via Supabase Edge Function to bypass CORS and
+/// maintain architectural sovereignty (INV-14).
 class ReceitaWsCnpjService implements ICnpjLookupService {
-  final http.Client _client;
+  final SupabaseClient _client;
 
-  ReceitaWsCnpjService({http.Client? client})
-    : _client = client ?? http.Client();
+  ReceitaWsCnpjService(this._client);
 
   @override
   Future<CnpjCompanyData?> lookup(String cnpjDigits) async {
     if (cnpjDigits.length != 14) return null;
+
     try {
-      final uri = Uri.https('receitaws.com.br', '/v1/cnpj/$cnpjDigits');
-      final response = await _client
-          .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 8));
+      final response = await _client.functions.invoke(
+        'super-admin-proxy',
+        body: {
+          'action': 'lookup_cnpj',
+          'params': {'cnpj': cnpjDigits},
+        },
+      );
 
-      if (response.statusCode != 200) return null;
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      if (json['status'] == 'ERROR') return null;
+      final data = (response.data as Map<String, dynamic>)['data'];
+      if (data == null) return null;
 
       return CnpjCompanyData(
         cnpj: cnpjDigits,
-        legalName: _trim(json['nome'] as String?),
-        tradeName: _trim(json['fantasia'] as String?),
-        situation: _trim(json['situacao'] as String?),
+        legalName: _trim(data['legalName'] as String?),
+        tradeName: _trim(data['tradeName'] as String?),
+        situation: _trim(data['situation'] as String?),
       );
     } catch (_) {
-      return null;
+      return null; // Silent failure ensures UX gracefully falls back to manual entry
     }
   }
 

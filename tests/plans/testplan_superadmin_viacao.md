@@ -118,6 +118,9 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
      * **Plano:** `Professional`
      * **Limite de Veículos:** `100`
      * **Limite de Contratos:** `20`
+     * **Custo Mensal da Ferramenta:** `R$ 7.010,00`
+     * **Justificativa:** `Implantação inicial da Viação Cometa Azul`
+     * **Capabilities:** Incidente, Doc.
      * **Admins:** `admin-a@cometaazul.com.br`, `admin-b@cometaazul.com.br`, `admin-c@cometaazul.com.br` (mínimo de 3 para validar cascata)
 * **Cenário Esperado:** Organização cadastrada com sucesso.
 * **O que validar:** TenantID diferente da Viação Estrela Dalva.

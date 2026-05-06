@@ -417,6 +417,45 @@ async function ensureBackdatingScenarios(url, serviceKey, orgId, planId, driverI
   console.log('ok');
 }
 
+async function ensureSuperAdminTestScenarios(url, serviceKey) {
+  process.stdout.write('  ── Provisionando Cenários SuperAdmin (CT01-CT09)\n');
+
+  const orgs = [
+    { id: '00000000-0000-0000-0000-000000000101', name: 'Viação Estrela Dalva' },
+    { id: '00000000-0000-0000-0000-000000000102', name: 'Viação Cometa Azul' }
+  ];
+
+  for (const org of orgs) {
+    process.stdout.write(`      Org: ${org.name}... `);
+    await post(
+      `${url}/rest/v1/organizations`,
+      { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      { id: org.id, name: org.name, is_active: true }
+    );
+    console.log('ok');
+  }
+
+  const invites = [
+    { email: 'joao@estreladalva.com.br', org_id: orgs[0].id },
+    { email: 'maria@estreladalva.com.br', org_id: orgs[0].id }
+  ];
+
+  for (const inv of invites) {
+    process.stdout.write(`      Invite: ${inv.email}... `);
+    await post(
+      `${url}/rest/v1/invitations`,
+      { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      { 
+        organization_id: inv.org_id, 
+        email: inv.email, 
+        role: 'TENANT_ADMIN',
+        invited_by_user_id: '00000000-0000-0000-0000-ffffffffffff'
+      }
+    );
+    console.log('ok');
+  }
+}
+
 async function signIn(url, anonKey, email, password) {
   const res = await post(
     `${url}/auth/v1/token?grant_type=password`,
@@ -519,6 +558,7 @@ async function main() {
 
   // Novo: Dados de negócio
   await ensureTestData(url, serviceKey);
+  await ensureSuperAdminTestScenarios(url, serviceKey);
 
   console.log('╔══════════════════════════════════════════════════════════╗');
   console.log('║                  CREDENCIAIS DE TESTE                   ║');

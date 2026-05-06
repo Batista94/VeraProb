@@ -122,7 +122,7 @@ class AuditLogParams {
 }
 
 final cnpjLookupServiceProvider = Provider<ICnpjLookupService>(
-  (_) => ReceitaWsCnpjService(),
+  (ref) => ReceitaWsCnpjService(ref.watch(supabaseClientProvider)),
 );
 
 final generateOrgSecretHandlerProvider = Provider<GenerateOrgSecretHandler>((

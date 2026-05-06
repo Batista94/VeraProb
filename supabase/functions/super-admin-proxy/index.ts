@@ -261,6 +261,85 @@ Deno.serve(async (req: Request): Promise<Response> => {
           }
         }
       }
+    } else if (body.action === "get_tenant_technical_health") {
+      const orgId = body.params?.organization_id;
+      if (!orgId) {
+        responseStatus = 400;
+        actionErrorMsg = "Missing organization_id";
+      } else {
+        const { data, error } = await serviceClient
+          .from("super_admin_tenant_technical_health_view")
+          .select("*")
+          .eq("id", orgId)
+          .maybeSingle();
+        if (error) throw error;
+        responseToReturn = Response.json({ data: data ?? {} }, { status: 200 });
+      }
+
+    } else if (body.action === "get_evidence_volume") {
+      const orgId = body.params?.organization_id;
+      if (!orgId) {
+        responseStatus = 400;
+        actionErrorMsg = "Missing organization_id";
+      } else {
+        const { data, error } = await serviceClient
+          .from("mv_evidence_volume")
+          .select("*")
+          .eq("organization_id", orgId)
+          .maybeSingle();
+        if (error) throw error;
+        responseToReturn = Response.json({ data: data ?? {} }, { status: 200 });
+      }
+
+    } else if (body.action === "check_schema_integrity") {
+      const orgId = body.params?.organization_id;
+      if (!orgId) {
+        responseStatus = 400;
+        actionErrorMsg = "Missing organization_id";
+      } else {
+        const { data, error } = await serviceClient.rpc("check_schema_integrity", {
+          p_org_id: orgId,
+        });
+        if (error) throw error;
+        responseToReturn = Response.json({ data: data ?? {} }, { status: 200 });
+      }
+
+    } else if (body.action === "lookup_cnpj") {
+      const cnpj = body.params?.cnpj;
+      if (!cnpj) {
+        responseStatus = 400;
+        actionErrorMsg = "Missing cnpj";
+      } else {
+        try {
+          const fetchRes = await fetch(`https://receitaws.com.br/v1/cnpj/${cnpj}`, {
+            headers: { Accept: "application/json" },
+          });
+          
+          if (!fetchRes.ok) {
+            responseStatus = fetchRes.status;
+            actionErrorMsg = "Error fetching CNPJ data";
+          } else {
+            const resultJson = await fetchRes.json();
+            if (resultJson.status === "ERROR") {
+              responseStatus = 404;
+              actionErrorMsg = resultJson.message || "CNPJ not found";
+            } else {
+              responseToReturn = Response.json({
+                data: {
+                  cnpj: cnpj,
+                  legalName: resultJson.nome,
+                  tradeName: resultJson.fantasia,
+                  situation: resultJson.situacao,
+                }
+              }, { status: 200 });
+            }
+          }
+        } catch (e) {
+          responseStatus = 502;
+          actionErrorMsg = "Failed to communicate with external CNPJ API";
+        }
+      }
+
     } else {
       responseStatus = 400;
       actionErrorMsg = "Unknown action";
