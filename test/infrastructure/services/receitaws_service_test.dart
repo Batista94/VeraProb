@@ -17,7 +17,7 @@ void main() {
         "cnpj": "12.345.678/0001-90",
         "nome": "EMPRESA DE TESTE S.A.",
         "fantasia": "TESTE",
-        "abertura": "01/01/2000"
+        "abertura": "01/01/2000",
       };
 
       mockClient = MockClient((request) async {
@@ -69,22 +69,22 @@ void main() {
 
       expect(result, isNull);
     });
-    
-    test('Adverse Path: Handles API Error Status (e.g. Rate Limit / Invalid CNPJ)', () async {
-      final mockJson = {
-        "status": "ERROR",
-        "message": "CNPJ Invalido"
-      };
 
-      mockClient = MockClient((request) async {
-        return http.Response(jsonEncode(mockJson), 200);
-      });
+    test(
+      'Adverse Path: Handles API Error Status (e.g. Rate Limit / Invalid CNPJ)',
+      () async {
+        final mockJson = {"status": "ERROR", "message": "CNPJ Invalido"};
 
-      service = ReceitaWsService(client: mockClient);
+        mockClient = MockClient((request) async {
+          return http.Response(jsonEncode(mockJson), 200);
+        });
 
-      final result = await service.fetchCompanyByCnpj('12345678000190');
+        service = ReceitaWsService(client: mockClient);
 
-      expect(result, isNull);
-    });
+        final result = await service.fetchCompanyByCnpj('12345678000190');
+
+        expect(result, isNull);
+      },
+    );
   });
 }

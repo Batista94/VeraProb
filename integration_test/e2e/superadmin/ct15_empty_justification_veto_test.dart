@@ -57,10 +57,7 @@ void main() {
 
       // Localizar o botão "Arquivar"
       final archiveButton = find.byTooltip('Arquivar');
-      final archiveButtonText = find.widgetWithText(
-        FilledButton,
-        'Arquivar',
-      );
+      final archiveButtonText = find.widgetWithText(FilledButton, 'Arquivar');
       final archiveButtonElevated = find.widgetWithText(
         ElevatedButton,
         'Arquivar',
@@ -89,63 +86,57 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets(
-      '6.1 Botão de confirmação inicia desabilitado ao abrir modal',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('6.1 Botão de confirmação inicia desabilitado ao abrir modal', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        await openArchiveModal(tester);
+      await openArchiveModal(tester);
 
-        // Verificar que o botão de confirmação está desabilitado
-        final isEnabled = SuperAdminWidgetHelpers.isConfirmButtonEnabled(
-          tester,
-        );
-        expect(
-          isEnabled,
-          isFalse,
-          reason:
-              'O botão de confirmação deve iniciar desabilitado quando o '
-              'modal é aberto (Req 6.1)',
-        );
+      // Verificar que o botão de confirmação está desabilitado
+      final isEnabled = SuperAdminWidgetHelpers.isConfirmButtonEnabled(tester);
+      expect(
+        isEnabled,
+        isFalse,
+        reason:
+            'O botão de confirmação deve iniciar desabilitado quando o '
+            'modal é aberto (Req 6.1)',
+      );
 
-        // Cancelar para resetar estado
-        await SuperAdminWidgetHelpers.cancelModal(tester);
-      },
-    );
+      // Cancelar para resetar estado
+      await SuperAdminWidgetHelpers.cancelModal(tester);
+    });
 
-    testWidgets(
-      '6.2 Botão permanece desabilitado com campo vazio',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('6.2 Botão permanece desabilitado com campo vazio', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        await openArchiveModal(tester);
+      await openArchiveModal(tester);
 
-        // Preencher com string vazia (simula foco e desfoco sem digitar)
-        await SuperAdminWidgetHelpers.fillJustification(tester, '');
-        await tester.pump();
+      // Preencher com string vazia (simula foco e desfoco sem digitar)
+      await SuperAdminWidgetHelpers.fillJustification(tester, '');
+      await tester.pump();
 
-        // Verificar que o botão permanece desabilitado
-        final isEnabled = SuperAdminWidgetHelpers.isConfirmButtonEnabled(
-          tester,
-        );
-        expect(
-          isEnabled,
-          isFalse,
-          reason:
-              'O botão de confirmação deve permanecer desabilitado com '
-              'campo vazio (Req 6.2)',
-        );
+      // Verificar que o botão permanece desabilitado
+      final isEnabled = SuperAdminWidgetHelpers.isConfirmButtonEnabled(tester);
+      expect(
+        isEnabled,
+        isFalse,
+        reason:
+            'O botão de confirmação deve permanecer desabilitado com '
+            'campo vazio (Req 6.2)',
+      );
 
-        // Cancelar para resetar estado
-        await SuperAdminWidgetHelpers.cancelModal(tester);
-      },
-    );
+      // Cancelar para resetar estado
+      await SuperAdminWidgetHelpers.cancelModal(tester);
+    });
 
     testWidgets(
       '6.3 Botão habilita ao digitar texto válido (≥10 chars não-whitespace)',
@@ -180,49 +171,50 @@ void main() {
       },
     );
 
-    testWidgets(
-      '6.4 Botão volta a desabilitar ao limpar campo',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('6.4 Botão volta a desabilitar ao limpar campo', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        await openArchiveModal(tester);
+      await openArchiveModal(tester);
 
-        // Preencher com texto válido primeiro
-        await SuperAdminWidgetHelpers.fillJustification(
-          tester,
-          'Texto válido para habilitar botão',
-        );
+      // Preencher com texto válido primeiro
+      await SuperAdminWidgetHelpers.fillJustification(
+        tester,
+        'Texto válido para habilitar botão',
+      );
 
-        // Verificar que habilitou
-        final isEnabledBefore =
-            SuperAdminWidgetHelpers.isConfirmButtonEnabled(tester);
-        expect(
-          isEnabledBefore,
-          isTrue,
-          reason: 'Botão deve estar habilitado com texto válido (setup 6.4)',
-        );
+      // Verificar que habilitou
+      final isEnabledBefore = SuperAdminWidgetHelpers.isConfirmButtonEnabled(
+        tester,
+      );
+      expect(
+        isEnabledBefore,
+        isTrue,
+        reason: 'Botão deve estar habilitado com texto válido (setup 6.4)',
+      );
 
-        // Limpar o campo (substituir por string vazia)
-        await SuperAdminWidgetHelpers.fillJustification(tester, '');
+      // Limpar o campo (substituir por string vazia)
+      await SuperAdminWidgetHelpers.fillJustification(tester, '');
 
-        // Verificar que o botão voltou a ficar desabilitado
-        final isEnabledAfter =
-            SuperAdminWidgetHelpers.isConfirmButtonEnabled(tester);
-        expect(
-          isEnabledAfter,
-          isFalse,
-          reason:
-              'O botão de confirmação deve voltar a ficar desabilitado '
-              'ao limpar o campo de justificativa (Req 6.4)',
-        );
+      // Verificar que o botão voltou a ficar desabilitado
+      final isEnabledAfter = SuperAdminWidgetHelpers.isConfirmButtonEnabled(
+        tester,
+      );
+      expect(
+        isEnabledAfter,
+        isFalse,
+        reason:
+            'O botão de confirmação deve voltar a ficar desabilitado '
+            'ao limpar o campo de justificativa (Req 6.4)',
+      );
 
-        // Cancelar para resetar estado
-        await SuperAdminWidgetHelpers.cancelModal(tester);
-      },
-    );
+      // Cancelar para resetar estado
+      await SuperAdminWidgetHelpers.cancelModal(tester);
+    });
 
     testWidgets(
       '6.5 Botão permanece desabilitado com apenas espaços em branco',
@@ -274,100 +266,101 @@ void main() {
       },
     );
 
-    testWidgets(
-      '6.6 Enter não dispara API enquanto botão desabilitado',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('6.6 Enter não dispara API enquanto botão desabilitado', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        await openArchiveModal(tester);
+      await openArchiveModal(tester);
 
-        // Verificar que o botão está desabilitado (campo vazio)
-        final isEnabledBefore =
-            SuperAdminWidgetHelpers.isConfirmButtonEnabled(tester);
-        expect(
-          isEnabledBefore,
-          isFalse,
-          reason: 'Botão deve estar desabilitado antes do teste de Enter',
+      // Verificar que o botão está desabilitado (campo vazio)
+      final isEnabledBefore = SuperAdminWidgetHelpers.isConfirmButtonEnabled(
+        tester,
+      );
+      expect(
+        isEnabledBefore,
+        isFalse,
+        reason: 'Botão deve estar desabilitado antes do teste de Enter',
+      );
+
+      // Localizar o campo de justificativa e dar foco
+      final dialogFinder = find.byType(AlertDialog);
+      final simpledialogFinder = find.byType(Dialog);
+
+      Finder textFieldFinder;
+      if (dialogFinder.evaluate().isNotEmpty) {
+        textFieldFinder = find.descendant(
+          of: dialogFinder,
+          matching: find.byType(TextFormField),
         );
-
-        // Localizar o campo de justificativa e dar foco
-        final dialogFinder = find.byType(AlertDialog);
-        final simpledialogFinder = find.byType(Dialog);
-
-        Finder textFieldFinder;
-        if (dialogFinder.evaluate().isNotEmpty) {
-          textFieldFinder = find.descendant(
-            of: dialogFinder,
-            matching: find.byType(TextFormField),
-          );
-        } else if (simpledialogFinder.evaluate().isNotEmpty) {
-          textFieldFinder = find.descendant(
-            of: simpledialogFinder,
-            matching: find.byType(TextFormField),
-          );
-        } else {
-          textFieldFinder = find.byType(TextFormField);
-        }
-
-        expect(
-          textFieldFinder,
-          findsAtLeast(1),
-          reason: 'Campo de justificativa deve estar visível no modal',
+      } else if (simpledialogFinder.evaluate().isNotEmpty) {
+        textFieldFinder = find.descendant(
+          of: simpledialogFinder,
+          matching: find.byType(TextFormField),
         );
+      } else {
+        textFieldFinder = find.byType(TextFormField);
+      }
 
-        // Dar foco ao campo
-        await tester.tap(textFieldFinder.first);
-        await tester.pump();
+      expect(
+        textFieldFinder,
+        findsAtLeast(1),
+        reason: 'Campo de justificativa deve estar visível no modal',
+      );
 
-        // Simular pressionar Enter via teclado
-        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-        await tester.pump();
+      // Dar foco ao campo
+      await tester.tap(textFieldFinder.first);
+      await tester.pump();
 
-        // Verificar que o modal ainda está visível (Enter não disparou API)
-        final dialogStillVisible =
-            find.byType(AlertDialog).evaluate().isNotEmpty ||
-            find.byType(Dialog).evaluate().isNotEmpty;
-        expect(
-          dialogStillVisible,
-          isTrue,
-          reason:
-              'O modal deve permanecer visível após pressionar Enter com '
-              'botão desabilitado — nenhuma API deve ser disparada (Req 6.6)',
-        );
+      // Simular pressionar Enter via teclado
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
 
-        // Verificar que o botão ainda está desabilitado
-        final isEnabledAfter =
-            SuperAdminWidgetHelpers.isConfirmButtonEnabled(tester);
-        expect(
-          isEnabledAfter,
-          isFalse,
-          reason:
-              'O botão deve permanecer desabilitado após tentativa de '
-              'bypass via Enter (Req 6.6)',
-        );
+      // Verificar que o modal ainda está visível (Enter não disparou API)
+      final dialogStillVisible =
+          find.byType(AlertDialog).evaluate().isNotEmpty ||
+          find.byType(Dialog).evaluate().isNotEmpty;
+      expect(
+        dialogStillVisible,
+        isTrue,
+        reason:
+            'O modal deve permanecer visível após pressionar Enter com '
+            'botão desabilitado — nenhuma API deve ser disparada (Req 6.6)',
+      );
 
-        // Também testar com TextInputAction.done
-        await tester.testTextInput.receiveAction(TextInputAction.done);
-        await tester.pump();
+      // Verificar que o botão ainda está desabilitado
+      final isEnabledAfter = SuperAdminWidgetHelpers.isConfirmButtonEnabled(
+        tester,
+      );
+      expect(
+        isEnabledAfter,
+        isFalse,
+        reason:
+            'O botão deve permanecer desabilitado após tentativa de '
+            'bypass via Enter (Req 6.6)',
+      );
 
-        // Modal ainda deve estar visível
-        final dialogStillVisibleAfterDone =
-            find.byType(AlertDialog).evaluate().isNotEmpty ||
-            find.byType(Dialog).evaluate().isNotEmpty;
-        expect(
-          dialogStillVisibleAfterDone,
-          isTrue,
-          reason:
-              'O modal deve permanecer visível após TextInputAction.done '
-              'com botão desabilitado (Req 6.6)',
-        );
+      // Também testar com TextInputAction.done
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
 
-        // Cancelar para resetar estado
-        await SuperAdminWidgetHelpers.cancelModal(tester);
-      },
-    );
+      // Modal ainda deve estar visível
+      final dialogStillVisibleAfterDone =
+          find.byType(AlertDialog).evaluate().isNotEmpty ||
+          find.byType(Dialog).evaluate().isNotEmpty;
+      expect(
+        dialogStillVisibleAfterDone,
+        isTrue,
+        reason:
+            'O modal deve permanecer visível após TextInputAction.done '
+            'com botão desabilitado (Req 6.6)',
+      );
+
+      // Cancelar para resetar estado
+      await SuperAdminWidgetHelpers.cancelModal(tester);
+    });
   });
 }

@@ -85,8 +85,7 @@ abstract class SuperAdminDbVerifier {
       expect(
         rows,
         isNotEmpty,
-        reason:
-            'Org $orgId deve ter pelo menos 1 user_role para verificar ban',
+        reason: 'Org $orgId deve ter pelo menos 1 user_role para verificar ban',
       );
 
       for (final row in rows) {
@@ -127,11 +126,14 @@ abstract class SuperAdminDbVerifier {
       '${SuperAdminTestConfig.supabaseUrl}/auth/v1/admin/users/$userId',
     );
 
-    final response = await http.get(url, headers: {
-      'apikey': SuperAdminTestConfig.serviceRoleKey,
-      'Authorization': 'Bearer ${SuperAdminTestConfig.serviceRoleKey}',
-      'Content-Type': 'application/json',
-    });
+    final response = await http.get(
+      url,
+      headers: {
+        'apikey': SuperAdminTestConfig.serviceRoleKey,
+        'Authorization': 'Bearer ${SuperAdminTestConfig.serviceRoleKey}',
+        'Content-Type': 'application/json',
+      },
+    );
 
     expect(
       response.statusCode,

@@ -173,7 +173,9 @@ abstract class SuperAdminDataFactory {
             .eq('organization_id', data.orgId);
       } catch (e) {
         // Log mas não falha — pode não existir invitations
-        _log('cleanup: falha ao deletar invitations para org ${data.orgId}: $e');
+        _log(
+          'cleanup: falha ao deletar invitations para org ${data.orgId}: $e',
+        );
       }
 
       // 2. Deletar user_roles da org
@@ -273,10 +275,7 @@ abstract class SuperAdminDataFactory {
         email: email,
         password: 'TestPassword123!',
         emailConfirm: true,
-        appMetadata: {
-          'org_id': orgId,
-          'role': 'TENANT_ADMIN',
-        },
+        appMetadata: {'org_id': orgId, 'role': 'TENANT_ADMIN'},
       ),
     );
 

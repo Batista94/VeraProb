@@ -535,8 +535,7 @@ class PostgresTestConfig {
         'event_type': eventType,
         'severity': severity,
         'organization_id': orgId,
-        'occurred_at':
-            (occurredAt ?? DateTime.now().toUtc()).toIso8601String(),
+        'occurred_at': (occurredAt ?? DateTime.now().toUtc()).toIso8601String(),
         'reason': ?reason,
         'actor_type': ?actorType,
         'actor_id': ?actorId,

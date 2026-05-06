@@ -11,32 +11,38 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: Center(
-              child: HmacSecretModal(
-                secret: 'TEST_HMAC_SECRET_12345',
-              ),
+              child: HmacSecretModal(secret: 'TEST_HMAC_SECRET_12345'),
             ),
           ),
         ),
       );
     }
 
-    testWidgets('Visual Feedback: Exibe segredo em fonte monospace e possui advertência (UX-Ops)', (tester) async {
-      await tester.pumpWidget(buildWidget());
+    testWidgets(
+      'Visual Feedback: Exibe segredo em fonte monospace e possui advertência (UX-Ops)',
+      (tester) async {
+        await tester.pumpWidget(buildWidget());
 
-      // Verifica se o texto de advertência de risco existe
-      expect(find.textContaining('não será exibido novamente'), findsOneWidget);
+        // Verifica se o texto de advertência de risco existe
+        expect(
+          find.textContaining('não será exibido novamente'),
+          findsOneWidget,
+        );
 
-      // Verifica se o segredo existe
-      final secretText = find.text('TEST_HMAC_SECRET_12345');
-      expect(secretText, findsOneWidget);
-      
-      // O texto precisa estar usando monospace style para facilitar a cópia
-      final Text textWidget = tester.widget(secretText);
-      expect(textWidget.style?.fontFamily, contains('mono'));
-      // Ou verifica apenas se existe um campo selecionável/selecionável monospaced (dependendo de como foi feito).
-    });
+        // Verifica se o segredo existe
+        final secretText = find.text('TEST_HMAC_SECRET_12345');
+        expect(secretText, findsOneWidget);
 
-    testWidgets('Validação Forense (Memória e Clipboard Leak Guard)', (tester) async {
+        // O texto precisa estar usando monospace style para facilitar a cópia
+        final Text textWidget = tester.widget(secretText);
+        expect(textWidget.style?.fontFamily, contains('mono'));
+        // Ou verifica apenas se existe um campo selecionável/selecionável monospaced (dependendo de como foi feito).
+      },
+    );
+
+    testWidgets('Validação Forense (Memória e Clipboard Leak Guard)', (
+      tester,
+    ) async {
       // Usaremos o DefaultBinaryMessenger para interceptar as chamadas ao Clipboard
       String? clipboardContent;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -72,37 +78,40 @@ void main() {
       expect(data?.text, isEmpty);
     });
 
-    testWidgets('Memory Leak Guard: Cancela timer se o widget for destruído precocemente', (tester) async {
-      String? clipboardContent;
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        (MethodCall methodCall) async {
-          if (methodCall.method == 'Clipboard.setData') {
-            clipboardContent = methodCall.arguments['text'] as String?;
+    testWidgets(
+      'Memory Leak Guard: Cancela timer se o widget for destruído precocemente',
+      (tester) async {
+        String? clipboardContent;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'Clipboard.setData') {
+              clipboardContent = methodCall.arguments['text'] as String?;
+              return null;
+            }
             return null;
-          }
-          return null;
-        },
-      );
+          },
+        );
 
-      await tester.pumpWidget(buildWidget());
-      
-      await tester.tap(find.byIcon(Icons.copy));
-      await tester.pump();
-      expect(clipboardContent, 'TEST_HMAC_SECRET_12345');
+        await tester.pumpWidget(buildWidget());
 
-      // Fechamento manual antes do timer estourar
-      // Desmontar o widget
-      await tester.pumpWidget(const SizedBox());
+        await tester.tap(find.byIcon(Icons.copy));
+        await tester.pump();
+        expect(clipboardContent, 'TEST_HMAC_SECRET_12345');
 
-      // Se o timer NÃO for cancelado no dispose(), lançará uma exceção de "Timer ainda ativo"
-      // ou se tentar mexer no widget desmontado (setState). 
-      // Ao tentar avançar o relógio, nada de anormal deve ocorrer, e como o dispose 
-      // ocorreu, o timer deve ter sido limpo, e a clipboard não deve ter sido limpa pelo timer.
-      await tester.pump(const Duration(seconds: 60));
-      
-      // Asserção Forense
-      expect(find.byType(HmacSecretModal), findsNothing);
-    });
+        // Fechamento manual antes do timer estourar
+        // Desmontar o widget
+        await tester.pumpWidget(const SizedBox());
+
+        // Se o timer NÃO for cancelado no dispose(), lançará uma exceção de "Timer ainda ativo"
+        // ou se tentar mexer no widget desmontado (setState).
+        // Ao tentar avançar o relógio, nada de anormal deve ocorrer, e como o dispose
+        // ocorreu, o timer deve ter sido limpo, e a clipboard não deve ter sido limpa pelo timer.
+        await tester.pump(const Duration(seconds: 60));
+
+        // Asserção Forense
+        expect(find.byType(HmacSecretModal), findsNothing);
+      },
+    );
   });
 }

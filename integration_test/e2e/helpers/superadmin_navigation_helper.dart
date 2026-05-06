@@ -78,8 +78,7 @@ abstract class SuperAdminNavigationHelper {
     expect(
       orgFinder,
       findsAtLeast(1),
-      reason:
-          'A organização "$orgName" deve estar visível na lista de tenants',
+      reason: 'A organização "$orgName" deve estar visível na lista de tenants',
     );
 
     await tester.tap(orgFinder.first);
@@ -104,8 +103,7 @@ abstract class SuperAdminNavigationHelper {
     expect(
       usersTab,
       findsAtLeast(1),
-      reason:
-          'A aba "Usuários" deve estar visível no TabBar do detalhe da org',
+      reason: 'A aba "Usuários" deve estar visível no TabBar do detalhe da org',
     );
 
     // A tab "Usuários" é um widget Tab dentro do TabBar.
@@ -130,8 +128,7 @@ abstract class SuperAdminNavigationHelper {
     expect(
       archivedChip,
       findsOneWidget,
-      reason:
-          'O FilterChip "Suspensos" deve estar visível na lista de tenants',
+      reason: 'O FilterChip "Suspensos" deve estar visível na lista de tenants',
     );
 
     await tester.tap(archivedChip);

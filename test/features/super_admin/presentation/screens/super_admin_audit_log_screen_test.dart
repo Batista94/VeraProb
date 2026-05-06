@@ -96,10 +96,16 @@ void main() {
 
       final entries = [
         _view(eventType: 'ORG_CREATED', orgId: 'org-A', severity: 'info'),
-        _view(eventType: 'STORAGE_QUOTA_EXCEEDED',
-            orgId: 'org-B', severity: 'warning'),
-        _view(eventType: 'IMPERSONATION_START',
-            actorType: 'IMPERSONATOR', severity: 'critical'),
+        _view(
+          eventType: 'STORAGE_QUOTA_EXCEEDED',
+          orgId: 'org-B',
+          severity: 'warning',
+        ),
+        _view(
+          eventType: 'IMPERSONATION_START',
+          actorType: 'IMPERSONATOR',
+          severity: 'critical',
+        ),
       ];
 
       await tester.pumpWidget(
@@ -114,84 +120,88 @@ void main() {
     });
 
     // ── 2: severity filter forwards to provider ─────────────────────────────
-    testWidgets('2 tapping CRITICAL chip queries provider with severity=critical',
-        (tester) async {
-      tester.view.physicalSize = const Size(1400, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      '2 tapping CRITICAL chip queries provider with severity=critical',
+      (tester) async {
+        tester.view.physicalSize = const Size(1400, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final captured = <AuditLogParams>[];
+        final captured = <AuditLogParams>[];
 
-      await tester.pumpWidget(
-        _buildScreen(
-          providerOverride: (ref, params) async {
-            captured.add(params);
-            return const <SystemAuditLogView>[];
-          },
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // First call uses no severity filter.
-      expect(captured.last.severity, isNull);
-
-      await tester.tap(find.widgetWithText(FilterChip, 'CRITICAL'));
-      await tester.pumpAndSettle();
-
-      expect(captured.last.severity, equals('critical'));
-    });
-
-    // ── 3: date-range filter forwards to provider ───────────────────────────
-    testWidgets('3 selecting a date range queries provider with from/to dates',
-        (tester) async {
-      tester.view.physicalSize = const Size(1400, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      final captured = <AuditLogParams>[];
-      late ProviderContainer container;
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            systemAuditLogProvider.overrideWith((ref, params) async {
+        await tester.pumpWidget(
+          _buildScreen(
+            providerOverride: (ref, params) async {
               captured.add(params);
               return const <SystemAuditLogView>[];
-            }),
-          ],
-          child: Builder(
-            builder: (context) {
-              container = ProviderScope.containerOf(context);
-              return const MaterialApp(
-                home: Scaffold(body: SuperAdminAuditLogScreen()),
-              );
             },
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // The DateRangePicker is opened via showDateRangePicker, which is
-      // hard to drive in a widget test (modal route + native fields). We
-      // simulate the same outcome by directly invalidating the provider
-      // family with a non-null date range — equivalent to the user pressing
-      // "Apply" in the picker. The screen re-fetches with the new params.
-      final from = DateTime.utc(2026, 4, 1);
-      final to = DateTime.utc(2026, 4, 30);
-      unawaited(
-        container.read(
-          systemAuditLogProvider(
-            auditLogParams(fromDate: from, toDate: to),
-          ).future,
-        ),
-      );
-      await tester.pumpAndSettle();
+        // First call uses no severity filter.
+        expect(captured.last.severity, isNull);
 
-      expect(
-        captured.any((p) => p.fromDate == from && p.toDate == to),
-        isTrue,
-      );
-    });
+        await tester.tap(find.widgetWithText(FilterChip, 'CRITICAL'));
+        await tester.pumpAndSettle();
+
+        expect(captured.last.severity, equals('critical'));
+      },
+    );
+
+    // ── 3: date-range filter forwards to provider ───────────────────────────
+    testWidgets(
+      '3 selecting a date range queries provider with from/to dates',
+      (tester) async {
+        tester.view.physicalSize = const Size(1400, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final captured = <AuditLogParams>[];
+        late ProviderContainer container;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              systemAuditLogProvider.overrideWith((ref, params) async {
+                captured.add(params);
+                return const <SystemAuditLogView>[];
+              }),
+            ],
+            child: Builder(
+              builder: (context) {
+                container = ProviderScope.containerOf(context);
+                return const MaterialApp(
+                  home: Scaffold(body: SuperAdminAuditLogScreen()),
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The DateRangePicker is opened via showDateRangePicker, which is
+        // hard to drive in a widget test (modal route + native fields). We
+        // simulate the same outcome by directly invalidating the provider
+        // family with a non-null date range — equivalent to the user pressing
+        // "Apply" in the picker. The screen re-fetches with the new params.
+        final from = DateTime.utc(2026, 4, 1);
+        final to = DateTime.utc(2026, 4, 30);
+        unawaited(
+          container.read(
+            systemAuditLogProvider(
+              auditLogParams(fromDate: from, toDate: to),
+            ).future,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          captured.any((p) => p.fromDate == from && p.toDate == to),
+          isTrue,
+        );
+      },
+    );
 
     // ── 4: empty state ──────────────────────────────────────────────────────
     testWidgets('4 empty data renders the empty-state copy', (tester) async {
@@ -211,8 +221,9 @@ void main() {
     });
 
     // ── 5: loading state ────────────────────────────────────────────────────
-    testWidgets('5 unresolved future renders CircularProgressIndicator',
-        (tester) async {
+    testWidgets('5 unresolved future renders CircularProgressIndicator', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -232,8 +243,9 @@ void main() {
     });
 
     // ── 6: error state ──────────────────────────────────────────────────────
-    testWidgets('6 thrown error renders error copy + Tentar novamente',
-        (tester) async {
+    testWidgets('6 thrown error renders error copy + Tentar novamente', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -246,8 +258,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Erro ao carregar logs'), findsOneWidget);
-      expect(find.widgetWithText(ElevatedButton, 'Tentar novamente'),
-          findsOneWidget);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Tentar novamente'),
+        findsOneWidget,
+      );
       // No red-screen / error-widget popup.
       expect(tester.takeException(), isNull);
     });
@@ -278,107 +292,112 @@ void main() {
   });
 
   // ── 37–38: AUDIT_LOG_VIEWED recursive audit (TDD-RED — adendo B) ──────────
-  group('SuperAdminAuditLogScreen — Auditoria-da-Auditoria (INV-3 backlog)', () {
-    testWidgets('37 first render emits AUDIT_LOG_VIEWED governance event', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1400, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  group(
+    'SuperAdminAuditLogScreen — Auditoria-da-Auditoria (INV-3 backlog)',
+    () {
+      testWidgets('37 first render emits AUDIT_LOG_VIEWED governance event', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(1400, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final spy = _MockSystemAuditLogService();
-      when(
-        () => spy.logGovernanceChange(
-          eventType: any(named: 'eventType'),
-          reason: any(named: 'reason'),
-          actorType: any(named: 'actorType'),
-          impersonatorId: any(named: 'impersonatorId'),
-          organizationId: any(named: 'organizationId'),
-          organizationName: any(named: 'organizationName'),
-          oldSnapshot: any(named: 'oldSnapshot'),
-          newSnapshot: any(named: 'newSnapshot'),
-          context: any(named: 'context'),
-          source: any(named: 'source'),
-        ),
-      ).thenAnswer((_) async {});
+        final spy = _MockSystemAuditLogService();
+        when(
+          () => spy.logGovernanceChange(
+            eventType: any(named: 'eventType'),
+            reason: any(named: 'reason'),
+            actorType: any(named: 'actorType'),
+            impersonatorId: any(named: 'impersonatorId'),
+            organizationId: any(named: 'organizationId'),
+            organizationName: any(named: 'organizationName'),
+            oldSnapshot: any(named: 'oldSnapshot'),
+            newSnapshot: any(named: 'newSnapshot'),
+            context: any(named: 'context'),
+            source: any(named: 'source'),
+          ),
+        ).thenAnswer((_) async {});
 
-      await tester.pumpWidget(
-        _buildScreen(
-          providerOverride: (ref, _) async => const [],
-          auditService: spy,
-        ),
+        await tester.pumpWidget(
+          _buildScreen(
+            providerOverride: (ref, _) async => const [],
+            auditService: spy,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => spy.logGovernanceChange(
+            eventType: 'AUDIT_LOG_VIEWED',
+            reason: any(named: 'reason'),
+            actorType: any(named: 'actorType'),
+            impersonatorId: any(named: 'impersonatorId'),
+            organizationId: any(named: 'organizationId'),
+            organizationName: any(named: 'organizationName'),
+            oldSnapshot: any(named: 'oldSnapshot'),
+            newSnapshot: any(named: 'newSnapshot'),
+            context: any(named: 'context'),
+            source: any(named: 'source'),
+          ),
+        ).called(1);
+        // TDD-RED — implement AUDIT_LOG_VIEWED emission in
+        // SuperAdminAuditLogScreen.initState (plan adendo B). Flip skip to
+        // false when impl lands.
+      }, skip: true);
+
+      testWidgets(
+        '38 changing severity filter emits a second AUDIT_LOG_VIEWED',
+        (tester) async {
+          tester.view.physicalSize = const Size(1400, 900);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(tester.view.resetPhysicalSize);
+
+          final spy = _MockSystemAuditLogService();
+          when(
+            () => spy.logGovernanceChange(
+              eventType: any(named: 'eventType'),
+              reason: any(named: 'reason'),
+              actorType: any(named: 'actorType'),
+              impersonatorId: any(named: 'impersonatorId'),
+              organizationId: any(named: 'organizationId'),
+              organizationName: any(named: 'organizationName'),
+              oldSnapshot: any(named: 'oldSnapshot'),
+              newSnapshot: any(named: 'newSnapshot'),
+              context: any(named: 'context'),
+              source: any(named: 'source'),
+            ),
+          ).thenAnswer((_) async {});
+
+          await tester.pumpWidget(
+            _buildScreen(
+              providerOverride: (ref, _) async => const [],
+              auditService: spy,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.widgetWithText(FilterChip, 'CRITICAL'));
+          await tester.pumpAndSettle();
+
+          verify(
+            () => spy.logGovernanceChange(
+              eventType: 'AUDIT_LOG_VIEWED',
+              reason: any(named: 'reason'),
+              actorType: any(named: 'actorType'),
+              impersonatorId: any(named: 'impersonatorId'),
+              organizationId: any(named: 'organizationId'),
+              organizationName: any(named: 'organizationName'),
+              oldSnapshot: any(named: 'oldSnapshot'),
+              newSnapshot: any(named: 'newSnapshot'),
+              context: any(named: 'context'),
+              source: any(named: 'source'),
+            ),
+          ).called(2);
+          // TDD-RED — implement filter-change emission of AUDIT_LOG_VIEWED
+          // (plan adendo B). Flip skip to false when impl lands.
+        },
+        skip: true,
       );
-      await tester.pumpAndSettle();
-
-      verify(
-        () => spy.logGovernanceChange(
-          eventType: 'AUDIT_LOG_VIEWED',
-          reason: any(named: 'reason'),
-          actorType: any(named: 'actorType'),
-          impersonatorId: any(named: 'impersonatorId'),
-          organizationId: any(named: 'organizationId'),
-          organizationName: any(named: 'organizationName'),
-          oldSnapshot: any(named: 'oldSnapshot'),
-          newSnapshot: any(named: 'newSnapshot'),
-          context: any(named: 'context'),
-          source: any(named: 'source'),
-        ),
-      ).called(1);
-      // TDD-RED — implement AUDIT_LOG_VIEWED emission in
-      // SuperAdminAuditLogScreen.initState (plan adendo B). Flip skip to
-      // false when impl lands.
-    }, skip: true);
-
-    testWidgets('38 changing severity filter emits a second AUDIT_LOG_VIEWED', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1400, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      final spy = _MockSystemAuditLogService();
-      when(
-        () => spy.logGovernanceChange(
-          eventType: any(named: 'eventType'),
-          reason: any(named: 'reason'),
-          actorType: any(named: 'actorType'),
-          impersonatorId: any(named: 'impersonatorId'),
-          organizationId: any(named: 'organizationId'),
-          organizationName: any(named: 'organizationName'),
-          oldSnapshot: any(named: 'oldSnapshot'),
-          newSnapshot: any(named: 'newSnapshot'),
-          context: any(named: 'context'),
-          source: any(named: 'source'),
-        ),
-      ).thenAnswer((_) async {});
-
-      await tester.pumpWidget(
-        _buildScreen(
-          providerOverride: (ref, _) async => const [],
-          auditService: spy,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.widgetWithText(FilterChip, 'CRITICAL'));
-      await tester.pumpAndSettle();
-
-      verify(
-        () => spy.logGovernanceChange(
-          eventType: 'AUDIT_LOG_VIEWED',
-          reason: any(named: 'reason'),
-          actorType: any(named: 'actorType'),
-          impersonatorId: any(named: 'impersonatorId'),
-          organizationId: any(named: 'organizationId'),
-          organizationName: any(named: 'organizationName'),
-          oldSnapshot: any(named: 'oldSnapshot'),
-          newSnapshot: any(named: 'newSnapshot'),
-          context: any(named: 'context'),
-          source: any(named: 'source'),
-        ),
-      ).called(2);
-      // TDD-RED — implement filter-change emission of AUDIT_LOG_VIEWED
-      // (plan adendo B). Flip skip to false when impl lands.
-    }, skip: true);
-  });
+    },
+  );
 }

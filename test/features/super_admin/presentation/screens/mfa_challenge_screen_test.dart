@@ -83,7 +83,9 @@ Widget _buildScreen({
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(MaterialPageRoute<void>(builder: (_) => const SizedBox()));
+    registerFallbackValue(
+      MaterialPageRoute<void>(builder: (_) => const SizedBox()),
+    );
   });
   setUp(() => HttpOverrides.global = _MockHttpOverrides());
   tearDown(() => HttpOverrides.global = null);
@@ -140,11 +142,13 @@ void main() {
 
       expect(find.byType(MfaChallengeScreen), findsNothing);
       expect(find.byType(SuperAdminShell), findsOneWidget);
-      verify(() => handler.verify(
-            factorId: 'factor-f1',
-            challengeId: 'challenge-c1',
-            code: _kCode,
-          )).called(1);
+      verify(
+        () => handler.verify(
+          factorId: 'factor-f1',
+          challengeId: 'challenge-c1',
+          code: _kCode,
+        ),
+      ).called(1);
     });
 
     testWidgets('15 single failure decrements remaining attempts', (
@@ -249,8 +253,9 @@ void main() {
       await tester.pump();
 
       String captureCountdown() {
-        final widget =
-            tester.widgetList<Text>(find.textContaining('Tente novamente em '));
+        final widget = tester.widgetList<Text>(
+          find.textContaining('Tente novamente em '),
+        );
         return widget.first.data ?? '';
       }
 
@@ -265,8 +270,11 @@ void main() {
 
       final later = captureCountdown();
 
-      expect(initial, isNot(equals(later)),
-          reason: 'Countdown text must change as time passes.');
+      expect(
+        initial,
+        isNot(equals(later)),
+        reason: 'Countdown text must change as time passes.',
+      );
       // Both values must follow the MM:SS format.
       final pattern = RegExp(r'Tente novamente em \d{2}:\d{2}');
       expect(pattern.hasMatch(initial), isTrue, reason: 'initial=$initial');

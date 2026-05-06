@@ -59,41 +59,40 @@ void main() {
       await SuperAdminDataFactory.cleanup(testOrgBrazilianChars);
     });
 
-    testWidgets(
-      '7.1 Truncamento com reticências para nomes de admin longos',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('7.1 Truncamento com reticências para nomes de admin longos', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantList(tester);
-        await tester.pumpAndSettle();
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantList(tester);
+      await tester.pumpAndSettle();
 
-        // Verificar que não há exceção de overflow
-        expect(
-          tester.takeException(),
-          isNull,
-          reason:
-              'Nenhum RenderFlex overflow deve ocorrer ao exibir nomes longos',
-        );
+      // Verificar que não há exceção de overflow
+      expect(
+        tester.takeException(),
+        isNull,
+        reason:
+            'Nenhum RenderFlex overflow deve ocorrer ao exibir nomes longos',
+      );
 
-        // Verificar que existem widgets Text com TextOverflow.ellipsis
-        // (indicando truncamento correto)
-        final truncatedTexts = find.byWidgetPredicate(
-          (widget) => widget is Text && widget.overflow == TextOverflow.ellipsis,
-        );
+      // Verificar que existem widgets Text com TextOverflow.ellipsis
+      // (indicando truncamento correto)
+      final truncatedTexts = find.byWidgetPredicate(
+        (widget) => widget is Text && widget.overflow == TextOverflow.ellipsis,
+      );
 
-        expect(
-          truncatedTexts,
-          findsWidgets,
-          reason:
-              'Deve existir pelo menos um widget Text com overflow ellipsis '
-              'para tratar nomes longos (Req 7.1)',
-        );
-      },
-    );
+      expect(
+        truncatedTexts,
+        findsWidgets,
+        reason:
+            'Deve existir pelo menos um widget Text com overflow ellipsis '
+            'para tratar nomes longos (Req 7.1)',
+      );
+    });
 
     testWidgets(
       '7.2 Alinhamento correto do grid com razão social longa (150+ chars)',
@@ -175,8 +174,8 @@ void main() {
         final chips = find.byType(Chip);
         final filterChips = find.byType(FilterChip);
 
-        final screenWidth = tester.view.physicalSize.width /
-            tester.view.devicePixelRatio;
+        final screenWidth =
+            tester.view.physicalSize.width / tester.view.devicePixelRatio;
 
         for (final chip in chips.evaluate()) {
           final renderBox = chip.renderObject as RenderBox?;
@@ -286,7 +285,8 @@ void main() {
 
         // Localizar textos truncados com ellipsis
         final truncatedTexts = find.byWidgetPredicate(
-          (widget) => widget is Text && widget.overflow == TextOverflow.ellipsis,
+          (widget) =>
+              widget is Text && widget.overflow == TextOverflow.ellipsis,
         );
 
         // Se não encontrar textos truncados, verificar se há Tooltip wrapping

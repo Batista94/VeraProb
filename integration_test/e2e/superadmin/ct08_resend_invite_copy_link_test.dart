@@ -161,16 +161,14 @@ void main() {
         expect(
           tester.takeException(),
           isNull,
-          reason:
-              'A ação de clipboard não deve gerar erros de UI (Req 2.3)',
+          reason: 'A ação de clipboard não deve gerar erros de UI (Req 2.3)',
         );
 
         // Verificar que o snackbar de confirmação apareceu
         expect(
           find.text('Link de convite copiado.'),
           findsOneWidget,
-          reason:
-              'Deve exibir snackbar confirmando cópia do link (Req 2.3)',
+          reason: 'Deve exibir snackbar confirmando cópia do link (Req 2.3)',
         );
 
         // Verificar que o clipboard recebeu um link válido
@@ -193,130 +191,126 @@ void main() {
       },
     );
 
-    testWidgets(
-      '2.4 Feedback visual de sucesso ao reenviar convite',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('2.4 Feedback visual de sucesso ao reenviar convite', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
 
+      // Tocar no botão de reenviar convite
+      final resendButton = find.byTooltip('Reenviar Convite');
+      expect(resendButton, findsAtLeast(1));
+      await tester.tap(resendButton.first);
+
+      // Aguardar feedback visual de sucesso (snackbar)
+      await SuperAdminWidgetHelpers.waitForSnackbar(
+        tester,
+        'Convite reenviado',
+      );
+
+      // Verificar que o snackbar de sucesso está visível
+      final snackBar = find.byType(SnackBar);
+      expect(
+        snackBar,
+        findsOneWidget,
+        reason: 'Deve exibir feedback visual de sucesso ao reenviar (Req 2.4)',
+      );
+    });
+
+    testWidgets('2.5 Ausência de botões quando não há convites pendentes', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrgNoPending.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
+
+      // Verificar ausência do botão de copiar link
+      final copyButton = find.byTooltip('Copiar link de convite');
+      expect(
+        copyButton,
+        findsNothing,
+        reason:
+            'O botão "Copiar link de convite" NÃO deve estar presente '
+            'quando não há convites pendentes (Req 2.5)',
+      );
+
+      // O botão "Reenviar Convite" pode estar presente para admins que
+      // não fizeram login ainda (!hasSignedIn), mas não para admins ativos
+      // que já logaram. Verificamos que não há botão associado a pendentes.
+      // Como todos os admins são ativos nesta org, verificamos a ausência
+      // do ícone de copiar (que é exclusivo de pendentes com token).
+    });
+
+    testWidgets('2.6 Exibição de erro em caso de falha de rede ao reenviar', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
+
+      // Simular falha de rede via HttpOverrides
+      final originalOverrides = HttpOverrides.current;
+      HttpOverrides.global = _FailingHttpOverrides();
+
+      try {
         // Tocar no botão de reenviar convite
         final resendButton = find.byTooltip('Reenviar Convite');
         expect(resendButton, findsAtLeast(1));
         await tester.tap(resendButton.first);
 
-        // Aguardar feedback visual de sucesso (snackbar)
+        // Aguardar feedback de erro (snackbar com mensagem de erro)
         await SuperAdminWidgetHelpers.waitForSnackbar(
           tester,
-          'Convite reenviado',
+          'Erro ao reenviar',
         );
 
-        // Verificar que o snackbar de sucesso está visível
-        final snackBar = find.byType(SnackBar);
+        // Verificar que a aplicação não crashou
         expect(
-          snackBar,
+          tester.takeException(),
+          isNull,
+          reason:
+              'A aplicação não deve crashar em caso de falha de rede (Req 2.6)',
+        );
+
+        // Verificar que o snackbar de erro está visível
+        final errorSnackbar = find.byType(SnackBar);
+        expect(
+          errorSnackbar,
           findsOneWidget,
           reason:
-              'Deve exibir feedback visual de sucesso ao reenviar (Req 2.4)',
+              'Deve exibir mensagem de erro ao usuário em caso de falha '
+              'de rede (Req 2.6)',
         );
-      },
-    );
-
-    testWidgets(
-      '2.5 Ausência de botões quando não há convites pendentes',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
-
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrgNoPending.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
-
-        // Verificar ausência do botão de copiar link
-        final copyButton = find.byTooltip('Copiar link de convite');
-        expect(
-          copyButton,
-          findsNothing,
-          reason:
-              'O botão "Copiar link de convite" NÃO deve estar presente '
-              'quando não há convites pendentes (Req 2.5)',
-        );
-
-        // O botão "Reenviar Convite" pode estar presente para admins que
-        // não fizeram login ainda (!hasSignedIn), mas não para admins ativos
-        // que já logaram. Verificamos que não há botão associado a pendentes.
-        // Como todos os admins são ativos nesta org, verificamos a ausência
-        // do ícone de copiar (que é exclusivo de pendentes com token).
-      },
-    );
-
-    testWidgets(
-      '2.6 Exibição de erro em caso de falha de rede ao reenviar',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
-
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
-
-        // Simular falha de rede via HttpOverrides
-        final originalOverrides = HttpOverrides.current;
-        HttpOverrides.global = _FailingHttpOverrides();
-
-        try {
-          // Tocar no botão de reenviar convite
-          final resendButton = find.byTooltip('Reenviar Convite');
-          expect(resendButton, findsAtLeast(1));
-          await tester.tap(resendButton.first);
-
-          // Aguardar feedback de erro (snackbar com mensagem de erro)
-          await SuperAdminWidgetHelpers.waitForSnackbar(
-            tester,
-            'Erro ao reenviar',
-          );
-
-          // Verificar que a aplicação não crashou
-          expect(
-            tester.takeException(),
-            isNull,
-            reason:
-                'A aplicação não deve crashar em caso de falha de rede (Req 2.6)',
-          );
-
-          // Verificar que o snackbar de erro está visível
-          final errorSnackbar = find.byType(SnackBar);
-          expect(
-            errorSnackbar,
-            findsOneWidget,
-            reason:
-                'Deve exibir mensagem de erro ao usuário em caso de falha '
-                'de rede (Req 2.6)',
-          );
-        } finally {
-          // Restaurar HttpOverrides original
-          HttpOverrides.global = originalOverrides;
-        }
-      },
-    );
+      } finally {
+        // Restaurar HttpOverrides original
+        HttpOverrides.global = originalOverrides;
+      }
+    });
   });
 }
 
@@ -370,12 +364,8 @@ class _FailingHttpClient implements HttpClient {
 
   @override
   set authenticateProxy(
-    Future<bool> Function(
-      String host,
-      int port,
-      String scheme,
-      String? realm,
-    )? f,
+    Future<bool> Function(String host, int port, String scheme, String? realm)?
+    f,
   ) {}
 
   @override
@@ -389,7 +379,8 @@ class _FailingHttpClient implements HttpClient {
       Uri url,
       String? proxyHost,
       int? proxyPort,
-    )? f,
+    )?
+    f,
   ) {}
 
   @override
@@ -415,8 +406,7 @@ class _FailingHttpClient implements HttpClient {
   Future<HttpClientRequest> getUrl(Uri url) => _fail();
 
   @override
-  Future<HttpClientRequest> head(String host, int port, String path) =>
-      _fail();
+  Future<HttpClientRequest> head(String host, int port, String path) => _fail();
 
   @override
   Future<HttpClientRequest> headUrl(Uri url) => _fail();
@@ -427,8 +417,7 @@ class _FailingHttpClient implements HttpClient {
     String host,
     int port,
     String path,
-  ) =>
-      _fail();
+  ) => _fail();
 
   @override
   Future<HttpClientRequest> openUrl(String method, Uri url) => _fail();
@@ -441,8 +430,7 @@ class _FailingHttpClient implements HttpClient {
   Future<HttpClientRequest> patchUrl(Uri url) => _fail();
 
   @override
-  Future<HttpClientRequest> post(String host, int port, String path) =>
-      _fail();
+  Future<HttpClientRequest> post(String host, int port, String path) => _fail();
 
   @override
   Future<HttpClientRequest> postUrl(Uri url) => _fail();

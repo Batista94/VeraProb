@@ -122,7 +122,8 @@ void main() {
         expect(
           stripped.contains('service_role'),
           isFalse,
-          reason: 'INV-30: service_role MUST NOT appear in executable repo code.',
+          reason:
+              'INV-30: service_role MUST NOT appear in executable repo code.',
         );
       },
     );
@@ -131,7 +132,8 @@ void main() {
   group('INV-31 — HMAC signing on super-admin-proxy', () {
     test(
       'getSystemAuditLog attaches HMAC signature + timestamp headers',
-      skip: 'TDD-RED — implement HMAC headers in '
+      skip:
+          'TDD-RED — implement HMAC headers in '
           'supabase_super_admin_repository.getSystemAuditLog (plan adendo A). '
           'Flip skip to false when impl lands.',
       () {
@@ -161,35 +163,39 @@ void main() {
       },
     );
 
-    test('super-admin-proxy index.ts imports HMAC verifier',
-        skip: 'TDD-RED — implement HMAC verification in '
-            'supabase/functions/super-admin-proxy/index.ts (plan adendo A). '
-            'Flip skip to false when impl lands.', () {
-      final proxyFile = File(_proxyIndexPath);
-      expect(
-        proxyFile.existsSync(),
-        isTrue,
-        reason: 'Edge Function not found at $_proxyIndexPath',
-      );
-      expect(
-        File(_hmacSharedPath).existsSync(),
-        isTrue,
-        reason:
-            'shared HMAC module not found at $_hmacSharedPath — INV-31 missing.',
-      );
+    test(
+      'super-admin-proxy index.ts imports HMAC verifier',
+      skip:
+          'TDD-RED — implement HMAC verification in '
+          'supabase/functions/super-admin-proxy/index.ts (plan adendo A). '
+          'Flip skip to false when impl lands.',
+      () {
+        final proxyFile = File(_proxyIndexPath);
+        expect(
+          proxyFile.existsSync(),
+          isTrue,
+          reason: 'Edge Function not found at $_proxyIndexPath',
+        );
+        expect(
+          File(_hmacSharedPath).existsSync(),
+          isTrue,
+          reason:
+              'shared HMAC module not found at $_hmacSharedPath — INV-31 missing.',
+        );
 
-      final proxySource = proxyFile.readAsStringSync();
-      final importsHmac =
-          proxySource.contains('hmac_signer') ||
-          proxySource.contains('verifyPayload');
-      expect(
-        importsHmac,
-        isTrue,
-        reason:
-            'INV-31 (TDD-RED): super-admin-proxy must import verifyPayload '
-            'from shared/hmac_signer.ts and reject unsigned/tampered requests. '
-            'Backlog: implement HMAC verification path before merge.',
-      );
-    });
+        final proxySource = proxyFile.readAsStringSync();
+        final importsHmac =
+            proxySource.contains('hmac_signer') ||
+            proxySource.contains('verifyPayload');
+        expect(
+          importsHmac,
+          isTrue,
+          reason:
+              'INV-31 (TDD-RED): super-admin-proxy must import verifyPayload '
+              'from shared/hmac_signer.ts and reject unsigned/tampered requests. '
+              'Backlog: implement HMAC verification path before merge.',
+        );
+      },
+    );
   });
 }

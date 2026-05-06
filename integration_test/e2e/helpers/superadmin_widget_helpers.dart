@@ -163,10 +163,7 @@ abstract class SuperAdminWidgetHelpers {
   /// sucesso/erro após operações assíncronas.
   ///
   /// Lança [TestFailure] se o SnackBar não aparecer dentro do timeout.
-  static Future<void> waitForSnackbar(
-    WidgetTester tester,
-    String text,
-  ) async {
+  static Future<void> waitForSnackbar(WidgetTester tester, String text) async {
     await retryUntil(
       tester,
       () async {
@@ -227,18 +224,14 @@ abstract class SuperAdminWidgetHelpers {
           .evaluate()
           .isNotEmpty;
       final isInsidePageView = find
-          .ancestor(
-            of: find.byWidget(widget),
-            matching: find.byType(PageView),
-          )
+          .ancestor(of: find.byWidget(widget), matching: find.byType(PageView))
           .evaluate()
           .isNotEmpty;
       final isInsideListView = find
           .ancestor(
             of: find.byWidget(widget),
             matching: find.byWidgetPredicate(
-              (w) =>
-                  w is ListView && w.scrollDirection == Axis.horizontal,
+              (w) => w is ListView && w.scrollDirection == Axis.horizontal,
             ),
           )
           .evaluate()

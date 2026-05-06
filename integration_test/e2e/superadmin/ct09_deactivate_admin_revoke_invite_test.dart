@@ -54,59 +54,57 @@ void main() {
       await SuperAdminDataFactory.cleanup(testOrgSingleAdmin);
     });
 
-    testWidgets(
-      '3.1 Modal_Confirmação exibido ao revogar convite pendente',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('3.1 Modal_Confirmação exibido ao revogar convite pendente', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
 
-        // Localizar o botão de revogar convite para admin pendente
-        final revokeButton = find.byTooltip('Revogar Convite');
-        expect(
-          revokeButton,
-          findsAtLeast(1),
-          reason:
-              'O botão "Revogar Convite" deve estar visível para '
-              'Admin_Pendente (Req 3.1)',
-        );
+      // Localizar o botão de revogar convite para admin pendente
+      final revokeButton = find.byTooltip('Revogar Convite');
+      expect(
+        revokeButton,
+        findsAtLeast(1),
+        reason:
+            'O botão "Revogar Convite" deve estar visível para '
+            'Admin_Pendente (Req 3.1)',
+      );
 
-        // Tocar no botão de revogar
-        await tester.tap(revokeButton.first);
-        await tester.pumpAndSettle();
+      // Tocar no botão de revogar
+      await tester.tap(revokeButton.first);
+      await tester.pumpAndSettle();
 
-        // Verificar que o Modal_Confirmação é exibido
-        final dialog = find.byType(AlertDialog);
-        final simpleDialog = find.byType(Dialog);
-        expect(
-          dialog.evaluate().isNotEmpty || simpleDialog.evaluate().isNotEmpty,
-          isTrue,
-          reason:
-              'O Modal_Confirmação deve ser exibido ao clicar em '
-              '"Revogar Convite" (Req 3.1)',
-        );
+      // Verificar que o Modal_Confirmação é exibido
+      final dialog = find.byType(AlertDialog);
+      final simpleDialog = find.byType(Dialog);
+      expect(
+        dialog.evaluate().isNotEmpty || simpleDialog.evaluate().isNotEmpty,
+        isTrue,
+        reason:
+            'O Modal_Confirmação deve ser exibido ao clicar em '
+            '"Revogar Convite" (Req 3.1)',
+      );
 
-        // Verificar que o modal contém texto relacionado à revogação
-        final revokeText = find.textContaining('Revogar');
-        expect(
-          revokeText,
-          findsAtLeast(1),
-          reason:
-              'O modal deve conter texto indicando a ação de revogação',
-        );
+      // Verificar que o modal contém texto relacionado à revogação
+      final revokeText = find.textContaining('Revogar');
+      expect(
+        revokeText,
+        findsAtLeast(1),
+        reason: 'O modal deve conter texto indicando a ação de revogação',
+      );
 
-        // Cancelar para não alterar estado para próximos testes
-        await SuperAdminWidgetHelpers.cancelModal(tester);
-      },
-    );
+      // Cancelar para não alterar estado para próximos testes
+      await SuperAdminWidgetHelpers.cancelModal(tester);
+    });
 
     testWidgets(
       '3.2 Convite removido da lista e status alterado no DB após confirmação',
@@ -124,9 +122,7 @@ void main() {
         await SuperAdminNavigationHelper.goToUsersTab(tester);
 
         // Obter o email do admin pendente para verificação posterior
-        final pendingAdmin = testOrg.admins.firstWhere(
-          (a) => a.isPending,
-        );
+        final pendingAdmin = testOrg.admins.firstWhere((a) => a.isPending);
 
         // Verificar que o admin pendente está visível na lista
         final pendingEmailFinder = find.textContaining(pendingAdmin.email);
@@ -147,16 +143,12 @@ void main() {
         await SuperAdminWidgetHelpers.confirmModal(tester);
 
         // Verificar que o convite foi removido da lista (UI)
-        await SuperAdminWidgetHelpers.retryUntil(
-          tester,
-          () async {
-            await tester.pump(const Duration(milliseconds: 100));
-            // O botão de revogar não deve mais estar presente para este admin
-            return find.textContaining(pendingAdmin.email).evaluate().isEmpty ||
-                find.byTooltip('Revogar Convite').evaluate().isEmpty;
-          },
-          timeout: SuperAdminTestConfig.defaultTimeout,
-        );
+        await SuperAdminWidgetHelpers.retryUntil(tester, () async {
+          await tester.pump(const Duration(milliseconds: 100));
+          // O botão de revogar não deve mais estar presente para este admin
+          return find.textContaining(pendingAdmin.email).evaluate().isEmpty ||
+              find.byTooltip('Revogar Convite').evaluate().isEmpty;
+        }, timeout: SuperAdminTestConfig.defaultTimeout);
 
         // Verificar no banco que o convite foi revogado/removido
         final client = SuperAdminTestConfig.createServiceRoleClient();
@@ -186,391 +178,381 @@ void main() {
       },
     );
 
-    testWidgets(
-      '3.3 Modal_Confirmação exibido ao desativar admin ativo',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('3.3 Modal_Confirmação exibido ao desativar admin ativo', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
 
-        // Localizar o botão de desativar admin ativo
-        final deactivateButton = find.byTooltip('Inativar Usuário');
+      // Localizar o botão de desativar admin ativo
+      final deactivateButton = find.byTooltip('Inativar Usuário');
+      expect(
+        deactivateButton,
+        findsAtLeast(1),
+        reason:
+            'O botão "Inativar Usuário" deve estar visível para '
+            'Admin_Ativo (Req 3.3)',
+      );
+
+      // Tocar no botão de desativar
+      await tester.tap(deactivateButton.first);
+      await tester.pumpAndSettle();
+
+      // Verificar que o Modal_Confirmação é exibido
+      final dialog = find.byType(AlertDialog);
+      final simpleDialog = find.byType(Dialog);
+      expect(
+        dialog.evaluate().isNotEmpty || simpleDialog.evaluate().isNotEmpty,
+        isTrue,
+        reason:
+            'O Modal_Confirmação deve ser exibido ao clicar em '
+            '"Inativar Usuário" (Req 3.3)',
+      );
+
+      // Verificar que o modal contém texto relacionado à desativação
+      final deactivateText = find.textContaining('Inativar');
+      expect(
+        deactivateText,
+        findsAtLeast(1),
+        reason: 'O modal deve conter texto indicando a ação de desativação',
+      );
+
+      // Cancelar para não alterar estado para próximos testes
+      await SuperAdminWidgetHelpers.cancelModal(tester);
+    });
+
+    testWidgets('3.4 is_active=false no DB após confirmação de desativação', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
+
+      // Obter um admin ativo para verificação
+      final activeAdmin = testOrg.admins.firstWhere(
+        (a) => a.isActive && !a.isPending,
+      );
+
+      // Verificar estado inicial no DB
+      final client = SuperAdminTestConfig.createServiceRoleClient();
+      try {
+        final beforeRows = await client
+            .from('user_roles')
+            .select('is_active')
+            .eq('user_id', activeAdmin.userId)
+            .eq('organization_id', testOrg.orgId);
+
         expect(
-          deactivateButton,
-          findsAtLeast(1),
-          reason:
-              'O botão "Inativar Usuário" deve estar visível para '
-              'Admin_Ativo (Req 3.3)',
-        );
-
-        // Tocar no botão de desativar
-        await tester.tap(deactivateButton.first);
-        await tester.pumpAndSettle();
-
-        // Verificar que o Modal_Confirmação é exibido
-        final dialog = find.byType(AlertDialog);
-        final simpleDialog = find.byType(Dialog);
-        expect(
-          dialog.evaluate().isNotEmpty || simpleDialog.evaluate().isNotEmpty,
+          beforeRows.first['is_active'],
           isTrue,
-          reason:
-              'O Modal_Confirmação deve ser exibido ao clicar em '
-              '"Inativar Usuário" (Req 3.3)',
+          reason: 'Admin deve estar ativo antes da desativação',
         );
+      } finally {
+        await client.dispose();
+      }
 
-        // Verificar que o modal contém texto relacionado à desativação
-        final deactivateText = find.textContaining('Inativar');
+      // Tocar no botão de desativar
+      final deactivateButton = find.byTooltip('Inativar Usuário');
+      expect(deactivateButton, findsAtLeast(1));
+      await tester.tap(deactivateButton.first);
+      await tester.pumpAndSettle();
+
+      // Confirmar a desativação no modal
+      await SuperAdminWidgetHelpers.confirmModal(tester);
+
+      // Aguardar processamento
+      await tester.pumpAndSettle(
+        const Duration(milliseconds: 100),
+        EnginePhase.sendSemanticsUpdate,
+        SuperAdminTestConfig.defaultTimeout,
+      );
+
+      // Verificar no banco que is_active=false
+      final verifyClient = SuperAdminTestConfig.createServiceRoleClient();
+      try {
+        final afterRows = await verifyClient
+            .from('user_roles')
+            .select('is_active')
+            .eq('user_id', activeAdmin.userId)
+            .eq('organization_id', testOrg.orgId);
+
         expect(
-          deactivateText,
-          findsAtLeast(1),
+          afterRows.first['is_active'],
+          isFalse,
           reason:
-              'O modal deve conter texto indicando a ação de desativação',
+              'user_roles.is_active deve ser false após confirmação '
+              'de desativação (Req 3.4)',
         );
+      } finally {
+        await verifyClient.dispose();
+      }
+    });
 
-        // Cancelar para não alterar estado para próximos testes
+    testWidgets('3.5 Cancelamento no modal não altera estado no DB', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
+
+      // Obter um admin ativo restante para verificação
+      final activeAdmins = testOrg.admins
+          .where((a) => a.isActive && !a.isPending)
+          .toList();
+
+      // Usar o segundo admin ativo (o primeiro pode ter sido desativado no 3.4)
+      final targetAdmin = activeAdmins.length > 1
+          ? activeAdmins[1]
+          : activeAdmins.first;
+
+      // Capturar estado antes da operação
+      final client = SuperAdminTestConfig.createServiceRoleClient();
+      bool isActiveBefore;
+      try {
+        final rows = await client
+            .from('user_roles')
+            .select('is_active')
+            .eq('user_id', targetAdmin.userId)
+            .eq('organization_id', testOrg.orgId);
+
+        isActiveBefore = rows.first['is_active'] as bool;
+      } finally {
+        await client.dispose();
+      }
+
+      // Tocar no botão de desativar (se disponível)
+      final deactivateButton = find.byTooltip('Inativar Usuário');
+      if (deactivateButton.evaluate().isEmpty) {
+        markTestSkipped(
+          'Nenhum botão de desativar disponível (admins já desativados).',
+        );
+        return;
+      }
+      await tester.tap(deactivateButton.first);
+      await tester.pumpAndSettle();
+
+      // Cancelar a operação no modal
+      await SuperAdminWidgetHelpers.cancelModal(tester);
+
+      // Verificar que o estado no DB não mudou
+      final verifyClient = SuperAdminTestConfig.createServiceRoleClient();
+      try {
+        final afterRows = await verifyClient
+            .from('user_roles')
+            .select('is_active')
+            .eq('user_id', targetAdmin.userId)
+            .eq('organization_id', testOrg.orgId);
+
+        expect(
+          afterRows.first['is_active'],
+          equals(isActiveBefore),
+          reason:
+              'user_roles.is_active não deve mudar após cancelamento '
+              'no modal (Req 3.5)',
+        );
+      } finally {
+        await verifyClient.dispose();
+      }
+    });
+
+    testWidgets('3.6 Comportamento ao desativar último admin ativo', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrgSingleAdmin.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
+
+      // Verificar que há exatamente 1 admin ativo
+      final activeCount = await SuperAdminDbVerifier.countActiveUsers(
+        testOrgSingleAdmin.orgId,
+      );
+      expect(
+        activeCount,
+        equals(1),
+        reason: 'Org deve ter exatamente 1 admin ativo para este teste',
+      );
+
+      // Tentar desativar o último admin ativo
+      final deactivateButton = find.byTooltip('Inativar Usuário');
+      expect(
+        deactivateButton,
+        findsAtLeast(1),
+        reason:
+            'O botão de desativar deve estar presente mesmo para o '
+            'último admin (Req 3.6)',
+      );
+
+      await tester.tap(deactivateButton.first);
+      await tester.pumpAndSettle();
+
+      // O sistema deve exibir um aviso ou bloquear a operação.
+      // Verificar se há um modal de aviso ou se o botão de confirmação
+      // está desabilitado, ou se há uma mensagem de alerta.
+      final warningText = find.textContaining('último');
+      final blockText = find.textContaining('não é possível');
+      final alertText = find.textContaining('atenção');
+
+      final hasWarning =
+          warningText.evaluate().isNotEmpty ||
+          blockText.evaluate().isNotEmpty ||
+          alertText.evaluate().isNotEmpty;
+
+      // Se o modal foi exibido normalmente, verificar se há algum
+      // indicador de que é o último admin
+      final dialog = find.byType(AlertDialog);
+      final simpleDialog = find.byType(Dialog);
+      final hasDialog =
+          dialog.evaluate().isNotEmpty || simpleDialog.evaluate().isNotEmpty;
+
+      expect(
+        hasWarning || hasDialog,
+        isTrue,
+        reason:
+            'O sistema deve exibir aviso ou modal ao tentar desativar '
+            'o último admin ativo (Req 3.6)',
+      );
+
+      // Se houver modal, cancelar para não alterar estado
+      if (hasDialog) {
         await SuperAdminWidgetHelpers.cancelModal(tester);
-      },
-    );
+      }
 
-    testWidgets(
-      '3.4 is_active=false no DB após confirmação de desativação',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+      // Verificar que o admin ainda está ativo no DB (operação bloqueada
+      // ou cancelada)
+      final postCount = await SuperAdminDbVerifier.countActiveUsers(
+        testOrgSingleAdmin.orgId,
+      );
+      expect(
+        postCount,
+        equals(1),
+        reason:
+            'O último admin ativo deve permanecer ativo após tentativa '
+            'de desativação (Req 3.6)',
+      );
+    });
 
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
+    testWidgets('3.7 Consistência UI/DB em caso de erro de rede', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        // Obter um admin ativo para verificação
-        final activeAdmin = testOrg.admins.firstWhere(
-          (a) => a.isActive && !a.isPending,
-        );
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrgSingleAdmin.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
 
-        // Verificar estado inicial no DB
-        final client = SuperAdminTestConfig.createServiceRoleClient();
-        try {
-          final beforeRows = await client
-              .from('user_roles')
-              .select('is_active')
-              .eq('user_id', activeAdmin.userId)
-              .eq('organization_id', testOrg.orgId);
+      // Capturar estado antes da operação
+      final singleAdmin = testOrgSingleAdmin.admins.first;
+      final client = SuperAdminTestConfig.createServiceRoleClient();
+      bool isActiveBefore;
+      try {
+        final rows = await client
+            .from('user_roles')
+            .select('is_active')
+            .eq('user_id', singleAdmin.userId)
+            .eq('organization_id', testOrgSingleAdmin.orgId);
 
-          expect(
-            beforeRows.first['is_active'],
-            isTrue,
-            reason: 'Admin deve estar ativo antes da desativação',
-          );
-        } finally {
-          await client.dispose();
-        }
+        isActiveBefore = rows.first['is_active'] as bool;
+      } finally {
+        await client.dispose();
+      }
 
+      // Simular falha de rede via HttpOverrides
+      final originalOverrides = HttpOverrides.current;
+      HttpOverrides.global = _FailingHttpOverrides();
+
+      try {
         // Tocar no botão de desativar
-        final deactivateButton = find.byTooltip('Inativar Usuário');
-        expect(deactivateButton, findsAtLeast(1));
-        await tester.tap(deactivateButton.first);
-        await tester.pumpAndSettle();
-
-        // Confirmar a desativação no modal
-        await SuperAdminWidgetHelpers.confirmModal(tester);
-
-        // Aguardar processamento
-        await tester.pumpAndSettle(
-          const Duration(milliseconds: 100),
-          EnginePhase.sendSemanticsUpdate,
-          SuperAdminTestConfig.defaultTimeout,
-        );
-
-        // Verificar no banco que is_active=false
-        final verifyClient = SuperAdminTestConfig.createServiceRoleClient();
-        try {
-          final afterRows = await verifyClient
-              .from('user_roles')
-              .select('is_active')
-              .eq('user_id', activeAdmin.userId)
-              .eq('organization_id', testOrg.orgId);
-
-          expect(
-            afterRows.first['is_active'],
-            isFalse,
-            reason:
-                'user_roles.is_active deve ser false após confirmação '
-                'de desativação (Req 3.4)',
-          );
-        } finally {
-          await verifyClient.dispose();
-        }
-      },
-    );
-
-    testWidgets(
-      '3.5 Cancelamento no modal não altera estado no DB',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
-
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
-
-        // Obter um admin ativo restante para verificação
-        final activeAdmins = testOrg.admins.where(
-          (a) => a.isActive && !a.isPending,
-        ).toList();
-
-        // Usar o segundo admin ativo (o primeiro pode ter sido desativado no 3.4)
-        final targetAdmin = activeAdmins.length > 1
-            ? activeAdmins[1]
-            : activeAdmins.first;
-
-        // Capturar estado antes da operação
-        final client = SuperAdminTestConfig.createServiceRoleClient();
-        bool isActiveBefore;
-        try {
-          final rows = await client
-              .from('user_roles')
-              .select('is_active')
-              .eq('user_id', targetAdmin.userId)
-              .eq('organization_id', testOrg.orgId);
-
-          isActiveBefore = rows.first['is_active'] as bool;
-        } finally {
-          await client.dispose();
-        }
-
-        // Tocar no botão de desativar (se disponível)
         final deactivateButton = find.byTooltip('Inativar Usuário');
         if (deactivateButton.evaluate().isEmpty) {
-          markTestSkipped(
-            'Nenhum botão de desativar disponível (admins já desativados).',
-          );
+          markTestSkipped('Nenhum botão de desativar disponível.');
           return;
         }
         await tester.tap(deactivateButton.first);
         await tester.pumpAndSettle();
 
-        // Cancelar a operação no modal
-        await SuperAdminWidgetHelpers.cancelModal(tester);
-
-        // Verificar que o estado no DB não mudou
-        final verifyClient = SuperAdminTestConfig.createServiceRoleClient();
-        try {
-          final afterRows = await verifyClient
-              .from('user_roles')
-              .select('is_active')
-              .eq('user_id', targetAdmin.userId)
-              .eq('organization_id', testOrg.orgId);
-
-          expect(
-            afterRows.first['is_active'],
-            equals(isActiveBefore),
-            reason:
-                'user_roles.is_active não deve mudar após cancelamento '
-                'no modal (Req 3.5)',
-          );
-        } finally {
-          await verifyClient.dispose();
-        }
-      },
-    );
-
-    testWidgets(
-      '3.6 Comportamento ao desativar último admin ativo',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
-
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrgSingleAdmin.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
-
-        // Verificar que há exatamente 1 admin ativo
-        final activeCount = await SuperAdminDbVerifier.countActiveUsers(
-          testOrgSingleAdmin.orgId,
-        );
-        expect(
-          activeCount,
-          equals(1),
-          reason: 'Org deve ter exatamente 1 admin ativo para este teste',
-        );
-
-        // Tentar desativar o último admin ativo
-        final deactivateButton = find.byTooltip('Inativar Usuário');
-        expect(
-          deactivateButton,
-          findsAtLeast(1),
-          reason:
-              'O botão de desativar deve estar presente mesmo para o '
-              'último admin (Req 3.6)',
-        );
-
-        await tester.tap(deactivateButton.first);
-        await tester.pumpAndSettle();
-
-        // O sistema deve exibir um aviso ou bloquear a operação.
-        // Verificar se há um modal de aviso ou se o botão de confirmação
-        // está desabilitado, ou se há uma mensagem de alerta.
-        final warningText = find.textContaining('último');
-        final blockText = find.textContaining('não é possível');
-        final alertText = find.textContaining('atenção');
-
-        final hasWarning = warningText.evaluate().isNotEmpty ||
-            blockText.evaluate().isNotEmpty ||
-            alertText.evaluate().isNotEmpty;
-
-        // Se o modal foi exibido normalmente, verificar se há algum
-        // indicador de que é o último admin
+        // Confirmar no modal (se exibido)
         final dialog = find.byType(AlertDialog);
         final simpleDialog = find.byType(Dialog);
-        final hasDialog =
-            dialog.evaluate().isNotEmpty || simpleDialog.evaluate().isNotEmpty;
+        if (dialog.evaluate().isNotEmpty ||
+            simpleDialog.evaluate().isNotEmpty) {
+          await SuperAdminWidgetHelpers.confirmModal(tester);
+        }
+
+        // Aguardar feedback de erro
+        await SuperAdminWidgetHelpers.waitForSnackbar(tester, 'Erro');
+
+        // Verificar que a aplicação não crashou
+        expect(
+          tester.takeException(),
+          isNull,
+          reason:
+              'A aplicação não deve crashar em caso de falha de rede '
+              '(Req 3.7)',
+        );
+      } finally {
+        // Restaurar HttpOverrides original
+        HttpOverrides.global = originalOverrides;
+      }
+
+      // Verificar que o estado no DB não mudou (consistência)
+      final verifyClient = SuperAdminTestConfig.createServiceRoleClient();
+      try {
+        final afterRows = await verifyClient
+            .from('user_roles')
+            .select('is_active')
+            .eq('user_id', singleAdmin.userId)
+            .eq('organization_id', testOrgSingleAdmin.orgId);
 
         expect(
-          hasWarning || hasDialog,
-          isTrue,
+          afterRows.first['is_active'],
+          equals(isActiveBefore),
           reason:
-              'O sistema deve exibir aviso ou modal ao tentar desativar '
-              'o último admin ativo (Req 3.6)',
+              'user_roles.is_active não deve mudar quando ocorre erro '
+              'de rede (Req 3.7 — consistência UI/DB)',
         );
-
-        // Se houver modal, cancelar para não alterar estado
-        if (hasDialog) {
-          await SuperAdminWidgetHelpers.cancelModal(tester);
-        }
-
-        // Verificar que o admin ainda está ativo no DB (operação bloqueada
-        // ou cancelada)
-        final postCount = await SuperAdminDbVerifier.countActiveUsers(
-          testOrgSingleAdmin.orgId,
-        );
-        expect(
-          postCount,
-          equals(1),
-          reason:
-              'O último admin ativo deve permanecer ativo após tentativa '
-              'de desativação (Req 3.6)',
-        );
-      },
-    );
-
-    testWidgets(
-      '3.7 Consistência UI/DB em caso de erro de rede',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
-
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrgSingleAdmin.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
-
-        // Capturar estado antes da operação
-        final singleAdmin = testOrgSingleAdmin.admins.first;
-        final client = SuperAdminTestConfig.createServiceRoleClient();
-        bool isActiveBefore;
-        try {
-          final rows = await client
-              .from('user_roles')
-              .select('is_active')
-              .eq('user_id', singleAdmin.userId)
-              .eq('organization_id', testOrgSingleAdmin.orgId);
-
-          isActiveBefore = rows.first['is_active'] as bool;
-        } finally {
-          await client.dispose();
-        }
-
-        // Simular falha de rede via HttpOverrides
-        final originalOverrides = HttpOverrides.current;
-        HttpOverrides.global = _FailingHttpOverrides();
-
-        try {
-          // Tocar no botão de desativar
-          final deactivateButton = find.byTooltip('Inativar Usuário');
-          if (deactivateButton.evaluate().isEmpty) {
-            markTestSkipped(
-              'Nenhum botão de desativar disponível.',
-            );
-            return;
-          }
-          await tester.tap(deactivateButton.first);
-          await tester.pumpAndSettle();
-
-          // Confirmar no modal (se exibido)
-          final dialog = find.byType(AlertDialog);
-          final simpleDialog = find.byType(Dialog);
-          if (dialog.evaluate().isNotEmpty ||
-              simpleDialog.evaluate().isNotEmpty) {
-            await SuperAdminWidgetHelpers.confirmModal(tester);
-          }
-
-          // Aguardar feedback de erro
-          await SuperAdminWidgetHelpers.waitForSnackbar(
-            tester,
-            'Erro',
-          );
-
-          // Verificar que a aplicação não crashou
-          expect(
-            tester.takeException(),
-            isNull,
-            reason:
-                'A aplicação não deve crashar em caso de falha de rede '
-                '(Req 3.7)',
-          );
-        } finally {
-          // Restaurar HttpOverrides original
-          HttpOverrides.global = originalOverrides;
-        }
-
-        // Verificar que o estado no DB não mudou (consistência)
-        final verifyClient = SuperAdminTestConfig.createServiceRoleClient();
-        try {
-          final afterRows = await verifyClient
-              .from('user_roles')
-              .select('is_active')
-              .eq('user_id', singleAdmin.userId)
-              .eq('organization_id', testOrgSingleAdmin.orgId);
-
-          expect(
-            afterRows.first['is_active'],
-            equals(isActiveBefore),
-            reason:
-                'user_roles.is_active não deve mudar quando ocorre erro '
-                'de rede (Req 3.7 — consistência UI/DB)',
-          );
-        } finally {
-          await verifyClient.dispose();
-        }
-      },
-    );
+      } finally {
+        await verifyClient.dispose();
+      }
+    });
   });
 }
 
@@ -624,12 +606,8 @@ class _FailingHttpClient implements HttpClient {
 
   @override
   set authenticateProxy(
-    Future<bool> Function(
-      String host,
-      int port,
-      String scheme,
-      String? realm,
-    )? f,
+    Future<bool> Function(String host, int port, String scheme, String? realm)?
+    f,
   ) {}
 
   @override
@@ -643,7 +621,8 @@ class _FailingHttpClient implements HttpClient {
       Uri url,
       String? proxyHost,
       int? proxyPort,
-    )? f,
+    )?
+    f,
   ) {}
 
   @override
@@ -669,8 +648,7 @@ class _FailingHttpClient implements HttpClient {
   Future<HttpClientRequest> getUrl(Uri url) => _fail();
 
   @override
-  Future<HttpClientRequest> head(String host, int port, String path) =>
-      _fail();
+  Future<HttpClientRequest> head(String host, int port, String path) => _fail();
 
   @override
   Future<HttpClientRequest> headUrl(Uri url) => _fail();
@@ -681,8 +659,7 @@ class _FailingHttpClient implements HttpClient {
     String host,
     int port,
     String path,
-  ) =>
-      _fail();
+  ) => _fail();
 
   @override
   Future<HttpClientRequest> openUrl(String method, Uri url) => _fail();
@@ -695,8 +672,7 @@ class _FailingHttpClient implements HttpClient {
   Future<HttpClientRequest> patchUrl(Uri url) => _fail();
 
   @override
-  Future<HttpClientRequest> post(String host, int port, String path) =>
-      _fail();
+  Future<HttpClientRequest> post(String host, int port, String path) => _fail();
 
   @override
   Future<HttpClientRequest> postUrl(Uri url) => _fail();

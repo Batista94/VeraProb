@@ -126,31 +126,34 @@ void main() {
       }
       expect(seededId, isNotNull);
 
-      await seedClient
-          .from('system_audit_log')
-          .delete()
-          .eq('id', seededId!);
+      await seedClient.from('system_audit_log').delete().eq('id', seededId!);
 
       final after = await seedClient
           .from('system_audit_log')
           .select('id')
           .eq('id', seededId!);
-      expect(after, hasLength(1),
-          reason: 'INV-3: append-only — DELETE must be a no-op');
+      expect(
+        after,
+        hasLength(1),
+        reason: 'INV-3: append-only — DELETE must be a no-op',
+      );
     });
   });
 
   group('super-admin-proxy — INV-31 HMAC (cases 35–36, TDD-RED backlog)', () {
-    test('35 proxy rejects request without/with tampered HMAC signature',
-        () async {
-      // Backlog: super-admin-proxy currently does not verify HMAC. When
-      // `shared/hmac_signer.ts` is wired into the proxy, this test must
-      // assert 401/403 for a request that is missing or tampered.
-      markTestSkipped(
-        'TDD-RED — implement HMAC verification in '
-        'supabase/functions/super-admin-proxy/index.ts (plan adendo A).',
-      );
-    }, skip: true);
+    test(
+      '35 proxy rejects request without/with tampered HMAC signature',
+      () async {
+        // Backlog: super-admin-proxy currently does not verify HMAC. When
+        // `shared/hmac_signer.ts` is wired into the proxy, this test must
+        // assert 401/403 for a request that is missing or tampered.
+        markTestSkipped(
+          'TDD-RED — implement HMAC verification in '
+          'supabase/functions/super-admin-proxy/index.ts (plan adendo A).',
+        );
+      },
+      skip: true,
+    );
 
     test('36 proxy rejects replayed request outside 5-minute window', () async {
       markTestSkipped(
@@ -161,23 +164,29 @@ void main() {
   });
 
   group('AUDIT_LOG_VIEWED recursivity (cases 39–40, TDD-RED backlog)', () {
-    test('39 viewing audit log inserts AUDIT_LOG_VIEWED row at DB level',
-        () async {
-      markTestSkipped(
-        'TDD-RED — implement AUDIT_LOG_VIEWED emission path (plan adendo B). '
-        'Once wired, assert: after a SuperAdmin GETs system_audit_log via the '
-        'real repo, a new row exists with event_type=AUDIT_LOG_VIEWED, '
-        'actor_type=HUMAN, organization_id IS NULL.',
-      );
-    }, skip: true);
+    test(
+      '39 viewing audit log inserts AUDIT_LOG_VIEWED row at DB level',
+      () async {
+        markTestSkipped(
+          'TDD-RED — implement AUDIT_LOG_VIEWED emission path (plan adendo B). '
+          'Once wired, assert: after a SuperAdmin GETs system_audit_log via the '
+          'real repo, a new row exists with event_type=AUDIT_LOG_VIEWED, '
+          'actor_type=HUMAN, organization_id IS NULL.',
+        );
+      },
+      skip: true,
+    );
 
-    test('40 anti-loop — AUDIT_LOG_VIEWED does not recurse on its own listing',
-        () async {
-      markTestSkipped(
-        'TDD-RED — once AUDIT_LOG_VIEWED emission is implemented, verify '
-        'a single read produces exactly one new event (no trigger recursion).',
-      );
-    }, skip: true);
+    test(
+      '40 anti-loop — AUDIT_LOG_VIEWED does not recurse on its own listing',
+      () async {
+        markTestSkipped(
+          'TDD-RED — once AUDIT_LOG_VIEWED emission is implemented, verify '
+          'a single read produces exactly one new event (no trigger recursion).',
+        );
+      },
+      skip: true,
+    );
   });
 
   // Smoke check that the test_cleanup_system_audit_log RPC exists. If the

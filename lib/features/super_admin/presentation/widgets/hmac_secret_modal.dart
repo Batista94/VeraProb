@@ -22,7 +22,7 @@ class _HmacSecretModalState extends State<HmacSecretModal> {
 
   void _copyToClipboard() {
     Clipboard.setData(ClipboardData(text: widget.secret));
-    
+
     // Configura o TTL (Time-To-Live) da Clipboard (60 segundos)
     _clipboardClearTimer?.cancel();
     _clipboardClearTimer = Timer(const Duration(seconds: 60), () {
@@ -31,7 +31,9 @@ class _HmacSecretModalState extends State<HmacSecretModal> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Copiado! O segredo sumirá da área de transferência em 60s.'),
+        content: Text(
+          'Copiado! O segredo sumirá da área de transferência em 60s.',
+        ),
         backgroundColor: Colors.amber, // Cor de risco UX-Ops
       ),
     );
@@ -99,7 +101,10 @@ class _HmacSecretModalState extends State<HmacSecretModal> {
               backgroundColor: Colors.red.shade800,
             ),
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fechar e Destruir', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Fechar e Destruir',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

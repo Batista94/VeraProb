@@ -66,23 +66,15 @@ abstract class SuperAdminAuthHelper {
 
     // Localizar e tocar no botão de login.
     // Busca por ElevatedButton ou FilledButton habilitado.
-    final loginButton = find.byWidgetPredicate(
-      (widget) {
-        if (widget is ElevatedButton) return widget.enabled;
-        if (widget is FilledButton) return widget.enabled;
-        return false;
-      },
-    );
+    final loginButton = find.byWidgetPredicate((widget) {
+      if (widget is ElevatedButton) return widget.enabled;
+      if (widget is FilledButton) return widget.enabled;
+      return false;
+    });
 
     // Fallback: buscar por texto comum de botão de login.
-    final loginByText = find.widgetWithText(
-      ElevatedButton,
-      'Entrar',
-    );
-    final loginByTextFilled = find.widgetWithText(
-      FilledButton,
-      'Entrar',
-    );
+    final loginByText = find.widgetWithText(ElevatedButton, 'Entrar');
+    final loginByTextFilled = find.widgetWithText(FilledButton, 'Entrar');
 
     Finder buttonFinder;
     if (loginByText.evaluate().isNotEmpty) {
@@ -149,9 +141,7 @@ abstract class SuperAdminAuthHelper {
   /// Lança [TestFailure] se qualquer dado sensível for encontrado.
   ///
   /// **Validates: Requirement 8.5** (anti "Flash de Dados")
-  static Future<void> assertNoSensitiveDataVisible(
-    WidgetTester tester,
-  ) async {
+  static Future<void> assertNoSensitiveDataVisible(WidgetTester tester) async {
     // Pump para garantir que o estado mais recente está renderizado.
     await tester.pump();
 
@@ -186,14 +176,12 @@ abstract class SuperAdminAuthHelper {
 
     // 4. Verificar ausência de padrões de CNPJ não-formatado (14 dígitos).
     // Evita falsos positivos filtrando apenas textos que são exatamente 14 dígitos.
-    final cnpjRaw = find.byWidgetPredicate(
-      (widget) {
-        if (widget is Text && widget.data != null) {
-          return RegExp(r'^\d{14}$').hasMatch(widget.data!.trim());
-        }
-        return false;
-      },
-    );
+    final cnpjRaw = find.byWidgetPredicate((widget) {
+      if (widget is Text && widget.data != null) {
+        return RegExp(r'^\d{14}$').hasMatch(widget.data!.trim());
+      }
+      return false;
+    });
     expect(
       cnpjRaw,
       findsNothing,

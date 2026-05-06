@@ -120,108 +120,104 @@ void main() {
       },
     );
 
-    testWidgets(
-      '5.2 Status muda para ACTIVE no DB após confirmação',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('5.2 Status muda para ACTIVE no DB após confirmação', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        // Verificar estado inicial (ARCHIVED)
-        final statusBefore = await SuperAdminDbVerifier.getOrgStatus(
-          testOrg.orgId,
-        );
-        expect(
-          statusBefore,
-          equals('ARCHIVED'),
-          reason: 'Org deve estar ARCHIVED antes do desarquivamento',
-        );
+      // Verificar estado inicial (ARCHIVED)
+      final statusBefore = await SuperAdminDbVerifier.getOrgStatus(
+        testOrg.orgId,
+      );
+      expect(
+        statusBefore,
+        equals('ARCHIVED'),
+        reason: 'Org deve estar ARCHIVED antes do desarquivamento',
+      );
 
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
 
-        // Filtrar por organizações arquivadas/suspensas
-        await SuperAdminNavigationHelper.goToTenantList(tester);
-        await SuperAdminNavigationHelper.filterArchived(tester);
+      // Filtrar por organizações arquivadas/suspensas
+      await SuperAdminNavigationHelper.goToTenantList(tester);
+      await SuperAdminNavigationHelper.filterArchived(tester);
 
-        // Navegar até o detalhe da org arquivada
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
+      // Navegar até o detalhe da org arquivada
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
 
-        // Clicar em "Desarquivar"
-        final buttonFinder = _findUnarchiveButton(tester);
-        expect(buttonFinder, findsAtLeast(1));
-        await tester.tap(buttonFinder.first);
-        await tester.pumpAndSettle();
+      // Clicar em "Desarquivar"
+      final buttonFinder = _findUnarchiveButton(tester);
+      expect(buttonFinder, findsAtLeast(1));
+      await tester.tap(buttonFinder.first);
+      await tester.pumpAndSettle();
 
-        // Preencher justificativa e confirmar
-        await SuperAdminWidgetHelpers.fillJustification(
-          tester,
-          'Desarquivamento para teste E2E CT13 — validação de cascata',
-        );
-        await SuperAdminWidgetHelpers.confirmModal(tester);
+      // Preencher justificativa e confirmar
+      await SuperAdminWidgetHelpers.fillJustification(
+        tester,
+        'Desarquivamento para teste E2E CT13 — validação de cascata',
+      );
+      await SuperAdminWidgetHelpers.confirmModal(tester);
 
-        // Aguardar processamento
-        await tester.pumpAndSettle(
-          const Duration(milliseconds: 100),
-          EnginePhase.sendSemanticsUpdate,
-          SuperAdminTestConfig.defaultTimeout,
-        );
+      // Aguardar processamento
+      await tester.pumpAndSettle(
+        const Duration(milliseconds: 100),
+        EnginePhase.sendSemanticsUpdate,
+        SuperAdminTestConfig.defaultTimeout,
+      );
 
-        // Verificar no banco que o status mudou para ACTIVE
-        final statusAfter = await SuperAdminDbVerifier.getOrgStatus(
-          testOrg.orgId,
-        );
-        expect(
-          statusAfter,
-          equals('ACTIVE'),
-          reason:
-              'organization.status deve ser ACTIVE após confirmação '
-              'do desarquivamento (Req 5.2)',
-        );
-      },
-    );
+      // Verificar no banco que o status mudou para ACTIVE
+      final statusAfter = await SuperAdminDbVerifier.getOrgStatus(
+        testOrg.orgId,
+      );
+      expect(
+        statusAfter,
+        equals('ACTIVE'),
+        reason:
+            'organization.status deve ser ACTIVE após confirmação '
+            'do desarquivamento (Req 5.2)',
+      );
+    });
 
-    testWidgets(
-      '5.3 Cascata_Desbloqueio: todos admins com is_active=true e '
-      'banned_until=null',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('5.3 Cascata_Desbloqueio: todos admins com is_active=true e '
+        'banned_until=null', (tester) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        // A org já foi desarquivada no teste 5.2.
-        // Verificar que TODOS os admins estão desbloqueados.
+      // A org já foi desarquivada no teste 5.2.
+      // Verificar que TODOS os admins estão desbloqueados.
 
-        // Verificar is_active=true para todos
-        await SuperAdminDbVerifier.assertAllUsersActiveStatus(
-          orgId: testOrg.orgId,
-          expectedActive: true,
-        );
+      // Verificar is_active=true para todos
+      await SuperAdminDbVerifier.assertAllUsersActiveStatus(
+        orgId: testOrg.orgId,
+        expectedActive: true,
+      );
 
-        // Verificar banned_until=null para todos
-        await SuperAdminDbVerifier.assertAllUsersBannedStatus(
-          orgId: testOrg.orgId,
-          shouldBeBanned: false,
-        );
+      // Verificar banned_until=null para todos
+      await SuperAdminDbVerifier.assertAllUsersBannedStatus(
+        orgId: testOrg.orgId,
+        shouldBeBanned: false,
+      );
 
-        // Verificar contagem: todos os 3 admins devem estar ativos
-        final activeCount = await SuperAdminDbVerifier.countActiveUsers(
-          testOrg.orgId,
-        );
-        expect(
-          activeCount,
-          equals(testOrg.admins.length),
-          reason:
-              'O número de admins ativos deve ser igual ao total de '
-              'admins da org (${testOrg.admins.length}) após '
-              'desarquivamento (Req 5.3)',
-        );
-      },
-    );
+      // Verificar contagem: todos os 3 admins devem estar ativos
+      final activeCount = await SuperAdminDbVerifier.countActiveUsers(
+        testOrg.orgId,
+      );
+      expect(
+        activeCount,
+        equals(testOrg.admins.length),
+        reason:
+            'O número de admins ativos deve ser igual ao total de '
+            'admins da org (${testOrg.admins.length}) após '
+            'desarquivamento (Req 5.3)',
+      );
+    });
 
     testWidgets(
       '5.4 Alternância instantânea do botão no cabeçalho (sem refresh)',
@@ -251,8 +247,7 @@ void main() {
         expect(
           desarquivarBefore,
           findsAtLeast(1),
-          reason:
-              'O botão "Desarquivar" deve estar visível antes da operação',
+          reason: 'O botão "Desarquivar" deve estar visível antes da operação',
         );
 
         // Verificar que "Arquivar" NÃO está presente em org arquivada
@@ -265,8 +260,7 @@ void main() {
           arquivarBefore.evaluate().isEmpty &&
               arquivarBeforeElevated.evaluate().isEmpty,
           isTrue,
-          reason:
-              'O botão "Arquivar" não deve estar visível em org arquivada',
+          reason: 'O botão "Arquivar" não deve estar visível em org arquivada',
         );
 
         // Clicar em "Desarquivar"
@@ -290,10 +284,7 @@ void main() {
         // Verificar que o botão alternou INSTANTANEAMENTE para "Arquivar"
         // (sem necessidade de refresh da página)
         final arquivarAfter = find.byTooltip('Arquivar');
-        final arquivarAfterText = find.widgetWithText(
-          FilledButton,
-          'Arquivar',
-        );
+        final arquivarAfterText = find.widgetWithText(FilledButton, 'Arquivar');
         final arquivarAfterElevated = find.widgetWithText(
           ElevatedButton,
           'Arquivar',
@@ -334,77 +325,70 @@ void main() {
       },
     );
 
-    testWidgets(
-      '5.5 Botões de ação restaurados após desarquivamento',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('5.5 Botões de ação restaurados após desarquivamento', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        // A org foi desarquivada no teste 5.4.
-        // Verificar que os botões de ação estão restaurados.
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
+      // A org foi desarquivada no teste 5.4.
+      // Verificar que os botões de ação estão restaurados.
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
 
-        // Verificar presença do botão "Adicionar Admin" (ou equivalente)
-        final addAdminButton = find.byTooltip('Adicionar Admin');
-        final addAdminText = find.widgetWithText(
-          FilledButton,
-          'Adicionar Admin',
-        );
-        final addAdminElevated = find.widgetWithText(
-          ElevatedButton,
-          'Adicionar Admin',
-        );
-        final addAdminIcon = find.byTooltip('Adicionar');
+      // Verificar presença do botão "Adicionar Admin" (ou equivalente)
+      final addAdminButton = find.byTooltip('Adicionar Admin');
+      final addAdminText = find.widgetWithText(FilledButton, 'Adicionar Admin');
+      final addAdminElevated = find.widgetWithText(
+        ElevatedButton,
+        'Adicionar Admin',
+      );
+      final addAdminIcon = find.byTooltip('Adicionar');
 
-        final addAdminPresent =
-            addAdminButton.evaluate().isNotEmpty ||
-            addAdminText.evaluate().isNotEmpty ||
-            addAdminElevated.evaluate().isNotEmpty ||
-            addAdminIcon.evaluate().isNotEmpty;
+      final addAdminPresent =
+          addAdminButton.evaluate().isNotEmpty ||
+          addAdminText.evaluate().isNotEmpty ||
+          addAdminElevated.evaluate().isNotEmpty ||
+          addAdminIcon.evaluate().isNotEmpty;
 
-        expect(
-          addAdminPresent,
-          isTrue,
-          reason:
-              'O botão "Adicionar Admin" deve estar visível após '
-              'desarquivamento da org (Req 5.5)',
-        );
+      expect(
+        addAdminPresent,
+        isTrue,
+        reason:
+            'O botão "Adicionar Admin" deve estar visível após '
+            'desarquivamento da org (Req 5.5)',
+      );
 
-        // Verificar presença do botão "Arquivar" no cabeçalho
-        // (indica que a org está ativa e pode ser arquivada novamente)
-        final archiveButton = find.byTooltip('Arquivar');
-        final archiveButtonText = find.widgetWithText(
-          FilledButton,
-          'Arquivar',
-        );
-        final archiveButtonElevated = find.widgetWithText(
-          ElevatedButton,
-          'Arquivar',
-        );
-        final archiveGeneric = find.textContaining('Arquivar');
+      // Verificar presença do botão "Arquivar" no cabeçalho
+      // (indica que a org está ativa e pode ser arquivada novamente)
+      final archiveButton = find.byTooltip('Arquivar');
+      final archiveButtonText = find.widgetWithText(FilledButton, 'Arquivar');
+      final archiveButtonElevated = find.widgetWithText(
+        ElevatedButton,
+        'Arquivar',
+      );
+      final archiveGeneric = find.textContaining('Arquivar');
 
-        final archivePresent =
-            archiveButton.evaluate().isNotEmpty ||
-            archiveButtonText.evaluate().isNotEmpty ||
-            archiveButtonElevated.evaluate().isNotEmpty ||
-            archiveGeneric.evaluate().isNotEmpty;
+      final archivePresent =
+          archiveButton.evaluate().isNotEmpty ||
+          archiveButtonText.evaluate().isNotEmpty ||
+          archiveButtonElevated.evaluate().isNotEmpty ||
+          archiveGeneric.evaluate().isNotEmpty;
 
-        expect(
-          archivePresent,
-          isTrue,
-          reason:
-              'O botão "Arquivar" deve estar visível no cabeçalho após '
-              'desarquivamento (Req 5.5)',
-        );
-      },
-    );
+      expect(
+        archivePresent,
+        isTrue,
+        reason:
+            'O botão "Arquivar" deve estar visível no cabeçalho após '
+            'desarquivamento (Req 5.5)',
+      );
+    });
 
     testWidgets(
       '5.6 Botão de confirmação desabilitado com justificativa vazia',
@@ -453,94 +437,93 @@ void main() {
       },
     );
 
-    testWidgets(
-      '5.7 Impedimento de desarquivamento de org já ativa',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('5.7 Impedimento de desarquivamento de org já ativa', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        // A testOrgDuplicate está ACTIVE — tentar desarquivar deve ser impedido.
-        final status = await SuperAdminDbVerifier.getOrgStatus(
-          testOrgDuplicate.orgId,
-        );
-        expect(
-          status,
-          equals('ACTIVE'),
-          reason: 'Org de teste de duplicidade deve estar ACTIVE',
-        );
+      // A testOrgDuplicate está ACTIVE — tentar desarquivar deve ser impedido.
+      final status = await SuperAdminDbVerifier.getOrgStatus(
+        testOrgDuplicate.orgId,
+      );
+      expect(
+        status,
+        equals('ACTIVE'),
+        reason: 'Org de teste de duplicidade deve estar ACTIVE',
+      );
 
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrgDuplicate.orgName,
-        );
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrgDuplicate.orgName,
+      );
 
-        // Verificar que o botão "Desarquivar" NÃO está disponível
-        // para uma org já ativa (deve ter "Arquivar" em seu lugar)
-        final unarchiveButton = find.byTooltip('Desarquivar');
-        final unarchiveButtonText = find.widgetWithText(
-          FilledButton,
-          'Desarquivar',
-        );
-        final unarchiveButtonElevated = find.widgetWithText(
-          ElevatedButton,
-          'Desarquivar',
-        );
+      // Verificar que o botão "Desarquivar" NÃO está disponível
+      // para uma org já ativa (deve ter "Arquivar" em seu lugar)
+      final unarchiveButton = find.byTooltip('Desarquivar');
+      final unarchiveButtonText = find.widgetWithText(
+        FilledButton,
+        'Desarquivar',
+      );
+      final unarchiveButtonElevated = find.widgetWithText(
+        ElevatedButton,
+        'Desarquivar',
+      );
 
-        final unarchivePresent =
-            unarchiveButton.evaluate().isNotEmpty ||
-            unarchiveButtonText.evaluate().isNotEmpty ||
-            unarchiveButtonElevated.evaluate().isNotEmpty;
+      final unarchivePresent =
+          unarchiveButton.evaluate().isNotEmpty ||
+          unarchiveButtonText.evaluate().isNotEmpty ||
+          unarchiveButtonElevated.evaluate().isNotEmpty;
 
-        if (unarchivePresent) {
-          // Se o botão "Desarquivar" está presente em org ativa,
-          // tentar clicar e verificar que o sistema impede a operação
-          Finder duplicateButtonFinder;
-          if (unarchiveButton.evaluate().isNotEmpty) {
-            duplicateButtonFinder = unarchiveButton;
-          } else if (unarchiveButtonText.evaluate().isNotEmpty) {
-            duplicateButtonFinder = unarchiveButtonText;
-          } else {
-            duplicateButtonFinder = unarchiveButtonElevated;
-          }
-
-          await tester.tap(duplicateButtonFinder.first);
-          await tester.pumpAndSettle();
-
-          // O sistema deve exibir mensagem de erro ou impedir a operação
-          final errorText = find.textContaining('já ativa');
-          final errorSnackbar = find.byType(SnackBar);
-          final blockDialog = find.byType(AlertDialog);
-
-          expect(
-            errorText.evaluate().isNotEmpty ||
-                errorSnackbar.evaluate().isNotEmpty ||
-                blockDialog.evaluate().isNotEmpty,
-            isTrue,
-            reason:
-                'O sistema deve impedir desarquivamento de org já ativa '
-                'com mensagem de erro ou bloqueio (Req 5.7)',
-          );
+      if (unarchivePresent) {
+        // Se o botão "Desarquivar" está presente em org ativa,
+        // tentar clicar e verificar que o sistema impede a operação
+        Finder duplicateButtonFinder;
+        if (unarchiveButton.evaluate().isNotEmpty) {
+          duplicateButtonFinder = unarchiveButton;
+        } else if (unarchiveButtonText.evaluate().isNotEmpty) {
+          duplicateButtonFinder = unarchiveButtonText;
         } else {
-          // O botão "Desarquivar" não está presente — comportamento correto:
-          // o sistema impede a operação por não oferecer o botão.
-          // Verificar que "Arquivar" está presente em seu lugar.
-          final archiveButton = find.byTooltip('Arquivar');
-          final archiveText = find.textContaining('Arquivar');
-
-          expect(
-            archiveButton.evaluate().isNotEmpty ||
-                archiveText.evaluate().isNotEmpty,
-            isTrue,
-            reason:
-                'O botão "Arquivar" deve estar presente no lugar de '
-                '"Desarquivar" para org já ativa (Req 5.7)',
-          );
+          duplicateButtonFinder = unarchiveButtonElevated;
         }
-      },
-    );
+
+        await tester.tap(duplicateButtonFinder.first);
+        await tester.pumpAndSettle();
+
+        // O sistema deve exibir mensagem de erro ou impedir a operação
+        final errorText = find.textContaining('já ativa');
+        final errorSnackbar = find.byType(SnackBar);
+        final blockDialog = find.byType(AlertDialog);
+
+        expect(
+          errorText.evaluate().isNotEmpty ||
+              errorSnackbar.evaluate().isNotEmpty ||
+              blockDialog.evaluate().isNotEmpty,
+          isTrue,
+          reason:
+              'O sistema deve impedir desarquivamento de org já ativa '
+              'com mensagem de erro ou bloqueio (Req 5.7)',
+        );
+      } else {
+        // O botão "Desarquivar" não está presente — comportamento correto:
+        // o sistema impede a operação por não oferecer o botão.
+        // Verificar que "Arquivar" está presente em seu lugar.
+        final archiveButton = find.byTooltip('Arquivar');
+        final archiveText = find.textContaining('Arquivar');
+
+        expect(
+          archiveButton.evaluate().isNotEmpty ||
+              archiveText.evaluate().isNotEmpty,
+          isTrue,
+          reason:
+              'O botão "Arquivar" deve estar presente no lugar de '
+              '"Desarquivar" para org já ativa (Req 5.7)',
+        );
+      }
+    });
   });
 }
 

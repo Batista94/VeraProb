@@ -43,16 +43,17 @@ class ReceitaWsService {
   Future<ReceitaCompanyData?> fetchCompanyByCnpj(String cnpj) async {
     try {
       final sanitizedCnpj = cnpj.replaceAll(RegExp(r'[^0-9]'), '');
-      
-      final response = await _client.get(Uri.parse('$_baseUrl/$sanitizedCnpj'))
-        .timeout(const Duration(seconds: 10));
+
+      final response = await _client
+          .get(Uri.parse('$_baseUrl/$sanitizedCnpj'))
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) {
         return null;
       }
 
       final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-      
+
       if (decoded['status'] == 'ERROR') {
         return null;
       }

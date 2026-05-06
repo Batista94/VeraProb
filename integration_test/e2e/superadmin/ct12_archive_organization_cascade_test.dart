@@ -81,10 +81,7 @@ void main() {
 
         // Localizar o botão "Arquivar" no cabeçalho de detalhes da org
         final archiveButton = find.byTooltip('Arquivar');
-        final archiveButtonText = find.widgetWithText(
-          FilledButton,
-          'Arquivar',
-        );
+        final archiveButtonText = find.widgetWithText(FilledButton, 'Arquivar');
         final archiveButtonElevated = find.widgetWithText(
           ElevatedButton,
           'Arquivar',
@@ -139,179 +136,165 @@ void main() {
       },
     );
 
-    testWidgets(
-      '4.2 Status muda para ARCHIVED no DB após confirmação',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('4.2 Status muda para ARCHIVED no DB após confirmação', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        // Verificar estado inicial
-        final statusBefore = await SuperAdminDbVerifier.getOrgStatus(
-          testOrg.orgId,
-        );
-        expect(
-          statusBefore,
-          equals('ACTIVE'),
-          reason: 'Org deve estar ACTIVE antes do arquivamento',
-        );
+      // Verificar estado inicial
+      final statusBefore = await SuperAdminDbVerifier.getOrgStatus(
+        testOrg.orgId,
+      );
+      expect(
+        statusBefore,
+        equals('ACTIVE'),
+        reason: 'Org deve estar ACTIVE antes do arquivamento',
+      );
 
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
 
-        // Clicar em "Arquivar"
-        final archiveButton = find.byTooltip('Arquivar');
-        final archiveButtonText = find.widgetWithText(
-          FilledButton,
-          'Arquivar',
-        );
-        final archiveButtonElevated = find.widgetWithText(
-          ElevatedButton,
-          'Arquivar',
-        );
+      // Clicar em "Arquivar"
+      final archiveButton = find.byTooltip('Arquivar');
+      final archiveButtonText = find.widgetWithText(FilledButton, 'Arquivar');
+      final archiveButtonElevated = find.widgetWithText(
+        ElevatedButton,
+        'Arquivar',
+      );
 
-        Finder buttonFinder;
-        if (archiveButton.evaluate().isNotEmpty) {
-          buttonFinder = archiveButton;
-        } else if (archiveButtonText.evaluate().isNotEmpty) {
-          buttonFinder = archiveButtonText;
-        } else if (archiveButtonElevated.evaluate().isNotEmpty) {
-          buttonFinder = archiveButtonElevated;
-        } else {
-          buttonFinder = find.textContaining('Arquivar');
-        }
+      Finder buttonFinder;
+      if (archiveButton.evaluate().isNotEmpty) {
+        buttonFinder = archiveButton;
+      } else if (archiveButtonText.evaluate().isNotEmpty) {
+        buttonFinder = archiveButtonText;
+      } else if (archiveButtonElevated.evaluate().isNotEmpty) {
+        buttonFinder = archiveButtonElevated;
+      } else {
+        buttonFinder = find.textContaining('Arquivar');
+      }
 
-        expect(buttonFinder, findsAtLeast(1));
-        await tester.tap(buttonFinder.first);
-        await tester.pumpAndSettle();
+      expect(buttonFinder, findsAtLeast(1));
+      await tester.tap(buttonFinder.first);
+      await tester.pumpAndSettle();
 
-        // Preencher justificativa e confirmar
-        await SuperAdminWidgetHelpers.fillJustification(
-          tester,
-          'Arquivamento para teste E2E CT12 — validação de cascata',
-        );
-        await SuperAdminWidgetHelpers.confirmModal(tester);
+      // Preencher justificativa e confirmar
+      await SuperAdminWidgetHelpers.fillJustification(
+        tester,
+        'Arquivamento para teste E2E CT12 — validação de cascata',
+      );
+      await SuperAdminWidgetHelpers.confirmModal(tester);
 
-        // Aguardar processamento
-        await tester.pumpAndSettle(
-          const Duration(milliseconds: 100),
-          EnginePhase.sendSemanticsUpdate,
-          SuperAdminTestConfig.defaultTimeout,
-        );
+      // Aguardar processamento
+      await tester.pumpAndSettle(
+        const Duration(milliseconds: 100),
+        EnginePhase.sendSemanticsUpdate,
+        SuperAdminTestConfig.defaultTimeout,
+      );
 
-        // Verificar no banco que o status mudou para ARCHIVED
-        final statusAfter = await SuperAdminDbVerifier.getOrgStatus(
-          testOrg.orgId,
-        );
-        expect(
-          statusAfter,
-          equals('ARCHIVED'),
-          reason:
-              'organization.status deve ser ARCHIVED após confirmação '
-              '(Req 4.2)',
-        );
-      },
-    );
+      // Verificar no banco que o status mudou para ARCHIVED
+      final statusAfter = await SuperAdminDbVerifier.getOrgStatus(
+        testOrg.orgId,
+      );
+      expect(
+        statusAfter,
+        equals('ARCHIVED'),
+        reason:
+            'organization.status deve ser ARCHIVED após confirmação '
+            '(Req 4.2)',
+      );
+    });
 
-    testWidgets(
-      '4.3 Cascata_Bloqueio: todos admins com is_active=false e '
-      'banned_until=infinity',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('4.3 Cascata_Bloqueio: todos admins com is_active=false e '
+        'banned_until=infinity', (tester) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        // A org já foi arquivada no teste 4.2.
-        // Verificar que TODOS os admins estão bloqueados.
+      // A org já foi arquivada no teste 4.2.
+      // Verificar que TODOS os admins estão bloqueados.
 
-        // Verificar is_active=false para todos
-        await SuperAdminDbVerifier.assertAllUsersActiveStatus(
-          orgId: testOrg.orgId,
-          expectedActive: false,
-        );
+      // Verificar is_active=false para todos
+      await SuperAdminDbVerifier.assertAllUsersActiveStatus(
+        orgId: testOrg.orgId,
+        expectedActive: false,
+      );
 
-        // Verificar banned_until não-nulo (infinity) para todos
-        await SuperAdminDbVerifier.assertAllUsersBannedStatus(
-          orgId: testOrg.orgId,
-          shouldBeBanned: true,
-        );
+      // Verificar banned_until não-nulo (infinity) para todos
+      await SuperAdminDbVerifier.assertAllUsersBannedStatus(
+        orgId: testOrg.orgId,
+        shouldBeBanned: true,
+      );
 
-        // Verificar contagem: todos os 3 admins devem estar bloqueados
-        final blockedCount = await SuperAdminDbVerifier.countBlockedUsers(
-          testOrg.orgId,
-        );
-        expect(
-          blockedCount,
-          equals(testOrg.admins.length),
-          reason:
-              'O número de admins bloqueados deve ser igual ao total de '
-              'admins da org (${testOrg.admins.length}) (Req 4.3)',
-        );
-      },
-    );
+      // Verificar contagem: todos os 3 admins devem estar bloqueados
+      final blockedCount = await SuperAdminDbVerifier.countBlockedUsers(
+        testOrg.orgId,
+      );
+      expect(
+        blockedCount,
+        equals(testOrg.admins.length),
+        reason:
+            'O número de admins bloqueados deve ser igual ao total de '
+            'admins da org (${testOrg.admins.length}) (Req 4.3)',
+      );
+    });
 
-    testWidgets(
-      '4.4 Botões de ação ocultos na org arquivada',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('4.4 Botões de ação ocultos na org arquivada', (tester) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        // A org já está arquivada (teste 4.2).
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
+      // A org já está arquivada (teste 4.2).
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
 
-        // Verificar ausência do botão "Adicionar Admin"
-        final addAdminButton = find.byTooltip('Adicionar Admin');
-        final addAdminText = find.widgetWithText(
-          FilledButton,
-          'Adicionar Admin',
-        );
-        final addAdminElevated = find.widgetWithText(
-          ElevatedButton,
-          'Adicionar Admin',
-        );
-        expect(
-          addAdminButton.evaluate().isEmpty &&
-              addAdminText.evaluate().isEmpty &&
-              addAdminElevated.evaluate().isEmpty,
-          isTrue,
-          reason:
-              'O botão "Adicionar Admin" deve estar oculto em org '
-              'arquivada (Req 4.4)',
-        );
+      // Verificar ausência do botão "Adicionar Admin"
+      final addAdminButton = find.byTooltip('Adicionar Admin');
+      final addAdminText = find.widgetWithText(FilledButton, 'Adicionar Admin');
+      final addAdminElevated = find.widgetWithText(
+        ElevatedButton,
+        'Adicionar Admin',
+      );
+      expect(
+        addAdminButton.evaluate().isEmpty &&
+            addAdminText.evaluate().isEmpty &&
+            addAdminElevated.evaluate().isEmpty,
+        isTrue,
+        reason:
+            'O botão "Adicionar Admin" deve estar oculto em org '
+            'arquivada (Req 4.4)',
+      );
 
-        // Verificar ausência do botão "Editar"
-        final editButton = find.byTooltip('Editar');
-        final editButtonText = find.widgetWithText(IconButton, 'Editar');
-        expect(
-          editButton.evaluate().isEmpty && editButtonText.evaluate().isEmpty,
-          isTrue,
-          reason:
-              'O botão "Editar" deve estar oculto em org arquivada (Req 4.4)',
-        );
+      // Verificar ausência do botão "Editar"
+      final editButton = find.byTooltip('Editar');
+      final editButtonText = find.widgetWithText(IconButton, 'Editar');
+      expect(
+        editButton.evaluate().isEmpty && editButtonText.evaluate().isEmpty,
+        isTrue,
+        reason: 'O botão "Editar" deve estar oculto em org arquivada (Req 4.4)',
+      );
 
-        // Verificar ausência do botão "Inativar Usuário"
-        final deactivateButton = find.byTooltip('Inativar Usuário');
-        expect(
-          deactivateButton,
-          findsNothing,
-          reason:
-              'O botão "Inativar Usuário" deve estar oculto em org '
-              'arquivada (Req 4.4)',
-        );
-      },
-    );
+      // Verificar ausência do botão "Inativar Usuário"
+      final deactivateButton = find.byTooltip('Inativar Usuário');
+      expect(
+        deactivateButton,
+        findsNothing,
+        reason:
+            'O botão "Inativar Usuário" deve estar oculto em org '
+            'arquivada (Req 4.4)',
+      );
+    });
 
     testWidgets(
       '4.5 Registro de auditoria criado em system_audit_log com justificativa',
@@ -358,10 +341,7 @@ void main() {
 
         // Clicar em "Arquivar"
         final archiveButton = find.byTooltip('Arquivar');
-        final archiveButtonText = find.widgetWithText(
-          FilledButton,
-          'Arquivar',
-        );
+        final archiveButtonText = find.widgetWithText(FilledButton, 'Arquivar');
         final archiveButtonElevated = find.widgetWithText(
           ElevatedButton,
           'Arquivar',
@@ -430,10 +410,7 @@ void main() {
 
         // Clicar em "Arquivar"
         final archiveButton = find.byTooltip('Arquivar');
-        final archiveButtonText = find.widgetWithText(
-          FilledButton,
-          'Arquivar',
-        );
+        final archiveButtonText = find.widgetWithText(FilledButton, 'Arquivar');
         final archiveButtonElevated = find.widgetWithText(
           ElevatedButton,
           'Arquivar',
@@ -469,10 +446,7 @@ void main() {
           await SuperAdminWidgetHelpers.confirmModal(tester);
 
           // Aguardar feedback de erro
-          await SuperAdminWidgetHelpers.waitForSnackbar(
-            tester,
-            'Erro',
-          );
+          await SuperAdminWidgetHelpers.waitForSnackbar(tester, 'Erro');
 
           // Verificar que a aplicação não crashou
           expect(
@@ -512,140 +486,134 @@ void main() {
       },
     );
 
-    testWidgets(
-      '4.8 Impedimento de arquivamento duplicado',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('4.8 Impedimento de arquivamento duplicado', (tester) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
 
-        // Primeiro, arquivar a org de duplicado normalmente
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrgDuplicate.orgName,
-        );
+      // Primeiro, arquivar a org de duplicado normalmente
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrgDuplicate.orgName,
+      );
 
-        // Clicar em "Arquivar"
-        final archiveButton = find.byTooltip('Arquivar');
-        final archiveButtonText = find.widgetWithText(
-          FilledButton,
-          'Arquivar',
-        );
-        final archiveButtonElevated = find.widgetWithText(
-          ElevatedButton,
-          'Arquivar',
-        );
+      // Clicar em "Arquivar"
+      final archiveButton = find.byTooltip('Arquivar');
+      final archiveButtonText = find.widgetWithText(FilledButton, 'Arquivar');
+      final archiveButtonElevated = find.widgetWithText(
+        ElevatedButton,
+        'Arquivar',
+      );
 
-        Finder buttonFinder;
-        if (archiveButton.evaluate().isNotEmpty) {
-          buttonFinder = archiveButton;
-        } else if (archiveButtonText.evaluate().isNotEmpty) {
-          buttonFinder = archiveButtonText;
-        } else if (archiveButtonElevated.evaluate().isNotEmpty) {
-          buttonFinder = archiveButtonElevated;
+      Finder buttonFinder;
+      if (archiveButton.evaluate().isNotEmpty) {
+        buttonFinder = archiveButton;
+      } else if (archiveButtonText.evaluate().isNotEmpty) {
+        buttonFinder = archiveButtonText;
+      } else if (archiveButtonElevated.evaluate().isNotEmpty) {
+        buttonFinder = archiveButtonElevated;
+      } else {
+        buttonFinder = find.textContaining('Arquivar');
+      }
+
+      expect(buttonFinder, findsAtLeast(1));
+      await tester.tap(buttonFinder.first);
+      await tester.pumpAndSettle();
+
+      // Preencher justificativa e confirmar
+      await SuperAdminWidgetHelpers.fillJustification(
+        tester,
+        'Primeiro arquivamento CT12 — teste de duplicidade',
+      );
+      await SuperAdminWidgetHelpers.confirmModal(tester);
+
+      // Aguardar processamento
+      await tester.pumpAndSettle(
+        const Duration(milliseconds: 100),
+        EnginePhase.sendSemanticsUpdate,
+        SuperAdminTestConfig.defaultTimeout,
+      );
+
+      // Confirmar que a org está arquivada
+      final status = await SuperAdminDbVerifier.getOrgStatus(
+        testOrgDuplicate.orgId,
+      );
+      expect(status, equals('ARCHIVED'));
+
+      // Agora tentar arquivar novamente — o botão "Arquivar" não deve
+      // estar disponível (deve ter sido substituído por "Desarquivar")
+      // OU se clicar, o sistema deve impedir a operação.
+
+      // Recarregar a página de detalhes
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrgDuplicate.orgName,
+      );
+
+      // Verificar que o botão "Arquivar" não está mais disponível
+      final archiveButtonAfter = find.byTooltip('Arquivar');
+      final archiveButtonTextAfter = find.widgetWithText(
+        FilledButton,
+        'Arquivar',
+      );
+      final archiveButtonElevatedAfter = find.widgetWithText(
+        ElevatedButton,
+        'Arquivar',
+      );
+
+      final archiveStillPresent =
+          archiveButtonAfter.evaluate().isNotEmpty ||
+          archiveButtonTextAfter.evaluate().isNotEmpty ||
+          archiveButtonElevatedAfter.evaluate().isNotEmpty;
+
+      if (archiveStillPresent) {
+        // Se o botão ainda está presente, tentar clicar e verificar
+        // que o sistema impede a operação duplicada
+        Finder duplicateButtonFinder;
+        if (archiveButtonAfter.evaluate().isNotEmpty) {
+          duplicateButtonFinder = archiveButtonAfter;
+        } else if (archiveButtonTextAfter.evaluate().isNotEmpty) {
+          duplicateButtonFinder = archiveButtonTextAfter;
         } else {
-          buttonFinder = find.textContaining('Arquivar');
+          duplicateButtonFinder = archiveButtonElevatedAfter;
         }
 
-        expect(buttonFinder, findsAtLeast(1));
-        await tester.tap(buttonFinder.first);
+        await tester.tap(duplicateButtonFinder.first);
         await tester.pumpAndSettle();
 
-        // Preencher justificativa e confirmar
-        await SuperAdminWidgetHelpers.fillJustification(
-          tester,
-          'Primeiro arquivamento CT12 — teste de duplicidade',
+        // O sistema deve exibir mensagem de erro ou impedir a operação
+        final errorText = find.textContaining('já arquivada');
+        final errorSnackbar = find.byType(SnackBar);
+        final blockDialog = find.byType(AlertDialog);
+
+        expect(
+          errorText.evaluate().isNotEmpty ||
+              errorSnackbar.evaluate().isNotEmpty ||
+              blockDialog.evaluate().isNotEmpty,
+          isTrue,
+          reason:
+              'O sistema deve impedir arquivamento duplicado com '
+              'mensagem de erro ou bloqueio (Req 4.8)',
         );
-        await SuperAdminWidgetHelpers.confirmModal(tester);
+      } else {
+        // O botão "Arquivar" foi removido/substituído — comportamento
+        // correto: o sistema impede a operação por não oferecer o botão.
+        // Verificar que "Desarquivar" está presente em seu lugar.
+        final unarchiveButton = find.byTooltip('Desarquivar');
+        final unarchiveText = find.textContaining('Desarquivar');
 
-        // Aguardar processamento
-        await tester.pumpAndSettle(
-          const Duration(milliseconds: 100),
-          EnginePhase.sendSemanticsUpdate,
-          SuperAdminTestConfig.defaultTimeout,
+        expect(
+          unarchiveButton.evaluate().isNotEmpty ||
+              unarchiveText.evaluate().isNotEmpty,
+          isTrue,
+          reason:
+              'O botão "Desarquivar" deve estar presente no lugar de '
+              '"Arquivar" para org já arquivada (Req 4.8)',
         );
-
-        // Confirmar que a org está arquivada
-        final status = await SuperAdminDbVerifier.getOrgStatus(
-          testOrgDuplicate.orgId,
-        );
-        expect(status, equals('ARCHIVED'));
-
-        // Agora tentar arquivar novamente — o botão "Arquivar" não deve
-        // estar disponível (deve ter sido substituído por "Desarquivar")
-        // OU se clicar, o sistema deve impedir a operação.
-
-        // Recarregar a página de detalhes
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrgDuplicate.orgName,
-        );
-
-        // Verificar que o botão "Arquivar" não está mais disponível
-        final archiveButtonAfter = find.byTooltip('Arquivar');
-        final archiveButtonTextAfter = find.widgetWithText(
-          FilledButton,
-          'Arquivar',
-        );
-        final archiveButtonElevatedAfter = find.widgetWithText(
-          ElevatedButton,
-          'Arquivar',
-        );
-
-        final archiveStillPresent =
-            archiveButtonAfter.evaluate().isNotEmpty ||
-            archiveButtonTextAfter.evaluate().isNotEmpty ||
-            archiveButtonElevatedAfter.evaluate().isNotEmpty;
-
-        if (archiveStillPresent) {
-          // Se o botão ainda está presente, tentar clicar e verificar
-          // que o sistema impede a operação duplicada
-          Finder duplicateButtonFinder;
-          if (archiveButtonAfter.evaluate().isNotEmpty) {
-            duplicateButtonFinder = archiveButtonAfter;
-          } else if (archiveButtonTextAfter.evaluate().isNotEmpty) {
-            duplicateButtonFinder = archiveButtonTextAfter;
-          } else {
-            duplicateButtonFinder = archiveButtonElevatedAfter;
-          }
-
-          await tester.tap(duplicateButtonFinder.first);
-          await tester.pumpAndSettle();
-
-          // O sistema deve exibir mensagem de erro ou impedir a operação
-          final errorText = find.textContaining('já arquivada');
-          final errorSnackbar = find.byType(SnackBar);
-          final blockDialog = find.byType(AlertDialog);
-
-          expect(
-            errorText.evaluate().isNotEmpty ||
-                errorSnackbar.evaluate().isNotEmpty ||
-                blockDialog.evaluate().isNotEmpty,
-            isTrue,
-            reason:
-                'O sistema deve impedir arquivamento duplicado com '
-                'mensagem de erro ou bloqueio (Req 4.8)',
-          );
-        } else {
-          // O botão "Arquivar" foi removido/substituído — comportamento
-          // correto: o sistema impede a operação por não oferecer o botão.
-          // Verificar que "Desarquivar" está presente em seu lugar.
-          final unarchiveButton = find.byTooltip('Desarquivar');
-          final unarchiveText = find.textContaining('Desarquivar');
-
-          expect(
-            unarchiveButton.evaluate().isNotEmpty ||
-                unarchiveText.evaluate().isNotEmpty,
-            isTrue,
-            reason:
-                'O botão "Desarquivar" deve estar presente no lugar de '
-                '"Arquivar" para org já arquivada (Req 4.8)',
-          );
-        }
-      },
-    );
+      }
+    });
   });
 }
 
@@ -699,12 +667,8 @@ class _FailingHttpClient implements HttpClient {
 
   @override
   set authenticateProxy(
-    Future<bool> Function(
-      String host,
-      int port,
-      String scheme,
-      String? realm,
-    )? f,
+    Future<bool> Function(String host, int port, String scheme, String? realm)?
+    f,
   ) {}
 
   @override
@@ -718,7 +682,8 @@ class _FailingHttpClient implements HttpClient {
       Uri url,
       String? proxyHost,
       int? proxyPort,
-    )? f,
+    )?
+    f,
   ) {}
 
   @override
@@ -744,8 +709,7 @@ class _FailingHttpClient implements HttpClient {
   Future<HttpClientRequest> getUrl(Uri url) => _fail();
 
   @override
-  Future<HttpClientRequest> head(String host, int port, String path) =>
-      _fail();
+  Future<HttpClientRequest> head(String host, int port, String path) => _fail();
 
   @override
   Future<HttpClientRequest> headUrl(Uri url) => _fail();
@@ -756,8 +720,7 @@ class _FailingHttpClient implements HttpClient {
     String host,
     int port,
     String path,
-  ) =>
-      _fail();
+  ) => _fail();
 
   @override
   Future<HttpClientRequest> openUrl(String method, Uri url) => _fail();
@@ -770,8 +733,7 @@ class _FailingHttpClient implements HttpClient {
   Future<HttpClientRequest> patchUrl(Uri url) => _fail();
 
   @override
-  Future<HttpClientRequest> post(String host, int port, String path) =>
-      _fail();
+  Future<HttpClientRequest> post(String host, int port, String path) => _fail();
 
   @override
   Future<HttpClientRequest> postUrl(Uri url) => _fail();

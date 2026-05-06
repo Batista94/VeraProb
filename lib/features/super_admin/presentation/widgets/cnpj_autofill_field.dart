@@ -10,10 +10,7 @@ import 'package:veraprob/state/providers/super_admin_providers.dart';
 class CnpjAutofillField extends ConsumerStatefulWidget {
   final TextEditingController companyNameController;
 
-  const CnpjAutofillField({
-    super.key,
-    required this.companyNameController,
-  });
+  const CnpjAutofillField({super.key, required this.companyNameController});
 
   @override
   ConsumerState<CnpjAutofillField> createState() => _CnpjAutofillFieldState();
@@ -59,7 +56,9 @@ class _CnpjAutofillFieldState extends ConsumerState<CnpjAutofillField> {
 
       // Graceful degradation: If data is null (API failed), we do nothing and
       // the user can manually type in the name field, keeping UI unblocked.
-      if (data != null && data.legalName != null && data.legalName!.isNotEmpty) {
+      if (data != null &&
+          data.legalName != null &&
+          data.legalName!.isNotEmpty) {
         widget.companyNameController.text = data.legalName!;
       }
     }
@@ -74,7 +73,7 @@ class _CnpjAutofillFieldState extends ConsumerState<CnpjAutofillField> {
           controller: _cnpjController,
           decoration: InputDecoration(
             labelText: 'CNPJ',
-            suffixIcon: _isLoading 
+            suffixIcon: _isLoading
                 ? const Padding(
                     padding: EdgeInsets.all(12.0),
                     child: SizedBox(
@@ -90,9 +89,7 @@ class _CnpjAutofillFieldState extends ConsumerState<CnpjAutofillField> {
         const SizedBox(height: 16),
         TextFormField(
           controller: widget.companyNameController,
-          decoration: const InputDecoration(
-            labelText: 'Razão Social',
-          ),
+          decoration: const InputDecoration(labelText: 'Razão Social'),
         ),
       ],
     );

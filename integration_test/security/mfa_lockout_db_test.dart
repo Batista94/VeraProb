@@ -99,14 +99,18 @@ void main() {
   });
 
   Future<Map<String, dynamic>> recordFailure(String uid) async {
-    final raw = await seedClient
-        .rpc('record_mfa_failure', params: {'p_user_id': uid});
+    final raw = await seedClient.rpc(
+      'record_mfa_failure',
+      params: {'p_user_id': uid},
+    );
     return Map<String, dynamic>.from(raw as Map);
   }
 
   Future<Map<String, dynamic>> checkLockout(String uid) async {
-    final raw = await seedClient
-        .rpc('check_mfa_lockout', params: {'p_user_id': uid});
+    final raw = await seedClient.rpc(
+      'check_mfa_lockout',
+      params: {'p_user_id': uid},
+    );
     return Map<String, dynamic>.from(raw as Map);
   }
 
@@ -125,48 +129,57 @@ void main() {
       expect(last!['is_locked'], isTrue);
       expect(last['failed_attempts'], equals(5));
 
-      final lockedUntil = DateTime.parse(last['locked_until'] as String).toUtc();
+      final lockedUntil = DateTime.parse(
+        last['locked_until'] as String,
+      ).toUtc();
       final delta = lockedUntil.difference(t0);
-      expect(delta.inSeconds, inInclusiveRange(14 * 60 + 30, 15 * 60 + 30),
-          reason: 'lockout window must be ≈15 minutes from t0 (UTC)');
+      expect(
+        delta.inSeconds,
+        inInclusiveRange(14 * 60 + 30, 15 * 60 + 30),
+        reason: 'lockout window must be ≈15 minutes from t0 (UTC)',
+      );
     });
 
-    test('24 record_mfa_failure during lockout still increments OR no-ops',
-        () async {
-      if (!await _stackOnline()) {
-        markTestSkipped('local supabase stack offline');
-        return;
-      }
-      for (var i = 0; i < 5; i++) {
-        await recordFailure(userA);
-      }
-      final before = await checkLockout(userA);
-      expect(before['is_locked'], isTrue);
+    test(
+      '24 record_mfa_failure during lockout still increments OR no-ops',
+      () async {
+        if (!await _stackOnline()) {
+          markTestSkipped('local supabase stack offline');
+          return;
+        }
+        for (var i = 0; i < 5; i++) {
+          await recordFailure(userA);
+        }
+        final before = await checkLockout(userA);
+        expect(before['is_locked'], isTrue);
 
-      // Migration's UPSERT keeps incrementing failed_attempts and resetting
-      // locked_until → 6 ≥ 5 path. The contract here is: behavior must be
-      // deterministic and preserve `is_locked=true`. Not asserting the exact
-      // counter value avoids over-coupling to the SQL CASE expression.
-      final after = await recordFailure(userA);
-      expect(after['is_locked'], isTrue);
-      expect(after['locked_until'], isNotNull);
-    });
+        // Migration's UPSERT keeps incrementing failed_attempts and resetting
+        // locked_until → 6 ≥ 5 path. The contract here is: behavior must be
+        // deterministic and preserve `is_locked=true`. Not asserting the exact
+        // counter value avoids over-coupling to the SQL CASE expression.
+        final after = await recordFailure(userA);
+        expect(after['is_locked'], isTrue);
+        expect(after['locked_until'], isNotNull);
+      },
+    );
 
-    test('25 cross-user isolation — userB stays unlocked while userA locks',
-        () async {
-      if (!await _stackOnline()) {
-        markTestSkipped('local supabase stack offline');
-        return;
-      }
-      for (var i = 0; i < 5; i++) {
-        await recordFailure(userA);
-      }
-      final lockedA = await checkLockout(userA);
-      final freshB = await checkLockout(userB);
-      expect(lockedA['is_locked'], isTrue);
-      expect(freshB['is_locked'], isFalse);
-      expect(freshB['failed_attempts'], equals(0));
-    });
+    test(
+      '25 cross-user isolation — userB stays unlocked while userA locks',
+      () async {
+        if (!await _stackOnline()) {
+          markTestSkipped('local supabase stack offline');
+          return;
+        }
+        for (var i = 0; i < 5; i++) {
+          await recordFailure(userA);
+        }
+        final lockedA = await checkLockout(userA);
+        final freshB = await checkLockout(userB);
+        expect(lockedA['is_locked'], isTrue);
+        expect(freshB['is_locked'], isFalse);
+        expect(freshB['failed_attempts'], equals(0));
+      },
+    );
 
     test('26 reset_mfa_lockout zeroes counters', () async {
       if (!await _stackOnline()) {
@@ -176,8 +189,7 @@ void main() {
       await recordFailure(userA);
       await recordFailure(userA);
       await recordFailure(userA);
-      await seedClient
-          .rpc('reset_mfa_lockout', params: {'p_user_id': userA});
+      await seedClient.rpc('reset_mfa_lockout', params: {'p_user_id': userA});
 
       final after = await checkLockout(userA);
       expect(after['failed_attempts'], equals(0));
@@ -210,9 +222,12 @@ void main() {
       });
 
       final result = await checkLockout(userA);
-      expect(result['is_locked'], isFalse,
-          reason:
-              'check_mfa_lockout must auto-expire stale locks (migration C.3)');
+      expect(
+        result['is_locked'],
+        isFalse,
+        reason:
+            'check_mfa_lockout must auto-expire stale locks (migration C.3)',
+      );
       expect(result['failed_attempts'], equals(0));
     });
   });
@@ -228,14 +243,14 @@ void main() {
       for (var i = 0; i < 5; i++) {
         last = await recordFailure(userA);
       }
-      final lockedUntil =
-          DateTime.parse(last!['locked_until'] as String).toUtc();
+      final lockedUntil = DateTime.parse(
+        last!['locked_until'] as String,
+      ).toUtc();
       final delta = lockedUntil.difference(t0);
       expect(delta.inSeconds, inInclusiveRange(14 * 60 + 30, 15 * 60 + 30));
     });
 
-    test('42 locked_until is TIMESTAMPTZ — UTC absolute on the wire',
-        () async {
+    test('42 locked_until is TIMESTAMPTZ — UTC absolute on the wire', () async {
       if (!await _stackOnline()) {
         markTestSkipped('local supabase stack offline');
         return;
@@ -257,34 +272,39 @@ void main() {
       expect(
         raw.endsWith('+00:00') || raw.endsWith('Z') || raw.contains('+00'),
         isTrue,
-        reason: 'INV-6: locked_until must serialise with an explicit UTC offset',
+        reason:
+            'INV-6: locked_until must serialise with an explicit UTC offset',
       );
 
       final parsed = DateTime.parse(raw).toUtc();
       expect(parsed.isUtc, isTrue);
     });
 
-    test('43 migration uses TIMESTAMPTZ-safe NOW() (static check)', () async {
-      // Static check against the migration source — no DB round-trip.
-      final file = await _readMigration(
-        'supabase/migrations/20260418000001_mfa_lockout_and_est_rls.sql',
-      );
-      // The migration uses raw NOW(); since locked_until is TIMESTAMPTZ this
-      // is UTC-absolute. Either keep the explicit-UTC marker comment or
-      // refactor to timezone('utc', now()). This test fails until either is
-      // present — TDD-RED driver per plan adendo C.
-      final hasExplicit =
-          file.contains("timezone('utc', now())") ||
-              file.contains('TZ-SAFE: NOW() returns TIMESTAMPTZ');
-      expect(
-        hasExplicit,
-        isTrue,
-        reason:
-            'INV-6 (TDD-RED): make UTC explicit in record_mfa_failure / '
-            'check_mfa_lockout / reset_mfa_lockout. Add `timezone(\'utc\', '
-            'now())` OR a `-- TZ-SAFE: NOW() returns TIMESTAMPTZ` comment.',
-      );
-    }, skip: true /* TDD-RED — flip when migration is hardened */);
+    test(
+      '43 migration uses TIMESTAMPTZ-safe NOW() (static check)',
+      () async {
+        // Static check against the migration source — no DB round-trip.
+        final file = await _readMigration(
+          'supabase/migrations/20260418000001_mfa_lockout_and_est_rls.sql',
+        );
+        // The migration uses raw NOW(); since locked_until is TIMESTAMPTZ this
+        // is UTC-absolute. Either keep the explicit-UTC marker comment or
+        // refactor to timezone('utc', now()). This test fails until either is
+        // present — TDD-RED driver per plan adendo C.
+        final hasExplicit =
+            file.contains("timezone('utc', now())") ||
+            file.contains('TZ-SAFE: NOW() returns TIMESTAMPTZ');
+        expect(
+          hasExplicit,
+          isTrue,
+          reason:
+              'INV-6 (TDD-RED): make UTC explicit in record_mfa_failure / '
+              'check_mfa_lockout / reset_mfa_lockout. Add `timezone(\'utc\', '
+              'now())` OR a `-- TZ-SAFE: NOW() returns TIMESTAMPTZ` comment.',
+        );
+      },
+      skip: true /* TDD-RED — flip when migration is hardened */,
+    );
 
     test('44 auto-expiry boundary survives clock-drift / TZ noise', () async {
       if (!await _stackOnline()) {
