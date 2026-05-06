@@ -430,7 +430,7 @@ jobs:
     runs-on: ubuntu-latest
     # Only run on PRs to main to ensure forensic integrity before merge
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
-    needs: test
+    needs: test-phase-4
     timeout-minutes: 25
 
     steps:
