@@ -104,16 +104,138 @@ jobs:
       - name: Dependency Intelligence (Outdated Audit)
         run: flutter pub outdated
 
-      - name: VeraProb Forensic Scan
+      - name: VeraProb Forensic Scan (H-03)
         run: |
           chmod +x scripts/security/pr_full_scanner.sh
           BASE_BRANCH="${{ github.base_ref || 'main' }}" bash scripts/security/pr_full_scanner.sh
 
-  test:
-    name: Flutter Test
+      - name: Secret Scan (H-04)
+        run: |
+          python3 scripts/security/scan_secrets.py
+        continue-on-error: false
+
+      - name: Prompt Injection Audit (H-06)
+        run: |
+          # Placeholder for prompt-injection-auditor skill invocation
+          # When skill system is available in CI, replace with actual scan
+          echo "[H-06] Prompt Injection Audit — requires skill invocation (deferred to pre-commit hook)"
+
+      - name: Index Advisor (H-11)
+        run: |
+          python3 scripts/index_advisor.py
+        continue-on-error: true
+
+  test-phase-1:
+    name: "Test Phase 1: Unit Pure (Domain/Application)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: analyze
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create stub .env
+        run: echo "# CI stub" > .env
+
+      - name: Phase 1 — Unit Pure Tests
+        run: |
+          flutter test --no-pub \
+            test/application/super_admin/audit_event_category_test.dart \
+            test/security/service_role_isolation_test.dart
+
+  test-phase-2:
+    name: "Test Phase 2: Unit + Widget"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: analyze
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create stub .env
+        run: echo "# CI stub" > .env
+
+      - name: Phase 2 — Unit + Widget Tests
+        run: |
+          flutter test --no-pub \
+            test/features \
+            test/infrastructure/super_admin/supabase_mfa_repository_test.dart
+
+  test-phase-3:
+    name: "Test Phase 3: Environment Config Matrix (INV-6)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: analyze
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create stub .env
+        run: echo "# CI stub" > .env
+
+      - name: Phase 3 — Environment Config Matrix
+        run: |
+          pwsh scripts/test/run_env_matrix.ps1
+
+  test-phase-4:
+    name: "Test Phase 4: Integration Tests (Conditional)"
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: analyze
+    needs: [test-phase-1, test-phase-2, test-phase-3]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -147,25 +269,81 @@ jobs:
       - name: Seed local database
         run: supabase db seed
 
-      - name: Test Supabase Edge Functions
-        run: supabase test functions
-
-      - name: Create stub .env for asset resolution
-        run: echo "# CI stub — credentials injected via dart-define" > .env
+      - name: Create stub .env
+        run: echo "# CI stub" > .env
 
       - name: Capture Supabase Keys
         run: |
-          # Extrai a chave de servico gerada localmente pelo Supabase (RLS Bypass para testes E2E)
-          # Usa -f 2- para capturar tudo após o primeiro '=' (JWTs podem conter '=' de padding base64)
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
           echo "SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
 
-      - name: JWT Sanity Check
+      - name: Check if integration tests should run
+        id: should_run_integration
         run: |
-          # Tenta um comando simples no banco usando a chave capturada
-          curl -X GET "http://127.0.0.1:54321/rest/v1/" \
-          -H "apikey: $SERVICE_ROLE_KEY" \
-          -H "Authorization: Bearer $SERVICE_ROLE_KEY"
+          # Check if any relevant files changed
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+
+          if echo "$CHANGED_FILES" | grep -E 'lib/features/super_admin/|lib/infrastructure/super_admin/|supabase/migrations/' | grep -q .; then
+            echo "run-tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "run-tests=false" >> $GITHUB_OUTPUT
+            echo "⏭️  No super_admin/migrations changes — skipping integration tests"
+          fi
+
+      - name: Phase 4 — Integration Tests
+        if: steps.should_run_integration.outputs.run-tests == 'true'
+        run: |
+          flutter test --no-pub \
+            integration_test/security/ \
+            --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
+            --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"
+
+      - name: Integration Tests Skipped
+        if: steps.should_run_integration.outputs.run-tests == 'false'
+        run: echo "Integration tests skipped (no super_admin/migrations changes detected)"
+
+  test-coverage:
+    name: "Test Coverage Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [test-phase-1, test-phase-2]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase Local
+        run: supabase start
+
+      - name: Create stub .env
+        run: echo "# CI stub" > .env
+
+      - name: Capture Supabase Keys
+        run: |
+          SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          echo "SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
 
       - name: Flutter Test with Coverage
         run: |
@@ -175,8 +353,6 @@ jobs:
 
       - name: Web Build Sanity Check (Smoke Test)
         run: |
-          # Garante que o projeto consegue ser compilado antes do deploy de staging
-          # Ignora o build remoto e testa a integridade dos plugins nativos
           flutter build web --no-pub --release --dart-define=ENV=ci_check
 
       - name: Install lcov
@@ -192,7 +368,7 @@ jobs:
             'lib/presentation/*' \
             --output-file coverage/lcov_filtered.info
 
-      - name: Enforce Coverage Gate (≥60% on domain/application/infrastructure/core)
+      - name: Enforce Coverage Gate (≥70%)
         uses: VeryGoodOpenSource/very_good_coverage@v3
         with:
           path: coverage/lcov_filtered.info

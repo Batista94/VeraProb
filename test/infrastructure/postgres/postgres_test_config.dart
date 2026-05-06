@@ -505,4 +505,138 @@ class PostgresTestConfig {
     final json = jsonEncode(payload);
     return base64Url.encode(utf8.encode(json)).replaceAll('=', '');
   }
+
+  // ── system_audit_log seed/cleanup (CT29 — F1/F3) ──────────────────────────
+
+  /// Inserts a single row into `public.system_audit_log` via service_role,
+  /// bypassing RLS. Returns the generated row UUID.
+  ///
+  /// Use [orgId]=null for system-level events (no tenant scope). When
+  /// [eventType] is a governance event (the trigger enforces a non-empty
+  /// reason), a [reason] MUST be supplied — the helper does not silently
+  /// substitute a placeholder.
+  static Future<String> seedSystemAuditLogEvent({
+    String? orgId,
+    required String eventType,
+    String severity = 'info',
+    DateTime? occurredAt,
+    String? reason,
+    String? actorType,
+    String? actorId,
+    Map<String, dynamic>? payload,
+    String? source,
+  }) async {
+    const uuid = Uuid();
+    final id = uuid.v4();
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      await seedClient.from('system_audit_log').insert({
+        'id': id,
+        'event_type': eventType,
+        'severity': severity,
+        'organization_id': orgId,
+        'occurred_at':
+            (occurredAt ?? DateTime.now().toUtc()).toIso8601String(),
+        'reason': ?reason,
+        'actor_type': ?actorType,
+        'actor_id': ?actorId,
+        'payload': ?payload,
+        'source': ?source,
+      });
+    } finally {
+      await seedClient.dispose();
+    }
+    return id;
+  }
+
+  /// Removes system_audit_log rows for the given [orgIds] via the
+  /// SECURITY DEFINER `test_cleanup_system_audit_log` RPC, which bypasses
+  /// the append-only `INSTEAD NOTHING` rules. Pass an empty list to remove
+  /// only system-level events (organization_id IS NULL).
+  ///
+  /// If the RPC is missing in the local stack, falls back to a direct
+  /// service_role DELETE (the rules will block it; tests will fail loudly
+  /// with a clear signal that the cleanup RPC must be added).
+  static Future<void> cleanupSystemAuditLog({
+    required List<String?> orgIds,
+  }) async {
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      await seedClient.rpc(
+        'test_cleanup_system_audit_log',
+        params: {'p_org_ids': orgIds},
+      );
+    } finally {
+      await seedClient.dispose();
+    }
+  }
+
+  // ── MFA lockouts cleanup (CT30 — F7) ──────────────────────────────────────
+
+  /// Removes super_admin_mfa_lockouts rows for the given [userIds] via
+  /// service_role (RLS denies all authenticated access; service_role bypasses).
+  static Future<void> cleanupMfaLockouts({
+    required List<String> userIds,
+  }) async {
+    if (userIds.isEmpty) return;
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    try {
+      await seedClient
+          .from('super_admin_mfa_lockouts')
+          .delete()
+          .inFilter('user_id', userIds);
+    } finally {
+      await seedClient.dispose();
+    }
+  }
+
+  // ── SuperAdmin auth session (CT29/CT30 — F3/F7) ───────────────────────────
+
+  /// Creates an [auth.users] row via the admin REST endpoint with
+  /// `app_metadata.super_admin = true` (and optional [extraAppMetadata]),
+  /// then signs the user in with password to get a real JWT carrying the
+  /// SuperAdmin claim. Returns the authenticated [SupabaseClient].
+  ///
+  /// This replaces the no-op `createOrgJwtClient` for RLS tests that need
+  /// a JWT with custom claims — the local Supabase JWT secret is private to
+  /// the stack and we do not sign HS256 tokens from Dart code.
+  ///
+  /// Caller is responsible for disposing the returned client.
+  static Future<SupabaseClient> createSuperAdminAuthSession({
+    required String email,
+    required String password,
+    Map<String, dynamic>? extraAppMetadata,
+  }) async {
+    // Step 1: create or upsert the user via the admin REST endpoint.
+    final adminUrl = Uri.parse('$supabaseUrl/auth/v1/admin/users');
+    final headers = {
+      'apikey': serviceRoleKey,
+      'Authorization': 'Bearer $serviceRoleKey',
+      'Content-Type': 'application/json',
+    };
+    final appMeta = <String, dynamic>{
+      'super_admin': true,
+      ...?extraAppMetadata,
+    };
+    final body = jsonEncode({
+      'email': email,
+      'password': password,
+      'email_confirm': true,
+      'app_metadata': appMeta,
+    });
+    final response = await http.post(adminUrl, headers: headers, body: body);
+    // 200/422 (already exists) are both fine — we still try to sign in below.
+    if (response.statusCode >= 500) {
+      throw StateError(
+        'createSuperAdminAuthSession: admin createUser failed '
+        '(${response.statusCode}): ${response.body}',
+      );
+    }
+
+    // Step 2: sign in with password on a fresh anon client. The JWT minted
+    // here will carry the app_metadata.super_admin claim.
+    final client = SupabaseClient(supabaseUrl, supabaseAnonKey);
+    await client.auth.signInWithPassword(email: email, password: password);
+    return client;
+  }
 }

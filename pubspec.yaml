@@ -65,6 +65,7 @@ dev_dependencies:
 
   fake_async: any
   test: ^1.25.0
+  supabase: any
 flutter:
   uses-material-design: true
   # 8.4 Observabilidade

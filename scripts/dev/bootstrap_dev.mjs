@@ -37,14 +37,14 @@ const USERS = [
   {
     id: '09d00994-6b32-4df3-b08f-3d722f28f4d0',
     email: 'admin-a@veraprob.dev',
-    password: 'veraprob123!',
+    password: '123456',
     label: 'Admin — Org Alpha',
     org_id: '00000000-0000-0000-0000-000000000001',
   },
   {
     id: '210b892e-2f05-4eff-bb45-c3664141022b',
     email: 'admin-b@veraprob.dev',
-    password: 'veraprob123!',
+    password: '123456',
     label: 'Admin — Org Beta',
     org_id: '00000000-0000-0000-0000-000000000002',
   },
@@ -116,7 +116,6 @@ function resolveConfig() {
 
   const finalUrl = url.replace(/\/$/, '');
 
-  // Safety check: common mistake is pointing to Studio (54323) instead of API (54321)
   if (finalUrl.includes(':54323')) {
     console.warn('\x1b[33m  AVISO: SUPABASE_URL parece estar apontando para o Studio (54323).');
     console.warn('         O script de bootstrap precisa do API URL (geralmente :54321).\x1b[0m\n');
@@ -179,21 +178,16 @@ async function createAuthUser(url, serviceKey, user) {
 }
 
 async function ensureSuperAdmin(url, serviceKey, user) {
-  // 1. Insert into super_admin_users (triggers JWT hook for future tokens).
   const res = await post(
     `${url}/rest/v1/super_admin_users`,
     { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
     { user_id: user.id, email: user.email },
   );
   
-  // Handle 409 Conflict if resolution=ignore-duplicates fails or if user already exists
   if (res.status !== 200 && res.status !== 201 && res.status !== 204 && res.status !== 409) {
     throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
   }
 
-  // 2. Persist super_admin=true to raw_app_meta_data so Edge Function's
-  //    getUser() sees the flag (JWT hook only enriches the token, not the DB row).
-  //    NOTE: GoTrue Admin API uses PUT for user updates (INV-14).
   const res2 = await put(
     `${url}/auth/v1/admin/users/${user.id}`,
     authHeaders(serviceKey),
@@ -208,12 +202,91 @@ async function ensureTenantAdmin(url, serviceKey, user) {
   const res = await post(
     `${url}/rest/v1/user_roles`,
     { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    { user_id: user.id, organization_id: user.org_id, role: 'TENANT_ADMIN' },
+    { user_id: user.id, organization_id: user.org_id, role: 'TENANT_ADMIN', is_active: true },
   );
-  // Handle 409 Conflict gracefully
   if (res.status === 200 || res.status === 201 || res.status === 204 || res.status === 409) return;
   throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
 }
+
+// ── Enriquecer Organizações do Seed com dados completos ───────────────────────
+
+async function enrichSeedOrganizations(url, serviceKey) {
+  process.stdout.write('  ── Enriquecendo Organizações do Seed (campos obrigatórios)\n');
+
+  const orgUpdates = [
+    {
+      id: '00000000-0000-0000-0000-000000000001',
+      data: {
+        legal_name: 'Alpha Transportes e Logística Ltda',
+        cnpj: '11.222.333/0001-81',
+        plan_type: 'professional',
+        max_vehicles: 80,
+        max_active_contracts: 15,
+        billing_day: 10,
+        contact_email: 'financeiro@alpha-transportes.com.br',
+        external_id: 'CRM-ALPHA-001',
+        tool_cost_cents: 500000,
+        dwell_time_seconds: 300,
+        organization_type: 'CARGO',
+        timezone: 'America/Sao_Paulo',
+        currency_code: 'BRL',
+        allowed_domains: ['alpha-transportes.com.br', 'veraprob.dev'],
+        capabilities: {
+          allows_sealing: true,
+          allows_loading: true,
+          allows_cargo_check: true,
+          allows_incident: true,
+          allows_doc: true,
+          smart_classify: true,
+        },
+      },
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000002',
+      data: {
+        legal_name: 'Beta Viação e Turismo S.A.',
+        cnpj: '44.555.666/0001-72',
+        plan_type: 'starter',
+        max_vehicles: 30,
+        max_active_contracts: 5,
+        billing_day: 15,
+        contact_email: 'contato@beta-viacao.com.br',
+        external_id: 'CRM-BETA-002',
+        tool_cost_cents: 250000,
+        dwell_time_seconds: 300,
+        organization_type: 'PASSENGER',
+        timezone: 'America/Sao_Paulo',
+        currency_code: 'BRL',
+        allowed_domains: ['beta-viacao.com.br', 'veraprob.dev'],
+        capabilities: {
+          allows_sealing: false,
+          allows_loading: false,
+          allows_cargo_check: false,
+          allows_incident: true,
+          allows_doc: true,
+          smart_classify: false,
+        },
+      },
+    },
+  ];
+
+  for (const org of orgUpdates) {
+    process.stdout.write(`      Org ${org.id.slice(-1)}... `);
+    const res = await patch(
+      `${url}/rest/v1/organizations?id=eq.${org.id}`,
+      { ...authHeaders(serviceKey), Prefer: 'return=minimal' },
+      org.data,
+    );
+    if (res.ok) {
+      console.log('ok');
+    } else {
+      console.log(`AVISO (${res.status}): ${JSON.stringify(res.data).slice(0, 120)}`);
+    }
+  }
+  console.log('');
+}
+
+// ── Dados de Teste (Motorista, Telegram, Viagem) ──────────────────────────────
 
 async function ensureTestData(url, serviceKey) {
   process.stdout.write('  ── Provisionando Dados de Teste (Motorista + Token Telegram)\n');
@@ -256,7 +329,6 @@ async function ensureTestData(url, serviceKey) {
     throw new Error(`Erro ao criar token: ${resToken.status} - ${JSON.stringify(resToken.data)}`);
   }
 
-  // Se o token já existia (ignore-duplicates), pegamos o ID dele via GET
   let tokenId = resToken.data?.[0]?.id;
   if (!tokenId) {
     const resGetToken = await fetch(`${url}/rest/v1/telegram_binding_tokens?code=eq.VERAPR22&select=id`, {
@@ -356,7 +428,6 @@ async function ensureTestData(url, serviceKey) {
 
 async function ensureAntiFloodScenario(url, serviceKey, orgId) {
   process.stdout.write('      [5.1] Cenário Anti-Flood (Alertas)... ');
-  // Simula 5 alertas idênticos para testar o debounce do sistema
   const alerts = Array.from({ length: 5 }, (_, i) => ({
     organization_id: orgId,
     entity_id: '999999999',
@@ -378,7 +449,6 @@ async function ensureBackdatingScenarios(url, serviceKey, orgId, planId, driverI
   process.stdout.write('      [5.2] Cenários Backdating (INV-6)... ');
   const now = new Date();
   
-  // Casos de uso do pgTAP portados para o bootstrap
   const scenarios = [
     { id: 'BDT-SET-01', note: '10 min ago (Closed)' },
     { id: 'BDT-SET-02', note: 'NULL fallback (Pending)' },
@@ -417,44 +487,9 @@ async function ensureBackdatingScenarios(url, serviceKey, orgId, planId, driverI
   console.log('ok');
 }
 
-async function ensureSuperAdminTestScenarios(url, serviceKey) {
-  process.stdout.write('  ── Provisionando Cenários SuperAdmin (CT01-CT09)\n');
 
-  const orgs = [
-    { id: '00000000-0000-0000-0000-000000000101', name: 'Viação Estrela Dalva' },
-    { id: '00000000-0000-0000-0000-000000000102', name: 'Viação Cometa Azul' }
-  ];
 
-  for (const org of orgs) {
-    process.stdout.write(`      Org: ${org.name}... `);
-    await post(
-      `${url}/rest/v1/organizations`,
-      { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-      { id: org.id, name: org.name, is_active: true }
-    );
-    console.log('ok');
-  }
-
-  const invites = [
-    { email: 'joao@estreladalva.com.br', org_id: orgs[0].id },
-    { email: 'maria@estreladalva.com.br', org_id: orgs[0].id }
-  ];
-
-  for (const inv of invites) {
-    process.stdout.write(`      Invite: ${inv.email}... `);
-    await post(
-      `${url}/rest/v1/invitations`,
-      { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-      { 
-        organization_id: inv.org_id, 
-        email: inv.email, 
-        role: 'TENANT_ADMIN',
-        invited_by_user_id: '00000000-0000-0000-0000-ffffffffffff'
-      }
-    );
-    console.log('ok');
-  }
-}
+// ── Sign-in helper ────────────────────────────────────────────────────────────
 
 async function signIn(url, anonKey, email, password) {
   const res = await post(
@@ -468,7 +503,6 @@ async function signIn(url, anonKey, email, password) {
 
 function cleanupZombies(userIds) {
   const ids = userIds.map(id => `'${id}'`).join(', ');
-  // Clean up both auth and public tables to ensure a clean state
   const sql = `
     DELETE FROM auth.users WHERE id IN (${ids});
     DELETE FROM public.super_admin_users WHERE user_id IN (${ids});
@@ -556,9 +590,11 @@ async function main() {
     console.log('');
   }
 
-  // Novo: Dados de negócio
+  // Enriquecer orgs do seed com dados completos
+  await enrichSeedOrganizations(url, serviceKey);
+
+  // Dados de negócio
   await ensureTestData(url, serviceKey);
-  await ensureSuperAdminTestScenarios(url, serviceKey);
 
   console.log('╔══════════════════════════════════════════════════════════╗');
   console.log('║                  CREDENCIAIS DE TESTE                   ║');

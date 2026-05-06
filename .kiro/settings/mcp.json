@@ -7,7 +7,7 @@
         "npx -y @playwright/mcp@latest"
       ],
       "env": {},
-      "disabled": false,
+      "disabled": true,
       "autoApprove": [
         "browser_navigate",
         "browser_snapshot",
@@ -68,13 +68,10 @@
       ]
     },
     "memory": {
-      "command": "powershell.exe",
+      "command": "cmd",
       "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "./.agents/scripts/memory-proxy.ps1"
+        "/c",
+        "C:\\Users\\wes_b\\Projects\\VeraProb\\.agents\\scripts\\memory-proxy.cmd"
       ],
       "env": {},
       "disabled": false

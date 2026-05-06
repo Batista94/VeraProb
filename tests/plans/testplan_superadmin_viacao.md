@@ -381,7 +381,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 
 ### 🛡️ Grupo 8: Integridade e Cascatas de Banco de Dados
 
-#### CT23: Limpeza de Sessões de Impersonation (Bug BUG-002)
+#### CT23: Limpeza de Sessões de Impersonation
 
 * **Objetivo:** Garantir que sessões administrativas de "impersonation" sejam encerradas ao arquivar uma organização.
 * **Passos:**
