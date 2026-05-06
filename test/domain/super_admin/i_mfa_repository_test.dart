@@ -34,15 +34,14 @@ MfaStatus _enrolledStatus({
   bool isLockedOut = false,
   int failedAttempts = 0,
   DateTime? lockedUntil,
-}) =>
-    MfaStatus(
-      currentLevel: level,
-      hasEnrolledFactor: true,
-      factorId: _kFactorId,
-      isLockedOut: isLockedOut,
-      failedAttempts: failedAttempts,
-      lockedUntil: lockedUntil,
-    );
+}) => MfaStatus(
+  currentLevel: level,
+  hasEnrolledFactor: true,
+  factorId: _kFactorId,
+  isLockedOut: isLockedOut,
+  failedAttempts: failedAttempts,
+  lockedUntil: lockedUntil,
+);
 
 // ── CIA Triad Suite ───────────────────────────────────────────────────────────
 
