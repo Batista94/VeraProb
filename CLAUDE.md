@@ -29,6 +29,11 @@ Must check before structural/domain edits.
 Architect, Senior, QA/Sec, UX/Ops, Reviewer.
 
 ---
+## DOMAIN PROTOCOLS
+- **SuperAdmin**: All multi-tenant escapes MUST use `SuperAdminBypassTenantValidator`. MFA enforcement is mandatory for sensitive state transitions (Archive/Quota/Delete).
+- **Telegram**: Integration via `TelegramBindingToken` (short TTL). Evidence links must be strictly bound to `organization_id` to maintain INV-1 isolation.
+
+---
 ## GUARDRAILS & HOOKS (Source: `hooks.json`)
 Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
 

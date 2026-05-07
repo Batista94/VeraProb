@@ -32,3 +32,8 @@ Utilize os comandos padronizados para gerenciar o ambiente:
 - **Frontend**: Flutter.
 - **Backend/DB**: Supabase (PostgreSQL + RLS).
 - **Architecture**: Agnostic core, C4 patterns, Wasm integration.
+
+---
+## 5. PROTOCOLOS DE DOMÍNIO
+- **SuperAdmin**: Escapes multi-tenant DEVEM usar `SuperAdminBypassTenantValidator`. MFA é obrigatório para transições de estado sensíveis (Arquivamento/Cotas).
+- **Telegram**: Vinculação via `TelegramBindingToken` (TTL curto). Links de evidência devem ser estritamente isolados por `organization_id` (INV-1).
