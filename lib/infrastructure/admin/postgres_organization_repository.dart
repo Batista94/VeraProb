@@ -4,6 +4,7 @@ import 'package:veraprob/domain/admin/org_capabilities.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/admin/organization_repository.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 class PostgresOrganizationRepository
@@ -25,6 +26,8 @@ class PostgresOrganizationRepository
       return _mapToOrganization(data);
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'organization');
+    } on IntegrityException {
+      rethrow;
     } catch (e) {
       return null;
     }
@@ -32,6 +35,12 @@ class PostgresOrganizationRepository
 
   @override
   Future<void> update(Organization organization) async {
+    if (organization.id.isEmpty) {
+      throw IntegrityException(
+        'Organization id required for update (INV-1 Fail-Fast)',
+        field: 'id',
+      );
+    }
     try {
       await _client
           .from('organizations')
@@ -58,7 +67,10 @@ class PostgresOrganizationRepository
         query = query.eq('status', status.dbValue);
       }
       final data = await query.order('name');
-      return (data as List).map((row) => _mapToOrganization(row)).toList();
+      return (data as List)
+          .cast<Map<String, dynamic>>()
+          .map(_mapToOrganization)
+          .toList();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'organization');
     }
@@ -72,6 +84,12 @@ class PostgresOrganizationRepository
     String actorId,
     String actorType,
   ) async {
+    if (orgId.isEmpty) {
+      throw IntegrityException(
+        'Organization id required for updateStatus (INV-1 Fail-Fast)',
+        field: 'id',
+      );
+    }
     try {
       await _client
           .from('organizations')
@@ -96,8 +114,12 @@ class PostgresOrganizationRepository
 
       if (data == null) return null;
       return OrgApiSecret.fromJson(data);
-    } on PostgrestException {
-      return null;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'org_api_secret',
+        resourceId: orgId,
+      );
     }
   }
 
@@ -130,7 +152,7 @@ class PostgresOrganizationRepository
       currencyCode: data['currency_code'] as String,
       logoUrl: data['logo_url'] as String?,
       status: status,
-      createdAt: DateTime.parse(data['created_at'] as String),
+      createdAt: DateTime.parse(data['created_at'] as String).toUtc(),
       legalName: data['legal_name'] as String?,
       cnpj: data['cnpj'] as String?,
       planType: data['plan_type'] as String?,

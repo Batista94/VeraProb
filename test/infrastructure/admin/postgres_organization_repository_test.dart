@@ -104,9 +104,14 @@ class _FakeBuilder<T> extends Fake implements PostgrestFilterBuilder<T> {
   // cause a runtime TypeError here. See _asDynList() helper in callers.
 
   Future<T> get _asFuture {
-    if (_error != null) return Future<T>.error(_error);
+    if (_error != null) return Future<T>.error(_error!);
     final value = _awaitResult;
     if (value == null) return Future<T>.value(null as T);
+    // postgrest 2.7+ changed PostgrestList from List<dynamic> to
+    // List<Map<String,dynamic>>. Coerce List<dynamic> awaitResults.
+    if (value is List<dynamic> && value is! T) {
+      return Future<T>.value(value.cast<Map<String, dynamic>>() as T);
+    }
     return Future<T>.value(value as T);
   }
 
