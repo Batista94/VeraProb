@@ -36,7 +36,7 @@ class PostgresOrganizationRepository
   @override
   Future<void> update(Organization organization) async {
     if (organization.id.isEmpty) {
-      throw IntegrityException(
+      throw const IntegrityException(
         'Organization id required for update (INV-1 Fail-Fast)',
         field: 'id',
       );
@@ -85,7 +85,7 @@ class PostgresOrganizationRepository
     String actorType,
   ) async {
     if (orgId.isEmpty) {
-      throw IntegrityException(
+      throw const IntegrityException(
         'Organization id required for updateStatus (INV-1 Fail-Fast)',
         field: 'id',
       );
