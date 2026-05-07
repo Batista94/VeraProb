@@ -85,7 +85,11 @@
         "C:\\Users\\wes_b\\Projects\\VeraProb\\.agents\\scripts\\memory-proxy.cmd"
       ],
       "env": {},
-      "disabled": false
+      "disabled": false,
+      "autoApprove": [
+        "create_entities",
+        "add_observations"
+      ]
     },
     "sequential-thinking": {
       "command": "cmd",

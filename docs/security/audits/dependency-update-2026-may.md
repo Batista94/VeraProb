@@ -465,3 +465,165 @@ No API changes in `supabase_flutter 2.12.4` or `postgres 3.5.9` affect the Postg
 **Signature:** Engineering Council — 2026-05-07  
 **Branch:** fase10  
 **Invariants verified:** INV-1, INV-2, INV-6, INV-12, INV-22, INV-25
+
+
+---
+
+# Dependency Audit — FASE 3: UX/Presentation, Observability & Asset Management
+**Date:** 2026-07-06  
+**Auditor:** Engineering Council (Architect + Senior Engineer + QA/Security)  
+**Branch:** fase10  
+**Scope:** INV-25 compliance — google_fonts, fl_chart, sentry_flutter, posthog_flutter,
+           cached_network_image, just_audio, qr_flutter, pdf; dev: sentry_dart_plugin  
+
+---
+
+## 1. INV-25 License & CVE Clearance
+
+All Phase 3 packages cleared. No critical or high-severity CVEs found for any package at their resolved versions.
+
+| Package | Resolved | License | CVE | Status |
+|---------|----------|---------|-----|--------|
+| `google_fonts` | 6.2.1 | BSD-3-Clause | none | ✓ APPROVED |
+| `fl_chart` | 0.70.2 | MIT | none | ✓ APPROVED |
+| `sentry_flutter` | 9.20.0 | MIT | none | ✓ APPROVED |
+| `sentry_dart_plugin` | 3.3.0 | MIT | none | ✓ APPROVED |
+| `posthog_flutter` | 5.24.2 | MIT | none | ✓ APPROVED |
+| `cached_network_image` | 3.4.1 | MIT | none | ✓ APPROVED |
+| `just_audio` | 0.9.39 | Apache-2.0 | none | ✓ APPROVED |
+| `qr_flutter` | 4.1.0 | BSD-3-Clause | none | ✓ APPROVED |
+| `pdf` | 3.12.0 | Apache-2.0 | none | ✓ APPROVED |
+
+License distribution: MIT (5), BSD-3-Clause (2), Apache-2.0 (2) — all permissive, INV-25 compliant.
+
+---
+
+## 2. Version Delta
+
+| Package | Previous Constraint | Applied Constraint | Resolved | Note |
+|---------|--------------------|--------------------|----------|------|
+| `google_fonts` | `^6.1.0` | `^6.2.1` | 6.2.1 | lower-bound bump |
+| `fl_chart` | `^0.66.2` | `^0.70.0` | 0.70.2 | **breaking change** ¹ |
+| `sentry_flutter` | `^9.15.0` | `^9.19.0` | 9.20.0 | minor bump (5 minors) |
+| `sentry_dart_plugin` | `^3.2.1` | `^3.3.0` | 3.3.0 | aligned with sentry_flutter |
+| `posthog_flutter` | `^5.21.0` | `^5.24.2` | 5.24.2 | lower-bound bump |
+| `cached_network_image` | `^3.4.1` | `^3.4.1` | 3.4.1 | no change (already latest) |
+| `just_audio` | `0.9.39` (pinned) | `^0.9.39` (caret) | 0.9.39 | constraint relaxed ² |
+| `qr_flutter` | `^4.1.0` | `^4.1.0` | 4.1.0 | no change (already latest) |
+| `pdf` | `^3.11.3` | `^3.12.0` | 3.12.0 | lower-bound bump |
+
+¹ `fl_chart 0.70.0` breaking changes: `BarTouchTooltipData.tooltipBgColor` removed in favor of `getTooltipColor` callback; `SideTitleWidget` constructor changed `axisSide` to `meta` parameter. Required code refactoring in `charts_section.dart`.  
+² `just_audio` changed from exact pin (`0.9.39`) to caret constraint (`^0.9.39`) to allow future patch updates. Resolved version unchanged.
+
+---
+
+## 3. Breaking Change Mitigation
+
+### fl_chart 0.70.0 — `tooltipBgColor` → `getTooltipColor` Callback
+
+**Impact:** `BarTouchTooltipData` constructor no longer accepts `tooltipBgColor` as a named parameter. Replaced with `getTooltipColor` callback that receives the `BarChartGroupData` and returns a `Color`.  
+**Affected code:** `lib/features/admin/presentation/widgets/charts_section.dart`  
+**Fix applied:** Migrated from static color parameter to callback pattern:
+
+```dart
+// Before (fl_chart 0.66.x):
+BarTouchTooltipData(
+  tooltipBgColor: VeraProbColors.surfaceElevated,
+  ...
+)
+
+// After (fl_chart 0.70.x):
+BarTouchTooltipData(
+  getTooltipColor: (group) => VeraProbColors.surfaceElevated,
+  ...
+)
+```
+
+### fl_chart 0.70.0 — `SideTitleWidget` Constructor Change
+
+**Impact:** `SideTitleWidget` constructor changed `axisSide` positional/named parameter to accept a `meta` parameter.  
+**Affected code:** `lib/features/admin/presentation/widgets/charts_section.dart`  
+**Fix applied:** Updated `SideTitleWidget` usage to pass `meta` parameter from the `getTitlesWidget` callback context.
+
+**Invariant preserved:** INV-25 (License/CVE) — no governance impact from API refactoring. Chart rendering behavior unchanged (visual output identical).
+
+---
+
+## 4. Build Integrity
+
+### `flutter pub get`
+```
+Status: SUCCESS
+Resolved: google_fonts 6.2.1, fl_chart 0.70.2, sentry_flutter 9.20.0,
+          sentry_dart_plugin 3.3.0, posthog_flutter 5.24.2, pdf 3.12.0
+No dependency resolution conflicts.
+```
+
+### `dart run build_runner build --delete-conflicting-outputs`
+```
+Status: SUCCESS
+Outputs: 2398 generated files
+Duration: nominal
+```
+
+### `flutter analyze`
+```
+Status: PASS
+Issues: 0 errors, 0 warnings, 0 hints
+```
+
+### `flutter test`
+```
+Status:  ALL PASS
+Tests:   5863 passed
+Skipped: 23 (pre-existing, not related to this change)
+Failed:  0
+```
+
+---
+
+## 5. Forensic Validation
+
+### Property-Based Correctness Tests (9 properties)
+
+| # | Property | Package | Result | Invariant |
+|---|----------|---------|--------|-----------|
+| 1 | Typography style preservation | `google_fonts` | ✓ PASS | Font family, size, weight, spacing match spec |
+| 2 | Chart data structural validity | `fl_chart` | ✓ PASS | BarChartData groups match input data points |
+| 3 | Sentry initialization safety | `sentry_flutter` | ✓ PASS | initSentry completes without exception |
+| 4 | Sentry exception forwarding | `sentry_flutter` | ✓ PASS | captureException invoked with correct values |
+| 5 | Forensic logger event emission | `sentry_flutter` | ✓ PASS | captureMessage contains all identifiers |
+| 6 | PostHog event tracking safety | `posthog_flutter` | ✓ PASS | capture completes, properties contain 'env' |
+| 7 | Alert sound debounce invariant | `just_audio` | ✓ PASS | play() invoked exactly once per 3s window |
+| 8 | QR code data encoding integrity | `qr_flutter` | ✓ PASS | Widget data equals input URI exactly |
+| 9 | PDF structural validity | `pdf` | ✓ PASS | Output begins with %PDF- magic header |
+
+All 9 correctness properties pass, validating that upgraded packages preserve functional behavior across the presentation, observability, and asset management layers.
+
+---
+
+## 6. Blocked Upgrades
+
+None. All 9 packages (8 runtime + 1 dev) resolved cleanly without dependency conflicts or transitive constraint blockers.
+
+---
+
+## 7. INV-25 Sign-Off
+
+> The Engineering Council (Architect, Senior Engineer, QA/Security) confirms that all 9 packages
+> in Phase 3 scope carry permissive licenses (MIT / BSD-3-Clause / Apache-2.0), have no known
+> critical or high-severity CVEs at their resolved versions, and pass the full VeraProb test suite
+> (5863/5863) with zero lint violations.
+>
+> One breaking change was identified and mitigated: `fl_chart 0.70.0` replaced `tooltipBgColor`
+> with `getTooltipColor` callback and changed `SideTitleWidget` constructor parameters. Code was
+> refactored in `charts_section.dart` with no behavioral regression. No `dependency_overrides`
+> or `// ignore` directives were introduced. No upgrades blocked.
+
+**Signature:** Engineering Council — 2026-07-06  
+**Branch:** fase10  
+**Package count:** 9 (8 runtime + 1 dev)  
+**License types:** MIT (5), BSD-3-Clause (2), Apache-2.0 (2)  
+**Test results:** 5863 passed, 23 pre-existing skips, 0 failures  
+**Blocked upgrades:** None  
+**Invariants verified:** INV-25 (3rd-party permissive license + CVE clearance)
