@@ -1,6 +1,6 @@
 import 'package:glados/glados.dart';
-import 'package:veraprob/features/super_admin/application/tenant_health_view.dart';
-import 'package:veraprob/features/super_admin/domain/tenant_health_snapshot.dart';
+import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
 
 /// **Validates: Requirements 1.2, 1.3, 1.4, 6.2, 6.3**
 ///

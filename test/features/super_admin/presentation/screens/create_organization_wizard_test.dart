@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:veraprob/features/super_admin/domain/create_organization_command.dart';
-import 'package:veraprob/features/super_admin/domain/i_cnpj_lookup_service.dart';
-import 'package:veraprob/features/super_admin/domain/i_super_admin_repository.dart';
+import 'package:veraprob/domain/super_admin/create_organization_command.dart';
+import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
+import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/create_organization_wizard.dart';
 import 'package:veraprob/infrastructure/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
-import 'package:veraprob/features/super_admin/application/create_organization_handler.dart';
-import 'package:veraprob/features/super_admin/application/create_organization_result.dart';
+import 'package:veraprob/application/super_admin/create_organization_handler.dart';
+import 'package:veraprob/application/super_admin/create_organization_result.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}

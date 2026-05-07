@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/features/super_admin/application/create_organization_form_data.dart';
-import 'package:veraprob/features/super_admin/application/org_capabilities_view_model.dart';
+import 'package:veraprob/application/super_admin/create_organization_form_data.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 
 // Regras de Escrita:

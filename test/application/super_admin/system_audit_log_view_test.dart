@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/features/super_admin/application/system_audit_log_view.dart';
-import 'package:veraprob/features/super_admin/domain/system_audit_log_entry.dart';
+import 'package:veraprob/application/super_admin/system_audit_log_view.dart';
+import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
 
 void main() {
   group('SystemAuditLogView', () {

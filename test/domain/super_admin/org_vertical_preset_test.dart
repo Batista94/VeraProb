@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/admin/org_capabilities.dart';
-import 'package:veraprob/features/super_admin/domain/org_vertical_preset.dart';
+import 'package:veraprob/domain/super_admin/org_vertical_preset.dart';
 
 void main() {
   group('OrgVerticalPreset — constants', () {

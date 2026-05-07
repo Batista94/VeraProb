@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/features/super_admin/application/quota_warning_view_model.dart';
+import 'package:veraprob/application/super_admin/quota_warning_view_model.dart';
 
 /// Health card for a tenant organization.
 ///

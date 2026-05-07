@@ -1,7 +1,7 @@
 // pr_scanner: ignore-regression
 //
 import 'package:veraprob/domain/admin/org_capabilities.dart';
-import 'package:veraprob/features/super_admin/domain/plan_type.dart';
+import 'package:veraprob/domain/super_admin/plan_type.dart';
 
 /// Immutable command DTO for creating a new tenant organization.
 ///

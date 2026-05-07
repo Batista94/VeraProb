@@ -7,9 +7,9 @@ import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/features/super_admin/domain/i_super_admin_repository.dart';
-import 'package:veraprob/features/super_admin/domain/plan_type.dart';
-import 'package:veraprob/features/super_admin/domain/update_organization_quota_command.dart';
+import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
+import 'package:veraprob/domain/super_admin/plan_type.dart';
+import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
 
 /// Application handler for [UpdateOrganizationQuotaCommand].
 ///

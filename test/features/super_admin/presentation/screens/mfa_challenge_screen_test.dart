@@ -16,10 +16,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/features/super_admin/application/mfa_challenge_handler.dart';
-import 'package:veraprob/features/super_admin/application/mfa_result_view.dart';
+import 'package:veraprob/application/super_admin/mfa_challenge_handler.dart';
+import 'package:veraprob/application/super_admin/mfa_result_view.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
-import 'package:veraprob/features/super_admin/domain/mfa_challenge_result.dart';
+import 'package:veraprob/domain/super_admin/mfa_challenge_result.dart';
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';

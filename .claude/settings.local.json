@@ -115,7 +115,10 @@
       "Bash(SCRATCHPAD_PERSONA=qa SCRATCHPAD_SECTION=decisions SCRATCHPAD_ACTION=append SCRATCHPAD_CONTENT=\"All financial operations must be auditable. Serializable isolation for consistency.\" bash scripts/sync_scratchpad.sh)",
       "Bash(SCRATCHPAD_PERSONA=test SCRATCHPAD_SECTION=mission SCRATCHPAD_ACTION=overwrite SCRATCHPAD_CONTENT=\"Test entry\" bash *)",
       "Bash(SCRATCHPAD_PERSONA=architect SCRATCHPAD_SECTION=\"Architect Decisions\" SCRATCHPAD_ACTION=append SCRATCHPAD_CONTENT=\"sync_scratchpad.py moved to scripts/ folder\" bash *)",
-      "Bash(SCRATCHPAD_PERSONA=senior SCRATCHPAD_SECTION=\"Current Mission State\" SCRATCHPAD_ACTION=overwrite SCRATCHPAD_CONTENT=\"Relocated sync_scratchpad.py to scripts/. Wrapper updated. Hook functional.\" bash *)"
+      "Bash(SCRATCHPAD_PERSONA=senior SCRATCHPAD_SECTION=\"Current Mission State\" SCRATCHPAD_ACTION=overwrite SCRATCHPAD_CONTENT=\"Relocated sync_scratchpad.py to scripts/. Wrapper updated. Hook functional.\" bash *)",
+      "Bash(git mv *)",
+      "Bash(xargs -I{} grep -l \"package:veraprob/domain/\" {})",
+      "Bash(awk '{print $NF}')"
     ]
   },
   "enabledMcpjsonServers": [

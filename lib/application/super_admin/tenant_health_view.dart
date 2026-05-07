@@ -1,7 +1,7 @@
-import 'package:veraprob/features/super_admin/application/org_capabilities_view_model.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
 import 'package:veraprob/domain/admin/org_capabilities.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
-import 'package:veraprob/features/super_admin/domain/tenant_health_snapshot.dart';
+import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
 
 /// Read model for [TenantHealthSnapshot] used in the presentation layer.
 ///

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/features/super_admin/application/audit_event_category.dart';
-import 'package:veraprob/features/super_admin/application/system_audit_log_view.dart';
+import 'package:veraprob/application/super_admin/audit_event_category.dart';
+import 'package:veraprob/application/super_admin/system_audit_log_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/audit_category_badge.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';

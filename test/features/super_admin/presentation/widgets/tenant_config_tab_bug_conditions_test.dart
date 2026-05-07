@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:veraprob/features/super_admin/application/archive_organization_handler.dart';
-import 'package:veraprob/features/super_admin/application/tenant_health_view.dart';
-import 'package:veraprob/features/super_admin/application/update_organization_quota_handler.dart';
+import 'package:veraprob/application/super_admin/archive_organization_handler.dart';
+import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/application/super_admin/update_organization_quota_handler.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
-import 'package:veraprob/features/super_admin/domain/i_super_admin_repository.dart';
+import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_config_tab.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 // NOTE: C₄ tests are in a separate file (tenant_config_tab_c4_bug_conditions_test.dart)

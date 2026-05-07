@@ -1,5 +1,5 @@
-import 'package:veraprob/features/super_admin/application/org_capabilities_view_model.dart';
-import 'package:veraprob/features/super_admin/domain/org_vertical_preset.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
+import 'package:veraprob/domain/super_admin/org_vertical_preset.dart';
 
 /// Application-layer ViewModel that surfaces preset metadata for the UI.
 ///

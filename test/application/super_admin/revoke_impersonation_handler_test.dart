@@ -4,7 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/features/super_admin/application/revoke_impersonation_handler.dart';
+import 'package:veraprob/application/super_admin/revoke_impersonation_handler.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 

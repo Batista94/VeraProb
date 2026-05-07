@@ -2,7 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:veraprob/features/super_admin/infrastructure/receita_ws_cnpj_service.dart';
+import 'package:veraprob/infrastructure/super_admin/cnpj_infrastructure_exceptions.dart';
+import 'package:veraprob/infrastructure/super_admin/receita_ws_cnpj_service.dart';
 
 import 'receita_ws_cnpj_service_test.mocks.dart';
 
@@ -66,14 +67,21 @@ void main() {
       ).called(1);
     });
 
-    test('lookup returns null when edge function throws', () async {
-      when(
-        mockFunctionsClient.invoke(any, body: anyNamed('body')),
-      ).thenThrow(Exception('Edge Function Failed'));
+    // INV-10: No silent fail. Generic edge-function errors surface as
+    // ExternalApiException, not null. Null is reserved for definitive not-found
+    // (proxy returns 200 with data:null).
+    test(
+      'lookup throws ExternalApiException when edge function throws',
+      () async {
+        when(
+          mockFunctionsClient.invoke(any, body: anyNamed('body')),
+        ).thenThrow(Exception('Edge Function Failed'));
 
-      final result = await service.lookup('45518855000147');
-
-      expect(result, isNull);
-    });
+        expect(
+          () => service.lookup('45518855000147'),
+          throwsA(isA<ExternalApiException>()),
+        );
+      },
+    );
   });
 }

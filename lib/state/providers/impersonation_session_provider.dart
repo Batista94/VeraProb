@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/features/super_admin/application/start_impersonation_handler.dart';
+import 'package:veraprob/application/super_admin/start_impersonation_handler.dart';
 
 /// Global state for the active impersonation session.
 ///

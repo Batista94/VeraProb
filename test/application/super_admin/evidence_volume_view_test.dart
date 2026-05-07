@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/features/super_admin/application/evidence_volume_view.dart';
+import 'package:veraprob/application/super_admin/evidence_volume_view.dart';
 
 void main() {
   group('EvidenceVolumeView', () {

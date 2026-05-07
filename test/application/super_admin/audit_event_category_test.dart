@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/features/super_admin/application/audit_event_category.dart';
+import 'package:veraprob/application/super_admin/audit_event_category.dart';
 
 void main() {
   group('AuditEventCategory', () {

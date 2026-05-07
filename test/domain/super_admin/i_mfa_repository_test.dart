@@ -9,11 +9,11 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:veraprob/features/super_admin/domain/i_mfa_repository.dart';
-import 'package:veraprob/features/super_admin/domain/mfa_challenge_result.dart';
-import 'package:veraprob/features/super_admin/domain/mfa_exception.dart';
-import 'package:veraprob/features/super_admin/domain/mfa_status.dart';
-import 'package:veraprob/features/super_admin/domain/mfa_verification_result.dart';
+import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
+import 'package:veraprob/domain/super_admin/mfa_challenge_result.dart';
+import 'package:veraprob/domain/super_admin/mfa_exception.dart';
+import 'package:veraprob/domain/super_admin/mfa_status.dart';
+import 'package:veraprob/domain/super_admin/mfa_verification_result.dart';
 
 // ── Mock & Fakes ──────────────────────────────────────────────────────────────
 

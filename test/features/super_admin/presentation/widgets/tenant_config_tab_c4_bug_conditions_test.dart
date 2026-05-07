@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/features/super_admin/application/tenant_health_view.dart';
+import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 

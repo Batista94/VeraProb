@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:veraprob/features/super_admin/application/mfa_enrollment_handler.dart';
-import 'package:veraprob/features/super_admin/domain/i_mfa_repository.dart';
-import 'package:veraprob/features/super_admin/domain/mfa_enrollment_result.dart';
-import 'package:veraprob/features/super_admin/domain/mfa_status.dart';
+import 'package:veraprob/application/super_admin/mfa_enrollment_handler.dart';
+import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
+import 'package:veraprob/domain/super_admin/mfa_enrollment_result.dart';
+import 'package:veraprob/domain/super_admin/mfa_status.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 class MockMfaRepository extends Mock implements IMfaRepository {}

@@ -1,4 +1,4 @@
-import 'package:veraprob/features/super_admin/domain/cnpj_exceptions.dart';
+import 'package:veraprob/domain/super_admin/cnpj_exceptions.dart';
 
 /// HTTP 4xx (excluding 429) or 5xx from the upstream registry or proxy.
 ///

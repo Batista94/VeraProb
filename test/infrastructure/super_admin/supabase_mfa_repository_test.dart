@@ -9,9 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/features/super_admin/domain/mfa_status.dart';
-import 'package:veraprob/features/super_admin/domain/mfa_verification_result.dart';
-import 'package:veraprob/features/super_admin/infrastructure/supabase_mfa_repository.dart';
+import 'package:veraprob/domain/super_admin/mfa_status.dart';
+import 'package:veraprob/domain/super_admin/mfa_verification_result.dart';
+import 'package:veraprob/infrastructure/super_admin/supabase_mfa_repository.dart';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 

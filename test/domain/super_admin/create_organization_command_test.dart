@@ -3,13 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/features/super_admin/application/create_organization_handler.dart';
+import 'package:veraprob/application/super_admin/create_organization_handler.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/features/super_admin/domain/create_organization_command.dart';
-import 'package:veraprob/features/super_admin/domain/i_super_admin_repository.dart';
-import 'package:veraprob/features/super_admin/domain/plan_limits.dart';
-import 'package:veraprob/features/super_admin/domain/plan_type.dart';
+import 'package:veraprob/domain/super_admin/create_organization_command.dart';
+import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
+import 'package:veraprob/domain/super_admin/plan_limits.dart';
+import 'package:veraprob/domain/super_admin/plan_type.dart';
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
 

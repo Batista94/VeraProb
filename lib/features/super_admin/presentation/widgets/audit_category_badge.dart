@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:veraprob/features/super_admin/application/audit_event_category.dart';
+import 'package:veraprob/application/super_admin/audit_event_category.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Compact badge that visually classifies an audit event by category.

@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/features/super_admin/domain/cnpj_company_data.dart';
-import 'package:veraprob/features/super_admin/domain/cnpj_exceptions.dart';
-import 'package:veraprob/features/super_admin/domain/i_cnpj_lookup_service.dart';
-import 'package:veraprob/features/super_admin/infrastructure/cnpj_infrastructure_exceptions.dart';
+import 'package:veraprob/domain/super_admin/cnpj_company_data.dart';
+import 'package:veraprob/domain/super_admin/cnpj_exceptions.dart';
+import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
+import 'package:veraprob/infrastructure/super_admin/cnpj_infrastructure_exceptions.dart';
 
 /// ReceitaWS implementation of [ICnpjLookupService].
 ///

@@ -22,7 +22,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:veraprob/features/super_admin/application/system_audit_log_view.dart';
+import 'package:veraprob/application/super_admin/system_audit_log_view.dart';
 import 'package:veraprob/application/audit/system_audit_log_service.dart';
 import 'package:veraprob/domain/admin/actor_type.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/super_admin_audit_log_screen.dart';

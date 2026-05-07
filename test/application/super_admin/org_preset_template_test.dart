@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/features/super_admin/application/org_capabilities_view_model.dart';
-import 'package:veraprob/features/super_admin/application/org_preset_view_model.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
+import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
 
 // Regras de Escrita:
 // 1. Use DateTime.now().toUtc() em mocks (mesma linha).
