@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
-import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
+import 'package:veraprob/features/super_admin/domain/tenant_health_snapshot.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 // Thin test double that exposes the mixin's mapping logic.

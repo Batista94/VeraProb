@@ -716,13 +716,15 @@ void main() {
       'DB TimeoutException in findById — result is null within 100ms, '
       'no hang (generic catch branch returns null per current implementation)',
       () async {
-        unawaited(_stubSelect(
-          mockQb,
-          error: TimeoutException(
-            'DB unreachable',
-            const Duration(seconds: 30),
+        unawaited(
+          _stubSelect(
+            mockQb,
+            error: TimeoutException(
+              'DB unreachable',
+              const Duration(seconds: 30),
+            ),
           ),
-        ));
+        );
         final repo = PostgresOrganizationRepository(mockClient);
 
         final stopwatch = Stopwatch()..start();

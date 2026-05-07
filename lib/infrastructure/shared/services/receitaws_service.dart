@@ -6,8 +6,8 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:veraprob/domain/super_admin/cnpj_exceptions.dart';
-import 'package:veraprob/infrastructure/super_admin/cnpj_infrastructure_exceptions.dart';
+import 'package:veraprob/features/super_admin/domain/cnpj_exceptions.dart';
+import 'package:veraprob/features/super_admin/infrastructure/cnpj_infrastructure_exceptions.dart';
 
 /// @deprecated Use [cnpjLookupServiceProvider] from super_admin_providers.dart instead.
 /// Direct HTTP calls are blocked by CORS in browser context (INV-14).

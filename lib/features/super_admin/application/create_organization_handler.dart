@@ -5,11 +5,11 @@ import 'package:veraprob/application/shared/super_admin_bypass_tenant_validator.
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/domain/super_admin/plan_limits.dart';
-import 'package:veraprob/domain/super_admin/create_organization_command.dart';
-import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
-import 'package:veraprob/application/super_admin/create_organization_result.dart';
-import 'package:veraprob/application/super_admin/super_admin_invitation_command_service.dart';
+import 'package:veraprob/features/super_admin/domain/plan_limits.dart';
+import 'package:veraprob/features/super_admin/domain/create_organization_command.dart';
+import 'package:veraprob/features/super_admin/domain/i_super_admin_repository.dart';
+import 'package:veraprob/features/super_admin/application/create_organization_result.dart';
+import 'package:veraprob/features/super_admin/application/super_admin_invitation_command_service.dart';
 
 /// Application handler for [CreateOrganizationCommand].
 ///

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/features/super_admin/application/tenant_health_view.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/org_secret_card.dart';
 
 class TenantSecurityTab extends StatelessWidget {

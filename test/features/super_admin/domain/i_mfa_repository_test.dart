@@ -9,11 +9,11 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
-import 'package:veraprob/domain/super_admin/mfa_challenge_result.dart';
-import 'package:veraprob/domain/super_admin/mfa_exception.dart';
-import 'package:veraprob/domain/super_admin/mfa_status.dart';
-import 'package:veraprob/domain/super_admin/mfa_verification_result.dart';
+import 'package:veraprob/features/super_admin/domain/i_mfa_repository.dart';
+import 'package:veraprob/features/super_admin/domain/mfa_challenge_result.dart';
+import 'package:veraprob/features/super_admin/domain/mfa_exception.dart';
+import 'package:veraprob/features/super_admin/domain/mfa_status.dart';
+import 'package:veraprob/features/super_admin/domain/mfa_verification_result.dart';
 
 // ── Mock & Fakes ──────────────────────────────────────────────────────────────
 
@@ -296,7 +296,7 @@ void main() {
     test('[I-3][Bug] Timezone divergence: local clock drifted to UTC-3; '
         'expiry calculation must remain UTC-anchored', () async {
       // Mock a "local time" that is UTC-3 (3h behind UTC).
-      final localNow = DateTime.now(); // system local
+      final localNow = DateTime.now().toUtc(); // system local
       final utcNow = DateTime.now().toUtc(); // authoritative
 
       // The diff between local (as UTC) and true UTC exposes tz drift.

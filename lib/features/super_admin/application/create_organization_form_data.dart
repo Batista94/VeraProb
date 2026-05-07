@@ -1,7 +1,7 @@
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
+import 'package:veraprob/features/super_admin/application/org_capabilities_view_model.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
-import 'package:veraprob/domain/super_admin/create_organization_command.dart';
+import 'package:veraprob/features/super_admin/domain/create_organization_command.dart';
 
 /// Mutable form DTO for the Create Organization wizard.
 ///

@@ -4,7 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/application/super_admin/start_impersonation_handler.dart';
+import 'package:veraprob/features/super_admin/application/start_impersonation_handler.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';

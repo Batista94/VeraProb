@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/domain/admin/impersonation_session.dart';
-import 'package:veraprob/domain/super_admin/impersonation_exception.dart';
+import 'package:veraprob/features/super_admin/domain/impersonation_exception.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 
 // ── Interfaces for Testing ───────────────────────────────────────────────────

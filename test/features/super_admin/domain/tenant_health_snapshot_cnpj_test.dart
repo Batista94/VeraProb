@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
+import 'package:veraprob/features/super_admin/domain/tenant_health_snapshot.dart';
 
 void main() {
   /// Minimal JSON with all required fields for TenantHealthSnapshot.fromJson.

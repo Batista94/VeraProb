@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/domain/super_admin/mfa_status.dart';
+import 'package:veraprob/features/super_admin/domain/mfa_status.dart';
 
 void main() {
   group('MfaStatus', () {

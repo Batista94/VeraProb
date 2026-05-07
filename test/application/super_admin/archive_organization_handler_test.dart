@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/shared/super_admin_bypass_tenant_validator.dart';
-import 'package:veraprob/application/super_admin/archive_organization_handler.dart';
-import 'package:veraprob/domain/super_admin/archive_organization_command.dart';
-import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
+import 'package:veraprob/features/super_admin/application/archive_organization_handler.dart';
+import 'package:veraprob/features/super_admin/domain/archive_organization_command.dart';
+import 'package:veraprob/features/super_admin/domain/i_super_admin_repository.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 

@@ -1,4 +1,4 @@
-import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
+import 'package:veraprob/features/super_admin/domain/system_audit_log_entry.dart';
 
 /// Read model for a system audit log entry used in the presentation layer.
 ///

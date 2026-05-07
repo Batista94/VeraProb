@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
-import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
+import 'package:veraprob/features/super_admin/domain/tenant_health_snapshot.dart';
 
 void main() {
   group('TenantHealthSnapshot', () {

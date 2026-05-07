@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:veraprob/infrastructure/super_admin/receita_ws_cnpj_service.dart';
+import 'package:veraprob/features/super_admin/infrastructure/receita_ws_cnpj_service.dart';
 
 import 'receita_ws_cnpj_service_test.mocks.dart';
 

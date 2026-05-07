@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/cnpj_autofill_field.dart';
-import 'package:veraprob/domain/super_admin/cnpj_company_data.dart';
-import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
+import 'package:veraprob/features/super_admin/domain/cnpj_company_data.dart';
+import 'package:veraprob/features/super_admin/domain/i_cnpj_lookup_service.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:mockito/mockito.dart';
 

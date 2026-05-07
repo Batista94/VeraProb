@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:veraprob/application/super_admin/quota_warning_service.dart';
+import 'package:veraprob/features/super_admin/application/quota_warning_service.dart';
 import 'package:veraprob/domain/admin/quota_warning.dart';
 import 'package:veraprob/application/admin/accept_invitation_handler.dart';
 import 'package:veraprob/application/admin/change_user_role_handler.dart';

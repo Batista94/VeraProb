@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/application/super_admin/audit_log_payload.dart';
+import 'package:veraprob/features/super_admin/application/audit_log_payload.dart';
 
 /// Structured audit log payload viewer.
 ///

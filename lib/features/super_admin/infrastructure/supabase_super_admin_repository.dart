@@ -1,12 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/domain/super_admin/archive_organization_command.dart';
-import 'package:veraprob/domain/super_admin/create_organization_command.dart';
-import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
-import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
-import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
-import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
+import 'package:veraprob/features/super_admin/domain/archive_organization_command.dart';
+import 'package:veraprob/features/super_admin/domain/create_organization_command.dart';
+import 'package:veraprob/features/super_admin/domain/i_super_admin_repository.dart';
+import 'package:veraprob/features/super_admin/domain/system_audit_log_entry.dart';
+import 'package:veraprob/features/super_admin/domain/tenant_health_snapshot.dart';
+import 'package:veraprob/features/super_admin/domain/update_organization_quota_command.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// PostgreSQL implementation of [ISuperAdminRepository].

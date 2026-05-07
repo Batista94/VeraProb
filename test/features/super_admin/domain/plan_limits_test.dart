@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:veraprob/domain/super_admin/plan_limits.dart';
-import 'package:veraprob/domain/super_admin/plan_type.dart';
+import 'package:veraprob/features/super_admin/domain/plan_limits.dart';
+import 'package:veraprob/features/super_admin/domain/plan_type.dart';
 
 void main() {
   group('PlanLimits', () {

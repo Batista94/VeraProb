@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:veraprob/application/super_admin/create_organization_form_data.dart';
+import 'package:veraprob/features/super_admin/application/create_organization_form_data.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 

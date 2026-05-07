@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:veraprob/application/super_admin/tenant_technical_health_view.dart';
+import 'package:veraprob/features/super_admin/application/tenant_technical_health_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Animated pulse indicator that communicates subsystem health status.

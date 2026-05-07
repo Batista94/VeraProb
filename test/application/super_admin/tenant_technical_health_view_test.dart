@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/application/super_admin/tenant_technical_health_view.dart';
+import 'package:veraprob/features/super_admin/application/tenant_technical_health_view.dart';
 
 void main() {
   group('ReplicationStatus', () {

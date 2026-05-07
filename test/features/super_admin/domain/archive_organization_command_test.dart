@@ -2,13 +2,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:veraprob/application/super_admin/archive_organization_handler.dart';
+import 'package:veraprob/features/super_admin/application/archive_organization_handler.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
-import 'package:veraprob/domain/super_admin/archive_organization_command.dart';
-import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
+import 'package:veraprob/features/super_admin/domain/archive_organization_command.dart';
+import 'package:veraprob/features/super_admin/domain/i_super_admin_repository.dart';
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
 

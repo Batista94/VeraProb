@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/domain/super_admin/mfa_verification_result.dart';
+import 'package:veraprob/features/super_admin/domain/mfa_verification_result.dart';
 
 void main() {
   group('MfaVerificationResult', () {

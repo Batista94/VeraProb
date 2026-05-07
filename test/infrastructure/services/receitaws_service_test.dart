@@ -7,9 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-import 'package:veraprob/domain/super_admin/cnpj_exceptions.dart';
+import 'package:veraprob/features/super_admin/domain/cnpj_exceptions.dart';
 import 'package:veraprob/infrastructure/shared/services/receitaws_service.dart';
-import 'package:veraprob/infrastructure/super_admin/cnpj_infrastructure_exceptions.dart';
+import 'package:veraprob/features/super_admin/infrastructure/cnpj_infrastructure_exceptions.dart';
 
 void main() {
   group('ReceitaWsService — CIA Resilience Suite', () {

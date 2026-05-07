@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/application/super_admin/tenant_status_filter.dart';
+import 'package:veraprob/features/super_admin/application/tenant_status_filter.dart';
 
 // Regras de Escrita:
 // 1. Use DateTime.now().toUtc() em mocks (mesma linha).

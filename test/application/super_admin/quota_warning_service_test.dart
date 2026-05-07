@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:veraprob/application/super_admin/quota_warning_service.dart';
+import 'package:veraprob/features/super_admin/application/quota_warning_service.dart';
 import 'package:veraprob/domain/admin/i_quota_alert_notifier.dart';
 import 'package:veraprob/domain/admin/i_quota_alert_state_cache.dart';
 import 'package:veraprob/domain/admin/quota_alert_context.dart';

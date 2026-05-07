@@ -1,8 +1,8 @@
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
-import 'package:veraprob/domain/super_admin/archive_organization_command.dart';
-import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
+import 'package:veraprob/features/super_admin/domain/archive_organization_command.dart';
+import 'package:veraprob/features/super_admin/domain/i_super_admin_repository.dart';
 
 /// Application handler for archiving a tenant organization.
 ///

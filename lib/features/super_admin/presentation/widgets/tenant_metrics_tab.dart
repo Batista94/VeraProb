@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/features/super_admin/application/tenant_health_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/evidence_volume_card.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/org_health_card.dart';

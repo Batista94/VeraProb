@@ -6,8 +6,8 @@ import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
-import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
+import 'package:veraprob/features/super_admin/application/org_capabilities_view_model.dart';
+import 'package:veraprob/features/super_admin/application/org_preset_view_model.dart';
 import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 
 const kBrTimezones = [

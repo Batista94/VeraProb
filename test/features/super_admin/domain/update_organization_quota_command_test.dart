@@ -4,11 +4,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/audit/system_audit_log_service.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/application/super_admin/update_organization_quota_handler.dart';
+import 'package:veraprob/features/super_admin/application/update_organization_quota_handler.dart';
 import 'package:veraprob/domain/admin/actor_type.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
-import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
+import 'package:veraprob/features/super_admin/domain/i_super_admin_repository.dart';
+import 'package:veraprob/features/super_admin/domain/update_organization_quota_command.dart';
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
 
