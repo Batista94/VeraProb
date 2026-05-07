@@ -118,7 +118,10 @@
       "Bash(SCRATCHPAD_PERSONA=senior SCRATCHPAD_SECTION=\"Current Mission State\" SCRATCHPAD_ACTION=overwrite SCRATCHPAD_CONTENT=\"Relocated sync_scratchpad.py to scripts/. Wrapper updated. Hook functional.\" bash *)",
       "Bash(git mv *)",
       "Bash(xargs -I{} grep -l \"package:veraprob/domain/\" {})",
-      "Bash(awk '{print $NF}')"
+      "Bash(awk '{print $NF}')",
+      "WebSearch",
+      "WebFetch(domain:pub.dev)",
+      "Bash(git -C . show HEAD:pubspec.lock)"
     ]
   },
   "enabledMcpjsonServers": [
