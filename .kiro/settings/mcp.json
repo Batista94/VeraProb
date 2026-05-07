@@ -7,7 +7,7 @@
         "npx -y @playwright/mcp@latest"
       ],
       "env": {},
-      "disabled": true,
+      "disabled": false,
       "autoApprove": [
         "browser_navigate",
         "browser_snapshot",
@@ -17,6 +17,10 @@
         "browser_take_screenshot",
         "browser_console_messages",
         "browser_resize"
+      ],
+      "disabledTools": [
+        "browser_file_upload",
+        "browser_take_screenshot"
       ]
     },
     "github": {
@@ -54,6 +58,13 @@
         "list_containers",
         "fetch_container_logs",
         "fetch_container_logs"
+      ],
+      "disabledTools": [
+        "remove_container",
+        "remove_image",
+        "remove_network",
+        "remove_volume",
+        "create_volume"
       ]
     },
     "fetch": {
