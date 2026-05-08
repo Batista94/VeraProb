@@ -101,16 +101,25 @@ class ReceitaWsCnpjService implements ICnpjLookupService {
     final situation = data['situation'];
 
     if (legalName != null && legalName is! String) {
-      throw DataParsingException('Contract drift: legalName must be String',
-          field: 'legalName', cnpj: cnpjDigits);
+      throw DataParsingException(
+        'Contract drift: legalName must be String',
+        field: 'legalName',
+        cnpj: cnpjDigits,
+      );
     }
     if (tradeName != null && tradeName is! String) {
-      throw DataParsingException('Contract drift: tradeName must be String',
-          field: 'tradeName', cnpj: cnpjDigits);
+      throw DataParsingException(
+        'Contract drift: tradeName must be String',
+        field: 'tradeName',
+        cnpj: cnpjDigits,
+      );
     }
     if (situation != null && situation is! String) {
-      throw DataParsingException('Contract drift: situation must be String',
-          field: 'situation', cnpj: cnpjDigits);
+      throw DataParsingException(
+        'Contract drift: situation must be String',
+        field: 'situation',
+        cnpj: cnpjDigits,
+      );
     }
 
     return CnpjCompanyData(

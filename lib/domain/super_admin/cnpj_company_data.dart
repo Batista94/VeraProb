@@ -22,25 +22,30 @@ class CnpjCompanyData extends Equatable {
     this.situation,
   }) : cnpj = cnpj.replaceAll(RegExp(r'[^0-9]'), '') {
     if (this.cnpj.isEmpty) {
-      throw const IntegrityException('CNPJ cannot be empty after normalisation', field: 'cnpj');
+      throw const IntegrityException(
+        'CNPJ cannot be empty after normalisation',
+        field: 'cnpj',
+      );
     }
   }
 
   factory CnpjCompanyData.fromJson(Map<String, dynamic> json) {
     return CnpjCompanyData(
       cnpj: json['cnpj']?.toString() ?? '',
-      legalName: json['legal_name']?.toString() ?? json['razao_social']?.toString(),
-      tradeName: json['trade_name']?.toString() ?? json['nome_fantasia']?.toString(),
+      legalName:
+          json['legal_name']?.toString() ?? json['razao_social']?.toString(),
+      tradeName:
+          json['trade_name']?.toString() ?? json['nome_fantasia']?.toString(),
       situation: json['situation']?.toString() ?? json['situacao']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'cnpj': cnpj,
-        'legal_name': legalName,
-        'trade_name': tradeName,
-        'situation': situation,
-      };
+    'cnpj': cnpj,
+    'legal_name': legalName,
+    'trade_name': tradeName,
+    'situation': situation,
+  };
 
   bool get isActive => situation?.trim().toUpperCase() == 'ATIVA';
 

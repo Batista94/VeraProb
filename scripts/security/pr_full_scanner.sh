@@ -505,7 +505,15 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
       if echo "$CHANGED_FILES" | grep -q "$TEST_FILE" || [[ -f "$TEST_FILE" ]]; then
         COVERED_COUNT=$((COVERED_COUNT + 1))
       else
-        MISSING_FILES+="\n    → $f"
+        # Fallback: import-based detection — search test/ for any _test.dart
+        # that imports this source file (covers cross-folder test organization).
+        PACKAGE_PATH=$(echo "$f" | sed 's|^lib/|package:veraprob/|')
+        IMPORT_HIT=$(grep -rl "import '$PACKAGE_PATH'" test/ 2>/dev/null | grep "_test\.dart$" | head -1 || true)
+        if [[ -n "$IMPORT_HIT" ]]; then
+          COVERED_COUNT=$((COVERED_COUNT + 1))
+        else
+          MISSING_FILES+="\n    → $f"
+        fi
       fi
     done <<< "$CRITICAL_FILES"
 

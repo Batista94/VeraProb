@@ -126,7 +126,8 @@
   },
   "enabledMcpjsonServers": [
     "playwright",
-    "postgres"
+    "postgres",
+    "memory"
   ],
   "disabledMcpjsonServers": [
     "puppeteer",

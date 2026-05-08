@@ -7,7 +7,7 @@
         "npx -y @playwright/mcp@latest"
       ],
       "env": {},
-      "disabled": false,
+      "disabled": true,
       "autoApprove": [
         "browser_navigate",
         "browser_snapshot",
@@ -23,7 +23,6 @@
         "browser_take_screenshot"
       ]
     },
-
     "postgres": {
       "command": "cmd",
       "args": [
@@ -43,7 +42,7 @@
         "mcp-server-docker"
       ],
       "env": {},
-      "disabled": false,
+      "disabled": true,
       "autoApprove": [
         "list_containers",
         "fetch_container_logs",

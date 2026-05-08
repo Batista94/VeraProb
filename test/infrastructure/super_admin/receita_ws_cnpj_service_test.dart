@@ -58,36 +58,40 @@ void main() {
         expect(result.situation, equals('ATIVA'));
       });
 
-      test('lookup returns null when proxy returns data:null (not found)',
-          () async {
-        when(
-          mockFunctionsClient.invoke(any, body: anyNamed('body')),
-        ).thenAnswer(
-          (_) async => FunctionResponse(status: 200, data: {'data': null}),
-        );
+      test(
+        'lookup returns null when proxy returns data:null (not found)',
+        () async {
+          when(
+            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+          ).thenAnswer(
+            (_) async => FunctionResponse(status: 200, data: {'data': null}),
+          );
 
-        final result = await service.lookup(validCnpj);
+          final result = await service.lookup(validCnpj);
 
-        expect(result, isNull);
-      });
+          expect(result, isNull);
+        },
+      );
     });
 
     group('C — Confidentiality (INV-28)', () {
-      test('ExternalApiException does not leak raw status code in message',
-          () async {
-        when(
-          mockFunctionsClient.invoke(any, body: anyNamed('body')),
-        ).thenAnswer((_) async => FunctionResponse(status: 503));
+      test(
+        'ExternalApiException does not leak raw status code in message',
+        () async {
+          when(
+            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+          ).thenAnswer((_) async => FunctionResponse(status: 503));
 
-        final exception = await _capture(() => service.lookup(validCnpj));
+          final exception = await _capture(() => service.lookup(validCnpj));
 
-        expect(exception, isA<ExternalApiException>());
-        expect(exception.toString(), isNot(contains('503')));
-        expect(
-          (exception as ExternalApiException).sanitizedCode,
-          equals('upstream_server_error'),
-        );
-      });
+          expect(exception, isA<ExternalApiException>());
+          expect(exception.toString(), isNot(contains('503')));
+          expect(
+            (exception as ExternalApiException).sanitizedCode,
+            equals('upstream_server_error'),
+          );
+        },
+      );
     });
 
     group('I — Integrity & Forensic Parsing', () {
@@ -104,67 +108,77 @@ void main() {
         );
       });
 
-      test('throws InvalidCnpjException when API returns status=ERROR',
-          () async {
-        when(
-          mockFunctionsClient.invoke(any, body: anyNamed('body')),
-        ).thenAnswer(
-          (_) async => FunctionResponse(
-            status: 200,
-            data: {
-              'data': {'status': 'ERROR', 'message': 'Invalid'},
-            },
-          ),
-        );
-
-        await expectLater(
-          () => service.lookup(validCnpj),
-          throwsA(
-            isA<InvalidCnpjException>().having(
-              (e) => e.reason,
-              'reason',
-              'api_status_error',
-            ),
-          ),
-        );
-      });
-
-      test('throws DataParsingException on unexpected response shape',
-          () async {
-        when(
-          mockFunctionsClient.invoke(any, body: anyNamed('body')),
-        ).thenAnswer(
-          (_) async => FunctionResponse(status: 200, data: 'not-a-map'),
-        );
-
-        await expectLater(
-          () => service.lookup(validCnpj),
-          throwsA(isA<DataParsingException>()),
-        );
-      });
-
-      test('throws DataParsingException on contract drift (TypeError)',
-          () async {
-        when(
-          mockFunctionsClient.invoke(any, body: anyNamed('body')),
-        ).thenAnswer(
-          (_) async => FunctionResponse(
-            status: 200,
-            data: {
-              'data': {
-                'legalName': 123, // Should be String
+      test(
+        'throws InvalidCnpjException when API returns status=ERROR',
+        () async {
+          when(
+            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+          ).thenAnswer(
+            (_) async => FunctionResponse(
+              status: 200,
+              data: {
+                'data': {'status': 'ERROR', 'message': 'Invalid'},
               },
-            },
-          ),
-        );
+            ),
+          );
 
-        await expectLater(
-          () => service.lookup(validCnpj),
-          throwsA(
-            isA<DataParsingException>().having((e) => e.field, 'field', 'legalName'),
-          ),
-        );
-      });
+          await expectLater(
+            () => service.lookup(validCnpj),
+            throwsA(
+              isA<InvalidCnpjException>().having(
+                (e) => e.reason,
+                'reason',
+                'api_status_error',
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'throws DataParsingException on unexpected response shape',
+        () async {
+          when(
+            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+          ).thenAnswer(
+            (_) async => FunctionResponse(status: 200, data: 'not-a-map'),
+          );
+
+          await expectLater(
+            () => service.lookup(validCnpj),
+            throwsA(isA<DataParsingException>()),
+          );
+        },
+      );
+
+      test(
+        'throws DataParsingException on contract drift (TypeError)',
+        () async {
+          when(
+            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+          ).thenAnswer(
+            (_) async => FunctionResponse(
+              status: 200,
+              data: {
+                'data': {
+                  'legalName': 123, // Should be String
+                },
+              },
+            ),
+          );
+
+          await expectLater(
+            () => service.lookup(validCnpj),
+            throwsA(
+              isA<DataParsingException>().having(
+                (e) => e.field,
+                'field',
+                'legalName',
+              ),
+            ),
+          );
+        },
+      );
     });
 
     group('A — Availability & Network Resilience', () {
@@ -190,17 +204,19 @@ void main() {
         );
       });
 
-      test('throws ExternalApiException on generic FunctionException',
-          () async {
-        when(
-          mockFunctionsClient.invoke(any, body: anyNamed('body')),
-        ).thenThrow(FunctionException(status: 500));
+      test(
+        'throws ExternalApiException on generic FunctionException',
+        () async {
+          when(
+            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+          ).thenThrow(FunctionException(status: 500));
 
-        await expectLater(
-          () => service.lookup(validCnpj),
-          throwsA(isA<ExternalApiException>()),
-        );
-      });
+          await expectLater(
+            () => service.lookup(validCnpj),
+            throwsA(isA<ExternalApiException>()),
+          );
+        },
+      );
     });
   });
 }

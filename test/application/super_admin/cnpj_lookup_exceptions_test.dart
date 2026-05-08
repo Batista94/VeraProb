@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/application/super_admin/cnpj_lookup_exceptions.dart' as app_ex;
+import 'package:veraprob/application/super_admin/cnpj_lookup_exceptions.dart'
+    as app_ex;
 
 void main() {
   test('cnpj_lookup_exceptions re-exports domain exceptions', () {

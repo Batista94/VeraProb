@@ -11,14 +11,22 @@ void main() {
     group('constructor & normalisation', () {
       test('normalises masked CNPJ to raw digits only', () {
         final data = CnpjCompanyData(cnpj: validCnpjMasked);
-        expect(data.cnpj, equals(validCnpjRaw), 
-          reason: 'CNPJ must be stored as digits only for security indexing.');
+        expect(
+          data.cnpj,
+          equals(validCnpjRaw),
+          reason: 'CNPJ must be stored as digits only for security indexing.',
+        );
       });
 
       test('removes malicious characters/injections from CNPJ string', () {
-        final data = CnpjCompanyData(cnpj: "11.222.333/0001-81'; DROP TABLE users;");
-        expect(data.cnpj, equals(validCnpjRaw), 
-          reason: 'Non-numeric injection payloads must be stripped.');
+        final data = CnpjCompanyData(
+          cnpj: "11.222.333/0001-81'; DROP TABLE users;",
+        );
+        expect(
+          data.cnpj,
+          equals(validCnpjRaw),
+          reason: 'Non-numeric injection payloads must be stripped.',
+        );
       });
 
       test('removes whitespace from CNPJ', () {
@@ -26,31 +34,43 @@ void main() {
         expect(data.cnpj, equals(validCnpjRaw));
       });
 
-      test('throws IntegrityException if CNPJ is empty or contains no digits (TDD Compliance)', () {
-        // This test ensures we follow INV-18 (rejecting garbage)
-        expect(() => CnpjCompanyData(cnpj: ''), throwsA(isA<IntegrityException>()));
-        expect(() => CnpjCompanyData(cnpj: 'abc-def'), throwsA(isA<IntegrityException>()));
-      });
+      test(
+        'throws IntegrityException if CNPJ is empty or contains no digits (TDD Compliance)',
+        () {
+          // This test ensures we follow INV-18 (rejecting garbage)
+          expect(
+            () => CnpjCompanyData(cnpj: ''),
+            throwsA(isA<IntegrityException>()),
+          );
+          expect(
+            () => CnpjCompanyData(cnpj: 'abc-def'),
+            throwsA(isA<IntegrityException>()),
+          );
+        },
+      );
     });
 
     // ── 2. Serialization (JSON Integrity) ────────────────────────────────────
     group('serialization', () {
-      test('fromJson maps international and brazilian field names correctly', () {
-        final json = {
-          'cnpj': validCnpjRaw,
-          'razao_social': 'Empresa Brasileira Ltda',
-          'nome_fantasia': 'Fantasia',
-          'situacao': 'ATIVA',
-        };
+      test(
+        'fromJson maps international and brazilian field names correctly',
+        () {
+          final json = {
+            'cnpj': validCnpjRaw,
+            'razao_social': 'Empresa Brasileira Ltda',
+            'nome_fantasia': 'Fantasia',
+            'situacao': 'ATIVA',
+          };
 
-        final data = CnpjCompanyData.fromJson(json);
+          final data = CnpjCompanyData.fromJson(json);
 
-        expect(data.cnpj, equals(validCnpjRaw));
-        expect(data.legalName, equals('Empresa Brasileira Ltda'));
-        expect(data.tradeName, equals('Fantasia'));
-        expect(data.situation, equals('ATIVA'));
-        expect(data.isActive, isTrue);
-      });
+          expect(data.cnpj, equals(validCnpjRaw));
+          expect(data.legalName, equals('Empresa Brasileira Ltda'));
+          expect(data.tradeName, equals('Fantasia'));
+          expect(data.situation, equals('ATIVA'));
+          expect(data.isActive, isTrue);
+        },
+      );
 
       test('toJson produces a clean map with current state', () {
         final data = CnpjCompanyData(
@@ -69,13 +89,20 @@ void main() {
 
     // ── 3. isActive (Business Logic Integrity) ──────────────────────────────
     group('isActive', () {
-      test('returns true for "ATIVA" regardless of case and surrounding spaces', () {
-        final scenarios = ['ATIVA', 'ativa', '  ATIVA  ', 'Ativa'];
-        for (final s in scenarios) {
-          final data = CnpjCompanyData(cnpj: validCnpjRaw, situation: s);
-          expect(data.isActive, isTrue, reason: 'Should be active for situation: "$s"');
-        }
-      });
+      test(
+        'returns true for "ATIVA" regardless of case and surrounding spaces',
+        () {
+          final scenarios = ['ATIVA', 'ativa', '  ATIVA  ', 'Ativa'];
+          for (final s in scenarios) {
+            final data = CnpjCompanyData(cnpj: validCnpjRaw, situation: s);
+            expect(
+              data.isActive,
+              isTrue,
+              reason: 'Should be active for situation: "$s"',
+            );
+          }
+        },
+      );
 
       test('returns false for non-active statuses', () {
         final scenarios = ['BAIXADA', 'INAPTA', 'SUSPENSA', '', null];

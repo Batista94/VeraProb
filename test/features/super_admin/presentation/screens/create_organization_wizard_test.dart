@@ -73,53 +73,54 @@ void main() {
   }
 
   group('CreateOrganizationWizard (Forensic & UX)', () {
-    testWidgets('Wizard Step 1: Structural CNPJ validation blocks progression', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+    testWidgets(
+      'Wizard Step 1: Structural CNPJ validation blocks progression',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(createWizard(mockRepo, mockLookup));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(createWizard(mockRepo, mockLookup));
+        await tester.pumpAndSettle();
 
-      // 1. Enter valid names
-      await tester.enterText(
-        find.ancestor(
-          of: find.text('Razão Social *'),
-          matching: find.byType(TextFormField),
-        ),
-        'Hydra Corp',
-      );
-      await tester.enterText(
-        find.ancestor(
-          of: find.text('Nome Fantasia *'),
-          matching: find.byType(TextFormField),
-        ),
-        'Hydra',
-      );
+        // 1. Enter valid names
+        await tester.enterText(
+          find.ancestor(
+            of: find.text('Razão Social *'),
+            matching: find.byType(TextFormField),
+          ),
+          'Hydra Corp',
+        );
+        await tester.enterText(
+          find.ancestor(
+            of: find.text('Nome Fantasia *'),
+            matching: find.byType(TextFormField),
+          ),
+          'Hydra',
+        );
 
-      // 2. Enter an invalid CNPJ (all same digits - structural failure)
-      await tester.enterText(
-        find.ancestor(
-          of: find.text('CNPJ *'),
-          matching: find.byType(TextFormField),
-        ),
-        '11.111.111/1111-11',
-      );
+        // 2. Enter an invalid CNPJ (all same digits - structural failure)
+        await tester.enterText(
+          find.ancestor(
+            of: find.text('CNPJ *'),
+            matching: find.byType(TextFormField),
+          ),
+          '11.111.111/1111-11',
+        );
 
-      // Wait for debounce settle
-      await tester.pump(const Duration(milliseconds: 750));
-      await tester.pumpAndSettle();
+        // Wait for debounce settle
+        await tester.pump(const Duration(milliseconds: 750));
+        await tester.pumpAndSettle();
 
-      // 3. Attempt to go to next step
-      final nextButton1 = find.text('Próximo');
-      await tester.ensureVisible(nextButton1);
-      await tester.tap(nextButton1);
-      await tester.pumpAndSettle();
+        // 3. Attempt to go to next step
+        final nextButton1 = find.text('Próximo');
+        await tester.ensureVisible(nextButton1);
+        await tester.tap(nextButton1);
+        await tester.pumpAndSettle();
 
-      // Verify it stays on step 1 due to validation error
-      expect(find.text('CNPJ inválido'), findsAtLeast(1));
-    });
+        // Verify it stays on step 1 due to validation error
+        expect(find.text('CNPJ inválido'), findsAtLeast(1));
+      },
+    );
 
     testWidgets('Wizard Completion: Full 3-Step Flow and Success Dialog', (
       tester,
@@ -342,9 +343,9 @@ void main() {
         of: find.text('CNPJ *'),
         matching: find.byType(TextFormField),
       );
-      
+
       await tester.enterText(cnpjFinder, '11.444.777/0001-61');
-      
+
       // Wait less than debounce (300ms < 600ms)
       await tester.pump(const Duration(milliseconds: 300));
       verifyNever(() => mockRepo.checkCnpjExists(any()));
@@ -362,7 +363,9 @@ void main() {
         situation: 'ATIVA',
       );
 
-      when(() => mockLookup.lookup('11444777000161')).thenAnswer((_) async => mockData);
+      when(
+        () => mockLookup.lookup('11444777000161'),
+      ).thenAnswer((_) async => mockData);
 
       await tester.pumpWidget(createWizard(mockRepo, mockLookup));
 
@@ -377,7 +380,7 @@ void main() {
         matching: find.byType(TextFormField),
       );
       await tester.enterText(cnpjFinder, '11.444.777/0001-61');
-      
+
       await tester.pump(const Duration(milliseconds: 1000));
       await tester.pumpAndSettle();
 
@@ -385,12 +388,20 @@ void main() {
         of: find.text('Razão Social *'),
         matching: find.byType(TextFormField),
       );
-      expect(tester.widget<TextFormField>(legalNameFinder).controller?.text, equals('Omni Consorcio Ltda'));
-      expect(tester.widget<TextFormField>(tradeNameFinder).controller?.text, equals('Meu Nome Customizado'));
+      expect(
+        tester.widget<TextFormField>(legalNameFinder).controller?.text,
+        equals('Omni Consorcio Ltda'),
+      );
+      expect(
+        tester.widget<TextFormField>(tradeNameFinder).controller?.text,
+        equals('Meu Nome Customizado'),
+      );
     });
 
     testWidgets('Resilience: API Failure does not crash UI', (tester) async {
-      when(() => mockLookup.lookup(any())).thenThrow(Exception('Service Unavailable'));
+      when(
+        () => mockLookup.lookup(any()),
+      ).thenThrow(Exception('Service Unavailable'));
 
       await tester.pumpWidget(createWizard(mockRepo, mockLookup));
 
@@ -399,7 +410,7 @@ void main() {
         matching: find.byType(TextFormField),
       );
       await tester.enterText(cnpjFinder, '11.444.777/0001-61');
-      
+
       await tester.pump(const Duration(milliseconds: 1000));
       await tester.pumpAndSettle();
 
