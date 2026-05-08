@@ -406,8 +406,7 @@ void main() {
     });
 
     test('handles mixed valid/invalid UTF-8', () {
-      final input =
-          'Valid ${String.fromCharCode(0xD800)} <script>x</script>';
+      final input = 'Valid ${String.fromCharCode(0xD800)} <script>x</script>';
       final result = sanitizer.sanitize(input);
       expect(result.text, isNot(contains('<script')));
     });

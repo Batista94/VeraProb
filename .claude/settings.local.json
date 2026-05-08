@@ -121,7 +121,9 @@
       "Bash(awk '{print $NF}')",
       "WebSearch",
       "WebFetch(domain:pub.dev)",
-      "Bash(git -C . show HEAD:pubspec.lock)"
+      "Bash(git -C . show HEAD:pubspec.lock)",
+      "Bash(Remove-Item \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\lib\\\\application\\\\sla_audit\\\\justification\\\\evidence_cleanup_service.dart\" -Force)",
+      "Bash(Write-Output \"Deleted\")"
     ]
   },
   "enabledMcpjsonServers": [

@@ -1,10 +1,5 @@
 import 'package:uuid/uuid.dart';
 
-// ignore_for_file: deprecated_member_use_from_same_package
-// Rationale: `expireStaleJustifications` still uses `updateStatusAtomic` +
-// `appendAuditLog` for batch expiration. Migration to a dedicated
-// `expireJustificationsWithAuditLog` RPC is tracked as a post-v2.1 task.
-
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
@@ -42,10 +37,10 @@ import 'package:veraprob/infrastructure/shared/forensic_security_logger.dart';
 /// enforce RBAC internally via [RbacService]. The Manager does NOT trust that
 /// the caller validated authority externally.
 ///
-/// **Race Condition Guard:** All review operations use `updateStatusAtomic`
-/// (a `WHERE status='PENDING'` atomic clause at the DB level). If 0 rows are
-/// updated, a [ConcurrencyException] is thrown — indicating that another
-/// concurrent process already changed the status.
+/// **Race Condition Guard:** All review operations use `updateStatusWithAuditLog`
+/// (a single atomic transaction at the DB level). If 0 rows are updated, a
+/// [ConcurrencyException] is thrown — indicating that another concurrent process
+/// already changed the status.
 ///
 /// **Anti-Double Dipping:** `submitJustification` checks for an existing
 /// justification for the vehicle+occurrence anchor before persisting a new one.
@@ -55,7 +50,7 @@ import 'package:veraprob/infrastructure/shared/forensic_security_logger.dart';
 ///
 /// Every status transition generates a [JustificationAuditLog] entry with
 /// full actor attribution (userId, callerRole, previousStatus, newStatus,
-/// timestamp).
+/// timestamp) via the atomic `updateStatusWithAuditLog` RPC.
 class SLAJustificationManager {
   final TenantValidationService _tenantValidator;
   final SLAJustificationRepository _repository;
@@ -120,6 +115,9 @@ class SLAJustificationManager {
   /// - Server-side hash re-verification: After persistence, recomputes SHA-256
   ///   via streaming and auto-rejects if any hash diverges (tamper detection).
   /// - Description minimum 10 characters.
+  ///
+  /// **Red Team ID 2 (Atomicity):** The justification entity and its initial
+  /// PENDING audit log entry are persisted atomically via [createWithAuditLog].
   Future<SLAJustification> submitJustification(
     SubmitSLAJustificationCommand command,
   ) async {
@@ -220,7 +218,9 @@ class SLAJustificationManager {
       );
     }
 
-    // ── Step 10: Create justification ────────────────────────────────────
+    // ── Step 10: Create justification + initial audit log (atomic) ───────
+    // Red Team ID 2: createWithAuditLog persists both records in a single
+    // transaction — no partial-write window between entity and audit trail.
     final id = const Uuid().v4();
     final justification = SLAJustification(
       id: id,
@@ -228,7 +228,7 @@ class SLAJustificationManager {
       vehicleId: command.vehicleId,
       occurrenceTimestamp: command.occurrenceTimestamp,
       category: category,
-      description: sanitizedDescription, // Use sanitized version
+      description: sanitizedDescription,
       evidenceUrls: List.unmodifiable(command.evidenceUrls),
       evidenceHashes: List.unmodifiable(command.evidenceHashes),
       status: JustificationStatus.pending,
@@ -236,7 +236,21 @@ class SLAJustificationManager {
       reviewerId: null,
       resolutionNotes: null,
     );
-    await _repository.create(justification);
+
+    final initialAuditLog = JustificationAuditLog(
+      id: const Uuid().v4(),
+      justificationId: id,
+      userId: command.callerUserId,
+      callerRole: 'SUBMITTER',
+      previousStatus: JustificationStatus.pending,
+      newStatus: JustificationStatus.pending,
+      timestamp: now,
+    );
+
+    await _repository.createWithAuditLog(
+      justification: justification,
+      initialAuditLog: initialAuditLog,
+    );
 
     // ── Step 11: CX05-INV-23 (Server-side hash re-verification) ──────────
     // Re-compute SHA-256 from raw bytes after persistence to detect any
@@ -267,19 +281,6 @@ class SLAJustificationManager {
         'index(es) $mismatches (CX05-INV-23).',
       );
     }
-
-    // ── Step 12: Audit Trail — initial PENDING log ───────────────────────
-    await _repository.appendAuditLog(
-      JustificationAuditLog(
-        id: const Uuid().v4(),
-        justificationId: id,
-        userId: command.callerUserId,
-        callerRole: 'SUBMITTER',
-        previousStatus: JustificationStatus.pending,
-        newStatus: JustificationStatus.pending,
-        timestamp: now,
-      ),
-    );
 
     return justification;
   }
@@ -469,16 +470,20 @@ class SLAJustificationManager {
   ///
   /// CX05-INV-22: Called by a scheduled job or evaluated lazily on access.
   /// Each expiration generates an audit log entry with `userId = 'SYSTEM'`
-  /// and `callerRole = 'SYSTEM'`.
+  /// and `callerRole = 'SYSTEM'` via the atomic [updateStatusWithAuditLog] RPC.
   ///
   /// **OOM Prevention:** Processes records in pages of [_expirePageSize] using
   /// cursor-based pagination ([findExpiredPendingPaged]). A hard cap of
   /// [_maxExpireIterations] prevents infinite loops in pathological DB states.
   ///
-  /// **Race Condition Guard:** Each expiration uses [updateStatusAtomic]. If
-  /// a record was concurrently approved/rejected between fetch and update,
+  /// **Race Condition Guard:** Each expiration uses [updateStatusWithAuditLog].
+  /// If a record was concurrently approved/rejected between fetch and update,
   /// 0 rows are affected and the record is silently skipped (correct — it is
-  /// no longer PENDING).
+  /// no longer PENDING). The RPC guarantees no partial write: if the optimistic
+  /// lock fails, neither the status nor the audit log is written.
+  ///
+  /// **Red Team ID 2 (Atomicity):** Status update and audit log are written in
+  /// a single transaction per record. No "ghost audit entries" are possible.
   Future<int> expireStaleJustifications({
     required String organizationId,
   }) async {
@@ -499,7 +504,9 @@ class SLAJustificationManager {
       if (page.isEmpty) break;
 
       for (final j in page) {
-        final rows = await _repository.updateStatusAtomic(
+        // Atomic: status update + audit log in one transaction.
+        // If 0 rows affected, the record was concurrently modified — skip.
+        final rows = await _repository.updateStatusWithAuditLog(
           id: j.id,
           organizationId: organizationId,
           expectedCurrentStatus: JustificationStatus.pending,
@@ -508,21 +515,12 @@ class SLAJustificationManager {
           resolutionNotes:
               'Auto-expired: submission window elapsed (CX05-INV-22).',
           reviewedAtUtc: now,
+          callerRole: 'SYSTEM',
+          evidenceUrls: j.evidenceUrls,
         );
 
         if (rows > 0) {
           totalExpired++;
-          await _repository.appendAuditLog(
-            JustificationAuditLog(
-              id: const Uuid().v4(),
-              justificationId: j.id,
-              userId: 'SYSTEM',
-              callerRole: 'SYSTEM',
-              previousStatus: JustificationStatus.pending,
-              newStatus: JustificationStatus.expired,
-              timestamp: now,
-            ),
-          );
         }
       }
 

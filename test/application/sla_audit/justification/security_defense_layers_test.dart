@@ -121,9 +121,14 @@ void main() {
 
     when(mockRbac.can(any, any)).thenReturn(true);
 
-    when(repository.create(any)).thenAnswer((inv) async {
-      final justification = inv.positionalArguments[0] as SLAJustification;
-      return justification;
+    when(
+      repository.createWithAuditLog(
+        justification: anyNamed('justification'),
+        initialAuditLog: anyNamed('initialAuditLog'),
+      ),
+    ).thenAnswer((invocation) async {
+      return invocation.namedArguments[const Symbol('justification')]
+          as SLAJustification;
     });
 
     when(
@@ -327,7 +332,12 @@ void main() {
           declaredHashes: anyNamed('declaredHashes'),
         ),
       ).called(1);
-      verify(repository.create(any)).called(1);
+      verify(
+        repository.createWithAuditLog(
+          justification: anyNamed('justification'),
+          initialAuditLog: anyNamed('initialAuditLog'),
+        ),
+      ).called(1);
 
       expect(result.id, isNotEmpty);
       expect(result.status, JustificationStatus.pending);

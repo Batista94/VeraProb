@@ -269,6 +269,28 @@ class MockSLAJustificationRepository extends _i1.Mock
           as _i6.Future<_i3.SLAJustification>);
 
   @override
+  _i6.Future<_i3.SLAJustification> createWithAuditLog({
+    required _i3.SLAJustification? justification,
+    required _i16.JustificationAuditLog? initialAuditLog,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#createWithAuditLog, [], {
+              #justification: justification,
+              #initialAuditLog: initialAuditLog,
+            }),
+            returnValue: _i6.Future<_i3.SLAJustification>.value(
+              _FakeSLAJustification_2(
+                this,
+                Invocation.method(#createWithAuditLog, [], {
+                  #justification: justification,
+                  #initialAuditLog: initialAuditLog,
+                }),
+              ),
+            ),
+          )
+          as _i6.Future<_i3.SLAJustification>);
+
+  @override
   _i6.Future<_i3.SLAJustification?> findById({
     required String? id,
     required String? organizationId,

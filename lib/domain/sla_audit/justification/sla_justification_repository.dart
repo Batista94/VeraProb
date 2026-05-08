@@ -13,6 +13,19 @@ abstract class SLAJustificationRepository {
   /// Persists a new SLA justification. Returns the created entity.
   Future<SLAJustification> create(SLAJustification justification);
 
+  /// Atomically persists a new SLA justification and its initial PENDING audit
+  /// log entry in a single transaction (INV-3 + Red Team ID 2).
+  ///
+  /// **Red Team v2.1 Remediation (ID 2):** Replaces the two-phase
+  /// `create()` + `appendAuditLog()` pattern with a single transactional RPC.
+  ///
+  /// **Forensic Guarantee:** If the DB write fails, no audit log entry exists.
+  /// The two records are always consistent.
+  Future<SLAJustification> createWithAuditLog({
+    required SLAJustification justification,
+    required JustificationAuditLog initialAuditLog,
+  });
+
   /// Loads a single justification by [id], scoped to [organizationId] (INV-1).
   /// Returns null when not found or outside tenant scope.
   Future<SLAJustification?> findById({
