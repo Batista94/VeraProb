@@ -52,9 +52,9 @@ class _SuperAdminAuditLogScreenState
           }),
         ),
         Expanded(
-          child: logsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(
+          child: switch (logsAsync) {
+            AsyncLoading() => const Center(child: CircularProgressIndicator()),
+            AsyncError(:final error) => Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -64,7 +64,7 @@ class _SuperAdminAuditLogScreenState
                     color: VeraProbColors.error,
                   ),
                   const SizedBox(height: 12),
-                  Text('Erro ao carregar logs: $err'),
+                  Text('Erro ao carregar logs: $error'),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
                     onPressed: () =>
@@ -75,8 +75,8 @@ class _SuperAdminAuditLogScreenState
                 ],
               ),
             ),
-            data: (logs) => _LogList(logs: logs),
-          ),
+            AsyncData(:final value) => _LogList(logs: value),
+          },
         ),
       ],
     );

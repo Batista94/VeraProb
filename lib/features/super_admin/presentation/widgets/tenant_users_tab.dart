@@ -166,8 +166,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
 
     try {
       final repo = ref.read(superAdminRepositoryProvider);
-      final userId =
-          ref.read(authStateProvider).valueOrNull?.session?.user.id ?? '';
+      final userId = ref.read(authStateProvider).value?.session?.user.id ?? '';
       await repo.revokeInvitation(
         orgId: widget.tenant.id,
         email: email,
@@ -246,8 +245,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
 
     try {
       final repo = ref.read(superAdminRepositoryProvider);
-      final userId =
-          ref.read(authStateProvider).valueOrNull?.session?.user.id ?? '';
+      final userId = ref.read(authStateProvider).value?.session?.user.id ?? '';
       const uuid = Uuid();
       await repo.addAdminToOrganization(
         orgId: widget.tenant.id,

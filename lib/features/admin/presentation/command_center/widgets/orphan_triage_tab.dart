@@ -15,16 +15,16 @@ class OrphanTriageTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final shadowsAsync = ref.watch(unlinkedShadowsProvider);
 
-    return shadowsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
+    return switch (shadowsAsync) {
+      AsyncLoading() => const Center(child: CircularProgressIndicator()),
+      AsyncError(:final error) => Center(
         child: Text(
-          'Erro: $e',
+          'Erro: $error',
           style: const TextStyle(color: VeraProbColors.error),
         ),
       ),
-      data: (shadows) {
-        if (shadows.isEmpty) {
+      AsyncData(:final value) => () {
+        if (value.isEmpty) {
           return const Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -50,12 +50,12 @@ class OrphanTriageTab extends ConsumerWidget {
 
         return ListView.separated(
           padding: const EdgeInsets.all(16),
-          itemCount: shadows.length,
+          itemCount: value.length,
           separatorBuilder: (_, _) => const SizedBox(height: 12),
-          itemBuilder: (_, i) => _ShadowCard(shadow: shadows[i]),
+          itemBuilder: (_, i) => _ShadowCard(shadow: value[i]),
         );
-      },
-    );
+      }(),
+    };
   }
 }
 
@@ -118,17 +118,17 @@ class _ShadowCard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           // Smart Link candidates
-          candidatesAsync.when(
-            loading: () => const SizedBox(
+          switch (candidatesAsync) {
+            AsyncLoading() => const SizedBox(
               height: 20,
               child: Center(child: LinearProgressIndicator()),
             ),
-            error: (_, _) => const Text(
+            AsyncError() => const Text(
               'Erro ao buscar candidatos',
               style: TextStyle(color: VeraProbColors.error, fontSize: 11),
             ),
-            data: (candidates) {
-              if (candidates.isEmpty) {
+            AsyncData(:final value) => () {
+              if (value.isEmpty) {
                 return const Text(
                   'Nenhuma viagem compatível (±30min)',
                   style: TextStyle(
@@ -151,7 +151,7 @@ class _ShadowCard extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  ...candidates.map(
+                  ...value.map(
                     (c) => _CandidateRow(
                       setId: c['set_id'] as String,
                       windowStart: c['window_start_utc'] as String,
@@ -162,8 +162,8 @@ class _ShadowCard extends ConsumerWidget {
                   ),
                 ],
               );
-            },
-          ),
+            }(),
+          },
         ],
       ),
     );

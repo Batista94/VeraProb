@@ -23,14 +23,14 @@ class OnboardingProgressBanner extends ConsumerWidget {
     final vehiclesAsync = ref.watch(vehiclesListProvider);
     final rulesAsync = ref.watch(slaTemplatesProvider);
 
-    final hasZones = (zonesAsync.valueOrNull ?? []).isNotEmpty;
-    final hasContractors = (contractorsAsync.valueOrNull ?? []).isNotEmpty;
-    final hasVehicles = (vehiclesAsync.valueOrNull ?? []).any(
+    final hasZones = (zonesAsync.value ?? []).isNotEmpty;
+    final hasContractors = (contractorsAsync.value ?? []).isNotEmpty;
+    final hasVehicles = (vehiclesAsync.value ?? []).any(
       (v) =>
           v.status == VehicleStatus.available ||
           v.status == VehicleStatus.inService,
     );
-    final hasRules = (rulesAsync.valueOrNull ?? []).isNotEmpty;
+    final hasRules = (rulesAsync.value ?? []).isNotEmpty;
 
     final prerequisites = [
       _Prerequisite(label: 'Zonas', isFulfilled: hasZones, navIndex: 7),

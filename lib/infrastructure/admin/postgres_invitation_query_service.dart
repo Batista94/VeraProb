@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/admin/invitation.dart';
 import 'package:veraprob/domain/admin/invitation_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';

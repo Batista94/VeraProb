@@ -1,5 +1,6 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/state/provider_timeout.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_subscriber.dart';
 import 'package:veraprob/application/sla_audit/contractual_financial_closing_service.dart';
@@ -127,14 +128,11 @@ final contractualEvaluationSubscriberProvider =
         clock: ref.watch(dateTimeProviderProvider),
       );
 
-      final vehicleStream = ref
-          .watch(normalizedStateProvider)
-          .when(
-            data: (states) => Stream.value(states),
-            loading: () => const Stream<List<VehicleOperationalState>>.empty(),
-            error: (e, s) =>
-                const Stream<List<VehicleOperationalState>>.empty(),
-          );
+      final vehicleStream = switch (ref.watch(normalizedStateProvider)) {
+        AsyncData(:final value) => Stream.value(value),
+        AsyncLoading() => const Stream<List<VehicleOperationalState>>.empty(),
+        AsyncError() => const Stream<List<VehicleOperationalState>>.empty(),
+      };
 
       return ContractualEvaluationSubscriber(
         engine: engine,
@@ -157,7 +155,9 @@ final slaSummaryProvider = FutureProvider<SlaExecutionSummary>((ref) async {
   }
 
   final service = ref.watch(slaExecutionQueryServiceProvider);
-  return service.getSummary(organizationId: organizationId);
+  return service
+      .getSummary(organizationId: organizationId)
+      .withProviderTimeout();
 });
 
 /// SLA exceptions (NoShow + EvidenceGap) for the current session's organization.

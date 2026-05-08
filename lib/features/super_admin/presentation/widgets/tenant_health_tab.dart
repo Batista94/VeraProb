@@ -109,11 +109,11 @@ class _TenantHealthTabState extends ConsumerState<TenantHealthTab>
       tenantTechnicalHealthProvider(widget.organizationId),
     );
 
-    return healthAsync.when(
-      loading: _buildLoading,
-      error: (error, _) => _buildError(error),
-      data: _buildData,
-    );
+    return switch (healthAsync) {
+      AsyncLoading() => _buildLoading(),
+      AsyncError(:final error) => _buildError(error),
+      AsyncData(:final value) => _buildData(value),
+    };
   }
 
   /// Req 4.2: Renders a blur overlay over placeholder content to indicate

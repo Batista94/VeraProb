@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum FleetStatusFilter {
@@ -10,7 +11,7 @@ enum FleetStatusFilter {
   kinematicAnomaly,
 }
 
-class CommandCenterFilterState {
+class CommandCenterFilterState extends Equatable {
   final FleetStatusFilter selectedFleetStatusFilter;
   final int? selectedSeverityFilter;
   final String? followVehicleId;
@@ -39,11 +40,20 @@ class CommandCenterFilterState {
           : (followVehicleId ?? this.followVehicleId),
     );
   }
+
+  @override
+  List<Object?> get props => [
+    selectedFleetStatusFilter,
+    selectedSeverityFilter,
+    followVehicleId,
+  ];
 }
 
-class CommandCenterFilterNotifier
-    extends StateNotifier<CommandCenterFilterState> {
-  CommandCenterFilterNotifier() : super(const CommandCenterFilterState());
+class CommandCenterFilterNotifier extends Notifier<CommandCenterFilterState> {
+  @override
+  CommandCenterFilterState build() {
+    return const CommandCenterFilterState();
+  }
 
   void setStatusFilter(FleetStatusFilter filter) {
     if (state.selectedFleetStatusFilter == filter) {
@@ -70,9 +80,6 @@ class CommandCenterFilterNotifier
 }
 
 final commandCenterFilterProvider =
-    StateNotifierProvider<
-      CommandCenterFilterNotifier,
-      CommandCenterFilterState
-    >((ref) {
-      return CommandCenterFilterNotifier();
-    });
+    NotifierProvider<CommandCenterFilterNotifier, CommandCenterFilterState>(
+      CommandCenterFilterNotifier.new,
+    );

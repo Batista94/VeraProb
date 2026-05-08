@@ -317,7 +317,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                       final contractorsAsync = ref.watch(
                         contractorListProvider,
                       );
-                      final contractors = contractorsAsync.valueOrNull ?? [];
+                      final contractors = contractorsAsync.value ?? [];
 
                       return ContractorTypeAheadField(
                         label: 'Entidade Contratante (Auditor) *',

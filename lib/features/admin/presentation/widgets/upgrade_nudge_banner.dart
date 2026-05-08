@@ -13,8 +13,9 @@ class UpgradeNudgeBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final warningsAsync = ref.watch(activeQuotaWarningsProvider);
 
-    return warningsAsync.when(
-      data: (warnings) {
+    return switch (warningsAsync) {
+      AsyncData(:final value) => () {
+        final warnings = value;
         if (warnings.isEmpty) return const SizedBox.shrink();
 
         // Show the highest threshold warning
@@ -53,9 +54,9 @@ class UpgradeNudgeBanner extends ConsumerWidget {
             ],
           ),
         );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-    );
+      }(),
+      AsyncLoading() => const SizedBox.shrink(),
+      AsyncError() => const SizedBox.shrink(),
+    };
   }
 }

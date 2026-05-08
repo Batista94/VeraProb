@@ -11,5 +11,16 @@ import 'package:veraprob/application/super_admin/start_impersonation_handler.dar
 /// this provider accordingly.
 ///
 /// INV-30: No direct Supabase client access — session metadata only.
+class _ActiveImpersonationSessionNotifier
+    extends Notifier<ImpersonationSessionInfo?> {
+  @override
+  ImpersonationSessionInfo? build() => null;
+
+  void set(ImpersonationSessionInfo? value) => state = value;
+}
+
 final activeImpersonationSessionProvider =
-    StateProvider<ImpersonationSessionInfo?>((ref) => null);
+    NotifierProvider<
+      _ActiveImpersonationSessionNotifier,
+      ImpersonationSessionInfo?
+    >(_ActiveImpersonationSessionNotifier.new);

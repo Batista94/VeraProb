@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/audit/audit_service.dart';
 import 'package:veraprob/domain/entities/audit_log.dart';

@@ -16,15 +16,14 @@ import 'package:veraprob/core/config/environment.dart';
 ///
 /// Attach to [ProviderScope] in main.dart.
 /// Only reports errors in staging/prod; in dev it prints to console.
-class SentryRiverpodObserver extends ProviderObserver {
+final class SentryRiverpodObserver extends ProviderObserver {
   const SentryRiverpodObserver();
 
   @override
   void didUpdateProvider(
-    ProviderBase<dynamic> provider,
+    ProviderObserverContext context,
     Object? previousValue,
     Object? newValue,
-    ProviderContainer container,
   ) {
     if (newValue is AsyncError) {
       final error = newValue.error;
@@ -32,7 +31,7 @@ class SentryRiverpodObserver extends ProviderObserver {
 
       if (kDebugMode) {
         debugPrint(
-          '[Sentry] Provider error in ${provider.name ?? provider.runtimeType}: $error',
+          '[Sentry] Provider error in ${context.provider.name ?? context.provider.runtimeType}: $error',
         );
       }
 
@@ -41,7 +40,9 @@ class SentryRiverpodObserver extends ProviderObserver {
           error,
           stackTrace: stack,
           hint: Hint.withMap({
-            'provider': provider.name ?? provider.runtimeType.toString(),
+            'provider':
+                context.provider.name ??
+                context.provider.runtimeType.toString(),
           }),
         );
       }

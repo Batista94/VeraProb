@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'vehicle_repository.dart';

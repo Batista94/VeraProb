@@ -63,25 +63,25 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
               const SizedBox(height: 20),
               // Drivers table
               Expanded(
-                child: filteredAsync.when(
-                  data: (drivers) => drivers.isEmpty
-                      ? _buildEmptyState(context)
-                      : _buildDriversTable(
-                          context,
-                          drivers,
-                          colorScheme,
-                          userRole,
-                        ),
-                  loading: () => _buildSkeletonLoading(),
-                  error: (err, stack) {
+                child: switch (filteredAsync) {
+                  AsyncData(:final value) =>
+                    value.isEmpty
+                        ? _buildEmptyState(context)
+                        : _buildDriversTable(
+                            context,
+                            value,
+                            colorScheme,
+                            userRole,
+                          ),
+                  AsyncLoading() => _buildSkeletonLoading(),
+                  AsyncError(:final error) => () {
                     LoggerService().error(
                       'Falha ao carregar motoristas',
-                      error: err,
-                      stackTrace: stack,
+                      error: error,
                     );
                     return _buildErrorState();
-                  },
-                ),
+                  }(),
+                },
               ),
             ],
           ),
@@ -156,8 +156,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
         // Toggle: show archived drivers (supervisors can audit history — INV-3)
         TextButton.icon(
           onPressed: () {
-            ref.read(showArchivedDriversProvider.notifier).state =
-                !showArchived;
+            ref.read(showArchivedDriversProvider.notifier).set(!showArchived);
           },
           icon: Icon(
             showArchived ? Icons.visibility_off_outlined : Icons.history,
@@ -205,14 +204,14 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                   icon: const Icon(Icons.clear, size: 18),
                   onPressed: () {
                     _searchController.clear();
-                    ref.read(driversSearchQueryProvider.notifier).state = '';
+                    ref.read(driversSearchQueryProvider.notifier).set('');
                   },
                 )
               : null,
           isDense: true,
         ),
         onChanged: (value) {
-          ref.read(driversSearchQueryProvider.notifier).state = value;
+          ref.read(driversSearchQueryProvider.notifier).set(value);
           setState(() {}); // Refresh clear button
         },
       ),

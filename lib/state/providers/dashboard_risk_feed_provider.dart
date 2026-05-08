@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/projections/dashboard_risk_feed_node.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'alert_providers.dart';
 import 'auth_providers.dart';
 import 'sla_providers.dart';
@@ -31,11 +32,9 @@ final dashboardRiskFeedProvider = FutureProvider<List<DashboardRiskFeedNode>>((
   final startOfDay = DateTime(now.year, now.month, now.day).toUtc();
   final endOfDay = startOfDay.add(const Duration(days: 1));
 
-  final todaysExecutions = await queryService.listByWindow(
-    startOfDay,
-    endOfDay,
-    organizationId: organizationId,
-  );
+  final todaysExecutions = await queryService
+      .listByWindow(startOfDay, endOfDay, organizationId: organizationId)
+      .withProviderTimeout();
 
   // 3. Join executions with alerts and map to Feed Nodes
   final nodes = todaysExecutions.map((exec) {

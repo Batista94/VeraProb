@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'auth_providers.dart';
 import 'sla_providers.dart';
 
@@ -11,7 +12,7 @@ import 'sla_providers.dart';
 final evaluationTracesProvider =
     FutureProvider.family<List<EvaluationTrace>, String>((ref, entityId) async {
       final traceRepo = ref.watch(evaluationTraceRepositoryProvider);
-      return traceRepo.findByEntityId(entityId);
+      return traceRepo.findByEntityId(entityId).withProviderTimeout();
     });
 
 /// Retrieves all ledger entries for a given SET ID.
@@ -21,10 +22,9 @@ final ledgerEntriesProvider =
       final organizationId = ref.watch(currentOrganizationIdProvider);
       if (organizationId == null) return [];
       final ledgerRepo = ref.watch(slaAuditLedgerRepositoryProvider);
-      final entries = await ledgerRepo.getEntriesBySetId(
-        setId,
-        organizationId: organizationId,
-      );
+      final entries = await ledgerRepo
+          .getEntriesBySetId(setId, organizationId: organizationId)
+          .withProviderTimeout();
       // Enforce chronological order regardless of repository implementation
       entries.sort((a, b) => a.occurredAtUtc.compareTo(b.occurredAtUtc));
       return entries;
@@ -37,5 +37,5 @@ final executionStateProvider =
       setId,
     ) async {
       final repo = ref.watch(contractualExecutionStateRepositoryProvider);
-      return repo.findBySetId(setId);
+      return repo.findBySetId(setId).withProviderTimeout();
     });

@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/authority/authorizing_command_bus.dart';
 import 'package:veraprob/application/authority/operational_command_bus.dart';
@@ -22,17 +22,23 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 /// ---------------------------------------------------------
 /// This mimics a live auth session holding the current user's scopes.
 /// In production, this reads from SupabaseAuth / SessionState.
-final mockAuthorizationContextProvider = StateProvider<AuthorizationContext>((
-  ref,
-) {
-  final dateTimeProvider = ref.watch(dateTimeProviderProvider);
-  // Starts with an approved role by default for initial map loads
-  return AuthorizationContext(
-    actorId: const ActorId('mock_operator_id_123'),
-    roleId: const RoleId('supervisor'),
-    capturedAt: dateTimeProvider.nowUtc(),
-  );
-});
+class _MockAuthorizationContextNotifier extends Notifier<AuthorizationContext> {
+  @override
+  AuthorizationContext build() {
+    final dateTimeProvider = ref.watch(dateTimeProviderProvider);
+    // Starts with an approved role by default for initial map loads
+    return AuthorizationContext(
+      actorId: const ActorId('mock_operator_id_123'),
+      roleId: const RoleId('supervisor'),
+      capturedAt: dateTimeProvider.nowUtc(),
+    );
+  }
+}
+
+final mockAuthorizationContextProvider =
+    NotifierProvider<_MockAuthorizationContextNotifier, AuthorizationContext>(
+      _MockAuthorizationContextNotifier.new,
+    );
 
 /// ---------------------------------------------------------
 /// FASE 3/4: COMMAND BUS & AUTHORITY DEPENDENCIES

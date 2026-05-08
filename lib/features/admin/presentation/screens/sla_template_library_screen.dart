@@ -62,34 +62,37 @@ class _SlaTemplateLibraryScreenState
                     const SizedBox(height: 32),
                     _SectionHeader(
                       title: 'Meus Modelos',
-                      count: orgTemplatesAsync.whenOrNull(
-                        data: (t) => _filteredTemplates(t).length,
-                      ),
+                      count: switch (orgTemplatesAsync) {
+                        AsyncData(:final value) => _filteredTemplates(
+                          value,
+                        ).length,
+                        _ => null,
+                      },
                     ),
                     const SizedBox(height: 12),
-                    orgTemplatesAsync.when(
-                      loading: () => const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                      error: (e, _) => Center(
-                        child: Text(
-                          'Erro ao carregar modelos: $e',
-                          style: const TextStyle(color: VeraProbColors.error),
-                        ),
-                      ),
-                      data: (templates) {
-                        final filtered = _filteredTemplates(templates);
+                    switch (orgTemplatesAsync) {
+                      AsyncData(:final value) => () {
+                        final filtered = _filteredTemplates(value);
                         if (filtered.isEmpty) {
                           return _EmptyState(
                             onCreate: () => _showEditor(context),
                           );
                         }
                         return _buildGrid(filtered, isPreset: false);
-                      },
-                    ),
+                      }(),
+                      AsyncLoading() => const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      AsyncError(:final error) => Center(
+                        child: Text(
+                          'Erro ao carregar modelos: $error',
+                          style: const TextStyle(color: VeraProbColors.error),
+                        ),
+                      ),
+                    },
                   ],
                 ),
               ),

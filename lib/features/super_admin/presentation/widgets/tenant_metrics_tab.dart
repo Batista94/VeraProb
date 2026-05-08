@@ -84,19 +84,20 @@ class TenantMetricsTab extends ConsumerWidget {
               ),
             ),
             // Card de Volumetria de Evidências (Req 5.1)
-            evidenceAsync.when(
-              data: (volume) => _buildCard(
+            switch (evidenceAsync) {
+              AsyncData(:final value) => _buildCard(
                 cardWidth,
                 EvidenceVolumeCard(
-                  totalHistorical: volume.totalHistorical,
-                  totalMonthly: volume.totalMonthly,
+                  totalHistorical: value.totalHistorical,
+                  totalMonthly: value.totalMonthly,
                 ),
               ),
-              loading: () =>
-                  _buildCard(cardWidth, _EvidenceVolumePlaceholder()),
-              error: (_, _) =>
-                  _buildCard(cardWidth, _EvidenceVolumeErrorCard()),
-            ),
+              AsyncLoading() => _buildCard(
+                cardWidth,
+                _EvidenceVolumePlaceholder(),
+              ),
+              AsyncError() => _buildCard(cardWidth, _EvidenceVolumeErrorCard()),
+            },
           ];
 
           return Wrap(spacing: spacing, runSpacing: spacing, children: cards);

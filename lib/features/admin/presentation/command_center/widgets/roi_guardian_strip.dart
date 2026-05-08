@@ -18,8 +18,8 @@ class RoiGuardianStrip extends ConsumerWidget {
       height: 42,
       color: const Color(0xFF0A1628), // dark navy — SOC palette
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: roiAsync.when(
-        loading: () => const Center(
+      child: switch (roiAsync) {
+        AsyncLoading() => const Center(
           child: SizedBox(
             width: 14,
             height: 14,
@@ -29,9 +29,9 @@ class RoiGuardianStrip extends ConsumerWidget {
             ),
           ),
         ),
-        error: (_, _) => const SizedBox.shrink(),
-        data: (roi) {
-          if (roi == null) return const SizedBox.shrink();
+        AsyncError() => const SizedBox.shrink(),
+        AsyncData(:final value) => () {
+          if (value == null) return const SizedBox.shrink();
           return Row(
             children: [
               const Icon(
@@ -42,35 +42,35 @@ class RoiGuardianStrip extends ConsumerWidget {
               const SizedBox(width: 6),
               _Metric(
                 label: 'RECEITA RECUPERADA',
-                value: _formatCents(roi.totalRecoveredCents),
+                value: _formatCents(value.totalRecoveredCents),
                 color: VeraProbColors.success,
               ),
               _Divider(),
               _Metric(
                 label: 'GLOSAS EVITADAS',
-                value: _formatCents(roi.totalAvoidedPenaltyCents),
+                value: _formatCents(value.totalAvoidedPenaltyCents),
                 color: VeraProbColors.warning,
               ),
               _Divider(),
-              _RoiAtualMetric(roiBps: roi.roiBps),
+              _RoiAtualMetric(roiBps: value.roiBps),
               _Divider(),
               _Metric(
                 label: 'VIAGENS AUTO-VINCULADAS',
-                value: roi.totalLinkedTrips.toString(),
+                value: value.totalLinkedTrips.toString(),
                 color: VeraProbColors.primary,
               ),
-              if (roi.pendingOrphans > 0) ...[
+              if (value.pendingOrphans > 0) ...[
                 _Divider(),
                 _Metric(
                   label: 'ÓRFÃOS PENDENTES',
-                  value: roi.pendingOrphans.toString(),
+                  value: value.pendingOrphans.toString(),
                   color: VeraProbColors.error,
                 ),
               ],
             ],
           );
-        },
-      ),
+        }(),
+      },
     );
   }
 

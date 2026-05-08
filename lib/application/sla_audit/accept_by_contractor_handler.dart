@@ -1,4 +1,4 @@
-﻿import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/contract_events.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';

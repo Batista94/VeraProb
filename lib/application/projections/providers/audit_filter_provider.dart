@@ -1,9 +1,10 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/projections/models/audit_log_projection.dart';
 
 /// The pure state representing the active filters applied to the Audit Log View.
-class AuditFilterState {
+class AuditFilterState extends Equatable {
   final DateTime? startDate;
   final DateTime? endDate;
   final String? eventType;
@@ -42,11 +43,24 @@ class AuditFilterState {
       silentMode: silentMode ?? this.silentMode,
     );
   }
+
+  @override
+  List<Object?> get props => [
+    startDate,
+    endDate,
+    eventType,
+    category,
+    entityId,
+    silentMode,
+  ];
 }
 
-/// The StateNotifier governing the active filters.
-class AuditFilterNotifier extends StateNotifier<AuditFilterState> {
-  AuditFilterNotifier() : super(const AuditFilterState());
+/// The Notifier governing the active filters.
+class AuditFilterNotifier extends Notifier<AuditFilterState> {
+  @override
+  AuditFilterState build() {
+    return const AuditFilterState();
+  }
 
   void setDateRange(DateTime start, DateTime end) {
     state = state.copyWith(startDate: start, endDate: end);
@@ -79,10 +93,20 @@ class AuditFilterNotifier extends StateNotifier<AuditFilterState> {
 
 /// The globally accessible provider for the Audit Filters.
 final auditFilterProvider =
-    StateNotifierProvider<AuditFilterNotifier, AuditFilterState>((ref) {
-      return AuditFilterNotifier();
-    });
+    NotifierProvider<AuditFilterNotifier, AuditFilterState>(
+      AuditFilterNotifier.new,
+    );
 
 /// The globally accessible provider explicitly holding the "Toggled" audit log
 /// for the persistent right-side panel without triggering full-width redraws via modais.
-final selectedAuditLogProvider = StateProvider<AuditLogEntry?>((ref) => null);
+class _SelectedAuditLogNotifier extends Notifier<AuditLogEntry?> {
+  @override
+  AuditLogEntry? build() => null;
+
+  void set(AuditLogEntry? value) => state = value;
+}
+
+final selectedAuditLogProvider =
+    NotifierProvider<_SelectedAuditLogNotifier, AuditLogEntry?>(
+      _SelectedAuditLogNotifier.new,
+    );

@@ -58,8 +58,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
 
     try {
       final handler = ref.read(archiveOrganizationHandlerProvider);
-      final userId =
-          ref.read(authStateProvider).valueOrNull?.session?.user.id ?? '';
+      final userId = ref.read(authStateProvider).value?.session?.user.id ?? '';
       final sessionId = ref.read(currentSessionIdProvider) ?? '';
       await handler.handlePrimitives(
         orgId: t.id,
@@ -105,8 +104,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
 
     try {
       final repo = ref.read(superAdminRepositoryProvider);
-      final userId =
-          ref.read(authStateProvider).valueOrNull?.session?.user.id ?? '';
+      final userId = ref.read(authStateProvider).value?.session?.user.id ?? '';
       await repo.unarchiveOrganization(
         orgId: t.id,
         reason: reason,

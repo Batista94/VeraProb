@@ -8,6 +8,7 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_rule_studio_command_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_rule_version_query_service.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'contract_providers.dart';
 
 // ── Infrastructure ────────────────────────────────────────────────────────────
@@ -42,7 +43,10 @@ final ruleHistoryProvider =
       ref,
       contractId,
     ) async {
-      return ref.watch(ruleVersionQueryServiceProvider).getHistory(contractId);
+      return ref
+          .watch(ruleVersionQueryServiceProvider)
+          .getHistory(contractId)
+          .withProviderTimeout();
     });
 
 /// Active rules per type for a contract — used by the rule cards.
@@ -53,5 +57,6 @@ final activeRulesProvider =
     ) async {
       return ref
           .watch(ruleVersionQueryServiceProvider)
-          .getActiveRules(contractId);
+          .getActiveRules(contractId)
+          .withProviderTimeout();
     });

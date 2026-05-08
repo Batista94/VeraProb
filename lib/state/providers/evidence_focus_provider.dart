@@ -31,6 +31,14 @@ class EvidenceMapFocus {
 /// - **Writer:** [ForensicAudioPlayer] / evidence card (on tap/play)
 /// - **Reader:** [TelemetrySyncMap] (via `ref.listen`)
 /// - **Null:** No evidence focused → map unchanged.
-final selectedEvidenceFocusProvider = StateProvider<EvidenceMapFocus?>(
-  (ref) => null,
-);
+class _SelectedEvidenceFocusNotifier extends Notifier<EvidenceMapFocus?> {
+  @override
+  EvidenceMapFocus? build() => null;
+
+  void set(EvidenceMapFocus? value) => state = value;
+}
+
+final selectedEvidenceFocusProvider =
+    NotifierProvider<_SelectedEvidenceFocusNotifier, EvidenceMapFocus?>(
+      _SelectedEvidenceFocusNotifier.new,
+    );

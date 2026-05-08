@@ -33,21 +33,21 @@ class ContractDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(contractDetailProvider(contractId));
 
-    return detailAsync.when(
-      data: (detail) {
-        if (detail == null) {
+    return switch (detailAsync) {
+      AsyncData(:final value) => () {
+        if (value == null) {
           return const Center(child: Text('Contrato não encontrado.'));
         }
-        return _DetailView(detail: detail);
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
+        return _DetailView(detail: value);
+      }(),
+      AsyncLoading() => const Center(child: CircularProgressIndicator()),
+      AsyncError(:final error) => Center(
         child: Text(
-          'Erro ao carregar contrato: $e',
+          'Erro ao carregar contrato: $error',
           style: const TextStyle(color: VeraProbColors.error),
         ),
       ),
-    );
+    };
   }
 }
 

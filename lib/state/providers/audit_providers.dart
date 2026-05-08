@@ -11,6 +11,7 @@ import 'package:veraprob/infrastructure/audit/postgres_audit_service.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 
@@ -34,7 +35,9 @@ final auditLogProjectionProvider = FutureProvider<AuditLogProjection>((
   ref,
 ) async {
   final auditService = ref.watch(auditServiceProvider);
-  final rawLogs = await auditService.getRecentLogs(limit: 200);
+  final rawLogs = await auditService
+      .getRecentLogs(limit: 200)
+      .withProviderTimeout();
 
   final trips = ref.watch(enrichedTripsProvider);
   final lookupMap = <String, OperationalTrip>{};

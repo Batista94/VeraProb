@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,10 +35,12 @@ void main() {
     persistenceModeProvider.overrideWithValue(PersistenceMode.inMemory),
     currentOrganizationIdProvider.overrideWith((ref) => 'org-smoke'),
     currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
-    contractStatusFilterProvider.overrideWith((ref) => null),
+    contractStatusFilterProvider.overrideWithBuild((ref, notifier) => null),
     contractListProvider.overrideWith((ref) async => <ContractSummaryView>[]),
     if (selectedId != null)
-      selectedContractIdProvider.overrideWith((ref) => selectedId),
+      selectedContractIdProvider.overrideWithBuild(
+        (ref, notifier) => selectedId,
+      ),
   ];
 
   group('Smoke 4: Regressão de Navegação (Cenário 14.11)', () {
@@ -98,12 +101,10 @@ void main() {
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(1400, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
-        final container = ProviderContainer(overrides: baseOverrides());
-        addTearDown(container.dispose);
 
         await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
+          ProviderScope(
+            overrides: baseOverrides(),
             child: const MaterialApp(home: Scaffold(body: ContractsScreen())),
           ),
         );
@@ -112,7 +113,7 @@ void main() {
         expect(find.text('Gestão de Contratos'), findsOneWidget);
 
         // Simula retorno do wizard com o novo contractId
-        container.read(selectedContractIdProvider.notifier).state =
+        tester.container().read(selectedContractIdProvider.notifier).state =
             'contract-after-creation';
         await tester.pump();
 

@@ -60,7 +60,7 @@ void main() {
     });
 
     test('driverRepositoryProvider returns IDriverRepository', () {
-      container = ProviderContainer(
+      container = ProviderContainer.test(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(mockPrefs),
           driverRepositoryProvider.overrideWithValue(FakeDriverRepository()),
@@ -72,7 +72,7 @@ void main() {
     });
 
     test('driverListProvider returns Future<List<Driver>>', () async {
-      container = ProviderContainer(
+      container = ProviderContainer.test(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(mockPrefs),
           driverRepositoryProvider.overrideWithValue(FakeDriverRepository()),
@@ -85,7 +85,7 @@ void main() {
     });
 
     test('currentDriverProvider starts as null', () {
-      container = ProviderContainer(
+      container = ProviderContainer.test(
         overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
       );
 
@@ -94,7 +94,7 @@ void main() {
     });
 
     test('currentDriverProvider stores a Driver', () {
-      container = ProviderContainer(
+      container = ProviderContainer.test(
         overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
       );
 
@@ -110,7 +110,7 @@ void main() {
     });
 
     test('searchControllerProvider returns broadcast StreamController', () {
-      container = ProviderContainer(
+      container = ProviderContainer.test(
         overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
       );
 
@@ -119,7 +119,7 @@ void main() {
     });
 
     test('searchQueryStreamProvider emits empty string initially', () async {
-      container = ProviderContainer(
+      container = ProviderContainer.test(
         overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
       );
 
@@ -136,7 +136,7 @@ void main() {
         () => mockVehicleRepo.getVehiclePositions(),
       ).thenAnswer((_) => Stream.value([]));
 
-      container = ProviderContainer(
+      container = ProviderContainer.test(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(mockPrefs),
           vehicleRepositoryProvider.overrideWithValue(mockVehicleRepo),
@@ -149,7 +149,7 @@ void main() {
     });
 
     test('gtfsServiceProvider returns GtfsRealtimeService', () {
-      container = ProviderContainer(
+      container = ProviderContainer.test(
         overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
       );
 

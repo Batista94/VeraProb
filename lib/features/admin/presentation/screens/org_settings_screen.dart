@@ -98,15 +98,9 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
             ),
             const SizedBox(height: 32),
             Expanded(
-              child: orgAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Text(
-                    'Erro ao carregar configurações: $e',
-                    style: const TextStyle(color: VeraProbColors.error),
-                  ),
-                ),
-                data: (org) {
+              child: switch (orgAsync) {
+                AsyncData(:final value) => () {
+                  final org = value;
                   if (org == null) {
                     return const Center(
                       child: Text('Organização não encontrada'),
@@ -581,8 +575,17 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                       ),
                     ),
                   );
-                },
-              ),
+                }(),
+                AsyncLoading() => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                AsyncError(:final error) => Center(
+                  child: Text(
+                    'Erro ao carregar configurações: $error',
+                    style: const TextStyle(color: VeraProbColors.error),
+                  ),
+                ),
+              },
             ),
           ],
         ),

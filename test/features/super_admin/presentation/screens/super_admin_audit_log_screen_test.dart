@@ -158,7 +158,6 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
 
         final captured = <AuditLogParams>[];
-        late ProviderContainer container;
 
         await tester.pumpWidget(
           ProviderScope(
@@ -168,17 +167,14 @@ void main() {
                 return const <SystemAuditLogView>[];
               }),
             ],
-            child: Builder(
-              builder: (context) {
-                container = ProviderScope.containerOf(context);
-                return const MaterialApp(
-                  home: Scaffold(body: SuperAdminAuditLogScreen()),
-                );
-              },
+            child: const MaterialApp(
+              home: Scaffold(body: SuperAdminAuditLogScreen()),
             ),
           ),
         );
         await tester.pumpAndSettle();
+
+        final container = tester.container();
 
         // The DateRangePicker is opened via showDateRangePicker, which is
         // hard to drive in a widget test (modal route + native fields). We

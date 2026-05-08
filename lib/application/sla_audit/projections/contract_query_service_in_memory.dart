@@ -1,4 +1,4 @@
-﻿import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';

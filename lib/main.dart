@@ -22,6 +22,7 @@ import 'infrastructure/observability/analytics_service.dart';
 import 'infrastructure/providers/supabase_provider.dart';
 import 'state/providers/sla_providers.dart';
 import 'state/providers/auth_providers.dart';
+import 'state/retry_policy.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,6 +67,7 @@ void main() async {
       runApp(
         ProviderScope(
           observers: const [SentryRiverpodObserver()],
+          retry: classifyForRetry,
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             // INV-30: Single bridge — Supabase client injected via Riverpod.

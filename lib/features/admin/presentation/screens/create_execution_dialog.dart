@@ -42,10 +42,12 @@ class _CreateExecutionDialogState extends ConsumerState<CreateExecutionDialog> {
     final contractsAsync = ref.watch(contractListProvider);
     final zonesAsync = ref.watch(operationalZonesProvider);
 
-    final isLoading =
-        driversAsync.isLoading ||
-        contractsAsync.isLoading ||
-        zonesAsync.isLoading;
+    // Stale-while-revalidate (Req 5.5): Only show skeleton on initial load
+    // (no previous data). During refresh, keep showing the form with stale data.
+    final isInitialLoading =
+        (driversAsync.isLoading && !driversAsync.hasValue) ||
+        (contractsAsync.isLoading && !contractsAsync.hasValue) ||
+        (zonesAsync.isLoading && !zonesAsync.hasValue);
 
     return Dialog(
       backgroundColor: VeraProbColors.surface,
@@ -85,7 +87,7 @@ class _CreateExecutionDialogState extends ConsumerState<CreateExecutionDialog> {
               const Divider(height: 24),
               if (_resultSetId != null)
                 _SuccessCard(setId: _resultSetId!)
-              else if (isLoading)
+              else if (isInitialLoading)
                 const SkeletonListLoader(itemCount: 4)
               else
                 Expanded(

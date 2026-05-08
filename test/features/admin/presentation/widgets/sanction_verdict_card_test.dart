@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
@@ -20,11 +21,6 @@ import 'package:veraprob/features/admin/presentation/screens/widgets/investigati
 
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/application/sla_audit/approve_sanction_handler.dart';
-import 'package:veraprob/application/sla_audit/reject_sanction_handler.dart';
-import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
-import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
-import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 
 class _MockHttpOverrides extends HttpOverrides {
@@ -67,69 +63,25 @@ class _MockTenantValidationService extends TenantValidationService {
   }) {}
 }
 
-class _MockQueueRepo implements SanctionReviewQueueRepository {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _MockLedgerRepo implements SlaAuditLedgerRepository {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
 final _fixedUtc = DateTime.utc(2026, 1, 15, 12, 0);
 
-class _MockApproveHandler extends ApproveSanctionHandler {
-  _MockApproveHandler()
-    : super(
-        tenantValidator: _MockTenantValidationService(),
-        queueRepo: _MockQueueRepo(),
-        ledger: _MockLedgerRepo(),
-        rbac: RbacService(),
-        dateTimeProvider: _MockDateTimeProvider(_fixedUtc),
-      );
-}
-
-class _MockRejectHandler extends RejectSanctionHandler {
-  _MockRejectHandler()
-    : super(
-        tenantValidator: _MockTenantValidationService(),
-        queueRepo: _MockQueueRepo(),
-        ledger: _MockLedgerRepo(),
-        rbac: RbacService(),
-        clock: _MockDateTimeProvider(_fixedUtc),
-      );
-}
-
 class _LoadingActionNotifier extends SanctionActionNotifier {
-  _LoadingActionNotifier()
-    : super(
-        approveHandler: _MockApproveHandler(),
-        rejectHandler: _MockRejectHandler(),
-      );
+  _LoadingActionNotifier() : super('test-id');
 
   @override
-  AsyncValue<void> get state => const AsyncLoading();
+  AsyncValue<void> build() => const AsyncLoading();
 }
 
 class _ErrorActionNotifier extends SanctionActionNotifier {
-  _ErrorActionNotifier()
-    : super(
-        approveHandler: _MockApproveHandler(),
-        rejectHandler: _MockRejectHandler(),
-      );
+  _ErrorActionNotifier() : super('test-id');
 
   @override
-  AsyncValue<void> get state =>
+  AsyncValue<void> build() =>
       const AsyncError('mock approve failure', StackTrace.empty);
 }
 
 class _MockSanctionActionNotifier extends SanctionActionNotifier {
-  _MockSanctionActionNotifier()
-    : super(
-        approveHandler: _MockApproveHandler(),
-        rejectHandler: _MockRejectHandler(),
-      );
+  _MockSanctionActionNotifier() : super('test-id');
 
   int approveCalls = 0;
   int rejectCalls = 0;
@@ -208,7 +160,7 @@ List<Override> _baseOverrides({
     contractNameProvider.overrideWith((ref, id) async => contractName),
     pendingSanctionsStreamProvider.overrideWith((ref) => Stream.value([item])),
     sanctionWindowProvider.overrideWith((ref, setId) async => null),
-    sanctionActionStateProvider.overrideWith((ref, id) => notifier),
+    sanctionActionStateProvider.overrideWith2((_) => notifier),
     tenantValidationServiceProvider.overrideWithValue(
       _MockTenantValidationService(),
     ),
@@ -493,16 +445,10 @@ void main() {
 
       final item = _makeItem();
       final notifier = _MockSanctionActionNotifier();
-      final container = ProviderContainer(
-        overrides: _baseOverrides(item: item, notifier: notifier),
-      );
-      addTearDown(container.dispose);
-
-      expect(container.read(selectedSanctionFocusProvider), isNull);
 
       await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
+        ProviderScope(
+          overrides: _baseOverrides(item: item, notifier: notifier),
           child: MaterialApp(
             home: Scaffold(
               body: SingleChildScrollView(
@@ -513,6 +459,9 @@ void main() {
         ),
       );
       await tester.pump();
+
+      final container = tester.container();
+      expect(container.read(selectedSanctionFocusProvider), isNull);
 
       // Tap on the clause badge (outside InkWell/button regions).
       await tester.tap(find.text('ATR-01'));

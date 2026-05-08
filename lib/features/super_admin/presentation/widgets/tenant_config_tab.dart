@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderException;
 import 'package:intl/intl.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
@@ -164,7 +165,7 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
         newMaxVehicles: int.tryParse(_maxVehiclesCtrl.text),
         newMaxActiveContracts: int.tryParse(_maxContractsCtrl.text),
         superAdminUserId:
-            ref.read(authStateProvider).valueOrNull?.session?.user.id ?? '',
+            ref.read(authStateProvider).value?.session?.user.id ?? '',
         reason: reason,
         capabilities: _capabilities,
         toolCostCents: (costVal * 100).round(),
@@ -190,6 +191,28 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
             backgroundColor: VeraProbColors.success,
           ),
         );
+      }
+    } on ProviderException catch (e) {
+      // Riverpod v3: unwrap ProviderException to get original error
+      final original = e.exception;
+      if (original is DomainException) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(original.message),
+              backgroundColor: VeraProbColors.error,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro: $original'),
+              backgroundColor: VeraProbColors.error,
+            ),
+          );
+        }
       }
     } on DomainException catch (e) {
       if (mounted) {

@@ -186,17 +186,17 @@ class _AuditTab extends ConsumerWidget {
     final selectedLog = ref.watch(selectedAuditLogProvider);
     final filters = ref.watch(auditFilterProvider);
 
-    return projectionAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(
+    return switch (projectionAsync) {
+      AsyncLoading() => const Center(child: CircularProgressIndicator()),
+      AsyncError(:final error) => Center(
         child: Text(
-          'Erro ao carregar auditoria: $err',
+          'Erro ao carregar auditoria: $error',
           style: const TextStyle(color: VeraProbColors.error),
           textAlign: TextAlign.center,
         ),
       ),
-      data: (projection) {
-        if (projection.entries.isEmpty) {
+      AsyncData(:final value) => () {
+        if (value.entries.isEmpty) {
           if (filters.silentMode) {
             return const Center(
               child: Column(
@@ -237,14 +237,14 @@ class _AuditTab extends ConsumerWidget {
         }
 
         return ListView.builder(
-          itemCount: projection.entries.length,
+          itemCount: value.entries.length,
           itemBuilder: (context, index) {
-            final log = projection.entries[index];
+            final log = value.entries[index];
             final isSelected = selectedLog?.id == log.id;
 
             return InkWell(
               onTap: () {
-                ref.read(selectedAuditLogProvider.notifier).state = log;
+                ref.read(selectedAuditLogProvider.notifier).set(log);
               },
               child: Container(
                 color: isSelected
@@ -363,8 +363,8 @@ class _AuditTab extends ConsumerWidget {
             );
           },
         );
-      },
-    );
+      }(),
+    };
   }
 }
 
@@ -476,7 +476,7 @@ class _AuditSidePanel extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.close, size: 20),
                 onPressed: () =>
-                    ref.read(selectedAuditLogProvider.notifier).state = null,
+                    ref.read(selectedAuditLogProvider.notifier).set(null),
                 color: VeraProbColors.textSecondary,
               ),
             ],

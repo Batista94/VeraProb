@@ -48,7 +48,16 @@ final sharedPreferencesProvider = Provider<SharedPreferences>(
 
 // ── Driver state ─────────────────────────────────────────────────────────────
 
-final currentDriverProvider = StateProvider<Driver?>((ref) => null);
+class _CurrentDriverNotifier extends Notifier<Driver?> {
+  @override
+  Driver? build() => null;
+
+  void set(Driver? value) => state = value;
+}
+
+final currentDriverProvider = NotifierProvider<_CurrentDriverNotifier, Driver?>(
+  _CurrentDriverNotifier.new,
+);
 
 // ── Search stream ─────────────────────────────────────────────────────────────
 

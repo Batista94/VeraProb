@@ -25,22 +25,33 @@ class EdgeLedgerStatusBadge extends ConsumerWidget {
     final countAsync = ref.watch(pendingFactCountProvider);
     final connectionState = ref.watch(connectivityNotifierProvider);
 
-    return countAsync.when(
-      loading: () => const _BadgeChip(
+    // Riverpod 3.x: a stream can surface an error while still being subscribed,
+    // producing AsyncLoading.copyWithPrevious(AsyncError). Check `hasError`
+    // ahead of the AsyncLoading branch so the user sees the failure.
+    if (countAsync.hasError) {
+      return const _BadgeChip(
+        label: 'Sync error',
+        icon: Icons.warning_amber_rounded,
+        color: Colors.red,
+      );
+    }
+
+    return switch (countAsync) {
+      AsyncLoading() => const _BadgeChip(
         label: 'Ledger',
         icon: Icons.sync,
         color: Colors.grey,
       ),
-      error: (e, s) => const _BadgeChip(
+      AsyncError() => const _BadgeChip(
         label: 'Sync error',
         icon: Icons.warning_amber_rounded,
         color: Colors.red,
       ),
-      data: (count) {
+      AsyncData(:final value) => () {
         if (connectionState == EdgeLedgerConnectionState.syncing) {
           return const _SyncingChip();
         }
-        if (count == 0) {
+        if (value == 0) {
           return const _BadgeChip(
             label: 'Synced',
             icon: Icons.check_circle_outline,
@@ -49,14 +60,14 @@ class EdgeLedgerStatusBadge extends ConsumerWidget {
           );
         }
         return _BadgeChip(
-          label: '$count buffered',
+          label: '$value buffered',
           icon: Icons.sync_outlined,
           color: Colors.amber.shade700,
-          onTap: () => _showDetail(context, ref, count),
-          semanticLabel: '$count facts buffered in Edge Ledger',
+          onTap: () => _showDetail(context, ref, value),
+          semanticLabel: '$value facts buffered in Edge Ledger',
         );
-      },
-    );
+      }(),
+    };
   }
 
   void _showDetail(BuildContext context, WidgetRef ref, int count) {

@@ -313,7 +313,7 @@ void main() {
   group('Preservation C₄ — tenantHealthSnapshotProvider invalidation', () {
     test('tenantHealthSnapshotProvider exists and can be read/invalidated', () {
       var fetchCount = 0;
-      final container = ProviderContainer(
+      final container = ProviderContainer.test(
         overrides: [
           tenantHealthSnapshotProvider.overrideWith((ref) async {
             fetchCount++;
@@ -321,7 +321,6 @@ void main() {
           }),
         ],
       );
-      addTearDown(container.dispose);
 
       // Read the provider to trigger the first fetch
       container.read(tenantHealthSnapshotProvider);

@@ -237,7 +237,7 @@ class _DeclareContractPlanFormState
     if (_selectedOriginZoneId == _selectedDestinationZoneId) {
       return 'A Zona de Partida e Chegada devem ser diferentes.';
     }
-    final zones = ref.read(operationalZonesProvider).valueOrNull ?? [];
+    final zones = ref.read(operationalZonesProvider).value ?? [];
     final originZone = zones
         .where((z) => z.id == _selectedOriginZoneId)
         .firstOrNull;
@@ -365,7 +365,7 @@ class _DeclareContractPlanFormState
       return;
     }
 
-    final zones = ref.read(operationalZonesProvider).valueOrNull ?? [];
+    final zones = ref.read(operationalZonesProvider).value ?? [];
     final snapshot = _snapshotCurrentDraft(zones);
 
     setState(() {
@@ -440,7 +440,7 @@ class _DeclareContractPlanFormState
     });
 
     try {
-      final zones = ref.read(operationalZonesProvider).valueOrNull ?? [];
+      final zones = ref.read(operationalZonesProvider).value ?? [];
       final finalSnapshot = _snapshotCurrentDraft(zones);
       final allDrafts = [..._confirmedShiftDrafts, finalSnapshot];
 
@@ -570,7 +570,7 @@ class _DeclareContractPlanFormState
   }
 
   Widget _buildStep4() {
-    final zones = ref.watch(operationalZonesProvider).valueOrNull ?? [];
+    final zones = ref.watch(operationalZonesProvider).value ?? [];
     final allTurns = [
       ..._confirmedShiftDrafts,
       if (_selectedOriginZoneId != null &&

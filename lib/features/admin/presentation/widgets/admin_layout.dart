@@ -30,7 +30,7 @@ class AdminLayout extends ConsumerWidget {
       backgroundColor: VeraProbColors.background,
       endDrawer: const AlertsTriadeDrawer(),
       onEndDrawerChanged: (isOpen) {
-        ref.read(isAlertsDrawerOpenProvider.notifier).state = isOpen;
+        ref.read(isAlertsDrawerOpenProvider.notifier).set(isOpen);
       },
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -40,8 +40,8 @@ class AdminLayout extends ConsumerWidget {
             InkWell(
               borderRadius: BorderRadius.circular(8),
               onTap: () {
-                ref.read(adminIndexProvider.notifier).state = 0;
-                ref.read(selectedContractIdProvider.notifier).state = null;
+                ref.read(adminIndexProvider.notifier).set(0);
+                ref.read(selectedContractIdProvider.notifier).set(null);
               },
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -139,9 +139,10 @@ class AdminLayout extends ConsumerWidget {
                         selectedIndex: selectedIndex,
                         onDestinationSelected: (index) {
                           if (index == selectedIndex) return;
-                          ref.read(adminIndexProvider.notifier).state = index;
-                          ref.read(selectedContractIdProvider.notifier).state =
-                              null;
+                          ref.read(adminIndexProvider.notifier).set(index);
+                          ref
+                              .read(selectedContractIdProvider.notifier)
+                              .set(null);
                         },
                         useIndicator: true,
                         destinations: destinations,
@@ -163,18 +164,17 @@ class AdminLayout extends ConsumerWidget {
                     children: [
                       OnboardingProgressBanner(
                         onNavigate: (destIdx) {
-                          ref.read(adminIndexProvider.notifier).state = destIdx;
-                          ref.read(selectedContractIdProvider.notifier).state =
-                              null;
+                          ref.read(adminIndexProvider.notifier).set(destIdx);
+                          ref
+                              .read(selectedContractIdProvider.notifier)
+                              .set(null);
                         },
                       ),
                       if (ref.watch(selectedContractIdProvider) != null)
                         _InternalBackButton(
-                          onBack: () =>
-                              ref
-                                      .read(selectedContractIdProvider.notifier)
-                                      .state =
-                                  null,
+                          onBack: () => ref
+                              .read(selectedContractIdProvider.notifier)
+                              .set(null),
                         ),
                       Expanded(
                         child: IndexedStack(
@@ -203,7 +203,7 @@ class _AlertsButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final alertsAsync = ref.watch(activeAlertsStreamProvider);
-    final count = alertsAsync.valueOrNull?.length ?? 0;
+    final count = alertsAsync.value?.length ?? 0;
 
     return IconButton(
       icon: Badge(

@@ -74,7 +74,7 @@ final pendingFactCountProvider = StreamProvider<int>((ref) {
 /// Watches Supabase auth events and triggers [LocalSyncOrchestrator.onConnectionRestored]
 /// on reconnect, filling any sequence gaps in the local fact queue.
 final connectivityNotifierProvider =
-    AutoDisposeNotifierProvider<
+    NotifierProvider.autoDispose<
       ConnectivityNotifier,
       EdgeLedgerConnectionState
     >(ConnectivityNotifier.new);

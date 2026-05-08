@@ -6,6 +6,7 @@ import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
 import 'package:veraprob/domain/super_admin/mfa_status.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_mfa_repository.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 
 /// INV-6: SuperAdmin access requires MFA + super_admin=true JWT claim.
 final mfaRepositoryProvider = Provider<IMfaRepository>((ref) {
@@ -14,7 +15,7 @@ final mfaRepositoryProvider = Provider<IMfaRepository>((ref) {
 
 final mfaStatusProvider = FutureProvider<MfaStatus>((ref) async {
   final repo = ref.watch(mfaRepositoryProvider);
-  return repo.getMfaStatus();
+  return repo.getMfaStatus().withProviderTimeout();
 });
 
 final mfaEnrollmentHandlerProvider = Provider<MfaEnrollmentHandler>((ref) {

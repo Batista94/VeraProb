@@ -74,50 +74,47 @@ class _FinancialKpiRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final impactAsync = ref.watch(financialImpactProvider);
 
-    return impactAsync.when(
-      loading: () => const Center(
+    return switch (impactAsync) {
+      AsyncLoading() => const Center(
         child: CircularProgressIndicator(color: VeraProbColors.primary),
       ),
-      error: (err, _) => Text(
-        'Erro ao carregar KPIs financeiros: $err',
+      AsyncError(:final error) => Text(
+        'Erro ao carregar KPIs financeiros: $error',
         style: VeraProbTypography.bodySmall.copyWith(
           color: VeraProbColors.error,
         ),
       ),
-      data: (impact) {
-        return Row(
-          children: [
-            Expanded(
-              child: _KpiCard(
-                title: 'Receita Protegida',
-                value:
-                    'R\$ ${(impact.protectedRevenue / 100).toStringAsFixed(2)}',
-                color: VeraProbColors.success,
-                icon: Icons.shield,
-              ),
+      AsyncData(:final value) => Row(
+        children: [
+          Expanded(
+            child: _KpiCard(
+              title: 'Receita Protegida',
+              value: 'R\$ ${(value.protectedRevenue / 100).toStringAsFixed(2)}',
+              color: VeraProbColors.success,
+              icon: Icons.shield,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _KpiCard(
-                title: 'Receita em Risco (Atrasos)',
-                value: 'R\$ ${(impact.revenueAtRisk / 100).toStringAsFixed(2)}',
-                color: VeraProbColors.warning,
-                icon: Icons.warning_amber_rounded,
-              ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _KpiCard(
+              title: 'Receita em Risco (Atrasos)',
+              value: 'R\$ ${(value.revenueAtRisk / 100).toStringAsFixed(2)}',
+              color: VeraProbColors.warning,
+              icon: Icons.warning_amber_rounded,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _KpiCard(
-                title: 'SLA Violado (Penalty)',
-                value: 'R\$ ${(impact.lostRevenue / 100).toStringAsFixed(2)}',
-                color: VeraProbColors.error,
-                icon: Icons.gavel,
-              ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _KpiCard(
+              title: 'SLA Violado (Penalty)',
+              value: 'R\$ ${(value.lostRevenue / 100).toStringAsFixed(2)}',
+              color: VeraProbColors.error,
+              icon: Icons.gavel,
             ),
-          ],
-        );
-      },
-    );
+          ),
+        ],
+      ),
+    };
   }
 }
 
@@ -221,26 +218,26 @@ class _RiskFeedList extends ConsumerWidget {
               ],
             ),
           ),
-          feedAsync.when(
-            loading: () => const Padding(
+          switch (feedAsync) {
+            AsyncLoading() => const Padding(
               padding: EdgeInsets.all(24.0),
               child: Center(
                 child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
             ),
-            error: (err, _) => Padding(
+            AsyncError(:final error) => Padding(
               padding: const EdgeInsets.all(24.0),
               child: Center(
                 child: Text(
-                  'Erro ao carregar feed: $err',
+                  'Erro ao carregar feed: $error',
                   style: VeraProbTypography.bodySmall.copyWith(
                     color: VeraProbColors.error,
                   ),
                 ),
               ),
             ),
-            data: (nodes) {
-              if (nodes.isEmpty) {
+            AsyncData(:final value) => () {
+              if (value.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Center(
@@ -256,16 +253,16 @@ class _RiskFeedList extends ConsumerWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(24),
-                itemCount: nodes.length,
+                itemCount: value.length,
                 itemBuilder: (context, index) {
                   return _FeedNodeItem(
-                    node: nodes[index],
-                    isLast: index == nodes.length - 1,
+                    node: value[index],
+                    isLast: index == value.length - 1,
                   );
                 },
               );
-            },
-          ),
+            }(),
+          },
         ],
       ),
     );

@@ -1,4 +1,4 @@
-﻿import 'package:veraprob/application/audit/audit_service.dart';
+import 'package:veraprob/application/audit/audit_service.dart';
 import 'package:veraprob/core/services/logger_service.dart';
 import 'package:veraprob/domain/entities/audit_log.dart';
 import 'package:uuid/uuid.dart';

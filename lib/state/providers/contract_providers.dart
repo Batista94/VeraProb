@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/state/provider_timeout.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/accept_by_contractor_handler.dart';
 import 'package:veraprob/application/sla_audit/clone_contract_handler.dart';
@@ -189,12 +190,30 @@ final contractQueryServiceProvider = Provider<ContractQueryService>((ref) {
 // ── UI State ────────────────────────────────────────────────
 
 /// Null = show list. Non-null = show detail for that contractId.
-final selectedContractIdProvider = StateProvider<String?>((ref) => null);
+class _SelectedContractIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String? value) => state = value;
+}
+
+final selectedContractIdProvider =
+    NotifierProvider<_SelectedContractIdNotifier, String?>(
+      _SelectedContractIdNotifier.new,
+    );
 
 /// Active status filter on the contracts list. Null = all statuses.
-final contractStatusFilterProvider = StateProvider<ContractStatusView?>(
-  (ref) => null,
-);
+class _ContractStatusFilterNotifier extends Notifier<ContractStatusView?> {
+  @override
+  ContractStatusView? build() => null;
+
+  void set(ContractStatusView? value) => state = value;
+}
+
+final contractStatusFilterProvider =
+    NotifierProvider<_ContractStatusFilterNotifier, ContractStatusView?>(
+      _ContractStatusFilterNotifier.new,
+    );
 
 // ── Projections ─────────────────────────────────────────────
 
@@ -207,7 +226,9 @@ final contractListProvider = FutureProvider<List<ContractSummaryView>>((
   final status = ref.watch(contractStatusFilterProvider);
   final service = ref.watch(contractQueryServiceProvider);
 
-  return service.listContracts(organizationId: organizationId, status: status);
+  return service
+      .listContracts(organizationId: organizationId, status: status)
+      .withProviderTimeout();
 });
 
 // ── Contract Detail Notifier (Anti-Pipoco) ──────────────────
@@ -216,18 +237,22 @@ final contractListProvider = FutureProvider<List<ContractSummaryView>>((
 ///
 /// Supports manual state updates via [updateState] to synchronization
 /// UI after command mutations without requiring a database round-trip.
-class ContractDetailNotifier
-    extends FamilyAsyncNotifier<ContractDetailView?, String> {
+class ContractDetailNotifier extends AsyncNotifier<ContractDetailView?> {
+  ContractDetailNotifier(this.contractId);
+  final String contractId;
+
   @override
-  Future<ContractDetailView?> build(String contractId) async {
+  Future<ContractDetailView?> build() async {
     final organizationId = ref.watch(currentOrganizationIdProvider);
     if (organizationId == null) return null;
 
     final service = ref.watch(contractQueryServiceProvider);
-    return service.getContractDetail(
-      organizationId: organizationId,
-      contractId: contractId,
-    );
+    return service
+        .getContractDetail(
+          organizationId: organizationId,
+          contractId: contractId,
+        )
+        .withProviderTimeout();
   }
 
   /// Manually updates the state with a new view model (INV-33).

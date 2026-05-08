@@ -39,13 +39,13 @@ class _TenantHealthPanelState extends ConsumerState<TenantHealthPanel> {
     ref.listen<AsyncValue<List<TenantHealthView>>>(
       tenantHealthSnapshotProvider,
       (_, next) {
-        next.whenData((snapshots) {
+        if (next case AsyncData(:final value)) {
           if (_selectedTenant == null || !mounted) return;
-          final updated = snapshots
+          final updated = value
               .where((t) => t.id == _selectedTenant!.id)
               .firstOrNull;
           if (updated != null) setState(() => _selectedTenant = updated);
-        });
+        }
       },
     );
     return Row(

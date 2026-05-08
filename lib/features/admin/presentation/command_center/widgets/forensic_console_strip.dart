@@ -65,9 +65,9 @@ class _ForensicConsoleStripState extends ConsumerState<ForensicConsoleStrip> {
         color: Color(0xFF1A1A1A),
         border: Border(top: BorderSide(color: Color(0xFF333333))),
       ),
-      child: ledgerAsync.when(
-        data: (entries) {
-          if (entries.isEmpty) {
+      child: switch (ledgerAsync) {
+        AsyncData(:final value) => () {
+          if (value.isEmpty) {
             return const Center(
               child: Text(
                 'FORENSIC LEDGER ACTIVE • WAITING FOR EVENTS',
@@ -81,7 +81,7 @@ class _ForensicConsoleStripState extends ConsumerState<ForensicConsoleStrip> {
             );
           }
 
-          final displayEntries = entries.take(50).toList();
+          final displayEntries = value.take(50).toList();
           _scrollToNewestIfAtEdge(displayEntries.length);
 
           return ListView.separated(
@@ -106,10 +106,10 @@ class _ForensicConsoleStripState extends ConsumerState<ForensicConsoleStrip> {
               );
             },
           );
-        },
-        loading: () => const _LoadingConsole(),
-        error: (err, stack) => _ErrorConsole(err: err.toString()),
-      ),
+        }(),
+        AsyncLoading() => const _LoadingConsole(),
+        AsyncError(:final error) => _ErrorConsole(err: error.toString()),
+      },
     );
   }
 

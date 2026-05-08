@@ -36,16 +36,28 @@ final generateTelegramBindingTokenHandlerProvider =
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
 class TelegramBindingNotifier
-    extends StateNotifier<AsyncValue<TelegramBindingToken?>> {
-  final GenerateTelegramBindingTokenHandler _handler;
+    extends Notifier<AsyncValue<TelegramBindingToken?>> {
+  TelegramBindingNotifier(this.driverId);
+  final String driverId;
 
-  TelegramBindingNotifier(this._handler) : super(const AsyncData(null));
+  @override
+  AsyncValue<TelegramBindingToken?> build() {
+    return const AsyncData(null);
+  }
 
   Future<void> generateToken(
     GenerateTelegramBindingTokenCommand command,
   ) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _handler.handle(command));
+    final result = await AsyncValue.guard(
+      () =>
+          ref.read(generateTelegramBindingTokenHandlerProvider).handle(command),
+    );
+
+    // INV-15: Guard before mutating state after await
+    if (!ref.mounted) return;
+
+    state = result;
   }
 
   // INV-1: exposes error path for pre-flight sovereignty failures caught in the UI layer.
@@ -54,11 +66,9 @@ class TelegramBindingNotifier
   }
 }
 
-final telegramBindingNotifierProvider = StateNotifierProvider.autoDispose
+final telegramBindingNotifierProvider = NotifierProvider.autoDispose
     .family<TelegramBindingNotifier, AsyncValue<TelegramBindingToken?>, String>(
-      (ref, driverId) => TelegramBindingNotifier(
-        ref.watch(generateTelegramBindingTokenHandlerProvider),
-      ),
+      TelegramBindingNotifier.new,
     );
 
 // ── Active binding query ──────────────────────────────────────────────────────
@@ -89,23 +99,25 @@ final orphanEvidencesProvider =
     });
 
 /// Notifier for linking orphan evidence to an execution set (INV-7: append-only).
-class LinkEvidenceNotifier
-    extends StateNotifier<AsyncValue<TelegramEvidenceLink?>> {
-  final ITelegramRepository _repo;
-  final Ref _ref;
+class LinkEvidenceNotifier extends Notifier<AsyncValue<TelegramEvidenceLink?>> {
+  late final ITelegramRepository _repo;
 
-  LinkEvidenceNotifier(this._repo, this._ref) : super(const AsyncData(null));
+  @override
+  AsyncValue<TelegramEvidenceLink?> build() {
+    _repo = ref.watch(telegramRepositoryProvider);
+    return const AsyncData(null);
+  }
 
   Future<void> link({
     required String evidenceUploadId,
     required String executionSetId,
   }) async {
-    final orgId = _ref.read(currentOrganizationIdProvider);
-    final userId = _ref.read(currentOperatorIdProvider);
+    final orgId = ref.read(currentOrganizationIdProvider);
+    final userId = ref.read(currentOperatorIdProvider);
     if (orgId == null || userId == null) return;
 
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final result = await AsyncValue.guard(
       () => _repo.linkEvidenceToExecution(
         evidenceUploadId: evidenceUploadId,
         executionSetId: executionSetId,
@@ -114,20 +126,23 @@ class LinkEvidenceNotifier
       ),
     );
 
+    // INV-15: Guard before mutating state after await
+    if (!ref.mounted) return;
+
+    state = result;
+
     // Invalidate orphan list after successful link
     if (state.hasValue && state.value != null) {
-      _ref.invalidate(orphanEvidencesProvider);
+      ref.invalidate(orphanEvidencesProvider);
     }
   }
 }
 
 final linkEvidenceNotifierProvider =
-    StateNotifierProvider.autoDispose<
+    NotifierProvider.autoDispose<
       LinkEvidenceNotifier,
       AsyncValue<TelegramEvidenceLink?>
-    >((ref) {
-      return LinkEvidenceNotifier(ref.watch(telegramRepositoryProvider), ref);
-    });
+    >(LinkEvidenceNotifier.new);
 
 // ── Compliance Status Providers ───────────────────────────────────────────────
 

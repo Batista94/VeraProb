@@ -141,9 +141,9 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
 
           // ── Tenant list ────────────────────────────────────────────
           Expanded(
-            child: tenantsAsync.when(
-              data: (tenants) {
-                final filtered = _filter(tenants);
+            child: switch (tenantsAsync) {
+              AsyncData(:final value) => () {
+                final filtered = _filter(value);
                 if (filtered.isEmpty) {
                   return const Center(
                     child: Text(
@@ -164,15 +164,17 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
                     );
                   },
                 );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
+              }(),
+              AsyncLoading() => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              AsyncError(:final error) => Center(
                 child: Text(
-                  'Erro: $e',
+                  'Erro: $error',
                   style: const TextStyle(color: VeraProbColors.error),
                 ),
               ),
-            ),
+            },
           ),
         ],
       ),

@@ -1,10 +1,19 @@
+import 'package:equatable/equatable.dart';
+
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 
 /// Read model projection for a single sanction queue item.
 ///
 /// Contains display helpers to avoid raw data manipulation in the UI layer.
-class SanctionQueueItemView {
+///
+/// Extends [Equatable] so that Riverpod v3's default `updateShouldNotify`
+/// (which uses `==`) can correctly filter duplicate stream emissions.
+/// Only semantically-relevant fields from the DB row are included in [props];
+/// UI-enriched fields ([contractName], [windowStartUtc], [windowEndUtc]) are
+/// excluded because they are resolved asynchronously and do not represent
+/// identity of the queue item.
+class SanctionQueueItemView extends Equatable {
   final String id;
   final String organizationId;
   final String ledgerEntryId;
@@ -113,4 +122,25 @@ class SanctionQueueItemView {
       vehiclePlate: entry.vehiclePlate,
     );
   }
+
+  /// Semantically-relevant fields for value equality.
+  ///
+  /// UI-enriched fields ([contractName], [windowStartUtc], [windowEndUtc]) are
+  /// intentionally excluded — they are resolved lazily and do not define the
+  /// identity of a queue item from the DB perspective.
+  @override
+  List<Object?> get props => [
+    id,
+    organizationId,
+    ledgerEntryId,
+    setId,
+    contractId,
+    verdictEvidence,
+    status,
+    createdAtUtc,
+    reviewedAtUtc,
+    reviewedByUserId,
+    rejectionReason,
+    vehiclePlate,
+  ];
 }

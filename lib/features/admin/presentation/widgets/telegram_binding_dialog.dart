@@ -96,7 +96,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
     final userId = ref.read(currentOperatorIdProvider);
     final role = ref.read(currentUserRoleProvider);
     final sessionId =
-        ref.read(authStateProvider).valueOrNull?.session?.accessToken ?? '';
+        ref.read(authStateProvider).value?.session?.accessToken ?? '';
 
     if (userId == null) return;
 
@@ -115,9 +115,9 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
     final tokenState = ref.read(
       telegramBindingNotifierProvider(widget.driverId),
     );
-    tokenState.whenData((token) {
-      if (token != null) _startCountdown(token.expiresAtUtc);
-    });
+    if (tokenState case AsyncData(:final value)) {
+      if (value != null) _startCountdown(value.expiresAtUtc);
+    }
   }
 
   Future<void> _copyCode(String code) async {
@@ -205,8 +205,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
               const SizedBox(height: 20),
 
               // Active binding warning
-              bindingAsync.whenData((hasBinding) => hasBinding).valueOrNull ==
-                      true
+              bindingAsync is AsyncData<bool> && bindingAsync.value == true
                   ? Container(
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
@@ -239,37 +238,38 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                   : const SizedBox.shrink(),
 
               // Instructions
-              tokenState.when(
-                data: (token) => token == null
-                    ? _buildInstructions()
-                    : _remaining == Duration.zero
-                    ? _buildExpiredState()
-                    : _buildCodeDisplay(token, colorScheme),
-                loading: () => const Center(
+              switch (tokenState) {
+                AsyncData(:final value) =>
+                  value == null
+                      ? _buildInstructions()
+                      : _remaining == Duration.zero
+                      ? _buildExpiredState()
+                      : _buildCodeDisplay(value, colorScheme),
+                AsyncLoading() => const Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: CircularProgressIndicator(),
                   ),
                 ),
-                error: (err, _) => _buildErrorState(err),
-              ),
+                AsyncError(:final error) => _buildErrorState(error),
+              },
 
               const SizedBox(height: 20),
 
               // Action button
               SizedBox(
                 width: double.infinity,
-                child: tokenState.when(
-                  data: (token) => FilledButton.icon(
+                child: switch (tokenState) {
+                  AsyncData(:final value) => FilledButton.icon(
                     onPressed: tokenState.isLoading ? null : _generate,
                     icon: const Icon(Icons.refresh, size: 18),
-                    label: Text(token == null ? 'Gerar Código' : 'Novo Código'),
+                    label: Text(value == null ? 'Gerar Código' : 'Novo Código'),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF0D47A1),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
-                  loading: () => FilledButton(
+                  AsyncLoading() => FilledButton(
                     onPressed: null,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -280,7 +280,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
-                  error: (err2, st) => FilledButton.icon(
+                  AsyncError() => FilledButton.icon(
                     onPressed: _generate,
                     icon: const Icon(Icons.refresh, size: 18),
                     label: const Text('Tentar Novamente'),
@@ -289,7 +289,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
-                ),
+                },
               ),
             ],
           ),

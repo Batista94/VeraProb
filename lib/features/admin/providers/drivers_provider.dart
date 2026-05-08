@@ -9,11 +9,32 @@ final driversListProvider = FutureProvider<List<Driver>>((ref) async {
 });
 
 // Search searchTerm provider
-final driversSearchQueryProvider = StateProvider<String>((ref) => '');
+class _DriversSearchQueryNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void set(String value) => state = value;
+}
+
+final driversSearchQueryProvider =
+    NotifierProvider<_DriversSearchQueryNotifier, String>(
+      _DriversSearchQueryNotifier.new,
+    );
 
 // Toggle: show archived (inactive + archived_at_utc != null) drivers.
 // Default false — supervisors must opt-in to view historical records.
-final showArchivedDriversProvider = StateProvider<bool>((ref) => false);
+class _ShowArchivedDriversNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+  void toggle() => state = !state;
+}
+
+final showArchivedDriversProvider =
+    NotifierProvider<_ShowArchivedDriversNotifier, bool>(
+      _ShowArchivedDriversNotifier.new,
+    );
 
 // Filtered drivers provider
 // INV-3: archived drivers kept in DB; hidden by default, not deleted.
@@ -22,19 +43,26 @@ final filteredDriversProvider = Provider<AsyncValue<List<Driver>>>((ref) {
   final searchTerm = ref.watch(driversSearchQueryProvider).toLowerCase();
   final showArchived = ref.watch(showArchivedDriversProvider);
 
-  return driversAsync.whenData((drivers) {
-    var result = drivers.where((d) {
-      if (!showArchived && d.isArchived) return false;
-      return true;
-    });
-
-    if (searchTerm.isNotEmpty) {
-      result = result.where((d) {
-        return d.name.toLowerCase().contains(searchTerm) ||
-            d.licenseNumber.contains(searchTerm);
+  return switch (driversAsync) {
+    AsyncData(:final value) => AsyncData(() {
+      var result = value.where((d) {
+        if (!showArchived && d.isArchived) return false;
+        return true;
       });
-    }
 
-    return result.toList();
-  });
+      if (searchTerm.isNotEmpty) {
+        result = result.where((d) {
+          return d.name.toLowerCase().contains(searchTerm) ||
+              d.licenseNumber.contains(searchTerm);
+        });
+      }
+
+      return result.toList();
+    }()),
+    AsyncError(:final error, :final stackTrace) => AsyncError(
+      error,
+      stackTrace,
+    ),
+    AsyncLoading() => const AsyncLoading(),
+  };
 });

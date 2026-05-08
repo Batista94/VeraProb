@@ -95,6 +95,7 @@ class OperationalAlert extends Equatable {
     triggeredAtUtc,
     triggeringEventId,
     traceId,
+    context,
     status,
     acknowledgedAtUtc,
     acknowledgedByUserId,

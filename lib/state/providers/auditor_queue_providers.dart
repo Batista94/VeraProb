@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/approve_sanction_command.dart';
@@ -10,6 +11,7 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/infraction_recurrence_report.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_service.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/notifiers/async_command_mixin.dart';
 import 'auth_providers.dart';
 import 'contract_providers.dart';
 import 'shared_providers.dart';
@@ -22,6 +24,12 @@ import 'sla_providers.dart';
 ///
 /// RLS enforces tenant isolation; no explicit org_id filter needed in query.
 /// INV-30: Client injected via supabaseClientProvider (no Supabase.instance).
+///
+/// Uses [Stream.distinct] with [listEquals] to filter consecutive duplicate
+/// emissions. Since [SanctionQueueItemView] extends [Equatable], element-wise
+/// comparison via `==` correctly identifies identical lists, ensuring Riverpod
+/// v3's default `updateShouldNotify` (which relies on `==`) does not trigger
+/// unnecessary listener rebuilds (Req 8.1, 8.4).
 final pendingSanctionsStreamProvider =
     StreamProvider.autoDispose<List<SanctionQueueItemView>>((ref) {
       return ref
@@ -32,16 +40,20 @@ final pendingSanctionsStreamProvider =
           .map(
             (rows) =>
                 rows.map((row) => SanctionQueueItemView.fromRow(row)).toList(),
-          );
+          )
+          .distinct(listEquals);
     });
 
 // ── Derived badge count ───────────────────────────────────────────────────────
 
 /// Derived count of pending sanctions for the navigation badge.
 final pendingSanctionsCountProvider = Provider.autoDispose<int>((ref) {
-  return ref
-      .watch(pendingSanctionsStreamProvider)
-      .maybeWhen(data: (items) => items.length, orElse: () => 0);
+  final sanctionsAsync = ref.watch(pendingSanctionsStreamProvider);
+  return switch (sanctionsAsync) {
+    AsyncData(:final value) => value.length,
+    AsyncError() => 0,
+    AsyncLoading() => 0,
+  };
 });
 
 // ── Contract name enrichment ──────────────────────────────────────────────────
@@ -111,35 +123,35 @@ final vehicleInfractionRecurrenceProvider = FutureProvider.autoDispose
 
 /// Loading/error state for approve/reject actions on a specific sanction card.
 /// Key: queueEntryId.
-final sanctionActionStateProvider = StateNotifierProvider.autoDispose
+final sanctionActionStateProvider = NotifierProvider.autoDispose
     .family<SanctionActionNotifier, AsyncValue<void>, String>(
-      (ref, sanctionId) => SanctionActionNotifier(
-        approveHandler: ApproveSanctionHandler(
-          tenantValidator: ref.watch(tenantValidationServiceProvider),
-          queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
-          ledger: ref.watch(slaAuditLedgerRepositoryProvider),
-          rbac: RbacService(),
-        ),
-        rejectHandler: RejectSanctionHandler(
-          tenantValidator: ref.watch(tenantValidationServiceProvider),
-          queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
-          ledger: ref.watch(slaAuditLedgerRepositoryProvider),
-          rbac: RbacService(),
-          clock: ref.watch(dateTimeProviderProvider),
-        ),
-      ),
+      SanctionActionNotifier.new,
     );
 
-class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
-  final ApproveSanctionHandler _approveHandler;
-  final RejectSanctionHandler _rejectHandler;
+class SanctionActionNotifier extends Notifier<AsyncValue<void>>
+    with GuardedAsyncActionMixin<void> {
+  SanctionActionNotifier(this.sanctionId);
+  final String sanctionId;
 
-  SanctionActionNotifier({
-    required ApproveSanctionHandler approveHandler,
-    required RejectSanctionHandler rejectHandler,
-  }) : _approveHandler = approveHandler,
-       _rejectHandler = rejectHandler,
-       super(const AsyncData(null));
+  @override
+  AsyncValue<void> build() {
+    return const AsyncData(null);
+  }
+
+  ApproveSanctionHandler get _approveHandler => ApproveSanctionHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    rbac: RbacService(),
+  );
+
+  RejectSanctionHandler get _rejectHandler => RejectSanctionHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    rbac: RbacService(),
+    clock: ref.watch(dateTimeProviderProvider),
+  );
 
   Future<void> approve({
     required String queueEntryId,
@@ -149,8 +161,7 @@ class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
     required String organizationId,
     required String sessionId,
   }) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    await guardedAction(
       () => _approveHandler.handle(
         ApproveSanctionCommand(
           queueEntryId: queueEntryId,
@@ -173,8 +184,7 @@ class SanctionActionNotifier extends StateNotifier<AsyncValue<void>> {
     required String organizationId,
     required String sessionId,
   }) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    await guardedAction(
       () => _rejectHandler.handle(
         RejectSanctionCommand(
           queueEntryId: queueEntryId,

@@ -90,7 +90,7 @@ class _SuperAdminGuardState extends ConsumerState<SuperAdminGuard> {
       // 3a. Actor_ID mismatch check
       final currentUserId = ref
           .watch(authStateProvider)
-          .valueOrNull
+          .value
           ?.session
           ?.user
           .id;
@@ -123,7 +123,7 @@ class _SuperAdminGuardState extends ConsumerState<SuperAdminGuard> {
   void _invalidateImpersonationSession() {
     _impersonationInvalidated = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(activeImpersonationSessionProvider.notifier).state = null;
+      ref.read(activeImpersonationSessionProvider.notifier).set(null);
       if (mounted) {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
@@ -135,7 +135,7 @@ class _SuperAdminGuardState extends ConsumerState<SuperAdminGuard> {
   /// Extracts sanitized JWT claims from the current session for the
   /// forensic record. Silent on failure (INV-26).
   void _logSecurityIncident({required String eventType}) {
-    final session = ref.read(authStateProvider).valueOrNull?.session;
+    final session = ref.read(authStateProvider).value?.session;
     final sanitizedClaims = _sanitizeJwtClaims(session?.accessToken);
 
     ref

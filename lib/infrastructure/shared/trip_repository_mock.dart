@@ -1,4 +1,4 @@
-﻿import 'package:veraprob/domain/shared/i_trip_repository.dart';
+import 'package:veraprob/domain/shared/i_trip_repository.dart';
 import 'package:veraprob/domain/entities/trip.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 

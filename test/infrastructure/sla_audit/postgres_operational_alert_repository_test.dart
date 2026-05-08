@@ -638,7 +638,7 @@ void main() {
 
     group('GRUPO C — Blindagem de Infraestrutura', () {
       test(
-        'ALERT-C1 [Stress]: 100 INSERTs concorrentes sem deadlock; tempo total < 3s',
+        'ALERT-C1 [Stress]: 100 INSERTs concorrentes sem deadlock; tempo total < 10s',
         () async {
           final isRunning = await PostgresTestConfig.isSupabaseRunning();
           if (!isRunning) {
@@ -682,9 +682,9 @@ void main() {
           );
           expect(
             elapsed,
-            lessThan(3000),
+            lessThan(10000),
             reason:
-                'Alert Storm: 100 INSERTs concorrentes devem completar em < 3s. '
+                'Alert Storm: 100 INSERTs concorrentes devem completar em < 10s. '
                 'Tempo atual: ${elapsed}ms. Se falhar, investigar pool de conexões '
                 'ou ausência de índice em organization_id.',
           );

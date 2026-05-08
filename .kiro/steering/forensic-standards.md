@@ -65,7 +65,7 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
 ## 🛠️ TECH STANDARDS
 
 ### Dart & Flutter Web
-- State Management: **Riverpod** (Generator required). Avoid `ChangeNotifier`.
+- State Management: **Riverpod v3** (Notifier-based). Avoid `ChangeNotifier`, `StateNotifier`.
 - Projections: Use `AsyncValue` patterns for UI.
 - Layouts: Constraint-based. Mobile-first. 24/7 Eye-Strain prevention (Industrial Deep palette).
 - Web: Target WASM/CanvasKit. High performance for dashbaords.

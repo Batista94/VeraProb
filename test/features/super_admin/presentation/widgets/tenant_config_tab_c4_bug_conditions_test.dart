@@ -53,7 +53,7 @@ void main() {
       // from the providers file. If it doesn't exist, the import fails.
       //
       // After fix: tenantDetailProvider is a FutureProvider.family<TenantHealthView?, String>
-      final container = ProviderContainer(
+      final container = ProviderContainer.test(
         overrides: [
           tenantHealthSnapshotProvider.overrideWith(
             (ref) async => <TenantHealthView>[
@@ -63,7 +63,6 @@ void main() {
           ),
         ],
       );
-      addTearDown(container.dispose);
 
       // This line will fail to compile on unfixed code because
       // tenantDetailProvider doesn't exist yet.
@@ -80,14 +79,13 @@ void main() {
     test('tenantsListProvider alias should exist in super_admin_providers', () {
       // On UNFIXED code: tenantsListProvider is not defined.
       // After fix: it's a semantic alias for tenantHealthSnapshotProvider.
-      final container = ProviderContainer(
+      final container = ProviderContainer.test(
         overrides: [
           tenantHealthSnapshotProvider.overrideWith(
             (ref) async => <TenantHealthView>[],
           ),
         ],
       );
-      addTearDown(container.dispose);
 
       // This line will fail to compile on unfixed code because
       // tenantsListProvider doesn't exist yet.

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/ad_hoc_cost/shadow_execution_summary.dart';
 import 'package:veraprob/infrastructure/ad_hoc_cost/postgres_shadow_execution_repository.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
 final shadowRepoProvider = Provider<PostgresShadowExecutionRepository>((ref) {
@@ -15,7 +16,8 @@ final unlinkedShadowsProvider =
       if (orgId == null) return [];
       final entities = await ref
           .watch(shadowRepoProvider)
-          .findUnlinked(organizationId: orgId);
+          .findUnlinked(organizationId: orgId)
+          .withProviderTimeout();
       return entities.map(ShadowExecutionSummary.fromDomain).toList();
     });
 
@@ -34,5 +36,6 @@ final smartLinkCandidatesProvider = FutureProvider.autoDispose
           .findSmartLinkCandidates(
             organizationId: orgId,
             messageTs: shadow.messageTs,
-          );
+          )
+          .withProviderTimeout();
     });

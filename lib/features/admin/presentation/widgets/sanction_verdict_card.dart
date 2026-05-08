@@ -88,7 +88,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
 
     // Async contract name resolution — RLS enforces tenant isolation.
     final contractNameAsync = ref.watch(contractNameProvider(item.contractId));
-    final contractName = contractNameAsync.valueOrNull;
+    final contractName = contractNameAsync.value;
     final displayName =
         contractName ??
         '${item.contractId.substring(0, 8).toUpperCase()} [...]';
@@ -115,24 +115,26 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         // WS-5: Toggle map focus — unidirectional (List → Provider → Map)
         final current = ref.read(selectedSanctionFocusProvider);
         if (current?.sanctionId == item.id) {
-          ref.read(selectedSanctionFocusProvider.notifier).state = null;
+          ref.read(selectedSanctionFocusProvider.notifier).set(null);
         } else {
           ref
               .read(selectedSanctionFocusProvider.notifier)
-              .state = SanctionMapFocus(
-            sanctionId: item.id,
-            infractionPoint: LatLng(
-              evidence.primaryEvidenceLat,
-              evidence.primaryEvidenceLng,
-            ),
-            geofenceCenter: evidence.geofenceCenterLat != null
-                ? LatLng(
-                    evidence.geofenceCenterLat!,
-                    evidence.geofenceCenterLng!,
-                  )
-                : null,
-            geofenceRadiusMeters: evidence.geofenceRadiusMeters ?? 50.0,
-          );
+              .set(
+                SanctionMapFocus(
+                  sanctionId: item.id,
+                  infractionPoint: LatLng(
+                    evidence.primaryEvidenceLat,
+                    evidence.primaryEvidenceLng,
+                  ),
+                  geofenceCenter: evidence.geofenceCenterLat != null
+                      ? LatLng(
+                          evidence.geofenceCenterLat!,
+                          evidence.geofenceCenterLng!,
+                        )
+                      : null,
+                  geofenceRadiusMeters: evidence.geofenceRadiusMeters ?? 50.0,
+                ),
+              );
         }
       },
       child: Opacity(
@@ -558,22 +560,22 @@ class _RiskThermometerZone extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final windowAsync = ref.watch(sanctionWindowProvider(item.setId));
 
-    return windowAsync.when(
-      loading: () => const SizedBox(height: 80),
-      error: (e, s) => const SizedBox.shrink(),
-      data: (window) {
-        if (window == null) return const SizedBox.shrink();
+    return switch (windowAsync) {
+      AsyncLoading() => const SizedBox(height: 80),
+      AsyncError() => const SizedBox.shrink(),
+      AsyncData(:final value) => () {
+        if (value == null) return const SizedBox.shrink();
         final report = const SlaBreachRiskCalculator().evaluate(
-          windowStartUtc: window.start,
-          windowEndUtc: window.end,
+          windowStartUtc: value.start,
+          windowEndUtc: value.end,
           currentEtaUtc: item.verdictEvidence.primaryEvidenceTimestampUtc,
         );
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
           child: RiskThermometerWidget(report: report),
         );
-      },
-    );
+      }(),
+    };
   }
 }
 
@@ -592,19 +594,17 @@ class _RecurrenceZone extends ConsumerWidget {
     if (plate == null || plate.isEmpty) return const SizedBox.shrink();
 
     final key = '${item.id}|$plate|${item.organizationId}';
-    return ref
-        .watch(vehicleInfractionRecurrenceProvider(key))
-        .when(
-          loading: () => const SizedBox(height: 48),
-          error: (_, _) => const SizedBox.shrink(),
-          data: (report) {
-            if (report == null) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-              child: RecurrenceBadgeWidget(report: report),
-            );
-          },
+    return switch (ref.watch(vehicleInfractionRecurrenceProvider(key))) {
+      AsyncLoading() => const SizedBox(height: 48),
+      AsyncError() => const SizedBox.shrink(),
+      AsyncData(:final value) => () {
+        if (value == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+          child: RecurrenceBadgeWidget(report: value),
         );
+      }(),
+    };
   }
 }
 
@@ -862,11 +862,11 @@ class _ComplianceBadgeZone extends ConsumerWidget {
       executionComplianceProvider((organizationId: orgId, setId: setId)),
     );
 
-    return complianceAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (compliance) {
-        if (compliance == null) return const SizedBox.shrink();
+    return switch (complianceAsync) {
+      AsyncLoading() => const SizedBox.shrink(),
+      AsyncError() => const SizedBox.shrink(),
+      AsyncData(:final value) => () {
+        if (value == null) return const SizedBox.shrink();
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
           child: Row(
@@ -885,11 +885,11 @@ class _ComplianceBadgeZone extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              ComplianceBadge(compliance: compliance),
+              ComplianceBadge(compliance: value),
             ],
           ),
         );
-      },
-    );
+      }(),
+    };
   }
 }

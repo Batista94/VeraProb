@@ -195,21 +195,9 @@ class Step3SlaPenalties extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       constraints: const BoxConstraints(maxHeight: 500),
-      builder: (ctx) => allTemplatesAsync.when(
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32),
-            child: CircularProgressIndicator(),
-          ),
-        ),
-        error: (e, _) => Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            'Erro ao carregar modelos: $e',
-            style: const TextStyle(color: VeraProbColors.error),
-          ),
-        ),
-        data: (templates) {
+      builder: (ctx) => switch (allTemplatesAsync) {
+        AsyncData(:final value) => () {
+          final templates = value;
           if (templates.isEmpty) {
             return const Center(
               child: Padding(
@@ -272,8 +260,21 @@ class Step3SlaPenalties extends ConsumerWidget {
               ],
             ],
           );
-        },
-      ),
+        }(),
+        AsyncLoading() => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+        AsyncError(:final error) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'Erro ao carregar modelos: $error',
+            style: const TextStyle(color: VeraProbColors.error),
+          ),
+        ),
+      },
     );
   }
 

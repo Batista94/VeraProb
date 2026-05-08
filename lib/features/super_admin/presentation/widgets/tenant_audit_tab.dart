@@ -26,8 +26,9 @@ class TenantAuditTab extends ConsumerWidget {
     final params = AuditLogParams(organizationId: organizationId, limit: 50);
     final auditLogsAsync = ref.watch(systemAuditLogProvider(params));
 
-    return auditLogsAsync.when(
-      data: (logs) {
+    return switch (auditLogsAsync) {
+      AsyncData(:final value) => () {
+        final logs = value;
         if (logs.isEmpty) {
           return const Center(
             child: Column(
@@ -56,15 +57,15 @@ class TenantAuditTab extends ConsumerWidget {
             return _AuditLogItem(log: log);
           },
         );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(
+      }(),
+      AsyncLoading() => const Center(child: CircularProgressIndicator()),
+      AsyncError(:final error) => Center(
         child: Text(
-          'Erro ao carregar logs: $err',
+          'Erro ao carregar logs: $error',
           style: const TextStyle(color: VeraProbColors.error),
         ),
       ),
-    );
+    };
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'auth_providers.dart';
 import 'shared_providers.dart';
 
@@ -64,7 +65,9 @@ final financialImpactProvider = FutureProvider<ContractualFinancialImpact>((
   }
 
   final service = ref.watch(financialImpactQueryServiceProvider);
-  return service.getImpact(organizationId: organizationId);
+  return service
+      .getImpact(organizationId: organizationId)
+      .withProviderTimeout();
 });
 
 final financialTrendQueryServiceProvider =

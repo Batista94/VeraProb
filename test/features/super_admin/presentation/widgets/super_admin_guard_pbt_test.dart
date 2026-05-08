@@ -10,6 +10,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -98,8 +99,8 @@ Widget _buildGuard({
     overrides: [
       isSuperAdminProvider.overrideWithValue(isSuperAdmin),
       isSuperAdminAal2Provider.overrideWithValue(isAal2),
-      activeImpersonationSessionProvider.overrideWith(
-        (ref) => impersonationSession,
+      activeImpersonationSessionProvider.overrideWithBuild(
+        (ref, notifier) => impersonationSession,
       ),
       securityIncidentLoggerProvider.overrideWithValue(fakeLogger),
       authOverride ??

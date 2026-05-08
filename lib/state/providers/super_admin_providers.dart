@@ -19,6 +19,7 @@ import 'package:veraprob/infrastructure/audit/postgres_system_audit_log_service.
 import 'package:veraprob/infrastructure/super_admin/receita_ws_cnpj_service.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_super_admin_repository.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'auth_providers.dart';
 import 'shared_providers.dart';
 
@@ -38,7 +39,7 @@ final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthView>>((
   ref,
 ) async {
   final repo = ref.watch(superAdminRepositoryProvider);
-  final snapshots = await repo.getAllTenantHealth();
+  final snapshots = await repo.getAllTenantHealth().withProviderTimeout();
   return snapshots.map(TenantHealthView.fromDomain).toList();
 });
 
@@ -80,13 +81,15 @@ final systemAuditLogProvider =
       params,
     ) async {
       final repo = ref.watch(superAdminRepositoryProvider);
-      final entries = await repo.getSystemAuditLog(
-        organizationId: params.organizationId,
-        severity: params.severity,
-        fromDate: params.fromDate,
-        toDate: params.toDate,
-        limit: params.limit,
-      );
+      final entries = await repo
+          .getSystemAuditLog(
+            organizationId: params.organizationId,
+            severity: params.severity,
+            fromDate: params.fromDate,
+            toDate: params.toDate,
+            limit: params.limit,
+          )
+          .withProviderTimeout();
       return entries.map(SystemAuditLogView.fromDomain).toList();
     });
 
@@ -167,7 +170,9 @@ final tenantTechnicalHealthProvider =
       orgId,
     ) async {
       final repo = ref.watch(superAdminRepositoryProvider);
-      final data = await repo.getTenantTechnicalHealth(orgId);
+      final data = await repo
+          .getTenantTechnicalHealth(orgId)
+          .withProviderTimeout();
       return TenantTechnicalHealthView.fromJson(data);
     });
 
@@ -179,7 +184,7 @@ final tenantTechnicalHealthProvider =
 final evidenceVolumeProvider =
     FutureProvider.family<EvidenceVolumeView, String>((ref, orgId) async {
       final repo = ref.watch(superAdminRepositoryProvider);
-      final data = await repo.getEvidenceVolume(orgId);
+      final data = await repo.getEvidenceVolume(orgId).withProviderTimeout();
       return EvidenceVolumeView.fromJson(data);
     });
 

@@ -37,21 +37,9 @@ class DeclarePlanZonesStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final zonesAsync = ref.watch(operationalZonesProvider);
 
-    return zonesAsync.when(
-      loading: () => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
-        ),
-      ),
-      error: (e, _) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          'Erro ao carregar zonas operacionais: $e',
-          style: const TextStyle(color: VeraProbColors.error),
-        ),
-      ),
-      data: (zones) {
+    return switch (zonesAsync) {
+      AsyncData(:final value) => () {
+        final zones = value;
         final contractorZones = zones
             .where(
               (z) =>
@@ -111,7 +99,20 @@ class DeclarePlanZonesStep extends ConsumerWidget {
             ),
           ],
         );
-      },
-    );
+      }(),
+      AsyncLoading() => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      AsyncError(:final error) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'Erro ao carregar zonas operacionais: $error',
+          style: const TextStyle(color: VeraProbColors.error),
+        ),
+      ),
+    };
   }
 }

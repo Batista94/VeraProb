@@ -236,7 +236,7 @@ class _JustificationDetailDrawerState
     final orgId = ref.read(currentOrganizationIdProvider);
     final userId = ref.read(currentOperatorIdProvider);
     final role = ref.read(currentUserRoleProvider);
-    final session = ref.read(authStateProvider).valueOrNull?.session;
+    final session = ref.read(authStateProvider).value?.session;
     final email = session?.user.email ?? '';
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
@@ -280,7 +280,7 @@ class _JustificationDetailDrawerState
     final orgId = ref.read(currentOrganizationIdProvider);
     final userId = ref.read(currentOperatorIdProvider);
     final role = ref.read(currentUserRoleProvider);
-    final session = ref.read(authStateProvider).valueOrNull?.session;
+    final session = ref.read(authStateProvider).value?.session;
     final email = session?.user.email ?? '';
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
 

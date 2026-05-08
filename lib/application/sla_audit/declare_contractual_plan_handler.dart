@@ -1,4 +1,4 @@
-﻿import 'package:collection/collection.dart';
+import 'package:collection/collection.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/shared/idempotent_handler_mixin.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
