@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/domain/super_admin/cnpj_company_data.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
@@ -11,6 +12,7 @@ import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/application/super_admin/create_organization_handler.dart';
 import 'package:veraprob/application/super_admin/create_organization_result.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
 
@@ -59,8 +61,10 @@ void main() {
         cnpjLookupServiceProvider.overrideWithValue(lookup),
         createOrganizationHandlerProvider.overrideWithValue(mockHandler),
         currentSuperAdminIdProvider.overrideWithValue('mock-super-admin-id'),
+        isSuperAdminProvider.overrideWithValue(true),
       ],
       child: MaterialApp(
+        theme: AppTheme.darkTheme,
         home: Scaffold(
           body: CreateOrganizationWizard(onSuccess: onSuccess ?? () {}),
         ),
@@ -114,7 +118,6 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify it stays on step 1 due to validation error
-      // We use findsAtLeast(1) because both the validator and the manual text might show it
       expect(find.text('CNPJ inválido'), findsAtLeast(1));
     });
 
@@ -127,7 +130,6 @@ void main() {
       const orgId = 'new-org-id';
       var successCalled = false;
 
-      // Mock Success Responses
       when(() => mockHandler.handle(any())).thenAnswer(
         (_) async => const CreateOrganizationResult(
           orgId: orgId,
@@ -144,7 +146,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // --- STEP 1: Basic Info ---
       await tester.enterText(
         find.ancestor(
           of: find.text('Razão Social *'),
@@ -159,8 +160,6 @@ void main() {
         ),
         'Omni',
       );
-
-      // Use a valid CNPJ format (for mock check only)
       await tester.enterText(
         find.ancestor(
           of: find.text('CNPJ *'),
@@ -169,7 +168,7 @@ void main() {
         '11.444.777/0001-61',
       );
 
-      await tester.pump(const Duration(milliseconds: 800)); // Debounce
+      await tester.pump(const Duration(milliseconds: 800));
       await tester.pumpAndSettle();
 
       final nextButtonStep1 = find.text('Próximo');
@@ -177,7 +176,6 @@ void main() {
       await tester.tap(nextButtonStep1);
       await tester.pumpAndSettle();
 
-      // --- STEP 2: Limits ---
       await tester.enterText(
         find.ancestor(
           of: find.text('Máximo de Veículos *'),
@@ -214,7 +212,6 @@ void main() {
       await tester.tap(nextButtonStep2);
       await tester.pumpAndSettle();
 
-      // --- STEP 3: Admin Invite (chip-based) ---
       final emailField1 = find.ancestor(
         of: find.text('E-mails dos Admins *'),
         matching: find.byType(TextField),
@@ -223,23 +220,17 @@ void main() {
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
 
-      // FINAL SUBMIT (Find the button that says 'Criar e Enviar Convite')
       final submitButton = find.widgetWithText(
         ElevatedButton,
         'Criar e Enviar Convite',
       );
       await tester.ensureVisible(submitButton);
       await tester.tap(submitButton);
-      await tester.pump(); // Start submission
-
-      // Wait for async operations
+      await tester.pump();
       await tester.pump(const Duration(seconds: 3));
       await tester.pumpAndSettle();
 
-      // Verify the Success Dialog appears
       expect(find.text('Organização Criada!'), findsOneWidget);
-
-      // Close Dialog
       await tester.tap(find.text('Ver Tenants'));
       await tester.pumpAndSettle();
 
@@ -252,10 +243,6 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(800, 1500));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        // thenThrow fires synchronously — the async wrapper never completes,
-        // so Flutter's runner intercepts it before the wizard's try/catch.
-        // thenAnswer with an async throw produces a rejected Future that
-        // `await handler.handle(cmd)` correctly unwraps into the catch block.
         when(() => mockHandler.handle(any())).thenAnswer(
           (_) async =>
               throw const DomainException('Forensic Permission Denied'),
@@ -264,7 +251,6 @@ void main() {
         await tester.pumpWidget(createWizard(mockRepo, mockLookup));
         await tester.pumpAndSettle();
 
-        // Advance Steps
         await tester.enterText(
           find.ancestor(
             of: find.text('Razão Social *'),
@@ -336,7 +322,6 @@ void main() {
         await tester.testTextInput.receiveAction(TextInputAction.done);
         await tester.pumpAndSettle();
 
-        // Submit
         final submitButton = find.widgetWithText(
           ElevatedButton,
           'Criar e Enviar Convite',
@@ -346,9 +331,80 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         await tester.pumpAndSettle();
 
-        // Verify error handling (Snackbar)
         expect(find.text('Forensic Permission Denied'), findsOneWidget);
       },
     );
+
+    testWidgets('UX: CNPJ Debounce Integrity', (tester) async {
+      await tester.pumpWidget(createWizard(mockRepo, mockLookup));
+
+      final cnpjFinder = find.ancestor(
+        of: find.text('CNPJ *'),
+        matching: find.byType(TextFormField),
+      );
+      
+      await tester.enterText(cnpjFinder, '11.444.777/0001-61');
+      
+      // Wait less than debounce (300ms < 600ms)
+      await tester.pump(const Duration(milliseconds: 300));
+      verifyNever(() => mockRepo.checkCnpjExists(any()));
+
+      // Wait more to trigger (another 400ms = 700ms total)
+      await tester.pump(const Duration(milliseconds: 400));
+      verify(() => mockRepo.checkCnpjExists('11444777000161')).called(1);
+    });
+
+    testWidgets('UX: Auto-Fill Intention Preservation', (tester) async {
+      final mockData = CnpjCompanyData(
+        cnpj: '11444777000161',
+        legalName: 'Omni Consorcio Ltda',
+        tradeName: 'Omni Digital',
+        situation: 'ATIVA',
+      );
+
+      when(() => mockLookup.lookup('11444777000161')).thenAnswer((_) async => mockData);
+
+      await tester.pumpWidget(createWizard(mockRepo, mockLookup));
+
+      final tradeNameFinder = find.ancestor(
+        of: find.text('Nome Fantasia *'),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(tradeNameFinder, 'Meu Nome Customizado');
+
+      final cnpjFinder = find.ancestor(
+        of: find.text('CNPJ *'),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(cnpjFinder, '11.444.777/0001-61');
+      
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pumpAndSettle();
+
+      final legalNameFinder = find.ancestor(
+        of: find.text('Razão Social *'),
+        matching: find.byType(TextFormField),
+      );
+      expect(tester.widget<TextFormField>(legalNameFinder).controller?.text, equals('Omni Consorcio Ltda'));
+      expect(tester.widget<TextFormField>(tradeNameFinder).controller?.text, equals('Meu Nome Customizado'));
+    });
+
+    testWidgets('Resilience: API Failure does not crash UI', (tester) async {
+      when(() => mockLookup.lookup(any())).thenThrow(Exception('Service Unavailable'));
+
+      await tester.pumpWidget(createWizard(mockRepo, mockLookup));
+
+      final cnpjFinder = find.ancestor(
+        of: find.text('CNPJ *'),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(cnpjFinder, '11.444.777/0001-61');
+      
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateOrganizationWizard), findsOneWidget);
+      expect(find.text('Razão Social *'), findsOneWidget);
+    });
   });
 }
