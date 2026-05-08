@@ -5,6 +5,7 @@ import 'package:veraprob/application/sla_audit/quick_reconciliation_service.dart
 import 'package:veraprob/core/services/alert_sound_service.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
 import 'sla_providers.dart';
@@ -16,25 +17,48 @@ import 'auth_providers.dart';
 /// Uses Postgres Changes subscription on `operational_alerts` table.
 /// Filters by organization_id and status='ACTIVE' client-side.
 /// INV-1: Org-scoped via currentOrganizationIdProvider.
+///
+/// Overrides [updateShouldNotify] to always return `true` so that every
+/// stream emission triggers a rebuild in listeners — even if the list is
+/// equal by `==`. Real-time alerts must propagate immediately (Req 8.2).
 final activeAlertsStreamProvider =
-    StreamProvider.autoDispose<List<OperationalAlert>>((ref) {
-      final client = ref.watch(supabaseClientProvider);
-      final orgId = ref.watch(currentOrganizationIdProvider);
-      if (orgId == null) return Stream.value([]);
+    StreamNotifierProvider.autoDispose<
+      ActiveAlertsNotifier,
+      List<OperationalAlert>
+    >(ActiveAlertsNotifier.new);
 
-      return client
-          .from('operational_alerts')
-          .stream(primaryKey: ['id'])
-          .eq('organization_id', orgId)
-          .order('severity')
-          .order('triggered_at_utc', ascending: false)
-          .map(
-            (rows) => rows
-                .where((r) => r['status'] == 'ACTIVE')
-                .map(_fromRow)
-                .toList(),
-          );
-    });
+/// StreamNotifier backing [activeAlertsStreamProvider].
+///
+/// Always notifies listeners on every emission to guarantee real-time
+/// alert propagation regardless of equality.
+class ActiveAlertsNotifier extends StreamNotifier<List<OperationalAlert>> {
+  @override
+  Stream<List<OperationalAlert>> build() {
+    final client = ref.watch(supabaseClientProvider);
+    final orgId = ref.watch(currentOrganizationIdProvider);
+    if (orgId == null) return Stream.value([]);
+
+    return client
+        .from('operational_alerts')
+        .stream(primaryKey: ['id'])
+        .eq('organization_id', orgId)
+        .order('severity')
+        .order('triggered_at_utc', ascending: false)
+        .map(
+          (rows) =>
+              rows.where((r) => r['status'] == 'ACTIVE').map(_fromRow).toList(),
+        );
+  }
+
+  @override
+  bool updateShouldNotify(
+    AsyncValue<List<OperationalAlert>> previous,
+    AsyncValue<List<OperationalAlert>> next,
+  ) {
+    // Always notify — real-time alerts must propagate immediately (Req 8.2)
+    return true;
+  }
+}
 
 /// Fallback: one-shot fetch of active alerts (for non-realtime contexts).
 final activeAlertsProvider = FutureProvider<List<OperationalAlert>>((
@@ -43,7 +67,7 @@ final activeAlertsProvider = FutureProvider<List<OperationalAlert>>((
   final repo = ref.watch(operationalAlertRepositoryProvider);
   final orgId = ref.watch(currentOrganizationIdProvider);
   if (orgId == null) return [];
-  return repo.findActive(orgId);
+  return repo.findActive(orgId).withProviderTimeout();
 });
 
 /// Provides alerts for a specific entity (SET ID).
@@ -53,7 +77,7 @@ final entityAlertsProvider =
       entityId,
     ) async {
       final repo = ref.watch(operationalAlertRepositoryProvider);
-      return repo.findByEntityId(entityId);
+      return repo.findByEntityId(entityId).withProviderTimeout();
     });
 
 /// Provides the AlertService for lifecycle transitions.

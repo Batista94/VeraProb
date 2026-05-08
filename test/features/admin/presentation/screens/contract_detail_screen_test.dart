@@ -1,8 +1,9 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show AsyncNotifierProviderFamily;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -28,22 +29,25 @@ class _FakeSubmitCommand extends Fake
     implements SubmitContractForApprovalCommand {}
 
 class _StaticDetailNotifier extends ContractDetailNotifier {
-  _StaticDetailNotifier(this._detail);
+  _StaticDetailNotifier(this._detail) : super('test-contract-id');
   final ContractDetailView? _detail;
 
   @override
-  Future<ContractDetailView?> build(String arg) async => _detail;
+  Future<ContractDetailView?> build() async => _detail;
 }
 
 class _ErrorDetailNotifier extends ContractDetailNotifier {
+  _ErrorDetailNotifier() : super('test-contract-id');
+
   @override
-  Future<ContractDetailView?> build(String arg) async =>
-      throw Exception('boom');
+  Future<ContractDetailView?> build() async => throw Exception('boom');
 }
 
 class _LoadingDetailNotifier extends ContractDetailNotifier {
+  _LoadingDetailNotifier() : super('test-contract-id');
+
   @override
-  Future<ContractDetailView?> build(String arg) =>
+  Future<ContractDetailView?> build() =>
       Completer<ContractDetailView?>().future;
 }
 
@@ -131,9 +135,9 @@ Widget _buildScreen({
     String
   >
   provider,
-  required _StaticDetailNotifier Function()? staticFactory,
-  _ErrorDetailNotifier Function()? errorFactory,
-  _LoadingDetailNotifier Function()? loadingFactory,
+  required _StaticDetailNotifier Function(String)? staticFactory,
+  _ErrorDetailNotifier Function(String)? errorFactory,
+  _LoadingDetailNotifier Function(String)? loadingFactory,
   SubmitContractForApprovalHandler? handler,
   String? orgId = 'org-1',
   String? userId = 'user-1',
@@ -142,9 +146,9 @@ Widget _buildScreen({
 }) {
   return ProviderScope(
     overrides: [
-      if (staticFactory != null) provider.overrideWith(staticFactory),
-      if (errorFactory != null) provider.overrideWith(errorFactory),
-      if (loadingFactory != null) provider.overrideWith(loadingFactory),
+      if (staticFactory != null) provider.overrideWith2(staticFactory),
+      if (errorFactory != null) provider.overrideWith2(errorFactory),
+      if (loadingFactory != null) provider.overrideWith2(loadingFactory),
       currentOrganizationIdProvider.overrideWithValue(orgId),
       currentOperatorIdProvider.overrideWithValue(userId),
       currentUserRoleProvider.overrideWithValue(role),
@@ -166,7 +170,7 @@ Widget _buildWithDetail(
 }) {
   return _buildScreen(
     provider: contractDetailProvider,
-    staticFactory: () => _StaticDetailNotifier(detail),
+    staticFactory: (_) => _StaticDetailNotifier(detail),
     handler: handler,
     orgId: orgId,
     userId: userId,
@@ -223,7 +227,7 @@ void main() {
         _buildScreen(
           provider: contractDetailProvider,
           staticFactory: null,
-          loadingFactory: () => _LoadingDetailNotifier(),
+          loadingFactory: (_) => _LoadingDetailNotifier(),
         ),
       );
       await tester.pump();
@@ -239,7 +243,7 @@ void main() {
         _buildScreen(
           provider: contractDetailProvider,
           staticFactory: null,
-          errorFactory: () => _ErrorDetailNotifier(),
+          errorFactory: (_) => _ErrorDetailNotifier(),
         ),
       );
       await tester.pumpAndSettle();
@@ -444,7 +448,7 @@ void main() {
       await tester.pumpWidget(
         _buildScreen(
           provider: contractDetailProvider,
-          staticFactory: () => _StaticDetailNotifier(detail),
+          staticFactory: (_) => _StaticDetailNotifier(detail),
           handler: handler,
           orgId: null,
         ),

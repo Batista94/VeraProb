@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_query_service.dart';

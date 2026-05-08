@@ -68,6 +68,9 @@ CREATE TABLE IF NOT EXISTS public.justification_recomputation_signals (
   resolved_at_utc       TIMESTAMPTZ
 );
 
+COMMENT ON TABLE public.justification_recomputation_signals IS
+  'deny-all: Internal trigger signals. service_role only.';
+
 CREATE INDEX IF NOT EXISTS idx_jrs_contract_id
   ON public.justification_recomputation_signals (contract_id);
 

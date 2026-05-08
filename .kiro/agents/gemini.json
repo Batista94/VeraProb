@@ -1,0 +1,20 @@
+{
+  "name": "Gemini Assistant",
+  "description": "On-demand usage for simple bugs, documentation and context recovery.",
+  "persona": "file://./gemini-assistant.md",
+  "capabilities": [
+    "bash",
+    "read_workspace",
+    "mcp:sequential-thinking"
+  ],
+  "steering": [
+    "file://../steering/forensic-standards.md",
+    "file://../../CLAUDE.md",
+    "file://../AGENTS.md",
+    "file://../rules.md"
+  ],
+  "env": {
+    "MODE": "LIGHTWEIGHT",
+    "TOKEN_PRESERVATION": "1"
+  }
+}

@@ -45,6 +45,9 @@ CREATE TABLE IF NOT EXISTS public.justification_submission_tokens (
   created_at_utc        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+COMMENT ON TABLE public.justification_submission_tokens IS
+  'deny-all: Anonymous submission tokens. service_role only (token validated in RPC).';
+
 -- ── Indexes ───────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_jst_token
   ON public.justification_submission_tokens (token);

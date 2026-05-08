@@ -15,7 +15,7 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
 
 /// Current operator ID (from auth session in production).
 final currentOperatorIdProvider = Provider<String?>((ref) {
-  final authState = ref.watch(authStateProvider).valueOrNull;
+  final authState = ref.watch(authStateProvider).value;
   return authState?.session?.user.id;
 });
 
@@ -24,7 +24,7 @@ final currentOperatorIdProvider = Provider<String?>((ref) {
 /// Direct fetcher for organization ID when JWT metadata is missing/syncing.
 /// INV-30: Client injected via supabaseClientProvider.
 final organizationIdFetcherProvider = FutureProvider<String?>((ref) async {
-  final authState = ref.watch(authStateProvider).valueOrNull;
+  final authState = ref.watch(authStateProvider).value;
   final userId = authState?.session?.user.id;
   if (userId == null) return null;
 
@@ -57,19 +57,19 @@ Map<String, dynamic>? _jwtAppMeta(Session? session) {
 /// Extracts the strict `organization_id` boundary from the JWT claims.
 /// Injected by the Postgres `custom_access_token_hook`.
 final currentOrganizationIdProvider = Provider<String?>((ref) {
-  final session = ref.watch(authStateProvider).valueOrNull?.session;
+  final session = ref.watch(authStateProvider).value?.session;
 
   // 1. Try JWT payload claims (primary — hook-injected)
   final fromJwt = _jwtAppMeta(session)?['org_id'] as String?;
   if (fromJwt != null) return fromJwt;
 
   // 2. Fallback to the async fetcher result if available
-  return ref.watch(organizationIdFetcherProvider).valueOrNull;
+  return ref.watch(organizationIdFetcherProvider).value;
 });
 
 /// Current User Role derived from the JWT custom app_metadata claim.
 final currentUserRoleProvider = Provider<UserRole>((ref) {
-  final session = ref.watch(authStateProvider).valueOrNull?.session;
+  final session = ref.watch(authStateProvider).value?.session;
   final meta = _jwtAppMeta(session);
 
   // SuperAdmin check — must run before role string mapping (D2).
@@ -83,7 +83,7 @@ final currentUserRoleProvider = Provider<UserRole>((ref) {
 
 /// Current operator Display Name.
 final currentOperatorNameProvider = Provider<String>((ref) {
-  final authState = ref.watch(authStateProvider).valueOrNull;
+  final authState = ref.watch(authStateProvider).value;
   return authState?.session?.user.userMetadata?['name'] ?? 'Operador';
 });
 
@@ -92,7 +92,7 @@ final currentOperatorNameProvider = Provider<String>((ref) {
 /// Every sealed/refused verdict logs this email alongside the user ID
 /// in the immutable ledger for forensic traceability.
 final currentOperatorEmailProvider = Provider<String>((ref) {
-  final authState = ref.watch(authStateProvider).valueOrNull;
+  final authState = ref.watch(authStateProvider).value;
   return authState?.session?.user.email ?? '';
 });
 
@@ -114,6 +114,6 @@ final authRepositoryProvider = Provider<IAuthRepository>((ref) {
 ///
 /// Returns `null` if there is no active session.
 final currentSessionIdProvider = Provider<String?>((ref) {
-  final session = ref.watch(authStateProvider).valueOrNull?.session;
+  final session = ref.watch(authStateProvider).value?.session;
   return session?.accessToken;
 });

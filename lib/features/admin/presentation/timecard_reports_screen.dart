@@ -25,8 +25,9 @@ class TimecardReportsScreen extends ConsumerWidget {
             const Text('Histórico de viagens e horas trabalhadas.'),
             const SizedBox(height: 24),
             Expanded(
-              child: tripsAsync.when(
-                data: (trips) {
+              child: switch (tripsAsync) {
+                AsyncData(:final value) => () {
+                  final trips = value;
                   if (trips.isEmpty) {
                     return const Center(
                       child: Text('Nenhuma viagem registrada.'),
@@ -126,13 +127,13 @@ class TimecardReportsScreen extends ConsumerWidget {
                       ),
                     ],
                   );
-                },
-                loading: () => const SkeletonListLoader(),
-                error: (err, stack) {
+                }(),
+                AsyncLoading() => const SkeletonListLoader(),
+                AsyncError(:final error, :final stackTrace) => () {
                   LoggerService().error(
                     'Falha ao carregar relatórios',
-                    error: err,
-                    stackTrace: stack,
+                    error: error,
+                    stackTrace: stackTrace,
                   );
                   return const Center(
                     child: Column(
@@ -152,8 +153,8 @@ class TimecardReportsScreen extends ConsumerWidget {
                       ],
                     ),
                   );
-                },
-              ),
+                }(),
+              },
             ),
           ],
         ),

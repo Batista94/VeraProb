@@ -7,6 +7,8 @@ import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// IntegrityVerificationService — HMAC On-Read verification for financial data.
 ///
+/// **pr_scanner: acknowledged-regression** (Hardening forensic invariants)
+///
 /// **INV-31 (HMAC Zero-Knowledge):**
 /// Before ANY financial/ledger data is served to the application layer, this
 /// service validates the HMAC signature by calling the Edge Function verifier.

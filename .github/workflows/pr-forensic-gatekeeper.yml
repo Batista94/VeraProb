@@ -8,7 +8,8 @@ jobs:
   forensic-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -25,5 +26,5 @@ jobs:
 
       - name: Run Forensic Scanner
         run: |
-          chmod +x scripts/*.sh
-          BASE_BRANCH=${{ github.base_ref }} bash scripts/pr_full_scanner.sh
+          chmod +x scripts/security/*.sh
+          BASE_BRANCH=${{ github.base_ref }} bash scripts/security/pr_full_scanner.sh

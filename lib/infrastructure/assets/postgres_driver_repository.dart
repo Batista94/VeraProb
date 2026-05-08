@@ -46,9 +46,13 @@ class PostgresDriverRepository extends BasePostgresRepository
   }
 
   @override
-  Future<void> deleteDriver(String driverId) async {
+  Future<void> archiveDriver(String driverId) async {
     try {
-      await client.from('drivers').delete().eq('id', driverId);
+      // INV-3: No hard DELETE. RPC soft-archives driver + revokes Telegram bindings.
+      await client.rpc(
+        'offboard_driver',
+        params: {'p_driver_id': driverId, 'p_org_id': _orgId},
+      );
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'driver');
     }

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
 
 void main() {
@@ -11,11 +12,18 @@ void main() {
           'legal_name': 'Transportes Silva Ltda.',
           'plan_type': 'professional',
           'is_active': true,
+          'status': 'ACTIVE',
           'max_vehicles': 100,
           'max_active_contracts': 25,
           'active_contract_count': 5,
           'last_telemetry_at': '2026-03-19T10:30:00.000Z',
           'open_critical_alert_count': 2,
+          'capabilities': {'allows_sealing': true, 'allows_loading': false},
+          'tool_cost_cents': 50000,
+          'dwell_time_seconds': 600,
+          'billing_day': 15,
+          'contact_email': 'billing@silva.com',
+          'external_id': 'CRM-001',
         };
 
         final snapshot = TenantHealthSnapshot.fromJson(json);
@@ -25,12 +33,68 @@ void main() {
         expect(snapshot.legalName, equals('Transportes Silva Ltda.'));
         expect(snapshot.planType, equals('professional'));
         expect(snapshot.isActive, isTrue);
+        expect(snapshot.status, equals(OrgStatus.active));
         expect(snapshot.maxVehicles, equals(100));
         expect(snapshot.maxActiveContracts, equals(25));
         expect(snapshot.activeContractCount, equals(5));
         expect(snapshot.lastTelemetryAt, isNotNull);
         expect(snapshot.lastTelemetryAt!.isUtc, isTrue);
         expect(snapshot.openCriticalAlertCount, equals(2));
+        expect(snapshot.capabilities, {
+          'allows_sealing': true,
+          'allows_loading': false,
+        });
+        expect(snapshot.toolCostCents, equals(50000));
+        expect(snapshot.dwellTimeSeconds, equals(600));
+        expect(snapshot.billingDay, equals(15));
+        expect(snapshot.contactEmail, equals('billing@silva.com'));
+        expect(snapshot.externalId, equals('CRM-001'));
+      });
+
+      test('maps TRIAL status correctly', () {
+        final json = {
+          'id': 'org-trial',
+          'name': 'Trial Org',
+          'is_active': true,
+          'status': 'TRIAL',
+          'max_vehicles': 5,
+          'max_active_contracts': 2,
+          'active_contract_count': 0,
+          'open_critical_alert_count': 0,
+        };
+        final snapshot = TenantHealthSnapshot.fromJson(json);
+        expect(snapshot.status, equals(OrgStatus.trial));
+        expect(snapshot.isActive, isTrue);
+      });
+
+      test('maps SUSPENDED status correctly', () {
+        final json = {
+          'id': 'org-suspended',
+          'name': 'Suspended Org',
+          'is_active': false,
+          'status': 'SUSPENDED',
+          'max_vehicles': 10,
+          'max_active_contracts': 5,
+          'active_contract_count': 0,
+          'open_critical_alert_count': 0,
+        };
+        final snapshot = TenantHealthSnapshot.fromJson(json);
+        expect(snapshot.status, equals(OrgStatus.suspended));
+        expect(snapshot.isActive, isFalse);
+      });
+
+      test('status is null when absent from JSON (retro-compat)', () {
+        final json = {
+          'id': 'org-legacy',
+          'name': 'Legacy Org',
+          'is_active': true,
+          'max_vehicles': 10,
+          'max_active_contracts': 5,
+          'active_contract_count': 0,
+          'open_critical_alert_count': 0,
+        };
+        final snapshot = TenantHealthSnapshot.fromJson(json);
+        expect(snapshot.status, isNull);
       });
 
       test('handles null nullable fields gracefully', () {
@@ -86,6 +150,35 @@ void main() {
         expect(snapshot.maxVehicles, equals(50));
         expect(snapshot.activeContractCount, equals(3));
         expect(snapshot.openCriticalAlertCount, equals(1));
+      });
+
+      test('new fields default when absent from JSON (legacy orgs)', () {
+        final json = {
+          'id': 'org-legacy',
+          'name': 'Legacy Org',
+          'is_active': true,
+        };
+
+        final snapshot = TenantHealthSnapshot.fromJson(json);
+
+        expect(snapshot.capabilities, isNull);
+        expect(snapshot.toolCostCents, isNull);
+        expect(snapshot.dwellTimeSeconds, equals(300));
+        expect(snapshot.billingDay, isNull);
+        expect(snapshot.contactEmail, isNull);
+        expect(snapshot.externalId, isNull);
+      });
+
+      test('capabilities as empty map parses without error', () {
+        final json = {
+          'id': 'org-empty-caps',
+          'name': 'Empty Caps Org',
+          'is_active': true,
+          'capabilities': <String, dynamic>{},
+        };
+
+        final snapshot = TenantHealthSnapshot.fromJson(json);
+        expect(snapshot.capabilities, equals(<String, dynamic>{}));
       });
     });
 

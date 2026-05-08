@@ -9,6 +9,7 @@ import 'package:veraprob/domain/sla_audit/shift_pattern.dart';
 import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
+import 'async_command_mixin.dart';
 import 'contract_command_state.dart';
 
 /// Notifier that executes contract commands (close, declare plan, etc.) and
@@ -25,12 +26,13 @@ import 'contract_command_state.dart';
 /// - The [idempotencyKey] is stable across network retries.
 /// - [onFormChanged] recycles the key ONLY if a previous error occurred.
 /// - Uses [ref.keepAlive()] to prevent unmount during in-flight operations.
-class ContractCommandNotifier
-    extends AutoDisposeFamilyNotifier<ContractCommandState, String> {
-  ContractCommandNotifier();
+class ContractCommandNotifier extends Notifier<ContractCommandState>
+    with AsyncCommandMixin<ContractCommandState> {
+  ContractCommandNotifier(this.contractId);
+  final String contractId;
 
   @override
-  ContractCommandState build(String contractId) {
+  ContractCommandState build() {
     // [INV-33] Stable Key on build
     return ContractCommandState(idempotencyKey: const Uuid().v4());
   }
@@ -72,13 +74,16 @@ class ContractCommandNotifier
 
       final updatedContract = await handler.handle(command);
 
+      if (!ref.mounted) return null;
+
       // ── Anti-Pipoco State Sync ────────────────────────────────────
       _syncDetailView(contractId, updatedContract);
       ref.invalidate(contractListProvider);
-
       state = state.copyWith(status: const AsyncData(null));
+
       return updatedContract;
     } catch (e, st) {
+      if (!ref.mounted) return null;
       state = state.copyWith(status: AsyncError(e, st));
       return null;
     } finally {
@@ -119,7 +124,9 @@ class ContractCommandNotifier
         idempotencyKey: state.idempotencyKey,
       );
 
-      final plan = await handler.handle(command);
+      final planResult = await handler.handle(command);
+
+      if (!ref.mounted) return null;
 
       // ── Anti-Pipoco State Sync ────────────────────────────────────
       // Not yet implementing deep contract update for plans since
@@ -127,10 +134,11 @@ class ContractCommandNotifier
       // the detail view for plans to ensure projection sync.
       ref.invalidate(contractDetailProvider(contractId));
       ref.invalidate(contractListProvider);
-
       state = state.copyWith(status: const AsyncData(null));
-      return plan.id;
+
+      return planResult.id;
     } catch (e, st) {
+      if (!ref.mounted) return null;
       state = state.copyWith(status: AsyncError(e, st));
       return null;
     } finally {
@@ -140,9 +148,7 @@ class ContractCommandNotifier
 
   /// Internally maps Domain Contract -> View Model and updates state.
   void _syncDetailView(String contractId, Contract domain) {
-    final currentView = ref
-        .read(contractDetailProvider(contractId))
-        .valueOrNull;
+    final currentView = ref.read(contractDetailProvider(contractId)).value;
     if (currentView != null) {
       final updatedView = currentView.copyWith(
         summary: currentView.summary.copyWith(
@@ -169,9 +175,7 @@ class ContractCommandNotifier
 }
 
 /// Provider family for the contract command notifier.
-final contractCommandNotifierProvider =
-    AutoDisposeNotifierProvider.family<
-      ContractCommandNotifier,
-      ContractCommandState,
-      String
-    >(ContractCommandNotifier.new);
+final contractCommandNotifierProvider = NotifierProvider.autoDispose
+    .family<ContractCommandNotifier, ContractCommandState, String>(
+      ContractCommandNotifier.new,
+    );

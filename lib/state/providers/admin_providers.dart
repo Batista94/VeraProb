@@ -1,12 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/application/super_admin/quota_warning_service.dart';
+import 'package:veraprob/domain/admin/quota_warning.dart';
 import 'package:veraprob/application/admin/accept_invitation_handler.dart';
 import 'package:veraprob/application/admin/change_user_role_handler.dart';
+import 'package:veraprob/application/admin/deactivate_member_handler.dart';
 import 'package:veraprob/application/admin/invitation_command_service.dart';
 import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/application/admin/remove_member_handler.dart';
 import 'package:veraprob/application/admin/revoke_invitation_handler.dart';
+import 'package:veraprob/application/admin/create_execution_handler.dart';
 import 'package:veraprob/application/admin/update_org_settings_handler.dart';
+import 'package:veraprob/application/admin/update_org_operational_params_handler.dart';
 import 'package:veraprob/application/admin/user_management_command_service.dart';
 import 'package:veraprob/domain/admin/data_seeding_repository.dart';
 import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
@@ -27,6 +32,7 @@ import 'package:veraprob/infrastructure/admin/supabase_data_seeding_repository.d
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
+import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'auth_providers.dart';
@@ -125,14 +131,54 @@ final removeMemberHandlerProvider = Provider<RemoveMemberHandler>((ref) {
   );
 });
 
+final deactivateMemberHandlerProvider = Provider<DeactivateMemberHandler>((
+  ref,
+) {
+  return DeactivateMemberHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    commandService: ref.watch(userManagementCommandServiceProvider),
+    queryService: ref.watch(userManagementQueryServiceProvider),
+  );
+});
+
 final updateOrgSettingsHandlerProvider = Provider<UpdateOrgSettingsHandler>((
   ref,
 ) {
   return UpdateOrgSettingsHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(organizationRepositoryProvider),
+    auditLogService: ref.watch(systemAuditLogServiceProvider),
   );
 });
+
+final updateOrgOperationalParamsHandlerProvider =
+    Provider<UpdateOrgOperationalParamsHandler>((ref) {
+      return UpdateOrgOperationalParamsHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
+        repository: ref.watch(organizationRepositoryProvider),
+        auditLogService: ref.watch(systemAuditLogServiceProvider),
+      );
+    });
+
+final createExecutionHandlerProvider = Provider<CreateExecutionHandler>((ref) {
+  return CreateExecutionHandler(
+    client: ref.watch(supabaseClientProvider),
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+  );
+});
+
+// ── Quota Warning Providers ───────────────────────────────────────────────────
+
+final quotaWarningServiceProvider = Provider<QuotaWarningService>((ref) {
+  return QuotaWarningService(ref.watch(supabaseClientProvider));
+});
+
+final activeQuotaWarningsProvider =
+    FutureProvider.autoDispose<List<QuotaWarning>>((ref) async {
+      final orgId = ref.watch(currentOrganizationIdProvider);
+      if (orgId == null) return const [];
+      return ref.watch(quotaWarningServiceProvider).getActiveWarnings(orgId);
+    });
 
 // ── UI Data Providers ────────────────────────────────────────────────────────
 

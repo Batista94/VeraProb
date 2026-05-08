@@ -1,46 +1,53 @@
 # VeraProb - MASTER
-SLA/Finance Protection.
+SLA/Finance Protection. Forensic Governance.
 
 ## PROTOCOLS
-1. TDD: Mandatory. Fail test BEFORE code.
-2. DESIGN: Industrial Dark. Micro-anim, glassmorphism, 8pt, Inter/Outfit. "Forensic/Precise".
-3. AUTONOMY: Proactive Council (.claude/agents/). Use skills (npx skills list). UX/Ops for arch/UI. QA/Senior sign-off.
-4. RESPONSE: Brief "Forensic Insight" + INV-X. UI: Direct fix.
+1. TDD: Fail test (IntegrityException) BEFORE code.
+2. DESIGN: Industrial Dark. Micro-anim, glassmorphism, 8pt, Inter/Outfit.
+3. AUTONOMY: Proactive Council. Lead Reviewer for ALL PRs.
+4. SCANNER: Run `bash scripts/security/pr_full_scanner.sh` BEFORE PR/Merge to Main. (Commits are free).
 
-## INV-1 to INV-27
-Details: .claude/rules/forensic-standards.md
+## COUNCIL PERSONAS
+- Architect: Agnostic core, C4, Wasm.
+- Senior: Flutter, Supabase/SQL, Perf.
+- QA/Sec: Red Team, RLS, invariant.
+- Reviewer: Gatekeeper. Final veto.
+- UX/Ops: Frictionless, zero-touch.
 
-| ID | Rule |
-|----|------|
-| 1 | org_id filter ALL. Fail-Fast JWT. |
-| 2 | RLS: auth.jwt() organization_id. NO uid. |
-| 3 | Ledger: APPEND-ONLY. NO Update/Delete. |
-| 4 | Money: BIGINT cents (DB/DTO). Money VO (Domain). |
-| 5 | Round: (cents * bps + 5000) ~/ 10000. |
-| 6 | UTC: DateTime.now().toUtc() ONE LINE. |
-| 7 | Type: No dynamic. Strict null safety. |
-| 8 | Repo: Enforce org_id. |
-| 9 | Seal: SHA-256 telemetry/files. |
-| 10| Error: IntegrityException. No silent fail. |
-| 11| Skill: State context before logic change. |
-| 12| Double: Annotate // Physical Metric. |
-| 13| Layers: C4. Features NO Domain/Infra import. |
-| 14| Transp: Use Asset/Operator/Execution contexts. |
-| 15| Deter: Byte-identical replay. |
-| 16| Limits: Max 60 DB connections. Pool/Stream. |
-| 17| Web: dart:js_interop (WASM). |
-| 18| Trust: Telemetry untrusted until normalized. |
-| 19| JIT: Inline master data in flows. |
-| 20| Time: DateTimeRange + UTC normal. |
-| 21| Audit: Engine verdict -> Snapshot ID. |
-| 22| Isol: Tenant isolation (Red Team target). |
-| 23| Budget: Free tier for pre-revenue. |
-| 24| Sec: Agentic need Security Audit Signature. |
-| 25| Stack: Supabase, MapTiler, PostHog, Resend, Sentry. |
-| 26| Parity: 404 for Not Found/Wrong Org. |
-| 27| Origin: Verify source ownership. |
+## INVARIANTS (INV-1 to INV-28)
+Consult Memory Server (entity: "VeraProb Invariants").
+Must check before structural/domain edits.
 
 ---
-## CMDS
-/audit, /tdd, /init.
-Council: Architect, Senior, QA/Sec, UX/Ops, Maverick.
+## ORCHESTRATION (Makefile)
+- `make setup` : Build env (DB/Seeds).
+- `make run`   : Local dev.
+- `make check` : Security/PR scan.
+- `make help`  : List all cmds.
+
+## COUNCIL
+Architect, Senior, QA/Sec, UX/Ops, Reviewer.
+
+---
+## DOMAIN PROTOCOLS
+- **SuperAdmin**: All multi-tenant escapes MUST use `SuperAdminBypassTenantValidator`. MFA enforcement is mandatory for sensitive state transitions (Archive/Quota/Delete).
+- **Telegram**: Integration via `TelegramBindingToken` (short TTL). Evidence links must be strictly bound to `organization_id` to maintain INV-1 isolation.
+
+---
+## GUARDRAILS & HOOKS (Source: `hooks.json`)
+Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
+
+| ID | Hook | Trigger | Action |
+|---|---|---|---|
+| H-01 | **TOKEN GUARD** | `preToolUse` | `.kiro/scripts/pre-tool-use.sh` (Auto-block >800 chars, node_modules). |
+| H-02 | **TYPE SYNC** | `preCommit` | `bash scripts/sync_db_types.sh` (Dart/SQL Parity). |
+| H-03 | **FORENSIC SCAN** | `preCommit` | `bash scripts/security/pr_full_scanner.sh` (Veto Gatekeeper). |
+| H-04 | **SECRET SCAN** | `preCommit` | `python scripts/security/scan_secrets.py` (INV-28). |
+| H-05 | **BARREL SCAN** | `preCommit` | `python scripts/validate_barrel_files.py` (INV-13). |
+| H-06 | **PROMPT AUDIT** | `preCommit` | `skill://prompt-injection-auditor/audit-batch` (INV-41). |
+| H-07 | **TDD ASSIST** | `onTestFail` | Senior Persona suggestion for fix. |
+| H-08 | **CHAOS SUGGEST**| `onTestRun` | `skill://iot-chaos-simulator/auto-suggest`. |
+| H-09 | **CACHE REFRESH**| `postSave` | `bash scripts/refresh_schema_cache.sh` (PostgREST sync). |
+| H-10 | **MISSION SYNC**| `onMissionComplete` | `mcp:memory/sync_project_state` (Memory persistence). |
+| H-11 | **INDEX ADVISOR**| `preCommit` | `python scripts/index_advisor.py` (INV-12). |
+

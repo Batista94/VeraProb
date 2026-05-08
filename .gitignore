@@ -23,7 +23,7 @@ app.*.map.json
 
 # Secrets & Environment (OWASP A01:2025/INV-2 Mitigation)
 .env*
-.env
+!.env.example
 .dev.env
 docs/governance/dev_environment.md
 *.secret
@@ -59,7 +59,37 @@ Thumbs.db
 .claude/*.log
 !.claude/skills/
 
+
 # Supabase Local Infrastructure
 supabase/.temp/
 supabase/.branches/
+supabase/snippets/
 
+
+# Agent & Tooling
+node_modules/
+package.json
+package-lock.json
+brain/
+scratch/
+tmp_*.dart
+test_output.txt
+devtools_options.yaml
+
+# Kiro (local settings — OS-specific MCP configs)
+.kiro/specs/
+.kiro/settings/mcp.json
+
+# MCP configs (OS-specific, each dev configures locally)
+.mcp.json
+
+# Vendored MCP server repos (install via tooling, not vendored)
+.docker-mcp/
+.mcp-servers-archived/
+.playwright-mcp/
+
+# Security Audit (INV-28 — local forensic logs, never commit)
+.veraprob/
+
+# Performance Guardian (INV-12 — query plan cache)
+.index_advisor_cache.json

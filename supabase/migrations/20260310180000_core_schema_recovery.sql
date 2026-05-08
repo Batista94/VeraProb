@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-rls (policies superseded by 20260322000001_asset_org_isolation.sql)
 -- ============================================================
 -- veraprob Core Schema Recovery Migration
 -- Target: Recover missing tables (drivers, routes, trips_audit)
@@ -10,7 +11,8 @@ CREATE TABLE IF NOT EXISTS public.drivers (
     license_number TEXT UNIQUE NOT NULL,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'pending')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    organization_id UUID -- Added for INV-2 compliance
 );
 
 -- 2. ROUTES
@@ -21,7 +23,8 @@ CREATE TABLE IF NOT EXISTS public.routes (
     long_name TEXT DEFAULT '',
     color TEXT,
     agency_id TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    organization_id UUID -- Added for INV-2 compliance
 );
 
 -- 3. TRIPS AUDIT (The reality table expected by TripRepositoryImpl)
@@ -48,17 +51,17 @@ DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Tenant Access Drivers') THEN
         CREATE POLICY "Tenant Access Drivers" ON public.drivers
-            FOR ALL USING (TRUE); -- Simple for now, refine based on org_id if added later
+            FOR ALL USING (organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid);
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Tenant Access Routes') THEN
         CREATE POLICY "Tenant Access Routes" ON public.routes
-            FOR ALL USING (TRUE);
+            FOR ALL USING (organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid);
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Tenant Access Trips') THEN
         CREATE POLICY "Tenant Access Trips" ON public.trips_audit
-            FOR ALL USING (TRUE);
+            FOR ALL USING (organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid);
     END IF;
 END $$;
 

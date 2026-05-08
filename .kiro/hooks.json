@@ -1,0 +1,101 @@
+{
+  "hooks": [
+    {
+      "event": "preCommit",
+      "agent": "senior-engineer",
+      "action": "bash scripts/sync_db_types.sh",
+      "blocking": false,
+      "description": "Sincronização de Tipos (Type-Safe Database): Garante que PRs com migrations incluam os tipos Dart atualizados. Bloqueia em main/PR se falhar."
+    },
+    {
+      "event": "preCommit",
+      "agent": "lead-reviewer",
+      "condition": "git.branch == 'main' || git.hasOpenPR == true",
+      "action": "bash scripts/security/pr_full_scanner.sh",
+      "blocking": true,
+      "description": "Veto Forense (Main/PR): O scanner só bloqueia a integração final. Branches de dev têm fluxo livre."
+    },
+    {
+      "event": "preCommit",
+      "agent": "security-auditor",
+      "condition": "git.branch == 'main' || git.hasOpenPR == true",
+      "action": "python scripts/security/scan_secrets.py",
+      "blocking": true,
+      "description": "Scanner Forense de Segredos (INV-28): Detecta chaves, tokens e strings de alta entropia nos arquivos staged. Não exibe segredos reais. Gera log em .veraprob/security_audit.log."
+    },
+    {
+      "event": "preCommit",
+      "agent": "security-auditor",
+      "action": "skill://prompt-injection-auditor/audit-batch .kiro/skills",
+      "blocking": true,
+      "description": "Auditoria de Prompt Injection (INV-41): Escaneia todas as skills e instruções em busca de vulnerabilidades de injeção e jailbreaks."
+    },
+    {
+      "event": "preCommit",
+      "agent": "architect",
+      "action": "python scripts/validate_barrel_files.py",
+      "blocking": true,
+      "description": "Validador de Arquivos Barrel (INV-13): Previne dependências circulares e importações desordenadas no core e features."
+    },
+    {
+      "event": "onTestFail",
+      "agent": "senior-engineer",
+      "description": "Auxílio em modo TDD: Sugere correções apenas quando o teste falha explicitamente."
+    },
+    {
+      "event": "onTestRun",
+      "agent": "qa-security",
+      "action": "skill://iot-chaos-simulator/auto-suggest",
+      "description": "Sugere testes de resiliência em cenários críticos de telemetria."
+    },
+    {
+      "event": "onMissionComplete",
+      "agent": "architect",
+      "action": "mcp:memory/sync_project_state",
+      "description": "Sincroniza automaticamente Invariantes e decisões arquiteturais com o Knowledge Graph."
+    },
+    {
+      "event": "postSave",
+      "condition": "file.extension == '.sql' && file.path.includes('supabase/migrations/')",
+      "agent": "senior-engineer",
+      "action": "bash scripts/refresh_schema_cache.sh",
+      "blocking": false,
+      "description": "Sincronização de Cache (INV-15): Recarrega o PostgREST automaticamente ao salvar uma migration."
+    },
+    {
+      "event": "postMerge",
+      "agent": "senior-engineer",
+      "action": "bash scripts/refresh_schema_cache.sh",
+      "blocking": false,
+      "description": "Sincronização de Cache (Post-Merge): Recarrega o PostgREST após atualizações de branch que tragam migrations."
+    },
+    {
+      "event": "preToolUse",
+      "agent": "*",
+      "action": "bash .kiro/scripts/pre-tool-use.sh",
+      "blocking": true,
+      "description": "Token Guard (INV-40): Bloqueia ferramentas caras/redundantes e acessos proibidos para economizar 40-60% de tokens."
+    },
+    {
+      "event": "preCommit",
+      "agent": "senior-engineer",
+      "action": "python scripts/index_advisor.py",
+      "blocking": false,
+      "description": "Index Advisor (INV-12): Sugere índices para queries SQL identificadas no código Dart ou migrations."
+    },
+    {
+      "event": "preReview",
+      "agent": "lead-reviewer",
+      "action": "git diff --staged > .veraprob/temp_diff.txt && skill://context-optimizer/apply-diff-only .veraprob/temp_diff.txt",
+      "description": "Revisão Diferencial: Força o agente a olhar apenas para o que mudou, evitando o re-processamento de código legado inalterado."
+    },
+    {
+      "event": "onMissionStep",
+      "agent": "*",
+      "condition": "env.SCRATCHPAD_CONTENT != ''",
+      "action": "bash scripts/sync_scratchpad.sh",
+      "blocking": false,
+      "description": "Sync Scratchpad (INV-42): Sincroniza estado operacional entre 11 personas. Ambiente deve definir SCRATCHPAD_PERSONA, SCRATCHPAD_SECTION, SCRATCHPAD_ACTION, SCRATCHPAD_CONTENT."
+    }
+  ]
+}

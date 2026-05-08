@@ -8,6 +8,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_rep
 import 'package:veraprob/infrastructure/sla_audit/postgres_operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/geocoding_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/http_geocoding_repository.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'auth_providers.dart';
 
 // ── Repository ───────────────────────────────────────────────
@@ -34,7 +35,8 @@ final operationalZonesProvider = FutureProvider<List<OperationalZoneView>>((
 
   final zones = await ref
       .watch(operationalZoneRepositoryProvider)
-      .findByOrganization(orgId);
+      .findByOrganization(orgId)
+      .withProviderTimeout();
   return zones.map(OperationalZoneView.fromDomain).toList();
 });
 
@@ -57,5 +59,8 @@ final geocodingSearchProvider =
     FutureProvider.family<List<PlaceSuggestion>, String>((ref, query) async {
       if (query.length < 4) return <PlaceSuggestion>[];
       // Artificial delay to mimic debouncing is handled by Riverpod's cache
-      return ref.watch(geocodingRepositoryProvider).search(query);
+      return ref
+          .watch(geocodingRepositoryProvider)
+          .search(query)
+          .withProviderTimeout();
     });

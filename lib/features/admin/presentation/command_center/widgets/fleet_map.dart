@@ -54,7 +54,7 @@ class _FleetMapState extends ConsumerState<FleetMap> {
     ref.listen(commandCenterFilterProvider, (previous, next) {
       if (next.followVehicleId != null &&
           previous?.followVehicleId != next.followVehicleId) {
-        final positions = ref.read(normalizedStateProvider).valueOrNull;
+        final positions = ref.read(normalizedStateProvider).value;
         final vehicle = positions
             ?.where((v) => v.vehicleId == next.followVehicleId)
             .firstOrNull;
@@ -120,14 +120,14 @@ class _FleetMapState extends ConsumerState<FleetMap> {
               name: 'FleetMap',
               child: AnimatedFleetMarkerLayer(
                 states: projection.allFilteredVehicles,
-                trips: tripsAsync.valueOrNull ?? [],
+                trips: tripsAsync.value ?? [],
                 attentionProjection: ref.watch(
                   fleetAttentionProjectionProvider,
                 ),
                 selectedId: selectedId,
                 showLabels: _showLabels,
                 onMarkerTap: (tripId) {
-                  ref.read(selectedTripIdProvider.notifier).state = tripId;
+                  ref.read(selectedTripIdProvider.notifier).set(tripId);
 
                   // Active Follow Mode
                   final vehicle = projection.allFilteredVehicles

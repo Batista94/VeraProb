@@ -45,6 +45,9 @@ CREATE TABLE IF NOT EXISTS public.contractor_justifications (
   created_at_utc        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+COMMENT ON TABLE public.contractor_justifications IS
+  'TODO-RLS: Evaluate if contractors need direct INSERT or if Edge Function handles all writes.';
+
 -- ── Indexes ───────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_cj_org_status
   ON public.contractor_justifications (organization_id, status);
@@ -168,6 +171,9 @@ CREATE TABLE IF NOT EXISTS public.justification_evidence_uploads (
   storage_path      TEXT        NOT NULL,
   uploaded_at_utc   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+COMMENT ON TABLE public.justification_evidence_uploads IS
+  'TODO-RLS: Evaluate if contractors need direct INSERT or if Edge Function handles all writes.';
 
 -- ── Indexes ───────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_jeu_justification_id

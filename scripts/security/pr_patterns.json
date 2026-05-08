@@ -1,0 +1,149 @@
+{
+  "WASM-BLOCK": {
+    "pattern": "import 'dart:html'|import 'dart:js'|js\\.context|document\\.querySelector|html\\.window",
+    "path_filter": "lib/",
+    "description": "Forbidden Wasm-host APIs. Use dart:js_interop instead.",
+    "severity": "BLOCK"
+  },
+  "UTC-BLOCK": {
+    "pattern": "\\bDateTime\\.now\\(\\)",
+    "path_filter": "lib/|test/",
+    "description": "DateTime.now() must always be followed by .toUtc().",
+    "severity": "BLOCK"
+  },
+  "FINANCIAL-BLOCK": {
+    "pattern": "\\bdouble\\b",
+    "path_filter": "lib/(domain|application)/",
+    "exclude_path_pattern": "coordinate|latitude|longitude|speed|heading|spatial|motion|position|location|state_normalizer|classifier|telemetry|detector|ping",
+    "description": "Use BIGINT cents instead of double for financial calculations.",
+    "severity": "BLOCK"
+  },
+  "SRP-UI-LEAK": {
+    "pattern": "supabase|(?<!\\b(?:List|Map|Set|Iterable|Duration|DateTime|Double|Int|num|String|TextEditingController|FocusNode|ScrollController|AnimationController|Color|Theme|FocusScope|Navigator|ScaffoldMessenger|MediaQuery)(?:<[^>]+>)?)\\.from\\(|(?<!\\b(?:[Ll]ist|[Mm]ap|[Ss]et|[Cc]ollection|[Qq]ueue))\\.insert\\(|\\.upsert\\(|\\.query\\(",
+    "path_filter": "lib/features/.*(presentation|screens|widgets|providers)/",
+    "description": "Supabase calls leaked into UI layer. Use a Repository/Handler.",
+    "severity": "BLOCK"
+  },
+  "DDD-BAD-NAMES": {
+    "pattern": "\\b(getData|processItem|handleResult)\\b|(var|final|late)\\s+(data|event)\\s*[=;:)]",
+    "path_filter": "lib/domain/",
+    "description": "Generic variable/method naming in Domain layer. Use CanonicalFact, LedgerEntry, etc.",
+    "severity": "BLOCK"
+  },
+  "CQRS-LEAK": {
+    "pattern": "Handler.*return.*(Contract|Entity|LedgerEntry)",
+    "path_filter": "lib/application/",
+    "description": "Handlers must return void or IDs (CQRS violation).",
+    "severity": "BLOCK"
+  },
+  "INV1-BLOCK": {
+    "type": "absence_check",
+    "pattern": "class \\w+Handler",
+    "must_also_contain": "assertTenantMatches",
+    "path_filter": "lib/application/.*_handler\\.dart",
+    "exclude_files": [
+      "accept_invitation_handler",
+      "accept_by_contractor_handler",
+      "mfa_challenge_handler",
+      "mfa_enrollment_handler",
+      "create_organization_handler"
+    ],
+    "description": "Every Handler must inject TenantValidationService and call assertTenantMatches() (INV-1: Identity Sovereignty).",
+    "severity": "BLOCK"
+  },
+  "INV-26-DB-REPO": {
+    "type": "absence_check",
+    "pattern": "class \\w+Repository",
+    "must_also_contain": "PostgresErrorInterceptor|extends BasePostgresRepository",
+    "path_filter": "lib/infrastructure/.*_repository\\.dart",
+    "exclude_files": [
+      "in_memory",
+      "mock",
+      "_test"
+    ],
+    "requires_supabase_content": [
+      "_client\\.from\\(",
+      "\\.rpc\\("
+    ],
+    "description": "Repositories performing Database/RPC calls MUST implement PostgresErrorInterceptor (INV-26: Error Parity).",
+    "severity": "BLOCK"
+  },
+  "INV-26-AUTH-REPO": {
+    "type": "absence_check",
+    "pattern": "class \\w+Repository",
+    "must_also_contain": "AuthErrorInterceptor",
+    "path_filter": "lib/infrastructure/.*_repository\\.dart",
+    "exclude_files": [
+      "in_memory",
+      "mock",
+      "_test"
+    ],
+    "requires_supabase_content": [
+      "auth\\.(getUser|signIn|signUp|signOut|refreshSession|mfa)"
+    ],
+    "description": "Repositories performing Auth calls MUST implement AuthErrorInterceptor (INV-26: Error Parity).",
+    "severity": "BLOCK"
+  },
+  "INV-30-CHECK": {
+    "type": "absence_check",
+    "pattern": "Supabase\\.instance\\.client",
+    "path_filter": "lib/",
+    "exclude_files": [
+      "supabase_client.dart",
+      "supabase_provider.dart"
+    ],
+    "exclude_path_pattern": "test/",
+    "must_also_contain": "^$",
+    "description": "INV-30 violation: Direct Supabase.instance.client access outside bootstrap (main.dart, supabase_provider.dart). Use DI via constructor or supabaseClientProvider.",
+    "severity": "BLOCK"
+  },
+  "HMAC-SIGN-CHECK": {
+    "type": "absence_check",
+    "pattern": "ingest|ledger|verdict|financial",
+    "path_filter": "supabase/functions/.*index\\.ts",
+    "exclude_files": [
+      "notify-invite",
+      "super-admin-proxy"
+    ],
+    "must_also_contain": "hmac_signer|hmac|signPayload|verifyPayload|loadAllKeys",
+    "description": "INV-31: Ingestion/ledger Edge Functions MUST import hmac_signer.ts for HMAC signing (Zero-Knowledge integrity).",
+    "severity": "BLOCK"
+  },
+  "INV-DB": {
+    "pattern": "\\bDELETE\\s+FROM\\b|\\bTRUNCATE\\b|\\bDROP\\s+TABLE\\b|\\bALTER\\s+COLUMN\\b.+\\bSET\\s+NOT\\s+NULL\\b",
+    "path_filter": "supabase/migrations/",
+    "description": "Destructive migration operation. Use soft-delete, triggers, or non-blocking constraints (INV-DB: Zero-Downtime).",
+    "severity": "BLOCK"
+  },
+  "INV6-TIMESTAMP-TZ": {
+    "pattern": "timestamp\\s+without\\s+time\\s+zone",
+    "path_filter": "supabase/migrations/|supabase/functions/",
+    "description": "INV-6 (Universal UTC): timestamp without time zone PROHIBITED. All timestamps MUST use TIMESTAMPTZ to preserve UTC offset.",
+    "severity": "BLOCK"
+  },
+  "INV6-BARE-TIMESTAMP-SQL": {
+    "pattern": "\\bTIMESTAMP\\s+(NOT\\s+NULL|DEFAULT|NULL\\b)",
+    "path_filter": "supabase/migrations/",
+    "description": "INV-6 (Universal UTC): Bare TIMESTAMP (without TZ) detected. Use TIMESTAMPTZ instead.",
+    "severity": "BLOCK"
+  },
+  "INV6-DEVICE-CLOCK-DEFAULT": {
+    "pattern": "\\b(message_date|device_time|client_ts|driver_ts)\\b.+DEFAULT\\s+NOW\\(\\)",
+    "path_filter": "supabase/migrations/",
+    "description": "INV-6: Device-clock column has DEFAULT NOW(). Server clock silently substitutes device anchor. DROP DEFAULT and force explicit insert.",
+    "severity": "WARN"
+  },
+  "INV-2-AUTH-UID": {
+    "pattern": "auth\\.uid\\(\\)",
+    "path_filter": "supabase/migrations/",
+    "description": "INV-2: auth.uid() is forbidden. Use auth.jwt() -> 'organization_id' claim for tenant isolation.",
+    "severity": "BLOCK"
+  },
+  "INV-2-RLS-INTEGRITY": {
+    "type": "sql_rls_integrity",
+    "pattern": "CREATE\\s+TABLE",
+    "path_filter": "supabase/migrations/",
+    "description": "INV-2: Mandatory RLS and Policy pattern verification for new tables.",
+    "severity": "BLOCK"
+  }
+}

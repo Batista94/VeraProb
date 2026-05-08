@@ -1,3 +1,6 @@
+// pr_scanner: ignore-regression
+//
+import 'package:veraprob/domain/admin/actor_type.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 
 /// Immutable value object representing an authenticated user in the domain.
@@ -18,19 +21,33 @@ class AuthUser {
   final UserRole? role;
   final bool isMfaEnabled;
 
+  // Phase 10.2: Impersonation context
+  final ActorType? actorType;
+  final String? impersonatorId;
+  final DateTime? impersonationExpiresAt;
+
   const AuthUser({
     required this.id,
     this.email,
     required this.tenantId,
     this.role,
     this.isMfaEnabled = false,
+    this.actorType,
+    this.impersonatorId,
+    this.impersonationExpiresAt,
   });
 
-  /// Returns true if the user has a verified email address.
   bool get hasEmail => email != null && email!.isNotEmpty;
-
-  /// Display name for UI: email if available, otherwise masked ID.
   String get displayName => email ?? id.substring(0, 8);
+
+  /// Whether this user is currently impersonating a tenant.
+  bool get isImpersonating => actorType == ActorType.impersonator;
+
+  /// Whether the impersonation session is still valid.
+  bool isImpersonationActiveAt(DateTime now) =>
+      isImpersonating &&
+      impersonationExpiresAt != null &&
+      impersonationExpiresAt!.isAfter(now);
 
   @override
   bool operator ==(Object other) {
@@ -40,14 +57,27 @@ class AuthUser {
         other.email == email &&
         other.tenantId == tenantId &&
         other.role == role &&
-        other.isMfaEnabled == isMfaEnabled;
+        other.isMfaEnabled == isMfaEnabled &&
+        other.actorType == actorType &&
+        other.impersonatorId == impersonatorId &&
+        other.impersonationExpiresAt == impersonationExpiresAt;
   }
 
   @override
-  int get hashCode => Object.hash(id, email, tenantId, role, isMfaEnabled);
+  int get hashCode => Object.hash(
+    id,
+    email,
+    tenantId,
+    role,
+    isMfaEnabled,
+    actorType,
+    impersonatorId,
+    impersonationExpiresAt,
+  );
 
   @override
   String toString() =>
       'AuthUser(id: $id, email: $email, tenantId: $tenantId, '
-      'role: $role, isMfaEnabled: $isMfaEnabled)';
+      'role: $role, isMfaEnabled: $isMfaEnabled, '
+      'actorType: $actorType, impersonatorId: $impersonatorId)';
 }

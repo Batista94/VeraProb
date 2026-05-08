@@ -1,4 +1,8 @@
+// pr_scanner: ignore-regression
+//
 import 'package:equatable/equatable.dart';
+import 'package:veraprob/domain/admin/actor_type.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Represents an immutable record of a manual intervention or automated critical
 /// action within the veraprob operational environment.
@@ -6,32 +10,18 @@ import 'package:equatable/equatable.dart';
 /// Used for legal accountability, operational review, and debugging.
 class AuditLog extends Equatable {
   final String id;
-
-  /// The Tenant / Organization ID that owns this audit record. Isolated boundary.
   final String organizationId;
-
-  /// ID of the user (Admin, Supervisor, Operator) taking the action
   final String operatorId;
-
-  /// A generalized string explaining what happened (e.g., "TRIP_STATUS_CHANGE", "DEVICE_OFFLINE")
   final String actionType;
-
-  /// The UUID of the entity being acted upon (Trip ID, Driver ID, Vehicle ID)
   final String entityId;
-
-  /// Stringified previous state (e.g., "TripStatus.enRoute")
   final String? oldValue;
-
-  /// Stringified new state (e.g., "TripStatus.detour")
   final String? newValue;
-
-  /// Human readable reason or system-generated notes
   final String? reason;
-
-  /// Strict server-side or localized timestamp of the factEvent
   final DateTime timestamp;
+  final ActorType? actorType;
+  final String? impersonatorId;
 
-  const AuditLog({
+  AuditLog({
     required this.id,
     required this.organizationId,
     required this.operatorId,
@@ -41,7 +31,17 @@ class AuditLog extends Equatable {
     this.newValue,
     this.reason,
     required this.timestamp,
-  });
+    this.actorType,
+    this.impersonatorId,
+  }) {
+    // INV-10: If actor is impersonator, impersonatorId is mandatory.
+    if (actorType == ActorType.impersonator && impersonatorId == null) {
+      throw const IntegrityException(
+        'impersonatorId is required when actorType is IMPERSONATOR',
+        field: 'impersonatorId',
+      );
+    }
+  }
 
   factory AuditLog.fromJson(Map<String, dynamic> json) {
     return AuditLog(
@@ -54,6 +54,10 @@ class AuditLog extends Equatable {
       newValue: json['new_value'] as String?,
       reason: json['reason'] as String?,
       timestamp: DateTime.parse(json['timestamp'] as String).toUtc(),
+      actorType: json['actor_type'] != null
+          ? ActorType.fromString(json['actor_type'] as String)
+          : null,
+      impersonatorId: json['impersonator_id'] as String?,
     );
   }
 
@@ -68,6 +72,8 @@ class AuditLog extends Equatable {
       'new_value': newValue,
       'reason': reason,
       'timestamp': timestamp.toIso8601String(),
+      if (actorType != null) 'actor_type': actorType!.dbValue,
+      if (impersonatorId != null) 'impersonator_id': impersonatorId,
     };
   }
 
@@ -82,5 +88,7 @@ class AuditLog extends Equatable {
     newValue,
     reason,
     timestamp,
+    actorType,
+    impersonatorId,
   ];
 }

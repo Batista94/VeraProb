@@ -12,6 +12,7 @@ import 'package:veraprob/domain/super_admin/mfa_exception.dart';
 import 'package:veraprob/domain/super_admin/mfa_status.dart';
 import 'package:veraprob/domain/super_admin/mfa_verification_result.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/auth_error_interceptor.dart';
 
 /// Supabase implementation of [IMfaRepository].
 ///
@@ -21,7 +22,7 @@ import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 ///
 /// INV-6: SuperAdmin access requires MFA + super_admin=true JWT claim.
 class SupabaseMfaRepository
-    with PostgresErrorInterceptor
+    with PostgresErrorInterceptor, AuthErrorInterceptor
     implements IMfaRepository {
   final SupabaseClient _client;
 

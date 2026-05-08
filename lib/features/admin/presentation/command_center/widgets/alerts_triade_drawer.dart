@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/evidence_dossier_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/core/config/environment.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/command_center/logic/alert_grouping.dart';
@@ -14,9 +13,20 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 
 /// State to control the visibility of the Alerts Triade Drawer.
-final isAlertsDrawerOpenProvider = StateProvider<bool>((ref) => false);
+class _IsAlertsDrawerOpenNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}
+
+final isAlertsDrawerOpenProvider =
+    NotifierProvider<_IsAlertsDrawerOpenNotifier, bool>(
+      _IsAlertsDrawerOpenNotifier.new,
+    );
 
 /// Proactive Command Center drawer for operational alert triaging.
 ///
@@ -41,7 +51,7 @@ class _AlertsTriadeDrawerState extends ConsumerState<AlertsTriadeDrawer> {
   }
 
   void _markAllViewed() {
-    final alerts = ref.read(activeAlertsStreamProvider).valueOrNull;
+    final alerts = ref.read(activeAlertsStreamProvider).value;
     final userId = ref.read(currentOperatorIdProvider);
     if (alerts == null || alerts.isEmpty || userId == null) return;
     final repo = ref.read(operationalAlertRepositoryProvider);
@@ -62,13 +72,13 @@ class _AlertsTriadeDrawerState extends ConsumerState<AlertsTriadeDrawer> {
       next,
     ) {
       final prevIds =
-          prev?.valueOrNull
+          prev?.value
               ?.where((a) => a.severity == 'CRITICAL')
               .map((a) => a.id)
               .toSet() ??
           {};
       final nextCritical =
-          next.valueOrNull?.where((a) => a.severity == 'CRITICAL') ?? [];
+          next.value?.where((a) => a.severity == 'CRITICAL') ?? [];
       final hasNew = nextCritical.any((a) => !prevIds.contains(a.id));
       if (hasNew) {
         ref.read(alertSoundServiceProvider).playAlertPing();
@@ -94,24 +104,34 @@ class _AlertsTriadeDrawerState extends ConsumerState<AlertsTriadeDrawer> {
               minHeight: 2,
             ),
           Expanded(
-            child: alertsAsync.when(
-              loading: () => const _LoadingPlaceholder(),
-              error: (e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'Erro ao carregar alertas: $e',
-                    style: VeraProbTypography.bodySmall.copyWith(
-                      color: VeraProbColors.critical,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-              data: (alerts) => alerts.isEmpty
-                  ? const _EmptyState()
-                  : _GroupedAlertsList(alerts: alerts),
-            ),
+            child: switch (alertsAsync) {
+              // Stale-while-revalidate (Req 5.5): During refresh with previous
+              // data, AsyncValue stays as AsyncData in Riverpod v3.
+              // AsyncLoading only matches on initial load (no previous data).
+              AsyncLoading() =>
+                alertsAsync.hasValue && alertsAsync.value != null
+                    ? _GroupedAlertsList(alerts: alertsAsync.value!)
+                    : const _LoadingPlaceholder(),
+              AsyncError(:final error) =>
+                alertsAsync.hasValue && alertsAsync.value != null
+                    ? _GroupedAlertsList(alerts: alertsAsync.value!)
+                    : Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            'Erro ao carregar alertas: $error',
+                            style: VeraProbTypography.bodySmall.copyWith(
+                              color: VeraProbColors.critical,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+              AsyncData(:final value) =>
+                value.isEmpty
+                    ? const _EmptyState()
+                    : _GroupedAlertsList(alerts: value),
+            },
           ),
         ],
       ),
@@ -461,9 +481,10 @@ class _RichEvidenceCard extends ConsumerWidget {
                   label: 'Reconciliar',
                   icon: Icons.open_in_new_rounded,
                   onPressed: () {
-                    ref.read(selectedContractIdProvider.notifier).state =
-                        alert.contractId;
-                    ref.read(adminIndexProvider.notifier).state = 5;
+                    ref
+                        .read(selectedContractIdProvider.notifier)
+                        .set(alert.contractId);
+                    ref.read(adminIndexProvider.notifier).set(5);
                     Navigator.of(context).pop();
                   },
                 ),
@@ -780,6 +801,7 @@ class _EvidencePeekWidget extends ConsumerWidget {
         children: [
           for (int i = 0; i < visible.length; i++) ...[
             _buildThumb(
+              ref: ref,
               id: visible[i],
               accessToken: accessToken,
               // Last thumb gets overflow badge when there are more than 3
@@ -795,13 +817,13 @@ class _EvidencePeekWidget extends ConsumerWidget {
   }
 
   Widget _buildThumb({
+    required WidgetRef ref,
     required String id,
     required String accessToken,
     required int overflowCount,
   }) {
     // INV-26: images MUST flow through secure-evidence-proxy only
-    final url =
-        '${EnvironmentConfig.supabaseUrl}/functions/v1/secure-evidence-proxy?evidence_id=$id'; // pr_scanner: ignore
+    final url = ref.read(evidenceUrlServiceProvider).getProxyUrl(id);
 
     final thumb = ClipRRect(
       borderRadius: BorderRadius.circular(8),

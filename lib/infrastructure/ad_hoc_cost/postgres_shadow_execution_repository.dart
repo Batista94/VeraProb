@@ -32,6 +32,38 @@ class PostgresShadowExecutionRepository extends BasePostgresRepository {
     }
   }
 
+  Future<List<Map<String, dynamic>>> findSmartLinkCandidates({
+    required String organizationId,
+    required int messageTs,
+    int toleranceSec = 1800, // 30min
+  }) async {
+    try {
+      final tsLow = messageTs - toleranceSec;
+      final tsHigh = messageTs + toleranceSec;
+
+      final lowUtc = DateTime.fromMillisecondsSinceEpoch(
+        tsLow * 1000,
+        isUtc: true,
+      ).toIso8601String();
+      final highUtc = DateTime.fromMillisecondsSinceEpoch(
+        tsHigh * 1000,
+        isUtc: true,
+      ).toIso8601String();
+
+      final rows = await client
+          .from('execution_states')
+          .select('set_id, window_start_utc, window_end_utc, status')
+          .eq('organization_id', organizationId)
+          .lte('window_start_utc', highUtc)
+          .gte('window_end_utc', lowUtc)
+          .limit(5);
+
+      return (rows as List<dynamic>).cast<Map<String, dynamic>>();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'execution_state');
+    }
+  }
+
   Future<ShadowExecution?> findById({
     required String id,
     required String organizationId,

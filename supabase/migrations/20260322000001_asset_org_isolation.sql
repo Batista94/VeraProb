@@ -29,8 +29,12 @@ UPDATE public.drivers
 SET organization_id = (SELECT id FROM public.organizations ORDER BY created_at LIMIT 1)
 WHERE organization_id IS NULL;
 
+-- 1.1 Backfill and non-blocking constraint
 ALTER TABLE public.drivers
-    ALTER COLUMN organization_id SET NOT NULL;
+    ADD CONSTRAINT drivers_organization_id_check
+    CHECK (organization_id IS NOT NULL) NOT VALID;
+
+ALTER TABLE public.drivers VALIDATE CONSTRAINT drivers_organization_id_check;
 
 ALTER TABLE public.drivers
     ADD CONSTRAINT fk_drivers_organization
@@ -64,8 +68,12 @@ UPDATE public.routes
 SET organization_id = (SELECT id FROM public.organizations ORDER BY created_at LIMIT 1)
 WHERE organization_id IS NULL;
 
+-- 2.1 Backfill and non-blocking constraint
 ALTER TABLE public.routes
-    ALTER COLUMN organization_id SET NOT NULL;
+    ADD CONSTRAINT routes_organization_id_check
+    CHECK (organization_id IS NOT NULL) NOT VALID;
+
+ALTER TABLE public.routes VALIDATE CONSTRAINT routes_organization_id_check;
 
 ALTER TABLE public.routes
     ADD CONSTRAINT fk_routes_organization
@@ -103,8 +111,12 @@ UPDATE public.trips_audit
 SET organization_id = (SELECT id FROM public.organizations ORDER BY created_at LIMIT 1)
 WHERE organization_id IS NULL;
 
+-- 3.1 Backfill and non-blocking constraint
 ALTER TABLE public.trips_audit
-    ALTER COLUMN organization_id SET NOT NULL;
+    ADD CONSTRAINT trips_audit_organization_id_check
+    CHECK (organization_id IS NOT NULL) NOT VALID;
+
+ALTER TABLE public.trips_audit VALIDATE CONSTRAINT trips_audit_organization_id_check;
 
 CREATE INDEX IF NOT EXISTS idx_trips_audit_organization_id
     ON public.trips_audit (organization_id);

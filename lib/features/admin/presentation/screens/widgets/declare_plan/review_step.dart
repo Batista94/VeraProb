@@ -212,7 +212,7 @@ class _RiskSummary extends ConsumerWidget {
     if (allTurns.isEmpty) return const SizedBox.shrink();
 
     final contractDetailAsync = ref.watch(contractDetailProvider(contractId));
-    final contract = contractDetailAsync.valueOrNull?.summary;
+    final contract = contractDetailAsync.value?.summary;
     final financialCeilingCents = contract?.financialCeilingCents;
 
     int totalProtectedRevenueCents = 0;

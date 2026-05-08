@@ -51,27 +51,30 @@ class OperationalZonesScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           Expanded(
-            child: zonesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
+            child: switch (zonesAsync) {
+              AsyncData(:final value) =>
+                value.isEmpty
+                    ? _EmptyState(
+                        onCreateTap: () async {
+                          final saved = await showZoneFormDialog(context);
+                          if (saved != null) {
+                            ref.invalidate(operationalZonesProvider);
+                          }
+                        },
+                      )
+                    : _ZoneList(zones: value),
+              AsyncLoading() => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              AsyncError(:final error) => Center(
                 child: Text(
-                  'Erro ao carregar zonas: $e',
+                  'Erro ao carregar zonas: $error',
                   style: VeraProbTypography.bodyMedium.copyWith(
                     color: VeraProbColors.error,
                   ),
                 ),
               ),
-              data: (zones) => zones.isEmpty
-                  ? _EmptyState(
-                      onCreateTap: () async {
-                        final saved = await showZoneFormDialog(context);
-                        if (saved != null) {
-                          ref.invalidate(operationalZonesProvider);
-                        }
-                      },
-                    )
-                  : _ZoneList(zones: zones),
-            ),
+            },
           ),
         ],
       ),

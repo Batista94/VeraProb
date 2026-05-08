@@ -1,4 +1,4 @@
-﻿import 'package:veraprob/domain/entities/operational_trip.dart';
+import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/entities/operational_warning.dart';
 import 'package:veraprob/domain/entities/trip_event.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';

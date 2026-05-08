@@ -5,6 +5,7 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_contractor_repository
 import 'package:veraprob/application/sla_audit/save_contractor_handler.dart';
 import 'package:veraprob/application/sla_audit/delete_contractor_handler.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'auth_providers.dart';
 import 'contract_providers.dart';
 import 'shared_providers.dart';
@@ -23,7 +24,8 @@ final contractorListProvider = FutureProvider<List<ContractorView>>((
   if (orgId == null) return [];
   final contractors = await ref
       .watch(contractorRepositoryProvider)
-      .findByOrganization(orgId);
+      .findByOrganization(orgId)
+      .withProviderTimeout();
   return contractors.map(ContractorView.fromDomain).toList();
 });
 

@@ -55,53 +55,52 @@ class _SlaSummarySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(slaSummaryProvider);
 
-    return summaryAsync.when(
-      data: (summary) => Row(
+    return switch (summaryAsync) {
+      AsyncData(:final value) => Row(
         children: [
           Expanded(
             child: _SummaryCard(
               title: 'CONFORMIDADES',
-              value: summary.totalCompleted,
+              value: value.totalCompleted,
               color: VeraProbColors.success,
-              percentage: summary.total > 0
-                  ? (summary.totalCompleted / summary.total * 100).round()
+              percentage: value.total > 0
+                  ? (value.totalCompleted / value.total * 100).round()
                   : 0,
               revenueLabel: 'RECEITA PROTEGIDA',
-              revenueValue: summary.protectedRevenue,
+              revenueValue: value.protectedRevenue,
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: _SummaryCard(
               title: 'INCONSISTÊNCIAS',
-              value: summary.totalCompletedWithGaps,
+              value: value.totalCompletedWithGaps,
               color: VeraProbColors.warning,
-              percentage: summary.total > 0
-                  ? (summary.totalCompletedWithGaps / summary.total * 100)
-                        .round()
+              percentage: value.total > 0
+                  ? (value.totalCompletedWithGaps / value.total * 100).round()
                   : 0,
               revenueLabel: 'RECEITA EM RISCO',
-              revenueValue: summary.revenueAtRisk,
+              revenueValue: value.revenueAtRisk,
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: _SummaryCard(
               title: 'QUEBRAS DE SLA',
-              value: summary.totalFailed,
+              value: value.totalFailed,
               color: VeraProbColors.error,
-              percentage: summary.total > 0
-                  ? (summary.totalFailed / summary.total * 100).round()
+              percentage: value.total > 0
+                  ? (value.totalFailed / value.total * 100).round()
                   : 0,
               revenueLabel: 'RECEITA PERDIDA',
-              revenueValue: summary.lostRevenue,
+              revenueValue: value.lostRevenue,
             ),
           ),
         ],
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Text('Erro ao carregar sumário: $err'),
-    );
+      AsyncLoading() => const Center(child: CircularProgressIndicator()),
+      AsyncError(:final error) => Text('Erro ao carregar sumário: $error'),
+    };
   }
 }
 
@@ -203,9 +202,9 @@ class _SlaExceptionsTable extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final exceptionsAsync = ref.watch(slaExceptionsProvider);
 
-    return exceptionsAsync.when(
-      data: (exceptions) {
-        if (exceptions.isEmpty) {
+    return switch (exceptionsAsync) {
+      AsyncData(:final value) => () {
+        if (value.isEmpty) {
           return Center(
             child: Text(
               'Nenhuma exceção detectada.',
@@ -238,7 +237,7 @@ class _SlaExceptionsTable extends ConsumerWidget {
                     DataColumn(label: Text('Valor')),
                     DataColumn(label: Text('Ação')),
                   ],
-                  rows: exceptions.map((item) {
+                  rows: value.map((item) {
                     return DataRow(
                       cells: [
                         DataCell(_StatusBadge(status: item.status)),
@@ -280,10 +279,10 @@ class _SlaExceptionsTable extends ConsumerWidget {
             ),
           ),
         );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Text('Erro ao carregar exceções: $err'),
-    );
+      }(),
+      AsyncLoading() => const Center(child: CircularProgressIndicator()),
+      AsyncError(:final error) => Text('Erro ao carregar exceções: $error'),
+    };
   }
 
   String _formatTime(DateTime dt) {

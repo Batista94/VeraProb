@@ -58,32 +58,33 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
               RouteSearchBar(
                 controller: _searchController,
                 onChanged: () {
-                  ref.read(routesSearchQueryProvider.notifier).state =
-                      _searchController.text;
+                  ref
+                      .read(routesSearchQueryProvider.notifier)
+                      .set(_searchController.text);
                   setState(() {});
                 },
                 onClear: () {
                   _searchController.clear();
-                  ref.read(routesSearchQueryProvider.notifier).state = '';
+                  ref.read(routesSearchQueryProvider.notifier).set('');
                   setState(() {});
                 },
               ),
               const SizedBox(height: 20),
               Expanded(
-                child: filteredAsync.when(
-                  data: (routes) => routes.isEmpty
-                      ? const RouteEmptyState()
-                      : _buildTable(routes, userRole),
-                  loading: () => const RouteSkeleton(),
-                  error: (err, stack) {
+                child: switch (filteredAsync) {
+                  AsyncData(:final value) =>
+                    value.isEmpty
+                        ? const RouteEmptyState()
+                        : _buildTable(value, userRole),
+                  AsyncLoading() => const RouteSkeleton(),
+                  AsyncError(:final error) => () {
                     LoggerService().error(
                       'Falha ao carregar rotas',
-                      error: err,
-                      stackTrace: stack,
+                      error: error,
                     );
                     return _buildErrorState();
-                  },
-                ),
+                  }(),
+                },
               ),
             ],
           ),

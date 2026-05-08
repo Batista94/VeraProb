@@ -35,7 +35,7 @@ final postgresVehicleAssetRepositoryProvider =
 /// final updated = await notifier.updateVehicle(vehicle);
 /// // List is already refreshing — no ref.invalidate needed!
 /// ```
-class VehicleCommandNotifier extends AutoDisposeNotifier<void> {
+class VehicleCommandNotifier extends Notifier<void> {
   @override
   void build() {
     // This Notifier has no state — it's a pure command dispatcher.
@@ -57,6 +57,7 @@ class VehicleCommandNotifier extends AutoDisposeNotifier<void> {
       capacity: capacity,
       status: status,
     );
+    if (!ref.mounted) return vehicle;
     ref.invalidate(vehiclesListProvider);
     return vehicle;
   }
@@ -68,6 +69,7 @@ class VehicleCommandNotifier extends AutoDisposeNotifier<void> {
   Future<Vehicle> updateVehicle(Vehicle vehicle) async {
     final repo = ref.read(postgresVehicleAssetRepositoryProvider);
     final updated = await repo.updateVehicle(vehicle);
+    if (!ref.mounted) return updated;
     ref.invalidate(vehiclesListProvider);
     return updated;
   }
@@ -76,6 +78,7 @@ class VehicleCommandNotifier extends AutoDisposeNotifier<void> {
   Future<void> deleteVehicle(String vehicleId) async {
     final repo = ref.read(postgresVehicleAssetRepositoryProvider);
     await repo.deleteVehicle(vehicleId);
+    if (!ref.mounted) return;
     ref.invalidate(vehiclesListProvider);
   }
 
@@ -91,6 +94,7 @@ class VehicleCommandNotifier extends AutoDisposeNotifier<void> {
   ) async {
     final repo = ref.read(postgresVehicleAssetRepositoryProvider);
     final updated = await repo.batchUpdateVehicles(updates);
+    if (!ref.mounted) return updated;
     ref.invalidate(vehiclesListProvider);
     return updated;
   }
@@ -109,6 +113,6 @@ class VehicleCommandNotifier extends AutoDisposeNotifier<void> {
 /// final results = await notifier.batchUpdateVehicles(updates);
 /// ```
 final vehicleCommandNotifierProvider =
-    AutoDisposeNotifierProvider<VehicleCommandNotifier, void>(
+    NotifierProvider.autoDispose<VehicleCommandNotifier, void>(
       VehicleCommandNotifier.new,
     );

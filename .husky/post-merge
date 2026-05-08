@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# INV-15: Auto-refresh PostgREST cache after merge
+echo ">>> Running Post-Merge Schema Sync (INV-15)..."
+bash scripts/refresh_schema_cache.sh

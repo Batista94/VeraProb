@@ -1,4 +1,4 @@
-﻿import 'package:equatable/equatable.dart';
+import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/core/utils/date_time_provider.dart';

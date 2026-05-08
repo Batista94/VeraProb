@@ -115,8 +115,9 @@ class _AdminShellState extends ConsumerState<AdminShell> {
                 _AdminHeader(
                   title: currentDestination.label,
                   onToggleAlerts: () {
-                    ref.read(isAlertsDrawerOpenProvider.notifier).state =
-                        !isDrawerOpen;
+                    ref
+                        .read(isAlertsDrawerOpenProvider.notifier)
+                        .set(!isDrawerOpen);
                   },
                 ),
                 // ── Main Content Area ──

@@ -150,22 +150,23 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
   Widget _buildCardList(
     AsyncValue<List<SanctionQueueItemView>> sanctionsAsync,
   ) {
-    return sanctionsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
+    return switch (sanctionsAsync) {
+      AsyncLoading() => const Center(child: CircularProgressIndicator()),
+      AsyncError(:final error) => Center(
         child: Text(
-          'Erro ao carregar fila: $e',
+          'Erro ao carregar fila: $error',
           style: const TextStyle(color: VeraProbColors.error),
         ),
       ),
-      data: (items) => items.isEmpty
-          ? const _EmptyState()
-          : ListView.separated(
-              itemCount: items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (_, i) => SanctionVerdictCard(item: items[i]),
-            ),
-    );
+      AsyncData(:final value) =>
+        value.isEmpty
+            ? const _EmptyState()
+            : ListView.separated(
+                itemCount: value.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (_, i) => SanctionVerdictCard(item: value[i]),
+              ),
+    };
   }
 }
 
@@ -265,10 +266,11 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final count = sanctionsAsync.maybeWhen(
-      data: (items) => items.length,
-      orElse: () => 0,
-    );
+    final count = switch (sanctionsAsync) {
+      AsyncData(:final value) => value.length,
+      AsyncError() => 0,
+      AsyncLoading() => 0,
+    };
     return Row(
       children: [
         const Icon(Icons.gavel_rounded, color: VeraProbColors.primary),

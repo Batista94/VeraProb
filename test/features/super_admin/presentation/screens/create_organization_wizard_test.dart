@@ -72,6 +72,9 @@ void main() {
     testWidgets('Wizard Step 1: Structural CNPJ validation blocks progression', (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.pumpWidget(createWizard(mockRepo, mockLookup));
       await tester.pumpAndSettle();
 
@@ -105,7 +108,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // 3. Attempt to go to next step
-      await tester.tap(find.text('Próximo'));
+      final nextButton1 = find.text('Próximo');
+      await tester.ensureVisible(nextButton1);
+      await tester.tap(nextButton1);
       await tester.pumpAndSettle();
 
       // Verify it stays on step 1 due to validation error
@@ -116,6 +121,9 @@ void main() {
     testWidgets('Wizard Completion: Full 3-Step Flow and Success Dialog', (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1500));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       const orgId = 'new-org-id';
       var successCalled = false;
 
@@ -123,7 +131,7 @@ void main() {
       when(() => mockHandler.handle(any())).thenAnswer(
         (_) async => const CreateOrganizationResult(
           orgId: orgId,
-          invitationToken: 'mock-token',
+          invitationTokens: ['mock-token'],
         ),
       );
 
@@ -164,7 +172,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 800)); // Debounce
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Próximo'));
+      final nextButtonStep1 = find.text('Próximo');
+      await tester.ensureVisible(nextButtonStep1);
+      await tester.tap(nextButtonStep1);
       await tester.pumpAndSettle();
 
       // --- STEP 2: Limits ---
@@ -182,24 +192,43 @@ void main() {
         ),
         '50',
       );
-
-      await tester.tap(find.text('Próximo'));
-      await tester.pumpAndSettle();
-
-      // --- STEP 3: Admin Invite ---
       await tester.enterText(
         find.ancestor(
-          of: find.text('E-mail do Admin Inicial *'),
+          of: find.text('Custo Mensal da Ferramenta *'),
           matching: find.byType(TextFormField),
         ),
-        'admin@omni.com',
+        '50000',
       );
+      await tester.enterText(
+        find.ancestor(
+          of: find.text(
+            'Ex: Criação de novo tenant conforme contrato comercial #123',
+          ),
+          matching: find.byType(TextFormField),
+        ),
+        'Criação de novo tenant conforme contrato #123',
+      );
+
+      final nextButtonStep2 = find.text('Próximo');
+      await tester.ensureVisible(nextButtonStep2);
+      await tester.tap(nextButtonStep2);
+      await tester.pumpAndSettle();
+
+      // --- STEP 3: Admin Invite (chip-based) ---
+      final emailField1 = find.ancestor(
+        of: find.text('E-mails dos Admins *'),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(emailField1, 'admin@omni.com');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
 
       // FINAL SUBMIT (Find the button that says 'Criar e Enviar Convite')
       final submitButton = find.widgetWithText(
         ElevatedButton,
         'Criar e Enviar Convite',
       );
+      await tester.ensureVisible(submitButton);
       await tester.tap(submitButton);
       await tester.pump(); // Start submission
 
@@ -220,6 +249,9 @@ void main() {
     testWidgets(
       'Wizard Error: Repository failure displays forensic error snackbar',
       (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1500));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
         // thenThrow fires synchronously — the async wrapper never completes,
         // so Flutter's runner intercepts it before the wizard's try/catch.
         // thenAnswer with an async throw produces a rejected Future that
@@ -256,7 +288,9 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 800));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Próximo'));
+        final nextButtonErr1 = find.text('Próximo');
+        await tester.ensureVisible(nextButtonErr1);
+        await tester.tap(nextButtonErr1);
         await tester.pumpAndSettle();
 
         await tester.enterText(
@@ -273,22 +307,41 @@ void main() {
           ),
           '5',
         );
-        await tester.tap(find.text('Próximo'));
-        await tester.pumpAndSettle();
-
         await tester.enterText(
           find.ancestor(
-            of: find.text('E-mail do Admin Inicial *'),
+            of: find.text('Custo Mensal da Ferramenta *'),
             matching: find.byType(TextFormField),
           ),
-          'bad@email.com',
+          '50000',
         );
+        await tester.enterText(
+          find.ancestor(
+            of: find.text(
+              'Ex: Criação de novo tenant conforme contrato comercial #123',
+            ),
+            matching: find.byType(TextFormField),
+          ),
+          'Criação de novo tenant conforme contrato #123',
+        );
+        final nextButtonErr2 = find.text('Próximo');
+        await tester.ensureVisible(nextButtonErr2);
+        await tester.tap(nextButtonErr2);
+        await tester.pumpAndSettle();
+
+        final emailField2 = find.ancestor(
+          of: find.text('E-mails dos Admins *'),
+          matching: find.byType(TextField),
+        );
+        await tester.enterText(emailField2, 'bad@email.com');
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
 
         // Submit
         final submitButton = find.widgetWithText(
           ElevatedButton,
           'Criar e Enviar Convite',
         );
+        await tester.ensureVisible(submitButton);
         await tester.tap(submitButton);
         await tester.pump(const Duration(seconds: 2));
         await tester.pumpAndSettle();

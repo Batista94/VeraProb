@@ -19,56 +19,51 @@ class MockSupabaseClient extends Mock implements SupabaseClient {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   group('FASE 4 - Read-Model Governance Tests', () {
-    test(
-      'Default mode should return InMemory implementations for Read-Models',
-      () {
-        final container =
-            ProviderContainer(); // Default mode is PersistenceMode.inMemory
-        addTearDown(container.dispose);
+    test('Default mode should return InMemory implementations for Read-Models', () {
+      final container =
+          ProviderContainer.test(); // Default mode is PersistenceMode.inMemory
 
-        final slaExecutionQueryService = container.read(
-          slaExecutionQueryServiceProvider,
-        );
-        expect(
-          slaExecutionQueryService,
-          isA<SlaExecutionQueryServiceInMemory>(),
-          reason:
-              'slaExecutionQueryServiceProvider should be InMemory by default',
-        );
+      final slaExecutionQueryService = container.read(
+        slaExecutionQueryServiceProvider,
+      );
+      expect(
+        slaExecutionQueryService,
+        isA<SlaExecutionQueryServiceInMemory>(),
+        reason:
+            'slaExecutionQueryServiceProvider should be InMemory by default',
+      );
 
-        final financialImpactQueryService = container.read(
-          financialImpactQueryServiceProvider,
-        );
-        expect(
-          financialImpactQueryService,
-          isA<ContractualFinancialImpactQueryServiceInMemory>(),
-          reason:
-              'financialImpactQueryServiceProvider should be InMemory by default',
-        );
+      final financialImpactQueryService = container.read(
+        financialImpactQueryServiceProvider,
+      );
+      expect(
+        financialImpactQueryService,
+        isA<ContractualFinancialImpactQueryServiceInMemory>(),
+        reason:
+            'financialImpactQueryServiceProvider should be InMemory by default',
+      );
 
-        final financialTrendQueryService = container.read(
-          financialTrendQueryServiceProvider,
-        );
-        expect(
-          financialTrendQueryService,
-          isA<ContractualFinancialTrendQueryServiceInMemory>(),
-          reason:
-              'financialTrendQueryServiceProvider should be InMemory by default',
-        );
-      },
-    );
+      final financialTrendQueryService = container.read(
+        financialTrendQueryServiceProvider,
+      );
+      expect(
+        financialTrendQueryService,
+        isA<ContractualFinancialTrendQueryServiceInMemory>(),
+        reason:
+            'financialTrendQueryServiceProvider should be InMemory by default',
+      );
+    });
 
     test(
       'Override to Postgres should return Postgres implementations for Read-Models',
       () {
         final mockSupabase = MockSupabaseClient();
-        final container = ProviderContainer(
+        final container = ProviderContainer.test(
           overrides: [
             persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
             supabaseClientProvider.overrideWithValue(mockSupabase),
           ],
         );
-        addTearDown(container.dispose);
 
         // Verify the provider instantiates the PG Query Service
         final slaExecutionQueryService = container.read(

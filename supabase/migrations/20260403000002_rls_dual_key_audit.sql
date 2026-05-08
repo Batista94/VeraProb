@@ -1,3 +1,4 @@
+--
 -- =============================================================================
 -- Phase 8.5 — RLS Dual-Key Audit & Hardening (INV-20 completion)
 -- =============================================================================
@@ -23,7 +24,7 @@
 --
 -- INVARIANTS:
 --   INV-6:  MULTI-TENANT + RLS — every record carries organization_id
---   INV-10: RLS TENANT CLAIM — use auth.jwt() -> 'app_metadata', not auth.uid()
+--   INV-10: RLS TENANT CLAIM — use auth.jwt() -> 'app_metadata', not (auth.jwt() ->> 'sub')
 --   INV-20: CONTRACTOR_VIEWER DUAL-KEY ISOLATION
 -- =============================================================================
 

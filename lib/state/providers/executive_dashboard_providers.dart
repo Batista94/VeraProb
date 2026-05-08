@@ -7,6 +7,7 @@ import 'package:veraprob/domain/sla_audit/canonical_fact_repository.dart';
 import 'package:veraprob/domain/sla_audit/shadow_mode_simulation.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_canonical_fact_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_shadow_mode_repository.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'audit_package_providers.dart';
 import 'sla_financial_providers.dart';
@@ -49,7 +50,9 @@ final shadowModeSimulationsProvider =
       if (organizationId == null) return const [];
 
       final service = ref.watch(shadowModeServiceProvider);
-      return service.listSimulations(organizationId: organizationId, limit: 5);
+      return service
+          .listSimulations(organizationId: organizationId, limit: 5)
+          .withProviderTimeout();
     });
 
 // ── Executive Dashboard View ────────────────────────────────────────────────
@@ -109,6 +112,6 @@ final executiveDashboardProvider = FutureProvider<ExecutiveDashboardView>((
 
 /// FPS sub-score extracted for widgets that only need the gauge value.
 final financialProtectionScoreProvider = Provider<double>((ref) {
-  final dashboard = ref.watch(executiveDashboardProvider).valueOrNull;
+  final dashboard = ref.watch(executiveDashboardProvider).value;
   return (dashboard?.financialProtectionScore ?? 0) / 100.0;
 });

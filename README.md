@@ -1,87 +1,66 @@
-# VeraProb - Vibing
+# VeraProb - Forensic Contract Governance
 
-> [!IMPORTANT]
-> **Natureza do Projeto e Isenção de Responsabilidade**
-> 
-> Este repositório é um experimento de **"vibe coding"**. Embora o desenvolvimento seja conduzido com o objetivo de aproximar-se ao máximo de padrões de engenharia reais — visando demonstrar a viabilidade e o potencial produtivo desta metodologia — ele permanece estritamente educacional.
-> 
-> * **Infraestrutura**: O projeto é construído utilizando exclusivamente ferramentas e serviços em camadas gratuitas (*free*) ou *freemium*.
-> * **Riscos e Limitações**: Como uma iniciativa experimental, o sistema está suscetível a instabilidades, erros de lógica e vulnerabilidades de segurança.
-> * **Aviso Crítico**: **Não utilize este software em ambientes de produção ou com dados reais.** Este projeto não deve ser adotado como referência técnica definitiva para sistemas críticos de missão.
+VeraProb is a high-performance platform designed to eliminate friction between B2B contracts and operational execution. It acts as an automated "Digital Judge" that transforms raw telemetry into Verifiable Contractual Truth, ensuring financial protection and forensic auditability.
 
-VeraProb is a high-performance platform designed to eliminate friction between B2B contracts and operational execution. It acts as an automated, impartial "Digital Judge" that transforms raw telemetry into Verifiable Contractual Truth.
+---
+
+## The Problem We Solve
+1. **Revenue Leakage:** Capture of unplanned trips via **Shadow Executions**.
+2. **Legal Fragility:** Replacing driver-vs-client disputes with a **Forensic PDF with Chain of Custody**.
+3. **SLA Fraud:** Detection of **Clock Drift** and GPS spoofing.
+4. **Penny Precision Gap:** Eliminating rounding errors using **INV-4/5 (Fixed-Point Math)** with BigInt.
+5. **Evidence Poisoning:** Entropy scanning to detect malicious script injection in photos (Ratio > 0.60).
+6. **Low Adoption:** Invisible, friction-free interface designed for field operators and drivers.
+
+## Business Vision & ROI
+- **Zero-Glosa objective:** Automated Proof of Delivery (POD) with forensic sealing accelerates cash flow.
+- **90% Backoffice Reduction:** Automated reconciliation by exception eliminates manual photo checking.
+- **Claims Shielding:** Irrefutable dossier forcing insurance payouts without contestation.
+- **Civil Liability:** Systematic transfer of custody materialized at the moment of cryptographic sealing.
 
 ---
 
 ## Architecture & Data Pipeline
+The platform follows a strict Event-Sourced logic:
+1. **Ingestion:** Raw telemetry and Evidence (Telegram Bot) received via secure Edge Functions.
+2. **Normalization:** Unification into Canonical Facts (Deterministic Snapshots).
+3. **Evaluation:** Facts replayed against SLA Rules by the Forensic Evaluation Engine.
+4. **Verdict:** Impacts sealed into an Immutable Ledger (INV-3).
 
-The platform follows a strict Event-Sourced logic across four core stages to ensure a forensic audit trail:
-
-1. **Ingestion**: Raw telemetry (GPS, IoT, Check-ins) and **Forensic Evidence (Telegram Bot)** are received via secure Edge Functions.
-2. **Normalization**: Noisy data is unified into Canonical Facts (Deterministic Snapshots).
-3. **Evaluation**: Facts are replayed against SLA Rules by the Forensic Evaluation Engine.
-4. **Verdict**: Financial impacts (penalties/approvals) are sealed into an Immutable Ledger (INV-7).
+## Tech Stack
+- **Frontend:** Flutter (WASM), Riverpod, Industrial Deep Design.
+- **Backend:** Supabase, PostgreSQL (PostGIS), Edge Functions.
+- **Security:** SHA-256, HMAC per-org (INV-28), Magic Bytes Entropy.
+- **Governance:** Sequential Thinking (MCP), Lead Reviewer AI, Forensic Scanner.
 
 ---
 
 ## Getting Started (Local Development)
 
-VeraProb relies on the **Supabase CLI (Docker)** to replicate the production environment locally, ensuring RLS policies and Edge Functions work as expected.
-
 ### 1. Prerequisites
-
 - **Flutter SDK** (>= 3.41.5)
-- **Docker Desktop** (Active)
-- **Supabase CLI** (`brew install supabase/tap/supabase`)
+- **Docker Desktop**
+- **Supabase CLI**
 - **Node.js** (>= 18)
 
-### 2. Setup Infrastructure
-
+### 2. Setup & Run
 ```bash
-# Start local containers (PostgreSQL, Auth, Storage, Edge Functions)
+# Start infrastructure
 supabase start
-
-# Apply local migrations and seed data
 supabase db reset
 
-# Provision test users, drivers, and Telegram tokens
-node scripts/bootstrap_dev.mjs
-```
+# Provision test data
+node scripts/dev/bootstrap_dev.mjs
 
-### 3. Setup Environment
-
-Copy `.env.example` to `.env` and fill in the local keys obtained from `supabase status`:
-
-```bash
+# Setup environment
 cp .env.example .env
+
+# Run app
+flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 ```
 
-### 4. Run Application
+### 3. Testing & Quality
+- **Unit/Integration:** `flutter test`
+- **Forensic Scanning:** `bash scripts/security/pr_full_scanner.sh` (Mandatory before PR).
 
-```bash
-flutter run -d chrome --web-renderer wasm
-```
-
-### 5. Test Credentials
-For a list of pre-configured SuperAdmins, Org Admins, and Drivers, see:
-👉 [Test Credentials Documentation](docs/governance/test_credentials.md)
-
----
-
-## Testing & Quality
-
-- **Unit/Integration Tests**: `flutter test`
-- **Load & Stress Testing**: Scripts available in `scripts/load_test/` (using k6).
-- **Forensic Scanning**: `bash scripts/pr_scanner.sh` (ensures compliance with INV-X).
-
-### Project Structure (Clean Architecture)
-
-- `lib/domain/`: Sovereign logic, Entities, and Repository Interfaces (Zero Infrastructure Dependencies).
-- `lib/infrastructure/`: Supabase/Postgres implementations, External Adapters, and Data Mappers.
-- `lib/application/`: Business use cases, Commands, Handlers, and Projections.
-- `lib/state/`: Riverpod Providers and global state management.
-- `lib/presentation/`: Flutter UI (Atomic Widgets, Features, and Screens).
-- `lib/core/`: Shared utilities, Forensic Invariants, and Constants.
-
-### Professional Standards
-VeraProb adheres to strict Forensic Invariants to guarantee legal admissibility. For the complete list of 27 technical invariants and core protocols, refer to [CLAUDE.md](CLAUDE.md).
+For the complete list of **28 Forensic Invariants**, refer to [CLAUDE.md](CLAUDE.md).

@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/shared/i_trip_repository.dart';
 import 'package:veraprob/domain/entities/trip.dart';
 import 'package:veraprob/infrastructure/shared/mappers/trip_mapper.dart';

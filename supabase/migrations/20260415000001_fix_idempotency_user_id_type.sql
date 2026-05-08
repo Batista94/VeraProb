@@ -1,3 +1,4 @@
+--
 -- =============================================================================
 -- Migration: 20260415000001 — Fix idempotency_keys.user_id: UUID → TEXT
 --
@@ -86,22 +87,22 @@ CREATE INDEX IF NOT EXISTS idx_idempotency_keys_user_status
 CREATE POLICY idempotency_keys_select_own
   ON public.idempotency_keys
   FOR SELECT
-  USING (user_id = auth.uid()::text);
+  USING (user_id = (auth.jwt() ->> 'sub'));
 
 CREATE POLICY idempotency_keys_insert_own
   ON public.idempotency_keys
   FOR INSERT
   WITH CHECK (
-    user_id = auth.uid()::text
+    user_id = (auth.jwt() ->> 'sub')
     AND status = 'processing'
   );
 
 CREATE POLICY idempotency_keys_update_own
   ON public.idempotency_keys
   FOR UPDATE
-  USING (user_id = auth.uid()::text)
+  USING (user_id = (auth.jwt() ->> 'sub'))
   WITH CHECK (
-    user_id = auth.uid()::text
+    user_id = (auth.jwt() ->> 'sub')
     AND status IN ('completed', 'error')
   );
 

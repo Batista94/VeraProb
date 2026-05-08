@@ -83,15 +83,9 @@ class _ContractorManagementScreenState
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: contractorsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Text(
-                    'Erro ao carregar contratantes: $e',
-                    style: const TextStyle(color: VeraProbColors.error),
-                  ),
-                ),
-                data: (all) {
+              child: switch (contractorsAsync) {
+                AsyncData(:final value) => () {
+                  final all = value;
                   final contractors = _filterContractors(all);
                   if (all.isEmpty) {
                     return Center(
@@ -185,8 +179,17 @@ class _ContractorManagementScreenState
                       );
                     },
                   );
-                },
-              ),
+                }(),
+                AsyncLoading() => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                AsyncError(:final error) => Center(
+                  child: Text(
+                    'Erro ao carregar contratantes: $error',
+                    style: const TextStyle(color: VeraProbColors.error),
+                  ),
+                ),
+              },
             ),
           ],
         ),

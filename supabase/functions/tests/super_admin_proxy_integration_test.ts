@@ -9,8 +9,8 @@ import { assertEquals, assert } from "jsr:@std/assert@1";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "http://127.0.0.1:54321";
-const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "sb_secret_N7UND0UgjKjNqL2yU563J0T7EaN6R9bA";
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 // Test setup
 const supabase = createClient(SUPABASE_URL, ANON_KEY);

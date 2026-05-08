@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/infrastructure/sla_audit/justification/file_service/justification_file_service.dart';
 import 'package:veraprob/application/sla_audit/justification/approve_justification_handler.dart';
+import 'package:veraprob/state/notifiers/async_command_mixin.dart';
 import 'package:veraprob/application/sla_audit/justification/contextual_signature_analyzer.dart';
 import 'package:veraprob/application/sla_audit/justification/generate_justification_token_handler.dart';
 import 'package:veraprob/application/sla_audit/justification/review_justification_command.dart';
@@ -108,48 +109,57 @@ final justificationListStreamProvider =
 /// Count of PENDING justifications — drives the nav-rail badge on
 /// "Portal Defesa".
 final pendingJustificationsCountProvider = Provider.autoDispose<int>((ref) {
-  return ref
-      .watch(justificationListStreamProvider)
-      .maybeWhen(
-        data: (rows) => rows
-            .where((r) => r['status'] == JustificationStatus.pending.dbValue)
-            .length,
-        orElse: () => 0,
-      );
+  final justificationsAsync = ref.watch(justificationListStreamProvider);
+  return switch (justificationsAsync) {
+    AsyncData(:final value) =>
+      value
+          .where((r) => r['status'] == JustificationStatus.pending.dbValue)
+          .length,
+    AsyncError() => 0,
+    AsyncLoading() => 0,
+  };
 });
 
 // ── Per-justification action state ───────────────────────────────────────────
 
+/// Provides a fresh [ApproveJustificationHandler] per read.
+final approveJustificationHandlerProvider =
+    Provider.autoDispose<ApproveJustificationHandler>((ref) {
+      return ApproveJustificationHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
+        justificationRepo: ref.watch(justificationRepositoryProvider),
+        ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+        rbac: RbacService(),
+      );
+    });
+
+/// Provides a fresh [RejectJustificationHandler] per read.
+final rejectJustificationHandlerProvider =
+    Provider.autoDispose<RejectJustificationHandler>((ref) {
+      return RejectJustificationHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
+        justificationRepo: ref.watch(justificationRepositoryProvider),
+        ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+        rbac: RbacService(),
+      );
+    });
+
 /// Loading/error state for approve/reject actions on a specific justification.
 /// Key: justificationId.
-final justificationActionStateProvider = StateNotifierProvider.autoDispose
+final justificationActionStateProvider = NotifierProvider.autoDispose
     .family<JustificationActionNotifier, AsyncValue<void>, String>(
-      (ref, justificationId) => JustificationActionNotifier(
-        approveHandler: ApproveJustificationHandler(
-          tenantValidator: ref.watch(tenantValidationServiceProvider),
-          justificationRepo: ref.watch(justificationRepositoryProvider),
-          ledger: ref.watch(slaAuditLedgerRepositoryProvider),
-          rbac: RbacService(),
-        ),
-        rejectHandler: RejectJustificationHandler(
-          tenantValidator: ref.watch(tenantValidationServiceProvider),
-          justificationRepo: ref.watch(justificationRepositoryProvider),
-          ledger: ref.watch(slaAuditLedgerRepositoryProvider),
-          rbac: RbacService(),
-        ),
-      ),
+      JustificationActionNotifier.new,
     );
 
-class JustificationActionNotifier extends StateNotifier<AsyncValue<void>> {
-  final ApproveJustificationHandler _approveHandler;
-  final RejectJustificationHandler _rejectHandler;
+class JustificationActionNotifier extends Notifier<AsyncValue<void>>
+    with GuardedAsyncActionMixin<void> {
+  JustificationActionNotifier(this.justificationId);
+  final String justificationId;
 
-  JustificationActionNotifier({
-    required ApproveJustificationHandler approveHandler,
-    required RejectJustificationHandler rejectHandler,
-  }) : _approveHandler = approveHandler,
-       _rejectHandler = rejectHandler,
-       super(const AsyncData(null));
+  @override
+  AsyncValue<void> build() {
+    return const AsyncData(null);
+  }
 
   Future<void> approve({
     required String justificationId,
@@ -160,19 +170,20 @@ class JustificationActionNotifier extends StateNotifier<AsyncValue<void>> {
     required String callerEmail,
     required String sessionId,
   }) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => _approveHandler.handle(
-        ApproveJustificationCommand(
-          justificationId: justificationId,
-          organizationId: organizationId,
-          planVersion: planVersion,
-          callerRole: callerRole,
-          callerUserId: callerUserId,
-          callerEmail: callerEmail,
-          sessionId: sessionId,
-        ),
-      ),
+    await guardedAction(
+      () => ref
+          .read(approveJustificationHandlerProvider)
+          .handle(
+            ApproveJustificationCommand(
+              justificationId: justificationId,
+              organizationId: organizationId,
+              planVersion: planVersion,
+              callerRole: callerRole,
+              callerUserId: callerUserId,
+              callerEmail: callerEmail,
+              sessionId: sessionId,
+            ),
+          ),
     );
   }
 
@@ -186,20 +197,21 @@ class JustificationActionNotifier extends StateNotifier<AsyncValue<void>> {
     required String rejectionNotes,
     required String sessionId,
   }) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => _rejectHandler.handle(
-        RejectJustificationCommand(
-          justificationId: justificationId,
-          organizationId: organizationId,
-          planVersion: planVersion,
-          callerRole: callerRole,
-          callerUserId: callerUserId,
-          callerEmail: callerEmail,
-          rejectionNotes: rejectionNotes,
-          sessionId: sessionId,
-        ),
-      ),
+    await guardedAction(
+      () => ref
+          .read(rejectJustificationHandlerProvider)
+          .handle(
+            RejectJustificationCommand(
+              justificationId: justificationId,
+              organizationId: organizationId,
+              planVersion: planVersion,
+              callerRole: callerRole,
+              callerUserId: callerUserId,
+              callerEmail: callerEmail,
+              rejectionNotes: rejectionNotes,
+              sessionId: sessionId,
+            ),
+          ),
     );
   }
 }

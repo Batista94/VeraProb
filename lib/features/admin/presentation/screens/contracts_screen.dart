@@ -96,8 +96,9 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
                   );
                   if (newContractId != null) {
                     ref.invalidate(contractListProvider);
-                    ref.read(selectedContractIdProvider.notifier).state =
-                        newContractId;
+                    ref
+                        .read(selectedContractIdProvider.notifier)
+                        .set(newContractId);
                   }
                 },
               ),
@@ -127,16 +128,15 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
                 label: 'Todos',
                 selected: activeFilter == null,
                 onSelected: (_) =>
-                    ref.read(contractStatusFilterProvider.notifier).state =
-                        null,
+                    ref.read(contractStatusFilterProvider.notifier).set(null),
               ),
               _FilterChip(
                 label: 'Rascunhos',
                 color: VeraProbColors.neutral,
                 selected: activeFilter == ContractStatusView.draft,
-                onSelected: (_) =>
-                    ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatusView.draft,
+                onSelected: (_) => ref
+                    .read(contractStatusFilterProvider.notifier)
+                    .set(ContractStatusView.draft),
               ),
               _FilterChip(
                 label: 'Aguardando Aceite',
@@ -144,45 +144,47 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
                 selected:
                     activeFilter ==
                     ContractStatusView.awaitingContractorAcceptance,
-                onSelected: (_) =>
-                    ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatusView.awaitingContractorAcceptance,
+                onSelected: (_) => ref
+                    .read(contractStatusFilterProvider.notifier)
+                    .set(ContractStatusView.awaitingContractorAcceptance),
               ),
               _FilterChip(
                 label: 'Ativos',
                 color: VeraProbColors.success,
                 selected: activeFilter == ContractStatusView.active,
-                onSelected: (_) =>
-                    ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatusView.active,
+                onSelected: (_) => ref
+                    .read(contractStatusFilterProvider.notifier)
+                    .set(ContractStatusView.active),
               ),
               _FilterChip(
                 label: 'Encerrados',
                 color: VeraProbColors.error,
                 selected: activeFilter == ContractStatusView.closed,
-                onSelected: (_) =>
-                    ref.read(contractStatusFilterProvider.notifier).state =
-                        ContractStatusView.closed,
+                onSelected: (_) => ref
+                    .read(contractStatusFilterProvider.notifier)
+                    .set(ContractStatusView.closed),
               ),
             ],
           ),
           const SizedBox(height: 24),
 
           Expanded(
-            child: contractsAsync.when(
-              data: (all) {
-                final contracts = _filterContracts(all);
+            child: switch (contractsAsync) {
+              AsyncData(:final value) => () {
+                final contracts = _filterContracts(value);
                 if (contracts.isEmpty) return const _EmptyState();
                 return _ContractTable(contracts: contracts);
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
+              }(),
+              AsyncLoading() => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              AsyncError(:final error) => Center(
                 child: Text(
-                  'Erro ao carregar contratos: $e',
+                  'Erro ao carregar contratos: $error',
                   style: const TextStyle(color: VeraProbColors.error),
                 ),
               ),
-            ),
+            },
           ),
         ],
       ),
@@ -298,7 +300,7 @@ class _ContractTable extends ConsumerWidget {
               ),
               OutlinedButton.icon(
                 onPressed: () {
-                  ref.read(selectedContractIdProvider.notifier).state = c.id;
+                  ref.read(selectedContractIdProvider.notifier).set(c.id);
                 },
                 icon: const Icon(Icons.chevron_right, size: 16),
                 label: const Text('Gerenciar'),
@@ -469,8 +471,9 @@ class _ContractTable extends ConsumerWidget {
                           );
                           ref.invalidate(contractListProvider);
                           if (ctx.mounted) Navigator.of(ctx).pop();
-                          ref.read(selectedContractIdProvider.notifier).state =
-                              newContract.id;
+                          ref
+                              .read(selectedContractIdProvider.notifier)
+                              .set(newContract.id);
                         } on DomainException catch (e) {
                           setDialogState(() {
                             errorMsg = e.message;

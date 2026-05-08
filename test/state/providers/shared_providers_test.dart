@@ -6,14 +6,12 @@ import 'package:veraprob/state/providers/shared_providers.dart';
 void main() {
   group('shared_providers.dart Tests', () {
     test('ProviderContainer initializes correctly', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
       expect(container, isNotNull);
     });
 
     test('provider initial state test structure', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
 
       // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
       expect(
@@ -23,8 +21,7 @@ void main() {
     });
 
     test('provider initial state test structure', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
 
       // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
       expect(
@@ -34,8 +31,7 @@ void main() {
     });
 
     test('provider initial state test structure', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
 
       // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
       expect(
@@ -45,8 +41,7 @@ void main() {
     });
 
     test('provider initial state test structure', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
 
       // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
       expect(
@@ -56,8 +51,7 @@ void main() {
     });
 
     test('provider initial state test structure', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
 
       // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
       expect(
@@ -67,8 +61,7 @@ void main() {
     });
 
     test('provider initial state test structure', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
 
       // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
       expect(
@@ -78,8 +71,7 @@ void main() {
     });
 
     test('provider data loading state', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
 
       final state = container.read(searchQueryStreamProvider);
 

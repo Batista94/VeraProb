@@ -89,29 +89,31 @@ class InvestigationModal extends ConsumerWidget {
                               final stateAsync = ref.watch(
                                 executionStateProvider(setId),
                               );
-                              return stateAsync.when(
-                                loading: () => const Center(
+                              return switch (stateAsync) {
+                                AsyncData(:final value) => () {
+                                  if (value == null) return const SizedBox();
+                                  return InvestigationMapPanel(
+                                    execution: value,
+                                  );
+                                }(),
+                                AsyncLoading() => const Center(
                                   child: CircularProgressIndicator(),
                                 ),
-                                error: (e, st) => const SizedBox(),
-                                data: (state) {
-                                  if (state == null) return const SizedBox();
-                                  return InvestigationMapPanel(
-                                    execution: state,
-                                  );
-                                },
-                              );
+                                AsyncError() => const SizedBox(),
+                              };
                             },
                           ),
                           const SizedBox(height: 16),
                           Expanded(
                             child: _LedgerTimelinePanel(
                               ledgerAsync: ledgerAsync,
-                              triggeringEventId: tracesAsync.whenOrNull(
-                                data: (traces) => traces.isNotEmpty
-                                    ? traces.first.triggeringEventId
-                                    : null,
-                              ),
+                              triggeringEventId: switch (tracesAsync) {
+                                AsyncData(:final value) =>
+                                  value.isNotEmpty
+                                      ? value.first.triggeringEventId
+                                      : null,
+                                _ => null,
+                              },
                             ),
                           ),
                         ],
@@ -235,20 +237,9 @@ class _LedgerTimelinePanel extends StatelessWidget {
 
           // Timeline Content
           Expanded(
-            child: ledgerAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: VeraProbColors.primary),
-              ),
-              error: (err, _) => Center(
-                child: Text(
-                  'Erro ao carregar ledger: $err',
-                  style: VeraProbTypography.bodySmall.copyWith(
-                    color: VeraProbColors.error,
-                  ),
-                ),
-              ),
-              data: (entries) {
-                if (entries.isEmpty) {
+            child: switch (ledgerAsync) {
+              AsyncData(:final value) => () {
+                if (value.isEmpty) {
                   return Center(
                     child: Text(
                       'Nenhum evento no ledger',
@@ -259,9 +250,9 @@ class _LedgerTimelinePanel extends StatelessWidget {
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: entries.length,
+                  itemCount: value.length,
                   itemBuilder: (context, index) {
-                    final entry = entries[index];
+                    final entry = value[index];
                     final isTriggering =
                         triggeringEventId != null &&
                         entry.eventId == triggeringEventId;
@@ -269,12 +260,23 @@ class _LedgerTimelinePanel extends StatelessWidget {
                     return _TimelineEvent(
                       entry: entry,
                       isTriggering: isTriggering,
-                      isLast: index == entries.length - 1,
+                      isLast: index == value.length - 1,
                     );
                   },
                 );
-              },
-            ),
+              }(),
+              AsyncLoading() => const Center(
+                child: CircularProgressIndicator(color: VeraProbColors.primary),
+              ),
+              AsyncError(:final error) => Center(
+                child: Text(
+                  'Erro ao carregar ledger: $error',
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.error,
+                  ),
+                ),
+              ),
+            },
           ),
         ],
       ),
@@ -441,32 +443,32 @@ class _EvaluationTracePanel extends StatelessWidget {
 
           // Trace Content
           Expanded(
-            child: tracesAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: VeraProbColors.primary),
-              ),
-              error: (err, _) => Center(
-                child: Text(
-                  'Erro ao carregar traces: $err',
-                  style: VeraProbTypography.bodySmall.copyWith(
-                    color: VeraProbColors.error,
-                  ),
-                ),
-              ),
-              data: (traces) {
-                if (traces.isEmpty) {
+            child: switch (tracesAsync) {
+              AsyncData(:final value) => () {
+                if (value.isEmpty) {
                   return _NoTraceState();
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: traces.length,
+                  itemCount: value.length,
                   itemBuilder: (context, index) {
-                    return _TraceCard(trace: traces[index]);
+                    return _TraceCard(trace: value[index]);
                   },
                 );
-              },
-            ),
+              }(),
+              AsyncLoading() => const Center(
+                child: CircularProgressIndicator(color: VeraProbColors.primary),
+              ),
+              AsyncError(:final error) => Center(
+                child: Text(
+                  'Erro ao carregar traces: $error',
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.error,
+                  ),
+                ),
+              ),
+            },
           ),
         ],
       ),

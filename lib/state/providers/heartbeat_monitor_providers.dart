@@ -5,6 +5,7 @@ import 'package:veraprob/application/sla_audit/projections/heartbeat_query_servi
 import 'package:veraprob/domain/sla_audit/heartbeat_classifier.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/supabase_heartbeat_query_service.dart';
+import 'package:veraprob/state/provider_timeout.dart';
 
 /// Provides the [HeartbeatQueryService] backed by Supabase.
 final heartbeatQueryServiceProvider = Provider<HeartbeatQueryService>((ref) {
@@ -23,5 +24,7 @@ final heartbeatMonitorProvider =
       organizationId,
     ) async {
       final service = ref.watch(heartbeatQueryServiceProvider);
-      return service.getHeartbeatMonitor(organizationId: organizationId);
+      return service
+          .getHeartbeatMonitor(organizationId: organizationId)
+          .withProviderTimeout();
     });

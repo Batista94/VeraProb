@@ -144,9 +144,14 @@ CREATE INDEX idx_financial_snapshot_date ON public.contractual_financial_snapsho
 CREATE INDEX idx_financial_snapshot_contract ON public.contractual_financial_snapshot(contract_id);
 
 -- ============================================================
--- SECURITY HARDENING
+-- SECURITY HARDENING (INV-2: RLS at Birth)
 -- ============================================================
--- Database-level invariants (REVOKE UPDATE/DELETE, RLS, policies)
--- are enforced by the migration:
+ALTER TABLE public.plan_declarations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contractual_service_executions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.execution_states ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.execution_state_transitions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sla_audit_ledger ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contractual_financial_snapshot ENABLE ROW LEVEL SECURITY;
+
+-- Note: Policies are defined in:
 --   supabase/migrations/20260304195300_sla_audit_hardening.sql
--- ============================================================

@@ -50,7 +50,7 @@ void main() async {
       late String driverA;
       late String evidenceId;
 
-      const orgA = PostgresTestConfig.testOrgId;
+      const orgA = '00000000-0000-0000-0000-000000000099';
 
       setUpAll(() async {
         serviceClient = PostgresTestConfig.createServiceRoleClient();
@@ -277,7 +277,7 @@ void main() async {
       late String driverA;
       late String tokenId;
 
-      const orgA = PostgresTestConfig.testOrgId;
+      const orgA = '00000000-0000-0000-0000-000000000099';
 
       setUpAll(() async {
         serviceClient = PostgresTestConfig.createServiceRoleClient();

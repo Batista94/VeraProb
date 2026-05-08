@@ -84,8 +84,56 @@
       "Read(//c/Users/wes_b/AppData/Local/deno/**)",
       "Read(//c/Users/wes_b/.deno/bin/**)",
       "Bash(/c/Users/wes_b/.deno/bin/deno test *)",
-      "Bash(npx deno *)"
+      "Bash(npx deno *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(supabase deno *)",
+      "Bash(claude mcp *)",
+      "Bash(bash scripts/security/pr_full_scanner.sh)",
+      "Bash(C:/Users/wes_b/AppData/Local/Pub/Cache/bin/metrics.bat analyze *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(Select-Object -First 20)",
+      "Bash(Format-Table FullName)",
+      "Bash(Get-ChildItem *)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_fill_form",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_run_code_unsafe",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_press_key",
+      "mcp__postgres__query",
+      "Bash(Select-Object Name)",
+      "Bash(pwsh scripts/test/run_env_matrix.ps1)",
+      "Bash(rm -rf .veraprob)",
+      "Bash(SCRATCHPAD_PERSONA=architect SCRATCHPAD_SECTION=decisions SCRATCHPAD_ACTION=append SCRATCHPAD_CONTENT=\"Event sourcing pattern for audit trail. Immutable ledger + snapshots for performance.\" bash scripts/sync_scratchpad.sh)",
+      "Bash(SCRATCHPAD_PERSONA=senior SCRATCHPAD_SECTION=mission SCRATCHPAD_ACTION=overwrite SCRATCHPAD_CONTENT=\"Implementing event sourcing. Schema designed. Ready for data layer tests.\" bash scripts/sync_scratchpad.sh)",
+      "Bash(SCRATCHPAD_PERSONA=qa SCRATCHPAD_SECTION=decisions SCRATCHPAD_ACTION=append SCRATCHPAD_CONTENT=\"All financial operations must be auditable. Serializable isolation for consistency.\" bash scripts/sync_scratchpad.sh)",
+      "Bash(SCRATCHPAD_PERSONA=test SCRATCHPAD_SECTION=mission SCRATCHPAD_ACTION=overwrite SCRATCHPAD_CONTENT=\"Test entry\" bash *)",
+      "Bash(SCRATCHPAD_PERSONA=architect SCRATCHPAD_SECTION=\"Architect Decisions\" SCRATCHPAD_ACTION=append SCRATCHPAD_CONTENT=\"sync_scratchpad.py moved to scripts/ folder\" bash *)",
+      "Bash(SCRATCHPAD_PERSONA=senior SCRATCHPAD_SECTION=\"Current Mission State\" SCRATCHPAD_ACTION=overwrite SCRATCHPAD_CONTENT=\"Relocated sync_scratchpad.py to scripts/. Wrapper updated. Hook functional.\" bash *)",
+      "Bash(git mv *)",
+      "Bash(xargs -I{} grep -l \"package:veraprob/domain/\" {})",
+      "Bash(awk '{print $NF}')",
+      "WebSearch",
+      "WebFetch(domain:pub.dev)",
+      "Bash(git -C . show HEAD:pubspec.lock)"
     ]
   },
-  "model": "sonnet"
+  "enabledMcpjsonServers": [
+    "playwright",
+    "postgres"
+  ],
+  "disabledMcpjsonServers": [
+    "puppeteer",
+    "sequential-thinking",
+    "docker",
+    "supabase",
+    "github",
+    "fetch"
+  ]
 }

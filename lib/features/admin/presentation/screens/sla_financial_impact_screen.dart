@@ -37,17 +37,19 @@ class SlaFinancialImpactScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 32),
             Expanded(
-              child: impactAsync.when(
-                data: (impact) => _FinancialDashboard(
-                  totalContractedRevenueCents: impact.totalContractedRevenue,
-                  protectedRevenueCents: impact.protectedRevenue,
-                  revenueAtRiskCents: impact.revenueAtRisk,
-                  lostRevenueCents: impact.lostRevenue,
-                  riskPercentageBps: impact.riskPercentageBps,
-                  lossPercentageBps: impact.lossPercentageBps,
+              child: switch (impactAsync) {
+                AsyncData(:final value) => _FinancialDashboard(
+                  totalContractedRevenueCents: value.totalContractedRevenue,
+                  protectedRevenueCents: value.protectedRevenue,
+                  revenueAtRiskCents: value.revenueAtRisk,
+                  lostRevenueCents: value.lostRevenue,
+                  riskPercentageBps: value.riskPercentageBps,
+                  lossPercentageBps: value.lossPercentageBps,
                 ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(
+                AsyncLoading() => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                AsyncError(:final error) => Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -64,11 +66,11 @@ class SlaFinancialImpactScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text('$err', style: VeraProbTypography.caption),
+                      Text('$error', style: VeraProbTypography.caption),
                     ],
                   ),
                 ),
-              ),
+              },
             ),
           ],
         ),

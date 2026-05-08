@@ -1,0 +1,12 @@
+{
+  "name": "Simulador de Caos IoT",
+  "description": "Sugere ou ativa o simulador de caos para testes de resiliência IoT.",
+  "version": "1",
+  "when": {
+    "type": "fileSaved"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Verifique se este teste IoT precisa de simulação de caos e ative o skill iot-chaos-simulator se necessário."
+  }
+}

@@ -5,6 +5,20 @@ All notable changes to VeraProb will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-05-07
+### Added
+- Comprehensive forensic audit of the entire dependency graph (INV-25).
+- 12 new Property-Based Tests (Glados) for State Engine resilience.
+
+### Changed
+- **Major**: Migrated State Management to **Riverpod v3** (Notifier API refactor).
+- **Major**: Upgraded Database Layer to **Drift 2.33.0** and **Postgres 3.5.9**.
+- **Security**: Hardened `ShiftPattern` logic to handle `timezone 0.11.0` breaking changes (Universal UTC).
+- Updated CI/CD to align with Flutter 3.41.5 (CVE-2026-27704 fix).
+
+### Fixed
+- Potential revenue leakage in Shadow Executions via strict Notifier lifecycle guards.
+
 ## [Unreleased] - Red Team v2.1 Remediation
 
 ### Security

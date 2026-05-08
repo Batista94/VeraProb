@@ -141,11 +141,8 @@ class _BillingCycleReportsScreenState
       children: [
         Row(
           children: [
-            contractsAsync.when(
-              loading: () =>
-                  const SizedBox(width: 220, child: LinearProgressIndicator()),
-              error: (_, _) => const Text('Erro ao carregar contratos'),
-              data: (contracts) => DropdownButton<String?>(
+            switch (contractsAsync) {
+              AsyncData(:final value) => DropdownButton<String?>(
                 value: _selectedContractId,
                 hint: const Text('Todos os contratos'),
                 items: [
@@ -153,7 +150,7 @@ class _BillingCycleReportsScreenState
                     value: null,
                     child: Text('Todos os contratos'),
                   ),
-                  ...contracts.map(
+                  ...value.map(
                     (c) => DropdownMenuItem<String?>(
                       value: c.id,
                       child: Text(
@@ -167,7 +164,12 @@ class _BillingCycleReportsScreenState
                 onChanged: (value) =>
                     setState(() => _selectedContractId = value),
               ),
-            ),
+              AsyncLoading() => const SizedBox(
+                width: 220,
+                child: LinearProgressIndicator(),
+              ),
+              AsyncError() => const Text('Erro ao carregar contratos'),
+            },
             const SizedBox(width: 16),
             OutlinedButton.icon(
               onPressed: () async {

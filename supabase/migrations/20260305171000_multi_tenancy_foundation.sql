@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-rls (policies superseded by 20260317000001_rls_jwt_path_unification.sql)
 -- =====================================================================
 -- MULTI-TENANCY & AUTHENTICATION FOUNDATION MIGRATION
 -- Purpose: Introduce strict organizational boundaries and RLS isolation.
@@ -113,24 +114,24 @@ ALTER TABLE contractual_financial_snapshot_v2 ENABLE ROW LEVEL SECURITY;
 -- ORGANIZATIONS: Users can only see their own organization
 CREATE POLICY "Tenant Isolation: Read Organization" ON organizations
 FOR SELECT USING (
-    id = (current_setting('request.jwt.claims', true)::json->'app_metadata'->>'org_id')::uuid
+    id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
 );
 
 -- LEDGER: Users can only Read/Insert events targeting their own organization_id
 CREATE POLICY "Tenant Isolation: Read Ledger" ON sla_audit_ledger_v2
 FOR SELECT USING (
-    organization_id = (current_setting('request.jwt.claims', true)::json->'app_metadata'->>'org_id')::uuid
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
 );
 
 CREATE POLICY "Tenant Isolation: Insert Ledger" ON sla_audit_ledger_v2
 FOR INSERT WITH CHECK (
-    organization_id = (current_setting('request.jwt.claims', true)::json->'app_metadata'->>'org_id')::uuid
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
 );
 
 -- FINANCIAL PROJECTIONS: Strict Tenant Isolation
 CREATE POLICY "Tenant Isolation: Read Projections" ON contractual_financial_snapshot_v2
 FOR SELECT USING (
-    organization_id = (current_setting('request.jwt.claims', true)::json->'app_metadata'->>'org_id')::uuid
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
 );
 
 -- =====================================================================

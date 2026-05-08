@@ -22,22 +22,22 @@
 -- ============================================================
 
 -- ── 1. Organizations ──────────────────────────────────────────────────────────
-INSERT INTO public.organizations (id, name, is_active)
+-- NOTE: `is_active` is a GENERATED ALWAYS column (status = 'ACTIVE') since
+-- migration 20260427010001_org_status_enum.sql — do NOT insert it explicitly.
+-- `status` defaults to 'ACTIVE', so is_active will be TRUE automatically.
+INSERT INTO public.organizations (id, name)
 VALUES
   (
     '00000000-0000-0000-0000-000000000001',
-    'Org Alpha (Test Tenant A)',
-    true
+    'Org Alpha (Test Tenant A)'
   ),
   (
     '00000000-0000-0000-0000-000000000002',
-    'Org Beta (Test Tenant B)',
-    true
+    'Org Beta (Test Tenant B)'
   ),
   (
     '00000000-0000-0000-0000-000000000003',
-    'Org Gamma (Test Tenant C)',
-    true
+    'Org Gamma (Test Tenant C)'
   )
 ON CONFLICT (id) DO NOTHING;
 

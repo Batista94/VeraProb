@@ -56,7 +56,7 @@ Widget _buildScreen() {
   return ProviderScope(
     overrides: [
       contractListProvider.overrideWith((_) => Future.value(_contracts)),
-      selectedContractIdProvider.overrideWith((_) => null),
+      selectedContractIdProvider.overrideWithBuild((ref, notifier) => null),
     ],
     child: const MaterialApp(home: Scaffold(body: ContractsScreen())),
   );

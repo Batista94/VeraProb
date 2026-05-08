@@ -6,14 +6,12 @@ import 'package:veraprob/application/projections/providers/audit_filter_provider
 void main() {
   group('audit_filter_provider.dart Tests', () {
     test('ProviderContainer initializes correctly', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
       expect(container, isNotNull);
     });
 
     test('provider initial state test structure', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
 
       // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
       expect(

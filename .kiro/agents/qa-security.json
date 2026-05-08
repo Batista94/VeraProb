@@ -1,48 +1,22 @@
 {
-    "name": "qa-security",
-    "description": "Protector of tenant data and ledger integrity.",
-    "resources": [
-        "file://.kiro/steering/forensic-standards.md",
-        "file://.kiro/powers/security-audit.md",
-        "file://.kiro/powers/attorney.md",
-        "file://.kiro/powers/pr-scanner.md",
-        "file://.claude/agents/qa-security.md",
-        "file://CLAUDE.md"
-    ],
-    "model": "claude-3-5-sonnet-latest",
-    "tools": [
-        "read",
-        "write",
-        "shell",
-        "grep",
-        "glob",
-        "code",
-        "aws",
-        "web_search",
-        "web_fetch",
-        "knowledge",
-        "use_subagent",
-        "session_settings",
-        "introspect",
-        "dummy",
-        "@builtin"
-    ],
-    "allowedTools": [
-        "read",
-        "write",
-        "shell",
-        "grep",
-        "glob",
-        "code",
-        "aws",
-        "web_search",
-        "web_fetch",
-        "knowledge",
-        "use_subagent",
-        "session_settings",
-        "introspect",
-        "dummy",
-        "@builtin"
-    ],
-    "prompt": "You are the qa-security. Follow the core protocols and forensic invariants strictly. Your specific persona rules are loaded as resources."
+  "name": "QA & Security",
+  "description": "Protector of tenant data and ledger integrity.",
+  "persona": "file://./qa-security.md",
+  "capabilities": [
+    "bash",
+    "read_workspace",
+    "mcp:postgres",
+    "mcp:playwright",
+    "mcp:docker"
+  ],
+  "steering": [
+    "file://../steering/forensic-standards.md",
+    "file://../../CLAUDE.md",
+    "file://../AGENTS.md",
+    "file://../rules.md"
+  ],
+  "env": {
+    "SECURITY_LEVEL": "HIGH",
+    "RLS_AUDIT": "1"
+  }
 }

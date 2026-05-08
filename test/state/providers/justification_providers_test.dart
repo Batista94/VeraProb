@@ -78,17 +78,23 @@ void main() {
     ];
 
     test('counts EXACTLY 2 pending from stream of 5 docs', () async {
-      final container = ProviderContainer(
+      final container = ProviderContainer.test(
         overrides: [
           justificationListStreamProvider.overrideWith(
             (ref) => Stream.value(makeRows()),
           ),
         ],
       );
-      addTearDown(container.dispose);
 
+      // In Riverpod v3, autoDispose providers are destroyed as soon as they have
+      // no active listeners. `container.read()` does not create a persistent
+      // subscription, so the ProviderScheduler would destroy the StreamProvider
+      // before the stream Future resolves. `container.listen()` mirrors what
+      // `ref.watch()` does in the widget tree — it keeps the provider alive.
+      final sub = container.listen(justificationListStreamProvider, (_, _) {});
       await container.read(justificationListStreamProvider.future);
       expect(container.read(pendingJustificationsCountProvider), 2);
+      sub.close();
     });
 
     test(
@@ -100,22 +106,27 @@ void main() {
           // lowercase must NOT match
           {'id': '2', 'status': 'pending'},
         ];
-        final container = ProviderContainer(
+        final container = ProviderContainer.test(
           overrides: [
             justificationListStreamProvider.overrideWith(
               (ref) => Stream.value(rows),
             ),
           ],
         );
-        addTearDown(container.dispose);
 
+        // Keep the autoDispose provider alive during the await (Riverpod v3).
+        final sub = container.listen(
+          justificationListStreamProvider,
+          (_, _) {},
+        );
         await container.read(justificationListStreamProvider.future);
         expect(container.read(pendingJustificationsCountProvider), 1);
+        sub.close();
       },
     );
 
     test('returns 0 while stream is loading', () {
-      final container = ProviderContainer(
+      final container = ProviderContainer.test(
         overrides: [
           justificationListStreamProvider.overrideWith(
             // never-completing stream → AsyncLoading
@@ -123,7 +134,6 @@ void main() {
           ),
         ],
       );
-      addTearDown(container.dispose);
 
       expect(container.read(pendingJustificationsCountProvider), 0);
     });
@@ -143,15 +153,19 @@ void main() {
           {'id': '1', 'created_at_utc': '2026-04-18', 'status': 'REJECTED'},
         ];
 
-        final container = ProviderContainer(
+        final container = ProviderContainer.test(
           overrides: [
             justificationListStreamProvider.overrideWith(
               (ref) => Stream.value(orderedRows),
             ),
           ],
         );
-        addTearDown(container.dispose);
 
+        // Keep the autoDispose provider alive during the await (Riverpod v3).
+        final sub = container.listen(
+          justificationListStreamProvider,
+          (_, _) {},
+        );
         await container.read(justificationListStreamProvider.future);
 
         container
@@ -167,6 +181,7 @@ void main() {
               error: (e, _) => fail('Unexpected error: $e'),
               loading: () => fail('Expected data, got loading'),
             );
+        sub.close();
       },
     );
   });
@@ -182,14 +197,10 @@ void main() {
       mockApprove = MockApproveJustificationHandler();
       mockReject = MockRejectJustificationHandler();
 
-      container = ProviderContainer(
+      container = ProviderContainer.test(
         overrides: [
-          justificationActionStateProvider('just-001').overrideWith(
-            (ref) => JustificationActionNotifier(
-              approveHandler: mockApprove,
-              rejectHandler: mockReject,
-            ),
-          ),
+          approveJustificationHandlerProvider.overrideWithValue(mockApprove),
+          rejectJustificationHandlerProvider.overrideWithValue(mockReject),
         ],
       );
     });
@@ -272,10 +283,9 @@ void main() {
       'forensicThrottleGatewayProvider injects a real SupabaseForensicThrottleGateway',
       () {
         final mockClient = MockSupabaseClient();
-        final container = ProviderContainer(
+        final container = ProviderContainer.test(
           overrides: [supabaseClientProvider.overrideWithValue(mockClient)],
         );
-        addTearDown(container.dispose);
 
         final gateway = container.read(forensicThrottleGatewayProvider);
 

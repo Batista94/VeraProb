@@ -1,0 +1,12 @@
+{
+  "name": "Sync Estado de Projeto",
+  "description": "Sincroniza automaticamente Invariantes e mudanças arquiteturais com o Knowledge Graph.",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Use o MCP memory para sincronizar o estado atual do projeto, invariantes e decisões arquiteturais com o Knowledge Graph."
+  }
+}

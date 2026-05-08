@@ -63,25 +63,25 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
               const SizedBox(height: 20),
               // Drivers table
               Expanded(
-                child: filteredAsync.when(
-                  data: (drivers) => drivers.isEmpty
-                      ? _buildEmptyState(context)
-                      : _buildDriversTable(
-                          context,
-                          drivers,
-                          colorScheme,
-                          userRole,
-                        ),
-                  loading: () => _buildSkeletonLoading(),
-                  error: (err, stack) {
+                child: switch (filteredAsync) {
+                  AsyncData(:final value) =>
+                    value.isEmpty
+                        ? _buildEmptyState(context)
+                        : _buildDriversTable(
+                            context,
+                            value,
+                            colorScheme,
+                            userRole,
+                          ),
+                  AsyncLoading() => _buildSkeletonLoading(),
+                  AsyncError(:final error) => () {
                     LoggerService().error(
                       'Falha ao carregar motoristas',
-                      error: err,
-                      stackTrace: stack,
+                      error: error,
                     );
                     return _buildErrorState();
-                  },
-                ),
+                  }(),
+                },
               ),
             ],
           ),
@@ -117,6 +117,8 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
     ColorScheme colorScheme,
     UserRole userRole,
   ) {
+    final showArchived = ref.watch(showArchivedDriversProvider);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -151,6 +153,27 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
           ),
         ),
         const SizedBox(width: 16),
+        // Toggle: show archived drivers (supervisors can audit history — INV-3)
+        TextButton.icon(
+          onPressed: () {
+            ref.read(showArchivedDriversProvider.notifier).set(!showArchived);
+          },
+          icon: Icon(
+            showArchived ? Icons.visibility_off_outlined : Icons.history,
+            size: 18,
+            color: showArchived ? Colors.orange.shade700 : Colors.grey.shade600,
+          ),
+          label: Text(
+            showArchived ? 'Ocultar arquivados' : 'Ver arquivados',
+            style: TextStyle(
+              fontSize: 13,
+              color: showArchived
+                  ? Colors.orange.shade700
+                  : Colors.grey.shade600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
         if (userRole.hasPermission(UserRole.admin))
           FilledButton.icon(
             onPressed: _openDrawer,
@@ -181,14 +204,14 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                   icon: const Icon(Icons.clear, size: 18),
                   onPressed: () {
                     _searchController.clear();
-                    ref.read(driversSearchQueryProvider.notifier).state = '';
+                    ref.read(driversSearchQueryProvider.notifier).set('');
                   },
                 )
               : null,
           isDense: true,
         ),
         onChanged: (value) {
-          ref.read(driversSearchQueryProvider.notifier).state = value;
+          ref.read(driversSearchQueryProvider.notifier).set(value);
           setState(() {}); // Refresh clear button
         },
       ),
@@ -392,10 +415,14 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                   driver: driver,
                   isHighlighted: isHighlighted,
                   organizationId: orgId,
-                  onDelete: userRole.hasPermission(UserRole.admin)
-                      ? () => _confirmDelete(context, driver)
+                  onArchive:
+                      (userRole.hasPermission(UserRole.admin) &&
+                          !driver.isArchived)
+                      ? () => _confirmArchive(context, driver)
                       : null,
-                  onTelegramBind: userRole.hasPermission(UserRole.operator)
+                  onTelegramBind:
+                      (userRole.hasPermission(UserRole.operator) &&
+                          !driver.isArchived)
                       ? () => showDialog<void>(
                           context: context,
                           builder: (_) => TelegramBindingDialog(
@@ -414,21 +441,39 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, Driver driver) async {
+  Future<void> _confirmArchive(BuildContext context, Driver driver) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar exclusão'),
-        content: Text('Deseja excluir o motorista ${driver.name} da frota?'),
+        title: const Text('Arquivar motorista'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Arquivar ${driver.name}?',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'O motorista será inativado e o vínculo do Telegram será revogado. '
+              'Evidências e histórico forense são preservados (INV-3).',
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Excluir'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.orange.shade700,
+            ),
+            icon: const Icon(Icons.archive_outlined, size: 18),
+            label: const Text('Arquivar'),
           ),
         ],
       ),
@@ -436,16 +481,19 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
 
     if (confirmed == true) {
       try {
-        await ref.read(driverRepositoryProvider).deleteDriver(driver.id);
+        await ref.read(driverRepositoryProvider).archiveDriver(driver.id);
         ref.invalidate(driversListProvider);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Motorista removido com sucesso.')),
+            SnackBar(
+              content: Text('${driver.name} arquivado. Histórico preservado.'),
+              backgroundColor: Colors.orange.shade700,
+            ),
           );
         }
       } catch (e, stack) {
         LoggerService().error(
-          'Falha ao remover motorista',
+          'Falha ao arquivar motorista',
           error: e,
           stackTrace: stack,
         );
@@ -453,7 +501,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Não foi possível remover o motorista agora. Tente novamente.',
+                'Não foi possível arquivar o motorista. Tente novamente.',
               ),
               backgroundColor: Colors.red,
             ),
@@ -471,14 +519,14 @@ class _DriverRow extends StatefulWidget {
   final Driver driver;
   final bool isHighlighted;
   final String organizationId;
-  final VoidCallback? onDelete;
+  final VoidCallback? onArchive;
   final VoidCallback? onTelegramBind;
 
   const _DriverRow({
     required this.driver,
     required this.isHighlighted,
     required this.organizationId,
-    required this.onDelete,
+    required this.onArchive,
     required this.onTelegramBind,
   });
 
@@ -493,6 +541,8 @@ class _DriverRowState extends State<_DriverRow> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    final isArchived = widget.driver.isArchived;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -501,85 +551,116 @@ class _DriverRowState extends State<_DriverRow> {
         decoration: BoxDecoration(
           color: widget.isHighlighted
               ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+              : isArchived
+              ? Colors.grey.shade50.withValues(alpha: 0.7)
               : _isHovered
               ? Colors.grey.shade50
               : Colors.white,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Row(
-          children: [
-            // Avatar
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: colorScheme.primaryContainer,
-              child: Text(
-                widget.driver.name[0].toUpperCase(),
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.primary,
-                  fontSize: 15,
+        child: Opacity(
+          opacity: isArchived ? 0.55 : 1.0,
+          child: Row(
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: isArchived
+                    ? Colors.grey.shade300
+                    : colorScheme.primaryContainer,
+                child: Text(
+                  widget.driver.name[0].toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isArchived
+                        ? Colors.grey.shade500
+                        : colorScheme.primary,
+                    fontSize: 15,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 16),
-            // Name
-            Expanded(
-              flex: 3,
-              child: Text(
-                widget.driver.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            // CNH
-            Expanded(
-              flex: 2,
-              child: Text(
-                widget.driver.licenseNumber,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade700,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ),
-            // Status chip
-            SizedBox(
-              width: 100,
-              child: _StatusChip(status: widget.driver.status),
-            ),
-            // Actions
-            SizedBox(
-              width: 116,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (widget.onTelegramBind != null)
-                    IconButton(
-                      icon: const Icon(
-                        Icons.telegram,
-                        size: 20,
-                        color: Color(0xFF0D47A1),
+              const SizedBox(width: 16),
+              // Name
+              Expanded(
+                flex: 3,
+                child: Row(
+                  children: [
+                    Text(
+                      widget.driver.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        decoration: isArchived
+                            ? TextDecoration.lineThrough
+                            : null,
+                        color: isArchived ? Colors.grey.shade500 : null,
                       ),
-                      tooltip: 'Vincular Telegram',
-                      onPressed: widget.onTelegramBind,
                     ),
-                  if (widget.onDelete != null)
-                    IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        size: 20,
-                        color: Colors.red.shade400,
+                    if (isArchived) ...[
+                      const SizedBox(width: 6),
+                      Tooltip(
+                        message: 'Arquivado — histórico forense preservado',
+                        child: Icon(
+                          Icons.archive_outlined,
+                          size: 14,
+                          color: Colors.grey.shade400,
+                        ),
                       ),
-                      tooltip: 'Remover motorista',
-                      onPressed: widget.onDelete,
-                    ),
-                ],
+                    ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              // CNH
+              Expanded(
+                flex: 2,
+                child: Text(
+                  widget.driver.licenseNumber,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade500,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+              // Status chip
+              SizedBox(
+                width: 100,
+                child: _StatusChip(
+                  status: widget.driver.status,
+                  isArchived: isArchived,
+                ),
+              ),
+              // Actions
+              SizedBox(
+                width: 116,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (widget.onTelegramBind != null)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.telegram,
+                          size: 20,
+                          color: Color(0xFF0D47A1),
+                        ),
+                        tooltip: 'Vincular Telegram',
+                        onPressed: widget.onTelegramBind,
+                      ),
+                    if (widget.onArchive != null)
+                      IconButton(
+                        icon: Icon(
+                          Icons.archive_outlined,
+                          size: 20,
+                          color: Colors.orange.shade600,
+                        ),
+                        tooltip: 'Arquivar motorista',
+                        onPressed: widget.onArchive,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -591,27 +672,31 @@ class _DriverRowState extends State<_DriverRow> {
 // ---------------------------------------------------------------------------
 class _StatusChip extends StatelessWidget {
   final DriverStatus status;
-  const _StatusChip({required this.status});
+  final bool isArchived;
+  const _StatusChip({required this.status, this.isArchived = false});
 
   @override
   Widget build(BuildContext context) {
-    final (label, color, bgColor) = switch (status) {
-      DriverStatus.active => (
-        'Ativo',
-        const Color(0xFF1B5E20),
-        const Color(0xFFE8F5E9),
-      ),
-      DriverStatus.inactive => (
-        'Inativo',
-        const Color(0xFF616161),
-        const Color(0xFFF5F5F5),
-      ),
-      DriverStatus.pending => (
-        'Pendente',
-        const Color(0xFFE65100),
-        const Color(0xFFFFF3E0),
-      ),
-    };
+    // Archived supersedes active/pending status for display purposes (INV-3).
+    final (label, color, bgColor) = isArchived
+        ? ('Arquivado', const Color(0xFF9E9E9E), const Color(0xFFF5F5F5))
+        : switch (status) {
+            DriverStatus.active => (
+              'Ativo',
+              const Color(0xFF1B5E20),
+              const Color(0xFFE8F5E9),
+            ),
+            DriverStatus.inactive => (
+              'Inativo',
+              const Color(0xFF616161),
+              const Color(0xFFF5F5F5),
+            ),
+            DriverStatus.pending => (
+              'Pendente',
+              const Color(0xFFE65100),
+              const Color(0xFFFFF3E0),
+            ),
+          };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

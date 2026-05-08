@@ -50,20 +50,22 @@ class _DefensePortalScreenState extends ConsumerState<DefensePortalScreen> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: listAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
+            child: switch (listAsync) {
+              AsyncData(:final value) => () {
+                final filtered = _applyFilters(value);
+                if (filtered.isEmpty) return const _EmptyState();
+                return _JustificationTable(rows: filtered);
+              }(),
+              AsyncLoading() => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              AsyncError(:final error) => Center(
                 child: Text(
-                  'Erro ao carregar justificativas: $e',
+                  'Erro ao carregar justificativas: $error',
                   style: const TextStyle(color: VeraProbColors.error),
                 ),
               ),
-              data: (rows) {
-                final filtered = _applyFilters(rows);
-                if (filtered.isEmpty) return const _EmptyState();
-                return _JustificationTable(rows: filtered);
-              },
-            ),
+            },
           ),
         ],
       ),
@@ -104,12 +106,14 @@ class _Header extends ConsumerStatefulWidget {
 class _HeaderState extends ConsumerState<_Header> {
   @override
   Widget build(BuildContext context) {
-    final pendingCount = widget.listAsync.maybeWhen(
-      data: (rows) => rows
-          .where((r) => r['status'] == JustificationStatus.pending.dbValue)
-          .length,
-      orElse: () => 0,
-    );
+    final pendingCount = switch (widget.listAsync) {
+      AsyncData(:final value) =>
+        value
+            .where((r) => r['status'] == JustificationStatus.pending.dbValue)
+            .length,
+      AsyncError() => 0,
+      AsyncLoading() => 0,
+    };
 
     return Row(
       children: [

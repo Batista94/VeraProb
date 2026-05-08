@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 /// Industrial sound feedback for CRITICAL alerts.
 ///
@@ -8,16 +10,21 @@ import 'package:just_audio/just_audio.dart';
 /// Lifecycle: managed via Riverpod provider with ref.onDispose.
 class AlertSoundService {
   final AudioPlayer _player;
+  final IDateTimeProvider _clock;
   DateTime _lastPlayedAt = DateTime.utc(2000);
 
   static const _debounceSeconds = 3;
   static const _assetPath = 'assets/sounds/industrial_ping.wav';
 
-  AlertSoundService() : _player = AudioPlayer();
+  AlertSoundService({
+    @visibleForTesting AudioPlayer? player,
+    @visibleForTesting IDateTimeProvider? clock,
+  }) : _player = player ?? AudioPlayer(),
+       _clock = clock ?? UtcDateTimeProvider();
 
   /// Plays the industrial ping if at least [_debounceSeconds] have elapsed.
   Future<void> playAlertPing() async {
-    final now = DateTime.now().toUtc();
+    final now = _clock.nowUtc();
     if (now.difference(_lastPlayedAt).inSeconds < _debounceSeconds) return;
     _lastPlayedAt = now;
 

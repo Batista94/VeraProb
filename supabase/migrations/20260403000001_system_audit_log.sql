@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.system_audit_log (
     CHECK (severity IN ('debug', 'info', 'warning', 'error', 'critical')),
   payload       JSONB,
   source        TEXT,  -- e.g., 'flutter_web', 'edge_function', 'evaluation_engine'
+  organization_id UUID, -- Added for INV-2 compliance
   occurred_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()  -- UTC, always
 );
 
@@ -56,6 +57,10 @@ CREATE POLICY system_audit_log_select_admin_policy ON public.system_audit_log
   TO authenticated
   USING (
     (auth.jwt() ->> 'user_role') = 'admin'
+    AND (
+      organization_id IS NULL 
+      OR organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    )
   );
 
 -- =============================================================================

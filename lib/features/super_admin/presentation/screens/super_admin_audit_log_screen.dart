@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/widgets/audit_payload_diff_view.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 const _kSeverities = ['debug', 'info', 'warning', 'error', 'critical'];
@@ -51,9 +52,9 @@ class _SuperAdminAuditLogScreenState
           }),
         ),
         Expanded(
-          child: logsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(
+          child: switch (logsAsync) {
+            AsyncLoading() => const Center(child: CircularProgressIndicator()),
+            AsyncError(:final error) => Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -63,7 +64,7 @@ class _SuperAdminAuditLogScreenState
                     color: VeraProbColors.error,
                   ),
                   const SizedBox(height: 12),
-                  Text('Erro ao carregar logs: $err'),
+                  Text('Erro ao carregar logs: $error'),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
                     onPressed: () =>
@@ -74,8 +75,8 @@ class _SuperAdminAuditLogScreenState
                 ],
               ),
             ),
-            data: (logs) => _LogList(logs: logs),
-          ),
+            AsyncData(:final value) => _LogList(logs: value),
+          },
         ),
       ],
     );
@@ -134,8 +135,8 @@ class _FilterBar extends StatelessWidget {
             icon: const Icon(Icons.date_range, size: 18),
             label: Text(
               dateRange == null
-                  ? 'Período'
-                  : '${_fmtDate(dateRange!.start)} — ${_fmtDate(dateRange!.end)}',
+                  ? 'Periodo'
+                  : '${_fmtDate(dateRange!.start)} - ${_fmtDate(dateRange!.end)}',
             ),
           ),
           const SizedBox(width: 8),
@@ -194,13 +195,43 @@ class _LogList extends StatelessWidget {
             color: _severityColor(log.severity),
             size: 20,
           ),
-          title: Text(log.eventType),
-          subtitle: Text(log.occurredAt.isNotEmpty ? log.occurredAt : '—'),
+          title: Row(
+            children: [
+              Expanded(child: Text(log.eventType)),
+              _ActorIcon(
+                actorType: log.actorType,
+                impersonatorId: log.impersonatorId,
+              ),
+            ],
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(log.occurredAt.isNotEmpty ? log.occurredAt : '-'),
+              if (log.reason != null && log.reason!.isNotEmpty)
+                Text(
+                  log.reason!,
+                  style: const TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: VeraProbColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
           trailing: log.payload != null
               ? IconButton(
                   icon: const Icon(Icons.data_object, size: 18),
-                  tooltip: 'Ver payload',
-                  onPressed: () => _showPayload(context, log.payload!),
+                  tooltip: 'Ver detalhes',
+                  onPressed: () => _showPayload(
+                    context,
+                    log.payload!,
+                    log.source,
+                    log.actorType,
+                    log.reason,
+                  ),
                 )
               : null,
         );
@@ -208,13 +239,27 @@ class _LogList extends StatelessWidget {
     );
   }
 
-  void _showPayload(BuildContext context, Map<String, dynamic> payload) {
+  void _showPayload(
+    BuildContext context,
+    Map<String, dynamic> payload,
+    String? source,
+    String? actorType,
+    String? reason,
+  ) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Payload'),
-        content: SingleChildScrollView(
-          child: SelectableText(payload.toString()),
+        title: const Text('Detalhes do Evento'),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: AuditPayloadDiffView(
+              payload: payload.cast<String, Object?>(),
+              source: source,
+              actorType: actorType,
+              reason: reason,
+            ),
+          ),
         ),
         actions: [
           TextButton(
@@ -249,6 +294,52 @@ class _LogList extends StatelessWidget {
         return VeraProbColors.delayed;
       default:
         return VeraProbColors.info;
+    }
+  }
+}
+
+/// Actor type icon shown next to each audit event title.
+///
+/// SYSTEM: robot icon (automated action)
+/// HUMAN: shield icon (super admin action)
+/// IMPERSONATOR: manage_accounts icon (impersonation session)
+class _ActorIcon extends StatelessWidget {
+  final String? actorType;
+  final String? impersonatorId;
+  const _ActorIcon({this.actorType, this.impersonatorId});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (actorType) {
+      case 'SYSTEM':
+        return const Tooltip(
+          message: 'Sistema',
+          child: Icon(
+            Icons.smart_toy_outlined,
+            size: 14,
+            color: VeraProbColors.textSecondary,
+          ),
+        );
+      case 'IMPERSONATOR':
+        return Tooltip(
+          message: 'Impersonacao (${impersonatorId ?? "?"})',
+          child: const Icon(
+            Icons.manage_accounts,
+            size: 14,
+            color: VeraProbColors.warning,
+          ),
+        );
+      case 'HUMAN':
+        return const Tooltip(
+          message: 'Admin',
+          child: Icon(
+            Icons.shield_outlined,
+            size: 14,
+            color: VeraProbColors.textPrimary,
+          ),
+        );
+      default:
+        return const SizedBox.shrink();
     }
   }
 }

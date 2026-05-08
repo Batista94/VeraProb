@@ -1,4 +1,4 @@
-﻿import 'package:veraprob/core/time/brazil_time.dart';
+import 'package:veraprob/core/time/brazil_time.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';

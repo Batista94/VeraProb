@@ -1,10 +1,16 @@
+---
+name: forensic-standards
+description: Consolida os 28 Invariantes Forenses e os protocolos de execução para garantir a integridade do ecossistema VeraProb.
+inclusion: auto
+---
+
 # VeraProb — FORENSIC STANDARDS & ORCHESTRATION
 
 This document is the **Single Source of Truth** for the VeraProb Council. It consolidates all invariants, protocols, and technical standards to ensure maximum instruction density and token efficiency.
 
 ---
 
-## ⚖️ THE 27 FORENSIC INVARIANTS (INV-1 to INV-27)
+## ⚖️ THE 28 FORENSIC INVARIANTS (INV-1 to INV-28)
 
 | ID | Category | Rule |
 |----|----------|------|
@@ -13,7 +19,7 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
 | INV-3 | Ledger Integrity | Financial/Verdict tables are APPEND-ONLY. NO `UPDATE` or `DELETE`. |
 | INV-4 | Money Type | Use `BIGINT` (cents) for DB; `int` for DTOs; `Money` VO for Domain. |
 | INV-5 | BPS Precision | Symmetric Rounding: (cents * bps + 5000) ~/ 10000. Forbid raw truncation. |
-| INV-6 | UTC Mandatory | `DateTime.now().toUtc()` on ONE LINE. Regex-enforced. |
+| INV-6 | UTC Mandatory | TIMESTAMPTZ mandatory DB-wide. PROHIBIT timestamp without time zone. IDateTimeProvider.nowUtc() ALL layers. Device-clock columns MUST DROP DEFAULT (prevent server-clock substitution). clock_drift sealed at ingest (INV-15). |
 | INV-7 | Null Safety | No `dynamic` in application code. Strict types only. |
 | INV-8 | Repo Isolation | Repositories must enforce `organization_id` on ALL read/write ops. |
 | INV-9 | Evidence Sealing | Shaft-256 hashing at ingestion for ALL raw telemetry and files. |
@@ -35,6 +41,8 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
 | INV-25 | Tech Stack | Supabase | MapTiler | Sentry | PostHog | Resend. SOC 2 compliant. |
 | INV-26 | Error Parity | Security-sensitive endpoints MUST return identical status codes (404) for 'Not Found' and 'Other Org' to prevent data inference (Oracle Attacks). |
 | INV-27 | Origin Ownership | Operations involving source-to-destination logic (Cloning/Transfers) MUST verify source ownership, treating unauthorized IDs as non-existent (404). |
+| INV-28 | Org Secret Isolation | Each organization has a unique HMAC secret for telemetry signing. Append-only rotation. Only SHA-256 hash stored. |
+
 
 ---
 
@@ -57,7 +65,7 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
 ## 🛠️ TECH STANDARDS
 
 ### Dart & Flutter Web
-- State Management: **Riverpod** (Generator required). Avoid `ChangeNotifier`.
+- State Management: **Riverpod v3** (Notifier-based). Avoid `ChangeNotifier`, `StateNotifier`.
 - Projections: Use `AsyncValue` patterns for UI.
 - Layouts: Constraint-based. Mobile-first. 24/7 Eye-Strain prevention (Industrial Deep palette).
 - Web: Target WASM/CanvasKit. High performance for dashbaords.

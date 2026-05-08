@@ -36,7 +36,7 @@ class ChartsSection extends StatelessWidget {
                   barTouchData: BarTouchData(
                     enabled: false,
                     touchTooltipData: BarTouchTooltipData(
-                      tooltipBgColor: VeraProbColors.surfaceElevated,
+                      getTooltipColor: (_) => VeraProbColors.surfaceElevated,
                       tooltipPadding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
@@ -87,7 +87,7 @@ class ChartsSection extends StatelessWidget {
                               return Container();
                           }
                           return SideTitleWidget(
-                            axisSide: meta.axisSide,
+                            meta: meta,
                             space: 4,
                             child: Text(text, style: style),
                           );

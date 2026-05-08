@@ -68,7 +68,7 @@ ProviderContainer makeContainer({
   required List<VehicleOperationalState> states,
   required List<OperationalTrip> trips,
 }) {
-  return ProviderContainer(
+  return ProviderContainer.test(
     overrides: [
       normalizedStateProvider.overrideWith((ref) => Stream.value(states)),
       enrichedTripsProvider.overrideWith((ref) => trips),
@@ -96,7 +96,6 @@ void main() {
           states: [makeState(connectivityState: ConnectivityState.signalLost)],
           trips: [makeTrip()],
         );
-        addTearDown(container.dispose);
         await pumpStream(container);
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -111,7 +110,6 @@ void main() {
           states: [makeState(routeAdherence: RouteAdherence.offRoute)],
           trips: [makeTrip()],
         );
-        addTearDown(container.dispose);
         await pumpStream(container);
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -126,7 +124,6 @@ void main() {
           states: [makeState()],
           trips: [makeTrip(status: TripStatus.interrupted)],
         );
-        addTearDown(container.dispose);
         await pumpStream(container);
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -141,7 +138,6 @@ void main() {
           states: [makeState()],
           trips: [makeTrip(status: TripStatus.noShow)],
         );
-        addTearDown(container.dispose);
         await pumpStream(container);
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -156,7 +152,6 @@ void main() {
           states: [makeState()],
           trips: [makeTrip(severityScore: 50)],
         );
-        addTearDown(container.dispose);
         await pumpStream(container);
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -171,7 +166,6 @@ void main() {
           states: [makeState()],
           trips: [makeTrip(status: TripStatus.delayed)],
         );
-        addTearDown(container.dispose);
         await pumpStream(container);
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -186,7 +180,6 @@ void main() {
           states: [makeState()],
           trips: [makeTrip(severityScore: 30)],
         );
-        addTearDown(container.dispose);
         await pumpStream(container);
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -201,7 +194,6 @@ void main() {
           states: [makeState()],
           trips: [makeTrip()],
         );
-        addTearDown(container.dispose);
         await pumpStream(container);
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -221,13 +213,12 @@ void main() {
               StreamController<List<VehicleOperationalState>>.broadcast();
           addTearDown(controller.close);
 
-          final container = ProviderContainer(
+          final container = ProviderContainer.test(
             overrides: [
               normalizedStateProvider.overrideWith((ref) => controller.stream),
               enrichedTripsProvider.overrideWith((ref) => [makeTrip()]),
             ],
           );
-          addTearDown(container.dispose);
 
           // Establish subscription BEFORE adding events so none are missed
           container.listen(normalizedStateProvider, (_, _) {});
@@ -268,13 +259,12 @@ void main() {
           addTearDown(controller.close);
 
           final now = DateTime.now().toUtc();
-          final container = ProviderContainer(
+          final container = ProviderContainer.test(
             overrides: [
               normalizedStateProvider.overrideWith((ref) => controller.stream),
               enrichedTripsProvider.overrideWith((ref) => [makeTrip()]),
             ],
           );
-          addTearDown(container.dispose);
 
           // Establish subscription BEFORE adding events so none are missed
           container.listen(normalizedStateProvider, (_, _) {});
@@ -313,7 +303,7 @@ void main() {
     // ── Group 3: UI Resilience & Focus Mode ──────────────────────────────────
     group('UI Resilience & Focus Mode', () {
       test('no data (loading) → empty projection with focus mode off', () {
-        final container = ProviderContainer(
+        final container = ProviderContainer.test(
           overrides: [
             normalizedStateProvider.overrideWith(
               (ref) => const Stream<List<VehicleOperationalState>>.empty(),
@@ -321,7 +311,6 @@ void main() {
             enrichedTripsProvider.overrideWith((ref) => []),
           ],
         );
-        addTearDown(container.dispose);
         // No pump — stream never emits, stays AsyncLoading
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -332,7 +321,7 @@ void main() {
       test(
         'stream error returns safe empty default without throwing',
         () async {
-          final container = ProviderContainer(
+          final container = ProviderContainer.test(
             overrides: [
               normalizedStateProvider.overrideWith(
                 (ref) => Stream<List<VehicleOperationalState>>.error(
@@ -342,7 +331,6 @@ void main() {
               enrichedTripsProvider.overrideWith((ref) => []),
             ],
           );
-          addTearDown(container.dispose);
           container.listen(normalizedStateProvider, (_, _) {});
           await Future<void>.delayed(Duration.zero);
 
@@ -370,7 +358,6 @@ void main() {
           makeTrip(id: 'trip2', vehicleId: 'v2'),
         ];
         final container = makeContainer(states: states, trips: trips);
-        addTearDown(container.dispose);
         await pumpStream(container);
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -397,7 +384,6 @@ void main() {
             makeTrip(id: 'trip2', vehicleId: 'v2'),
           ];
           final container = makeContainer(states: states, trips: trips);
-          addTearDown(container.dispose);
           await pumpStream(container);
 
           final proj = container.read(fleetAttentionProjectionProvider);
@@ -423,7 +409,6 @@ void main() {
             makeTrip(id: 'trip2', vehicleId: 'v2', status: TripStatus.delayed),
           ];
           final container = makeContainer(states: states, trips: trips);
-          addTearDown(container.dispose);
           await pumpStream(container);
 
           final proj = container.read(fleetAttentionProjectionProvider);
@@ -456,7 +441,6 @@ void main() {
           makeTrip(id: 'trip3', vehicleId: 'v3'),
         ];
         final container = makeContainer(states: states, trips: trips);
-        addTearDown(container.dispose);
         await pumpStream(container);
 
         final proj = container.read(fleetAttentionProjectionProvider);
@@ -495,7 +479,6 @@ void main() {
             makeTrip(id: 'trip3', vehicleId: 'v3'),
           ];
           final container = makeContainer(states: states, trips: trips);
-          addTearDown(container.dispose);
           await pumpStream(container);
 
           final proj = container.read(fleetAttentionProjectionProvider);

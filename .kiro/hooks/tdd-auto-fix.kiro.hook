@@ -1,0 +1,12 @@
+{
+  "name": "Auto-Correção TDD",
+  "description": "Análise e sugestão de correção após falha detectada.",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analise os logs de erro recentes e a spec ativa. Se houver falhas, atue como senior-engineer para propor a correção seguindo os Forensic Standards."
+  }
+}

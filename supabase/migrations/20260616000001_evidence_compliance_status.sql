@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS public.telegram_status_queries (
   queried_at_utc      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+COMMENT ON TABLE public.telegram_status_queries IS
+  'deny-all: Evidence compliance status queries. Edge Function (service_role) only.';
+
 -- Index for negligence audit: "how many times did driver X check /status for SET Y?"
 CREATE INDEX IF NOT EXISTS idx_tsq_org_driver_set
   ON public.telegram_status_queries (organization_id, driver_id, set_id, queried_at_utc DESC);

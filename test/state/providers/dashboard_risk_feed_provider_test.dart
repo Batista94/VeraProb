@@ -5,8 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('dashboard_risk_feed_provider.dart Tests', () {
     test('ProviderContainer initializes correctly', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
       expect(container, isNotNull);
     });
   });

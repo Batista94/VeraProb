@@ -1,0 +1,109 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @playwright/mcp@latest"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_wait_for",
+        "browser_tabs",
+        "browser_close",
+        "browser_take_screenshot",
+        "browser_console_messages",
+        "browser_resize"
+      ],
+      "disabledTools": [
+        "browser_file_upload",
+        "browser_take_screenshot"
+      ]
+    },
+    "github": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "disabled": true
+    },
+    "postgres": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+      ],
+      "env": {},
+      "autoApprove": [
+        "query"
+      ],
+      "disabled": false
+    },
+    "docker": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-docker"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "list_containers",
+        "fetch_container_logs",
+        "fetch_container_logs"
+      ],
+      "disabledTools": [
+        "remove_container",
+        "remove_image",
+        "remove_network",
+        "remove_volume",
+        "create_volume"
+      ]
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-fetch"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "fetch"
+      ]
+    },
+    "memory": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "C:\\Users\\wes_b\\Projects\\VeraProb\\.agents\\scripts\\memory-proxy.cmd"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "create_entities",
+        "add_observations",
+        "search_nodes",
+        "search_nodes"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {},
+      "autoApprove": [
+        "sequentialthinking"
+      ],
+      "disabled": false
+    }
+  }
+}

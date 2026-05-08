@@ -50,20 +50,20 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
               _buildSearchBar(),
               const SizedBox(height: 20),
               Expanded(
-                child: filteredAsync.when(
-                  data: (vehicles) => vehicles.isEmpty
-                      ? _buildEmptyState()
-                      : _buildTable(context, vehicles, colorScheme, userRole),
-                  loading: () => _buildSkeleton(),
-                  error: (err, stack) {
+                child: switch (filteredAsync) {
+                  AsyncData(:final value) =>
+                    value.isEmpty
+                        ? _buildEmptyState()
+                        : _buildTable(context, value, colorScheme, userRole),
+                  AsyncLoading() => _buildSkeleton(),
+                  AsyncError(:final error) => () {
                     LoggerService().error(
                       'Falha ao carregar veículos',
-                      error: err,
-                      stackTrace: stack,
+                      error: error,
                     );
                     return _buildErrorState();
-                  },
-                ),
+                  }(),
+                },
               ),
             ],
           ),
@@ -164,14 +164,14 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
                   icon: const Icon(Icons.clear, size: 18),
                   onPressed: () {
                     _searchController.clear();
-                    ref.read(vehiclesSearchQueryProvider.notifier).state = '';
+                    ref.read(vehiclesSearchQueryProvider.notifier).set('');
                   },
                 )
               : null,
           isDense: true,
         ),
         onChanged: (value) {
-          ref.read(vehiclesSearchQueryProvider.notifier).state = value;
+          ref.read(vehiclesSearchQueryProvider.notifier).set(value);
           setState(() {});
         },
       ),

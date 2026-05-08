@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
+import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
+import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
 
 const kBrTimezones = [
   'America/Sao_Paulo',
@@ -39,6 +43,11 @@ class Step1FiscalData extends StatelessWidget {
   final ValueChanged<String> onTimezoneChanged;
   final ValueChanged<String> onCurrencyChanged;
 
+  // Optional billing / integration fields
+  final TextEditingController? contactEmailCtrl;
+  final TextEditingController? externalIdCtrl;
+  final TextEditingController? billingDayCtrl;
+
   const Step1FiscalData({
     super.key,
     required this.formKey,
@@ -55,6 +64,9 @@ class Step1FiscalData extends StatelessWidget {
     required this.onPlanChanged,
     required this.onTimezoneChanged,
     required this.onCurrencyChanged,
+    this.contactEmailCtrl,
+    this.externalIdCtrl,
+    this.billingDayCtrl,
   });
 
   @override
@@ -202,28 +214,107 @@ class Step1FiscalData extends StatelessWidget {
                 .toList(),
             onChanged: (v) => onCurrencyChanged(v!),
           ),
+          if (contactEmailCtrl != null) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: contactEmailCtrl,
+              decoration: const InputDecoration(
+                labelText: 'E-mail de Cobrança',
+                hintText: 'financeiro@empresa.com.br',
+              ),
+              keyboardType: TextInputType.emailAddress,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return null;
+                if (!v.trim().contains('@')) return 'E-mail inválido';
+                return null;
+              },
+            ),
+          ],
+          if (externalIdCtrl != null) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: externalIdCtrl,
+              decoration: const InputDecoration(
+                labelText: 'ID Externo (CRM/ERP)',
+                hintText: 'Ex: CRM-00123',
+              ),
+              maxLength: 100,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return null;
+                if (v.trim().length > 100) return 'Máximo 100 caracteres';
+                return null;
+              },
+            ),
+          ],
+          if (billingDayCtrl != null) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: billingDayCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Dia de Faturamento (1–28)',
+                hintText: 'Ex: 5',
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return null;
+                final day = int.tryParse(v.trim());
+                if (day == null || day < 1 || day > 28) {
+                  return 'Deve ser entre 1 e 28';
+                }
+                return null;
+              },
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-// ── Step 2: Limits ─────────────────────────────────────────────────────────────
+// ── Step 2: Limits + Operational Config ───────────────────────────────────────
 
 class Step2Limits extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController maxVehiclesCtrl;
   final TextEditingController maxContractsCtrl;
+  final TextEditingController toolCostCtrl;
+  final TextEditingController reasonCtrl;
   final String tradeName;
   final String planLabel;
+  final String? selectedPreset;
+
+  /// Capabilities as a presentation-safe ViewModel.
+  /// This widget never imports [OrgCapabilities] from domain.
+  final OrgCapabilitiesViewModel capabilities;
+
+  final int dwellTimeSeconds;
+  final ValueChanged<String?> onPresetChanged;
+  final ValueChanged<int> onDwellChanged;
+
+  /// Called when a capability flag is toggled by the SuperAdmin.
+  /// Key is the capability identifier (e.g. 'allows_sealing').
+  final void Function(String key, bool value) onCapabilityToggled;
+
+  /// Called when the kinematic speed slider changes.
+  final ValueChanged<double> onSpeedChanged;
 
   const Step2Limits({
     super.key,
     required this.formKey,
     required this.maxVehiclesCtrl,
     required this.maxContractsCtrl,
+    required this.toolCostCtrl,
+    required this.reasonCtrl,
     required this.tradeName,
     required this.planLabel,
+    this.selectedPreset,
+    required this.capabilities,
+    required this.dwellTimeSeconds,
+    required this.onPresetChanged,
+    required this.onDwellChanged,
+    required this.onCapabilityToggled,
+    required this.onSpeedChanged,
   });
 
   @override
@@ -289,38 +380,411 @@ class Step2Limits extends StatelessWidget {
               return null;
             },
           ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 12),
+
+          // ── Tipo de Operação (Template Disparador) ─────────────────────────
+          Text(
+            'Tipo de Operação',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Selecione um preset para pré-configurar os módulos abaixo. '
+            'Todos os campos permanecem editáveis.',
+            style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: OrgPresetViewModel.labels.entries
+                .map(
+                  (e) =>
+                      ButtonSegment<String>(value: e.key, label: Text(e.value)),
+                )
+                .toList(),
+            selected: selectedPreset != null ? {selectedPreset!} : {},
+            emptySelectionAllowed: true,
+            onSelectionChanged: (s) =>
+                onPresetChanged(s.isEmpty ? null : s.first),
+          ),
+
+          // ── Banner de preset aplicado ──────────────────────────────────────
+          if (selectedPreset != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: VeraProbColors.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: VeraProbColors.warning.withValues(alpha: 0.5),
+                ),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.tune, size: 15, color: VeraProbColors.warning),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Preset aplicado. Você pode customizar os módulos abaixo '
+                      'conforme o contrato específico.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: VeraProbColors.warning,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // ── Módulos operacionais (FilterChips editáveis) ───────────────────
+          const SizedBox(height: 16),
+          Text(
+            'Módulos Operacionais',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          OrgCapabilitiesEditor(
+            capabilities: capabilities,
+            onToggled: onCapabilityToggled,
+          ),
+
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: toolCostCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Custo Mensal da Ferramenta *',
+              hintText: 'R\$ 0,00',
+              suffixIcon: InfoTooltip(
+                message:
+                    'Este valor é o divisor base para o cálculo do ROI Guardian no dashboard do cliente.',
+                variant: InfoTooltipVariant.info,
+              ),
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [BrlCurrencyInputFormatter()],
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
+              final cents = BrlCurrencyInputFormatter.toCents(v);
+              if (cents == null) return 'Valor inválido';
+              return null;
+            },
+          ),
+
+          // ── Tempo de Parada Inicial (Padrão) ──────────────────────────────
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Text(
+                'Tempo de Parada Inicial (Padrão)',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(width: 6),
+              const InfoTooltip(
+                message:
+                    'Valor inicial padrão para fechamento automático de parada. '
+                    'O Admin da Org poderá alterar este valor após o onboarding '
+                    'nas configurações de negócio.',
+                variant: InfoTooltipVariant.info,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${dwellTimeSeconds}s (~${(dwellTimeSeconds / 60).round()} min)',
+            style: const TextStyle(
+              fontSize: 13,
+              color: VeraProbColors.textSecondary,
+            ),
+          ),
+          SliderTheme(
+            data: const SliderThemeData(
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
+              trackHeight: 2,
+              activeTrackColor: VeraProbColors.secondary,
+              inactiveTrackColor: VeraProbColors.border,
+              thumbColor: VeraProbColors.secondary,
+            ),
+            child: Slider(
+              value: dwellTimeSeconds.toDouble(),
+              min: 60,
+              max: 1800,
+              divisions: 29,
+              label: '${dwellTimeSeconds}s',
+              onChanged: (v) => onDwellChanged(v.round()),
+            ),
+          ),
+
+          // ── Velocidade Máx. Inicial (Padrão) — sempre visível ─────────────
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                'Velocidade Máx. Inicial (Padrão)',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(width: 6),
+              const InfoTooltip(
+                message:
+                    'Limite de velocidade que gera alerta no monitor. '
+                    'O Admin da Org poderá ajustar este valor nas configurações '
+                    'de negócio após o onboarding.',
+                variant: InfoTooltipVariant.info,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            capabilities.maxKinematicSpeedKmh != null
+                ? '${capabilities.maxKinematicSpeedKmh!.toStringAsFixed(0)} km/h'
+                : '—  (sem limite configurado)',
+            style: const TextStyle(
+              fontSize: 13,
+              color: VeraProbColors.textSecondary,
+            ),
+          ),
+          SliderTheme(
+            data: const SliderThemeData(
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
+              trackHeight: 2,
+              activeTrackColor: VeraProbColors.secondary,
+              inactiveTrackColor: VeraProbColors.border,
+              thumbColor: VeraProbColors.secondary,
+            ),
+            child: Slider(
+              value: (capabilities.maxKinematicSpeedKmh ?? 80.0).clamp(
+                10.0,
+                200.0,
+              ),
+              min: 10,
+              max: 200,
+              divisions: 38,
+              label:
+                  '${(capabilities.maxKinematicSpeedKmh ?? 80.0).toStringAsFixed(0)} km/h',
+              onChanged: (v) => onSpeedChanged(v),
+            ),
+          ),
+
+          // ── Justificativa (obrigatória em todo cadastro) ───────────────────
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 12),
+          Text(
+            'Justificativa *',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Obrigatória para rastreabilidade no log de auditoria.',
+            style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: reasonCtrl,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              hintText:
+                  'Ex: Criação de novo tenant conforme contrato comercial #123',
+              alignLabelWithHint: true,
+            ),
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) {
+                return 'Justificativa é obrigatória';
+              }
+              if (v.trim().length < 10) {
+                return 'Mínimo de 10 caracteres';
+              }
+              return null;
+            },
+          ),
         ],
       ),
     );
   }
 }
 
+// ── OrgCapabilitiesEditor (FilterChips interativos) ───────────────────────────
+
+/// Renders capability flags from an [OrgCapabilitiesViewModel] as interactive
+/// [FilterChip] widgets. The SuperAdmin can toggle any flag freely — the preset
+/// acts as a template, not a blocking state.
+///
+/// **INV-4 / Lens 2:** This widget only knows about [OrgCapabilitiesViewModel]
+/// (application layer) — never about [OrgCapabilities] (domain).
+class OrgCapabilitiesEditor extends StatelessWidget {
+  const OrgCapabilitiesEditor({
+    super.key,
+    required this.capabilities,
+    required this.onToggled,
+  });
+
+  /// Presentation-safe capabilities ViewModel. No domain type here.
+  final OrgCapabilitiesViewModel capabilities;
+
+  /// Called when a capability is toggled. [key] maps to the capability name
+  /// (e.g. 'allows_sealing') and [value] is the new boolean state.
+  final void Function(String key, bool value) onToggled;
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <_EditorChip>[
+      _EditorChip(
+        'Lacre',
+        'allows_sealing',
+        capabilities.allowsSealing,
+        Icons.lock_outline,
+      ),
+      _EditorChip(
+        'Carregamento',
+        'allows_loading',
+        capabilities.allowsLoading,
+        Icons.inventory_2_outlined,
+      ),
+      _EditorChip(
+        'Cargo Check',
+        'allows_cargo_check',
+        capabilities.allowsCargoCheck,
+        Icons.fact_check_outlined,
+      ),
+      _EditorChip(
+        'Incidente',
+        'allows_incident',
+        capabilities.allowsIncident,
+        Icons.warning_amber_outlined,
+      ),
+      _EditorChip(
+        'Doc',
+        'allows_doc',
+        capabilities.allowsDoc,
+        Icons.description_outlined,
+      ),
+      _EditorChip(
+        'Smart Classify',
+        'smart_classify',
+        capabilities.smartClassify,
+        Icons.auto_awesome_outlined,
+      ),
+    ];
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: chips.map((c) {
+        return FilterChip(
+          avatar: Icon(
+            c.icon,
+            size: 14,
+            color: c.enabled
+                ? VeraProbColors.success
+                : VeraProbColors.textDisabled,
+          ),
+          label: Text(
+            c.label,
+            style: TextStyle(
+              fontSize: 11,
+              color: c.enabled
+                  ? VeraProbColors.textPrimary
+                  : VeraProbColors.textDisabled,
+            ),
+          ),
+          selected: c.enabled,
+          onSelected: (v) => onToggled(c.key, v),
+          selectedColor: VeraProbColors.success.withValues(alpha: 0.1),
+          backgroundColor: VeraProbColors.border.withValues(alpha: 0.3),
+          checkmarkColor: VeraProbColors.success,
+          side: BorderSide(
+            color: c.enabled
+                ? VeraProbColors.success.withValues(alpha: 0.4)
+                : VeraProbColors.border,
+            width: 0.5,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          visualDensity: VisualDensity.compact,
+          showCheckmark: true,
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _EditorChip {
+  const _EditorChip(this.label, this.key, this.enabled, this.icon);
+  final String label;
+  final String key;
+  final bool enabled;
+  final IconData icon;
+}
+
 // ── Step 3: Admin Invite ───────────────────────────────────────────────────────
 
-class Step3AdminInvite extends StatelessWidget {
+class Step3AdminInvite extends StatefulWidget {
   final GlobalKey<FormState> formKey;
-  final TextEditingController adminEmailCtrl;
+  final List<String> adminEmails;
+  final ValueChanged<List<String>> onEmailsChanged;
   final String tradeName;
   final String planLabel;
   final String maxVehicles;
   final String maxContracts;
   final bool isSubmitting;
+  final TextEditingController emailCtrl;
 
   const Step3AdminInvite({
     super.key,
     required this.formKey,
-    required this.adminEmailCtrl,
+    required this.adminEmails,
+    required this.onEmailsChanged,
     required this.tradeName,
     required this.planLabel,
     required this.maxVehicles,
     required this.maxContracts,
     required this.isSubmitting,
+    required this.emailCtrl,
   });
+
+  @override
+  State<Step3AdminInvite> createState() => _Step3AdminInviteState();
+}
+
+class _Step3AdminInviteState extends State<Step3AdminInvite> {
+  String? _inputError;
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  void _addEmail(String raw) {
+    final email = raw.trim().toLowerCase();
+    if (email.isEmpty) return;
+    if (!email.contains('@')) {
+      setState(() => _inputError = 'E-mail invalido');
+      return;
+    }
+    if (widget.adminEmails.contains(email)) {
+      setState(() => _inputError = 'E-mail duplicado');
+      return;
+    }
+    widget.onEmailsChanged([...widget.adminEmails, email]);
+    widget.emailCtrl.clear();
+    setState(() => _inputError = null);
+  }
+
+  void _removeEmail(String email) {
+    widget.onEmailsChanged(
+      widget.adminEmails.where((e) => e != email).toList(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Form(
-      key: formKey,
+      key: widget.formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -336,41 +800,66 @@ class Step3AdminInvite extends StatelessWidget {
                 WizardSummaryRow(
                   icon: Icons.business,
                   label: 'Empresa',
-                  value: tradeName,
+                  value: widget.tradeName,
                 ),
                 WizardSummaryRow(
                   icon: Icons.star_outline,
                   label: 'Plano',
-                  value: planLabel,
+                  value: widget.planLabel,
                 ),
                 WizardSummaryRow(
                   icon: Icons.directions_car,
-                  label: 'Máx. Veículos',
-                  value: maxVehicles,
+                  label: 'Max. Veiculos',
+                  value: widget.maxVehicles,
                 ),
                 WizardSummaryRow(
                   icon: Icons.description_outlined,
-                  label: 'Máx. Contratos',
-                  value: maxContracts,
+                  label: 'Max. Contratos',
+                  value: widget.maxContracts,
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          TextFormField(
-            controller: adminEmailCtrl,
-            decoration: const InputDecoration(
-              labelText: 'E-mail do Admin Inicial *',
-              hintText: 'admin@empresa.com.br',
-              prefixIcon: Icon(Icons.email_outlined),
+          if (widget.adminEmails.isNotEmpty) ...[
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: widget.adminEmails
+                  .map(
+                    (email) => InputChip(
+                      label: Text(email, style: const TextStyle(fontSize: 12)),
+                      onDeleted: () => _removeEmail(email),
+                      deleteIconColor: VeraProbColors.error,
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 12),
+          ],
+          TextField(
+            controller: widget.emailCtrl,
+            decoration: InputDecoration(
+              labelText: 'E-mails dos Admins *',
+              hintText: 'Digite e pressione Enter ou clique em +',
+              prefixIcon: const Icon(Icons.email_outlined),
+              errorText: _inputError,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => _addEmail(widget.emailCtrl.text),
+              ),
             ),
             keyboardType: TextInputType.emailAddress,
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
-              if (!v.trim().contains('@')) return 'E-mail inválido';
-              return null;
-            },
+            onSubmitted: _addEmail,
           ),
+          if (widget.adminEmails.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 4, left: 12),
+              child: Text(
+                'Adicione pelo menos um e-mail.',
+                style: TextStyle(fontSize: 12, color: VeraProbColors.error),
+              ),
+            ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(10),
@@ -391,7 +880,7 @@ class Step3AdminInvite extends StatelessWidget {
                   color: VeraProbColors.warning,
                 ),
                 Text(
-                  'Um convite válido por 7 dias será enviado para este e-mail com permissão de Administrador.',
+                  'Convites validos por 7 dias serao enviados para cada e-mail com permissao de Administrador.',
                   style: TextStyle(fontSize: 12),
                 ),
               ],

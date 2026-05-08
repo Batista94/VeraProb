@@ -1,4 +1,4 @@
-﻿import 'contractual_execution_state.dart';
+import 'contractual_execution_state.dart';
 
 /// Domain Port: Repository for persisting and querying
 /// [ContractualExecutionState] aggregates.

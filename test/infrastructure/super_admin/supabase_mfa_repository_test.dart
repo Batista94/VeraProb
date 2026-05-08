@@ -295,6 +295,115 @@ void main() {
           ),
         ).called(1);
       });
+
+      // ── INV-6 — circuit-breaker pre-check is a hard short-circuit ──────────
+      test(
+        'pre-check lockout short-circuits BOTH mfa.verify AND record_mfa_failure',
+        () async {
+          when(
+            () => mockClient.rpc(
+              'check_mfa_lockout',
+              params: any(named: 'params'),
+            ),
+          ).thenAnswer(
+            (_) => FakePostgrestFilterBuilder({
+              'failed_attempts': 5,
+              'locked_until': DateTime.utc(
+                2026,
+                3,
+                27,
+                13,
+                0,
+              ).toIso8601String(),
+              'is_locked': true,
+            }),
+          );
+
+          final result = await repo.verifyChallenge(
+            factorId: 'factor-123',
+            challengeId: 'challenge-abc',
+            code: '999999',
+          );
+
+          expect(result, isA<MfaVerificationFailure>());
+          final failure = result as MfaVerificationFailure;
+          expect(failure.isLockedOut, isTrue);
+          expect(failure.failedAttempts, 5);
+
+          verifyNever(
+            () => mockMfa.verify(
+              factorId: any(named: 'factorId'),
+              challengeId: any(named: 'challengeId'),
+              code: any(named: 'code'),
+            ),
+          );
+          verifyNever(
+            () => mockClient.rpc(
+              'record_mfa_failure',
+              params: any(named: 'params'),
+            ),
+          );
+        },
+      );
+
+      // ── INV-6 — reset is called EXACTLY ONCE on success (not zero, not twice) ──
+      test(
+        'successful verification calls reset_mfa_lockout exactly 1×',
+        () async {
+          when(
+            () => mockClient.rpc(
+              'check_mfa_lockout',
+              params: any(named: 'params'),
+            ),
+          ).thenAnswer(
+            (_) => FakePostgrestFilterBuilder({
+              'failed_attempts': 0,
+              'locked_until': null,
+              'is_locked': false,
+            }),
+          );
+          when(
+            () => mockMfa.verify(
+              factorId: 'factor-123',
+              challengeId: 'challenge-abc',
+              code: '111111',
+            ),
+          ).thenAnswer(
+            (_) async => AuthMFAVerifyResponse(
+              accessToken: 'tok',
+              tokenType: 'bearer',
+              expiresIn: const Duration(hours: 1),
+              refreshToken: 'rfr',
+              user: fakeUser,
+            ),
+          );
+          when(
+            () => mockClient.rpc(
+              'reset_mfa_lockout',
+              params: any(named: 'params'),
+            ),
+          ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
+
+          await repo.verifyChallenge(
+            factorId: 'factor-123',
+            challengeId: 'challenge-abc',
+            code: '111111',
+          );
+
+          verify(
+            () => mockClient.rpc(
+              'reset_mfa_lockout',
+              params: any(named: 'params'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockClient.rpc(
+              'record_mfa_failure',
+              params: any(named: 'params'),
+            ),
+          );
+        },
+      );
     });
   });
 }

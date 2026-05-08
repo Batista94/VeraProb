@@ -55,10 +55,19 @@ final situationEngineProvider = Provider<SituationEngine>((ref) {
 // from _emitCurrentState() and do NOT need this workaround.
 // Pending: Replace with a StreamProvider for events in a future data architecture sprint.
 
-final uiRefreshTrigger = StateProvider<int>((ref) => 0);
+class _UiRefreshTriggerNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void increment() => state++;
+}
+
+final uiRefreshTrigger = NotifierProvider<_UiRefreshTriggerNotifier, int>(
+  _UiRefreshTriggerNotifier.new,
+);
 
 void triggerUIRefresh(WidgetRef ref) {
-  ref.read(uiRefreshTrigger.notifier).state++;
+  ref.read(uiRefreshTrigger.notifier).increment();
 }
 
 // ── Trip Stream ────────────────────────────────────────
@@ -86,13 +95,13 @@ final enrichedTripsProvider = Provider<List<OperationalTrip>>((ref) {
     }
   }
 
-  return tripsAsync.maybeWhen(
-    data: (rawTrips) {
+  return switch (tripsAsync) {
+    AsyncData(:final value) =>
       // Pass raw trips and stabilized vehicle states through the intelligence engine
-      return engine.analyze(rawTrips, statesMap, control);
-    },
-    orElse: () => [],
-  );
+      engine.analyze(value, statesMap, control),
+    AsyncError() => [],
+    AsyncLoading() => [],
+  };
 });
 
 /// All active, enriched trips (non-terminal)
@@ -142,21 +151,30 @@ final normalizedStateProvider = StreamProvider<List<VehicleOperationalState>>((
   final rawPositionsAsync = ref.watch(positionStreamProvider);
   final normalizer = ref.watch(operationalStateNormalizerProvider);
 
-  return rawPositionsAsync.when(
-    data: (rawPositions) {
+  return switch (rawPositionsAsync) {
+    AsyncData(:final value) =>
       // In Phase 1, we don't have Stop geofencing wired up to real stops yet.
       // We pass an empty list, allowing debounce and smoothing to work first.
-      return Stream.value(normalizer.normalize(rawPositions, knownStops: []));
-    },
-    loading: () => Stream.value([]),
-    error: (error, stack) => Stream.value([]),
-  );
+      Stream.value(normalizer.normalize(value, knownStops: [])),
+    AsyncLoading() => Stream.value([]),
+    AsyncError() => Stream.value([]),
+  };
 });
 
 // ── Selected Trip ──────────────────────────────────────
 
 /// Currently selected trip in the Command Center.
-final selectedTripIdProvider = StateProvider<String?>((ref) => null);
+class _SelectedTripIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String? value) => state = value;
+}
+
+final selectedTripIdProvider =
+    NotifierProvider<_SelectedTripIdNotifier, String?>(
+      _SelectedTripIdNotifier.new,
+    );
 
 /// The selected, enriched operational trip object.
 final selectedTripProvider = Provider<OperationalTrip?>((ref) {

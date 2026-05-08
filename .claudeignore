@@ -46,6 +46,7 @@ test-output/
 .env*
 
 # Media & Fonts
+assets/
 *.ttf
 *.otf
 *.woff
@@ -57,6 +58,26 @@ test-output/
 *.ico
 *.mp4
 
+# Databases & Lockfiles
+*.db
+*.sqlite
+deno.lock
+
 # Supabase Local State
 supabase/.temp/
 supabase/.branches/
+
+# Agent Memory & Scratch
+brain/
+scratch/
+package-lock.json
+tmp_*.dart
+devtools_options.yaml
+doc/
+
+# Security Audit Logs (INV-28 — local only, never index)
+.veraprob/
+
+# Playwright MCP (Screenshots and local infra)
+.playwright-mcp/
+

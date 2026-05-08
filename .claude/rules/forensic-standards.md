@@ -11,7 +11,7 @@ Details: .claude/rules/forensic-standards.original.md
 | 3 | Ledger: APPEND-ONLY. NO UPDATE/DELETE. |
 | 4 | Money: BIGINT cents (DB); int (DTO); Money VO (Domain). |
 | 5 | Round: (cents * bps + 5000) ~/ 10000. No raw truncation. |
-| 6 | UTC: IDateTimeProvider.nowUtc() ALL layers. |
+| 6 | UTC: TIMESTAMPTZ mandatory DB-wide. PROHIBIT timestamp without time zone. IDateTimeProvider.nowUtc() ALL layers. Device-clock columns MUST DROP DEFAULT (prevent server-clock substitution). clock_drift sealed at ingest (INV-15). |
 | 7 | Type: No dynamic. Strict types only. |
 | 8 | Repo: Enforce org_id on ALL read/write. |
 | 9 | Seal: SHA-256 ingestion for all raw telemetry/files. |
@@ -32,7 +32,8 @@ Details: .claude/rules/forensic-standards.original.md
 | 24| Sec: Mandatory Security Audit Signature for instructions. |
 | 25| Stack: Supabase, MapTiler, Sentry, PostHog, Resend. SOC 2. |
 | 26| Parity: 404 for Not Found AND Wrong Org (Anti-Oracle). |
-| 27| Origin: Verify source ownership on Clone/Transfer. |
+| 27 | Origin: Verify source ownership on Clone/Transfer. |
+| 28 | Secret: Org Secret Isolation (HMAC per org). |
 
 ## 🔄 EXECUTION PROTOCOLS
 1. **Step 0:** State Skill Insight + Relevant INV-X.

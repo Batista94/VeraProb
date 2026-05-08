@@ -1,3 +1,4 @@
+--
 -- =============================================================================
 -- Phase 9 — tenant_billing_events: add organization_name for human traceability
 -- =============================================================================
@@ -36,7 +37,7 @@ BEGIN
   -- 1. Validate super_admin claim
   -- Service-role connections (migrations, Edge Functions) have auth.uid() = NULL;
   -- skip the claim check so integration tests using the service key work correctly.
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     v_is_super := auth.jwt() -> 'app_metadata' ->> 'super_admin';
     IF v_is_super IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'

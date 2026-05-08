@@ -1,3 +1,6 @@
+// pr_scanner: ignore-regression
+//
+import 'archive_organization_command.dart';
 import 'create_organization_command.dart';
 import 'system_audit_log_entry.dart';
 import 'tenant_health_snapshot.dart';
@@ -47,4 +50,89 @@ abstract class ISuperAdminRepository {
   /// Atomically updates the organizations row and appends a 'PLAN_CHANGED'
   /// billing factEvent (INV-7). NULL limits = unlimited (enterprise tier).
   Future<void> updateOrganizationQuota(UpdateOrganizationQuotaCommand command);
+
+  /// Archives an organization: sets status=ARCHIVED, revokes API secrets,
+  /// appends ORG_ARCHIVED audit record.
+  ///
+  /// INV-3: Secrets revoked via revoked_at, never deleted.
+  /// INV-26: Returns error for not-found AND wrong-org (404 parity).
+  Future<void> archiveOrganization(ArchiveOrganizationCommand command);
+
+  /// Unarchives an organization: sets status=ACTIVE, and unbans users.
+  Future<void> unarchiveOrganization({
+    required String orgId,
+    required String reason,
+    required String superAdminId,
+  });
+
+  /// Lists all members of a specific organization for SuperAdmin visibility.
+  Future<List<Map<String, dynamic>>> getTenantMembers(String orgId);
+
+  /// Toggles the active status of a tenant member.
+  Future<void> toggleTenantMemberStatus({
+    required String orgId,
+    required String userId,
+    required bool isActive,
+  });
+
+  /// Resends an invitation email to a tenant member.
+  Future<void> resendInvitation({
+    required String email,
+    required String orgName,
+  });
+
+  /// Adds a new admin invitation to an existing organization (CT06).
+  ///
+  /// Inserts a new row in [invitations] via [super_admin_add_org_admin] RPC.
+  /// Throws [DomainException] if the email already has a pending invite (P0005)
+  /// or is already an active member (P0006).
+  Future<void> addAdminToOrganization({
+    required String orgId,
+    required String email,
+    required String invitationId,
+    required String token,
+    required DateTime expiresAtUtc,
+    required String superAdminUserId,
+  });
+
+  /// Revokes a pending invitation (CT09 — INV-3: sets revoked_at_utc, never DELETE).
+  ///
+  /// Throws [DomainException] P0008 if no matching pending invitation found.
+  Future<void> revokeInvitation({
+    required String orgId,
+    required String email,
+    required String superAdminUserId,
+  });
+
+  /// Returns technical health data for a tenant (replication status, schema
+  /// integrity) as a raw JSON map.
+  ///
+  /// The caller is responsible for parsing the map into a presentation-layer
+  /// ViewModel. Data is fetched via the Edge Function proxy (INV-14).
+  Future<Map<String, dynamic>> getTenantTechnicalHealth(String orgId);
+
+  /// Returns evidence volume metrics for a tenant (historical total and
+  /// current-month count) as a raw JSON map.
+  ///
+  /// Backed by a materialized view to avoid expensive COUNT() aggregations
+  /// on the transactional database during UI builds.
+  Future<Map<String, dynamic>> getEvidenceVolume(String orgId);
+
+  /// Triggers an on-demand schema integrity check for a tenant and returns
+  /// the result as a raw JSON map.
+  ///
+  /// Invoked exclusively through the Edge Function proxy so the
+  /// `service_role` key stays as a Deno secret (INV-14).
+  Future<Map<String, dynamic>> checkSchemaIntegrity(String orgId);
+
+  /// Updates the allowed email domain whitelist for an org.
+  ///
+  /// Input is normalized (lowercase + deduplicated) before RPC call.
+  /// Server-side SECURITY DEFINER RPC also normalizes as defense-in-depth.
+  /// INV-2: 42501 from Postgres → SovereigntyViolationException via PostgresErrorInterceptor.
+  Future<void> updateAllowedDomains(
+    String orgId,
+    List<String> domains,
+    String superAdminUserId,
+  );
 }

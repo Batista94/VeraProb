@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/super_admin/create_organization_handler.dart';
+import 'package:veraprob/application/super_admin/create_organization_result.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/domain/super_admin/plan_limits.dart';
@@ -34,8 +35,10 @@ CreateOrganizationCommand _validCmd({
   planType: PlanType.starter,
   maxVehicles: 50,
   maxActiveContracts: 10,
-  initialAdminEmail: email,
+  adminEmails: [email],
   superAdminUserId: 'super-admin-uuid-123',
+  toolCostCents: 50000,
+  reason: 'Motivo válido de teste de auditoria',
 );
 
 void main() {
@@ -211,6 +214,75 @@ void main() {
       });
     });
 
+    group('toolCostCents validation (INV-10)', () {
+      test('throws DomainException when toolCostCents is null', () async {
+        const cmd = CreateOrganizationCommand(
+          legalName: 'Transportes Silva Ltda.',
+          tradeName: 'Silva Logística',
+          cnpj: '11222333000181',
+          timezone: 'America/Sao_Paulo',
+          currencyCode: 'BRL',
+          planType: PlanType.starter,
+          maxVehicles: 50,
+          maxActiveContracts: 10,
+          adminEmails: ['admin@empresa.com.br'],
+          superAdminUserId: 'super-admin-uuid-123',
+          toolCostCents: null, // must be rejected
+          reason: 'Motivo válido de teste de auditoria',
+        );
+
+        await expectLater(
+          handler.handle(cmd),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains('ROI'),
+            ),
+          ),
+        );
+
+        verifyNever(() => mockRepo.createOrganization(any()));
+      });
+
+      test('accepts toolCostCents = 0 (free tier)', () async {
+        when(
+          () => mockRepo.createOrganization(any()),
+        ).thenThrow(Exception('stop here'));
+
+        const cmd = CreateOrganizationCommand(
+          legalName: 'Transportes Silva Ltda.',
+          tradeName: 'Silva Logística',
+          cnpj: '11222333000181',
+          timezone: 'America/Sao_Paulo',
+          currencyCode: 'BRL',
+          planType: PlanType.starter,
+          maxVehicles: 50,
+          maxActiveContracts: 10,
+          adminEmails: ['admin@empresa.com.br'],
+          superAdminUserId: 'super-admin-uuid-123',
+          toolCostCents: 0,
+          reason: 'Motivo válido de teste de auditoria',
+        );
+
+        await expectLater(
+          handler.handle(cmd),
+          throwsA(isNot(isA<DomainException>())),
+        );
+      });
+
+      test('accepts toolCostCents > 0', () async {
+        when(
+          () => mockRepo.createOrganization(any()),
+        ).thenThrow(Exception('stop here'));
+
+        await expectLater(
+          handler.handle(_validCmd()),
+          throwsA(isNot(isA<DomainException>())),
+        );
+      });
+    });
+
     group('quota auto-fill from PlanType', () {
       // These tests verify what the handler passes to the repo.
       // createOrganization throws a sentinel Exception so the invite step is
@@ -234,8 +306,10 @@ void main() {
             currencyCode: 'BRL',
             planType: PlanType.starter,
             // maxVehicles and maxActiveContracts intentionally omitted (null)
-            initialAdminEmail: 'admin@empresa.com.br',
+            adminEmails: ['admin@empresa.com.br'],
             superAdminUserId: 'super-admin-uuid-123',
+            toolCostCents: 50000,
+            reason: 'Motivo válido de teste de auditoria',
           );
 
           await expectLater(
@@ -274,5 +348,129 @@ void main() {
         expect(captured!.maxActiveContracts, 10);
       });
     });
+
+    group('new optional fields — billingDay / externalId (INV-10)', () {
+      test(
+        'billingDay 29 in command throws DomainException before RPC',
+        () async {
+          const cmd = CreateOrganizationCommand(
+            legalName: 'Transportes Silva Ltda.',
+            tradeName: 'Silva Logística',
+            cnpj: '11222333000181',
+            timezone: 'America/Sao_Paulo',
+            currencyCode: 'BRL',
+            planType: PlanType.starter,
+            maxVehicles: 50,
+            maxActiveContracts: 10,
+            adminEmails: ['admin@empresa.com.br'],
+            superAdminUserId: 'super-admin-uuid-123',
+            toolCostCents: 50000,
+            reason: 'Motivo válido de teste de auditoria',
+            billingDay: 29, // out-of-range — no month guarantees day 29
+          );
+
+          await expectLater(
+            handler.handle(cmd),
+            throwsA(isA<DomainException>()),
+          );
+          verifyNever(() => mockRepo.createOrganization(any()));
+        },
+      );
+
+      test(
+        'externalId longer than 100 chars throws DomainException before RPC',
+        () async {
+          final cmd = CreateOrganizationCommand(
+            legalName: 'Transportes Silva Ltda.',
+            tradeName: 'Silva Logística',
+            cnpj: '11222333000181',
+            timezone: 'America/Sao_Paulo',
+            currencyCode: 'BRL',
+            planType: PlanType.starter,
+            maxVehicles: 50,
+            maxActiveContracts: 10,
+            adminEmails: ['admin@empresa.com.br'],
+            superAdminUserId: 'super-admin-uuid-123',
+            toolCostCents: 50000,
+            reason: 'Motivo válido de teste de auditoria',
+            externalId: 'x' * 101, // exceeds 100-char limit
+          );
+
+          await expectLater(
+            handler.handle(cmd),
+            throwsA(isA<DomainException>()),
+          );
+          verifyNever(() => mockRepo.createOrganization(any()));
+        },
+      );
+    });
+
+    group('CreateOrganizationResult — orgApiSecret field (INV-28)', () {
+      test('result type carries orgApiSecret — null for missing secret', () {
+        const result = CreateOrganizationResult(
+          orgId: 'test-org-id',
+          invitationTokens: ['test-token'],
+          orgApiSecret: null,
+        );
+        expect(result.orgApiSecret, isNull);
+      });
+
+      test(
+        'result type carries orgApiSecret — non-null 64-char hex when generated',
+        () {
+          const secret =
+              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'; // 64 hex chars
+          const result = CreateOrganizationResult(
+            orgId: 'test-org-id',
+            invitationTokens: ['test-token'],
+            orgApiSecret: secret,
+          );
+          expect(result.orgApiSecret, isNotNull);
+          expect(result.orgApiSecret!.length, 64);
+        },
+      );
+    });
+
+    group(
+      'CreateOrganizationResult — per-email invitation tokens (INV-27)',
+      () {
+        test('invitationTokens stores one token per admin email', () {
+          const result = CreateOrganizationResult(
+            orgId: 'org-1',
+            invitationTokens: [
+              'token-a@admin1',
+              'token-b@admin2',
+              'token-c@admin3',
+            ],
+          );
+          expect(result.invitationTokens.length, 3);
+          expect(result.invitationTokens[0], 'token-a@admin1');
+          expect(result.invitationTokens[1], 'token-b@admin2');
+          expect(result.invitationTokens[2], 'token-c@admin3');
+        });
+
+        test(
+          'firstInvitationToken returns first token (single-admin convenience)',
+          () {
+            const result = CreateOrganizationResult(
+              orgId: 'org-1',
+              invitationTokens: ['only-token'],
+            );
+            expect(result.firstInvitationToken, 'only-token');
+          },
+        );
+
+        test(
+          'each admin gets distinct token — no token reuse across emails',
+          () {
+            const result = CreateOrganizationResult(
+              orgId: 'org-1',
+              invitationTokens: ['token-alpha', 'token-beta'],
+            );
+            expect(result.invitationTokens.toSet().length, 2);
+          },
+        );
+      },
+    );
   });
 }

@@ -17,7 +17,7 @@ class AlertBar extends ConsumerWidget {
 
     return InkWell(
       onTap: () {
-        ref.read(isAlertsDrawerOpenProvider.notifier).state = true;
+        ref.read(isAlertsDrawerOpenProvider.notifier).set(true);
       },
       child: Container(
         height: 36,

@@ -1,3 +1,4 @@
+--
 -- Suppress DROP TRIGGER/POLICY IF EXISTS NOTICEs.
 SET client_min_messages TO 'WARNING';
 
@@ -7,7 +8,7 @@ SET client_min_messages TO 'WARNING';
 -- Tables: telegram_user_consents, telegram_evidence_metadata
 --
 -- INV-1:  Tenant isolation via organization_id (metadata table).
--- INV-2:  RLS uses auth.jwt() -> 'app_metadata' ->> 'org_id'. NO auth.uid().
+-- INV-2:  RLS uses auth.jwt() -> 'app_metadata' ->> 'org_id'. NO (auth.jwt() ->> 'sub').
 -- INV-6:  UTC everywhere (timestamptz).
 -- INV-7:  Both tables fully immutable, append-only. UPDATE and DELETE blocked.
 -- INV-9:  ip_hash stores SHA-256 for forensic audit trail.

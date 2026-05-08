@@ -96,22 +96,20 @@ class KpiBar extends ConsumerWidget {
                   .setStatusFilter(FleetStatusFilter.atStop),
             ),
             _divider(),
-            ref
-                .watch(atRiskSlaCountProvider)
-                .when(
-                  data: (count) => _KpiChip(
-                    icon: Icons.alarm_rounded,
-                    value: '$count',
-                    label: 'SLA em Risco',
-                    color: count > 0
-                        ? VeraProbColors.warning
-                        : VeraProbColors.textDisabled,
-                    isSelected: false,
-                    onTap: () {},
-                  ),
-                  loading: () => const SizedBox(width: 80),
-                  error: (e, s) => const SizedBox.shrink(),
-                ),
+            switch (ref.watch(atRiskSlaCountProvider)) {
+              AsyncData(:final value) => _KpiChip(
+                icon: Icons.alarm_rounded,
+                value: '$value',
+                label: 'SLA em Risco',
+                color: value > 0
+                    ? VeraProbColors.warning
+                    : VeraProbColors.textDisabled,
+                isSelected: false,
+                onTap: () {},
+              ),
+              AsyncLoading() => const SizedBox(width: 80),
+              AsyncError() => const SizedBox.shrink(),
+            },
             const Spacer(),
             // Average delay
             if (summary.avgDelayMinutes > 0)

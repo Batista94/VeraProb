@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/core/config/environment.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
@@ -12,7 +13,7 @@ import 'auth_providers.dart';
 /// by the custom_access_token_hook). Must decode the JWT — this claim is NOT
 /// in session.user.appMetadata (which reads raw_app_meta_data from auth.users).
 final isSuperAdminProvider = Provider<bool>((ref) {
-  final session = ref.watch(authStateProvider).valueOrNull?.session;
+  final session = ref.watch(authStateProvider).value?.session;
   if (session == null) return false;
   final claims = decodeJwtPayload(session.accessToken);
   final meta = claims['app_metadata'] as Map<String, dynamic>?;
@@ -24,25 +25,22 @@ final currentSuperAdminIdProvider = Provider<String?>((ref) {
   final isSuperAdmin = ref.watch(isSuperAdminProvider);
   if (!isSuperAdmin) return null;
 
-  final authState = ref.watch(authStateProvider).valueOrNull;
+  final authState = ref.watch(authStateProvider).value;
   return authState?.session?.user.id;
 });
 
-/// Returns true if the current SuperAdmin has completed MFA (AAL2).
-///
-/// Relaxed in development: returns true if ENV=dev even if AAL1 (INV-6 relaxation).
 final isSuperAdminAal2Provider = Provider<bool>((ref) {
   final isSuperAdmin = ref.watch(isSuperAdminProvider);
   if (!isSuperAdmin) return false;
 
-  // Relax MFA requirement in development environment.
-  const isDev = String.fromEnvironment('ENV') == 'dev';
+  // Relax MFA requirement in development environment if SKIP_MFA_DEV is set.
+  if (EnvironmentConfig.skipMfaForSuperAdmin) return true;
 
-  final session = ref.watch(authStateProvider).valueOrNull?.session;
+  final session = ref.watch(authStateProvider).value?.session;
   if (session == null) return false;
   final claims = decodeJwtPayload(session.accessToken);
 
-  return isDev || claims['aal'] == 'aal2';
+  return claims['aal'] == 'aal2';
 });
 
 /// Convenience alias — derives [UserRole.superAdmin] for RBAC use in handlers.

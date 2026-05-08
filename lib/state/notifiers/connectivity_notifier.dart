@@ -16,8 +16,7 @@ enum EdgeLedgerConnectionState { connected, disconnected, syncing }
 /// to fill any sequence gaps in the local fact queue.
 ///
 /// **INV-23:** OCC read-only — this notifier never mutates server state.
-class ConnectivityNotifier
-    extends AutoDisposeNotifier<EdgeLedgerConnectionState> {
+class ConnectivityNotifier extends Notifier<EdgeLedgerConnectionState> {
   StreamSubscription<AuthState>? _authSub;
 
   @override
@@ -38,20 +37,29 @@ class ConnectivityNotifier
     return EdgeLedgerConnectionState.connected;
   }
 
-  void _onReconnected(Session? session) {
+  Future<void> _onReconnected(Session? session) async {
     final organizationId =
         session?.user.userMetadata?['organization_id'] as String?;
     if (organizationId == null) return;
 
     state = EdgeLedgerConnectionState.syncing;
 
-    final orchestrator = ref.read(localSyncOrchestratorProvider);
-    orchestrator
-        .onConnectionRestored(
-          organizationId: organizationId,
-          missingFacts: const [],
-        )
-        .then((_) => state = EdgeLedgerConnectionState.connected)
-        .catchError((_) => state = EdgeLedgerConnectionState.connected);
+    try {
+      final orchestrator = ref.read(localSyncOrchestratorProvider);
+      await orchestrator.onConnectionRestored(
+        organizationId: organizationId,
+        missingFacts: const [],
+      );
+
+      // INV-15: Guard before mutating state after await
+      if (!ref.mounted) return;
+
+      state = EdgeLedgerConnectionState.connected;
+    } catch (_) {
+      // INV-15: Guard before mutating state after await
+      if (!ref.mounted) return;
+
+      state = EdgeLedgerConnectionState.connected;
+    }
   }
 }

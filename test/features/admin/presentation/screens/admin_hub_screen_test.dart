@@ -74,7 +74,7 @@ void main() {
       await tester.tap(find.text('Equipe'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Gestão de Usuários'), findsOneWidget);
+      expect(find.text('Gestao de Equipe'), findsOneWidget);
     });
 
     testWidgets('tab switch to Organização shows org settings content', (

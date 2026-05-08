@@ -85,17 +85,17 @@ class VehicleDetailDrawer extends ConsumerWidget {
                   const Divider(height: 1, color: VeraProbColors.border),
 
                   // Event Timeline
-                  eventsAsync.when(
-                    data: (entries) => _EventTimeline(entries: entries),
-                    loading: () => const Padding(
+                  switch (eventsAsync) {
+                    AsyncData(:final value) => _EventTimeline(entries: value),
+                    AsyncLoading() => const Padding(
                       padding: EdgeInsets.all(24),
                       child: Center(child: CircularProgressIndicator()),
                     ),
-                    error: (e, st) => Padding(
+                    AsyncError(:final error) => Padding(
                       padding: const EdgeInsets.all(24),
-                      child: Text('Erro ao carregar histórico: $e'),
+                      child: Text('Erro ao carregar histórico: $error'),
                     ),
-                  ),
+                  },
                 ],
               ),
             ),
@@ -606,7 +606,7 @@ class _EvidenceMiniMapSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Resolve vehicle position from normalized state
     final statesAsync = ref.watch(normalizedStateProvider);
-    final vehicleState = statesAsync.valueOrNull
+    final vehicleState = statesAsync.value
         ?.where((s) => s.tripId == trip.id)
         .firstOrNull;
 

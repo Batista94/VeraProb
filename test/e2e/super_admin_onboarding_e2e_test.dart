@@ -109,8 +109,10 @@ void main() async {
             planType: PlanType.professional,
             maxVehicles: 100,
             maxActiveContracts: 20,
-            initialAdminEmail: adminEmail,
+            adminEmails: [adminEmail],
             superAdminUserId: superAdminUserId,
+            toolCostCents: 50000,
+            reason: 'Onboarding E2E test',
           );
 
           // Fluxo completo: RBAC → validação → createOrg → billingEvent → convite
@@ -165,11 +167,11 @@ void main() async {
           // 5. Token do convite corresponde ao resultado do handler
           expect(
             (invitations.first as Map)['token'],
-            equals(result.invitationToken),
+            equals(result.invitationTokens.first),
             reason: 'Token do handler deve coincidir com o token no banco',
           );
 
-          // 6. Audit log com snapshot do actor (INV-33: Enterprise Identity Standard)
+          // 6. Audit log — Diff format {before: {}, after: {...}} + reason
           final auditLogs = await serviceRoleClient
               .from('system_audit_log')
               .select()
@@ -182,25 +184,29 @@ void main() async {
             reason: 'Deve ter audit log ORGANIZATION_CREATE',
           );
 
-          final payload = auditLogs.first['payload'] as Map<String, dynamic>;
-          final actor = payload['actor'] as Map<String, dynamic>;
+          final log = auditLogs.first;
+          final payload = log['payload'] as Map;
+          final after = payload['after'] as Map;
 
           expect(
-            actor['id'],
-            equals(superAdminUserId),
-            reason:
-                'Audit log deve capturar o ID do super admin que criou a org',
+            payload['before'],
+            equals({}),
+            reason: 'Diff: before deve ser vazio para org nova',
           );
           expect(
-            actor['role'],
-            equals('super_admin'),
-            reason: 'Audit log deve capturar o role super_admin',
+            after['trade_name'],
+            equals('E2E Corp'),
+            reason: 'Diff: after deve conter trade_name',
           );
           expect(
-            actor['email'],
-            equals('system@veraprob.internal'),
-            reason:
-                'Audit log em testes E2E (service_role) deve usar o email de sistema',
+            after['plan_type'],
+            equals('professional'),
+            reason: 'Diff: after deve conter plan_type',
+          );
+          expect(
+            log['reason'],
+            equals('Onboarding E2E test'),
+            reason: 'Coluna reason deve ser preenchida',
           );
 
           // ignore: avoid_print

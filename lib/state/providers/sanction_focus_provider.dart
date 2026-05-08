@@ -34,6 +34,14 @@ class SanctionMapFocus {
 /// - **Writer:** [SanctionVerdictCard] (on tap)
 /// - **Reader:** [TelemetrySyncMap] (via `ref.listen`)
 /// - **Null:** No sanction selected → map shows default overview.
-final selectedSanctionFocusProvider = StateProvider<SanctionMapFocus?>(
-  (ref) => null,
-);
+class _SelectedSanctionFocusNotifier extends Notifier<SanctionMapFocus?> {
+  @override
+  SanctionMapFocus? build() => null;
+
+  void set(SanctionMapFocus? value) => state = value;
+}
+
+final selectedSanctionFocusProvider =
+    NotifierProvider<_SelectedSanctionFocusNotifier, SanctionMapFocus?>(
+      _SelectedSanctionFocusNotifier.new,
+    );

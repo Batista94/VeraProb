@@ -1,21 +1,22 @@
+--
 -- =============================================================================
 -- Phase 9.2 — SuperAdmin RPCs: service_role bypass (CREATE OR REPLACE)
 -- =============================================================================
 -- MOTIVO:
---   auth.uid() retorna NULL quando o cliente usa service_role key diretamente
+--   (auth.jwt() ->> 'sub') retorna NULL quando o cliente usa service_role key diretamente
 --   (sem sessão de usuário autenticado). Isso afeta testes de integração e
 --   chamadas server-side legítimas (migrações, scripts de onboarding, etc).
 --
 -- PADRÃO SUPABASE:
 --   service_role já bypassa RLS automaticamente — tem trust elevado por design.
 --   Verificar JWT é redundante para chamadas service_role. O bloco de validação
---   JWT só faz sentido quando há um usuário autenticado (auth.uid() IS NOT NULL).
+--   JWT só faz sentido quando há um usuário autenticado ((auth.jwt() ->> 'sub') IS NOT NULL).
 --
 -- SEGURANÇA:
 --   - GRANT EXECUTE TO authenticated bloqueia chamadas anon no nível do PostgREST.
---   - Logo, auth.uid() IS NULL dentro da função = service_role call (não anon).
+--   - Logo, (auth.jwt() ->> 'sub') IS NULL dentro da função = service_role call (não anon).
 --   - Em produção, o Flutter SuperAdmin client usa o client autenticado (anon key +
---     login), portanto auth.uid() não é NULL e a validação JWT permanece ativa.
+--     login), portanto (auth.jwt() ->> 'sub') não é NULL e a validação JWT permanece ativa.
 -- =============================================================================
 
 
@@ -43,8 +44,8 @@ DECLARE
   v_org_id UUID := gen_random_uuid();
 BEGIN
   -- Validação JWT: apenas quando há sessão de usuário (não service_role).
-  -- auth.uid() IS NULL indica chamada via service_role key — bypass permitido.
-  IF auth.uid() IS NOT NULL THEN
+  -- (auth.jwt() ->> 'sub') IS NULL indica chamada via service_role key — bypass permitido.
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';
@@ -146,7 +147,7 @@ SET search_path = public, auth
 AS $$
 BEGIN
   -- Validação JWT: apenas quando há sessão de usuário (não service_role).
-  IF auth.uid() IS NOT NULL THEN
+  IF (auth.jwt() ->> 'sub') IS NOT NULL THEN
     IF (auth.jwt() -> 'app_metadata' ->> 'super_admin') IS DISTINCT FROM 'true' THEN
       RAISE EXCEPTION 'Unauthorized: super_admin claim required'
         USING ERRCODE = 'insufficient_privilege';

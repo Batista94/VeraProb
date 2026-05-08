@@ -1,4 +1,4 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 
 import 'package:veraprob/domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart'

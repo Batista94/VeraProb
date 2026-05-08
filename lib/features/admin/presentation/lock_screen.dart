@@ -50,7 +50,7 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
   ///
   /// Regular tenant users → AdminHome (unchanged).
   Future<void> _routeAfterAuth() async {
-    final session = ref.read(authStateProvider).valueOrNull?.session;
+    final session = ref.read(authStateProvider).value?.session;
     if (session == null) return;
 
     final claims = decodeJwtPayload(session.accessToken);

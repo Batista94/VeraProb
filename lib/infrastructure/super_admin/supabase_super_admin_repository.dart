@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/super_admin/archive_organization_command.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
@@ -40,6 +41,15 @@ class SupabaseSuperAdminRepository
           'p_max_vehicles': cmd.maxVehicles,
           'p_max_active_contracts': cmd.maxActiveContracts,
           'p_super_admin_user_id': cmd.superAdminUserId,
+          'p_capabilities': cmd.capabilities?.toJson(),
+          'p_tool_cost_cents': cmd.toolCostCents,
+          'p_dwell_time_seconds': cmd.dwellTimeSeconds,
+          'p_billing_day': cmd.billingDay,
+          'p_contact_email': cmd.contactEmail,
+          'p_external_id': cmd.externalId,
+          'p_reason': cmd.reason,
+          'p_organization_type': cmd.organizationType,
+          'p_allowed_domains': cmd.allowedDomains,
         },
       );
       return result as String;
@@ -152,10 +162,262 @@ class SupabaseSuperAdminRepository
           'p_new_max_contracts': cmd.newMaxActiveContracts,
           'p_super_admin_user_id': cmd.superAdminUserId,
           'p_reason': cmd.reason,
+          'p_capabilities': cmd.capabilities?.toJson(),
+          'p_tool_cost_cents': cmd.toolCostCents,
+          'p_dwell_time_seconds': cmd.dwellTimeSeconds,
+          'p_billing_day': cmd.billingDay,
+          'p_contact_email': cmd.contactEmail,
+          'p_external_id': cmd.externalId,
+          'p_organization_type': cmd.organizationType,
+          'p_trade_name': cmd.tradeName,
+          'p_legal_name': cmd.legalName,
+          'p_expected_updated_at': cmd.expectedUpdatedAt?.toIso8601String(),
         },
       );
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<void> archiveOrganization(ArchiveOrganizationCommand cmd) async {
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_archive_organization',
+        params: {
+          'p_org_id': cmd.orgId,
+          'p_reason': cmd.reason,
+          'p_super_admin_id': cmd.superAdminUserId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<void> unarchiveOrganization({
+    required String orgId,
+    required String reason,
+    required String superAdminId,
+  }) async {
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_unarchive_organization',
+        params: {
+          'p_org_id': orgId,
+          'p_reason': reason,
+          'p_super_admin_id': superAdminId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getTenantMembers(String orgId) async {
+    try {
+      final response = await _authenticatedClient.rpc(
+        'super_admin_get_org_members',
+        params: {'p_org_id': orgId},
+      );
+      return (response as List).cast<Map<String, dynamic>>();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<void> toggleTenantMemberStatus({
+    required String orgId,
+    required String userId,
+    required bool isActive,
+  }) async {
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_toggle_member_status',
+        params: {
+          'p_org_id': orgId,
+          'p_user_id': userId,
+          'p_is_active': isActive,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<void> resendInvitation({
+    required String email,
+    required String orgName,
+  }) async {
+    try {
+      await _authenticatedClient.functions.invoke(
+        'notify-invite',
+        body: {
+          'email': email,
+          'inviteUrl': 'Entre em contato com o suporte para um novo link',
+          'orgName': orgName,
+        },
+      );
+    } catch (e) {
+      // Se não for possível usar as exceptions do postgrest, mapeamos genérico ou deixamos subir
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> addAdminToOrganization({
+    required String orgId,
+    required String email,
+    required String invitationId,
+    required String token,
+    required DateTime expiresAtUtc,
+    required String superAdminUserId,
+  }) async {
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_add_org_admin',
+        params: {
+          'p_org_id': orgId,
+          'p_email': email,
+          'p_invitation_id': invitationId,
+          'p_token': token,
+          'p_expires_at': expiresAtUtc.toIso8601String(),
+          'p_invited_by': superAdminUserId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      if (e.code == 'P0005') {
+        throw DomainException(
+          'Já existe um convite pendente para $email nesta organização.',
+        );
+      }
+      if (e.code == 'P0006') {
+        throw DomainException(
+          '$email já possui um perfil ativo nesta organização.',
+        );
+      }
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  @override
+  Future<void> revokeInvitation({
+    required String orgId,
+    required String email,
+    required String superAdminUserId,
+  }) async {
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_revoke_invitation',
+        params: {
+          'p_org_id': orgId,
+          'p_email': email,
+          'p_super_admin_id': superAdminUserId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      if (e.code == 'P0008') {
+        throw DomainException(
+          'Nenhum convite pendente encontrado para $email nesta organização.',
+        );
+      }
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  /// Returns technical health data for a tenant (replication status, schema
+  /// integrity) as a raw JSON map.
+  ///
+  /// Fetched via the `super-admin-proxy` Edge Function (INV-14).
+  /// The `service_role` key stays as a Deno secret — never in the Flutter
+  /// WASM bundle.
+  @override
+  Future<Map<String, dynamic>> getTenantTechnicalHealth(String orgId) async {
+    try {
+      final response = await _authenticatedClient.functions.invoke(
+        'super-admin-proxy',
+        body: {
+          'action': 'get_tenant_technical_health',
+          'params': {'organization_id': orgId},
+        },
+      );
+      return (response.data as Map<String, dynamic>)['data']
+          as Map<String, dynamic>;
+    } on Exception catch (e) {
+      throw DomainException('Edge Function super-admin-proxy unavailable: $e');
+    }
+  }
+
+  /// Returns evidence volume metrics for a tenant (historical total and
+  /// current-month count) as a raw JSON map.
+  ///
+  /// Backed by the `mv_evidence_volume` materialized view to avoid expensive
+  /// COUNT() aggregations on the transactional database during UI builds.
+  /// Fetched via the `super-admin-proxy` Edge Function (INV-14).
+  @override
+  Future<Map<String, dynamic>> getEvidenceVolume(String orgId) async {
+    try {
+      final response = await _authenticatedClient.functions.invoke(
+        'super-admin-proxy',
+        body: {
+          'action': 'get_evidence_volume',
+          'params': {'organization_id': orgId},
+        },
+      );
+      return (response.data as Map<String, dynamic>)['data']
+          as Map<String, dynamic>;
+    } on Exception catch (e) {
+      throw DomainException('Edge Function super-admin-proxy unavailable: $e');
+    }
+  }
+
+  @override
+  Future<void> updateAllowedDomains(
+    String orgId,
+    List<String> domains,
+    String superAdminUserId,
+  ) async {
+    final normalized = domains
+        .map((d) => d.toLowerCase().trim())
+        .toSet()
+        .toList();
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_update_allowed_domains',
+        params: {
+          'p_org_id': orgId,
+          'p_allowed_domains': normalized,
+          'p_super_admin_user_id': superAdminUserId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    }
+  }
+
+  /// Triggers an on-demand schema integrity check for a tenant and returns
+  /// the result as a raw JSON map.
+  ///
+  /// Invoked as a POST action through the `super-admin-proxy` Edge Function
+  /// which calls the `check_schema_integrity` RPC server-side (INV-14).
+  @override
+  Future<Map<String, dynamic>> checkSchemaIntegrity(String orgId) async {
+    try {
+      final response = await _authenticatedClient.functions.invoke(
+        'super-admin-proxy',
+        body: {
+          'action': 'check_schema_integrity',
+          'params': {'organization_id': orgId},
+        },
+      );
+      return (response.data as Map<String, dynamic>)['data']
+          as Map<String, dynamic>;
+    } on Exception catch (e) {
+      throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
 }

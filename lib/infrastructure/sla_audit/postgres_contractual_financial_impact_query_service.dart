@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';

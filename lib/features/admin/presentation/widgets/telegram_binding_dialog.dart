@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/telegram/generate_telegram_binding_token_command.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/core/services/logger_service.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
 
@@ -27,6 +28,20 @@ class TelegramBindingDialog extends ConsumerStatefulWidget {
   @override
   ConsumerState<TelegramBindingDialog> createState() =>
       _TelegramBindingDialogState();
+
+  /// INV-1: JWT org_id is the inviolable sovereignty anchor.
+  /// Widget prop cannot be trusted alone — validate against JWT before any I/O.
+  static void assertOrgIdMatch({
+    required String widgetOrgId,
+    required String? jwtOrgId,
+  }) {
+    if (widgetOrgId.isEmpty || jwtOrgId == null || jwtOrgId != widgetOrgId) {
+      throw SovereigntyViolationException(
+        payloadOrgId: widgetOrgId,
+        jwtOrgId: jwtOrgId ?? 'none',
+      );
+    }
+  }
 }
 
 class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
@@ -60,10 +75,28 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
   }
 
   Future<void> _generate() async {
+    // INV-1: Fail-Fast sovereignty check before any RPC call.
+    final jwtOrgId = ref.read(currentOrganizationIdProvider);
+    try {
+      TelegramBindingDialog.assertOrgIdMatch(
+        widgetOrgId: widget.organizationId,
+        jwtOrgId: jwtOrgId,
+      );
+    } on SovereigntyViolationException catch (e) {
+      LoggerService().error(
+        'SovereigntyViolation in TelegramBindingDialog',
+        error: e,
+      );
+      ref
+          .read(telegramBindingNotifierProvider(widget.driverId).notifier)
+          .fail(e, StackTrace.current);
+      return;
+    }
+
     final userId = ref.read(currentOperatorIdProvider);
     final role = ref.read(currentUserRoleProvider);
     final sessionId =
-        ref.read(authStateProvider).valueOrNull?.session?.accessToken ?? '';
+        ref.read(authStateProvider).value?.session?.accessToken ?? '';
 
     if (userId == null) return;
 
@@ -82,9 +115,9 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
     final tokenState = ref.read(
       telegramBindingNotifierProvider(widget.driverId),
     );
-    tokenState.whenData((token) {
-      if (token != null) _startCountdown(token.expiresAtUtc);
-    });
+    if (tokenState case AsyncData(:final value)) {
+      if (value != null) _startCountdown(value.expiresAtUtc);
+    }
   }
 
   Future<void> _copyCode(String code) async {
@@ -172,8 +205,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
               const SizedBox(height: 20),
 
               // Active binding warning
-              bindingAsync.whenData((hasBinding) => hasBinding).valueOrNull ==
-                      true
+              bindingAsync is AsyncData<bool> && bindingAsync.value == true
                   ? Container(
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
@@ -206,37 +238,38 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                   : const SizedBox.shrink(),
 
               // Instructions
-              tokenState.when(
-                data: (token) => token == null
-                    ? _buildInstructions()
-                    : _remaining == Duration.zero
-                    ? _buildExpiredState()
-                    : _buildCodeDisplay(token, colorScheme),
-                loading: () => const Center(
+              switch (tokenState) {
+                AsyncData(:final value) =>
+                  value == null
+                      ? _buildInstructions()
+                      : _remaining == Duration.zero
+                      ? _buildExpiredState()
+                      : _buildCodeDisplay(value, colorScheme),
+                AsyncLoading() => const Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: CircularProgressIndicator(),
                   ),
                 ),
-                error: (err, _) => _buildErrorState(err),
-              ),
+                AsyncError(:final error) => _buildErrorState(error),
+              },
 
               const SizedBox(height: 20),
 
               // Action button
               SizedBox(
                 width: double.infinity,
-                child: tokenState.when(
-                  data: (token) => FilledButton.icon(
+                child: switch (tokenState) {
+                  AsyncData(:final value) => FilledButton.icon(
                     onPressed: tokenState.isLoading ? null : _generate,
                     icon: const Icon(Icons.refresh, size: 18),
-                    label: Text(token == null ? 'Gerar Código' : 'Novo Código'),
+                    label: Text(value == null ? 'Gerar Código' : 'Novo Código'),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF0D47A1),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
-                  loading: () => FilledButton(
+                  AsyncLoading() => FilledButton(
                     onPressed: null,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -247,7 +280,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
-                  error: (err2, st) => FilledButton.icon(
+                  AsyncError() => FilledButton.icon(
                     onPressed: _generate,
                     icon: const Icon(Icons.refresh, size: 18),
                     label: const Text('Tentar Novamente'),
@@ -256,7 +289,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
-                ),
+                },
               ),
             ],
           ),

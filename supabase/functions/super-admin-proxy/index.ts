@@ -21,6 +21,7 @@
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -93,7 +94,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // ── Auth: verify JWT and super_admin claim ──────────────────────────────────
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    console.error("[super-admin-proxy] Unauthorized: Missing or malformed Bearer token");
+    return sovereigntyErrorResponse();
   }
 
   // Authenticated client to verify the caller's identity
@@ -105,7 +107,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     const { data: authData, error: authError } = await authClient.auth.getUser();
     if (authError || !authData.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      console.error("[super-admin-proxy] Auth verification failed:", authError);
+      return sovereigntyErrorResponse();
     }
     user = authData.user;
   } catch (err) {
@@ -115,7 +118,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   const isSuperAdmin = user.app_metadata?.super_admin === true;
   if (!isSuperAdmin) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+    console.error(`[super-admin-proxy] Forbidden: User ${user.id} lacks super_admin claim`);
+    return sovereigntyErrorResponse();
   }
 
   // ── AAL2 enforcement (INV-6: SuperAdmin requires MFA) ─────────────────────
@@ -134,10 +138,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const isLocal = environment === "development" || environment === "dev";
 
   if (!isLocal && jwtPayload.aal !== "aal2") {
-    return Response.json(
-      { error: "MFA verification required (AAL2)" },
-      { status: 403 }
-    );
+    console.error(`[super-admin-proxy] MFA Required: User ${user.id} attempted access with AAL1`);
+    return sovereigntyErrorResponse();
   }
 
   // ── Service-role client initialization ─────────────────────────────────────
@@ -151,10 +153,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     );
     if (lockoutError) throw lockoutError;
     if (lockoutData?.is_locked === true) {
-      return Response.json(
-        { error: "Account temporarily locked due to failed MFA attempts" },
-        { status: 429 }
-      );
+      console.error(`[super-admin-proxy] MFA Lockout: User ${user.id} is temporarily locked`);
+      return sovereigntyErrorResponse();
     }
   } catch (err) {
     console.error("[super-admin-proxy] Lockout check exception:", err);
@@ -188,7 +188,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const { data, error } = await serviceClient
         .from("super_admin_tenant_health_view")
         .select(
-          "id, name, legal_name, plan_type, is_active, max_vehicles, max_active_contracts, active_contract_count, last_telemetry_at, open_critical_alert_count"
+          "id,name,legal_name,plan_type,is_active,status,max_vehicles,max_active_contracts,capabilities,tool_cost_cents,dwell_time_seconds,billing_day,contact_email,external_id,active_contract_count,last_telemetry_at,open_critical_alert_count"
         );
 
       if (error) throw error;
@@ -201,7 +201,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // Builder: Filters must be applied BEFORE order/limit (PostgrestTransformBuilder bug fix)
       let query = serviceClient
         .from("system_audit_log")
-        .select("severity, event_type, occurred_at, organization_id, payload");
+        .select("severity,event_type,occurred_at,organization_id,payload,source,actor_type,reason,impersonator_id");
 
       if (params.organization_id) {
         query = query.eq("organization_id", params.organization_id);
@@ -261,6 +261,85 @@ Deno.serve(async (req: Request): Promise<Response> => {
           }
         }
       }
+    } else if (body.action === "get_tenant_technical_health") {
+      const orgId = body.params?.organization_id;
+      if (!orgId) {
+        responseStatus = 400;
+        actionErrorMsg = "Missing organization_id";
+      } else {
+        const { data, error } = await serviceClient
+          .from("super_admin_tenant_technical_health_view")
+          .select("*")
+          .eq("id", orgId)
+          .maybeSingle();
+        if (error) throw error;
+        responseToReturn = Response.json({ data: data ?? {} }, { status: 200 });
+      }
+
+    } else if (body.action === "get_evidence_volume") {
+      const orgId = body.params?.organization_id;
+      if (!orgId) {
+        responseStatus = 400;
+        actionErrorMsg = "Missing organization_id";
+      } else {
+        const { data, error } = await serviceClient
+          .from("mv_evidence_volume")
+          .select("*")
+          .eq("organization_id", orgId)
+          .maybeSingle();
+        if (error) throw error;
+        responseToReturn = Response.json({ data: data ?? {} }, { status: 200 });
+      }
+
+    } else if (body.action === "check_schema_integrity") {
+      const orgId = body.params?.organization_id;
+      if (!orgId) {
+        responseStatus = 400;
+        actionErrorMsg = "Missing organization_id";
+      } else {
+        const { data, error } = await serviceClient.rpc("check_schema_integrity", {
+          p_org_id: orgId,
+        });
+        if (error) throw error;
+        responseToReturn = Response.json({ data: data ?? {} }, { status: 200 });
+      }
+
+    } else if (body.action === "lookup_cnpj") {
+      const cnpj = body.params?.cnpj;
+      if (!cnpj) {
+        responseStatus = 400;
+        actionErrorMsg = "Missing cnpj";
+      } else {
+        try {
+          const fetchRes = await fetch(`https://receitaws.com.br/v1/cnpj/${cnpj}`, {
+            headers: { Accept: "application/json" },
+          });
+          
+          if (!fetchRes.ok) {
+            responseStatus = fetchRes.status;
+            actionErrorMsg = "Error fetching CNPJ data";
+          } else {
+            const resultJson = await fetchRes.json();
+            if (resultJson.status === "ERROR") {
+              responseStatus = 404;
+              actionErrorMsg = resultJson.message || "CNPJ not found";
+            } else {
+              responseToReturn = Response.json({
+                data: {
+                  cnpj: cnpj,
+                  legalName: resultJson.nome,
+                  tradeName: resultJson.fantasia,
+                  situation: resultJson.situacao,
+                }
+              }, { status: 200 });
+            }
+          }
+        } catch (e) {
+          responseStatus = 502;
+          actionErrorMsg = "Failed to communicate with external CNPJ API";
+        }
+      }
+
     } else {
       responseStatus = 400;
       actionErrorMsg = "Unknown action";

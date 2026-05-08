@@ -255,6 +255,14 @@ class ShiftPattern extends Equatable {
     try {
       tz.getLocation(timezone);
     } catch (_) {
+      // timezone 0.11.0 default database does not include bare "UTC" —
+      // only "Etc/UTC". Accept "UTC" as a well-known alias.
+      if (timezone == 'UTC') {
+        try {
+          tz.getLocation('Etc/UTC');
+          return; // "UTC" is valid via Etc/UTC alias
+        } catch (_) {}
+      }
       throw DomainException(
         'Unknown timezone: "$timezone". Must be a valid IANA timezone identifier '
         '(e.g. "America/Sao_Paulo").',

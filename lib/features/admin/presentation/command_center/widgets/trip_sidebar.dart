@@ -10,8 +10,28 @@ import 'package:veraprob/presentation/shared/widgets/status_badge.dart';
 import 'package:veraprob/dev/performance_metrics.dart';
 
 /// Local sidebar state for search and sort (not global — UI-only).
-final _sidebarSearchProvider = StateProvider<String>((ref) => '');
-final _sidebarSortAscProvider = StateProvider<bool>((ref) => true);
+class _SidebarSearchNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void set(String value) => state = value;
+}
+
+final _sidebarSearchProvider = NotifierProvider<_SidebarSearchNotifier, String>(
+  _SidebarSearchNotifier.new,
+);
+
+class _SidebarSortAscNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void set(bool value) => state = value;
+  void toggle() => state = !state;
+}
+
+final _sidebarSortAscProvider = NotifierProvider<_SidebarSortAscNotifier, bool>(
+  _SidebarSortAscNotifier.new,
+);
 
 /// Left sidebar in the Command Center showing all active trips.
 ///
@@ -69,11 +89,11 @@ class TripSidebar extends ConsumerWidget {
             // Search + Sort controls
             _SearchSortBar(
               onSearchChanged: (query) {
-                ref.read(_sidebarSearchProvider.notifier).state = query;
+                ref.read(_sidebarSearchProvider.notifier).set(query);
               },
               sortAsc: sortAsc,
               onSortToggle: () {
-                ref.read(_sidebarSortAscProvider.notifier).state = !sortAsc;
+                ref.read(_sidebarSortAscProvider.notifier).set(!sortAsc);
               },
             ),
 
@@ -107,13 +127,14 @@ class TripSidebar extends ConsumerWidget {
                           isSelected: trip.id == selectedId,
                           onTap: () {
                             final isSelecting = trip.id != selectedId;
-                            ref.read(selectedTripIdProvider.notifier).state =
-                                isSelecting ? trip.id : null;
+                            ref
+                                .read(selectedTripIdProvider.notifier)
+                                .set(isSelecting ? trip.id : null);
 
                             if (isSelecting) {
                               final positions = ref
                                   .read(normalizedStateProvider)
-                                  .valueOrNull;
+                                  .value;
                               final vehicle = positions
                                   ?.where((v) => v.tripId == trip.id)
                                   .firstOrNull;

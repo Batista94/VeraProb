@@ -20,8 +20,7 @@ void main() {
   group('FASE 2 - Write-Model Governance Tests', () {
     test('Default mode should return InMemory implementations', () {
       final container =
-          ProviderContainer(); // Default mode is PersistenceMode.inMemory
-      addTearDown(container.dispose);
+          ProviderContainer.test(); // Default mode is PersistenceMode.inMemory
 
       final auditService = container.read(auditServiceProvider);
       expect(
@@ -52,13 +51,12 @@ void main() {
       'Override to Postgres should return Postgres implementations in governed providers',
       () {
         final mockSupabase = MockSupabaseClient();
-        final container = ProviderContainer(
+        final container = ProviderContainer.test(
           overrides: [
             persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
             supabaseClientProvider.overrideWithValue(mockSupabase),
           ],
         );
-        addTearDown(container.dispose);
 
         final auditService = container.read(auditServiceProvider);
         expect(

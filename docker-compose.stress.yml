@@ -1,0 +1,33 @@
+# =============================================================================
+# docker-compose.stress.yml -- VeraProb Phase 10 Stress Environment
+#
+# NOTE: This file CANNOT be used standalone. Supabase CLI manages its own
+# internal docker-compose. Use scripts/chaos/apply_stress_limits.sh instead,
+# which calls `docker update` on already-running Supabase containers.
+#
+# This file is kept as documentation of the intended resource limits.
+# Actual application: bash scripts/chaos/apply_stress_limits.sh
+# =============================================================================
+#
+# INTENDED LIMITS:
+#
+#   supabase-db (postgres):
+#     cpus: 2.0
+#     memory: 1536m
+#     -- Forces connection pool pressure at INV-16 (60-conn cap)
+#
+#   edge-runtime:
+#     cpus: 1.0
+#     memory: 512m
+#     -- Forces function queue buildup under concurrent webhook load
+#     -- SIGKILL target for crash_recovery.sh
+#
+#   supabase-rest (postgrest):
+#     cpus: 1.0
+#     memory: 256m
+#
+#   supabase-kong:
+#     cpus: 0.5
+#     memory: 256m
+#
+# See apply_stress_limits.sh for the actual implementation.

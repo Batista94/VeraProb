@@ -36,6 +36,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { sovereigntyErrorResponse } from "./sovereignty_error_mapper.ts";
 import { validateJwtAuth, type JwtAuthResult } from "./jwt_auth_validator.ts";
+import { sanitizeJwtClaims } from "./jwt_claims_sanitizer.ts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -83,6 +84,24 @@ export type SecurityHandler = (
   supabase: ReturnType<typeof createClient>,
   req: Request,
 ) => Promise<Response>;
+
+// ── Environment Helpers ──────────────────────────────────────────────────────
+
+/**
+ * Strict validation of development environment.
+ *
+ * Accepts ONLY "dev" or "development" as valid values for the ENVIRONMENT
+ * variable. Rejects variations like "dev-like", "DEV", "Dev", "development "
+ * (with trailing space), etc.
+ *
+ * Case-sensitive, no trim — prevents bypass via creative environment values.
+ *
+ * @returns true if ENVIRONMENT is exactly "dev" or "development"
+ */
+export function isDevEnvironment(): boolean {
+  const env = Deno.env.get("ENVIRONMENT");
+  return env === "dev" || env === "development";
+}
 
 // ── Crypto Helpers ───────────────────────────────────────────────────────────
 
@@ -133,6 +152,8 @@ export async function handleWithSecurity(
   edgeFunction: string,
   handler: SecurityHandler,
   requireAuth: boolean = true,
+  requireSuperAdmin: boolean = false,
+  requireAAL2: boolean = false,
 ): Promise<Response> {
   // Step 1: Generate correlation ID
   const correlationId = generateCorrelationId();
@@ -182,6 +203,57 @@ export async function handleWithSecurity(
     ctx.userId = authResult.userId;
     ctx.orgId = authResult.orgId;
     ctx.sessionId = authResult.sessionId;
+
+    // Step 5.1: SuperAdmin Enforcement (INV-6)
+    if (requireSuperAdmin) {
+      const isSuperAdmin = authResult.jwtPayload.app_metadata?.super_admin === true || 
+                          authResult.jwtPayload.app_metadata?.super_admin === "true";
+      
+      if (!isSuperAdmin) {
+        // INV-26: Return canonical 404 to prevent inference of SuperAdmin status
+        console.error(`[handleWithSecurity] SuperAdmin violation by user ${ctx.userId}`);
+        return sovereigntyErrorResponse();
+      }
+    }
+
+    // Step 5.2: AAL2 Enforcement (FIX-02, INV-6)
+    // Activates when requireAAL2 === true OR requireSuperAdmin === true (backward compatible)
+    if (requireAAL2 || requireSuperAdmin) {
+      const aal = authResult.jwtPayload.aal as string | undefined;
+      const isDev = isDevEnvironment();
+
+      if (isDev) {
+        // In dev, log warning and skip AAL2 enforcement
+        console.warn(`[handleWithSecurity] AAL2 bypassed in dev for user ${ctx.userId} on ${edgeFunction}`);
+      } else if (aal !== "aal2") {
+        // Production: AAL2 is mandatory — log forensic event and reject
+        console.error(`[handleWithSecurity] AAL2 violation by user ${ctx.userId} on ${edgeFunction}`);
+
+        // Forensic logging to system_audit_log
+        try {
+          const auditSupabase = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+          );
+          await auditSupabase.from("system_audit_log").insert({
+            event_type: "SECURITY_VIOLATION_AAL2_BYPASS",
+            severity: "critical",
+            source: "edge_function",
+            payload: {
+              correlation_id: correlationId,
+              ip: requestIp,
+              user_agent: req.headers.get("user-agent") ?? "unknown",
+              jwt_claims: sanitizeJwtClaims(authResult.jwtPayload),
+            },
+            actor_type: "UNAUTHORIZED",
+          });
+        } catch {
+          // Audit log failure must not block the security response
+        }
+
+        return sovereigntyErrorResponse();
+      }
+    }
   }
 
   // Step 6: Initialize Supabase service_role client

@@ -7,19 +7,35 @@ final vehiclesListProvider = FutureProvider<List<Vehicle>>((ref) {
   return repository.getVehicles();
 });
 
-final vehiclesSearchQueryProvider = StateProvider<String>((ref) => '');
+class _VehiclesSearchQueryNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void set(String value) => state = value;
+}
+
+final vehiclesSearchQueryProvider =
+    NotifierProvider<_VehiclesSearchQueryNotifier, String>(
+      _VehiclesSearchQueryNotifier.new,
+    );
 
 final filteredVehiclesProvider = Provider<AsyncValue<List<Vehicle>>>((ref) {
   final vehiclesAsync = ref.watch(vehiclesListProvider);
   final query = ref.watch(vehiclesSearchQueryProvider).toLowerCase();
 
-  return vehiclesAsync.whenData((vehicles) {
-    if (query.isEmpty) {
-      return vehicles;
-    }
-    return vehicles.where((v) {
-      return v.plate.toLowerCase().contains(query) ||
-          (v.model?.toLowerCase().contains(query) ?? false);
-    }).toList();
-  });
+  return switch (vehiclesAsync) {
+    AsyncData(:final value) => AsyncData(
+      query.isEmpty
+          ? value
+          : value.where((v) {
+              return v.plate.toLowerCase().contains(query) ||
+                  (v.model?.toLowerCase().contains(query) ?? false);
+            }).toList(),
+    ),
+    AsyncError(:final error, :final stackTrace) => AsyncError(
+      error,
+      stackTrace,
+    ),
+    AsyncLoading() => const AsyncLoading(),
+  };
 });

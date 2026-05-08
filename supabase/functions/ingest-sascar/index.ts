@@ -17,6 +17,8 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import * as Sentry from "npm:@sentry/deno@^8";
+import { classifyIntegrity } from "../_shared/classify_integrity.ts";
+import { signPayload } from "../shared/hmac_signer.ts";
 
 // ── Sentry init (no-op if SENTRY_DSN is not set) ───────────────────────────
 Sentry.init({
@@ -51,9 +53,7 @@ interface IngestResult {
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const SOURCE_ADAPTER = "SASCAR_V1";
-const LATE_ARRIVAL_THRESHOLD_MS = 4 * 60 * 60 * 1000; // 4 hours
-const FUTURE_TIMESTAMP_TOLERANCE_MS = 5 * 60 * 1000; // 5 minutes grace
-const MAX_SPEED_CMS = 200 * 100 / 3.6; // 200 km/h in cm/s
+const DEFAULT_MAX_SPEED_KMH = 200; // physics floor — overridden by org capabilities
 const MAX_ACCURACY_METERS = 100;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -64,36 +64,6 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
-
-function classifyIntegrity(
-  gpsTimestamp: Date,
-  receivedAt: Date,
-  lat: number,
-  lng: number,
-  speedCms: number | null,
-  accuracyMeters: number | null,
-): string {
-  // Null Island — firmware default when satellite lock is lost
-  if (lat === 0.0 && lng === 0.0) return "NULL_ISLAND";
-
-  const latencyMs = receivedAt.getTime() - gpsTimestamp.getTime();
-
-  // Future timestamp (device clock drift or spoofing)
-  if (latencyMs < -FUTURE_TIMESTAMP_TOLERANCE_MS) return "FUTURE_TIMESTAMP";
-
-  // Late arrival
-  if (latencyMs > LATE_ARRIVAL_THRESHOLD_MS) return "LATE_ARRIVAL";
-
-  // Kinematic anomaly — physically impossible speed
-  if (speedCms !== null && speedCms > MAX_SPEED_CMS) return "KINEMATIC_ANOMALY";
-
-  // Low accuracy
-  if (accuracyMeters !== null && accuracyMeters > MAX_ACCURACY_METERS) {
-    return "LOW_ACCURACY";
-  }
-
-  return "OK";
 }
 
 function parseSascarTimestamp(raw: string): Date | null {
@@ -168,6 +138,19 @@ async function handleRequest(req: Request): Promise<Response> {
 
   const organizationId: string = keyRow.organization_id;
 
+  // ── Step 1b: Load org capabilities for forensic thresholds (INV-14) ──────
+  const { data: orgRow } = await supabase
+    .from("organizations")
+    .select("capabilities")
+    .eq("id", organizationId)
+    .maybeSingle();
+
+  const maxSpeedKmh: number =
+    (orgRow?.capabilities as Record<string, unknown> | null)
+      ?.max_kinematic_speed_kmh as number ?? DEFAULT_MAX_SPEED_KMH;
+  // Physical Metric - Double Required
+  const maxSpeedCms: number = maxSpeedKmh * 100 / 3.6;
+
   // ── Step 2: Read raw body — seal BEFORE any parsing ─────────────────────
   let rawBodyText: string;
   try {
@@ -192,12 +175,27 @@ async function handleRequest(req: Request): Promise<Response> {
     );
   }
 
-  // Schema validation — required fields
+  // C4: INV-6 — event_time (device clock) REQUIRED. Missing → alert operator immediately.
+  if (typeof payload.event_time !== "string" || !payload.event_time) {
+    await supabase.from("ingestion_alerts").insert({
+      organization_id: organizationId,
+      device_serial: typeof payload.device_serial === "string"
+        ? payload.device_serial
+        : null,
+      alert_type: "INGESTION_INTEGRITY_ERROR",
+      detail: "event_time absent — clock source unknown; INV-6 violation",
+      created_at_utc: new Date().toISOString(),
+    });
+    return Response.json(
+      { status: "rejected", reason: "missing_event_time" } as IngestResult,
+      { status: 422 },
+    );
+  }
+
+  // Schema validation — remaining required fields
   if (
     typeof payload.device_serial !== "string" ||
     !payload.device_serial ||
-    typeof payload.event_time !== "string" ||
-    !payload.event_time ||
     typeof payload.latitude !== "number" ||
     typeof payload.longitude !== "number" ||
     typeof payload.speed_kmh !== "number"
@@ -206,7 +204,7 @@ async function handleRequest(req: Request): Promise<Response> {
       {
         status: "rejected",
         reason:
-          "Missing required fields: device_serial, event_time, latitude, longitude, speed_kmh",
+          "Missing required fields: device_serial, latitude, longitude, speed_kmh",
       } as IngestResult,
       { status: 422 },
     );
@@ -251,6 +249,8 @@ async function handleRequest(req: Request): Promise<Response> {
     payload.longitude,
     speedCms,
     accuracyMeters,
+    MAX_ACCURACY_METERS,
+    maxSpeedCms,
   );
 
   // ── Step 5: INSERT raw_telemetry_payloads (commit before canonical) ──────
@@ -277,24 +277,27 @@ async function handleRequest(req: Request): Promise<Response> {
   const rawPayloadId: string = rawRow.id;
 
   // ── Step 6: INSERT canonical_facts (ON CONFLICT = idempotent) ───────────
+  const canonicalPayload = {
+    organization_id: organizationId,
+    raw_payload_id: rawPayloadId,
+    asset_id: null,
+    device_id: payload.device_serial,
+    gps_timestamp: gpsTimestamp.toISOString(),
+    received_at_utc: receivedAtUtc,
+    lat: payload.latitude,
+    lng: payload.longitude,
+    speed_cms: speedCms,
+    heading_degrees: headingDegrees,
+    accuracy_meters: accuracyMeters,
+    source_adapter: SOURCE_ADAPTER,
+    integrity_flag: integrityFlag,
+  };
+  const payloadHmac = await signPayload(canonicalPayload); // INV-31
+
   const { data: canonicalRow, error: canonicalError } = await supabase
     .from("canonical_facts")
     .upsert(
-      {
-        organization_id: organizationId,
-        raw_payload_id: rawPayloadId,
-        asset_id: null, // asset mapping happens downstream via device_id lookup
-        device_id: payload.device_serial,
-        gps_timestamp: gpsTimestamp.toISOString(),
-        received_at_utc: receivedAtUtc,
-        lat: payload.latitude,
-        lng: payload.longitude,
-        speed_cms: speedCms,
-        heading_degrees: headingDegrees,
-        accuracy_meters: accuracyMeters,
-        source_adapter: SOURCE_ADAPTER,
-        integrity_flag: integrityFlag,
-      },
+      { ...canonicalPayload, payload_hmac: payloadHmac },
       {
         onConflict: "organization_id,device_id,gps_timestamp,source_adapter",
         ignoreDuplicates: true, // idempotent — C3 chaos scenario
@@ -322,7 +325,29 @@ async function handleRequest(req: Request): Promise<Response> {
     );
   }
 
-  // ── Step 7: Respond ──────────────────────────────────────────────────────
+  // ── Step 7: Kinematic alert (INV-18: fire-and-forget, non-blocking) ──────
+  if (integrityFlag === "KINEMATIC_ANOMALY") {
+    supabase.from("ingestion_alerts").insert({
+      organization_id: organizationId,
+      device_serial: payload.device_serial,
+      alert_type: "KINEMATIC_ANOMALY",
+      detail: `speed_cms=${speedCms} exceeds ${Math.round(maxSpeedCms)} cm/s (${maxSpeedKmh} km/h cap). INV-18.`,
+      created_at_utc: new Date().toISOString(),
+    }).catch((e) => console.warn("[ingest-sascar] kinematic_alert:", e));
+  }
+
+  // ── Step 8: Respond ──────────────────────────────────────────────────────
+  // C1: waitUntil — GPS transition RPC must complete even after response is sent.
+  EdgeRuntime.waitUntil(
+    supabase.rpc("process_gps_for_execution_transitions", {
+      p_org_id: organizationId,
+      p_device_serial: payload.device_serial,
+      p_lat: payload.latitude,
+      p_lng: payload.longitude,
+      p_device_ts: gpsTimestamp.toISOString(),
+    }).catch((e) => console.warn("[ingest-sascar] gps_transition:", e)),
+  );
+
   return Response.json(
     {
       status: "accepted",

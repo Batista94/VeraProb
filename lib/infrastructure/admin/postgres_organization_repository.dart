@@ -1,9 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/domain/admin/org_api_secret.dart';
+import 'package:veraprob/domain/admin/org_capabilities.dart';
+import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/admin/organization_repository.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
-/// PostgreSQL implementation of [OrganizationRepository] using Supabase.
 class PostgresOrganizationRepository
     with PostgresErrorInterceptor
     implements OrganizationRepository {
@@ -20,30 +23,24 @@ class PostgresOrganizationRepository
           .eq('id', id)
           .single();
 
-      return Organization(
-        id: data['id'] as String,
-        name: data['name'] as String,
-        timezone: data['timezone'] as String,
-        currencyCode: data['currency_code'] as String,
-        logoUrl: data['logo_url'] as String?,
-        isActive: data['is_active'] as bool,
-        createdAt: DateTime.parse(data['created_at'] as String),
-        legalName: data['legal_name'] as String?,
-        cnpj: data['cnpj'] as String?,
-        planType: data['plan_type'] as String?,
-        maxVehicles: data['max_vehicles'] as int?,
-        maxActiveContracts: data['max_active_contracts'] as int?,
-      );
+      return _mapToOrganization(data);
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'organization');
+    } on IntegrityException {
+      rethrow;
     } catch (e) {
-      // If single() fails (not found or multiple), return null
       return null;
     }
   }
 
   @override
   Future<void> update(Organization organization) async {
+    if (organization.id.isEmpty) {
+      throw const IntegrityException(
+        'Organization id required for update (INV-1 Fail-Fast)',
+        field: 'id',
+      );
+    }
     try {
       await _client
           .from('organizations')
@@ -52,10 +49,122 @@ class PostgresOrganizationRepository
             'timezone': organization.timezone,
             'currency_code': organization.currencyCode,
             'logo_url': organization.logoUrl,
+            'organization_type': organization.organizationType,
+            'capabilities': organization.capabilities.toJson(),
+            'dwell_time_seconds': organization.dwellTimeSeconds,
           })
           .eq('id', organization.id);
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'organization');
     }
+  }
+
+  @override
+  Future<List<Organization>> findAll({OrgStatus? status}) async {
+    try {
+      var query = _client.from('organizations').select();
+      if (status != null) {
+        query = query.eq('status', status.dbValue);
+      }
+      final data = await query.order('name');
+      return (data as List)
+          .cast<Map<String, dynamic>>()
+          .map(_mapToOrganization)
+          .toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'organization');
+    }
+  }
+
+  @override
+  Future<void> updateStatus(
+    String orgId,
+    OrgStatus status,
+    String reason,
+    String actorId,
+    String actorType,
+  ) async {
+    if (orgId.isEmpty) {
+      throw const IntegrityException(
+        'Organization id required for updateStatus (INV-1 Fail-Fast)',
+        field: 'id',
+      );
+    }
+    try {
+      await _client
+          .from('organizations')
+          .update({'status': status.dbValue})
+          .eq('id', orgId);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'organization');
+    }
+  }
+
+  @override
+  Future<OrgApiSecret?> findApiSecret(String orgId) async {
+    try {
+      final data = await _client
+          .from('org_api_secrets')
+          .select()
+          .eq('organization_id', orgId)
+          .isFilter('revoked_at', null)
+          .order('version', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (data == null) return null;
+      return OrgApiSecret.fromJson(data);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'org_api_secret',
+        resourceId: orgId,
+      );
+    }
+  }
+
+  Organization _mapToOrganization(Map<String, dynamic> data) {
+    final rawCaps = data['capabilities'];
+    final capabilities = rawCaps is Map<String, dynamic>
+        ? OrgCapabilities.fromJson(rawCaps)
+        : OrgCapabilities.defaults;
+
+    // Parse status: fallback to is_active boolean for retro-compatibility
+    final statusStr = data['status'] as String?;
+    final OrgStatus status;
+    if (statusStr != null) {
+      status = OrgStatus.fromString(statusStr);
+    } else {
+      status = (data['is_active'] as bool? ?? true)
+          ? OrgStatus.active
+          : OrgStatus.suspended;
+    }
+
+    final allowedDomainsRaw = data['allowed_domains'];
+    final allowedDomains = allowedDomainsRaw is List
+        ? allowedDomainsRaw.cast<String>()
+        : <String>[];
+
+    return Organization(
+      id: data['id'] as String,
+      name: data['name'] as String,
+      timezone: data['timezone'] as String,
+      currencyCode: data['currency_code'] as String,
+      logoUrl: data['logo_url'] as String?,
+      status: status,
+      createdAt: DateTime.parse(data['created_at'] as String).toUtc(),
+      legalName: data['legal_name'] as String?,
+      cnpj: data['cnpj'] as String?,
+      planType: data['plan_type'] as String?,
+      maxVehicles: data['max_vehicles'] as int?,
+      maxActiveContracts: data['max_active_contracts'] as int?,
+      organizationType: data['organization_type'] as String?,
+      capabilities: capabilities,
+      billingDay: data['billing_day'] as int?,
+      contactEmail: data['contact_email'] as String?,
+      externalId: data['external_id'] as String?,
+      dwellTimeSeconds: data['dwell_time_seconds'] as int? ?? 300,
+      allowedDomains: allowedDomains,
+    );
   }
 }

@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS public.telegram_pending_links (
   CONSTRAINT chk_tpl_short_id_len CHECK (char_length(short_id) = 8)
 );
 
+COMMENT ON TABLE public.telegram_pending_links IS
+  'deny-all: Pending self-link tokens. Edge Function (service_role) only.';
+
 CREATE INDEX IF NOT EXISTS idx_tpl_expires
   ON public.telegram_pending_links (expires_at_utc);
 

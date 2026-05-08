@@ -5,21 +5,30 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
 import 'package:veraprob/core/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/create_organization_form_data.dart';
+import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
+import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
+import 'package:veraprob/presentation/shared/widgets/domain_chip_input.dart';
 
 /// 3-step wizard for creating a new tenant organization.
 ///
 /// Step 1 — Dados Fiscais: legal/trade name, CNPJ, plan, timezone, currency.
-/// Step 2 — Limites de Uso: max vehicles, max active contracts.
+/// Step 2 — Limites & Config: max vehicles, max contracts, capabilities editor,
+///          speed/dwell defaults (labelled "Inicial (Padrão)"), reason field.
 /// Step 3 — Convite Admin: initial admin email.
 ///
 /// Pattern: ConsumerStatefulWidget + _currentStep + _highestStepReached
 /// (mirrors declare_contract_plan_form.dart — INV-19: overlay modal).
+///
+/// **INV-4 / Lens 2:** No domain types are imported here.
+/// - Capabilities are held as [OrgCapabilitiesViewModel] (application layer).
+/// - Preset resolution goes through [OrgPresetViewModel] (application layer).
 class CreateOrganizationWizard extends ConsumerStatefulWidget {
   /// Called when the wizard completes successfully (navigates to Tenants panel).
   final VoidCallback onSuccess;
@@ -42,6 +51,9 @@ class _CreateOrganizationWizardState
   final _legalNameCtrl = TextEditingController();
   final _tradeNameCtrl = TextEditingController();
   final _cnpjCtrl = TextEditingController();
+  final _contactEmailCtrl = TextEditingController();
+  final _externalIdCtrl = TextEditingController();
+  final _billingDayCtrl = TextEditingController();
   PlanType _selectedPlan = PlanType.starter;
   String _timezone = 'America/Sao_Paulo';
   String _currency = 'BRL';
@@ -57,11 +69,23 @@ class _CreateOrganizationWizardState
   // Step 2 controllers
   final _maxVehiclesCtrl = TextEditingController(text: '50');
   final _maxContractsCtrl = TextEditingController(text: '10');
+  final _toolCostCtrl = TextEditingController();
+  final _reasonCtrl = TextEditingController();
+
+  // Step 2 operational config state — held as application-layer ViewModel,
+  // never as OrgCapabilities (domain).
+  String? _selectedPreset;
+  OrgCapabilitiesViewModel _capabilities = OrgCapabilitiesViewModel.defaults;
+  int _dwellTimeSeconds = 300;
+
+  // Step 2 — Allowed Domains
+  List<String> _allowedDomains = [];
 
   // Step 3 controllers
   final _adminEmailCtrl = TextEditingController();
+  List<String> _adminEmails = [];
 
-  // Step 1 key
+  // Form keys
   final _step1Key = GlobalKey<FormState>();
   final _step2Key = GlobalKey<FormState>();
   final _step3Key = GlobalKey<FormState>();
@@ -79,10 +103,55 @@ class _CreateOrganizationWizardState
     _legalNameCtrl.dispose();
     _tradeNameCtrl.dispose();
     _cnpjCtrl.dispose();
+    _contactEmailCtrl.dispose();
+    _externalIdCtrl.dispose();
+    _billingDayCtrl.dispose();
     _maxVehiclesCtrl.dispose();
     _maxContractsCtrl.dispose();
+    _toolCostCtrl.dispose();
+    _reasonCtrl.dispose();
     _adminEmailCtrl.dispose();
     super.dispose();
+  }
+
+  /// Resolves capabilities from the selected preset via the application-layer
+  /// façade [OrgPresetViewModel], without importing any domain type.
+  void _onPresetChanged(String? preset) {
+    setState(() {
+      _selectedPreset = preset;
+      if (preset == null) {
+        _capabilities = OrgCapabilitiesViewModel.defaults;
+      } else {
+        // Apply preset as a template — existing manual overrides are replaced
+        // by the template but remain editable afterwards.
+        _capabilities = OrgPresetViewModel.resolveCapabilities(preset);
+      }
+    });
+  }
+
+  /// Toggles a single capability flag by key name.
+  /// The preset is used as a template — SuperAdmin can override freely.
+  void _onCapabilityToggled(String key, bool value) {
+    setState(() {
+      _capabilities = switch (key) {
+        'allows_sealing' => _capabilities.copyWith(allowsSealing: value),
+        'allows_loading' => _capabilities.copyWith(allowsLoading: value),
+        'allows_cargo_check' => _capabilities.copyWith(allowsCargoCheck: value),
+        'allows_incident' => _capabilities.copyWith(allowsIncident: value),
+        'allows_doc' => _capabilities.copyWith(allowsDoc: value),
+        'smart_classify' => _capabilities.copyWith(smartClassify: value),
+        _ => _capabilities,
+      };
+    });
+  }
+
+  /// Updates the kinematic speed initial default.
+  void _onSpeedChanged(double value) {
+    setState(() {
+      _capabilities = _capabilities.copyWith(
+        maxKinematicSpeedKmh: value, // Physical Metric - Double Required
+      );
+    });
   }
 
   void _onCnpjChanged() {
@@ -172,9 +241,12 @@ class _CreateOrganizationWizardState
     return true;
   }
 
-  bool _validateStep2() => _step2Key.currentState?.validate() ?? false;
+  bool _validateStep2() {
+    if (!(_step2Key.currentState?.validate() ?? false)) return false;
+    return BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text) != null;
+  }
 
-  bool _validateStep3() => _step3Key.currentState?.validate() ?? false;
+  bool _validateStep3() => _adminEmails.isNotEmpty;
 
   void _goToStep(int step) {
     if (step > _currentStep) {
@@ -189,6 +261,15 @@ class _CreateOrganizationWizardState
   }
 
   Future<void> _submit() async {
+    // If the user typed an email but forgot to press Enter, add it automatically
+    final pendingEmail = _adminEmailCtrl.text.trim().toLowerCase();
+    if (pendingEmail.isNotEmpty &&
+        pendingEmail.contains('@') &&
+        !_adminEmails.contains(pendingEmail)) {
+      setState(() => _adminEmails.add(pendingEmail));
+      _adminEmailCtrl.clear();
+    }
+
     if (!_validateStep3()) return;
 
     final superAdminId = ref.read(currentSuperAdminIdProvider);
@@ -207,6 +288,7 @@ class _CreateOrganizationWizardState
     try {
       final handler = ref.read(createOrganizationHandlerProvider);
 
+      final billingDayText = _billingDayCtrl.text.trim();
       final cmd = CreateOrganizationFormData(
         legalName: _legalNameCtrl.text.trim(),
         tradeName: _tradeNameCtrl.text.trim(),
@@ -216,8 +298,23 @@ class _CreateOrganizationWizardState
         planType: _selectedPlan,
         maxVehicles: int.parse(_maxVehiclesCtrl.text.trim()),
         maxActiveContracts: int.parse(_maxContractsCtrl.text.trim()),
-        initialAdminEmail: _adminEmailCtrl.text.trim().toLowerCase(),
+        adminEmails: _adminEmails,
         superAdminUserId: superAdminId,
+        // _capabilities is OrgCapabilitiesViewModel — toCommand() converts to domain
+        capabilities: _capabilities,
+        toolCostCents: BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text),
+        dwellTimeSeconds: _dwellTimeSeconds,
+        reason: _reasonCtrl.text.trim(),
+        contactEmail: _contactEmailCtrl.text.trim().isEmpty
+            ? null
+            : _contactEmailCtrl.text.trim(),
+        externalId: _externalIdCtrl.text.trim().isEmpty
+            ? null
+            : _externalIdCtrl.text.trim(),
+        billingDay: billingDayText.isEmpty
+            ? null
+            : int.tryParse(billingDayText),
+        allowedDomains: _allowedDomains,
       ).toCommand();
 
       final result = await handler.handle(cmd);
@@ -232,17 +329,25 @@ class _CreateOrganizationWizardState
         baseUrl = Uri.base.origin;
       } catch (_) {}
 
-      final inviteUrl =
-          '$baseUrl/accept-invite?token=${result.invitationToken}';
+      // Build per-email invite URLs — one token per admin (INV-27 per-identity).
+      final inviteUrls = <String, String>{};
+      for (var i = 0; i < _adminEmails.length; i++) {
+        final token = i < result.invitationTokens.length
+            ? result.invitationTokens[i]
+            : result.firstInvitationToken;
+        inviteUrls[_adminEmails[i]] = '$baseUrl/accept-invite?token=$token';
+      }
 
-      // Fire invitation email — silent failure (link in dialog is the fallback)
-      unawaited(
-        handler.sendInviteNotification(
-          email: cmd.initialAdminEmail,
-          inviteUrl: inviteUrl,
-          orgName: cmd.tradeName,
-        ),
-      );
+      // Fire invitation emails — silent failure (link in dialog is the fallback)
+      for (final entry in inviteUrls.entries) {
+        unawaited(
+          handler.sendInviteNotification(
+            email: entry.key,
+            inviteUrl: entry.value,
+            orgName: _tradeNameCtrl.text.trim(),
+          ),
+        );
+      }
 
       // Stop loader before showing dialog, otherwise pumpAndSettle times out
       if (mounted) {
@@ -253,7 +358,8 @@ class _CreateOrganizationWizardState
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => _buildSuccessDialog(inviteUrl, messenger),
+        builder: (_) =>
+            _buildSuccessDialog(inviteUrls, messenger, result.orgApiSecret),
       );
 
       // Invalidate health snapshot to refresh the tenant list
@@ -280,8 +386,9 @@ class _CreateOrganizationWizardState
   }
 
   Widget _buildSuccessDialog(
-    String inviteUrl,
+    Map<String, String> inviteUrls,
     ScaffoldMessengerState messenger,
+    String? orgApiSecret,
   ) {
     return AlertDialog(
       icon: const Icon(
@@ -296,33 +403,55 @@ class _CreateOrganizationWizardState
         children: [
           Text('Organização: ${_tradeNameCtrl.text.trim()}'),
           const SizedBox(height: 8),
-          Text('Admin convidado para: ${_adminEmailCtrl.text.trim()}'),
+          Text('Admin(s) convidado(s): ${inviteUrls.keys.join(", ")}'),
           const SizedBox(height: 16),
           const Text(
-            'Link de convite do Admin:',
+            'Links de convite (um por admin):',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: SelectableText(
-                  inviteUrl,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
+          ...inviteUrls.entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          entry.key,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SelectableText(
+                          entry.value,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy_all, size: 16),
+                    tooltip: 'Copiar link de ${entry.key}',
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: entry.value));
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Link de ${entry.key} copiado!'),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.copy_all, size: 18),
-                tooltip: 'Copiar link',
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: inviteUrl));
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Link copiado!')),
-                  );
-                },
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 12),
           Container(
@@ -352,6 +481,10 @@ class _CreateOrganizationWizardState
               ],
             ),
           ),
+          if (orgApiSecret != null) ...[
+            const SizedBox(height: 16),
+            _SecretRevealSection(secret: orgApiSecret, messenger: messenger),
+          ],
         ],
       ),
       actions: [
@@ -397,19 +530,55 @@ class _CreateOrganizationWizardState
             onPlanChanged: (p) => setState(() => _selectedPlan = p),
             onTimezoneChanged: (t) => setState(() => _timezone = t),
             onCurrencyChanged: (c) => setState(() => _currency = c),
+            contactEmailCtrl: _contactEmailCtrl,
+            externalIdCtrl: _externalIdCtrl,
+            billingDayCtrl: _billingDayCtrl,
           ),
         ),
         Step(
           title: const Text('Limites'),
           isActive: _currentStep >= 1,
           state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-          content: Step2Limits(
-            formKey: _step2Key,
-            maxVehiclesCtrl: _maxVehiclesCtrl,
-            maxContractsCtrl: _maxContractsCtrl,
-            // Read-only summary from Step 1
-            tradeName: _tradeNameCtrl.text,
-            planLabel: _selectedPlan.label,
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Step2Limits(
+                formKey: _step2Key,
+                maxVehiclesCtrl: _maxVehiclesCtrl,
+                maxContractsCtrl: _maxContractsCtrl,
+                toolCostCtrl: _toolCostCtrl,
+                reasonCtrl: _reasonCtrl,
+                tradeName: _tradeNameCtrl.text,
+                planLabel: _selectedPlan.label,
+                selectedPreset: _selectedPreset,
+                capabilities: _capabilities,
+                dwellTimeSeconds: _dwellTimeSeconds,
+                onPresetChanged: _onPresetChanged,
+                onDwellChanged: (v) => setState(() => _dwellTimeSeconds = v),
+                onCapabilityToggled: _onCapabilityToggled,
+                onSpeedChanged: _onSpeedChanged,
+              ),
+              const SizedBox(height: VeraProbSpacing.md),
+              const Divider(color: VeraProbColors.border),
+              const SizedBox(height: VeraProbSpacing.sm),
+              Text(
+                'Segurança · Domínios Permitidos',
+                style: VeraProbTypography.sectionTitle,
+              ),
+              const SizedBox(height: VeraProbSpacing.xs),
+              Text(
+                'E-mails de acesso restritos a estes domínios (opcional).',
+                style: VeraProbTypography.bodySmall,
+              ),
+              const SizedBox(height: VeraProbSpacing.sm),
+              DomainChipInput(
+                initialDomains: _allowedDomains,
+                onChanged: (domains) =>
+                    setState(() => _allowedDomains = domains),
+                hintText: 'ex: empresa.com.br',
+              ),
+              const SizedBox(height: VeraProbSpacing.sm),
+            ],
           ),
         ),
         Step(
@@ -418,7 +587,9 @@ class _CreateOrganizationWizardState
           state: StepState.indexed,
           content: Step3AdminInvite(
             formKey: _step3Key,
-            adminEmailCtrl: _adminEmailCtrl,
+            emailCtrl: _adminEmailCtrl,
+            adminEmails: _adminEmails,
+            onEmailsChanged: (emails) => setState(() => _adminEmails = emails),
             tradeName: _tradeNameCtrl.text,
             planLabel: _selectedPlan.label,
             maxVehicles: _maxVehiclesCtrl.text,
@@ -465,6 +636,79 @@ class _CreateOrganizationWizardState
                     ),
                   )
                 : Text(isLast ? 'Criar e Enviar Convite' : 'Próximo'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One-time HMAC secret reveal section (INV-28).
+///
+/// Displayed in the success dialog when [CreateOrganizationResult.orgApiSecret]
+/// is non-null. The plain-text secret is shown exactly once and never stored.
+class _SecretRevealSection extends StatelessWidget {
+  final String secret;
+  final ScaffoldMessengerState messenger;
+
+  const _SecretRevealSection({required this.secret, required this.messenger});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: VeraProbColors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.warning_amber, size: 16, color: VeraProbColors.error),
+              SizedBox(width: 6),
+              Text(
+                'Chave de API da Organização (única exibição)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: VeraProbColors.error,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: SelectableText(
+                  secret,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    color: VeraProbColors.textPrimary,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy_all, size: 16),
+                tooltip: 'Copiar chave',
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: secret));
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Chave copiada!')),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Copie agora. Este segredo não será exibido novamente.',
+            style: TextStyle(fontSize: 11, color: VeraProbColors.error),
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -26,10 +27,11 @@ class _MockPlanDeclarationRepository extends Mock
 // ── Stub Notifier: tracks onFormChanged calls (INV-33) ───────────────────────
 
 class _StubCommandNotifier extends ContractCommandNotifier {
+  _StubCommandNotifier(super.contractId);
   int formChangedCallCount = 0;
 
   @override
-  ContractCommandState build(String arg) =>
+  ContractCommandState build() =>
       const ContractCommandState(idempotencyKey: 'stub-key-initial');
 
   @override
@@ -98,7 +100,7 @@ List<Override> _baseOverrides({
     currentOperatorIdProvider.overrideWithValue(operatorId),
     currentSessionIdProvider.overrideWithValue(_sessionId),
     if (notifier != null)
-      contractCommandNotifierProvider.overrideWith(() => notifier),
+      contractCommandNotifierProvider.overrideWith2((_) => notifier),
     planDeclarationRepositoryProvider.overrideWith((_) => repo),
   ];
 }
@@ -220,14 +222,13 @@ void main() {
   // ── Group 3: Idempotency — onFormChanged (ARCH / INV-33) ─────────────────
   group('Idempotency — onFormChanged (INV-33)', () {
     test('key stable when state is AsyncData (no rotation)', () {
-      final container = ProviderContainer(
+      final container = ProviderContainer.test(
         overrides: [
-          contractCommandNotifierProvider.overrideWith(
-            _StubCommandNotifier.new,
+          contractCommandNotifierProvider.overrideWith2(
+            (_) => _StubCommandNotifier(_contractId),
           ),
         ],
       );
-      addTearDown(container.dispose);
 
       final initialKey = container
           .read(contractCommandNotifierProvider(_contractId))
@@ -245,14 +246,13 @@ void main() {
     });
 
     test('key rotates after AsyncError + onFormChanged', () {
-      final container = ProviderContainer(
+      final container = ProviderContainer.test(
         overrides: [
-          contractCommandNotifierProvider.overrideWith(
-            _StubCommandNotifier.new,
+          contractCommandNotifierProvider.overrideWith2(
+            (_) => _StubCommandNotifier(_contractId),
           ),
         ],
       );
-      addTearDown(container.dispose);
 
       final initialKey = container
           .read(contractCommandNotifierProvider(_contractId))
@@ -277,14 +277,13 @@ void main() {
     });
 
     test('onFormChanged increments counter on stub notifier', () {
-      final container = ProviderContainer(
+      final container = ProviderContainer.test(
         overrides: [
-          contractCommandNotifierProvider.overrideWith(
-            _StubCommandNotifier.new,
+          contractCommandNotifierProvider.overrideWith2(
+            (_) => _StubCommandNotifier(_contractId),
           ),
         ],
       );
-      addTearDown(container.dispose);
 
       final notifier =
           container.read(contractCommandNotifierProvider(_contractId).notifier)

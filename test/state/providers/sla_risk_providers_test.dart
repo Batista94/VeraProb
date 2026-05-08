@@ -6,14 +6,12 @@ import 'package:veraprob/state/providers/sla_risk_providers.dart';
 void main() {
   group('sla_risk_providers.dart Tests', () {
     test('ProviderContainer initializes correctly', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
       expect(container, isNotNull);
     });
 
     test('provider data loading state', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = ProviderContainer.test();
 
       final state = container.read(atRiskSlaCountProvider);
 
