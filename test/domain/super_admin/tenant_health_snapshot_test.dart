@@ -279,8 +279,7 @@ void main() {
       });
 
       test('snapshots with different cnpj are not equal', () {
-        final dt = DateTime.utc(2026, 3, 19);
-        final a = TenantHealthSnapshot(
+        const a = TenantHealthSnapshot(
           id: 'org-1',
           name: 'x',
           isActive: true,
@@ -290,7 +289,7 @@ void main() {
           openCriticalAlertCount: 0,
           cnpj: '11.111.111/0001-11',
         );
-        final b = TenantHealthSnapshot(
+        const b = TenantHealthSnapshot(
           id: 'org-1',
           name: 'x',
           isActive: true,

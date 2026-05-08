@@ -209,7 +209,7 @@ void main() {
         () async {
           when(
             mockFunctionsClient.invoke(any, body: anyNamed('body')),
-          ).thenThrow(FunctionException(status: 500));
+          ).thenThrow(const FunctionException(status: 500));
 
           await expectLater(
             () => service.lookup(validCnpj),

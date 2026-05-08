@@ -52,7 +52,7 @@ class MockClock extends Mock implements IDateTimeProvider {}
 class MockEvidenceIntegrityVerifier extends Mock
     implements EvidenceIntegrityVerifier {}
 
-class MockXssInputSanitizer extends Mock implements XssInputSanitizer {}
+class MockXssInputSanitizer extends Mock implements InputSanitizer {}
 
 class MockContextualSignatureAnalyzer extends Mock
     implements ContextualSignatureAnalyzer {}
@@ -127,11 +127,11 @@ void main() {
     final rbac = RbacService();
 
     // Default safe stub for sanitizer: strips HTML tags using a real-ish impl.
-    when(() => mockSanitizer.sanitizeText(any())).thenAnswer((inv) {
+    when(() => mockSanitizer.sanitize(any())).thenAnswer((inv) {
       final input = inv.positionalArguments[0] as String;
       // Simulates what sanitize_html does: removes HTML tags and their content
       // for script tags, strips all other tags.
-      return input
+      final cleaned = input
           .replaceAll(
             RegExp(
               r'<script[^>]*>.*?</script>',
@@ -142,6 +142,15 @@ void main() {
           )
           .replaceAll(RegExp(r'<[^>]*>'), '')
           .trim();
+      return SanitizationResult(
+        text: cleaned,
+        wasModified: cleaned != input,
+        threatLevel: cleaned != input ? ThreatLevel.low : ThreatLevel.none,
+      );
+    });
+    when(() => mockSanitizer.sanitizeText(any())).thenAnswer((inv) {
+      final input = inv.positionalArguments[0] as String;
+      return mockSanitizer.sanitize(input).text;
     });
 
     // Default safe stub: all files pass binary inspection.
@@ -853,7 +862,7 @@ void main() {
 
         // Verify all layers executed.
         verify(
-          () => mockSanitizer.sanitizeText(any()),
+          () => mockSanitizer.sanitize(any()),
         ).called(greaterThanOrEqualTo(1)); // Layer 1: XSS sanitization
         verify(
           () => mockFileInspector.validateEvidence(any()),

@@ -12,7 +12,7 @@ void main() {
       });
 
       test('accepts explicit maps', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'key': 'old'},
           after: {'key': 'new'},
           context: {'user': 'admin'},
@@ -172,17 +172,17 @@ void main() {
 
     group('hasDiff', () {
       test('returns true when both before and after are non-empty', () {
-        final payload = AuditLogPayload(before: {'a': 1}, after: {'a': 2});
+        const payload = AuditLogPayload(before: {'a': 1}, after: {'a': 2});
         expect(payload.hasDiff, isTrue);
       });
 
       test('returns false when before is empty', () {
-        final payload = AuditLogPayload(before: const {}, after: {'a': 2});
+        const payload = AuditLogPayload(before: {}, after: {'a': 2});
         expect(payload.hasDiff, isFalse);
       });
 
       test('returns false when after is empty', () {
-        final payload = AuditLogPayload(before: {'a': 1}, after: const {});
+        const payload = AuditLogPayload(before: {'a': 1}, after: {});
         expect(payload.hasDiff, isFalse);
       });
 
@@ -193,7 +193,7 @@ void main() {
 
       test('returns true even when values are identical (non-empty maps)', () {
         // hasDiff only checks non-emptiness, not actual difference
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'a': 'same'},
           after: {'a': 'same'},
         );
@@ -203,7 +203,7 @@ void main() {
 
     group('hasContext', () {
       test('returns true when context is non-empty', () {
-        final payload = AuditLogPayload(context: {'actor': 'system'});
+        const payload = AuditLogPayload(context: {'actor': 'system'});
         expect(payload.hasContext, isTrue);
       });
 
@@ -220,17 +220,17 @@ void main() {
       });
 
       test('returns false when only before has data', () {
-        final payload = AuditLogPayload(before: {'x': 1});
+        const payload = AuditLogPayload(before: {'x': 1});
         expect(payload.isEmpty, isFalse);
       });
 
       test('returns false when only after has data', () {
-        final payload = AuditLogPayload(after: {'x': 1});
+        const payload = AuditLogPayload(after: {'x': 1});
         expect(payload.isEmpty, isFalse);
       });
 
       test('returns false when only context has data', () {
-        final payload = AuditLogPayload(context: {'x': 1});
+        const payload = AuditLogPayload(context: {'x': 1});
         expect(payload.isEmpty, isFalse);
       });
 
@@ -242,7 +242,7 @@ void main() {
 
     group('changedKeys', () {
       test('detects changed values', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'status': 'active', 'name': 'Alice'},
           after: {'status': 'suspended', 'name': 'Alice'},
         );
@@ -250,7 +250,7 @@ void main() {
       });
 
       test('returns empty list when no values changed', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'a': '1', 'b': '2'},
           after: {'a': '1', 'b': '2'},
         );
@@ -258,7 +258,7 @@ void main() {
       });
 
       test('detects keys present in before but missing in after', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'removed_key': 'value', 'kept': 'same'},
           after: {'kept': 'same'},
         );
@@ -267,7 +267,7 @@ void main() {
       });
 
       test('detects keys present in after but missing in before', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'kept': 'same'},
           after: {'kept': 'same', 'new_key': 'added'},
         );
@@ -276,7 +276,7 @@ void main() {
       });
 
       test('detects all keys changed when completely different maps', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'a': '1', 'b': '2'},
           after: {'c': '3', 'd': '4'},
         );
@@ -287,7 +287,7 @@ void main() {
       test(
         'FORENSIC: int 1 vs String "1" are treated as SAME due to toString coercion',
         () {
-          final payload = AuditLogPayload(
+          const payload = AuditLogPayload(
             before: {'count': 1},
             after: {'count': '1'},
           );
@@ -305,7 +305,7 @@ void main() {
       test(
         'FORENSIC: bool true vs String "true" are treated as SAME due to toString coercion',
         () {
-          final payload = AuditLogPayload(
+          const payload = AuditLogPayload(
             before: {'enabled': true},
             after: {'enabled': 'true'},
           );
@@ -321,7 +321,7 @@ void main() {
       test(
         'FORENSIC: bool false vs String "false" are treated as SAME due to toString coercion',
         () {
-          final payload = AuditLogPayload(
+          const payload = AuditLogPayload(
             before: {'disabled': false},
             after: {'disabled': 'false'},
           );
@@ -335,7 +335,7 @@ void main() {
       );
 
       test('FORENSIC: null vs empty string are treated as DIFFERENT', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'field': null},
           after: {'field': ''},
         );
@@ -343,7 +343,7 @@ void main() {
       });
 
       test('FORENSIC: null vs String "null" are treated as DIFFERENT', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'field': null},
           after: {'field': 'null'},
         );
@@ -351,7 +351,7 @@ void main() {
       });
 
       test('FORENSIC: double 1.0 vs String "1.0" are treated as SAME', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'score': 1.0},
           after: {'score': '1.0'},
         );
@@ -363,7 +363,7 @@ void main() {
       });
 
       test('detects change when nested map toString differs', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {
             'config': {'a': 1},
           },
@@ -375,7 +375,7 @@ void main() {
       });
 
       test('does not detect change when nested maps are identical', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {
             'config': {'a': 1, 'b': 2},
           },
@@ -414,7 +414,7 @@ void main() {
       });
 
       test('handles keys with only whitespace differences in values', () {
-        final payload = AuditLogPayload(
+        const payload = AuditLogPayload(
           before: {'name': 'hello'},
           after: {'name': 'hello '},
         );

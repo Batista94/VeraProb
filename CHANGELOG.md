@@ -34,21 +34,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All `description` and `resolutionNotes` fields sanitized using `package:sanitize_html`
   - Strips all HTML tags, attributes, and JavaScript before persistence
   - Prevents script injection attacks in justification workflows
-- **CRITICAL:** Added evidence lifecycle management to prevent storage cost leaks (Red Team ID 6)
-  - Rejected/expired justifications now schedule evidence for deletion after 7-day grace period
-  - `JustificationJanitorService` automates cleanup of orphaned files
-  - Prevents unbounded storage growth from abandoned justifications
+- **CRITICAL:** Implemented evidence lifecycle management and retention policies (Red Team ID 6)
+  - Rejected/expired justifications now transition to **Cold Storage** after a 90-day active period.
+  - `EvidenceLifecycleManager` automates archival and enforces 5-year forensic retention.
+  - Prevents data loss while optimizing storage costs via tiered access.
 
 ### Added
 - `justification_audit_logs` table with immutability triggers (INV-3)
   - Append-only audit trail for all status transitions
   - Full actor attribution (user_id, caller_role, timestamp_utc)
   - RLS enforces tenant isolation (INV-1)
-- `evidence_deletion_queue` table with 7-day grace period
-  - Soft-delete pattern allows recovery before permanent removal
-  - Service Role bypass required (INV-24) — standard users cannot query pending deletions
+- `evidence_retention_policy` configuration
+  - Defines legal hold and archival rules per tenant
+  - Service Role bypass required (INV-24) — standard users cannot modify policies
 - `update_justification_status_with_audit` PostgreSQL RPC for atomic operations
-  - Single transaction: status update + audit log + deletion queue
+  - Single transaction: status update + audit log + archival trigger
   - Concurrency-safe: returns 0 on conflict, entire transaction rolls back
   - SECURITY DEFINER with `SET search_path = public`
 - `InputSanitizer` service using `package:sanitize_html` (Google)
@@ -58,10 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Defense-in-Depth Layer 2: Binary inspection before SHA-256 verification
   - HEIC signature detection at offset 4 (box length prefix)
   - Forensic guarantee: all evidence files match MIME whitelist
-- `JustificationJanitorService` for automated evidence cleanup
-  - Defense-in-Depth Layer 5: Lifecycle management after atomic persistence
-  - Idempotent: failed deletions retry on next run, no silent data loss
-  - Cost control: prevents unbounded storage growth
+- `EvidenceLifecycleManager` for automated archival and compliance
+  - Defense-in-Depth Layer 5: Enforces retention periods before any physical removal
+  - Idempotent: failed transitions retry on next run, no silent data loss
+  - Cost control: utilizes tiered storage for non-active evidence
 
 ### Changed
 - `SLAJustificationRepository` interface updated with `updateStatusWithAuditLog` method
@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Layer 2: Binary inspection (Magic Bytes)
   - Layer 3: Cryptographic sealing (SHA-256, existing)
   - Layer 4: Atomic persistence (Transaction)
-  - Layer 5: Lifecycle management (Janitor)
+  - Layer 5: Lifecycle management (Archival/Retention)
 
 ### Dependencies
 - Added `sanitize_html: ^2.1.0` for XSS protection

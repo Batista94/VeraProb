@@ -33,7 +33,7 @@ class MockClock extends Mock implements IDateTimeProvider {}
 class MockEvidenceIntegrityVerifier extends Mock
     implements EvidenceIntegrityVerifier {}
 
-class MockXssInputSanitizer extends Mock implements XssInputSanitizer {}
+class MockXssInputSanitizer extends Mock implements InputSanitizer {}
 
 class MockContextualSignatureAnalyzer extends Mock
     implements ContextualSignatureAnalyzer {}
@@ -215,9 +215,9 @@ void main() {
     mockLinkChecker = MockEvidenceLinkChecker();
 
     // Configure mocks
-    when(() => mockSanitizer.sanitizeText(any())).thenAnswer((inv) {
+    when(() => mockSanitizer.sanitize(any())).thenAnswer((inv) {
       final input = inv.positionalArguments[0] as String;
-      return input
+      final cleaned = input
           .replaceAll(
             RegExp(
               r'<script[^>]*>.*?</script>',
@@ -228,6 +228,15 @@ void main() {
           )
           .replaceAll(RegExp(r'<[^>]*>'), '')
           .trim();
+      return SanitizationResult(
+        text: cleaned,
+        wasModified: cleaned != input,
+        threatLevel: cleaned != input ? ThreatLevel.low : ThreatLevel.none,
+      );
+    });
+    when(() => mockSanitizer.sanitizeText(any())).thenAnswer((inv) {
+      final input = inv.positionalArguments[0] as String;
+      return mockSanitizer.sanitize(input).text;
     });
 
     when(
@@ -522,6 +531,14 @@ void main() {
     test('respects custom expiration window (48h)', () async {
       final mockSanitizer = MockXssInputSanitizer();
       final mockFileInspector = MockContextualSignatureAnalyzer();
+      when(() => mockSanitizer.sanitize(any())).thenAnswer((inv) {
+        final input = inv.positionalArguments[0] as String;
+        return SanitizationResult(
+          text: input,
+          wasModified: false,
+          threatLevel: ThreatLevel.none,
+        );
+      });
       when(
         () => mockSanitizer.sanitizeText(any()),
       ).thenAnswer((inv) => inv.positionalArguments[0] as String);
@@ -627,6 +644,14 @@ void main() {
 
         final mockSanitizer = MockXssInputSanitizer();
         final mockFileInspector = MockContextualSignatureAnalyzer();
+        when(() => mockSanitizer.sanitize(any())).thenAnswer((inv) {
+          final input = inv.positionalArguments[0] as String;
+          return SanitizationResult(
+            text: input,
+            wasModified: false,
+            threatLevel: ThreatLevel.none,
+          );
+        });
         when(
           () => mockSanitizer.sanitizeText(any()),
         ).thenReturn('sanitized_text_valid');

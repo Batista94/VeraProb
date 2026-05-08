@@ -23,6 +23,7 @@ import 'evidence_integrity_verifier.dart';
 import 'evidence_validation_service.dart';
 import 'submit_sla_justification_command.dart';
 import 'xss_input_sanitizer.dart';
+import 'package:veraprob/infrastructure/shared/forensic_security_logger.dart';
 
 /// Central orchestrator for the SLA Justification Layer (CX-05).
 ///
@@ -61,7 +62,7 @@ class SLAJustificationManager {
   final RbacService _rbac;
   final IDateTimeProvider _clock;
   final EvidenceIntegrityVerifier _evidenceVerifier;
-  final XssInputSanitizer _sanitizer;
+  final InputSanitizer _sanitizer;
   final ContextualSignatureAnalyzer _fileInspector;
   final EvidenceLinkChecker _linkChecker;
 
@@ -93,7 +94,7 @@ class SLAJustificationManager {
     required RbacService rbac,
     required IDateTimeProvider clock,
     required EvidenceIntegrityVerifier evidenceVerifier,
-    required XssInputSanitizer sanitizer,
+    required InputSanitizer sanitizer,
     required ContextualSignatureAnalyzer fileInspector,
     required EvidenceLinkChecker linkChecker,
     required this.eventExistsChecker,
@@ -139,7 +140,17 @@ class SLAJustificationManager {
     }
 
     // ── Step 3: XSS Protection (Red Team ID 4) ───────────────────────────
-    final sanitizedDescription = _sanitizer.sanitizeText(command.description);
+    final descriptionResult = _sanitizer.sanitize(command.description);
+    final sanitizedDescription = descriptionResult.text;
+
+    // ── Step 3b: Forensic Logging (INV-21) — log high-threat attempts ────
+    if (descriptionResult.threatLevel == ThreatLevel.high) {
+      _logXssAttempt(
+        field: 'description',
+        organizationId: command.organizationId,
+        rawInput: command.description,
+      );
+    }
 
     // ── Step 4: Description validation (min 10 chars) ────────────────────
     if (sanitizedDescription.trim().length < 10) {
@@ -304,9 +315,18 @@ class SLAJustificationManager {
     final now = _clock.nowUtc();
 
     // ── XSS Protection (Red Team ID 4) ───────────────────────────────────
-    final sanitizedNotes = resolutionNotes != null
-        ? _sanitizer.sanitizeText(resolutionNotes)
-        : null;
+    String? sanitizedNotes;
+    if (resolutionNotes != null) {
+      final notesResult = _sanitizer.sanitize(resolutionNotes);
+      sanitizedNotes = notesResult.text;
+      if (notesResult.threatLevel == ThreatLevel.high) {
+        _logXssAttempt(
+          field: 'resolutionNotes',
+          organizationId: organizationId,
+          rawInput: resolutionNotes,
+        );
+      }
+    }
 
     // ── Atomic Transaction (Red Team ID 2) ───────────────────────────────
     // Fetch evidence URLs for deletion queue
@@ -381,7 +401,15 @@ class SLAJustificationManager {
     _assertReviewAuthority(callerRole);
 
     // ── XSS Protection (Red Team ID 4) ───────────────────────────────────
-    final sanitizedNotes = _sanitizer.sanitizeText(resolutionNotes);
+    final notesResult = _sanitizer.sanitize(resolutionNotes);
+    final sanitizedNotes = notesResult.text;
+    if (notesResult.threatLevel == ThreatLevel.high) {
+      _logXssAttempt(
+        field: 'resolutionNotes',
+        organizationId: organizationId,
+        rawInput: resolutionNotes,
+      );
+    }
 
     if (sanitizedNotes.trim().length < 10) {
       throw const DomainException(
@@ -548,5 +576,29 @@ class SLAJustificationManager {
         '(${missing.length} URL(s) unreachable). CX05-Fix-5.',
       );
     }
+  }
+
+  /// Logs a detected XSS attack attempt to Sentry for SOC correlation (INV-21).
+  ///
+  /// **Side-effect only:** Does NOT throw or alter control flow.
+  /// The sanitizer already neutralized the payload — this is purely
+  /// for forensic observability and threat intelligence.
+  void _logXssAttempt({
+    required String field,
+    required String organizationId,
+    required String rawInput,
+  }) {
+    // Truncate raw input for Sentry (avoid sending 10KB payloads to logging)
+    final truncated = rawInput.length > 200
+        ? '${rawInput.substring(0, 200)}...[truncated]'
+        : rawInput;
+
+    ForensicSecurityLogger.logOriginOwnershipViolation(
+      requesterOrgId: organizationId,
+      resourceOwnerOrgId: organizationId,
+      resourceType: 'xss_attempt',
+      resourceId: field,
+      attackVector: 'xss_injection_red_team_id_4:$truncated',
+    );
   }
 }
