@@ -7,32 +7,16 @@ import 'package:veraprob/features/admin/presentation/screens/widgets/_zone_form_
 
 // ── Filter helper (top-level for testability) ─────────────────
 
-/// Filters [zones] visible to [currentContractor]:
-/// - [ZoneScope.global] zones (no contractor label) are always included
-/// - [ZoneScope.exclusive] zones are only included when their label matches [currentContractor]
-///
-/// Then applies a case-insensitive substring match on [query] (when non-empty).
+/// Filters [zones] by a case-insensitive substring match on [query].
+/// When [query] is empty, all zones are returned.
 /// Preserves the input order — sorting is the caller's responsibility.
 List<OperationalZoneView> filterZones(
   List<OperationalZoneView> zones,
   String query,
-  String currentContractor,
 ) {
-  var filtered = zones
-      .where(
-        (z) =>
-            z.scope == ZoneScope.global ||
-            z.contractorLabel == currentContractor,
-      )
-      .toList();
-
-  if (query.isNotEmpty) {
-    final lower = query.toLowerCase();
-    filtered = filtered
-        .where((z) => z.name.toLowerCase().contains(lower))
-        .toList();
-  }
-  return filtered;
+  if (query.isEmpty) return zones;
+  final lower = query.toLowerCase();
+  return zones.where((z) => z.name.toLowerCase().contains(lower)).toList();
 }
 
 // ── Widget ────────────────────────────────────────────────────
@@ -40,11 +24,9 @@ List<OperationalZoneView> filterZones(
 /// A type-ahead (autocomplete) field for selecting or Just-in-Time creating an
 /// [OperationalZoneView].
 ///
-/// Displays existing zones as autocomplete suggestions, scoped by
-/// [contractorName] — zones belonging to a different contractor are hidden.
-/// When the operator types a name that does not match, a "+ Criar zona"
-/// option is shown below the field. Tapping it opens the native
-/// [showZoneFormDialog] (map + Nominatim) instead of an inline mini-form.
+/// When the operator types a name that does not match any zone, a "+ Criar zona"
+/// option is shown below the field. Tapping it opens [showZoneFormDialog]
+/// (map + Nominatim) instead of an inline mini-form.
 ///
 /// After a zone is created via the modal, [onInvalidateZones] is called so
 /// the parent can reload the provider, and [onChanged] is called with the
@@ -57,15 +39,11 @@ class ZoneTypeAheadField extends StatefulWidget {
   final String label;
   final IconData prefixIcon;
 
-  /// Pre-sorted list from the parent. Contractor zones should appear first.
+  /// Pre-sorted list from the parent.
   final List<OperationalZoneView> zones;
 
   /// The currently selected zone (can be null when nothing is selected yet).
   final OperationalZoneView? selectedZone;
-
-  /// Contract's contractor name — used to filter visible zones and to
-  /// auto-apply as [contractorLabel] on newly-created zones.
-  final String contractorName;
 
   /// Invalidates the zones cache after the modal creates/edits a zone.
   final Future<void> Function() onInvalidateZones;
@@ -83,7 +61,6 @@ class ZoneTypeAheadField extends StatefulWidget {
     required this.prefixIcon,
     required this.zones,
     required this.selectedZone,
-    required this.contractorName,
     required this.onInvalidateZones,
     required this.onChanged,
     this.onGeofenceConfigured,
@@ -175,7 +152,7 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
         final query = textEditingValue.text == selectedName
             ? ''
             : textEditingValue.text;
-        return filterZones(widget.zones, query, widget.contractorName);
+        return filterZones(widget.zones, query);
       },
       displayStringForOption: (zone) => zone.name,
       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
@@ -238,9 +215,6 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
                 itemBuilder: (context, index) {
                   final zone = optionList[index];
                   final hasGeo = zone.geofence != null;
-                  final isContractor =
-                      widget.contractorName.isNotEmpty &&
-                      zone.contractorLabel == widget.contractorName;
 
                   return ListTile(
                     leading: Icon(
@@ -255,26 +229,6 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    trailing: isContractor
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: VeraProbSpacing.xs,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: VeraProbColors.primary.withValues(
-                                alpha: 0.15,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Seu contratante',
-                              style: VeraProbTypography.fieldLabel.copyWith(
-                                color: VeraProbColors.primary,
-                              ),
-                            ),
-                          )
-                        : null,
                     onTap: () => onSelected(zone),
                   );
                 },

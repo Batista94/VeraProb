@@ -10,11 +10,7 @@ enum ZoneType { garagem, cliente, apoio }
 ///
 /// - [global]: operator-owned zone visible to all contractors.
 /// - [exclusive]: zone scoped to a specific contractor (identified by
-///   [OperationalZone.contractorLabel] in Phase 5; will migrate to a proper
-///   FK on the `Contractor` aggregate in Phase 6).
-///
-/// Derived from [OperationalZone.contractorLabel] — no separate DB column
-/// needed in the domain layer (DB uses a generated column `zone_scope`).
+///   [OperationalZone.contractorId]).
 enum ZoneScope { global, exclusive }
 
 /// Optional geofence configuration for an [OperationalZone].
@@ -50,12 +46,6 @@ class GeofenceConfiguration extends Equatable {
 /// projection time.** Updating a zone after projection does NOT retroactively
 /// change historical SETs, preserving replay determinism.
 ///
-/// **[contractorLabel]:** Optional free-text tag linking this zone to a
-/// client/contractor name. Used by the Wizard to group zones belonging to
-/// the current contract's contractor at the top of the selection list.
-/// This is NOT a FK — it is a display/grouping hint. A proper FK to a
-/// `Contractor` aggregate will be introduced in Phase 6.
-///
 /// Equality is based exclusively on [id].
 class OperationalZone extends Equatable {
   final String id;
@@ -65,19 +55,12 @@ class OperationalZone extends Equatable {
   final String? address;
   final String? contractorId;
 
-  /// Optional grouping label matching a contractor/client name.
-  /// Null means the zone is not associated with any specific client.
-  ///
-  /// @deprecated Use [contractorId] instead. Will be dropped in Phase 8.
-  final String? contractorLabel;
-
-  /// Ownership scope derived from [contractorId] or [contractorLabel].
+  /// Ownership scope derived from [contractorId].
   ///
   /// [ZoneScope.global] when no contractor is associated;
   /// [ZoneScope.exclusive] when tied to a specific contractor.
-  ZoneScope get scope => (contractorId != null || contractorLabel != null)
-      ? ZoneScope.exclusive
-      : ZoneScope.global;
+  ZoneScope get scope =>
+      contractorId != null ? ZoneScope.exclusive : ZoneScope.global;
 
   /// Optional geofence. Null means "no geofence configured yet".
   /// Never defaults to 0.0/0.0 — that coordinate is geographically valid
@@ -91,7 +74,6 @@ class OperationalZone extends Equatable {
     required this.type,
     this.address,
     this.contractorId,
-    this.contractorLabel,
     this.geofence,
   });
 
@@ -104,7 +86,6 @@ class OperationalZone extends Equatable {
     required ZoneType type,
     String? address,
     String? contractorId,
-    String? contractorLabel,
     GeofenceConfiguration? geofence,
   }) {
     if (organizationId.isEmpty) {
@@ -124,9 +105,6 @@ class OperationalZone extends Equatable {
       type: type,
       address: address,
       contractorId: contractorId,
-      contractorLabel: contractorLabel?.trim().isEmpty ?? true
-          ? null
-          : contractorLabel?.trim(),
       geofence: geofence,
     );
   }
@@ -139,7 +117,6 @@ class OperationalZone extends Equatable {
     required ZoneType type,
     String? address,
     String? contractorId,
-    String? contractorLabel,
     GeofenceConfiguration? geofence,
   }) {
     return OperationalZone._(
@@ -149,7 +126,6 @@ class OperationalZone extends Equatable {
       type: type,
       address: address,
       contractorId: contractorId,
-      contractorLabel: contractorLabel,
       geofence: geofence,
     );
   }

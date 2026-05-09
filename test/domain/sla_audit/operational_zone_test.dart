@@ -31,13 +31,13 @@ void main() {
       expect(z1.id, isNot(equals(z2.id)));
     });
 
-    test('preserva campos incluindo contractorLabel', () {
+    test('preserva campos incluindo contractorId', () {
       final z = OperationalZone.create(
         organizationId: 'org-1',
         name: 'Portaria Sul',
         type: ZoneType.cliente,
         address: 'Av. Paulista, 1000',
-        contractorLabel: 'Empresa ABC',
+        contractorId: 'contractor-uuid-123',
         geofence: kGeofence,
       );
 
@@ -45,26 +45,8 @@ void main() {
       expect(z.name, 'Portaria Sul');
       expect(z.type, ZoneType.cliente);
       expect(z.address, 'Av. Paulista, 1000');
-      expect(z.contractorLabel, 'Empresa ABC');
+      expect(z.contractorId, 'contractor-uuid-123');
       expect(z.geofence, kGeofence);
-    });
-
-    test('trim e null de contractorLabel vazio', () {
-      final zEmpty = OperationalZone.create(
-        organizationId: 'org-1',
-        name: 'Zona',
-        type: ZoneType.apoio,
-        contractorLabel: '   ',
-      );
-      expect(zEmpty.contractorLabel, isNull);
-
-      final zNull = OperationalZone.create(
-        organizationId: 'org-1',
-        name: 'Zona',
-        type: ZoneType.apoio,
-        contractorLabel: null,
-      );
-      expect(zNull.contractorLabel, isNull);
     });
 
     test('lança DomainException se name vazio', () {
@@ -177,7 +159,7 @@ void main() {
   // ── ZoneScope getter ──────────────────────────────────────
 
   group('ZoneScope getter', () {
-    test('zona sem contractorLabel tem scope global', () {
+    test('zona sem contractorId tem scope global', () {
       final z = OperationalZone.create(
         organizationId: 'org-1',
         name: 'Garagem Central',
@@ -186,25 +168,14 @@ void main() {
       expect(z.scope, ZoneScope.global);
     });
 
-    test('zona com contractorLabel tem scope exclusive', () {
+    test('zona com contractorId tem scope exclusive', () {
       final z = OperationalZone.create(
         organizationId: 'org-1',
         name: 'Portaria ACME',
         type: ZoneType.cliente,
-        contractorLabel: 'ACME Corp',
+        contractorId: 'contractor-uuid-abc',
       );
       expect(z.scope, ZoneScope.exclusive);
-    });
-
-    test('contractorLabel vazio (normalizado para null) → scope global', () {
-      final z = OperationalZone.create(
-        organizationId: 'org-1',
-        name: 'Zona',
-        type: ZoneType.apoio,
-        contractorLabel: '   ',
-      );
-      expect(z.contractorLabel, isNull);
-      expect(z.scope, ZoneScope.global);
     });
   });
 

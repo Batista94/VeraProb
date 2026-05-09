@@ -8,7 +8,6 @@ import 'package:veraprob/domain/sla_audit/geocoding_repository.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/_zone_form_dialog.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 
 // ── Fixtures ─────────────────────────────────────────────────
@@ -57,7 +56,6 @@ class _FakeGeocodingRepository implements GeocodingRepository {
 Widget _buildHost({
   OperationalZoneView? existingZone,
   _FakeGeocodingRepository? geocodingRepo,
-  List<String> contractorNames = const [],
   String? orgId = _kOrgId,
   InMemoryOperationalZoneRepository? zoneRepo,
 }) {
@@ -68,7 +66,6 @@ Widget _buildHost({
     overrides: [
       currentOrganizationIdProvider.overrideWithValue(orgId),
       operationalZoneRepositoryProvider.overrideWithValue(repo),
-      contractorNamesProvider.overrideWith((_) async => contractorNames),
       geocodingRepositoryProvider.overrideWithValue(geoRepo),
     ],
     child: MaterialApp(
@@ -288,9 +285,8 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      // Address field — find by hint text area (index 2 or by partial text)
-      // Address field is the 3rd TextField (0=Nome, 1=Contractor, 2=Endereço)
-      final addressField = find.byType(TextField).at(2);
+      // Address field — 2nd TextField (0=Nome, 1=Endereço)
+      final addressField = find.byType(TextField).at(1);
       await tester.ensureVisible(addressField);
       await tester.enterText(addressField, 'Av');
       await tester.pump(const Duration(milliseconds: 600));
@@ -310,7 +306,7 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      final addressField = find.byType(TextField).at(2);
+      final addressField = find.byType(TextField).at(1);
       await tester.ensureVisible(addressField);
       await tester.enterText(addressField, 'Avenida Paulista');
 
@@ -333,7 +329,7 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      final addressField = find.byType(TextField).at(2);
+      final addressField = find.byType(TextField).at(1);
       await tester.ensureVisible(addressField);
       await tester.enterText(addressField, 'Avenida Paulista');
       await tester.pump(const Duration(milliseconds: 600));
@@ -360,7 +356,7 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      final addressField = find.byType(TextField).at(2);
+      final addressField = find.byType(TextField).at(1);
       await tester.ensureVisible(addressField);
       await tester.enterText(addressField, 'Avenida Paulista');
       await tester.pump(const Duration(milliseconds: 600));
@@ -376,36 +372,9 @@ void main() {
     });
   });
 
-  // ── 4. Isolation INV-1 — Contractor list filtrado por orgId ──
+  // ── 4. Isolation INV-1 — org session guard ───────────────────
 
-  group('4. Isolation INV-1 — contractor list scoped to org', () {
-    testWidgets('contractor options vêm do provider com orgId correto', (
-      tester,
-    ) async {
-      _setScreenSize(tester);
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(
-        _buildHost(contractorNames: ['ACME Corp', 'Beta Ltda']),
-      );
-      await tester.pumpAndSettle();
-      await _openDialog(tester);
-
-      // Contractor field is the 2nd TextField — focus then type to trigger Autocomplete overlay
-      final contractorField = find.byType(TextField).at(1);
-      await tester.ensureVisible(contractorField);
-      await tester.tap(contractorField);
-      await tester.pump();
-      await tester.enterText(contractorField, 'a');
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-
-      // Autocomplete options should show org-scoped contractors matching 'a'
-      expect(find.text('ACME Corp'), findsOneWidget);
-      expect(find.text('Beta Ltda'), findsOneWidget);
-    });
-
+  group('4. Isolation INV-1 — session guard', () {
     testWidgets('orgId null → erro ao submeter (sessão expirada)', (
       tester,
     ) async {
@@ -426,31 +395,6 @@ void main() {
         find.text('Sessão expirada. Faça login novamente.'),
         findsOneWidget,
       );
-    });
-
-    testWidgets('dados de outro org não aparecem no autocomplete', (
-      tester,
-    ) async {
-      _setScreenSize(tester);
-      addTearDown(tester.view.resetPhysicalSize);
-
-      // org-001 only sees its own contractors
-      await tester.pumpWidget(_buildHost(contractorNames: ['ACME Corp']));
-      await tester.pumpAndSettle();
-      await _openDialog(tester);
-
-      final contractorField = find.byType(TextField).at(1);
-      await tester.ensureVisible(contractorField);
-      await tester.tap(contractorField);
-      await tester.pump();
-      await tester.enterText(contractorField, 'a');
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.text('ACME Corp'), findsOneWidget);
-      // Competitor data from other org absent
-      expect(find.text('Org-B Contractor'), findsNothing);
     });
   });
 
@@ -569,7 +513,7 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      final addressField = find.byType(TextField).at(2);
+      final addressField = find.byType(TextField).at(1);
       await tester.ensureVisible(addressField);
       await tester.enterText(addressField, 'Rua Augusta São Paulo');
       await tester.pump(const Duration(milliseconds: 600));
@@ -612,7 +556,7 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      final addressField = find.byType(TextField).at(2);
+      final addressField = find.byType(TextField).at(1);
       await tester.ensureVisible(addressField);
 
       // First selection
@@ -653,7 +597,7 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      final addressField = find.byType(TextField).at(2);
+      final addressField = find.byType(TextField).at(1);
       await tester.ensureVisible(addressField);
       await tester.enterText(addressField, 'Rua Augusta');
       await tester.pump(const Duration(milliseconds: 600));

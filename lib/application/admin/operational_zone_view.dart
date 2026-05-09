@@ -8,12 +8,10 @@ class OperationalZoneView {
   final ZoneType type;
   final String? address;
   final String? contractorId;
-  final String? contractorLabel;
   final GeofenceView? geofence;
 
-  ZoneScope get scope => (contractorId != null || contractorLabel != null)
-      ? ZoneScope.exclusive
-      : ZoneScope.global;
+  ZoneScope get scope =>
+      contractorId != null ? ZoneScope.exclusive : ZoneScope.global;
 
   const OperationalZoneView({
     required this.id,
@@ -22,7 +20,6 @@ class OperationalZoneView {
     required this.type,
     this.address,
     this.contractorId,
-    this.contractorLabel,
     this.geofence,
   });
 
@@ -34,7 +31,6 @@ class OperationalZoneView {
       type: domain.type,
       address: domain.address,
       contractorId: domain.contractorId,
-      contractorLabel: domain.contractorLabel,
       geofence: domain.geofence != null
           ? GeofenceView.fromDomain(domain.geofence!)
           : null,
@@ -49,7 +45,6 @@ class OperationalZoneView {
       type: type,
       address: address,
       contractorId: contractorId,
-      contractorLabel: contractorLabel,
       geofence: geofence?.toDomain(),
     );
   }

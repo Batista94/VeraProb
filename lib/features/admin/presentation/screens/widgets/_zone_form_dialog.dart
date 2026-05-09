@@ -11,7 +11,6 @@ import 'package:uuid/uuid.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/zone_ui_utils.dart';
 
@@ -39,7 +38,6 @@ class _ZoneFormDialog extends ConsumerStatefulWidget {
 class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _contractorLabelController = TextEditingController();
   final _addressController = TextEditingController();
   final _radiusController = TextEditingController(text: '200');
   final _mapController = MapController();
@@ -72,7 +70,6 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
     final zone = widget.existingZone;
     if (zone != null) {
       _nameController.text = zone.name;
-      _contractorLabelController.text = zone.contractorLabel ?? '';
       _addressController.text = zone.address ?? '';
       _selectedType = zone.type;
       if (zone.geofence != null) {
@@ -86,7 +83,6 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
   @override
   void dispose() {
     _nameController.dispose();
-    _contractorLabelController.dispose();
     _addressController.dispose();
     _radiusController.dispose();
     _nameFocus.dispose();
@@ -179,10 +175,6 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
         );
       }
 
-      final contractorLabel = _contractorLabelController.text.trim().isEmpty
-          ? null
-          : _contractorLabelController.text.trim();
-
       final OperationalZoneView zone;
       if (widget.existingZone != null) {
         // EDIT: use existing ID
@@ -194,7 +186,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           address: _addressController.text.trim().isEmpty
               ? null
               : _addressController.text.trim(),
-          contractorLabel: contractorLabel,
+          contractorId: widget.existingZone!.contractorId,
           geofence: geofence,
         );
       } else {
@@ -207,7 +199,6 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           address: _addressController.text.trim().isEmpty
               ? null
               : _addressController.text.trim(),
-          contractorLabel: contractorLabel,
           geofence: geofence,
         );
       }
@@ -339,47 +330,6 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
               (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
           autofocus: widget.existingZone == null,
           onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-        ),
-        const SizedBox(height: 16),
-
-        // ── Contratante / Cliente ──────────────────────────
-        Builder(
-          builder: (context) {
-            final options =
-                ref.watch(contractorNamesProvider).value ?? const <String>[];
-            return Autocomplete<String>(
-              initialValue: TextEditingValue(
-                text: _contractorLabelController.text,
-              ),
-              optionsBuilder: (v) {
-                if (v.text.isEmpty) return options;
-                final lower = v.text.toLowerCase();
-                return options.where((n) => n.toLowerCase().contains(lower));
-              },
-              displayStringForOption: (o) => o,
-              fieldViewBuilder: (ctx, ctrl, fn, onSubmitted) {
-                ctrl.addListener(
-                  () => _contractorLabelController.text = ctrl.text,
-                );
-                return TextFormField(
-                  controller: ctrl,
-                  focusNode: fn,
-                  decoration: const InputDecoration(
-                    labelText: 'Contratante / Cliente (opcional)',
-                    hintText: 'Ex: Empresa ABC',
-                    helperText:
-                        'Agrupa esta zona no Wizard de Plano para o contratante informado.',
-                  ),
-                  onFieldSubmitted: (_) =>
-                      FocusScope.of(context).requestFocus(_addressFocus),
-                );
-              },
-              onSelected: (v) {
-                _contractorLabelController.text = v;
-                setState(() {});
-              },
-            );
-          },
         ),
         const SizedBox(height: 16),
 

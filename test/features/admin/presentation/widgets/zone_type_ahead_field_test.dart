@@ -13,7 +13,7 @@ const _kOrgId = 'org-test';
 
 OperationalZoneView _makeZone(
   String name, {
-  String? contractorLabel,
+  String? contractorId,
   GeofenceView? geofence,
   ZoneType type = ZoneType.garagem,
 }) => OperationalZoneView(
@@ -21,7 +21,7 @@ OperationalZoneView _makeZone(
   organizationId: _kOrgId,
   name: name,
   type: type,
-  contractorLabel: contractorLabel,
+  contractorId: contractorId,
   geofence: geofence,
 );
 
@@ -36,7 +36,6 @@ const _kGeo = GeofenceView(
 Widget _buildTestWidget({
   required List<OperationalZoneView> zones,
   OperationalZoneView? selectedZone,
-  String contractorName = '',
   ValueChanged<OperationalZoneView?>? onChanged,
   ValueChanged<OperationalZoneView>? onGeofenceConfigured,
 }) {
@@ -54,7 +53,6 @@ Widget _buildTestWidget({
               prefixIcon: Icons.business,
               zones: zones,
               selectedZone: selectedZone,
-              contractorName: contractorName,
               onInvalidateZones: () async =>
                   ref.invalidate(operationalZonesProvider),
               onChanged: onChanged ?? (_) {},
@@ -79,72 +77,48 @@ void main() {
       _makeZone('Apoio Leste'),
     ];
 
-    test('query vazia retorna todas as zonas sem label', () {
-      final result = filterZones(zones, '', 'qualquer');
+    test('query vazia retorna todas as zonas', () {
+      final result = filterZones(zones, '');
       expect(result, equals(zones));
     });
 
     test('filtra por substring case-insensitive (minúscula)', () {
-      final result = filterZones(zones, 'gar', '');
+      final result = filterZones(zones, 'gar');
       expect(result.length, 1);
       expect(result.first.name, 'Garagem Central');
     });
 
     test('filtra por substring case-insensitive (maiúscula)', () {
-      final result = filterZones(zones, 'SUL', '');
+      final result = filterZones(zones, 'SUL');
       expect(result.length, 1);
       expect(result.first.name, 'Portaria Sul');
     });
 
     test('sem match retorna lista vazia', () {
-      final result = filterZones(zones, 'xxxyyy', '');
+      final result = filterZones(zones, 'xxxyyy');
       expect(result, isEmpty);
     });
 
     test('preserva a ordem do input (sort é responsabilidade do pai)', () {
-      final result = filterZones(zones, 'a', '');
+      final result = filterZones(zones, 'a');
       expect(
         result.map((z) => z.name).toList(),
         containsAllInOrder(['Garagem Central', 'Portaria Sul', 'Apoio Leste']),
       );
     });
 
-    test(
-      'ZoneScope.global (sem contractorLabel) é visível para qualquer contratante',
-      () {
-        final shared = _makeZone('Zona Compartilhada');
-        expect(shared.scope, ZoneScope.global);
-        final result = filterZones([shared], '', 'ACME');
-        expect(result, contains(shared));
-      },
-    );
-
-    test('ZoneScope.exclusive de outro contratante é excluída', () {
-      final zoneAcme = _makeZone('Garagem ACME', contractorLabel: 'ACME Corp');
-      final zoneOther = _makeZone(
-        'Portaria Beta',
-        contractorLabel: 'Beta Ltda',
-      );
-      expect(zoneAcme.scope, ZoneScope.exclusive);
-      expect(zoneOther.scope, ZoneScope.exclusive);
-      final result = filterZones([zoneAcme, zoneOther], '', 'ACME Corp');
-      expect(result.map((z) => z.name), contains('Garagem ACME'));
-      expect(result.map((z) => z.name), isNot(contains('Portaria Beta')));
+    test('zona global (sem contractorId) é visível', () {
+      final shared = _makeZone('Zona Compartilhada');
+      expect(shared.scope, ZoneScope.global);
+      final result = filterZones([shared], '');
+      expect(result, contains(shared));
     });
 
-    test('ZoneScope.exclusive do contratante correto é incluída', () {
-      final zone = _makeZone('Garagem ACME', contractorLabel: 'ACME Corp');
+    test('zona exclusive (com contractorId) é incluída na lista completa', () {
+      final zone = _makeZone('Garagem ACME', contractorId: 'contractor-uuid');
       expect(zone.scope, ZoneScope.exclusive);
-      final result = filterZones([zone], '', 'ACME Corp');
+      final result = filterZones([zone], '');
       expect(result, contains(zone));
-    });
-
-    test('filtro de contratante + substring name combinados', () {
-      final z1 = _makeZone('Portaria ACME', contractorLabel: 'ACME Corp');
-      final z2 = _makeZone('Portaria Beta', contractorLabel: 'Beta Ltda');
-      final result = filterZones([z1, z2], 'portaria', 'ACME Corp');
-      expect(result.length, 1);
-      expect(result.first.name, 'Portaria ACME');
     });
   });
 
@@ -235,24 +209,6 @@ void main() {
       },
     );
 
-    testWidgets(
-      'zona com contractorLabel igual a contractorName exibe badge no overlay',
-      (tester) async {
-        final zone = _makeZone('Frota ACME', contractorLabel: 'ACME Corp');
-
-        await tester.pumpWidget(
-          _buildTestWidget(zones: [zone], contractorName: 'ACME Corp'),
-        );
-
-        await tester.tap(find.byType(TextFormField));
-        await tester.pump();
-        await tester.enterText(find.byType(TextFormField), 'ACME');
-        await tester.pump();
-
-        expect(find.text('Seu contratante'), findsOneWidget);
-      },
-    );
-
     testWidgets('selecionar zona existente chama onChanged', (tester) async {
       final zone = _makeZone('Portaria Norte', geofence: _kGeo);
       OperationalZoneView? selected;
@@ -273,36 +229,6 @@ void main() {
       expect(selected!.name, 'Portaria Norte');
     });
 
-    testWidgets('zona de outro contratante não aparece no overlay', (
-      tester,
-    ) async {
-      final zoneAcme = _makeZone(
-        'Garagem ACME',
-        contractorLabel: 'ACME Corp',
-        geofence: _kGeo,
-      );
-      final zoneBeta = _makeZone(
-        'Portaria Beta',
-        contractorLabel: 'Beta Ltda',
-        geofence: _kGeo,
-      );
-
-      await tester.pumpWidget(
-        _buildTestWidget(
-          zones: [zoneAcme, zoneBeta],
-          contractorName: 'ACME Corp',
-        ),
-      );
-
-      await tester.tap(find.byType(TextFormField));
-      await tester.pump();
-      await tester.enterText(find.byType(TextFormField), 'a');
-      await tester.pump();
-
-      expect(find.text('Garagem ACME'), findsOneWidget);
-      expect(find.text('Portaria Beta'), findsNothing);
-    });
-
     testWidgets(
       'exibe botão de limpar (X) quando zona está selecionada e limpa ao clicar',
       (tester) async {
@@ -317,17 +243,13 @@ void main() {
           ),
         );
 
-        // Verifica se o ícone de limpar está presente
         expect(find.byIcon(Icons.clear), findsOneWidget);
 
-        // Clica no botão de limpar
         await tester.tap(find.byIcon(Icons.clear));
         await tester.pump();
 
-        // Verifica se onChanged foi chamado com null
         expect(selected, isNull);
 
-        // Verifica se o texto do controller foi limpo (implicitamente pelo pump se o controller for re-renderizado ou se verificarmos o TextField)
         final textField = tester.widget<TextField>(find.byType(TextField));
         expect(textField.controller?.text, isEmpty);
       },
