@@ -123,7 +123,8 @@
       "WebFetch(domain:pub.dev)",
       "Bash(git -C . show HEAD:pubspec.lock)",
       "Bash(Remove-Item \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\lib\\\\application\\\\sla_audit\\\\justification\\\\evidence_cleanup_service.dart\" -Force)",
-      "Bash(Write-Output \"Deleted\")"
+      "Bash(Write-Output \"Deleted\")",
+      "Bash(Select-String -Pattern \"\\(All tests|Some tests|FAILED|passed|failed\\)\")"
     ]
   },
   "enabledMcpjsonServers": [
