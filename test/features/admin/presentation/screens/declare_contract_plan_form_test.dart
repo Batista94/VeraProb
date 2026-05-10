@@ -595,4 +595,178 @@ void main() {
       expect(find.text('Continuar'), findsAtLeastNWidgets(1));
     });
   });
+
+  // ── Group 11: Audit Gate — geofence blocker (INV-33) ─────────────────────
+  group('Audit Gate — geofence blocker (INV-33)', () {
+    testWidgets(
+      'BLOQUEIO DE AUDITORIA shown when destination zone lacks geofence',
+      (tester) async {
+        tester.view.physicalSize = const Size(600, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(_buildForm(zones: _allZones));
+        await tester.pumpAndSettle();
+
+        // Select origin zone (has geofence) — key starts as 'origin_null'
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const ValueKey('origin_null')),
+            matching: find.byType(TextFormField),
+          ),
+          'Garagem',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Garagem Central'));
+        await tester.pumpAndSettle();
+
+        // Select destination zone WITHOUT geofence — key still 'destination_null'
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const ValueKey('destination_null')),
+            matching: find.byType(TextFormField),
+          ),
+          'Sem',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Zona Sem Geofence'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Continuar').first);
+        await tester.pump();
+
+        expect(find.textContaining('BLOQUEIO DE AUDITORIA'), findsOneWidget);
+      },
+    );
+  });
+
+  // ── Group 12: Idempotency — onFormChanged on zone selection (INV-33) ──────
+  group('Idempotency — onFormChanged on zone selection (INV-33)', () {
+    testWidgets(
+      'formChangedCallCount increments when origin zone is selected',
+      (tester) async {
+        tester.view.physicalSize = const Size(600, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final notifier = _StubCommandNotifier(_contractId);
+        await tester.pumpWidget(
+          _buildForm(zones: _allZones, notifier: notifier),
+        );
+        await tester.pumpAndSettle();
+
+        expect(notifier.formChangedCallCount, 0);
+
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const ValueKey('origin_null')),
+            matching: find.byType(TextFormField),
+          ),
+          'Garagem',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Garagem Central'));
+        await tester.pumpAndSettle();
+
+        expect(notifier.formChangedCallCount, greaterThan(0));
+      },
+    );
+  });
+
+  // ── Group 13: Dialog barrier — barrierDismissible: false ─────────────────
+  group('Dialog — barrierDismissible: false', () {
+    testWidgets('dialog stays open when barrier area tapped outside form', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(600, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _baseOverrides(zones: _allZones),
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showDialog<bool>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const DeclareContractPlanForm(
+                      contractId: _contractId,
+                      contractName: _contractName,
+                      contractorName: _contractorName,
+                    ),
+                  ),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DeclareContractPlanForm), findsOneWidget);
+
+      // Tap at barrier area (top-left corner, outside the centered dialog)
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DeclareContractPlanForm), findsOneWidget);
+    });
+  });
+
+  // ── Group 14: Origin == Destination guard ─────────────────────────────────
+  group('Zone validation — origin ≠ destination guard', () {
+    testWidgets(
+      'shows devem ser diferentes when same zone selected for both fields',
+      (tester) async {
+        tester.view.physicalSize = const Size(600, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(_buildForm(zones: _allZones));
+        await tester.pumpAndSettle();
+
+        // Select origin as 'Garagem Central'
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const ValueKey('origin_null')),
+            matching: find.byType(TextFormField),
+          ),
+          'Garagem',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Garagem Central'));
+        await tester.pumpAndSettle();
+
+        // Select SAME zone for destination — key still 'destination_null'
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const ValueKey('destination_null')),
+            matching: find.byType(TextFormField),
+          ),
+          'Garagem',
+        );
+        await tester.pumpAndSettle();
+        // Origin field shows 'Garagem Central'; dropdown also shows it.
+        // Target the ListTile in the dropdown specifically.
+        await tester.tap(
+          find.ancestor(
+            of: find.text('Garagem Central'),
+            matching: find.byType(ListTile),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Continuar').first);
+        await tester.pump();
+
+        expect(find.textContaining('devem ser diferentes'), findsOneWidget);
+      },
+    );
+  });
 }
