@@ -54,14 +54,28 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
     // Search filter
     final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
+      final normalizedQuery = _normalize(query);
       filtered = filtered.where((t) {
-        return t.name.toLowerCase().contains(query) ||
-            (t.legalName?.toLowerCase().contains(query) ?? false) ||
-            t.id.toLowerCase().contains(query);
+        return _normalize(t.name).contains(normalizedQuery) ||
+            (t.legalName != null &&
+                _normalize(t.legalName!).contains(normalizedQuery)) ||
+            _normalize(t.id).contains(normalizedQuery);
       }).toList();
     }
 
     return filtered;
+  }
+
+  String _normalize(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll(RegExp(r'[àáâãäå]'), 'a')
+        .replaceAll(RegExp(r'[èéêë]'), 'e')
+        .replaceAll(RegExp(r'[ìíîï]'), 'i')
+        .replaceAll(RegExp(r'[òóôõö]'), 'o')
+        .replaceAll(RegExp(r'[ùúûü]'), 'u')
+        .replaceAll(RegExp(r'[ç]'), 'c')
+        .replaceAll(RegExp(r'[ñ]'), 'n');
   }
 
   @override

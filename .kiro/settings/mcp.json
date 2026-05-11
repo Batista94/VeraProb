@@ -79,7 +79,9 @@
         "create_entities",
         "add_observations",
         "search_nodes",
-        "search_nodes"
+        "search_nodes",
+        "read_graph",
+        "create_relations"
       ]
     },
     "sequential-thinking": {
