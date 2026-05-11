@@ -83,6 +83,10 @@ class _ActorBadge extends StatelessWidget {
         icon = Icons.visibility_outlined;
         color = VeraProbColors.error;
         label = 'Impersonation';
+      case 'UNKNOWN':
+        icon = Icons.help_outline;
+        color = VeraProbColors.warning;
+        label = 'Desconhecido';
       case 'HUMAN':
       default:
         icon = Icons.admin_panel_settings_outlined;
@@ -90,37 +94,43 @@ class _ActorBadge extends StatelessWidget {
         label = 'Administrador';
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: color,
-          ),
-        ),
-        if (source != null) ...[
-          const SizedBox(width: 4),
+    final semanticLabel = source != null
+        ? 'Ator: $label ($source)'
+        : 'Ator: $label';
+
+    return Semantics(
+      label: semanticLabel,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
           Text(
-            '($source)',
-            style: const TextStyle(
-              fontSize: 11,
-              color: VeraProbColors.textDisabled,
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
           ),
+          if (source != null) ...[
+            const SizedBox(width: 4),
+            Text(
+              '($source)',
+              style: const TextStyle(
+                fontSize: 11,
+                color: VeraProbColors.textDisabled,
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
   String _inferType(String? source) {
-    if (source == 'system' || source == 'edge_function' || source == null) {
-      return 'SYSTEM';
-    }
+    if (source == 'system' || source == 'edge_function') return 'SYSTEM';
+    if (source == null) return 'UNKNOWN';
     return 'HUMAN';
   }
 }
