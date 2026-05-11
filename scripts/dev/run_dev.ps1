@@ -27,7 +27,8 @@ try {
         $supabaseRunning = $true
         Write-Host "  → Supabase já está rodando. Pulando 'supabase start'." -ForegroundColor DarkGreen
     }
-} catch { }
+}
+catch { }
 
 if (-not $supabaseRunning) {
     Write-Host "  → Iniciando Supabase..." -ForegroundColor Green
@@ -74,11 +75,10 @@ if ($needsPubGet) {
 }
 
 # 7. Servir portal — HTML renderer para boot rápido (validação de UI)
-Write-Host "RUN: Servindo portal em http://localhost:50185..." -ForegroundColor Cyan
-Write-Host "     (web-renderer html = boot rápido para validação)" -ForegroundColor DarkGray
-flutter run -d web-server `
+Write-Host "RUN: Abrindo portal no Chrome em http://localhost:50185..." -ForegroundColor Cyan
+Write-Host "     (usando renderer padrão - CanvasKit/Wasm)" -ForegroundColor DarkGray
+flutter run -d chrome `
     --web-port=50185 `
-    --web-renderer html `
     --dart-define=SKIP_MFA_DEV=true
 
 # Cleanup ao encerrar

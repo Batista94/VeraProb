@@ -274,7 +274,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 * **Cenário Esperado:**
   * O texto deve ser truncado com reticências (...) ou quebrar linha graciosamente sem empurrar outros elementos da UI para fora da tela.
 
-#### CT31: Imutabilidade de Identidade Core (INV-1)
+#### CT17: Imutabilidade de Identidade Core (INV-1)
 
 * **Objetivo:** Garantir que campos críticos de roteamento e compliance não sejam alterados após a criação.
 * **Passos:**
@@ -288,7 +288,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 
 ### 🛠️ Grupo 6: Funcionalidades de Apoio (UX & Integração)
 
-#### CT17: Autofill de CNPJ via API Externa (ReceitaWS)
+#### CT18: Autofill de CNPJ via API Externa (ReceitaWS)
 
 * **Objetivo:** Validar o preenchimento automático de dados cadastrais a partir do CNPJ.
 * **Pré-condições:** SuperAdmin no Passo 1 do Wizard de Criação.
@@ -302,7 +302,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * O preenchimento não deve sobrescrever dados caso o usuário já tenha digitado algo manualmente.
   * Em caso de erro de conexão (CORS/Timeout), o sistema deve permitir o preenchimento manual sem travar.
 
-#### CT18: Validação Dinâmica com Debounce (Unicidade e Algoritmo)
+#### CT19: Validação Dinâmica com Debounce (Unicidade e Algoritmo)
 
 * **Objetivo:** Garantir que a validação ocorra durante a digitação para feedback imediato.
 * **Passos:**
@@ -313,7 +313,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * Mensagem "CNPJ já cadastrado no sistema" aparece via debounce, sem necessidade de clicar em "Próximo".
   * O botão "Próximo" deve ser desabilitado enquanto a verificação está em curso ou se houver erro.
 
-#### CT19: Revelação de Segredo HMAC (Exibição Única - INV-28)
+#### CT20: Revelação de Segredo HMAC (Exibição Única - INV-28)
 
 * **Objetivo:** Garantir a segurança da chave de API da organização.
 * **Pré-condições:** Finalizar o CT01 ou CT02 (Sucesso no cadastro).
@@ -329,7 +329,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 
 ### 📑 Grupo 7: Abas Internas de Detalhes (Tenant Detail Tabs)
 
-#### CT20: Aba de Métricas - Visibilidade de Saúde da Operação
+#### CT21: Aba de Métricas - Visibilidade de Saúde da Operação
 
 * **Objetivo:** Validar se os indicadores de saúde do tenant estão sendo exibidos corretamente.
 * **Passos:**
@@ -342,7 +342,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * Se houver alertas críticos, o valor deve estar em **vermelho**.
   * Se não houver telemetria, deve exibir **"Nunca"** em cinza.
 
-#### CT21: Aba de Segurança - Gestão de Chaves de API
+#### CT22: Aba de Segurança - Gestão de Chaves de API
 
 * **Objetivo:** Validar o acesso a configurações de segurança e segredos do tenant.
 * **Passos:**
@@ -353,7 +353,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * Acesso restrito (apenas SuperAdmin deve conseguir visualizar esta aba).
   * Possibilidade de rotacionar ou revogar segredos (se implementado no card).
 
-#### CT22: Aba de Auditoria - Rastreabilidade Forense (INV-34)
+#### CT23: Aba de Auditoria - Rastreabilidade Forense (INV-34)
 
 * **Objetivo:** Validar o log de eventos específico da organização selecionada.
 * **Passos:**
@@ -367,7 +367,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * Se a justificativa preenchida em outros passos (ex: CT10 ou CT12) aparece corretamente aqui.
   * Diferenciação visual por severidade (Info, Warning, Critical).
 
-#### CT32: Aba de Saúde Técnica (Health Check do Tenant)
+#### CT24: Aba de Saúde Técnica (Health Check do Tenant)
 
 * **Objetivo:** Validar o status de integridade técnica do schema e replicação da organização.
 * **Passos:**
@@ -381,7 +381,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 
 ### 🛡️ Grupo 8: Integridade e Cascatas de Banco de Dados
 
-#### CT23: Limpeza de Sessões de Impersonation
+#### CT25: Limpeza de Sessões de Impersonation
 
 * **Objetivo:** Garantir que sessões administrativas de "impersonation" sejam encerradas ao arquivar uma organização.
 * **Passos:**
@@ -391,7 +391,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * A sessão de impersonação deve ser invalidada imediatamente no banco de dados (`impersonation_sessions`).
   * O acesso via proxy deve retornar 403/401 após o arquivamento.
 
-#### CT24: Bloqueio de Usuários em Cascata (Invariante 4)
+#### CT26: Bloqueio de Usuários em Cascata (Invariante 4)
 
 * **Objetivo:** Validar o banimento automático de todos os membros de uma organização arquivada.
 * **Passos:**
@@ -401,7 +401,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * **Todos** os usuários vinculados (admin-a, admin-b e admin-c) devem ter `banned_until = 'infinity'`.
   * Ao tentar login com qualquer um dos três, o Supabase Auth deve rejeitar a autenticação.
 
-#### CT25: Sanitização e Encoding de Caracteres (Bug BUG-001)
+#### CT27: Sanitização e Encoding de Caracteres (Bug BUG-001)
 
 * **Objetivo:** Validar a estabilidade da UI e do DB com caracteres especiais brasileiros.
 * **Passos:**
@@ -414,7 +414,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 
 ### 🏥 Grupo 9: Sanity & UAT (Jornada Completa)
 
-#### CT26: Health Check e Navegação Global
+#### CT28: Health Check e Navegação Global
 
 * **Objetivo:** Garantir que as rotas principais do SuperAdmin estão operacionais.
 * **Passos:**
@@ -423,7 +423,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 * **Cenário Esperado:**
   * Navegação fluida sem telas de erro (Red Screens) ou erros 500 no console.
 
-#### CT27: Listagem e Filtros de Tenants
+#### CT29: Listagem e Filtros de Tenants
 
 * **Objetivo:** Validar a leitura e filtragem da base de dados.
 * **Passos:**
@@ -432,7 +432,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 * **Cenário Esperado:**
   * O grid deve atualizar instantaneamente ao mudar o filtro.
 
-#### CT28: Jornada de Onboarding de Novo Cliente (UAT)
+#### CT30: Jornada de Onboarding de Novo Cliente (UAT)
 
 * **Objetivo:** Validar o fluxo completo de entrada de uma nova empresa.
 * **Passos:**
@@ -450,7 +450,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 > [!IMPORTANT]
 > **Nota de Ambiente:** Os testes de MFA são desabilitados por padrão em desenvolvimento via flag `SKIP_MFA_DEV=true`. Para executar o CT30, é necessário reiniciar o ambiente sem esta flag.
 
-#### CT29: Auditoria Global de Sistema (Audit Log Geral)
+#### CT31: Auditoria Global de Sistema (Audit Log Geral)
 
 * **Objetivo:** Validar o log consolidado de governança de todas as organizações (visão macro).
 * **Pré-condições:** SuperAdmin logado.
@@ -461,7 +461,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * Devem aparecer eventos de **múltiplos tenants** (ex: criação da Org A e arquivamento da Org B).
   * A coluna de TenantID/Organização deve estar preenchida corretamente para cada linha.
 
-#### CT30: Fluxo de MFA - Desafio, Verificação e Lockout (INV-32)
+#### CT32: Fluxo de MFA - Desafio, Verificação e Lockout (INV-32)
 
 * **Objetivo:** Validar a barreira de segurança obrigatória para acesso ao portal.
 * **Pré-condições:** App iniciado **sem** a flag de bypass de MFA.
@@ -510,3 +510,80 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * A interface deve exibir apenas os módulos contratados (ex: Frota, Operação, Configurações locais).
 
 ---
+
+### 🛡️ Grupo 12: Segurança de Sessão e Enrollment Avançado
+
+#### CT36: Configuração de MFA - Fase 1 (QR Code e Segredo)
+
+* **Objetivo:** Validar a exibição inicial dos segredos para enrollment de MFA.
+* **Passos:**
+  1. Acessar a tela de configuração de MFA (`MfaEnrollmentScreen`).
+* **Cenário Esperado:**
+  * QR Code visível e escaneável.
+  * Segredo manual visível com botão de cópia funcional.
+
+#### CT37: Configuração de MFA - Fase 2 (Validação de Código)
+
+* **Objetivo:** Garantir que o enrollment só complete após confirmação de um código válido.
+* **Passos:**
+  1. No enrollment, digitar um código de 6 dígitos inválido.
+  2. Digitar o código correto gerado pelo app autenticador.
+* **Cenário Esperado:**
+  * Código inválido exibe erro e impede o avanço.
+  * Código correto avança para a fase de códigos de recuperação.
+
+#### CT38: Configuração de MFA - Fase 3 (Códigos de Recuperação)
+
+* **Objetivo:** Forçar o salvamento dos códigos de recuperação.
+* **Passos:**
+  1. Na tela de códigos de recuperação, tentar clicar em "CONTINUAR" sem marcar o checkbox.
+  2. Marcar o checkbox e clicar em "CONTINUAR".
+* **Cenário Esperado:**
+  * Botão "CONTINUAR" desabilitado até o acknowledge.
+  * Redirecionamento correto após confirmação.
+
+#### CT39: Aviso de Inatividade (Session Timeout Warning)
+
+* **Objetivo:** Alertar o SuperAdmin antes do encerramento automático por ociosidade.
+* **Passos:**
+  1. Permanecer logado no SuperAdmin sem interagir (mouse/teclado) por 5 minutos.
+* **Cenário Esperado:**
+  * Exibição do modal "Aviso de Inatividade".
+  * Opção "Continuar Logado" reseta os timers.
+
+#### CT40: Logout Forçado por Ociosidade
+
+* **Objetivo:** Garantir o encerramento da sessão após o tempo limite de segurança.
+* **Passos:**
+  1. Ignorar o aviso de inatividade por mais 2 minutos (total de 7 minutos).
+* **Cenário Esperado:**
+  * O sistema executa `signOut()` automaticamente.
+  * Redirecionamento para a tela de `LockScreen`.
+
+#### CT41: Auditoria de Alterações - Diff View (Visualização de Mudança)
+
+* **Objetivo:** Validar a clareza na comparação de estados (antigo vs novo).
+* **Passos:**
+  1. No log de auditoria, abrir o detalhe de uma alteração de configuração.
+* **Cenário Esperado:**
+  * O widget `AuditPayloadDiffView` deve destacar claramente quais campos foram alterados.
+  * Exibição legível de valores JSON.
+
+#### CT42: Banner de Impersonação - Interação e Revogação
+
+* **Objetivo:** Validar a funcionalidade e o feedback visual durante o uso de proxy de usuário.
+* **Passos:**
+  1. Iniciar impersonação de um usuário.
+  2. Observar o banner no topo.
+  3. Clicar em "Encerrar Sessão" no banner.
+* **Cenário Esperado:**
+  * Banner visível com contagem regressiva de expiração.
+  * Encerramento imediato da sessão e retorno ao perfil SuperAdmin.
+
+#### CT43: Alerta de MFA Desabilitado (Security Banner)
+
+* **Objetivo:** Alertar sobre a vulnerabilidade de conta sem MFA ativo.
+* **Passos:**
+  1. Acessar o SuperAdmin com uma conta que não possui MFA configurado.
+* **Cenário Esperado:**
+  * Exibição do `MfaDisabledBanner` no topo da tela com call-to-action para configurar.
