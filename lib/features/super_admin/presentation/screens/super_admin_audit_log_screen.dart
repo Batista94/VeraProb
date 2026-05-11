@@ -318,15 +318,17 @@ class _ActorIcon extends StatelessWidget {
             Icons.smart_toy_outlined,
             size: 14,
             color: VeraProbColors.textSecondary,
+            semanticLabel: 'Ação realizada por robô',
           ),
         );
       case 'IMPERSONATOR':
         return Tooltip(
           message: 'Impersonacao (${impersonatorId ?? "?"})',
-          child: const Icon(
+          child: Icon(
             Icons.manage_accounts,
             size: 14,
             color: VeraProbColors.warning,
+            semanticLabel: 'Ação por personificação (${impersonatorId ?? "?"})',
           ),
         );
       case 'HUMAN':
@@ -336,6 +338,7 @@ class _ActorIcon extends StatelessWidget {
             Icons.shield_outlined,
             size: 14,
             color: VeraProbColors.textPrimary,
+            semanticLabel: 'Ação realizada por administrador',
           ),
         );
       default:
