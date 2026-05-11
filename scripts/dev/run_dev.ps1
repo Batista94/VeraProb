@@ -74,16 +74,15 @@ if ($needsPubGet) {
     }
 }
 
-# 7. Servir portal — HTML renderer para boot rápido (validação de UI)
-Write-Host "RUN: Abrindo portal no Chrome em http://127.0.0.1:50185..." -ForegroundColor Cyan
-Write-Host "     (usando renderer HTML - boot rápido)" -ForegroundColor DarkGray
-flutter run -d chrome `
+# 7. Servir portal — IMPORTANTE: --web-hostname é necessário para abrir em outras abas
+Write-Host "RUN: Iniciando servidor Flutter (Headless/Web-Server) em http://127.0.0.1:50185..." -ForegroundColor Cyan
+flutter run -d web-server `
     --web-port=50185 `
+    --web-hostname=127.0.0.1 `
     --dart-define=SKIP_MFA_DEV=true
+
 # Cleanup ao encerrar
 Write-Host "STOP: Encerrando Edge Functions..." -ForegroundColor DarkGray
 Stop-Job $efJob -ErrorAction SilentlyContinue
 Remove-Job $efJob -ErrorAction SilentlyContinue
-Write-Host "DONE: Ambiente encerrado." -Foree
-Rgmove-Job $efJob -ErrorAction SilentlyContinue
-Write-Host "DONE: Ambiente encerrado." -ForegroundColor DarkGrayroundColor DarkGray
+Write-Host "DONE: Ambiente encerrado." -ForegroundColor DarkGray
