@@ -50,10 +50,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   }
 
   Future<void> _archiveOrg(TenantHealthView t) async {
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (_) => const ArchiveConfirmationDialog(),
-    );
+    final reason = await ArchiveConfirmationDialog.show(context);
     if (reason == null || !mounted) return;
 
     try {

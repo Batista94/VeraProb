@@ -183,9 +183,21 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
                 child: CircularProgressIndicator(),
               ),
               AsyncError(:final error) => Center(
-                child: Text(
-                  'Erro: $error',
-                  style: const TextStyle(color: VeraProbColors.error),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Erro: $error',
+                      style: const TextStyle(color: VeraProbColors.error),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          ref.invalidate(tenantHealthSnapshotProvider),
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Tentar novamente'),
+                    ),
+                  ],
                 ),
               ),
             },
@@ -236,45 +248,49 @@ class _TenantListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      selected: isSelected,
-      selectedTileColor: VeraProbColors.superAdminSurface.withValues(
-        alpha: 0.08,
-      ),
-      onTap: onTap,
-      leading: CircleAvatar(
-        radius: 14,
-        backgroundColor: tenant.isActive
-            ? VeraProbColors.success.withValues(alpha: 0.15)
-            : VeraProbColors.error.withValues(alpha: 0.15),
-        child: Icon(
-          tenant.isActive ? Icons.check : Icons.pause,
-          size: 14,
-          color: tenant.isActive
-              ? VeraProbColors.success
-              : VeraProbColors.error,
+    final statusLabel = tenant.isActive ? 'Ativo' : 'Suspenso';
+    return Semantics(
+      label: '${tenant.name}, $statusLabel',
+      child: ListTile(
+        dense: true,
+        selected: isSelected,
+        selectedTileColor: VeraProbColors.superAdminSurface.withValues(
+          alpha: 0.08,
         ),
-      ),
-      title: Text(
-        tenant.name,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        onTap: onTap,
+        leading: CircleAvatar(
+          radius: 14,
+          backgroundColor: tenant.isActive
+              ? VeraProbColors.success.withValues(alpha: 0.15)
+              : VeraProbColors.error.withValues(alpha: 0.15),
+          child: Icon(
+            tenant.isActive ? Icons.check : Icons.pause,
+            size: 14,
+            color: tenant.isActive
+                ? VeraProbColors.success
+                : VeraProbColors.error,
+          ),
         ),
-        overflow: TextOverflow.ellipsis,
+        title: Text(
+          tenant.name,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          tenant.planType?.toUpperCase() ?? '—',
+          style: const TextStyle(fontSize: 11),
+        ),
+        trailing: tenant.hasCriticalAlerts
+            ? const Icon(
+                Icons.warning_amber,
+                size: 16,
+                color: VeraProbColors.error,
+              )
+            : const Icon(Icons.chevron_right, size: 16),
       ),
-      subtitle: Text(
-        tenant.planType?.toUpperCase() ?? '—',
-        style: const TextStyle(fontSize: 11),
-      ),
-      trailing: tenant.hasCriticalAlerts
-          ? const Icon(
-              Icons.warning_amber,
-              size: 16,
-              color: VeraProbColors.error,
-            )
-          : const Icon(Icons.chevron_right, size: 16),
     );
   }
 }

@@ -337,6 +337,92 @@ void main() {
     });
   });
 
+  group('TenantListPanel - Enterprise Tier 1: CIA / Adversarial / A11y', () {
+    testWidgets(
+      'CIA (Integrity): Race condition — rapid search resolves to last query',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+        await tester.pumpAndSettle();
+
+        // Type "Alpha" then immediately overwrite with "Hydra"
+        await tester.enterText(find.byType(TextField), 'Alpha');
+        await tester.pump(); // single frame — no settle
+        await tester.enterText(find.byType(TextField), 'Hydra');
+        await tester.pumpAndSettle();
+
+        // Final state MUST reflect last query only
+        expect(find.text('Hydra Corp'), findsOneWidget);
+        expect(find.text('Alpha Trans'), findsNothing);
+        expect(find.text('Omni Consórcio'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Adversarial (Availability): Retry after timeout preserves filter state',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onOrgSelected: (_) {},
+            error: TimeoutException('Network timeout'),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpAndSettle();
+
+        // Error state visible with retry button
+        expect(find.text('Tentar novamente'), findsOneWidget);
+
+        // Set filter to "Suspensos" BEFORE retry
+        await tester.tap(find.text('Suspensos'));
+        await tester.pumpAndSettle();
+
+        // Enter search text BEFORE retry
+        await tester.enterText(find.byType(TextField), 'Hydra');
+        await tester.pumpAndSettle();
+
+        // Now reconfigure mock to succeed on next call
+        when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          return mockTenants.map((t) => t.toSnapshot()).toList();
+        });
+
+        // Tap retry
+        await tester.tap(find.text('Tentar novamente'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpAndSettle();
+
+        // Filter state preserved: only suspended + matching "Hydra"
+        expect(find.text('Hydra Corp'), findsOneWidget);
+        expect(find.text('Omni Consórcio'), findsNothing);
+        expect(find.text('Alpha Trans'), findsNothing);
+      },
+    );
+
+    testWidgets('A11y (Semantics): Screen reader announces tenant status', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpAndSettle();
+
+      // Active tenant announces "Ativo"
+      expect(
+        find.bySemanticsLabel(RegExp(r'Omni Consórcio, Ativo')),
+        findsOneWidget,
+      );
+
+      // Suspended tenant announces "Suspenso"
+      expect(
+        find.bySemanticsLabel(RegExp(r'Hydra Corp, Suspenso')),
+        findsOneWidget,
+      );
+
+      handle.dispose();
+    });
+  });
+
   group('TenantListPanel - Visual Regression (Goldens)', () {
     testWidgets('Golden Test: Default List State', (tester) async {
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
