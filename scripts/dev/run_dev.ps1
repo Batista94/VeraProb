@@ -75,14 +75,15 @@ if ($needsPubGet) {
 }
 
 # 7. Servir portal — HTML renderer para boot rápido (validação de UI)
-Write-Host "RUN: Abrindo portal no Chrome em http://localhost:50185..." -ForegroundColor Cyan
-Write-Host "     (usando renderer padrão - CanvasKit/Wasm)" -ForegroundColor DarkGray
+Write-Host "RUN: Abrindo portal no Chrome em http://127.0.0.1:50185..." -ForegroundColor Cyan
+Write-Host "     (usando renderer HTML - boot rápido)" -ForegroundColor DarkGray
 flutter run -d chrome `
     --web-port=50185 `
     --dart-define=SKIP_MFA_DEV=true
-
 # Cleanup ao encerrar
 Write-Host "STOP: Encerrando Edge Functions..." -ForegroundColor DarkGray
 Stop-Job $efJob -ErrorAction SilentlyContinue
+Remove-Job $efJob -ErrorAction SilentlyContinue
+Write-Host "DONE: Ambiente encerrado." -ForegroundColor DarkGray
 Remove-Job $efJob -ErrorAction SilentlyContinue
 Write-Host "DONE: Ambiente encerrado." -ForegroundColor DarkGray
