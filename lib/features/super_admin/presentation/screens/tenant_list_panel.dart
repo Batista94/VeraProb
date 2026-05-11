@@ -183,21 +183,26 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
                 child: CircularProgressIndicator(),
               ),
               AsyncError(:final error) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Erro: $error',
-                      style: const TextStyle(color: VeraProbColors.error),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: () =>
-                          ref.invalidate(tenantHealthSnapshotProvider),
-                      icon: const Icon(Icons.refresh, size: 16),
-                      label: const Text('Tentar novamente'),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Erro: $error',
+                        style: const TextStyle(color: VeraProbColors.error),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            ref.invalidate(tenantHealthSnapshotProvider),
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Tentar novamente'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             },

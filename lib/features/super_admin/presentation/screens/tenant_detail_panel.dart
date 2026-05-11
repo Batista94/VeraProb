@@ -138,16 +138,22 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-          child: Row(
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 240),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       t.name,
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     if (t.legalName != null)
                       Text(
@@ -156,15 +162,14 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                           color: VeraProbColors.textSecondary,
                           fontSize: 13,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                   ],
                 ),
               ),
               OrgStatusBadge(label: t.status?.label),
-              const SizedBox(width: 8),
               PlanBadge(planType: t.planType),
-              if (t.isOperational) ...[
-                const SizedBox(width: 8),
+              if (t.isOperational)
                 OutlinedButton.icon(
                   onPressed: () => _archiveOrg(t),
                   icon: const Icon(Icons.archive_outlined, size: 16),
@@ -176,9 +181,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                     textStyle: const TextStyle(fontSize: 12),
                   ),
                 ),
-              ],
-              if (t.isArchived) ...[
-                const SizedBox(width: 8),
+              if (t.isArchived)
                 FilledButton.icon(
                   onPressed: () => _unarchiveOrg(t),
                   icon: const Icon(Icons.unarchive_outlined, size: 16),
@@ -189,7 +192,6 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                     textStyle: const TextStyle(fontSize: 12),
                   ),
                 ),
-              ],
             ],
           ),
         ),

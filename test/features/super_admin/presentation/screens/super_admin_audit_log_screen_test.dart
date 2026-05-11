@@ -5,6 +5,7 @@ library;
 
 import 'dart:async';
 import 'dart:io';
+
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -159,9 +160,6 @@ void main() {
       await tester.pumpAndSettle();
       final from = DateTime.utc(2026, 4, 1);
       final to = DateTime.utc(2026, 4, 30);
-      final container = tester
-          .element(find.byType(SuperAdminAuditLogScreen))
-          .findAncestorWidgetOfExactType<ProviderScope>()!;
       // Simulate date range selection by reading provider with params directly
       unawaited(
         ProviderScope.containerOf(
@@ -554,7 +552,7 @@ void main() {
       final semantics = tester.getSemantics(
         find.widgetWithText(FilterChip, 'CRITICAL'),
       );
-      expect(semantics.hasFlag(SemanticsFlag.isSelected), isTrue);
+      expect(semantics.flagsCollection.isSelected, Tristate.isTrue);
     });
 
     testWidgets('20 unselected FilterChip does not announce selected', (
@@ -569,7 +567,7 @@ void main() {
       final semantics = tester.getSemantics(
         find.widgetWithText(FilterChip, 'INFO'),
       );
-      expect(semantics.hasFlag(SemanticsFlag.isSelected), isFalse);
+      expect(semantics.flagsCollection.isSelected, Tristate.isFalse);
     });
 
     testWidgets('21 SYSTEM actor icon has descriptive semanticLabel', (

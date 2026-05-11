@@ -1097,7 +1097,7 @@ void main() {
                   Expanded(child: CreateOrganizationWizard(onSuccess: () {})),
                   // Consumer forces provider initialization
                   Consumer(
-                    builder: (_, ref, __) {
+                    builder: (_, ref, _) {
                       ref.watch(tenantHealthSnapshotProvider);
                       return const SizedBox.shrink();
                     },

@@ -81,7 +81,7 @@ ProviderContainer _containerSignedOut() {
 
 /// Waits for the authStateProvider stream to emit and keeps it alive.
 Future<void> _pumpAuth(ProviderContainer container) async {
-  container.listen(authStateProvider, (_, __) {});
+  container.listen(authStateProvider, (_, _) {});
   // Allow microtask to propagate the stream value
   await Future<void>.delayed(Duration.zero);
 }
@@ -503,7 +503,7 @@ void main() {
             ),
           ],
         );
-        container.listen(authStateProvider, (_, __) {});
+        container.listen(authStateProvider, (_, _) {});
         await Future<void>.delayed(Duration.zero);
 
         // After stream settles on last event, state must be consistent

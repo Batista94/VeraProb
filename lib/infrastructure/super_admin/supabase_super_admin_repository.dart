@@ -99,7 +99,7 @@ class SupabaseSuperAdminRepository
             (row) => TenantHealthSnapshot.fromJson(row as Map<String, dynamic>),
           )
           .toList();
-    } on Exception catch (e) {
+    } on Object catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
@@ -143,7 +143,7 @@ class SupabaseSuperAdminRepository
             (row) => SystemAuditLogEntry.fromJson(row as Map<String, dynamic>),
           )
           .toList();
-    } on Exception catch (e) {
+    } on Object catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
@@ -253,19 +253,14 @@ class SupabaseSuperAdminRepository
     required String email,
     required String orgName,
   }) async {
-    try {
-      await _authenticatedClient.functions.invoke(
-        'notify-invite',
-        body: {
-          'email': email,
-          'inviteUrl': 'Entre em contato com o suporte para um novo link',
-          'orgName': orgName,
-        },
-      );
-    } catch (e) {
-      // Se não for possível usar as exceptions do postgrest, mapeamos genérico ou deixamos subir
-      rethrow;
-    }
+    await _authenticatedClient.functions.invoke(
+      'notify-invite',
+      body: {
+        'email': email,
+        'inviteUrl': 'Entre em contato com o suporte para um novo link',
+        'orgName': orgName,
+      },
+    );
   }
 
   @override
@@ -347,7 +342,7 @@ class SupabaseSuperAdminRepository
       );
       return (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
-    } on Exception catch (e) {
+    } on Object catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
@@ -370,7 +365,7 @@ class SupabaseSuperAdminRepository
       );
       return (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
-    } on Exception catch (e) {
+    } on Object catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
@@ -416,7 +411,7 @@ class SupabaseSuperAdminRepository
       );
       return (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
-    } on Exception catch (e) {
+    } on Object catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }

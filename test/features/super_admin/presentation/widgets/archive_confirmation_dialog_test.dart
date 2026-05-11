@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,7 +16,7 @@ void main() {
   Future<void> openDialog(WidgetTester tester) async {
     await tester.pumpWidget(buildApp());
     final ctx = tester.element(find.byType(Scaffold));
-    ArchiveConfirmationDialog.show(ctx);
+    unawaited(ArchiveConfirmationDialog.show(ctx));
     await tester.pumpAndSettle();
   }
 

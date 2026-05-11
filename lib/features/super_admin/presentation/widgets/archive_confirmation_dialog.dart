@@ -36,7 +36,7 @@ class _ArchiveConfirmationDialogState extends State<ArchiveConfirmationDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Row(
+      title: const Row(
         children: [
           Icon(
             Icons.archive_outlined,
@@ -44,8 +44,8 @@ class _ArchiveConfirmationDialogState extends State<ArchiveConfirmationDialog> {
             size: 20,
             semanticLabel: 'Ícone de arquivamento',
           ),
-          const SizedBox(width: 8),
-          const Text('Arquivar Organização'),
+          SizedBox(width: 8),
+          Text('Arquivar Organização'),
         ],
       ),
       content: SizedBox(

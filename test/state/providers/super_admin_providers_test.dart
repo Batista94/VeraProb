@@ -208,7 +208,7 @@ void main() {
 
           final container = _createContainer(repo: mockRepo);
           // Subscribe to trigger provider build
-          container.listen(tenantHealthSnapshotProvider, (_, __) {});
+          container.listen(tenantHealthSnapshotProvider, (_, _) {});
           async.flushMicrotasks();
 
           // Provider should be loading
@@ -238,7 +238,7 @@ void main() {
           ).thenAnswer((_) => Completer<Map<String, dynamic>>().future);
 
           final container = _createContainer(repo: mockRepo);
-          container.listen(tenantTechnicalHealthProvider('org-1'), (_, __) {});
+          container.listen(tenantTechnicalHealthProvider('org-1'), (_, _) {});
           async.flushMicrotasks();
 
           async.elapse(const Duration(seconds: 31));
@@ -259,7 +259,7 @@ void main() {
         ).thenAnswer((_) => Completer<Map<String, dynamic>>().future);
 
         final container = _createContainer(repo: mockRepo);
-        container.listen(evidenceVolumeProvider('org-1'), (_, __) {});
+        container.listen(evidenceVolumeProvider('org-1'), (_, _) {});
         async.flushMicrotasks();
 
         async.elapse(const Duration(seconds: 31));
@@ -286,7 +286,7 @@ void main() {
 
         final container = _createContainer(repo: mockRepo);
         const params = AuditLogParams(organizationId: 'org-1');
-        container.listen(systemAuditLogProvider(params), (_, __) {});
+        container.listen(systemAuditLogProvider(params), (_, _) {});
         async.flushMicrotasks();
 
         async.elapse(const Duration(seconds: 31));
@@ -313,7 +313,7 @@ void main() {
           );
 
           final container = _createContainer(repo: mockRepo);
-          container.listen(tenantHealthSnapshotProvider, (_, __) {});
+          container.listen(tenantHealthSnapshotProvider, (_, _) {});
           async.flushMicrotasks();
 
           final state = container.read(tenantHealthSnapshotProvider);
@@ -334,7 +334,7 @@ void main() {
           );
 
           final container = _createContainer(repo: mockRepo);
-          container.listen(tenantTechnicalHealthProvider('org-1'), (_, __) {});
+          container.listen(tenantTechnicalHealthProvider('org-1'), (_, _) {});
           async.flushMicrotasks();
 
           final state = container.read(tenantTechnicalHealthProvider('org-1'));
@@ -353,7 +353,7 @@ void main() {
         );
 
         final container = _createContainer(repo: mockRepo);
-        container.listen(evidenceVolumeProvider('org-1'), (_, __) {});
+        container.listen(evidenceVolumeProvider('org-1'), (_, _) {});
         async.flushMicrotasks();
 
         final state = container.read(evidenceVolumeProvider('org-1'));
@@ -378,7 +378,7 @@ void main() {
 
         final container = _createContainer(repo: mockRepo);
         const params = AuditLogParams(organizationId: 'org-1');
-        container.listen(systemAuditLogProvider(params), (_, __) {});
+        container.listen(systemAuditLogProvider(params), (_, _) {});
         async.flushMicrotasks();
 
         final state = container.read(systemAuditLogProvider(params));
@@ -398,7 +398,7 @@ void main() {
           );
 
           final container = _createContainer(repo: mockRepo);
-          container.listen(tenantHealthSnapshotProvider, (_, __) {});
+          container.listen(tenantHealthSnapshotProvider, (_, _) {});
           async.flushMicrotasks();
 
           final asyncValue = container.read(tenantHealthSnapshotProvider);

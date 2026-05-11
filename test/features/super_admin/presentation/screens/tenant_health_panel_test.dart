@@ -446,6 +446,9 @@ void main() {
       // Panel renders without crash during loading
       expect(find.byType(TenantHealthPanel), findsOneWidget);
       expect(tester.takeException(), isNull);
+
+      // Drain pending timers to avoid test framework assertion.
+      await tester.pumpAndSettle();
     });
   });
 
