@@ -126,7 +126,10 @@
       "Bash(Write-Output \"Deleted\")",
       "Bash(Select-String -Pattern \"\\(All tests|Some tests|FAILED|passed|failed\\)\")",
       "Bash(Select-String -Pattern \"FAILED|PASSED|All tests|Some tests|Error|Exception\")",
-      "Bash(Select-Object -Last 20)"
+      "Bash(Select-Object -Last 20)",
+      "Bash(Select-String -Pattern \"\\(FAILED|PASSED|All tests passed|Some tests failed|^\\\\d+ tests?|Error\\)\")",
+      "Bash(Select-String -Pattern \"\\(FAILED|passed|failed|error|All tests\\)\")",
+      "Bash(Select-Object -Last 10)"
     ]
   },
   "enabledMcpjsonServers": [

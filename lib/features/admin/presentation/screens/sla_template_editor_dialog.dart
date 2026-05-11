@@ -170,8 +170,9 @@ class _SlaTemplateEditorDialogState
 
       final penalties = PenaltiesFormData(
         noShowPenaltyBps:
-            (double.tryParse(_noShowMultCtl.text.replaceAll(',', '.')) ??
-                    1.5 * 10000)
+            ((double.tryParse(_noShowMultCtl.text.replaceAll(',', '.')) ??
+                        1.5) *
+                    10000)
                 .round(),
         delayToleranceMinutes: int.tryParse(_delayTolCtl.text) ?? 15,
         delayPenaltyPerMinuteCents: _reaisToCents(_delayPerMinCtl.text),
@@ -199,7 +200,7 @@ class _SlaTemplateEditorDialogState
           );
 
       ref.invalidate(slaTemplatesProvider);
-      if (mounted) Navigator.pop(context, saved);
+      if (mounted) Navigator.pop(context, SlaTemplateView.fromDomain(saved));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
