@@ -84,6 +84,6 @@ flutter run -d chrome `
 Write-Host "STOP: Encerrando Edge Functions..." -ForegroundColor DarkGray
 Stop-Job $efJob -ErrorAction SilentlyContinue
 Remove-Job $efJob -ErrorAction SilentlyContinue
-Write-Host "DONE: Ambiente encerrado." -ForegroundColor DarkGray
-Remove-Job $efJob -ErrorAction SilentlyContinue
-Write-Host "DONE: Ambiente encerrado." -ForegroundColor DarkGray
+Write-Host "DONE: Ambiente encerrado." -Foree
+Rgmove-Job $efJob -ErrorAction SilentlyContinue
+Write-Host "DONE: Ambiente encerrado." -ForegroundColor DarkGrayroundColor DarkGray
