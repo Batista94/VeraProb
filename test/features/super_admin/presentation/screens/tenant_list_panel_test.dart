@@ -582,6 +582,10 @@ void main() {
 
   group('TenantListPanel - Visual Regression (Goldens)', () {
     testWidgets('Golden Test: Default List State', (tester) async {
+      tester.view.physicalSize = const Size(320, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
@@ -592,6 +596,10 @@ void main() {
     });
 
     testWidgets('Golden Test: Search Results State', (tester) async {
+      tester.view.physicalSize = const Size(320, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
@@ -605,6 +613,10 @@ void main() {
     });
 
     testWidgets('Golden Test: Empty State', (tester) async {
+      tester.view.physicalSize = const Size(320, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       await tester.pumpWidget(
         createTestWidget(onOrgSelected: (_) {}, tenants: []),
       );
@@ -617,6 +629,10 @@ void main() {
     });
 
     testWidgets('Golden Test: Skeleton Loading State', (tester) async {
+      tester.view.physicalSize = const Size(320, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       final completer = Completer<List<TenantHealthSnapshot>>();
       when(
         () => mockRepo.getAllTenantHealth(),

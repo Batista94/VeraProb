@@ -49,3 +49,5 @@ STRICT MEMORY PROTOCOL para todos os agentes:
 - **Dart Wildcards**: Use apenas um único underscore `_` para parâmetros não utilizados, independentemente da quantidade (evita erro `unnecessary_underscores`).
 - **Unused Code**: Remova variáveis locais e imports não utilizados antes de submeter alterações.
 - **Automated Fix**: Execute `dart fix --apply` após edições estruturais.
+- **Prefer Const**: Utilize `const` em construtores e declarações sempre que possível.
+- **Universal UTC (INV-6)**: `DateTime.now()` deve SEMPRE ser seguido por `.toUtc()` para conformidade com a invariante forense global.

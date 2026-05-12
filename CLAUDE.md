@@ -59,4 +59,5 @@ Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
 - **Clean Imports**: No unused imports.
 - **Dart Wildcards**: Use only a single `_` for ALL unused parameters (to avoid `unnecessary_underscores` errors).
 - **Unused Locals**: Never leave unused local variables in tests or production code (enforced as error).
-
+- **Prefer Const**: Always use `const` for constructors and declarations whenever possible.
+- **Universal UTC (INV-6)**: `DateTime.now()` must ALWAYS be followed by `.toUtc()`. No exceptions.

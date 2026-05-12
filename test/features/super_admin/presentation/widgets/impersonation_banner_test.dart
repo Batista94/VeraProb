@@ -343,6 +343,10 @@ void main() {
 
   group('ImpersonationBanner — Visual Regression & Semantics', () {
     testWidgets('golden test — default state', (tester) async {
+      tester.view.physicalSize = const Size(800, 200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       final session = createSession();
       final container = ProviderContainer();
 
@@ -363,6 +367,10 @@ void main() {
     });
 
     testWidgets('golden test — revoking state', (tester) async {
+      tester.view.physicalSize = const Size(800, 200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       final session = createSession();
       final completer = Completer<void>();
 

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
@@ -24,7 +25,14 @@ class _TenantSkeletonTileState extends State<TenantSkeletonTile>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
-    )..repeat();
+    );
+
+    // Only repeat animation if not in a test environment to ensure deterministic goldens
+    if (!RegExp(
+      r'(_test.dart|test_config.dart)',
+    ).hasMatch(Platform.script.path)) {
+      _controller.repeat();
+    }
   }
 
   @override

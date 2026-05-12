@@ -84,12 +84,12 @@ class VeraProbTypography {
     try {
       // Direct check to avoid any side effects in test zones
       if (!GoogleFonts.config.allowRuntimeFetching) {
-        return const TextStyle(fontFamily: 'Roboto');
+        return const TextStyle(fontFamily: 'Lato');
       }
       return GoogleFonts.inter();
     } catch (_) {
       // Ultimate fallback to avoid crashing the theme initialization
-      return const TextStyle(fontFamily: 'Roboto');
+      return const TextStyle(fontFamily: 'Lato');
     }
   }
 
