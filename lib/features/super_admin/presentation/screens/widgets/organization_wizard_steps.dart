@@ -77,6 +77,7 @@ class Step1FiscalData extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextFormField(
+            key: const ValueKey('field_legal_name'),
             controller: legalNameCtrl,
             decoration: const InputDecoration(
               labelText: 'Razão Social *',
@@ -87,6 +88,7 @@ class Step1FiscalData extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           TextFormField(
+            key: const ValueKey('field_trade_name'),
             controller: tradeNameCtrl,
             decoration: const InputDecoration(
               labelText: 'Nome Fantasia *',
@@ -217,6 +219,7 @@ class Step1FiscalData extends StatelessWidget {
           if (contactEmailCtrl != null) ...[
             const SizedBox(height: 12),
             TextFormField(
+              key: const ValueKey('field_contact_email'),
               controller: contactEmailCtrl,
               decoration: const InputDecoration(
                 labelText: 'E-mail de Cobrança',
@@ -233,6 +236,7 @@ class Step1FiscalData extends StatelessWidget {
           if (externalIdCtrl != null) ...[
             const SizedBox(height: 12),
             TextFormField(
+              key: const ValueKey('field_external_id'),
               controller: externalIdCtrl,
               decoration: const InputDecoration(
                 labelText: 'ID Externo (CRM/ERP)',
@@ -249,6 +253,7 @@ class Step1FiscalData extends StatelessWidget {
           if (billingDayCtrl != null) ...[
             const SizedBox(height: 12),
             TextFormField(
+              key: const ValueKey('field_billing_day'),
               controller: billingDayCtrl,
               decoration: const InputDecoration(
                 labelText: 'Dia de Faturamento (1–28)',
@@ -350,6 +355,7 @@ class Step2Limits extends StatelessWidget {
             ),
           const SizedBox(height: 16),
           TextFormField(
+            key: const ValueKey('field_max_vehicles'),
             controller: maxVehiclesCtrl,
             decoration: const InputDecoration(
               labelText: 'Máximo de Veículos *',
@@ -366,6 +372,7 @@ class Step2Limits extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           TextFormField(
+            key: const ValueKey('field_max_contracts'),
             controller: maxContractsCtrl,
             decoration: const InputDecoration(
               labelText: 'Máximo de Contratos Ativos *',

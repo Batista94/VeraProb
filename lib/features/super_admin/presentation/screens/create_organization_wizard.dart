@@ -283,37 +283,47 @@ class _CreateOrganizationWizardState
       return;
     }
 
+    // ── Snapshot all controller values BEFORE any async gap (INV-7) ──────────
+    // Prevents race conditions where setState/rebuild could contaminate
+    // controller text between validation and submission.
+    final snapshotLegalName = _legalNameCtrl.text.trim();
+    final snapshotTradeName = _tradeNameCtrl.text.trim();
+    final snapshotCnpj = _cnpjCtrl.text.trim();
+    final snapshotMaxVehicles = _maxVehiclesCtrl.text.trim();
+    final snapshotMaxContracts = _maxContractsCtrl.text.trim();
+    final snapshotToolCost = _toolCostCtrl.text;
+    final snapshotReason = _reasonCtrl.text.trim();
+    final snapshotContactEmail = _contactEmailCtrl.text.trim();
+    final snapshotExternalId = _externalIdCtrl.text.trim();
+    final snapshotBillingDay = _billingDayCtrl.text.trim();
+
     setState(() => _isSubmitting = true);
 
     try {
       final handler = ref.read(createOrganizationHandlerProvider);
 
-      final billingDayText = _billingDayCtrl.text.trim();
       final cmd = CreateOrganizationFormData(
-        legalName: _legalNameCtrl.text.trim(),
-        tradeName: _tradeNameCtrl.text.trim(),
-        cnpj: _cnpjCtrl.text.trim(),
+        legalName: snapshotLegalName,
+        tradeName: snapshotTradeName,
+        cnpj: snapshotCnpj,
         timezone: _timezone,
         currencyCode: _currency,
         planType: _selectedPlan,
-        maxVehicles: int.parse(_maxVehiclesCtrl.text.trim()),
-        maxActiveContracts: int.parse(_maxContractsCtrl.text.trim()),
+        maxVehicles: int.parse(snapshotMaxVehicles),
+        maxActiveContracts: int.parse(snapshotMaxContracts),
         adminEmails: _adminEmails,
         superAdminUserId: superAdminId,
-        // _capabilities is OrgCapabilitiesViewModel — toCommand() converts to domain
         capabilities: _capabilities,
-        toolCostCents: BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text),
+        toolCostCents: BrlCurrencyInputFormatter.toCents(snapshotToolCost),
         dwellTimeSeconds: _dwellTimeSeconds,
-        reason: _reasonCtrl.text.trim(),
-        contactEmail: _contactEmailCtrl.text.trim().isEmpty
+        reason: snapshotReason,
+        contactEmail: snapshotContactEmail.isEmpty
             ? null
-            : _contactEmailCtrl.text.trim(),
-        externalId: _externalIdCtrl.text.trim().isEmpty
+            : snapshotContactEmail,
+        externalId: snapshotExternalId.isEmpty ? null : snapshotExternalId,
+        billingDay: snapshotBillingDay.isEmpty
             ? null
-            : _externalIdCtrl.text.trim(),
-        billingDay: billingDayText.isEmpty
-            ? null
-            : int.tryParse(billingDayText),
+            : int.tryParse(snapshotBillingDay),
         allowedDomains: _allowedDomains,
       ).toCommand();
 
