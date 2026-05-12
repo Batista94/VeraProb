@@ -103,6 +103,7 @@ class Step1FiscalData extends StatelessWidget {
             decoration: InputDecoration(
               labelText: 'CNPJ *',
               hintText: '00.000.000/0000-00',
+              errorText: cnpjApiError,
               suffixIcon: cnpjChecking
                   ? const Padding(
                       padding: EdgeInsets.all(12),
@@ -129,17 +130,6 @@ class Step1FiscalData extends StatelessWidget {
               return null;
             },
           ),
-          if (cnpjApiError != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4, left: 12),
-              child: Text(
-                cnpjApiError!,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 12,
-                ),
-              ),
-            ),
           if (cnpjAutoFilled && cnpjApiError == null)
             Padding(
               padding: const EdgeInsets.only(top: 6, left: 4),

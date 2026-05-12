@@ -169,10 +169,12 @@ class _CreateOrganizationWizardState
 
     // Structural validation (immediate check-digit check)
     if (!CnpjValidator.isValid(digits)) {
-      setState(() {
-        _cnpjApiError = 'CNPJ inválido';
-        _cnpjChecking = false;
-      });
+      if (_cnpjApiError != null || _cnpjChecking) {
+        setState(() {
+          _cnpjApiError = null;
+          _cnpjChecking = false;
+        });
+      }
       return;
     }
 
@@ -379,23 +381,44 @@ class _CreateOrganizationWizardState
       }
     } on DomainException catch (e) {
       if (!mounted) return;
+      final message = _mapErrorMessage(e.message);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.message),
+          content: Text(message),
           backgroundColor: VeraProbColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erro inesperado: $e'),
+          content: Text('Erro ao processar solicitação. Tente novamente.'),
           backgroundColor: VeraProbColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  String _mapErrorMessage(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('already_exists') || lower.contains('já existe')) {
+      if (lower.contains('invite') || lower.contains('convite')) {
+        return 'Um convite já foi enviado para um destes administradores.';
+      }
+      if (lower.contains('cnpj')) {
+        return 'Este CNPJ já está cadastrado no sistema.';
+      }
+      return 'Este registro já existe no sistema.';
+    }
+    if (lower.contains('permission') || lower.contains('unauthorized')) {
+      return 'Você não tem permissão para realizar esta operação.';
+    }
+    // Remove technical prefix if present (e.g. "DomainException: message")
+    return raw.replaceAll(RegExp(r'^.*Exception: '), '').trim();
   }
 
   Widget _buildSuccessDialog(

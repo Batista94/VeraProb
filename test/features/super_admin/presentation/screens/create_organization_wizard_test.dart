@@ -118,7 +118,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify it stays on step 1 due to validation error
-        expect(find.text('CNPJ inválido'), findsAtLeast(1));
+        // Verify it appears exactly once (no duplication)
+        expect(find.text('CNPJ inválido'), findsOneWidget);
       },
     );
 
@@ -332,7 +333,10 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         await tester.pumpAndSettle();
 
-        expect(find.text('Forensic Permission Denied'), findsOneWidget);
+        expect(
+          find.text('Você não tem permissão para realizar esta operação.'),
+          findsOneWidget,
+        );
       },
     );
 
@@ -416,6 +420,84 @@ void main() {
 
       expect(find.byType(CreateOrganizationWizard), findsOneWidget);
       expect(find.text('Razão Social *'), findsOneWidget);
+    });
+    testWidgets('CT07: DomainException mapping and UI persistence', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      when(() => mockHandler.handle(any())).thenThrow(
+        const DomainException('DomainException: invite_already_exists'),
+      );
+
+      await tester.pumpWidget(createWizard(mockRepo, mockLookup));
+      await tester.pumpAndSettle();
+
+      // Step 1
+      await tester.enterText(
+        find.ancestor(of: find.text('Razão Social *'), matching: find.byType(TextFormField)),
+        'Org Test',
+      );
+      await tester.enterText(
+        find.ancestor(of: find.text('Nome Fantasia *'), matching: find.byType(TextFormField)),
+        'Org',
+      );
+      await tester.enterText(
+        find.ancestor(of: find.text('CNPJ *'), matching: find.byType(TextFormField)),
+        '11.444.777/0001-61',
+      );
+      // Aguarda o debounce de 600ms do _checkCnpjExists
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Próximo'));
+      await tester.pumpAndSettle();
+
+      // Step 2
+      await tester.enterText(
+        find.ancestor(of: find.text('Máximo de Veículos *'), matching: find.byType(TextFormField)),
+        '50',
+      );
+      await tester.enterText(
+        find.ancestor(of: find.text('Máximo de Contratos Ativos *'), matching: find.byType(TextFormField)),
+        '10',
+      );
+      await tester.enterText(
+        find.ancestor(of: find.text('Custo Mensal da Ferramenta *'), matching: find.byType(TextFormField)),
+        '500000',
+      );
+      // O título Justificativa é um widget separado, usamos o hintText para achar o campo
+      await tester.enterText(
+        find.ancestor(
+          of: find.text('Ex: Criação de novo tenant conforme contrato comercial #123'),
+          matching: find.byType(TextFormField),
+        ),
+        'Justificativa de teste válida',
+      );
+      await tester.tap(find.text('Próximo'));
+      await tester.pumpAndSettle();
+
+      // Step 3
+      final emailField = find.ancestor(
+        of: find.text('E-mails dos Admins *'),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(emailField, 'admin@teste.com');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      final submitBtn = find.widgetWithText(ElevatedButton, 'Criar e Enviar Convite');
+      await tester.ensureVisible(submitBtn);
+      await tester.tap(submitBtn);
+      await tester.pumpAndSettle();
+
+      // Verify Friendly Message (mapped from tech string)
+      expect(
+        find.text('Um convite já foi enviado para um destes administradores.'),
+        findsOneWidget,
+      );
+
+      // Verify UI Persistence (Wizard didn't close)
+      expect(find.byType(CreateOrganizationWizard), findsOneWidget);
     });
   });
 }

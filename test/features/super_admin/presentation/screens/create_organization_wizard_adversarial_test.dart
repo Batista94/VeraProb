@@ -857,9 +857,9 @@ void main() {
       await tester.tap(nextBtn);
       await tester.pumpAndSettle();
 
-      // Error text present and accessible
+      // Error text present and accessible (exactly once, no duplication)
       final errorFinder = find.text('CNPJ inválido');
-      expect(errorFinder, findsAtLeast(1));
+      expect(errorFinder, findsOneWidget);
 
       // Verify error is within the TextFormField semantics tree
       final errorWidget = find.ancestor(
@@ -1142,7 +1142,9 @@ void main() {
       expect(fetchCount, greaterThan(initialFetchCount));
     });
 
-    testWidgets('Dialog is dismissible by tapping barrier (UX Improvement)', (tester) async {
+    testWidgets('Dialog is dismissible by tapping barrier (UX Improvement)', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(800, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
