@@ -67,7 +67,10 @@ class _SuperAdminGuardState extends ConsumerState<SuperAdminGuard> {
 
       // Production: redirect to MFA challenge (Fail-Fast — no child rendered).
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
+        if (mounted && !_impersonationInvalidated) {
+          debugPrint(
+            '[SuperAdminGuard] AAL2 missing — redirecting to MFA challenge',
+          );
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const MfaChallengeScreen()),
             (_) => false,

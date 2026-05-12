@@ -393,7 +393,9 @@ class _CreateOrganizationWizardState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Erro inesperado ao processar solicitação. Tente novamente.'),
+          content: Text(
+            'Erro inesperado ao processar solicitação. Tente novamente.',
+          ),
           backgroundColor: VeraProbColors.error,
           behavior: SnackBarBehavior.floating,
         ),

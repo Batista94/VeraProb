@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/super_admin/start_impersonation_handler.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/not_found_page.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/super_admin_guard.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -436,6 +437,130 @@ void main() {
           reason:
               'event_type MUST be '
               'SECURITY_VIOLATION_IMPERSONATION_MISMATCH',
+        );
+      });
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════════════════
+  // Property 6: MFA redirect suppressed during impersonation invalidation
+  // Feature: superadmin-zero-trust-security, Property 6
+  // **Validates: Regression — mounted + !_impersonationInvalidated guard**
+  //
+  // When an impersonation session expires (triggering _invalidateImpersonationSession),
+  // the guard sets _impersonationInvalidated=true. If a subsequent rebuild
+  // evaluates isAal2=false, the MFA redirect MUST NOT fire — the widget
+  // must remain on the blank Scaffold without navigating to MfaChallengeScreen.
+  // ════════════════════════════════════════════════════════════════════════
+  group('Feature: superadmin-zero-trust-security, '
+      'Property 6: MFA redirect suppressed during impersonation invalidation', () {
+    final userId = _uuidFromSeed(42);
+
+    testWidgets(
+      'Expired impersonation + aal2=false → no MfaChallengeScreen navigation',
+      (tester) async {
+        // Start with an expired impersonation session.
+        // This triggers _invalidateImpersonationSession() which sets
+        // _impersonationInvalidated = true.
+        final expiredSession = ImpersonationSessionInfo(
+          sessionId: 'session-expired',
+          targetOrgId: 'org-target',
+          targetOrgName: 'Target Org',
+          impersonatorId: userId,
+          issuedAt: now.subtract(const Duration(minutes: 60)),
+          expiresAt: now.subtract(const Duration(minutes: 1)),
+          dateTimeProvider: dateTimeProvider,
+        );
+
+        // Build with aal2=true initially so we reach Step 3 (impersonation check).
+        await tester.pumpWidget(
+          _buildGuard(
+            isSuperAdmin: true,
+            isAal2: true,
+            impersonationSession: expiredSession,
+            authOverride: _authStateWithUserId(userId),
+          ),
+        );
+        await tester.pump();
+
+        // After the expired session is detected, _impersonationInvalidated=true.
+        // The widget renders a blank Scaffold (blocking child).
+        expect(find.text('CHILD_RENDERED'), findsNothing);
+
+        // Process the post-frame callback (impersonation cleanup).
+        await tester.pump();
+
+        // MfaChallengeScreen MUST NOT appear — the impersonation invalidation
+        // takes precedence over any MFA redirect.
+        expect(
+          find.byType(MfaChallengeScreen),
+          findsNothing,
+          reason:
+              'MFA redirect MUST NOT fire when _impersonationInvalidated '
+              'is true (race condition guard)',
+        );
+      },
+    );
+
+    testWidgets(
+      'aal2=false without impersonation → MFA redirect fires normally',
+      (tester) async {
+        // No impersonation session — standard MFA redirect path.
+        await tester.pumpWidget(_buildGuard(isSuperAdmin: true, isAal2: false));
+        await tester.pump();
+
+        // Child must not render (Fail-Fast).
+        expect(find.text('CHILD_RENDERED'), findsNothing);
+
+        // Process the post-frame callback (MFA redirect).
+        await tester.pumpAndSettle();
+
+        // MfaChallengeScreen MUST appear via navigation.
+        expect(
+          find.byType(MfaChallengeScreen),
+          findsOneWidget,
+          reason:
+              'MFA redirect MUST fire when aal2=false and no '
+              'impersonation invalidation in progress',
+        );
+      },
+    );
+
+    for (var i = 0; i < 50; i++) {
+      final seed = i + 100;
+      final testUserId = _uuidFromSeed(seed);
+
+      testWidgets('iter $i: expired session (seed=$seed) blocks MFA redirect', (
+        tester,
+      ) async {
+        final expiredSession = ImpersonationSessionInfo(
+          sessionId: 'session-$seed',
+          targetOrgId: 'org-$seed',
+          targetOrgName: 'Org $seed',
+          impersonatorId: testUserId,
+          issuedAt: now.subtract(Duration(minutes: 30 + i)),
+          expiresAt: now.subtract(Duration(minutes: 1 + i)),
+          dateTimeProvider: dateTimeProvider,
+        );
+
+        await tester.pumpWidget(
+          _buildGuard(
+            isSuperAdmin: true,
+            isAal2: true,
+            impersonationSession: expiredSession,
+            authOverride: _authStateWithUserId(testUserId),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // After impersonation invalidation, MfaChallengeScreen must NOT appear.
+        expect(
+          find.byType(MfaChallengeScreen),
+          findsNothing,
+          reason:
+              'MFA redirect MUST be suppressed when impersonation '
+              'invalidation is in progress (iter $i)',
         );
       });
     }
