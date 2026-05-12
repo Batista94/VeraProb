@@ -392,7 +392,7 @@ class _CreateOrganizationWizardState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Erro ao processar solicitação. Tente novamente.'),
           backgroundColor: VeraProbColors.error,
           behavior: SnackBarBehavior.floating,
