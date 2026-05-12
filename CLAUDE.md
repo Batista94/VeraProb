@@ -56,5 +56,7 @@ Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
 ## QUALITY CODE PROTOCOLS (Mandatory for Agents)
 - **Zero-Waste**: Always run `dart fix --apply` after significant edits.
 - **Strict Linting**: Treat all analyzer warnings as blockers (Errors in `analysis_options.yaml`).
-- **Clean Imports**: No unused imports. Use `_` for all unused parameters (wildcards).
+- **Clean Imports**: No unused imports.
+- **Dart Wildcards**: Use only a single `_` for ALL unused parameters (to avoid `unnecessary_underscores` errors).
+- **Unused Locals**: Never leave unused local variables in tests or production code (enforced as error).
 

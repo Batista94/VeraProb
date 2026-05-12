@@ -43,3 +43,9 @@ STRICT MEMORY PROTOCOL para todos os agentes:
 - **Decision Points (DPs)**: Justificativa para escolhas que impactam Invariantes Forenses.
 - **Format**: `DP-[ID]: [Context] -> [Decision] -> [Invariant Impact]`.
 - **Exemplo**: `DP-001: Migração para BigInt -> Impacto INV-19 -> Motivo: Precisão monetária.`
+
+## 7. CLEAN CODE & LINTING (Agent Mandatory)
+- **Analyzer Compliance**: Trate todos os avisos do `flutter analyze` como erros bloqueantes.
+- **Dart Wildcards**: Use apenas um único underscore `_` para parâmetros não utilizados, independentemente da quantidade (evita erro `unnecessary_underscores`).
+- **Unused Code**: Remova variáveis locais e imports não utilizados antes de submeter alterações.
+- **Automated Fix**: Execute `dart fix --apply` após edições estruturais.

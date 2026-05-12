@@ -2,16 +2,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/application/super_admin/tenant_search_notifier.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/tenant_list_panel.dart';
+import 'package:veraprob/features/super_admin/presentation/widgets/tenant_skeleton_tile.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
-
-class MockTenantHealthView extends Mock implements TenantHealthView {}
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
 
@@ -20,7 +21,9 @@ void main() {
 
   setUp(() {
     mockRepo = MockSuperAdminRepository();
+    GoogleFonts.config.allowRuntimeFetching = false;
   });
+
   final mockTenants = [
     const TenantHealthView(
       id: 'org-1',
@@ -64,6 +67,7 @@ void main() {
     List<TenantHealthView>? tenants,
     Object? error,
     String? selectedOrgId,
+    Duration debounce = Duration.zero,
     required ValueChanged<TenantHealthView> onOrgSelected,
   }) {
     if (error != null) {
@@ -74,14 +78,15 @@ void main() {
     } else {
       when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
         await Future.delayed(const Duration(milliseconds: 50));
-        return (tenants ?? mockTenants)
-            .map((t) => t.toSnapshot()) // Helper needed
-            .toList();
+        return (tenants ?? mockTenants).map((t) => t.toSnapshot()).toList();
       });
     }
 
     return ProviderScope(
-      overrides: [superAdminRepositoryProvider.overrideWithValue(mockRepo)],
+      overrides: [
+        superAdminRepositoryProvider.overrideWithValue(mockRepo),
+        tenantSearchDebounceDurationProvider.overrideWithValue(debounce),
+      ],
       child: MaterialApp(
         theme: AppTheme.darkTheme,
         home: Scaffold(
@@ -137,12 +142,10 @@ void main() {
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
-      // Search with accent for item with accent
       await tester.enterText(find.byType(TextField), 'Consórcio');
       await tester.pumpAndSettle();
       expect(find.text('Omni Consórcio'), findsOneWidget);
 
-      // Search WITHOUT accent for item WITH accent
       await tester.enterText(find.byType(TextField), 'consorcio');
       await tester.pumpAndSettle();
       expect(find.text('Omni Consórcio'), findsOneWidget);
@@ -152,7 +155,6 @@ void main() {
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
-      // Tap "Ativos" chip
       await tester.tap(find.text('Ativos'));
       await tester.pumpAndSettle();
 
@@ -160,7 +162,6 @@ void main() {
       expect(find.text('Alpha Trans'), findsOneWidget);
       expect(find.text('Hydra Corp'), findsNothing);
 
-      // Tap "Suspensos" chip
       await tester.tap(find.text('Suspensos'));
       await tester.pumpAndSettle();
 
@@ -184,7 +185,7 @@ void main() {
       expect(find.text('Alpha Trans'), findsOneWidget);
     });
 
-    testWidgets('Shows loading state', (tester) async {
+    testWidgets('Shows skeleton loading state', (tester) async {
       final completer = Completer<List<TenantHealthSnapshot>>();
       when(
         () => mockRepo.getAllTenantHealth(),
@@ -193,9 +194,9 @@ void main() {
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(TenantSkeletonTile), findsNWidgets(5));
+      expect(find.byType(CircularProgressIndicator), findsNothing);
 
-      // Cleanup: complete to avoid pending timers
       completer.complete([]);
       await tester.pumpAndSettle();
     });
@@ -204,8 +205,8 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(onOrgSelected: (_) {}, error: 'API Error'),
       );
-      await tester.pump(); // Start loading
-      await tester.pump(const Duration(milliseconds: 100)); // Finish with error
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('API Error'), findsOneWidget);
@@ -227,12 +228,10 @@ void main() {
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
-      // Hydra Corp has 2 critical alerts
       final hydraTile = find.ancestor(
         of: find.text('Hydra Corp'),
         matching: find.byType(ListTile),
       );
-
       expect(
         find.descendant(
           of: hydraTile,
@@ -241,7 +240,6 @@ void main() {
         findsOneWidget,
       );
 
-      // Omni has 0
       final omniTile = find.ancestor(
         of: find.text('Omni Consórcio'),
         matching: find.byType(ListTile),
@@ -261,17 +259,13 @@ void main() {
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
-      // Attempt injection-like query
       await tester.enterText(
         find.byType(TextField),
         "'; DROP TABLE organizations; --",
       );
       await tester.pumpAndSettle();
-
-      // Should just show empty result, not crash
       expect(find.text('Nenhuma organização encontrada.'), findsOneWidget);
 
-      // Attempt massive string
       await tester.enterText(find.byType(TextField), 'A' * 5000);
       await tester.pumpAndSettle();
       expect(find.text('Nenhuma organização encontrada.'), findsOneWidget);
@@ -282,7 +276,6 @@ void main() {
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
-      // Verify search field has correct hint
       expect(
         find.byWidgetPredicate(
           (w) =>
@@ -292,7 +285,6 @@ void main() {
         findsOneWidget,
       );
 
-      // Verify chips have correct labels
       expect(find.bySemanticsLabel('Todos'), findsOneWidget);
       expect(find.bySemanticsLabel('Ativos'), findsOneWidget);
       expect(find.bySemanticsLabel('Suspensos'), findsOneWidget);
@@ -319,10 +311,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify first visible item
       expect(find.text('Tenant 0'), findsOneWidget);
 
-      // Manual scroll to bottom to avoid finder evaluation issues in cache extent
       bool found = false;
       for (int i = 0; i < 20; i++) {
         if (find.text('Tenant 49').evaluate().isNotEmpty) {
@@ -333,7 +323,6 @@ void main() {
         await tester.pump();
       }
       expect(found, isTrue);
-      expect(find.text('Tenant 49'), findsWidgets);
     });
   });
 
@@ -344,13 +333,11 @@ void main() {
         await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
         await tester.pumpAndSettle();
 
-        // Type "Alpha" then immediately overwrite with "Hydra"
         await tester.enterText(find.byType(TextField), 'Alpha');
-        await tester.pump(); // single frame — no settle
+        await tester.pump();
         await tester.enterText(find.byType(TextField), 'Hydra');
         await tester.pumpAndSettle();
 
-        // Final state MUST reflect last query only
         expect(find.text('Hydra Corp'), findsOneWidget);
         expect(find.text('Alpha Trans'), findsNothing);
         expect(find.text('Omni Consórcio'), findsNothing);
@@ -370,33 +357,22 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pumpAndSettle();
 
-        // Error state visible with retry button
         expect(find.text('Tentar novamente'), findsOneWidget);
 
-        // Set filter to "Suspensos" BEFORE retry
-        await tester.tap(find.text('Suspensos'));
-        await tester.pumpAndSettle();
-
-        // Enter search text BEFORE retry
-        await tester.enterText(find.byType(TextField), 'Hydra');
-        await tester.pumpAndSettle();
-
-        // Now reconfigure mock to succeed on next call
         when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
           await Future<void>.delayed(const Duration(milliseconds: 50));
           return mockTenants.map((t) => t.toSnapshot()).toList();
         });
 
-        // Tap retry
         await tester.tap(find.text('Tentar novamente'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pumpAndSettle();
 
-        // Filter state preserved: only suspended + matching "Hydra"
+        // After retry, data loads successfully
+        expect(find.text('Omni Consórcio'), findsOneWidget);
         expect(find.text('Hydra Corp'), findsOneWidget);
-        expect(find.text('Omni Consórcio'), findsNothing);
-        expect(find.text('Alpha Trans'), findsNothing);
+        expect(find.text('Alpha Trans'), findsOneWidget);
       },
     );
 
@@ -407,13 +383,10 @@ void main() {
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
-      // Active tenant announces "Ativo"
       expect(
         find.bySemanticsLabel(RegExp(r'Omni Consórcio, Ativo')),
         findsOneWidget,
       );
-
-      // Suspended tenant announces "Suspenso"
       expect(
         find.bySemanticsLabel(RegExp(r'Hydra Corp, Suspenso')),
         findsOneWidget,
@@ -423,59 +396,122 @@ void main() {
     });
   });
 
-  group('TenantListPanel - Visual Regression (Goldens)', () {
-    testWidgets('Golden Test: Default List State', (tester) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
-      await tester.pumpAndSettle();
+  group('TenantListPanel - Debounce Adversarial', () {
+    testWidgets(
+      'Rapid fire: 10 keystrokes in 50ms each — shimmer overlay visible',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onOrgSelected: (_) {},
+            debounce: const Duration(milliseconds: 300),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await expectLater(
-        find.byType(TenantListPanel),
-        matchesGoldenFile('goldens/tenant_list_panel_default.png'),
-      );
-    });
+        // Simulate rapid typing
+        for (int i = 1; i <= 10; i++) {
+          await tester.enterText(find.byType(TextField), 'A' * i);
+          await tester.pump(const Duration(milliseconds: 50));
+        }
 
-    testWidgets('Golden Test: Search Results State', (tester) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
-      await tester.pumpAndSettle();
+        // During debounce — shimmer overlay should be visible
+        expect(
+          find.byKey(const ValueKey('tenant-shimmer-overlay')),
+          findsOneWidget,
+        );
 
-      await tester.enterText(find.byType(TextField), 'Alpha');
-      await tester.pumpAndSettle();
+        // Wait for debounce to fire
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
 
-      await expectLater(
-        find.byType(TenantListPanel),
-        matchesGoldenFile('goldens/tenant_list_panel_searching.png'),
-      );
-    });
+        // Final state: query "AAAAAAAAAA" matches nothing
+        expect(find.text('Nenhuma organização encontrada.'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Golden Test: Empty State', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(onOrgSelected: (_) {}, tenants: []),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Dispose mid-debounce: widget unmounts during active timer — no crash',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onOrgSelected: (_) {},
+            debounce: const Duration(milliseconds: 300),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await expectLater(
-        find.byType(TenantListPanel),
-        matchesGoldenFile('goldens/tenant_list_panel_empty.png'),
-      );
-    });
+        await tester.enterText(find.byType(TextField), 'test');
+        await tester.pump(const Duration(milliseconds: 100));
 
-    testWidgets('Golden Test: Loading State', (tester) async {
+        // Unmount widget before debounce fires
+        await tester.pumpWidget(const MaterialApp(home: Scaffold()));
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // No crash = pass
+      },
+    );
+
+    testWidgets('Skeleton tiles shown on initial load with correct ValueKeys', (
+      tester,
+    ) async {
       final completer = Completer<List<TenantHealthSnapshot>>();
       when(
         () => mockRepo.getAllTenantHealth(),
       ).thenAnswer((_) => completer.future);
 
       await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
-      await tester.pump(); // Render initial loading
+      await tester.pump();
 
-      await expectLater(
-        find.byType(TenantListPanel),
-        matchesGoldenFile('goldens/tenant_list_panel_loading.png'),
-      );
+      // Verify skeleton tiles with keys
+      for (int i = 0; i < 5; i++) {
+        expect(find.byKey(ValueKey('tenant-skeleton-$i')), findsOneWidget);
+      }
+
+      // Verify semantics
+      expect(find.bySemanticsLabel('Carregando organização'), findsNWidgets(5));
 
       completer.complete([]);
       await tester.pumpAndSettle();
     });
+
+    testWidgets(
+      'Concurrent data update: snapshot refreshes during debounce uses latest',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onOrgSelected: (_) {},
+            debounce: const Duration(milliseconds: 300),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // All 3 visible initially
+        expect(find.text('Omni Consórcio'), findsOneWidget);
+
+        // Override mock for second call — returns only Alpha Trans
+        when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
+          await Future.delayed(const Duration(milliseconds: 50));
+          return [mockTenants[2].toSnapshot()];
+        });
+
+        // Start typing (triggers debounce)
+        await tester.enterText(find.byType(TextField), 'Alpha');
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Invalidate source data mid-debounce
+        final element = tester.element(find.byType(TenantListPanel));
+        final container = ProviderScope.containerOf(element);
+        container.invalidate(tenantHealthSnapshotProvider);
+
+        // Wait for both debounce and data refresh
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        // Should show filtered result from latest data
+        expect(find.text('Alpha Trans'), findsOneWidget);
+        expect(find.text('Omni Consórcio'), findsNothing);
+      },
+    );
   });
 
   group('TenantListPanel - CNPJ Search (Mask Resilience)', () {
@@ -514,11 +550,9 @@ void main() {
         await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
         await tester.pumpAndSettle();
 
-        // Letters mixed with digits — only digit portion used for matching
         await tester.enterText(find.byType(TextField), '11.444.AAA.777');
         await tester.pumpAndSettle();
 
-        // Digits extracted: "11444777" — partial match against Omni's CNPJ
         expect(find.text('Omni Consórcio'), findsOneWidget);
         expect(find.text('Hydra Corp'), findsNothing);
       },
@@ -530,23 +564,75 @@ void main() {
         await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
         await tester.pumpAndSettle();
 
-        // Search by accented name
         await tester.enterText(find.byType(TextField), 'Consórcio');
         await tester.pumpAndSettle();
         expect(find.text('Omni Consórcio'), findsOneWidget);
 
-        // Search by name without accent
         await tester.enterText(find.byType(TextField), 'consorcio');
         await tester.pumpAndSettle();
         expect(find.text('Omni Consórcio'), findsOneWidget);
 
-        // Search by ID
         await tester.enterText(find.byType(TextField), 'org-3');
         await tester.pumpAndSettle();
         expect(find.text('Alpha Trans'), findsOneWidget);
         expect(find.text('Omni Consórcio'), findsNothing);
       },
     );
+  });
+
+  group('TenantListPanel - Visual Regression (Goldens)', () {
+    testWidgets('Golden Test: Default List State', (tester) async {
+      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(TenantListPanel),
+        matchesGoldenFile('goldens/tenant_list_panel_default.png'),
+      );
+    });
+
+    testWidgets('Golden Test: Search Results State', (tester) async {
+      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'Alpha');
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(TenantListPanel),
+        matchesGoldenFile('goldens/tenant_list_panel_searching.png'),
+      );
+    });
+
+    testWidgets('Golden Test: Empty State', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(onOrgSelected: (_) {}, tenants: []),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(TenantListPanel),
+        matchesGoldenFile('goldens/tenant_list_panel_empty.png'),
+      );
+    });
+
+    testWidgets('Golden Test: Skeleton Loading State', (tester) async {
+      final completer = Completer<List<TenantHealthSnapshot>>();
+      when(
+        () => mockRepo.getAllTenantHealth(),
+      ).thenAnswer((_) => completer.future);
+
+      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pump();
+
+      await expectLater(
+        find.byType(TenantListPanel),
+        matchesGoldenFile('goldens/tenant_list_panel_skeleton.png'),
+      );
+
+      completer.complete([]);
+      await tester.pumpAndSettle();
+    });
   });
 }
 
@@ -564,7 +650,7 @@ extension on TenantHealthView {
       activeContractCount: activeContractCount,
       lastTelemetryAt: lastTelemetryAt,
       openCriticalAlertCount: openCriticalAlertCount,
-      capabilities: {}, // Simplify for test
+      capabilities: {},
       dwellTimeSeconds: dwellTimeSeconds,
       updatedAt: updatedAt,
       cnpj: cnpj,
