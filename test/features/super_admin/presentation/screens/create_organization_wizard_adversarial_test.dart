@@ -1051,8 +1051,8 @@ void main() {
       // Dialog shown
       expect(find.text('Organização Criada!'), findsOneWidget);
 
-      // Dismiss via "Ver Tenants"
-      await tester.tap(find.text('Ver Tenants'));
+      // Dismiss via "Concluir"
+      await tester.tap(find.text('Concluir'));
       await tester.pumpAndSettle();
 
       expect(successFired, isTrue);
@@ -1135,14 +1135,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Dismiss dialog
-      await tester.tap(find.text('Ver Tenants'));
+      await tester.tap(find.text('Concluir'));
       await tester.pumpAndSettle();
 
       // Provider was re-fetched after invalidation
       expect(fetchCount, greaterThan(initialFetchCount));
     });
 
-    testWidgets('Dialog is not dismissible by tapping barrier', (tester) async {
+    testWidgets('Dialog is dismissible by tapping barrier (UX Improvement)', (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1181,13 +1181,12 @@ void main() {
       // Dialog shown
       expect(find.text('Organização Criada!'), findsOneWidget);
 
-      // Tap outside dialog (barrier) — should NOT dismiss (barrierDismissible: false)
+      // Tap outside dialog (barrier) — should DISMISS now (UX Improvement)
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
 
-      // Dialog still present — secret not lost
-      expect(find.text('Organização Criada!'), findsOneWidget);
-      expect(find.textContaining('secret-barrier'), findsOneWidget);
+      // Dialog should be gone
+      expect(find.text('Organização Criada!'), findsNothing);
     });
   });
 }

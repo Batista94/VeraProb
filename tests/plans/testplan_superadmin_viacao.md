@@ -101,7 +101,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * Persistência dos dados no banco de dados (incluindo CRM, Dia de Faturamento e Custo).
   * Criação do TenantID único para a organização.
   * Status inicial da organização como "Ativo".
-* **Requisito de Sucesso:** Modal de sucesso exibido com o link de convite e a chave de API da organização.
+* **Requisito de Sucesso:** Modal de sucesso exibido com o link de convite e a chave de API da organização. O modal deve permitir o fechamento via botão "Concluir", ícone "X" ou clique fora (barrier dismissal), redirecionando sempre para a listagem de Tenants.
 
 #### CT02: Cadastro de Organização - Viação B (Sucesso)
 
@@ -181,7 +181,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 
 * **Passos:** Localizar o convite pendente na aba "Usuários".
 * **O que validar (UI):**
-  * O botão de **Copiar Link** (ícone de prancheta) deve estar disponível para convites pendentes.
+  * O botão de **Copiar Link** (ícone de prancheta) deve estar disponível, possuir feedback tátil (Haptic) e tooltip descritivo.
   * O botão de **Reenviar Convite** deve funcionar.
 
 #### CT09: Desativar Admin / Revogar Convite
@@ -320,7 +320,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 * **Passos:**
   1. No modal de sucesso, localizar a seção "Chave de API da Organização".
   2. Clicar no botão de copiar.
-  3. Fechar o modal e tentar localizar a chave novamente nos detalhes da organização.
+  3. Fechar o modal (via botão "Concluir", "X" ou clique fora) e tentar localizar a chave novamente nos detalhes da organização.
 * **Cenário Esperado:**
   * A chave deve ser exibida em texto claro apenas uma vez no modal de sucesso.
   * Após fechar o modal, a chave **não deve ser mais visível** em nenhum lugar da UI (apenas via API/DB se necessário, mas não no front-end por padrão).

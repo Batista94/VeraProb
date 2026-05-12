@@ -232,7 +232,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Organização Criada!'), findsOneWidget);
-      await tester.tap(find.text('Ver Tenants'));
+      await tester.tap(find.text('Concluir'));
       await tester.pumpAndSettle();
 
       expect(successCalled, isTrue);
