@@ -23,6 +23,8 @@ UpdateOrganizationQuotaCommand _validCmd({
   String? reason = 'Ajuste de cota conforme contrato atualizado',
   String sessionId = 'session-uuid-789',
   int? toolCostCents = 50000,
+  String? tradeName,
+  String? legalName,
 }) => UpdateOrganizationQuotaCommand(
   organizationId: organizationId,
   newPlanType: newPlanType,
@@ -32,6 +34,8 @@ UpdateOrganizationQuotaCommand _validCmd({
   reason: reason,
   sessionId: sessionId,
   toolCostCents: toolCostCents,
+  tradeName: tradeName,
+  legalName: legalName,
 );
 
 void main() {
@@ -230,6 +234,92 @@ void main() {
         await expectLater(handler.handle(_validCmd()), completes);
       });
     });
+
+    // ── Regression: bugs fixed in 20260706 ────────────────────────────────────
+    // Bug 1 — double-write: handler was writing a second system_audit_log entry
+    //   after CT11 already made the RPC the sole authoritative writer.
+    // Bug 2 — name fields absent from audit payload: tradeName/legalName were
+    //   never forwarded, so the DB diff was blind to cadastral changes.
+    // These tests pin the handler contract so both bugs stay dead.
+
+    group('regression: CT11 double-write prevention', () {
+      test(
+        'happy path — repo called exactly once, no other interactions',
+        () async {
+          when(
+            () => mockRepo.updateOrganizationQuota(any()),
+          ).thenAnswer((_) async {});
+
+          await handler.handle(_validCmd());
+
+          verify(() => mockRepo.updateOrganizationQuota(any())).called(1);
+          verifyNoMoreInteractions(mockRepo);
+        },
+      );
+
+      test('name-only change — repo still called exactly once', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handle(
+          _validCmd(
+            tradeName: 'Novo Nome Fantasia',
+            legalName: 'Nova Razão Social LTDA',
+          ),
+        );
+
+        verify(() => mockRepo.updateOrganizationQuota(any())).called(1);
+        verifyNoMoreInteractions(mockRepo);
+      });
+    });
+
+    group(
+      'regression: name fields propagation to repo (CT11 audit payload diff)',
+      () {
+        test('tradeName and legalName reach repo command unchanged', () async {
+          when(
+            () => mockRepo.updateOrganizationQuota(any()),
+          ).thenAnswer((_) async {});
+
+          await handler.handle(
+            _validCmd(
+              tradeName: 'Transportes Rápidos SA',
+              legalName: 'Transportes Rápidos Sociedade Anônima',
+            ),
+          );
+
+          final captured =
+              verify(
+                    () => mockRepo.updateOrganizationQuota(captureAny()),
+                  ).captured.single
+                  as UpdateOrganizationQuotaCommand;
+
+          expect(captured.tradeName, 'Transportes Rápidos SA');
+          expect(captured.legalName, 'Transportes Rápidos Sociedade Anônima');
+        });
+
+        test(
+          'null tradeName and legalName preserved as null — DB COALESCE keeps existing',
+          () async {
+            when(
+              () => mockRepo.updateOrganizationQuota(any()),
+            ).thenAnswer((_) async {});
+
+            await handler.handle(_validCmd(tradeName: null, legalName: null));
+
+            final captured =
+                verify(
+                      () => mockRepo.updateOrganizationQuota(captureAny()),
+                    ).captured.single
+                    as UpdateOrganizationQuotaCommand;
+
+            expect(captured.tradeName, isNull);
+            expect(captured.legalName, isNull);
+          },
+        );
+      },
+    );
 
     group('P0001 passthrough', () {
       test('wraps P0001 PostgrestException as DomainException', () async {

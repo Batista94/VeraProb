@@ -2,17 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/application/audit/system_audit_log_service.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/super_admin/update_organization_quota_handler.dart';
-import 'package:veraprob/domain/admin/actor_type.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
-
-class MockSystemAuditLogService extends Mock implements SystemAuditLogService {}
 
 class MockTenantValidationService extends Mock
     implements TenantValidationService {}
@@ -55,19 +51,15 @@ UpdateOrganizationQuotaCommand _cmd({
 
 void main() {
   late MockSuperAdminRepository mockRepo;
-  late MockSystemAuditLogService mockAudit;
   late MockTenantValidationService mockValidator;
   late UpdateOrganizationQuotaHandler handler;
 
   setUpAll(() {
     registerFallbackValue(_cmd());
-    registerFallbackValue(ActorType.human);
-    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
     mockRepo = MockSuperAdminRepository();
-    mockAudit = MockSystemAuditLogService();
     mockValidator = MockTenantValidationService();
 
     when(
@@ -80,7 +72,6 @@ void main() {
     handler = UpdateOrganizationQuotaHandler(
       tenantValidator: mockValidator,
       repository: mockRepo,
-      auditLogService: mockAudit,
     );
   });
 
@@ -90,7 +81,7 @@ void main() {
 
   group('CONFIDENTIALITY', () {
     test(
-      'unauthorized session — validator throws, repo and audit never called',
+      'unauthorized session — validator throws, repo never called',
       () async {
         when(
           () => mockValidator.assertTenantMatches(
@@ -111,15 +102,6 @@ void main() {
         );
 
         verifyNever(() => mockRepo.updateOrganizationQuota(any()));
-        verifyNever(
-          () => mockAudit.logGovernanceChange(
-            eventType: any(named: 'eventType'),
-            reason: any(named: 'reason'),
-            organizationId: any(named: 'organizationId'),
-            oldSnapshot: any(named: 'oldSnapshot'),
-            newSnapshot: any(named: 'newSnapshot'),
-          ),
-        );
       },
     );
 
@@ -138,15 +120,6 @@ void main() {
         );
 
         verifyNever(() => mockRepo.updateOrganizationQuota(any()));
-        verifyNever(
-          () => mockAudit.logGovernanceChange(
-            eventType: any(named: 'eventType'),
-            reason: any(named: 'reason'),
-            organizationId: any(named: 'organizationId'),
-            oldSnapshot: any(named: 'oldSnapshot'),
-            newSnapshot: any(named: 'newSnapshot'),
-          ),
-        );
       },
     );
 
@@ -234,16 +207,6 @@ void main() {
         when(
           () => mockRepo.updateOrganizationQuota(any()),
         ).thenAnswer((_) async {});
-        when(
-          () => mockAudit.logGovernanceChange(
-            eventType: any(named: 'eventType'),
-            reason: any(named: 'reason'),
-            actorType: any(named: 'actorType'),
-            organizationId: any(named: 'organizationId'),
-            oldSnapshot: any(named: 'oldSnapshot'),
-            newSnapshot: any(named: 'newSnapshot'),
-          ),
-        ).thenAnswer((_) async {});
 
         await handler.handle(_cmd(newMaxVehicles: 999999999));
 
@@ -257,131 +220,19 @@ void main() {
       },
     );
 
-    test('audit log fired with correct snapshot after happy path', () async {
-      String? capturedEventType;
-      String? capturedOrgId;
-      Map<String, Object?>? capturedNewSnapshot;
-
-      when(
-        () => mockRepo.updateOrganizationQuota(any()),
-      ).thenAnswer((_) async {});
-      when(
-        () => mockAudit.logGovernanceChange(
-          eventType: any(named: 'eventType'),
-          reason: any(named: 'reason'),
-          actorType: any(named: 'actorType'),
-          organizationId: any(named: 'organizationId'),
-          oldSnapshot: any(named: 'oldSnapshot'),
-          newSnapshot: any(named: 'newSnapshot'),
-        ),
-      ).thenAnswer((invocation) async {
-        capturedEventType =
-            invocation.namedArguments[const Symbol('eventType')] as String?;
-        capturedOrgId =
-            invocation.namedArguments[const Symbol('organizationId')]
-                as String?;
-        capturedNewSnapshot =
-            invocation.namedArguments[const Symbol('newSnapshot')]
-                as Map<String, Object?>?;
-      });
-
-      await handler.handle(
-        _cmd(
-          organizationId: 'org-audit-verify',
-          newPlanType: 'enterprise',
-          newMaxVehicles: 200,
-          toolCostCents: 99900,
-        ),
-      );
-
-      verify(
-        () => mockAudit.logGovernanceChange(
-          eventType: any(named: 'eventType'),
-          reason: any(named: 'reason'),
-          actorType: any(named: 'actorType'),
-          organizationId: any(named: 'organizationId'),
-          oldSnapshot: any(named: 'oldSnapshot'),
-          newSnapshot: any(named: 'newSnapshot'),
-        ),
-      ).called(1);
-
-      expect(capturedEventType, 'QUOTA_CHANGE');
-      expect(capturedOrgId, 'org-audit-verify');
-      expect(capturedNewSnapshot!['plan_type'], 'enterprise');
-      expect(capturedNewSnapshot!['max_vehicles'], 200);
-      expect(capturedNewSnapshot!['tool_cost_cents'], 99900);
-    });
-
     test(
-      'atomicity: repo failure — audit logGovernanceChange NEVER called',
+      'atomicity: repo failure — exception propagates, handler does not swallow it',
       () async {
         when(
           () => mockRepo.updateOrganizationQuota(any()),
         ).thenThrow(Exception('db_failure'));
 
         await expectLater(handler.handle(_cmd()), throwsA(isA<Exception>()));
-
-        verifyNever(
-          () => mockAudit.logGovernanceChange(
-            eventType: any(named: 'eventType'),
-            reason: any(named: 'reason'),
-            organizationId: any(named: 'organizationId'),
-            oldSnapshot: any(named: 'oldSnapshot'),
-            newSnapshot: any(named: 'newSnapshot'),
-          ),
-        );
-      },
-    );
-  });
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // AVAILABILITY
-  // ══════════════════════════════════════════════════════════════════════════
-
-  group('AVAILABILITY', () {
-    test(
-      'upgrade path professional→enterprise with null limits — completes, audit called once',
-      () async {
-        when(
-          () => mockRepo.updateOrganizationQuota(any()),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockAudit.logGovernanceChange(
-            eventType: any(named: 'eventType'),
-            reason: any(named: 'reason'),
-            actorType: any(named: 'actorType'),
-            organizationId: any(named: 'organizationId'),
-            oldSnapshot: any(named: 'oldSnapshot'),
-            newSnapshot: any(named: 'newSnapshot'),
-          ),
-        ).thenAnswer((_) async {});
-
-        await expectLater(
-          handler.handle(
-            _cmd(
-              newPlanType: 'enterprise',
-              newMaxVehicles: null,
-              newMaxActiveContracts: null,
-            ),
-          ),
-          completes,
-        );
-
-        verify(
-          () => mockAudit.logGovernanceChange(
-            eventType: any(named: 'eventType'),
-            reason: any(named: 'reason'),
-            actorType: any(named: 'actorType'),
-            organizationId: any(named: 'organizationId'),
-            oldSnapshot: any(named: 'oldSnapshot'),
-            newSnapshot: any(named: 'newSnapshot'),
-          ),
-        ).called(1);
       },
     );
 
     test(
-      'OCC collision — P0001 rethrown as DomainException, audit never called',
+      'OCC collision — PostgrestException P0001 rethrown as DomainException',
       () async {
         when(() => mockRepo.updateOrganizationQuota(any())).thenThrow(
           const PostgrestException(
@@ -400,32 +251,147 @@ void main() {
             ),
           ),
         );
-
-        verifyNever(
-          () => mockAudit.logGovernanceChange(
-            eventType: any(named: 'eventType'),
-            reason: any(named: 'reason'),
-            organizationId: any(named: 'organizationId'),
-            oldSnapshot: any(named: 'oldSnapshot'),
-            newSnapshot: any(named: 'newSnapshot'),
-          ),
-        );
       },
     );
+  });
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // AVAILABILITY
+  // ══════════════════════════════════════════════════════════════════════════
+
+  group('AVAILABILITY', () {
     test(
-      'no audit service wired — null auditLogService, repo succeeds, completes without NPE',
+      'upgrade path professional→enterprise with null limits — completes',
       () async {
-        final handlerNoAudit = UpdateOrganizationQuotaHandler(
-          tenantValidator: mockValidator,
-          repository: mockRepo,
-        );
-
         when(
           () => mockRepo.updateOrganizationQuota(any()),
         ).thenAnswer((_) async {});
 
-        await expectLater(handlerNoAudit.handle(_cmd()), completes);
+        await expectLater(
+          handler.handle(
+            _cmd(
+              newPlanType: 'enterprise',
+              newMaxVehicles: null,
+              newMaxActiveContracts: null,
+            ),
+          ),
+          completes,
+        );
+
+        verify(() => mockRepo.updateOrganizationQuota(any())).called(1);
+      },
+    );
+
+    test(
+      'name-only change (tradeName set, quota fields default) — repo called once',
+      () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handle(_cmd(tradeName: 'Novo Nome Fantasia'));
+
+        final captured =
+            verify(
+                  () => mockRepo.updateOrganizationQuota(captureAny()),
+                ).captured.single
+                as UpdateOrganizationQuotaCommand;
+
+        expect(captured.tradeName, 'Novo Nome Fantasia');
+      },
+    );
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // REGRESSION (bugs fixed 2026-07-06)
+  // ══════════════════════════════════════════════════════════════════════════
+  //
+  // Bug A — double-write: handler wrote a second system_audit_log entry after
+  //   CT11 made the RPC the sole authoritative writer. Fixed by removing
+  //   Step 6 from the handler.
+  //
+  // Bug B — name fields absent from RPC audit payload: tradeName/legalName
+  //   were never forwarded by the handler, so the DB could not build a
+  //   before/after diff for cadastral changes. Fixed in migration
+  //   20260706000007 + ensuring fields flow through the command to the repo.
+  //
+  // Bug C — wrong event_type: all updates logged as QUOTA_CHANGE even when
+  //   only names changed. Fixed in migration 20260706000007 with dynamic
+  //   event_type selection. DB-level; validated via integration test.
+
+  group('REGRESSION', () {
+    test(
+      'repo called exactly once per handle — no double-write (Bug A)',
+      () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handle(_cmd());
+
+        verify(() => mockRepo.updateOrganizationQuota(any())).called(1);
+        verifyNoMoreInteractions(mockRepo);
+      },
+    );
+
+    test('legalName flows to repo command unchanged (Bug B)', () async {
+      when(
+        () => mockRepo.updateOrganizationQuota(any()),
+      ).thenAnswer((_) async {});
+
+      await handler.handle(_cmd(legalName: 'Empresa Teste Razão Social LTDA'));
+
+      final captured =
+          verify(
+                () => mockRepo.updateOrganizationQuota(captureAny()),
+              ).captured.single
+              as UpdateOrganizationQuotaCommand;
+
+      expect(captured.legalName, 'Empresa Teste Razão Social LTDA');
+    });
+
+    test(
+      'null tradeName and legalName pass as null — DB COALESCE preserves existing (Bug B)',
+      () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handle(_cmd(tradeName: null, legalName: null));
+
+        final captured =
+            verify(
+                  () => mockRepo.updateOrganizationQuota(captureAny()),
+                ).captured.single
+                as UpdateOrganizationQuotaCommand;
+
+        expect(captured.tradeName, isNull);
+        expect(captured.legalName, isNull);
+      },
+    );
+
+    test(
+      'both tradeName and legalName set — both reach repo unchanged (Bug B)',
+      () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handle(
+          _cmd(
+            tradeName: 'Logística Verde SA',
+            legalName: 'Logística Verde Sociedade Anônima',
+          ),
+        );
+
+        final captured =
+            verify(
+                  () => mockRepo.updateOrganizationQuota(captureAny()),
+                ).captured.single
+                as UpdateOrganizationQuotaCommand;
+
+        expect(captured.tradeName, 'Logística Verde SA');
+        expect(captured.legalName, 'Logística Verde Sociedade Anônima');
       },
     );
   });
