@@ -7,7 +7,14 @@
     "read_workspace",
     "mcp:postgres",
     "mcp:playwright",
-    "mcp:docker"
+    "mcp:docker",
+    "mcp:memory",
+    "mcp:sequential-thinking"
+  ],
+  "resources": [
+    "skill://forensic-scanner",
+    "skill://prompt-injection-auditor",
+    "skill://hostile-defense-attorney"
   ],
   "steering": [
     "file://../steering/forensic-standards.md",

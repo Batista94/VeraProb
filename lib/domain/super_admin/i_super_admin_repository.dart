@@ -79,6 +79,8 @@ abstract class ISuperAdminRepository {
   Future<void> resendInvitation({
     required String email,
     required String orgName,
+    required String orgId,
+    required String reason,
   });
 
   /// Adds a new admin invitation to an existing organization (CT06).
@@ -93,6 +95,7 @@ abstract class ISuperAdminRepository {
     required String token,
     required DateTime expiresAtUtc,
     required String superAdminUserId,
+    required String reason,
   });
 
   /// Revokes a pending invitation (CT09 — INV-3: sets revoked_at_utc, never DELETE).
@@ -102,6 +105,7 @@ abstract class ISuperAdminRepository {
     required String orgId,
     required String email,
     required String superAdminUserId,
+    required String reason,
   });
 
   /// Returns technical health data for a tenant (replication status, schema

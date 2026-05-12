@@ -6,7 +6,12 @@
     "bash",
     "read_workspace",
     "mcp:postgres",
-    "mcp:sequential-thinking"
+    "mcp:sequential-thinking",
+    "mcp:memory"
+  ],
+  "resources": [
+    "skill://supabase-postgres-best-practices",
+    "skill://iot-chaos-simulator"
   ],
   "steering": [
     "file://../steering/forensic-standards.md",

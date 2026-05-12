@@ -50,4 +50,11 @@ Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
 | H-09 | **CACHE REFRESH**| `postSave` | `bash scripts/refresh_schema_cache.sh` (PostgREST sync). |
 | H-10 | **MISSION SYNC**| `onMissionComplete` | `mcp:memory/sync_project_state` (Memory persistence). |
 | H-11 | **INDEX ADVISOR**| `preCommit` | `python scripts/index_advisor.py` (INV-12). |
+| H-12 | **CODE QUALITY** | `preCommit` | `dart fix --apply && flutter analyze` (Clean Code). |
+
+---
+## QUALITY CODE PROTOCOLS (Mandatory for Agents)
+- **Zero-Waste**: Always run `dart fix --apply` after significant edits.
+- **Strict Linting**: Treat all analyzer warnings as blockers (Errors in `analysis_options.yaml`).
+- **Clean Imports**: No unused imports. Use `_` for all unused parameters (wildcards).
 

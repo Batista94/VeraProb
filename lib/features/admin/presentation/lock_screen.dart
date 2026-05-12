@@ -197,7 +197,11 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
               ignoring: !_isRouting || _isLoading,
               child: Container(
                 color: VeraProbColors.background.withValues(alpha: 0.85),
-                child: const Center(child: CircularProgressIndicator()),
+                child: Center(
+                  child: (_isRouting && !_isLoading)
+                      ? const CircularProgressIndicator()
+                      : const SizedBox.shrink(),
+                ),
               ),
             ),
           ),

@@ -7,6 +7,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
@@ -124,8 +125,9 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
         _lockoutTimer?.cancel();
         return;
       }
-      if (_lockedUntil != null &&
-          DateTime.now().toUtc().isAfter(_lockedUntil!)) {
+
+      final now = ref.read(dateTimeProviderProvider).nowUtc();
+      if (_lockedUntil != null && now.isAfter(_lockedUntil!)) {
         _lockoutTimer?.cancel();
         setState(() {
           _isLockedOut = false;
@@ -150,7 +152,8 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
 
   String _formatCountdown() {
     if (_lockedUntil == null) return '';
-    final diff = _lockedUntil!.difference(DateTime.now().toUtc());
+    final now = ref.read(dateTimeProviderProvider).nowUtc();
+    final diff = _lockedUntil!.difference(now);
     if (diff.isNegative) return '';
     final minutes = diff.inMinutes;
     final seconds = diff.inSeconds % 60;

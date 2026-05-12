@@ -861,28 +861,54 @@ void main() {
   // resendInvitation (Edge Function — rethrow)
   // ═══════════════════════════════════════════════════════════════════════════
   group('resendInvitation', () {
-    Future<void> call() =>
-        repo.resendInvitation(email: _kEmail, orgName: 'Acme');
+    const rpcName = 'super_admin_audit_resend_invitation';
+
+    Future<void> call() => repo.resendInvitation(
+      email: _kEmail,
+      orgName: 'Acme',
+      orgId: _kOrgId,
+      reason: 'User did not receive email',
+    );
 
     test('completes successfully', () async {
+      stubRpc(rpcName, null);
       when(
         () => mockFunctions.invoke('notify-invite', body: any(named: 'body')),
       ).thenAnswer((_) async => _fnOk({'sent': true}));
       await expectLater(call(), completes);
     });
 
-    test(
-      'rethrows any exception without wrapping (rethrow semantics)',
-      () async {
-        const error = SocketException('Connection refused');
-        when(
-          () => mockFunctions.invoke('notify-invite', body: any(named: 'body')),
-        ).thenThrow(error);
-        expect(call, throwsA(same(error)));
-      },
-    );
+    test('calls audit RPC before notify edge function', () async {
+      stubRpc(rpcName, null);
+      when(
+        () => mockFunctions.invoke('notify-invite', body: any(named: 'body')),
+      ).thenAnswer((_) async => _fnOk({'sent': true}));
+      await call();
 
-    test('rethrows FunctionException on 500', () async {
+      final captured =
+          verify(
+                () => mockClient.rpc(
+                  rpcName,
+                  params: captureAny(named: 'params'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(captured['p_org_id'], _kOrgId);
+      expect(captured['p_email'], _kEmail);
+      expect(captured['p_reason'], 'User did not receive email');
+    });
+
+    test('wraps non-Postgrest exceptions as DomainException', () async {
+      stubRpc(rpcName, null);
+      const error = SocketException('Connection refused');
+      when(
+        () => mockFunctions.invoke('notify-invite', body: any(named: 'body')),
+      ).thenThrow(error);
+      expect(call, throwsA(isA<DomainException>()));
+    });
+
+    test('wraps FunctionException on 500 as DomainException', () async {
+      stubRpc(rpcName, null);
       const error = FunctionException(
         status: 500,
         details: 'Internal Server Error',
@@ -890,7 +916,7 @@ void main() {
       when(
         () => mockFunctions.invoke('notify-invite', body: any(named: 'body')),
       ).thenThrow(error);
-      expect(call, throwsA(isA<FunctionException>()));
+      expect(call, throwsA(isA<DomainException>()));
     });
   });
 
@@ -908,11 +934,27 @@ void main() {
       token: _kToken,
       expiresAtUtc: expiresAt,
       superAdminUserId: _kUserId,
+      reason: 'New admin needed',
     );
 
     test('completes successfully', () async {
       stubRpc(rpcName, null);
       await expectLater(call(), completes);
+    });
+
+    test('passes reason to RPC', () async {
+      stubRpc(rpcName, null);
+      await call();
+
+      final captured =
+          verify(
+                () => mockClient.rpc(
+                  rpcName,
+                  params: captureAny(named: 'params'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(captured['p_reason'], 'New admin needed');
     });
 
     test('P0005 → DomainException with pending invite message', () async {
@@ -1001,11 +1043,27 @@ void main() {
       orgId: _kOrgId,
       email: email,
       superAdminUserId: _kUserId,
+      reason: 'Admin no longer needed',
     );
 
     test('completes successfully', () async {
       stubRpc(rpcName, null);
       await expectLater(call(), completes);
+    });
+
+    test('passes reason to RPC', () async {
+      stubRpc(rpcName, null);
+      await call();
+
+      final captured =
+          verify(
+                () => mockClient.rpc(
+                  rpcName,
+                  params: captureAny(named: 'params'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(captured['p_reason'], 'Admin no longer needed');
     });
 
     test('P0008 → DomainException with no pending invite message', () async {

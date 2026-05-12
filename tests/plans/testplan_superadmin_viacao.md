@@ -358,14 +358,15 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 * **Objetivo:** Validar o log de eventos específico da organização selecionada.
 * **Passos:**
   1. Clicar na aba **"Auditoria"**.
-  2. Expandir um evento da lista (ex: `ORG_CREATED` ou `ORG_ARCHIVED`).
+  2. Localizar um evento recente e clicar para expandir os detalhes.
 * **Cenário Esperado:**
   * Lista de eventos ordenada pelo mais recente.
-  * **Auditoria de Infraestrutura:** Deve registrar quem alterou configurações do tenant (ex: mudança de `storage_quota` ou `plan_type`).
-  * Detalhes exibidos: **Ator**, **Justificativa**, **Data/Hora Local** e **Payload** (dados técnicos da alteração).
+  * **Auditoria de Infraestrutura:** Deve registrar quem alterou configurações do tenant (ex: mudança de `QUOTA_CHANGE`, `ADMIN_INVITE` ou `STATUS_CHANGE`).
+  * Detalhes exibidos ao expandir: **Ator**, **Justificativa**, **Origem**, **Data/Hora Local** e **Payload** (dados técnicos da alteração).
 * **O que validar:**
-  * Se a justificativa preenchida em outros passos (ex: CT10 ou CT12) aparece corretamente aqui.
-  * Diferenciação visual por severidade (Info, Warning, Critical).
+  * Se a justificativa preenchida em outros passos (ex: CT10 ou CT12) aparece corretamente na expansão do log.
+  * Diferenciação visual por severidade (Info, Warning, Critical) via cores nos ícones laterais.
+  * **Nota de Escopo:** Não existe botão de exportação (CSV/Excel) nesta versão; a validação é exclusivamente via inspeção visual da lista e expansão dos itens na UI.
 
 #### CT24: Aba de Saúde Técnica (Health Check do Tenant)
 

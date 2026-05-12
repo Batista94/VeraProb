@@ -13,6 +13,10 @@ analyzer:
     missing_return: error
     # Treat dead code as a warning (not an error, to avoid blocking builds).
     dead_code: warning
+    # --- Clean Code Enforcements ---
+    unused_import: error
+    unnecessary_underscores: error
+    unused_local_variable: error
 
   # ── Phase 8.5 — Strict-Casts (Challenger: iterative activation) ────────────
   # strict-casts, strict-inference, and strict-raw-types are NOT globally enabled

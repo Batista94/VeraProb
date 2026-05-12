@@ -252,15 +252,27 @@ class SupabaseSuperAdminRepository
   Future<void> resendInvitation({
     required String email,
     required String orgName,
+    required String orgId,
+    required String reason,
   }) async {
-    await _authenticatedClient.functions.invoke(
-      'notify-invite',
-      body: {
-        'email': email,
-        'inviteUrl': 'Entre em contato com o suporte para um novo link',
-        'orgName': orgName,
-      },
-    );
+    try {
+      await _authenticatedClient.rpc(
+        'super_admin_audit_resend_invitation',
+        params: {'p_org_id': orgId, 'p_email': email, 'p_reason': reason},
+      );
+      await _authenticatedClient.functions.invoke(
+        'notify-invite',
+        body: {
+          'email': email,
+          'inviteUrl': 'Entre em contato com o suporte para um novo link',
+          'orgName': orgName,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    } on Object catch (e) {
+      throw DomainException('Falha ao reenviar convite: $e');
+    }
   }
 
   @override
@@ -271,6 +283,7 @@ class SupabaseSuperAdminRepository
     required String token,
     required DateTime expiresAtUtc,
     required String superAdminUserId,
+    required String reason,
   }) async {
     try {
       await _authenticatedClient.rpc(
@@ -282,6 +295,7 @@ class SupabaseSuperAdminRepository
           'p_token': token,
           'p_expires_at': expiresAtUtc.toIso8601String(),
           'p_invited_by': superAdminUserId,
+          'p_reason': reason,
         },
       );
     } on PostgrestException catch (e) {
@@ -304,6 +318,7 @@ class SupabaseSuperAdminRepository
     required String orgId,
     required String email,
     required String superAdminUserId,
+    required String reason,
   }) async {
     try {
       await _authenticatedClient.rpc(
@@ -312,6 +327,7 @@ class SupabaseSuperAdminRepository
           'p_org_id': orgId,
           'p_email': email,
           'p_super_admin_id': superAdminUserId,
+          'p_reason': reason,
         },
       );
     } on PostgrestException catch (e) {

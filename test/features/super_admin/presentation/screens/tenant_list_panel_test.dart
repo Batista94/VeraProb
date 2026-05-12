@@ -477,6 +477,77 @@ void main() {
       await tester.pumpAndSettle();
     });
   });
+
+  group('TenantListPanel - CNPJ Search (Mask Resilience)', () {
+    testWidgets('CT-CNPJ-01: Full CNPJ with mask finds correct tenant', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), '11.444.777/0001-61');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Omni Consórcio'), findsOneWidget);
+      expect(find.text('Hydra Corp'), findsNothing);
+      expect(find.text('Alpha Trans'), findsNothing);
+    });
+
+    testWidgets(
+      'CT-CNPJ-02: Full CNPJ without mask (digits only) finds correct tenant',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(TextField), '11444777000161');
+        await tester.pumpAndSettle();
+
+        expect(find.text('Omni Consórcio'), findsOneWidget);
+        expect(find.text('Hydra Corp'), findsNothing);
+        expect(find.text('Alpha Trans'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'CT-CNPJ-03 (Adversarial): Invalid chars in CNPJ do not crash',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+        await tester.pumpAndSettle();
+
+        // Letters mixed with digits — only digit portion used for matching
+        await tester.enterText(find.byType(TextField), '11.444.AAA.777');
+        await tester.pumpAndSettle();
+
+        // Digits extracted: "11444777" — partial match against Omni's CNPJ
+        expect(find.text('Omni Consórcio'), findsOneWidget);
+        expect(find.text('Hydra Corp'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'CT-CNPJ-04 (Regression): Name with accents and ID search still work',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+        await tester.pumpAndSettle();
+
+        // Search by accented name
+        await tester.enterText(find.byType(TextField), 'Consórcio');
+        await tester.pumpAndSettle();
+        expect(find.text('Omni Consórcio'), findsOneWidget);
+
+        // Search by name without accent
+        await tester.enterText(find.byType(TextField), 'consorcio');
+        await tester.pumpAndSettle();
+        expect(find.text('Omni Consórcio'), findsOneWidget);
+
+        // Search by ID
+        await tester.enterText(find.byType(TextField), 'org-3');
+        await tester.pumpAndSettle();
+        expect(find.text('Alpha Trans'), findsOneWidget);
+        expect(find.text('Omni Consórcio'), findsNothing);
+      },
+    );
+  });
 }
 
 extension on TenantHealthView {

@@ -55,11 +55,15 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
       final normalizedQuery = _normalize(query);
+      final digitsQuery = _digits(query);
       filtered = filtered.where((t) {
         return _normalize(t.name).contains(normalizedQuery) ||
             (t.legalName != null &&
                 _normalize(t.legalName!).contains(normalizedQuery)) ||
-            _normalize(t.id).contains(normalizedQuery);
+            _normalize(t.id).contains(normalizedQuery) ||
+            (t.cnpj != null &&
+                digitsQuery.isNotEmpty &&
+                _digits(t.cnpj!).contains(digitsQuery));
       }).toList();
     }
 
@@ -77,6 +81,9 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
         .replaceAll(RegExp(r'[ç]'), 'c')
         .replaceAll(RegExp(r'[ñ]'), 'n');
   }
+
+  /// Extracts only digits — mask-agnostic CNPJ comparison.
+  String _digits(String text) => text.replaceAll(RegExp(r'[^0-9]'), '');
 
   @override
   Widget build(BuildContext context) {

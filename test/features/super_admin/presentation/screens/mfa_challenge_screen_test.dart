@@ -27,13 +27,17 @@ import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dar
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 class _MockMfaChallengeHandler extends Mock implements MfaChallengeHandler {}
 
 class _MockAuthRepository extends Mock implements IAuthRepository {}
 
 class _MockNavigatorObserver extends Mock implements NavigatorObserver {}
+
+class _MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 class _FakeSecurityIncidentLogger implements SecurityIncidentLogger {
   @override
@@ -56,12 +60,14 @@ const _kCode = '123456';
 
 Widget _buildScreen({
   required _MockMfaChallengeHandler handler,
+  required IDateTimeProvider timeProvider,
   IAuthRepository? authRepo,
   NavigatorObserver? observer,
   bool stubShellGuard = false,
 }) {
   final overrides = <Override>[
     mfaChallengeHandlerProvider.overrideWithValue(handler),
+    dateTimeProviderProvider.overrideWithValue(timeProvider),
     if (authRepo != null) authRepositoryProvider.overrideWithValue(authRepo),
     if (stubShellGuard) ...[
       isSuperAdminProvider.overrideWithValue(true),
@@ -93,9 +99,15 @@ void main() {
 
   group('MfaChallengeScreen — CT30', () {
     late _MockMfaChallengeHandler handler;
+    late _MockDateTimeProvider timeProvider;
+    late DateTime fixedNow;
 
     setUp(() {
       handler = _MockMfaChallengeHandler();
+      timeProvider = _MockDateTimeProvider();
+      fixedNow = DateTime(2026, 5, 12, 14, 0, 0).toUtc();
+
+      when(() => timeProvider.nowUtc()).thenReturn(fixedNow);
       when(() => handler.createChallenge()).thenAnswer(
         (_) async => const MfaChallengeResult(
           challengeId: 'challenge-c1',
@@ -132,6 +144,7 @@ void main() {
       await tester.pumpWidget(
         _buildScreen(
           handler: handler,
+          timeProvider: timeProvider,
           observer: observer,
           stubShellGuard: true,
         ),
@@ -173,7 +186,9 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildScreen(handler: handler));
+      await tester.pumpWidget(
+        _buildScreen(handler: handler, timeProvider: timeProvider),
+      );
       await tester.pumpAndSettle();
 
       await enterCode(tester);
@@ -192,9 +207,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      final lockedUntil = DateTime.now().toUtc().add(
-        const Duration(minutes: 15),
-      );
+      final lockedUntil = fixedNow.add(const Duration(minutes: 15));
       when(
         () => handler.verify(
           factorId: 'factor-f1',
@@ -210,7 +223,9 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildScreen(handler: handler));
+      await tester.pumpWidget(
+        _buildScreen(handler: handler, timeProvider: timeProvider),
+      );
       await tester.pumpAndSettle();
 
       await enterCode(tester);
@@ -230,9 +245,7 @@ void main() {
       // Future enough to keep the lockout banner visible across the test
       // window. Real wall-clock advances during runAsync delays — we compare
       // formatted countdown values for monotonic decrease.
-      final lockedUntil = DateTime.now().toUtc().add(
-        const Duration(seconds: 30),
-      );
+      final lockedUntil = fixedNow.add(const Duration(seconds: 30));
       when(
         () => handler.verify(
           factorId: 'factor-f1',
@@ -248,7 +261,9 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildScreen(handler: handler));
+      await tester.pumpWidget(
+        _buildScreen(handler: handler, timeProvider: timeProvider),
+      );
       await tester.pumpAndSettle();
       await enterCode(tester);
       await tester.pump();
@@ -262,10 +277,10 @@ void main() {
 
       final initial = captureCountdown();
 
-      // Advance real wall-clock by ~2s, then let the periodic timer fire.
-      await tester.runAsync(
-        () async => await Future<void>.delayed(const Duration(seconds: 2)),
-      );
+      // Advance virtual clock by 2s.
+      fixedNow = fixedNow.add(const Duration(seconds: 2));
+      when(() => timeProvider.nowUtc()).thenReturn(fixedNow);
+
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
@@ -289,9 +304,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      final lockedUntil = DateTime.now().toUtc().add(
-        const Duration(minutes: 15),
-      );
+      final lockedUntil = fixedNow.add(const Duration(minutes: 15));
       when(
         () => handler.verify(
           factorId: 'factor-f1',
@@ -307,7 +320,9 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildScreen(handler: handler));
+      await tester.pumpWidget(
+        _buildScreen(handler: handler, timeProvider: timeProvider),
+      );
       await tester.pumpAndSettle();
       await enterCode(tester);
       await tester.pump();
@@ -323,10 +338,8 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      // Lockout that will expire in ~1.5 real-time seconds.
-      final lockedUntil = DateTime.now().toUtc().add(
-        const Duration(milliseconds: 1500),
-      );
+      // Lockout that will expire in 1.5 virtual seconds.
+      final lockedUntil = fixedNow.add(const Duration(milliseconds: 1500));
       when(
         () => handler.verify(
           factorId: 'factor-f1',
@@ -342,16 +355,19 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildScreen(handler: handler));
+      await tester.pumpWidget(
+        _buildScreen(handler: handler, timeProvider: timeProvider),
+      );
       await tester.pumpAndSettle();
       await enterCode(tester);
       await tester.pump();
 
       expect(find.text('Conta Temporariamente Bloqueada'), findsOneWidget);
 
-      await tester.runAsync(
-        () async => await Future<void>.delayed(const Duration(seconds: 2)),
-      );
+      // Advance virtual clock by 2s.
+      fixedNow = fixedNow.add(const Duration(seconds: 2));
+      when(() => timeProvider.nowUtc()).thenReturn(fixedNow);
+
       // Pump twice with the periodic timer interval to fire the unlock path.
       await tester.pump(const Duration(seconds: 1));
       await tester.pump(const Duration(seconds: 1));
@@ -377,7 +393,11 @@ void main() {
       ).thenAnswer((_) => const Stream<bool>.empty());
 
       await tester.pumpWidget(
-        _buildScreen(handler: handler, authRepo: authRepo),
+        _buildScreen(
+          handler: handler,
+          timeProvider: timeProvider,
+          authRepo: authRepo,
+        ),
       );
       await tester.pumpAndSettle();
 

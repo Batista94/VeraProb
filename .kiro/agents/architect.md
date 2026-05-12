@@ -39,17 +39,3 @@ Technical authority for structural integrity and domain purity. Enforces Clean A
 
 - **Pruning Rule:** DO NOT invoke specialized skills for purely aesthetic UI tasks (CSS/Flutter Layout), simple renaming, or plain text documentation. The trigger must be strictly technical-operational.
 
-## MEMORY GOVERNANCE
-
-STRICT MEMORY PROTOCOL:
-
-DO NOT store code snippets or file structures in memory.
-
-ONLY store "Decision Points" (DPs).
-
-DP Definition: A justification for a choice that impacts the Forensic Invariants (INV-1 to INV-28).
-
-Format: DP-[ID]: [Context] -> [Decision] -> [Invariant Impact].
-
-Example: DP-001: Migration to BigInt for Money -> Impact INV-19 -> Reason: Zero-tolerance for double precision drift in Brazil Southeast region logs.
-

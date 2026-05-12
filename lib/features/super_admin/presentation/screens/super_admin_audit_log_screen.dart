@@ -5,6 +5,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/audit_payload_diff_view.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 
 const _kSeverities = ['debug', 'info', 'warning', 'error', 'critical'];
 
@@ -83,7 +84,7 @@ class _SuperAdminAuditLogScreenState
   }
 }
 
-class _FilterBar extends StatelessWidget {
+class _FilterBar extends ConsumerWidget {
   final String? selectedSeverity;
   final DateTimeRange? dateRange;
   final ValueChanged<String?> onSeverityChanged;
@@ -99,7 +100,7 @@ class _FilterBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -124,10 +125,11 @@ class _FilterBar extends StatelessWidget {
           const SizedBox(width: 12),
           OutlinedButton.icon(
             onPressed: () async {
+              final now = ref.read(dateTimeProviderProvider).nowUtc();
               final picked = await showDateRangePicker(
                 context: context,
                 firstDate: DateTime(2024),
-                lastDate: DateTime.now().toUtc().add(const Duration(days: 1)),
+                lastDate: now.add(const Duration(days: 1)),
                 initialDateRange: dateRange,
               );
               if (picked != null) onDateRangeChanged(picked);

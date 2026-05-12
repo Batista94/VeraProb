@@ -37,3 +37,9 @@ Utilize os comandos padronizados para gerenciar o ambiente:
 ## 5. PROTOCOLOS DE DOMÍNIO
 - **SuperAdmin**: Escapes multi-tenant DEVEM usar `SuperAdminBypassTenantValidator`. MFA é obrigatório para transições de estado sensíveis (Arquivamento/Cotas).
 - **Telegram**: Vinculação via `TelegramBindingToken` (TTL curto). Links de evidência devem ser estritamente isolados por `organization_id` (INV-1).
+
+## 6. MEMORY GOVERNANCE (DPs)
+STRICT MEMORY PROTOCOL para todos os agentes:
+- **Decision Points (DPs)**: Justificativa para escolhas que impactam Invariantes Forenses.
+- **Format**: `DP-[ID]: [Context] -> [Decision] -> [Invariant Impact]`.
+- **Exemplo**: `DP-001: Migração para BigInt -> Impacto INV-19 -> Motivo: Precisão monetária.`

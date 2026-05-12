@@ -15,6 +15,8 @@ import 'package:veraprob/features/super_admin/presentation/screens/tenant_health
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
 
@@ -24,6 +26,8 @@ class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
 
 class MockUpdateQuotaHandler extends Mock
     implements UpdateOrganizationQuotaHandler {}
+
+class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 const _fallbackCommand = UpdateOrganizationQuotaCommand(
   organizationId: '',
@@ -99,6 +103,7 @@ Future<void> _pumpUntilFound(
 Widget _buildPanel({
   required MockSuperAdminRepository repo,
   MockUpdateQuotaHandler? handler,
+  MockDateTimeProvider? timeProvider,
   List<TenantHealthView>? tenants,
   Object? error,
   bool loading = false,
@@ -125,6 +130,8 @@ Widget _buildPanel({
       currentSuperAdminIdProvider.overrideWithValue('super-admin-uid'),
       authStateProvider.overrideWith((ref) => const Stream<Never>.empty()),
       currentSessionIdProvider.overrideWithValue('test-session'),
+      if (timeProvider != null)
+        dateTimeProviderProvider.overrideWithValue(timeProvider),
     ],
     child: MaterialApp(
       theme: AppTheme.darkTheme,
@@ -709,6 +716,88 @@ void main() {
         findsNothing,
       );
       expect(find.byIcon(Icons.touch_app_outlined), findsNothing);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 10. Adversarial: Network Instability — Error → Retry → Recovery
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('Adversarial: Network Instability — Retry Recovery', () {
+    testWidgets('error state recovers correctly after successful retry', (
+      tester,
+    ) async {
+      // Phase 1: Network failure
+      when(
+        () => mockRepo.getAllTenantHealth(),
+      ).thenThrow(Exception('HTTP 500: Internal Server Error'));
+
+      await tester.pumpWidget(
+        _buildPanel(
+          repo: mockRepo,
+          error: Exception('HTTP 500: Internal Server Error'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Error state visible
+      expect(find.textContaining('Erro'), findsOneWidget);
+      expect(find.text('Tentar novamente'), findsOneWidget);
+      expect(find.text('Alpha Trans'), findsNothing);
+
+      // Phase 2: Retry succeeds
+      when(() => mockRepo.getAllTenantHealth()).thenAnswer(
+        (_) async => [_tenantA, _tenantB].map(_makeSnapshot).toList(),
+      );
+
+      await tester.tap(find.text('Tentar novamente'));
+      await tester.pumpAndSettle();
+
+      // Recovered — tenant list visible, error gone
+      expect(find.text('Alpha Trans'), findsOneWidget);
+      expect(find.text('Beta Logística'), findsOneWidget);
+      expect(find.text('Tentar novamente'), findsNothing);
+
+      // No infinite loading state
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('multiple consecutive failures do not corrupt widget state', (
+      tester,
+    ) async {
+      // First failure
+      when(
+        () => mockRepo.getAllTenantHealth(),
+      ).thenThrow(Exception('Timeout attempt 1'));
+
+      await tester.pumpWidget(
+        _buildPanel(repo: mockRepo, error: Exception('Timeout attempt 1')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Erro'), findsOneWidget);
+
+      // Second failure on retry
+      when(
+        () => mockRepo.getAllTenantHealth(),
+      ).thenThrow(Exception('Timeout attempt 2'));
+
+      await tester.tap(find.text('Tentar novamente'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Erro'), findsOneWidget);
+
+      // Third attempt succeeds
+      when(
+        () => mockRepo.getAllTenantHealth(),
+      ).thenAnswer((_) async => [_tenantA].map(_makeSnapshot).toList());
+
+      await tester.tap(find.text('Tentar novamente'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alpha Trans'), findsOneWidget);
+      expect(find.textContaining('Erro'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 }

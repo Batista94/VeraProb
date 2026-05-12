@@ -19,6 +19,8 @@ import 'package:veraprob/domain/admin/actor_type.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/super_admin_audit_log_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/audit_payload_diff_view.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
+import 'package:veraprob/core/utils/date_time_provider.dart';
 
 // ─── Mocks & Helpers ────────────────────────────────────────────────────────
 
@@ -32,6 +34,8 @@ class _MockHttpOverrides extends HttpOverrides {
 
 class _MockSystemAuditLogService extends Mock
     implements SystemAuditLogService {}
+
+class _MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 SystemAuditLogView _view({
   required String eventType,
@@ -65,12 +69,15 @@ Widget _buildScreen({
   )
   providerOverride,
   SystemAuditLogService? auditService,
+  IDateTimeProvider? timeProvider,
 }) {
   return ProviderScope(
     overrides: [
       systemAuditLogProvider.overrideWith(providerOverride),
       if (auditService != null)
         systemAuditLogServiceProvider.overrideWithValue(auditService),
+      if (timeProvider != null)
+        dateTimeProviderProvider.overrideWithValue(timeProvider),
     ],
     child: const MaterialApp(home: Scaffold(body: SuperAdminAuditLogScreen())),
   );
@@ -322,8 +329,13 @@ void main() {
     ) async {
       _setLargeScreen(tester);
       final captured = <AuditLogParams>[];
+      final timeProvider = _MockDateTimeProvider();
+      final fixedNow = DateTime.utc(2026, 5, 12, 14);
+      when(() => timeProvider.nowUtc()).thenReturn(fixedNow);
+
       await tester.pumpWidget(
         _buildScreen(
+          timeProvider: timeProvider,
           providerOverride: (ref, params) async {
             captured.add(params);
             return const <SystemAuditLogView>[];

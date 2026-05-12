@@ -199,8 +199,8 @@ void main() {
       await tester.pump();
 
       authStatusCtrl.add(true);
-      await tester.pump();
-      await tester.pump();
+      // pumpAndSettle is required to wait for the Navigator transition to complete.
+      await tester.pumpAndSettle();
 
       // Verify the safe fallback: on MFA error, navigate to challenge screen.
       verify(() => mfaRepo.getMfaStatus()).called(greaterThanOrEqualTo(1));
