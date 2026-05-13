@@ -1,7 +1,7 @@
 import 'package:veraprob/domain/shared/idempotency_key.dart';
 import 'package:veraprob/domain/shared/idempotency_registration_result.dart';
 import 'package:veraprob/domain/shared/idempotency_store.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// In-memory implementation of [IIdempotencyStore] for unit testing.
 class InMemoryIdempotencyStore implements IIdempotencyStore {

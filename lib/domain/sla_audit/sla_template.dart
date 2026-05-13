@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 import 'domain_exception.dart';
 import 'sla_penalties.dart';
@@ -9,7 +9,7 @@ import 'transport_vertical.dart';
 /// Core Domain Entity representing a named preset of [SLAPenalties].
 ///
 /// SLA Templates allow operators to configure penalty parameters once and
-/// reuse them across multiple plan declarations â€” eliminating repetitive
+/// reuse them across multiple plan declarations — eliminating repetitive
 /// manual entry in the Wizard Step 3.
 ///
 /// **Classification:** Core Domain Entity.
@@ -17,7 +17,7 @@ import 'transport_vertical.dart';
 /// templates. A template is purely a named JSONB preset.
 ///
 /// **Immutability:** All fields are final. Editing a template creates a new
-/// record (not enforced here â€” left to the UI/handler layer).
+/// record (not enforced here — left to the UI/handler layer).
 ///
 /// Equality is based exclusively on [id].
 class SlaTemplate extends Equatable {

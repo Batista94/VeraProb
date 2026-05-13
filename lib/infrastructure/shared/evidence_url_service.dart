@@ -1,4 +1,4 @@
-import 'package:veraprob/core/config/environment.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 
 /// Service to encapsulate Supabase evidence URL generation.
 ///

@@ -1,6 +1,6 @@
 import 'package:veraprob/application/intelligence/telemetry_normalizer.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/entities/raw_telemetry_ping.dart';
 import 'package:veraprob/domain/sla_audit/canonical_fact.dart';
 import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
@@ -32,7 +32,7 @@ class TelemetryNormalizationHandler {
     RawTelemetryBatch batch, {
     required String sessionId,
   }) async {
-    // INV-1: Identity Sovereignty â€” fail-fast tenant check
+    // INV-1: Identity Sovereignty — fail-fast tenant check
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: batch.organizationId,
       sessionId: sessionId,

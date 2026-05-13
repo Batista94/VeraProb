@@ -1,4 +1,4 @@
-import 'package:veraprob/core/utils/uuid_generator.dart';
+import 'package:veraprob/domain/shared/uuid_generator.dart';
 
 /// Deterministic UUID generator for testing (INV-15).
 /// Returns sequential IDs: 'fake-uuid-0', 'fake-uuid-1', etc.

@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
-import 'package:veraprob/core/utils/cnpj_validator.dart';
+import 'package:veraprob/presentation/shared/formatters/brl_currency_input_formatter.dart';
+import 'package:veraprob/domain/shared/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/create_organization_form_data.dart';
 import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';

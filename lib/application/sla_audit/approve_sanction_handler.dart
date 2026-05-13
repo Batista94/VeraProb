@@ -1,5 +1,5 @@
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -15,7 +15,7 @@ import 'sla_ledger_mapper.dart';
 /// Enforces Human-in-the-Loop: only this handler can generate a
 /// `VERDICT_SEALED` ledger entry. The engine NEVER does this directly.
 ///
-/// Contains NO domain logic â€” authorization and idempotency guards are
+/// Contains NO domain logic — authorization and idempotency guards are
 /// application-layer concerns. Ledger append is irreversible (INV-1).
 class ApproveSanctionHandler {
   final TenantValidationService _tenantValidator;
@@ -44,18 +44,18 @@ class ApproveSanctionHandler {
   /// - Queue entry not found for the given [organizationId]
   /// - Entry is not in [SanctionReviewStatus.pending] (idempotency guard, INV-24)
   Future<void> handle(ApproveSanctionCommand command) async {
-    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. RBAC check â€” before any I/O (prevents oracle attacks)
+    // 2. RBAC check — before any I/O (prevents oracle attacks)
     if (!_rbac.can(command.callerRole, UserPermission.canApproveSanctions)) {
       throw const DomainException('Unauthorized.');
     }
 
-    // 2. Load queue entry â€” scoped to organizationId (tenant isolation, INV-6)
+    // 2. Load queue entry — scoped to organizationId (tenant isolation, INV-6)
     final entry = await _queueRepo.findById(
       command.queueEntryId,
       organizationId: command.organizationId,

@@ -4,11 +4,11 @@
 //
 // 100% branch coverage for MotionClassifier.
 //
-// Coordinate geometry (haversine-exact, SÃ£o Paulo â€“ ParaÃ­so area):
-//   kStopALat/Lng  = (-23.5612,    -46.6560)  â€” Ponto ParaÃ­so (reference stop)
-//   kStopBLat/Lng  = (-23.5593982, -46.6560)  â€” ~200 m north of A
-//   kVehicle30mLat = -23.5609297              â€” ~30 m north of A (inside 50 m radius)
-//   kVehicle80mLat = -23.5604793              â€” ~80 m north of A (outside 50 m radius)
+// Coordinate geometry (haversine-exact, São Paulo – Paraíso area):
+//   kStopALat/Lng  = (-23.5612,    -46.6560)  — Ponto Paraíso (reference stop)
+//   kStopBLat/Lng  = (-23.5593982, -46.6560)  — ~200 m north of A
+//   kVehicle30mLat = -23.5609297              — ~30 m north of A (inside 50 m radius)
+//   kVehicle80mLat = -23.5604793              — ~80 m north of A (outside 50 m radius)
 //
 //   Vehicle at kVehicle30mLat â†’ dist_A â‰ˆ 30 m (inside), dist_B â‰ˆ 170 m (outside)
 //   Vehicle at kVehicle80mLat â†’ dist_A â‰ˆ 80 m (outside), dist_B â‰ˆ 120 m (outside)
@@ -21,9 +21,9 @@ import 'package:veraprob/domain/entities/stop.dart';
 
 import '../../mocks/fake_date_time_provider.dart';
 
-// â”€â”€ Shared coordinate constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared coordinate constants ───────────────────────────────────────────────
 
-/// Reference stop: Ponto ParaÃ­so, Av. Brigadeiro LuÃ­s AntÃ´nio, SÃ£o Paulo.
+/// Reference stop: Ponto Paraíso, Av. Brigadeiro Luís Antônio, São Paulo.
 const double kStopALat = -23.5612;
 const double kStopALng = -46.6560;
 
@@ -39,11 +39,11 @@ const double kVehicle80mLat = -23.5604793;
 
 const double kBaseLng = -46.6560;
 
-// â”€â”€ Canonical stop fixtures â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Canonical stop fixtures ───────────────────────────────────────────────────
 
 const Stop kStopA = Stop(
   id: 'stop-a',
-  name: 'Ponto ParaÃ­so',
+  name: 'Ponto Paraíso',
   latitude: kStopALat,
   longitude: kStopALng,
 );
@@ -55,7 +55,7 @@ const Stop kStopB = Stop(
   longitude: kStopBLng,
 );
 
-// â”€â”€ Factory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Factory ───────────────────────────────────────────────────────────────────
 
 MotionClassifier makeClassifier() => MotionClassifier(
   movingSpeedThreshold: 8.0,
@@ -68,7 +68,7 @@ MotionClassifier makeClassifier() => MotionClassifier(
 void main() {
   final kEpoch = DateTime.utc(2026, 4, 7, 12, 0, 0);
 
-  // â”€â”€ classifyMotion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── classifyMotion ────────────────────────────────────────────────────────
   group('classifyMotion', () {
     late MotionClassifier classifier;
     late FakeDateTimeProvider clock;
@@ -78,7 +78,7 @@ void main() {
       clock = FakeDateTimeProvider(kEpoch);
     });
 
-    // B1 â€” speed above movingSpeedThreshold, key was never in map
+    // B1 — speed above movingSpeedThreshold, key was never in map
     test(
       'B1: returns moving and does not insert key when speed > movingSpeedThreshold '
       '(key was never in map)',
@@ -104,7 +104,7 @@ void main() {
       },
     );
 
-    // B2 â€” speed above movingSpeedThreshold WITH a pre-existing map entry
+    // B2 — speed above movingSpeedThreshold WITH a pre-existing map entry
     test(
       'B2: removes existing low-speed key when speed > movingSpeedThreshold',
       () {
@@ -142,7 +142,7 @@ void main() {
       },
     );
 
-    // B3 â€” speed <= movingSpeedThreshold, key NOT yet in map
+    // B3 — speed <= movingSpeedThreshold, key NOT yet in map
     test(
       'B3: inserts key with current timestamp when first entering low-speed state',
       () {
@@ -158,7 +158,7 @@ void main() {
       },
     );
 
-    // B4 â€” speed <= movingSpeedThreshold, key ALREADY in map (timestamp preserved)
+    // B4 — speed <= movingSpeedThreshold, key ALREADY in map (timestamp preserved)
     test(
       'B4: putIfAbsent preserves existing timestamp on second low-speed call',
       () {
@@ -173,7 +173,7 @@ void main() {
           t0,
         );
 
-        // Advance 20 s â€” if putIfAbsent overwrote the key, duration would be 0
+        // Advance 20 s — if putIfAbsent overwrote the key, duration would be 0
         // and the result would be moving instead of stopped.
         clock.advance(const Duration(seconds: 20));
         final result = classifier.classifyMotion(
@@ -188,7 +188,7 @@ void main() {
       },
     );
 
-    // B5 â€” speed <= slowTrafficThreshold, duration < stoppedMinDuration
+    // B5 — speed <= slowTrafficThreshold, duration < stoppedMinDuration
     test(
       'B5: returns moving when speed <= slowTrafficThreshold but duration < stoppedMinDuration',
       () {
@@ -203,7 +203,7 @@ void main() {
         clock.advance(const Duration(seconds: 5)); // 5 s < 15 s
         final result = classifier.classifyMotion(
           'v5',
-          0.0, // exactly zero â€” definitely <= slowTrafficThreshold
+          0.0, // exactly zero — definitely <= slowTrafficThreshold
           (kStopALat, kStopALng),
           const [],
           clock.nowUtc(),
@@ -212,7 +212,7 @@ void main() {
       },
     );
 
-    // B6 â€” speed <= slowTrafficThreshold, duration >= stoppedMinDuration, no near stop
+    // B6 — speed <= slowTrafficThreshold, duration >= stoppedMinDuration, no near stop
     test(
       'B6: returns stopped when stationary long enough with no stop within radius',
       () {
@@ -228,10 +228,7 @@ void main() {
         final result = classifier.classifyMotion(
           'v6',
           0.0,
-          (
-            kVehicle80mLat,
-            kBaseLng,
-          ), // ~80 m from Stop A â€” outside 50 m radius
+          (kVehicle80mLat, kBaseLng), // ~80 m from Stop A — outside 50 m radius
           [kStopA],
           clock.nowUtc(),
         );
@@ -239,7 +236,7 @@ void main() {
       },
     );
 
-    // B7 â€” speed <= slowTrafficThreshold, duration >= stoppedMinDuration, stop within radius
+    // B7 — speed <= slowTrafficThreshold, duration >= stoppedMinDuration, stop within radius
     test(
       'B7: returns dwellingAtStop when stationary long enough and within stop radius',
       () {
@@ -255,10 +252,7 @@ void main() {
         final result = classifier.classifyMotion(
           'v7',
           0.0,
-          (
-            kVehicle30mLat,
-            kBaseLng,
-          ), // ~30 m from Stop A â€” inside 50 m radius
+          (kVehicle30mLat, kBaseLng), // ~30 m from Stop A — inside 50 m radius
           [kStopA],
           clock.nowUtc(),
         );
@@ -266,7 +260,7 @@ void main() {
       },
     );
 
-    // B8 â€” slowTrafficThreshold < speed <= movingSpeedThreshold,
+    // B8 — slowTrafficThreshold < speed <= movingSpeedThreshold,
     //      duration >= slowTrafficMinDuration
     test('B8: returns slowTraffic when in middle speed band long enough', () {
       classifier.classifyMotion(
@@ -290,7 +284,7 @@ void main() {
       expect(result, MotionState.slowTraffic);
     });
 
-    // B9 â€” slowTrafficThreshold < speed <= movingSpeedThreshold,
+    // B9 — slowTrafficThreshold < speed <= movingSpeedThreshold,
     //      duration < slowTrafficMinDuration
     test(
       'B9: returns moving when in middle speed band but not long enough',
@@ -316,7 +310,7 @@ void main() {
     );
   });
 
-  // â”€â”€ _findNearestStop (via classifyMotion) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── _findNearestStop (via classifyMotion) ─────────────────────────────────
   group('_findNearestStop via classifyMotion', () {
     late MotionClassifier classifier;
     late FakeDateTimeProvider clock;
@@ -339,20 +333,20 @@ void main() {
       clock.advance(const Duration(seconds: 16));
     }
 
-    // B10 â€” empty stop list
+    // B10 — empty stop list
     test('B10: returns stopped when stops list is empty', () {
       primeTimer('vA', (kVehicle80mLat, kBaseLng));
       final result = classifier.classifyMotion(
         'vA',
         0.0,
-        (kVehicle30mLat, kBaseLng), // position irrelevant â€” no stops to check
+        (kVehicle30mLat, kBaseLng), // position irrelevant — no stops to check
         const [],
         clock.nowUtc(),
       );
       expect(result, MotionState.stopped);
     });
 
-    // B11 â€” single stop, distance > radius
+    // B11 — single stop, distance > radius
     test(
       'B11: returns stopped when the only stop is outside radius (~80 m > 50 m)',
       () {
@@ -368,7 +362,7 @@ void main() {
       },
     );
 
-    // B12 â€” single stop, distance <= radius
+    // B12 — single stop, distance <= radius
     test(
       'B12: returns dwellingAtStop when the only stop is inside radius (~30 m < 50 m)',
       () {
@@ -384,7 +378,7 @@ void main() {
       },
     );
 
-    // B13 â€” multiple stops, closer one inside radius wins; list order must not matter
+    // B13 — multiple stops, closer one inside radius wins; list order must not matter
     test('B13: picks closer stop (A, ~30 m) over farther stop (B, ~170 m) '
         'even when B appears first in the list', () {
       primeTimer('vD', (kVehicle30mLat, kBaseLng));
@@ -393,17 +387,17 @@ void main() {
         'vD',
         0.0,
         (kVehicle30mLat, kBaseLng),
-        [kStopB, kStopA], // B first â€” reversed order
+        [kStopB, kStopA], // B first — reversed order
         clock.nowUtc(),
       );
       expect(result, MotionState.dwellingAtStop);
     });
 
-    // B14 â€” multiple stops, closest still outside radius
+    // B14 — multiple stops, closest still outside radius
     test(
       'B14: returns stopped when multiple stops present but nearest is still outside radius',
       () {
-        // kVehicle80mLat: dist_A â‰ˆ 80 m, dist_B â‰ˆ 120 m â€” both > 50 m
+        // kVehicle80mLat: dist_A â‰ˆ 80 m, dist_B â‰ˆ 120 m — both > 50 m
         primeTimer('vE', (kVehicle80mLat, kBaseLng));
         final result = classifier.classifyMotion(
           'vE',
@@ -417,7 +411,7 @@ void main() {
     );
   });
 
-  // â”€â”€ removeKey â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── removeKey ──────────────────────────────────────────────────────────────
   group('removeKey', () {
     late MotionClassifier classifier;
     late FakeDateTimeProvider clock;
@@ -427,7 +421,7 @@ void main() {
       clock = FakeDateTimeProvider(kEpoch);
     });
 
-    // B15a â€” removeKey on existing key resets the timer
+    // B15a — removeKey on existing key resets the timer
     test(
       'B15a: removeKey on existing key causes next slow-speed call to use a fresh timestamp',
       () {
@@ -458,7 +452,7 @@ void main() {
       },
     );
 
-    // B15b â€” removeKey on a key that was never inserted must not throw
+    // B15b — removeKey on a key that was never inserted must not throw
     test('B15b: removeKey on a missing key does not throw', () {
       expect(
         () => classifier.removeKey('nonexistent-vehicle'),
@@ -467,7 +461,7 @@ void main() {
     });
   });
 
-  // â”€â”€ reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── reset ──────────────────────────────────────────────────────────────────
   group('reset', () {
     late MotionClassifier classifier;
     late FakeDateTimeProvider clock;
@@ -477,7 +471,7 @@ void main() {
       clock = FakeDateTimeProvider(kEpoch);
     });
 
-    // B16 â€” reset clears all accumulated state across multiple vehicles
+    // B16 — reset clears all accumulated state across multiple vehicles
     test(
       'B16: reset clears all low-speed timers so every vehicle starts fresh',
       () {

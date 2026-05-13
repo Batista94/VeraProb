@@ -1,6 +1,12 @@
 # =============================================================================
 # VeraProb — Orchestration Makefile
 # =============================================================================
+
+# ── Environment ───────────────────────────────────────────────────────────────
+IMAGE_NAME = veraprob-test-env
+# Em Windows/PowerShell, CURDIR precisa ser tratado para o Docker
+DOCKER_RUN = docker run --rm -v "$(CURDIR)":/app -v /app/.dart_tool -v /app/build -w /app
+
 # Uso:
 #   make <comando>
 #
@@ -8,7 +14,7 @@
 #   make help
 # =============================================================================
 
-.PHONY: help setup run scan-secrets test-security pr-scan load-tokens index-advisor test test-db test-all full-check goldens
+.PHONY: help setup run scan-secrets test-security pr-scan load-tokens index-advisor test test-db test-all full-check goldens build-test-env
 
 help: ## Mostra este menu de ajuda
 	@echo "VeraProb — Comandos Disponíveis:"
@@ -30,18 +36,18 @@ run-staging: ## Inicia o ambiente simulando staging
 # ── Segurança & Governança (INV-28) ──────────────────────────────────────────
 
 scan-secrets: ## Executa o scanner de segredos nos arquivos staged
-	python scripts/security/scan_secrets.py
+	$(DOCKER_RUN) $(IMAGE_NAME) python3 scripts/security/scan_secrets.py
 
 test-security: ## Valida se os 3 níveis do motor do scanner estão operacionais
-	python scripts/internal/test_scan_secrets.py
+	$(DOCKER_RUN) $(IMAGE_NAME) python3 scripts/internal/test_scan_secrets.py
 
 pr-scan: ## [Lead Reviewer] Executa o scanner determinístico completo de PR
-	bash scripts/security/pr_full_scanner.sh
+	$(DOCKER_RUN) $(IMAGE_NAME) bash scripts/security/pr_full_scanner.sh
 
 # ── QA & Performance ──────────────────────────────────────────────────────────
 
 index-advisor: ## [INV-12] Analisa queries staged para Seq Scans e índices faltantes
-	python scripts/index_advisor.py
+	$(DOCKER_RUN) --network host -e PGHOST=host.docker.internal $(IMAGE_NAME) python3 scripts/index_advisor.py
 
 load-tokens: ## Gera tokens JWT para testes de estresse (K6)
 	node scripts/qa/generate_load_test_tokens.mjs
@@ -62,6 +68,9 @@ test-db: ## [INV-28] Executa testes forenses de integridade no PostgreSQL (pgTap
 	supabase test db
 
 test-all: test test-db ## Roda todos os testes (Flutter + DB)
+
+build-test-env: ## Constrói a imagem Docker de ambiente de testes
+	docker build -t $(IMAGE_NAME) -f scripts/docker/Dockerfile.test .
 
 # ── Atalhos ───────────────────────────────────────────────────────────────────
 

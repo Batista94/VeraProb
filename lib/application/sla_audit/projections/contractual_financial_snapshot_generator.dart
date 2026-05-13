@@ -1,5 +1,5 @@
-import 'package:veraprob/core/time/brazil_time.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/brazil_time.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
@@ -71,7 +71,7 @@ class ContractualFinancialSnapshotGenerator {
     }).toList();
 
     // Guard: when a contractId is scoped, zero states means either the contract
-    // belongs to another org or has no obligations that day â€” do not persist an
+    // belongs to another org or has no obligations that day — do not persist an
     // empty cross-tenant snapshot (INV-6). Org-level snapshots (no contractId)
     // may legitimately be zero and are still persisted.
     if (contractId != null && dayStates.isEmpty) return;
@@ -109,7 +109,7 @@ class ContractualFinancialSnapshotGenerator {
           evidenceGapCount++;
           break;
         case ExecutionStatus.inhibited:
-          // Penalty suppressed â€” counts as protected revenue for reconciliation
+          // Penalty suppressed — counts as protected revenue for reconciliation
           protectedRevenue = protectedRevenue + value;
           executedCount++;
           break;

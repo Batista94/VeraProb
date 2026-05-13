@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/core/config/environment.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/mfa_disabled_banner.dart';

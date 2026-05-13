@@ -3,7 +3,7 @@ import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// Mixin for Application Handlers to orchestrate resilient, idempotent execution.
 ///
@@ -47,7 +47,7 @@ mixin IdempotentHandlerMixin {
       staleThresholdMinutes: staleThresholdMinutes,
     );
 
-    // â”€â”€ ACQUIRED = TRUE: Execute Business Logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── ACQUIRED = TRUE: Execute Business Logic ─────────────────────────────
     if (result.acquired) {
       try {
         final entity = await businessLogic();
@@ -111,7 +111,7 @@ mixin IdempotentHandlerMixin {
       }
     }
 
-    // â”€â”€ ACQUIRED = FALSE: Handle Cache Hit (Replay) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── ACQUIRED = FALSE: Handle Cache Hit (Replay) ─────────────────────────
     final cached = result.key;
 
     if (cached.isCompleted) {

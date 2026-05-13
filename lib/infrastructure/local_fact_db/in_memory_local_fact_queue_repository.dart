@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/local_fact_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// In-memory implementation of [LocalFactQueueRepository].
 ///
 /// Used exclusively in tests and as a fallback in non-WASM environments.
 /// Enforces idempotency via factId uniqueness (INV-11).
 ///
-/// **INV-18:** Pure Dart â€” zero Flutter / Supabase dependencies.
+/// **INV-18:** Pure Dart — zero Flutter / Supabase dependencies.
 class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
   final List<PendingFact> _facts = [];
   final StreamController<int> _countController =
@@ -19,7 +19,7 @@ class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
 
   InMemoryLocalFactQueueRepository(this._dateTimeProvider);
 
-  // â”€â”€ LocalFactQueueRepository â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── LocalFactQueueRepository ─────────────────────────────────────────────
 
   @override
   Future<void> enqueue(PendingFact fact) async {
@@ -87,7 +87,7 @@ class InMemoryLocalFactQueueRepository implements LocalFactQueueRepository {
     if (_facts.length != before) _emitCount();
   }
 
-  // â”€â”€ Private helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Private helpers ──────────────────────────────────────────────────────
 
   void _update(String factId, PendingFact Function(PendingFact) transform) {
     final idx = _facts.indexWhere((f) => f.factId == factId);

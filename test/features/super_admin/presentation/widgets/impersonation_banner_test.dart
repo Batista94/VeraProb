@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/super_admin/revoke_impersonation_handler.dart';
 import 'package:veraprob/application/super_admin/start_impersonation_handler.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/impersonation_banner.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 

@@ -1,6 +1,6 @@
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/operational_control_service.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/authority/commands/contracts/update_contract_command.dart';
 import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
 import 'package:veraprob/domain/authority/commands/trips/create_trip_event_command.dart';

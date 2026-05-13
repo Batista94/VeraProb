@@ -8,7 +8,7 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/domain/sla_audit/contract_status.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'close_contract_command.dart';
 import 'sla_ledger_mapper.dart';
 

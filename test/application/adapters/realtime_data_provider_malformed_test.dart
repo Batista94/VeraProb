@@ -1,8 +1,8 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/adapters/realtime_data_provider.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 class MockSupabaseClient extends Mock implements SupabaseClient {}
@@ -42,7 +42,7 @@ void main() {
   });
 
   group('Mensagens Malformadas', () {
-    test('payload vazio nÃ£o causa crash', () {
+    test('payload vazio não causa crash', () {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       provider.connect();
 
@@ -60,7 +60,7 @@ void main() {
       provider.disconnect();
     });
 
-    test('campo tripId faltando Ã© ignorado', () {
+    test('campo tripId faltando é ignorado', () {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       provider.connect();
       final emissions = <List<VehiclePosition>>[];
@@ -85,7 +85,7 @@ void main() {
       provider.disconnect();
     });
 
-    test('campo latitude faltando Ã© ignorado', () {
+    test('campo latitude faltando é ignorado', () {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       provider.connect();
       final emissions = <List<VehiclePosition>>[];
@@ -110,7 +110,7 @@ void main() {
       provider.disconnect();
     });
 
-    test('campo longitude faltando Ã© ignorado', () {
+    test('campo longitude faltando é ignorado', () {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       provider.connect();
       final emissions = <List<VehiclePosition>>[];
@@ -135,7 +135,7 @@ void main() {
       provider.disconnect();
     });
 
-    test('campo timestamp faltando Ã© ignorado', () {
+    test('campo timestamp faltando é ignorado', () {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       provider.connect();
       final emissions = <List<VehiclePosition>>[];
@@ -160,7 +160,7 @@ void main() {
       provider.disconnect();
     });
 
-    test('latitude com tipo errado (string) Ã© ignorado', () {
+    test('latitude com tipo errado (string) é ignorado', () {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       provider.connect();
       final emissions = <List<VehiclePosition>>[];
@@ -186,7 +186,7 @@ void main() {
       provider.disconnect();
     });
 
-    test('longitude com tipo errado (string) Ã© ignorado', () {
+    test('longitude com tipo errado (string) é ignorado', () {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       provider.connect();
       final emissions = <List<VehiclePosition>>[];
@@ -212,7 +212,7 @@ void main() {
       provider.disconnect();
     });
 
-    test('timestamp com formato invÃ¡lido Ã© ignorado', () {
+    test('timestamp com formato inválido é ignorado', () {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       provider.connect();
       final emissions = <List<VehiclePosition>>[];

@@ -2,7 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:equatable/equatable.dart';
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/shadow_verdict.dart';
 import 'package:veraprob/domain/sla_audit/shadow_verdict_repository.dart';
 
@@ -27,10 +27,10 @@ class ShadowComparisonReport extends Equatable {
   /// All shadow_verdicts in the time window (compared + pending).
   final int totalEvaluated;
 
-  /// Subset with a human decision â€” the denominator for [matchRate].
+  /// Subset with a human decision — the denominator for [matchRate].
   final int totalCompared;
 
-  /// Percentage of compared verdicts where engine == human (0.0â€“100.0).
+  /// Percentage of compared verdicts where engine == human (0.0–100.0).
   /// 0.0 when [totalCompared] == 0 (no human decisions yet in window).
   final double matchRate; // Physical Metric - Double Required
 
@@ -40,7 +40,7 @@ class ShadowComparisonReport extends Equatable {
   /// Engine cleared obligation; human applied penalty.
   final int falseNegativeCount;
 
-  /// Awaiting a human decision â€” excluded from [matchRate].
+  /// Awaiting a human decision — excluded from [matchRate].
   final int pendingManualCount;
 
   /// FP + FN entries for SuperAdmin drill-down.
@@ -160,7 +160,7 @@ class ShadowComparisonService {
         ? 0.0
         : (matchCount / compared.length) * 100.0;
 
-    // 4. Critical divergence check â€” only fires when there is real comparison data.
+    // 4. Critical divergence check — only fires when there is real comparison data.
     final isCritical =
         compared.isNotEmpty && matchRate < criticalDivergenceThreshold;
 
@@ -173,10 +173,10 @@ class ShadowComparisonService {
         'FP=$fpCount FN=$fnCount '
         'divergentEntries=${divergentEntries.length} '
         'window=${fromUtc.toIso8601String()}â†’${toUtc.toIso8601String()} '
-        'â€” Requires immediate SuperAdmin review of EvaluationEngine '
+        '— Requires immediate SuperAdmin review of EvaluationEngine '
         'verdict/inhibition logic.',
         name: 'ShadowComparisonService',
-        level: 1000, // SEVERE â€” maps to ERROR in the Dart log hierarchy
+        level: 1000, // SEVERE — maps to ERROR in the Dart log hierarchy
       );
     }
 

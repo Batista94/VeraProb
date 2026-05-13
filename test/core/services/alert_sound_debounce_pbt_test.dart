@@ -5,7 +5,7 @@ import 'package:glados/glados.dart'
     hide expect, group, test, setUpAll, tearDownAll, setUp, tearDown, any;
 import 'package:just_audio/just_audio.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:veraprob/core/services/alert_sound_service.dart';
+import 'package:veraprob/infrastructure/audio/alert_sound_service.dart';
 
 import '../../mocks/fake_date_time_provider.dart';
 

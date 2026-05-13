@@ -37,7 +37,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_execution_state_repository.dart';
 
 import '../postgres/postgres_test_config.dart';

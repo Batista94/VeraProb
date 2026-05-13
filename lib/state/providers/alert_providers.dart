@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/alert_service.dart';
 import 'package:veraprob/application/sla_audit/quick_reconciliation_service.dart';
-import 'package:veraprob/core/services/alert_sound_service.dart';
+import 'package:veraprob/infrastructure/audio/alert_sound_service.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/provider_timeout.dart';

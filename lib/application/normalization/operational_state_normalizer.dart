@@ -1,7 +1,7 @@
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
-import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/domain/shared/geo_math.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'package:veraprob/domain/entities/stop.dart';
 import 'models/vehicle_operational_state.dart';

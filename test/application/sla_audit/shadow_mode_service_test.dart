@@ -8,7 +8,7 @@ import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_canonical_fact_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_shadow_mode_repository.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 void main() {
   final periodStart = DateTime.utc(2026, 3, 1);

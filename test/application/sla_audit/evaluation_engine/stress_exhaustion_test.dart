@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/domain/shared/geo_math.dart';
 
 import '_engine_test_helpers.dart';
 

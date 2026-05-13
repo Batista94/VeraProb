@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:veraprob/core/utils/cnpj_validator.dart';
+import 'package:veraprob/domain/shared/cnpj_validator.dart';
 
 void main() {
   group('CnpjValidator', () {

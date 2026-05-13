@@ -98,6 +98,39 @@ jobs:
       - name: Flutter Analyze (zero warnings policy)
         run: flutter analyze --no-pub
 
+      - name: H-13 Encoding Guard (reject mojibake)
+        run: |
+          echo "Scanning all .dart files for encoding violations..."
+          ERRORS=0
+          while IFS= read -r FILE; do
+            # Valid UTF-8 check
+            if ! iconv -f UTF-8 -t UTF-8 "$FILE" > /dev/null 2>&1; then
+              echo "::error file=$FILE::Invalid UTF-8 encoding"
+              ERRORS=$((ERRORS + 1))
+              continue
+            fi
+            # BOM check
+            if head -c 3 "$FILE" | grep -qP '\xef\xbb\xbf'; then
+              echo "::error file=$FILE::UTF-8 BOM detected (remove BOM)"
+              ERRORS=$((ERRORS + 1))
+            fi
+            # Latin-1 double-encode
+            if grep -qP '\xc3\x83\xc2' "$FILE"; then
+              echo "::error file=$FILE::Mojibake detected (Latin-1 double-encode)"
+              ERRORS=$((ERRORS + 1))
+            fi
+            # Win-1252 double-encode
+            if grep -qP '\xc3\xa2\xe2\x82\xac' "$FILE"; then
+              echo "::error file=$FILE::Mojibake detected (Win-1252 double-encode)"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done < <(find lib test -name '*.dart' -type f)
+          if [ $ERRORS -gt 0 ]; then
+            echo "::error::Encoding Guard FAILED: $ERRORS file(s) with violations"
+            exit 1
+          fi
+          echo "✅ All .dart files are valid UTF-8 without mojibake."
+
       - name: Enforce Dart Formatting
         run: dart format --output=none --set-exit-if-changed .
 

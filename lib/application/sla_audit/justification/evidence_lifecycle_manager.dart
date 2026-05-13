@@ -21,7 +21,7 @@
 /// forensic value because no business event was ever committed.
 library;
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Storage tier of a forensic evidence file.

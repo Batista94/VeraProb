@@ -1,6 +1,6 @@
 import 'dart:math' show pow, sqrt;
 
-import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/domain/shared/geo_math.dart';
 
 import 'canonical_fact.dart';
 import 'spoofing_risk_score.dart';

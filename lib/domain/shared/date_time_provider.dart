@@ -1,4 +1,4 @@
-import 'package:veraprob/core/time/brazil_time.dart';
+import 'package:veraprob/domain/shared/brazil_time.dart';
 
 /// Abstract interface for deterministic time injection.
 ///

@@ -2,7 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/audit/audit_service.dart';
 import 'package:veraprob/domain/entities/audit_log.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// Postgres implementation of the [AuditService].
 /// Operates strictly as an append-only persistence adapter.

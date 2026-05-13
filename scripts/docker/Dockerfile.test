@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
     libgtk-3-0 \
     libblkid1 \
     liblzma5 \
+    python3 \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Instala o Flutter 3.41.5 (versão do seu CI)

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/detectors/stopped_vehicle_detector.dart';
 import 'package:veraprob/application/normalization/operational_state_normalizer.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
@@ -127,7 +127,7 @@ void main() {
 
       final warning = detector.evaluate(trip, replayResults.first, []);
       expect(warning, isNotNull);
-      expect(warning!.message, contains('VeÃ­culo Parado na Via: 10 min'));
+      expect(warning!.message, contains('Veículo Parado na Via: 10 min'));
     });
 
     test('Dwell Time Transition - Moving to Stopped state transition', () {

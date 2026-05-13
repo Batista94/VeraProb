@@ -36,7 +36,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:veraprob/application/shared/security_context.dart';
-import 'package:veraprob/core/config/environment.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 
 /// Static forensic logger for security event auditing.
 ///

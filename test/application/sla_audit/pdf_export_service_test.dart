@@ -1,9 +1,9 @@
 // Regras de Escrita:
-// 1. Use DateTime.utc() ou DateTime.now().toUtc() em uma Ãºnica linha (INV-9).
-// 2. Use int para valores monetÃ¡rios (cents) e taxas (BPS) â€” INV-19.
+// 1. Use DateTime.utc() ou DateTime.now().toUtc() em uma única linha (INV-9).
+// 2. Use int para valores monetários (cents) e taxas (BPS) — INV-19.
 // 3. Proibido importar lib/infrastructure em testes de application
-//    (exceto implementaÃ§Ãµes in-memory de repositÃ³rios para suporte de testes).
-// 4. Fonts sÃ£o carregadas via rootBundle (flutter_test) â€” sem dependÃªncia de dart:io.
+//    (exceto implementaçÃµes in-memory de repositórios para suporte de testes).
+// 4. Fonts são carregadas via rootBundle (flutter_test) — sem dependência de dart:io.
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,7 +21,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_audit_package_reposi
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
 
 void main() {
-  // â”€â”€ Font bytes â€” loaded once for the entire suite via rootBundle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Font bytes — loaded once for the entire suite via rootBundle ──────────
   // Eliminates Helvetica Unicode warnings for em-dash and â‰¤ in legal notices.
   late ByteData fontRegular;
   late ByteData fontBold;
@@ -32,7 +32,7 @@ void main() {
     fontBold = await rootBundle.load('assets/fonts/Lato-Bold.ttf');
   });
 
-  // â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Constants ─────────────────────────────────────────────────────────────
   final periodStart = DateTime.utc(2026, 3, 1);
   final periodEnd = DateTime.utc(2026, 3, 31, 23, 59, 59);
   const orgId = 'org-forensic';
@@ -41,12 +41,12 @@ void main() {
   const engineVersion = '7.1.0-test';
   const userId = 'user-test-1';
 
-  // â”€â”€ Local formatting helpers (mirror private _fmtBrl / BPS display) â”€â”€â”€â”€â”€â”€â”€
+  // ── Local formatting helpers (mirror private _fmtBrl / BPS display) ───────
   // These test the algorithm independently of the private methods in the service.
   String fmtBrl(int cents) => 'R\$ ${(cents / 100).toStringAsFixed(2)}';
   String fmtBps(int bps) => '${(bps / 100.0).toStringAsFixed(1)}%';
 
-  // â”€â”€ Domain object factories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Domain object factories ───────────────────────────────────────────────
   AttestationHeader makeHeader({
     String tenantName = 'Operadora Alpha',
     String? tenantCnpj = '12.345.678/0001-99',
@@ -83,7 +83,7 @@ void main() {
     lastLedgerEntryId: lastLedgerEntryId,
   );
 
-  // â”€â”€ Infrastructure â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Infrastructure ────────────────────────────────────────────────────────
   late InMemoryAuditPackageRepository auditPackageRepo;
   late InMemoryContractualFinancialSnapshotRepository snapshotRepo;
   late ReportingService reportingService;
@@ -101,7 +101,7 @@ void main() {
     pdfService = PdfExportService(fontRegular: fontRegular, fontBold: fontBold);
   });
 
-  // â”€â”€ Fixture helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Fixture helper ────────────────────────────────────────────────────────
   /// Seeds [snapshots] (defaults to a single March-1 row), calls
   /// [packageService.createDraftAndSeal], and returns the sealed package
   /// together with the matching [BillingCycleReport].
@@ -141,9 +141,9 @@ void main() {
   }
 
   // =========================================================================
-  // Group 1 â€” Guard Clauses (INV-18)
+  // Group 1 — Guard Clauses (INV-18)
   // =========================================================================
-  group('Guard clauses â€” INV-18', () {
+  group('Guard clauses — INV-18', () {
     test('1. throws DomainException for draft package', () async {
       await snapshotRepo.save(makeSnapshot(date: DateTime.utc(2026, 3, 1)));
       final report = await reportingService.generateBillingCycleReport(
@@ -247,7 +247,7 @@ void main() {
           noShowCount: report.noShowCount,
           evidenceGapCount: report.evidenceGapCount,
           complianceRateBps: report.complianceRateBps,
-          packageHash: '', // â† empty â€” equally invalid
+          packageHash: '', // â† empty — equally invalid
           hashAlgorithm: 'SHA-256',
           schemaVersion: AuditPackage.kSchemaVersion,
           engineVersionAtGeneration: engineVersion,
@@ -293,9 +293,9 @@ void main() {
   });
 
   // =========================================================================
-  // Group 2 â€” Happy Path & Structural Integrity (INV-20/21)
+  // Group 2 — Happy Path & Structural Integrity (INV-20/21)
   // =========================================================================
-  group('Happy path â€” structural integrity (INV-20/21)', () {
+  group('Happy path — structural integrity (INV-20/21)', () {
     test('6. returns non-empty bytes for minimal valid input', () async {
       final (sealed, report) = await makeSealedFixture();
       final bytes = await pdfService.generatePdf(
@@ -384,7 +384,7 @@ void main() {
           report: report,
         );
 
-        // Exact byte equality expected â€” same pw.Document, same inputs, no
+        // Exact byte equality expected — same pw.Document, same inputs, no
         // internal mutation between calls.
         expect(bytes1.length, equals(bytes2.length));
       },
@@ -392,9 +392,9 @@ void main() {
   });
 
   // =========================================================================
-  // Group 3 â€” Financial Precision (INV-19)
+  // Group 3 — Financial Precision (INV-19)
   // =========================================================================
-  group('Financial precision â€” INV-19', () {
+  group('Financial precision — INV-19', () {
     // Tests 11-14: Verify the BRL formatting algorithm used by _fmtBrl.
     // The helper mirrors `cents / 100 â†’ toStringAsFixed(2)` exactly.
 
@@ -424,7 +424,7 @@ void main() {
           totalRevenue: const Money(15000),
         );
         final (sealed, report) = await makeSealedFixture(snapshots: [snapshot]);
-        // If _fmtBrl misbehaves, generatePdf would crash â€” we prove it does not.
+        // If _fmtBrl misbehaves, generatePdf would crash — we prove it does not.
         final bytes = await pdfService.generatePdf(
           package: sealed,
           report: report,
@@ -444,9 +444,9 @@ void main() {
   });
 
   // =========================================================================
-  // Group 4 â€” Layout Resilience (Dirty Data)
+  // Group 4 — Layout Resilience (Dirty Data)
   // =========================================================================
-  group('Layout resilience â€” dirty data', () {
+  group('Layout resilience — dirty data', () {
     test('17. handles null tenantCnpj gracefully (renders "N/A")', () async {
       final (sealed, report) = await makeSealedFixture(
         header: makeHeader(tenantCnpj: null),
@@ -485,12 +485,10 @@ void main() {
     });
 
     test(
-      '20. handles special characters in tenant name (Ã£ Ã§ Ãª Ã± â€” "Ltda")',
+      '20. handles special characters in tenant name (ã ç ê Ã± — "Ltda")',
       () async {
         final (sealed, report) = await makeSealedFixture(
-          header: makeHeader(
-            tenantName: 'Operadora SÃ£o JoÃ£o & Cia â€” "Ltda"',
-          ),
+          header: makeHeader(tenantName: 'Operadora São João & Cia — "Ltda"'),
         );
         final bytes = await pdfService.generatePdf(
           package: sealed,
@@ -833,9 +831,9 @@ void main() {
   });
 
   // =========================================================================
-  // Group 5 â€” Performance / Stress (200+ Snapshots)
+  // Group 5 — Performance / Stress (200+ Snapshots)
   // =========================================================================
-  group('Performance â€” 200+ snapshots', () {
+  group('Performance — 200+ snapshots', () {
     /// Builds 200 daily snapshots starting from [baseDate].
     List<ContractualFinancialDailySnapshot> build200Snapshots() {
       final base = DateTime.utc(2026, 1, 1);

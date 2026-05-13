@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
+import 'package:veraprob/presentation/shared/formatters/brl_currency_input_formatter.dart';
 
 void main() {
   group('BrlCurrencyInputFormatter.fromCents', () {

@@ -1,5 +1,5 @@
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/contract_events.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
@@ -9,18 +9,18 @@ import 'sla_ledger_mapper.dart';
 
 /// Application handler for [AcceptByContractorCommand].
 ///
-/// PUBLIC operation â€” no RBAC check. Token possession IS the authorization.
+/// PUBLIC operation — no RBAC check. Token possession IS the authorization.
 ///
 /// Flow:
 ///   1. Guard: token must not be empty
 ///   2. Atomic RPC: validate token, stamp used_at_utc, activate contract
 ///   3. Append [ContractAcceptedByContractorEvent] to the immutable ledger
 ///
-/// The aggregate is NOT reloaded after the RPC â€” the RPC returns the minimal
+/// The aggregate is NOT reloaded after the RPC — the RPC returns the minimal
 /// data needed to construct the ledger event, avoiding a second round-trip.
 ///
 /// Note: [_tenantValidator] is injected for API consistency but intentionally
-/// not used â€” this is a public token-based operation with no session context.
+/// not used — this is a public token-based operation with no session context.
 class AcceptByContractorHandler {
   // ignore: unused_field
   final TenantValidationService _tenantValidator;

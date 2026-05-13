@@ -1,6 +1,6 @@
 import 'package:veraprob/domain/shared/i_trip_repository.dart';
 import 'package:veraprob/domain/entities/trip.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// In-memory mock of [ITripRepository] for tests and offline mode.
 class TripRepositoryMock implements ITripRepository {

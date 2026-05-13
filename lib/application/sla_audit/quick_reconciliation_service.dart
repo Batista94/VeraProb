@@ -1,5 +1,5 @@
 import 'package:veraprob/application/sla_audit/alert_service.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
 import 'package:veraprob/domain/sla_audit/telegram/i_telegram_repository.dart';

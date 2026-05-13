@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:veraprob/data/services/fleet_simulation_service.dart';
+import 'package:veraprob/infrastructure/simulation/fleet_simulation_service.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'operational_data_provider.dart';
 

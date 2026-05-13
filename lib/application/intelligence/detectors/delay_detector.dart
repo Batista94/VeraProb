@@ -32,7 +32,7 @@ class DelayDetector extends SituationDetector {
       return OperationalWarning(
         id: 'warn_delay_critical_${trip.id}',
         type: 'delay_critical',
-        message: 'Atraso CrÃ­tico: $delayMinutes min',
+        message: 'Atraso Crítico: $delayMinutes min',
         severityScore: 40,
         detectedAt: dateTimeProvider.nowUtc(),
         metadata: {'delay_minutes': delayMinutes},

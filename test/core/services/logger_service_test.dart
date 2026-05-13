@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/core/services/logger_service.dart';
+import 'package:veraprob/infrastructure/observability/logger_service.dart';
 
 void main() {
   group('LoggerService Coverage', () {

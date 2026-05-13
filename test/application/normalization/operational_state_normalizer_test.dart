@@ -12,10 +12,10 @@
 //   B5: No ping for 90 s â†’ ConnectivityState.signalLost, confidence 0.0
 //   B6: Empty pings + no cache â†’ empty result list
 //
-// Coordinate geometry (haversine-exact, SÃ£o Paulo â€“ ParaÃ­so area):
-//   kStopALat/Lng  = (-23.5612, -46.6560) â€” Ponto ParaÃ­so
-//   kVehicle30mLat = -23.5609297          â€” ~30 m north of A (inside 50 m radius)
-//   kVehicle80mLat = -23.5604793          â€” ~80 m north of A (outside all radii)
+// Coordinate geometry (haversine-exact, São Paulo – Paraíso area):
+//   kStopALat/Lng  = (-23.5612, -46.6560) — Ponto Paraíso
+//   kVehicle30mLat = -23.5609297          — ~30 m north of A (inside 50 m radius)
+//   kVehicle80mLat = -23.5604793          — ~80 m north of A (outside all radii)
 // =============================================================================
 
 import 'package:test/test.dart';
@@ -30,7 +30,7 @@ import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 import '../../mocks/fake_date_time_provider.dart';
 
-// â”€â”€ Coordinate constants (mirrored from motion_classifier_test.dart) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Coordinate constants (mirrored from motion_classifier_test.dart) ──────────
 const double kStopALat = -23.5612;
 const double kStopALng = -46.6560;
 const double kVehicle30mLat =
@@ -39,16 +39,16 @@ const double kVehicle80mLat =
     -23.5604793; // ~80 m north of Stop A (outside all radii)
 const double kBaseLng = -46.6560;
 
-// â”€â”€ Stop fixture â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Stop fixture ──────────────────────────────────────────────────────────────
 const Stop kStopA = Stop(
   id: 'stop-a',
-  name: 'Ponto ParaÃ­so',
+  name: 'Ponto Paraíso',
   latitude: kStopALat,
   longitude: kStopALng,
 );
 
-// â”€â”€ FakeMotionClassifier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-/// Deterministic stub â€” always returns [fixedResult] regardless of input.
+// ── FakeMotionClassifier ──────────────────────────────────────────────────────
+/// Deterministic stub — always returns [fixedResult] regardless of input.
 /// Extends [MotionClassifier] so it can be injected via the constructor
 /// without any mock library dependency.
 class FakeMotionClassifier extends MotionClassifier {
@@ -76,7 +76,7 @@ class FakeMotionClassifier extends MotionClassifier {
   }) => fixedResult;
 }
 
-// â”€â”€ Factories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Factories ─────────────────────────────────────────────────────────────────
 OperationalStateNormalizer makeNormalizer(MotionClassifier classifier) =>
     OperationalStateNormalizer(
       debounceDuration: const Duration(seconds: 5),
@@ -92,7 +92,7 @@ OperationalStateNormalizer makeNormalizer(MotionClassifier classifier) =>
     );
 
 /// Builds a [VehiclePosition] whose timestamp equals [clock].nowUtc().
-/// Zero raw instanciaÃ§Ã£o nativa de tempo â€” all temporal values come from [FakeDateTimeProvider].
+/// Zero raw instanciação nativa de tempo — all temporal values come from [FakeDateTimeProvider].
 VehiclePosition makePing({
   required FakeDateTimeProvider clock,
   double lat = kStopALat,
@@ -110,14 +110,14 @@ VehiclePosition makePing({
   vehiclePlate: vehiclePlate,
 );
 
-// â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Tests ─────────────────────────────────────────────────────────────────────
 void main() {
   final kEpoch = DateTime.utc(2026, 4, 7, 12, 0, 0);
 
-  // â”€â”€ Basic Mapping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Basic Mapping ─────────────────────────────────────────────────────────
   group('Basic Mapping', () {
-    // B1 â€” MotionState.moving propagated directly
-    test('B1: moving â€“ classifier result surfaces as motionState.moving', () {
+    // B1 — MotionState.moving propagated directly
+    test('B1: moving – classifier result surfaces as motionState.moving', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(
         FakeMotionClassifier(MotionState.moving),
@@ -130,9 +130,9 @@ void main() {
       expect(out.first.connectivityState, ConnectivityState.healthy);
     });
 
-    // B4 â€” dwellingAtStop triggers nearest-stop lookup when vehicle â‰¤ 50 m from stop
+    // B4 — dwellingAtStop triggers nearest-stop lookup when vehicle â‰¤ 50 m from stop
     test(
-      'B4: dwellingAtStop inside radius â€“ nearestStopId and name populated',
+      'B4: dwellingAtStop inside radius – nearestStopId and name populated',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(
@@ -152,39 +152,29 @@ void main() {
         );
         expect(out.first.motionState, MotionState.dwellingAtStop);
         expect(out.first.nearestStopId, 'stop-a');
-        expect(out.first.nearestStopName, 'Ponto ParaÃ­so');
+        expect(out.first.nearestStopName, 'Ponto Paraíso');
         expect(out.first.distanceToRoute, isNotNull);
       },
     );
 
-    // B4-miss â€” dwellingAtStop but outside radius â†’ stop info remains null
-    test(
-      'B4-miss: dwellingAtStop outside radius â€“ nearestStopId is null',
-      () {
-        final clock = FakeDateTimeProvider(kEpoch);
-        final normalizer = makeNormalizer(
-          FakeMotionClassifier(MotionState.dwellingAtStop),
-        );
-        final out = normalizer.normalize(
-          [
-            makePing(
-              clock: clock,
-              lat: kVehicle80mLat,
-              lng: kBaseLng,
-              speed: 0,
-            ),
-          ],
-          knownStops: const [kStopA],
-          now: clock.nowUtc(),
-        );
-        expect(out.first.motionState, MotionState.dwellingAtStop);
-        expect(out.first.nearestStopId, isNull);
-      },
-    );
+    // B4-miss — dwellingAtStop but outside radius â†’ stop info remains null
+    test('B4-miss: dwellingAtStop outside radius – nearestStopId is null', () {
+      final clock = FakeDateTimeProvider(kEpoch);
+      final normalizer = makeNormalizer(
+        FakeMotionClassifier(MotionState.dwellingAtStop),
+      );
+      final out = normalizer.normalize(
+        [makePing(clock: clock, lat: kVehicle80mLat, lng: kBaseLng, speed: 0)],
+        knownStops: const [kStopA],
+        now: clock.nowUtc(),
+      );
+      expect(out.first.motionState, MotionState.dwellingAtStop);
+      expect(out.first.nearestStopId, isNull);
+    });
 
-    // B5 â€” ConnectivityState.signalLost after 90 s of silence
+    // B5 — ConnectivityState.signalLost after 90 s of silence
     test(
-      'B5: connectionLost â€“ signalLost and confidence 0.0 after 95 s silence',
+      'B5: connectionLost – signalLost and confidence 0.0 after 95 s silence',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(
@@ -199,9 +189,9 @@ void main() {
       },
     );
 
-    // B6 â€” Empty pings + empty cache â†’ empty result list
+    // B6 — Empty pings + empty cache â†’ empty result list
     test(
-      'B6: no prior state â€“ normalize([]) returns empty when no vehicle tracked',
+      'B6: no prior state – normalize([]) returns empty when no vehicle tracked',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(
@@ -212,26 +202,23 @@ void main() {
     );
   });
 
-  // â”€â”€ Ignition Logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Ignition Logic ────────────────────────────────────────────────────────
   group('Ignition Logic', () {
-    // B2 â€” MotionState.stopped (still + ignition off equivalent)
-    test(
-      'B2: stopped â€“ motionState == stopped propagated (ignition-off)',
-      () {
-        final clock = FakeDateTimeProvider(kEpoch);
-        final normalizer = makeNormalizer(
-          FakeMotionClassifier(MotionState.stopped),
-        );
-        final out = normalizer.normalize([
-          makePing(clock: clock, speed: 0),
-        ], now: clock.nowUtc());
-        expect(out.first.motionState, MotionState.stopped);
-      },
-    );
+    // B2 — MotionState.stopped (still + ignition off equivalent)
+    test('B2: stopped – motionState == stopped propagated (ignition-off)', () {
+      final clock = FakeDateTimeProvider(kEpoch);
+      final normalizer = makeNormalizer(
+        FakeMotionClassifier(MotionState.stopped),
+      );
+      final out = normalizer.normalize([
+        makePing(clock: clock, speed: 0),
+      ], now: clock.nowUtc());
+      expect(out.first.motionState, MotionState.stopped);
+    });
 
-    // B3 â€” MotionState.slowTraffic (still + ignition on / idling equivalent)
+    // B3 — MotionState.slowTraffic (still + ignition on / idling equivalent)
     test(
-      'B3: slowTraffic â€“ motionState == slowTraffic propagated (idling)',
+      'B3: slowTraffic – motionState == slowTraffic propagated (idling)',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(
@@ -245,11 +232,11 @@ void main() {
     );
   });
 
-  // â”€â”€ Edge Cases â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Edge Cases ────────────────────────────────────────────────────────────
   group('Edge Cases', () {
-    // Debounce â€” second ping within 5 s window returns unmodified cached state
+    // Debounce — second ping within 5 s window returns unmodified cached state
     test(
-      'Debounce: ping within 5 s returns cached state â€“ new position ignored',
+      'Debounce: ping within 5 s returns cached state – new position ignored',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(
@@ -267,7 +254,7 @@ void main() {
       },
     );
 
-    // INV-9 Evidence Sealing â€” rawSpeed preserves device-reported speed
+    // INV-9 Evidence Sealing — rawSpeed preserves device-reported speed
     test(
       'rawSpeed preservation: preserves device-reported speed before smoothing',
       () {
@@ -304,7 +291,7 @@ void main() {
       },
     );
 
-    // Visual Stability â€” rawSpeed excluded from equality comparison
+    // Visual Stability — rawSpeed excluded from equality comparison
     test('rawSpeed equality: states equal when only rawSpeed differs', () {
       final time = DateTime.utc(2026, 4, 7, 12, 0, 0);
 
@@ -348,7 +335,7 @@ void main() {
       expect(state2.rawSpeed, 10.1);
     });
 
-    // Recovery â€” healthy connectivity is restored after two pings past a signal-lost gap
+    // Recovery — healthy connectivity is restored after two pings past a signal-lost gap
     //
     // Gap-recovery detection (ConnectivityAnalyzer): the FIRST ping after a >90 s gap
     // is still flagged as signalLost (gap = 95 s > 90 s threshold).
@@ -362,7 +349,7 @@ void main() {
         );
         // Seed at t=0
         normalizer.normalize([makePing(clock: clock)], now: clock.nowUtc());
-        // Advance 95 s â€” no new pings â†’ signalLost on replay
+        // Advance 95 s — no new pings â†’ signalLost on replay
         clock.advance(const Duration(seconds: 95));
         expect(
           normalizer.normalize([], now: clock.nowUtc()).first.connectivityState,
@@ -379,7 +366,7 @@ void main() {
       },
     );
 
-    // Anomaly (forensic integrity) â€” suspicious jump reduces confidence proportionally
+    // Anomaly (forensic integrity) — suspicious jump reduces confidence proportionally
     //
     // Formula: confidence = conn.confidence Ã— (1 âˆ’ jumpDistance / jumpThreshold)
     // With jumpDistance â‰ˆ 334 m and threshold = 500 m: confidence â‰ˆ 0.33 (< 1.0)
@@ -393,7 +380,7 @@ void main() {
         makePing(clock: clock, lat: kStopALat, lng: kStopALng),
       ], now: clock.nowUtc());
       clock.advance(const Duration(seconds: 6)); // past debounce
-      // Move ~334 m north (0.003 deg Ã— 111 320 m/deg â‰ˆ 334 m) â€” within 500 m threshold
+      // Move ~334 m north (0.003 deg Ã— 111 320 m/deg â‰ˆ 334 m) — within 500 m threshold
       final out = normalizer.normalize([
         makePing(clock: clock, lat: kStopALat + 0.003, lng: kStopALng),
       ], now: clock.nowUtc());
@@ -402,7 +389,7 @@ void main() {
       expect(out.first.confidence, greaterThan(0.0));
     });
 
-    // Stale cleanup â€” vehicle absent for > 30 min is evicted from cache on next poll
+    // Stale cleanup — vehicle absent for > 30 min is evicted from cache on next poll
     test('Stale cleanup: vehicle is evicted after 30+ min of no pings', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(
@@ -416,7 +403,7 @@ void main() {
       expect(normalizer.normalize([], now: clock.nowUtc()), isEmpty);
     });
 
-    // Jump filter â€” teleportation > 500 m is rejected; cached state is replayed
+    // Jump filter — teleportation > 500 m is rejected; cached state is replayed
     test('Jump filter: ping > 500 m from last position is rejected', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(
@@ -430,11 +417,11 @@ void main() {
       final out = normalizer.normalize([
         makePing(clock: clock, lat: kStopALat + 0.05, lng: kStopALng),
       ], now: clock.nowUtc());
-      // Cached latitude replayed â€” not the teleport target
+      // Cached latitude replayed — not the teleport target
       expect(out.first.latitude, closeTo(kStopALat, 1e-4));
     });
 
-    // reset() â€” clears all buffers, cache, and classifier state
+    // reset() — clears all buffers, cache, and classifier state
     test('reset: normalize([]) returns empty after reset()', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(
@@ -446,7 +433,7 @@ void main() {
       expect(normalizer.normalize([], now: clock.nowUtc()), isEmpty);
     });
 
-    // vehicleId resolution â€” vehiclePlate takes precedence over tripId when non-empty
+    // vehicleId resolution — vehiclePlate takes precedence over tripId when non-empty
     test('vehicleId: vehiclePlate used as identity key when present', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(
@@ -458,7 +445,7 @@ void main() {
       expect(out.first.vehiclePlate, 'ABC-1234');
     });
 
-    // Buffer eviction â€” more than 3 sequential pings never crashes
+    // Buffer eviction — more than 3 sequential pings never crashes
     test('Buffer eviction: 6 sequential pings processed without throwing', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(

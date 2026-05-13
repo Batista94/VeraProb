@@ -1,7 +1,7 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
-import 'package:veraprob/core/time/brazil_time.dart';
+import 'package:veraprob/domain/shared/brazil_time.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';

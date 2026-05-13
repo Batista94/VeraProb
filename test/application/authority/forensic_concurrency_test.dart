@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/authority/authorizing_command_bus.dart';
@@ -6,7 +6,7 @@ import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.d
 import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 import 'mocks/mock_mutator_service.dart';
 import 'mocks/strict_mock_policy_evaluator.dart';

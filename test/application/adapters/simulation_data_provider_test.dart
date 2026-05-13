@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/adapters/simulation_data_provider.dart';
-import 'package:veraprob/data/services/fleet_simulation_service.dart';
+import 'package:veraprob/infrastructure/simulation/fleet_simulation_service.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 /// Subclass that overrides only positionStream to return a controlled stream.

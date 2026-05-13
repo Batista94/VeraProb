@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -41,7 +41,7 @@ import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repositor
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import '../mocks/fake_date_time_provider.dart';
 
-// â”€â”€ Database Integrity Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Database Integrity Helpers ───────────────────────────
 
 Future<void> cleanupTestData(SupabaseClient db, String cid) async {
   // Cloud Validation Environment:
@@ -61,7 +61,7 @@ void main() {
     // Register a single skipped placeholder so the runner reports this file
     // as skipped rather than errored, keeping the CI signal clean.
     test(
-      'SLA Audit E2E (skipped â€” no Supabase credentials)',
+      'SLA Audit E2E (skipped — no Supabase credentials)',
       () {},
       skip:
           'Set SUPABASE_URL and SUPABASE_KEY via --dart-define to run E2E tests.',
@@ -101,7 +101,7 @@ void main() {
   String? originalSnapshotLedgerEntryId;
   String? originalSnapshotId;
 
-  // â”€â”€ Setup & Teardown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Setup & Teardown ─────────────────────────────────────
 
   setUpAll(() async {
     if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
@@ -174,10 +174,10 @@ void main() {
     await client.dispose();
   });
 
-  // â”€â”€ 6-Stage E2E Test Suite â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 6-Stage E2E Test Suite ───────────────────────────────
 
   group('SLA Audit: End-to-End Postgres Integration', () {
-    test('Stage 1 â€” Create PlanDeclaration (Atomic Setup)', () async {
+    test('Stage 1 — Create PlanDeclaration (Atomic Setup)', () async {
       // 1. Define Command
       final input = ContractualServiceInput(
         scheduledStartTimeUtc: testBaseTimeUtc,
@@ -222,7 +222,7 @@ void main() {
       expect(savedPlan.services.first.setId, sharedSetId);
     });
 
-    test('Stage 2 â€” Simulate Telemetry & Real-time Binding', () async {
+    test('Stage 2 — Simulate Telemetry & Real-time Binding', () async {
       assert(sharedSetId != null, 'Dependency failed');
 
       // Given: An initial execution state
@@ -332,7 +332,7 @@ void main() {
       expect(transitions.last['new_status'], 'completed');
     });
 
-    test('Stage 3 â€” Validate SLA Audit Ledger Constraints', () async {
+    test('Stage 3 — Validate SLA Audit Ledger Constraints', () async {
       assert(sharedSetId != null, 'Dependency failed');
 
       // Get all ledger events for this contract
@@ -395,7 +395,7 @@ void main() {
       originalSnapshotLedgerEntryId = lastId;
     });
 
-    test('Stage 4 â€” Generate Financial Snapshot', () async {
+    test('Stage 4 — Generate Financial Snapshot', () async {
       assert(originalSnapshotLedgerEntryId != null, 'Dependency failed');
 
       // Run daily closure manually for the test date
@@ -437,7 +437,7 @@ void main() {
       expect(snap.previousSnapshotId, isNull);
     });
 
-    test('Stage 5 â€” Snapshot Chain Reprocessing', () async {
+    test('Stage 5 — Snapshot Chain Reprocessing', () async {
       assert(originalSnapshotId != null, 'Dependency failed');
 
       // Reprocess explicitly
@@ -488,7 +488,7 @@ void main() {
       );
     });
 
-    test('Stage 6 â€” Postgres Idempotency (Unique Constraint)', () async {
+    test('Stage 6 — Postgres Idempotency (Unique Constraint)', () async {
       // Let's test idempotency by attempting a raw insert of a duplicate SET.
       final duplicateSet = ContractualExecutionState.create(
         organizationId: '00000000-0000-0000-0000-000000000001',
@@ -513,7 +513,7 @@ void main() {
       );
     });
 
-    test('Stage 7 â€” Postgres RLS Isolation (Multi-Tenant Penetration)', () async {
+    test('Stage 7 — Postgres RLS Isolation (Multi-Tenant Penetration)', () async {
       // Simulate an Operator from '00000000-0000-0000-0000-000000000002' trying to read '00000000-0000-0000-0000-000000000001' data via API.
       // In a real environment with JWTs, Supabase Auth enforces this automatically.
       // Since our integration tests use the service_role key or bypass Auth,
@@ -561,9 +561,9 @@ void main() {
     });
 
     test(
-      'Stage 7.1 â€” Postgres RLS Active Attack (Write Sabotage)',
+      'Stage 7.1 — Postgres RLS Active Attack (Write Sabotage)',
       () async {
-        // This test intentionally left empty â€” RLS enforcement requires a
+        // This test intentionally left empty — RLS enforcement requires a
         // non-service-role JWT authenticated as a specific tenant. The CI test
         // runner uses SERVICE_ROLE_KEY, which bypasses all RLS by design (Postgres
         // superuser-equivalent). A cross-tenant write attempt would SUCCEED with
@@ -573,12 +573,12 @@ void main() {
         //   test/integration/rls_isolation_test.dart (uses restricted anon/user JWTs)
       },
       skip:
-          'Requires restricted tenant JWT â€” service_role bypasses RLS (INV-10). '
+          'Requires restricted tenant JWT — service_role bypasses RLS (INV-10). '
           'Covered by RLS isolation integration tests.',
     );
 
-    test('Stage 8 â€” E2E UI Dashboard Query Coverage', () async {
-      // Stage 4 must have provided the snapshot ID â€” fail explicitly if missing.
+    test('Stage 8 — E2E UI Dashboard Query Coverage', () async {
+      // Stage 4 must have provided the snapshot ID — fail explicitly if missing.
       expect(
         originalSnapshotId,
         isNotNull,
@@ -629,10 +629,10 @@ void main() {
       expect(impact.revenueAtRisk, 0);
     });
 
-    // â”€â”€ INV-33: Idempotency Tests (Red Team) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── INV-33: Idempotency Tests (Red Team) ─────────────────────────────
 
     test(
-      'T07 â€” Idempotency Hit: Duplicate command returns cached response',
+      'T07 — Idempotency Hit: Duplicate command returns cached response',
       () async {
         // Given: A unique idempotency key
         final idempotencyKey = const Uuid().v4();
@@ -678,7 +678,7 @@ void main() {
     );
 
     test(
-      'T08 â€” Idempotency Race: Simultaneous commands with same key should block one',
+      'T08 — Idempotency Race: Simultaneous commands with same key should block one',
       () async {
         // This test verifies that the RPC function handles concurrent requests.
         // In a real race condition, one request wins and the other gets
@@ -686,7 +686,7 @@ void main() {
         //
         // Since Dart is single-threaded, we simulate this by:
         // 1. Manually registering a key as 'processing' via the store.
-        // 2. Attempting to handle the command â€” should throw.
+        // 2. Attempting to handle the command — should throw.
 
         final idempotencyKey = const Uuid().v4();
         final testContractId = const Uuid().v4();
@@ -738,7 +738,7 @@ void main() {
     );
 
     test(
-      'T09 â€” Idempotency Rollback: Failed command should NOT register key as completed',
+      'T09 — Idempotency Rollback: Failed command should NOT register key as completed',
       () async {
         // Given: A command that will fail due to missing operational zones
         final idempotencyKey = const Uuid().v4();
@@ -805,7 +805,7 @@ void main() {
         );
 
         // The key was never registered because the handler checks idempotency
-        // BEFORE business logic â€” validation fails before any persistence.
+        // BEFORE business logic — validation fails before any persistence.
         // This proves that failed commands do NOT pollute the idempotency store.
         expect(
           key?.isCompleted ?? false,
@@ -817,7 +817,7 @@ void main() {
     );
 
     test(
-      'T10 â€” Stale Key Recovery: Processing key older than 5 minutes should be reclaimable',
+      'T10 — Stale Key Recovery: Processing key older than 5 minutes should be reclaimable',
       () async {
         // Given: A key that has been 'processing' for more than the stale threshold
         final idempotencyKey = const Uuid().v4();

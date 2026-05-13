@@ -24,6 +24,9 @@ python scripts/security/scan_secrets.py
 echo "--- [H-05] Barrel Scan ---"
 python scripts/validate_barrel_files.py
 
+# H-13: Encoding Guard (blocks mojibake before it enters the repo)
+bash scripts/encoding_guard.sh
+
 # H-03: Forensic Scan (The Veto)
 echo "--- [H-03] Forensic Scan ---"
 bash scripts/security/pr_full_scanner.sh

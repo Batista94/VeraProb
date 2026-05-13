@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'contractual_evaluation_engine.dart';
 import 'contractual_financial_closing_service.dart';
 
@@ -73,13 +73,13 @@ class ContractualEvaluationSubscriber {
     _sweepTimer = null;
   }
 
-  // â”€â”€ Internal Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Internal Handlers ─────────────────────────────────────
 
   /// Processes each vehicle state sequentially within a batch.
   ///
   /// Sequential processing is required because the engine maintains
   /// internal dwell-time state that assumes single-threaded access.
-  /// Errors from the engine are caught and logged â€” they never
+  /// Errors from the engine are caught and logged — they never
   /// cancel the subscription.
   void _onVehicleData(List<VehicleOperationalState> states) async {
     for (final state in states) {

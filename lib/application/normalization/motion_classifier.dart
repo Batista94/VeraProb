@@ -1,4 +1,4 @@
-import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/domain/shared/geo_math.dart';
 import 'package:veraprob/domain/entities/stop.dart';
 import 'models/motion_state.dart';
 

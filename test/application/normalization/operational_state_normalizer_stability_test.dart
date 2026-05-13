@@ -31,7 +31,7 @@ import 'package:veraprob/application/normalization/models/route_adherence.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/application/normalization/motion_classifier.dart';
 import 'package:veraprob/application/normalization/operational_state_normalizer.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/entities/stop.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 

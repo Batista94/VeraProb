@@ -1,5 +1,5 @@
 import 'package:veraprob/application/operational_control_service.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/entities/operational_warning.dart';
 import 'detectors/delay_detector.dart';
 import 'detectors/off_route_detector.dart';

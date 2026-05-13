@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/contextual_signature_analyzer.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -29,7 +29,7 @@ import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 /// Two authorisation paths:
 /// - **Operator/Admin path**: [callerRole] must have [UserPermission.canSubmitJustification].
 /// - **Token path**: [callerRole] is null and [submittedByTokenId] is non-null
-///   (driver self-service via tokenised link â€” PO-1).
+///   (driver self-service via tokenised link — PO-1).
 ///
 /// Idempotency (INV-11): deterministic [PendingFact.factId] derived from
 /// contractId + setId + actorUserId prevents duplicate enqueue on retry.
@@ -64,13 +64,13 @@ class SubmitJustificationHandler {
   Future<ContractorJustification> handle(
     SubmitJustificationCommand command,
   ) async {
-    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. RBAC â€” token path (null role) bypasses permission check (PO-1)
+    // 2. RBAC — token path (null role) bypasses permission check (PO-1)
     final isTokenPath =
         command.callerRole == null && command.submittedByTokenId != null;
     final role = command.callerRole;
@@ -80,7 +80,7 @@ class SubmitJustificationHandler {
       throw const DomainException('Unauthorized.');
     }
 
-    // 2. Validate category â€” throws ArgumentError converted to DomainException
+    // 2. Validate category — throws ArgumentError converted to DomainException
     final JustificationCategory category;
     try {
       category = JustificationCategory.fromDb(command.category);

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/admin/route_command_service_provider.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/core/services/logger_service.dart';
+import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/features/admin/providers/routes_provider.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 

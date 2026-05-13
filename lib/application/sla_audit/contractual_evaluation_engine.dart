@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
-import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/domain/shared/geo_math.dart';
 import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/domain/shared/money.dart';
@@ -91,7 +91,7 @@ class ContractualEvaluationEngine {
     return plan.ruleSnapshot;
   }
 
-  // â”€â”€ Method 1: Process Vehicle Telemetry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Method 1: Process Vehicle Telemetry ─────────────────
 
   Future<void> processVehicleState(
     VehicleOperationalState vehicleState, {
@@ -99,7 +99,7 @@ class ContractualEvaluationEngine {
     DateTime? receivedAtUtc,
     required String organizationId,
   }) async {
-    // INV-18: Input validation â€” reject corrupted telemetry before any processing.
+    // INV-18: Input validation — reject corrupted telemetry before any processing.
     if (vehicleState.vehicleId.isEmpty) {
       throw const SlaEvaluationException('vehicleId is required');
     }
@@ -127,9 +127,9 @@ class ContractualEvaluationEngine {
       );
 
       // Grace period: skip SETs whose buffer window has not yet elapsed.
-      // Grace period is read from the cached plan's shift patterns (Challenger approach â€”
+      // Grace period is read from the cached plan's shift patterns (Challenger approach —
       // no schema migration required). When all patterns share the same value, that value
-      // is used. When patterns differ, we fall back to 0 (most conservative â€” engine
+      // is used. When patterns differ, we fall back to 0 (most conservative — engine
       // starts checking immediately, no false passes).
       final cacheKey = '${state.contractId}_${state.planVersion}';
       final gracePeriodMinutes = _getGracePeriodMinutes(_planCache[cacheKey]);
@@ -143,7 +143,7 @@ class ContractualEvaluationEngine {
       // INV-12: 48h Late-Arrival Enforcement.
       // When receivedAtUtc is provided (only for lateArrival facts), enforce the
       // 48h reprocessing window. noShow and evidenceGap states past the cutoff
-      // are final â€” the verdict cannot be overturned by a late fact.
+      // are final — the verdict cannot be overturned by a late fact.
       if (receivedAtUtc != null &&
           (state.status == ExecutionStatus.failed ||
               state.status == ExecutionStatus.completedWithGaps)) {
@@ -159,7 +159,7 @@ class ContractualEvaluationEngine {
       if (_isLowQualityPing(vehicleState, state)) continue;
 
       // INV-15: Inhibit evaluation if asset is in maintenance or offDuty.
-      // Defense-in-depth â€” pipeline already checks, engine confirms.
+      // Defense-in-depth — pipeline already checks, engine confirms.
       if (_assetStatusRepo != null) {
         final assetStatus = await _assetStatusRepo.getCurrentStatus(
           assetId: vehicleState.vehicleId,
@@ -234,7 +234,7 @@ class ContractualEvaluationEngine {
               confidenceScore: 98,
             );
 
-            // INV-11: Idempotency guard â€” skip if identical evidence_hash already in ledger.
+            // INV-11: Idempotency guard — skip if identical evidence_hash already in ledger.
             final existingEntries = await _ledgerRepo.getEntriesBySetId(
               state.setId,
               organizationId: state.organizationId,
@@ -402,7 +402,7 @@ class ContractualEvaluationEngine {
     }
   }
 
-  // â”€â”€ Method 2: Sweep Expired Obligations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Method 2: Sweep Expired Obligations ─────────────────
 
   Future<void> sweepExpiredObligations({
     DateTime? nowUtc,
@@ -479,7 +479,7 @@ class ContractualEvaluationEngine {
       await _commitEvaluationResults(state, now, decisions);
 
       // INV-23: Emit SANCTION_RECOMMENDED when a penalty was assessed.
-      // The engine RECOMMENDS â€” it never emits VERDICT_SEALED directly.
+      // The engine RECOMMENDS — it never emits VERDICT_SEALED directly.
       // The DB trigger auto-populates sanction_review_queue on INSERT.
       if (penaltyCents != null && penaltyCents > 0) {
         // Build VerdictEvidence from the no-show context.
@@ -532,7 +532,7 @@ class ContractualEvaluationEngine {
     }
   }
 
-  // â”€â”€ Persistence Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Persistence Helper ────────────────────────────────────
 
   /// Formally constructs the Triplet and routes it to repositories.
   Future<void> _commitEvaluationResults(
@@ -542,7 +542,7 @@ class ContractualEvaluationEngine {
   ) async {
     await _executionRepo.save(state);
 
-    // â”€â”€ Pipeline: Ledger first â†’ event_id â†’ Trace â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Pipeline: Ledger first â†’ event_id â†’ Trace ──────────
     // Persist ledger entries and capture the last event UUID
     // for causal linkage with the evaluation trace.
     String? triggeringEventId;
@@ -568,7 +568,7 @@ class ContractualEvaluationEngine {
     // Persist trace
     await _traceRepo.save(result.trace);
 
-    // â”€â”€ Alert Derivation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Alert Derivation ──────────────────────────────────
     if (_alertRepo != null) {
       final alert = AlertDerivationService.deriveFrom(
         state: state,
@@ -583,7 +583,7 @@ class ContractualEvaluationEngine {
     }
   }
 
-  // â”€â”€ Grace Period Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Grace Period Helper ──────────────────────────────────
 
   /// Returns the grace period (minutes) to apply before the engine starts
   /// evaluating a SET. Reads from the cached [PlanDeclaration] shift patterns.
@@ -599,7 +599,7 @@ class ContractualEvaluationEngine {
     return values.length == 1 ? values.first : 0;
   }
 
-  // â”€â”€ GPS Quality Filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── GPS Quality Filter ──────────────────────────────────
 
   bool _isLowQualityPing(
     VehicleOperationalState v,
@@ -611,7 +611,7 @@ class ContractualEvaluationEngine {
     return false;
   }
 
-  // â”€â”€ Hysteresis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Hysteresis ──────────────────────────────────────────
 
   bool _isInsideWithHysteresis(
     double distance, // Physical Metric - Double Required
@@ -622,7 +622,7 @@ class ContractualEvaluationEngine {
     return distance <= radiusMeters * 1.2; // Exit: hysteresis band
   }
 
-  // â”€â”€ Interpolated Passage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Interpolated Passage ────────────────────────────────
 
   void _checkInterpolatedPassage(
     VehicleOperationalState v,
@@ -631,7 +631,7 @@ class ContractualEvaluationEngine {
     List<EvaluationDecision> decisions,
   ) {
     final last = _lastPositions[state.setId];
-    if (last == null) return; // No prior position â€” nothing to interpolate
+    if (last == null) return; // No prior position — nothing to interpolate
 
     final crosses = GeoMath.lineIntersectsCircle(
       last.lat,

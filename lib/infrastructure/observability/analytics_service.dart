@@ -10,7 +10,7 @@ library;
 import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
-import 'package:veraprob/core/config/environment.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 
 @JS('initPosthog')
 external void _jsInitPosthog(

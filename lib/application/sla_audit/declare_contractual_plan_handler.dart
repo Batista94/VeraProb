@@ -13,7 +13,7 @@ import 'package:veraprob/domain/admin/i_active_vehicle_repository.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'declare_contractual_plan_command.dart';
 import 'sla_ledger_mapper.dart';
 

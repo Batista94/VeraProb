@@ -67,7 +67,7 @@ TABLE_REF_RE = re.compile(
 def get_branch():
     try:
         return subprocess.check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"], text=True
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], text=True, encoding='utf-8'
         ).strip()
     except Exception:
         return "unknown"
@@ -81,7 +81,7 @@ def is_strict_mode():
 def get_staged_files():
     try:
         out = subprocess.check_output(
-            ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"], text=True
+            ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"], text=True, encoding='utf-8'
         )
         return [f.strip() for f in out.splitlines() if f.strip()]
     except Exception:
@@ -174,7 +174,7 @@ def run_explain(sql):
         result = subprocess.run(
             ["psql", "-h", DB_HOST, "-p", DB_PORT, "-U", DB_USER,
              "-d", DB_NAME, "-t", "-A", "-c", explain_sql],
-            capture_output=True, text=True, timeout=10, env=env,
+            capture_output=True, text=True, timeout=10, env=env, encoding='utf-8'
         )
         if result.returncode != 0:
             return None, result.stderr.strip()
@@ -198,7 +198,7 @@ def run_analyze():
         subprocess.run(
             ["psql", "-h", DB_HOST, "-p", DB_PORT, "-U", DB_USER,
              "-d", DB_NAME, "-c", f"ANALYZE {tables};"],
-            capture_output=True, text=True, timeout=15, env=env,
+            capture_output=True, text=True, timeout=15, env=env, encoding='utf-8'
         )
     except Exception:
         pass  # best-effort

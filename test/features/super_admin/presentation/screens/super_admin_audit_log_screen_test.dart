@@ -20,7 +20,7 @@ import 'package:veraprob/domain/admin/actor_type.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/super_admin_audit_log_screen.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 // ─── Mocks & Helpers ────────────────────────────────────────────────────────
 
