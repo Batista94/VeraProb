@@ -15,12 +15,8 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   return AlchemistConfig.runWithConfig(
     config: AlchemistConfig(
       forceUpdateGoldenFiles: false,
-      theme: ThemeData(
-        fontFamily: 'Lato',
-      ),
-      platformGoldensConfig: const PlatformGoldensConfig(
-        enabled: false,
-      ),
+      theme: ThemeData(fontFamily: 'Lato'),
+      platformGoldensConfig: const PlatformGoldensConfig(enabled: false),
     ),
     run: () async {
       await testMain();

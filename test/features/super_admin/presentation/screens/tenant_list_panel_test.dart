@@ -74,7 +74,9 @@ void main() {
   }) {
     if (isLoading) {
       final completer = Completer<List<TenantHealthSnapshot>>();
-      when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) => completer.future);
+      when(
+        () => mockRepo.getAllTenantHealth(),
+      ).thenAnswer((_) => completer.future);
       addTearDown(() {
         if (!completer.isCompleted) completer.complete([]);
       });
@@ -95,7 +97,9 @@ void main() {
         superAdminRepositoryProvider.overrideWithValue(mockRepo),
         tenantSearchDebounceDurationProvider.overrideWithValue(debounce),
         if (isLoading)
-          tenantHealthSnapshotProvider.overrideWith((ref) => Completer<List<TenantHealthView>>().future),
+          tenantHealthSnapshotProvider.overrideWith(
+            (ref) => Completer<List<TenantHealthView>>().future,
+          ),
       ],
       child: MaterialApp(
         theme: AppTheme.darkTheme,
