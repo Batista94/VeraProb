@@ -59,10 +59,34 @@ cp .env.example .env
 flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 ```
 
-### 3. Testing & Quality
-- **Unit/Integration:** `flutter test`
-- **Visual Regression (Goldens):** `make goldens` (Runs in Linux Docker to ensure CI parity).
-- **Forensic Scanning:** `bash scripts/security/pr_full_scanner.sh` (Mandatory before PR).
+## Governança & Qualidade (Tier 1)
+
+O VeraProb utiliza um padrão de **Governança Tier 1**, garantindo que o código seja idêntico em qualquer ambiente (Windows, Mac ou Linux).
+
+### 1. Requisitos de Ambiente
+Para garantir a integridade forense, certas verificações **exigem Docker** (ambiente Linux hermético):
+- **Integrity Guard:** Bloqueia arquivos com encoding inválido ou finais de linha Windows (CRLF).
+- **Secrets Scanner:** Detecção de credenciais em ambiente isolado.
+- **Index Advisor:** Validação de performance contra o Postgres.
+
+### 2. Ciclo de Validação (Obrigatório)
+Antes de abrir qualquer Pull Request, você deve garantir que o projeto está em conformidade:
+
+```bash
+# 1. Prepare o ambiente de auditoria (uma vez ou após mudar Dockerfile)
+make build-test-env
+
+# 2. Execute o Veredito Supremo (Integridade + Segurança + Testes)
+make full-check
+```
+
+### 3. Comandos Úteis
+- `make check`: Executa apenas os scanners de segurança e integridade (rápido).
+- `make goldens`: Atualiza capturas de tela para testes de regressão visual em ambiente Linux.
+- `make test-all`: Executa todos os testes unitários (Flutter) e de banco de dados (pgTap).
+
+> [!IMPORTANT]
+> **Padrão de Encoding:** Todos os arquivos de texto devem ser salvos em **UTF-8** com finais de linha **LF** (Unix). O `make full-check` falhará imediatamente se detectar **CRLF** (Windows).
 
 > [!IMPORTANT]
 > **Hermetic Goldens** Sempre use `make goldens` para atualizar imagens de referência. Isso garante que os pixels sejam gerados em ambiente Linux, evitando falhas de divergência de renderização entre Windows e o CI (GitHub Actions).

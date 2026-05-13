@@ -14,7 +14,7 @@ DOCKER_RUN = docker run --rm -v "$(CURDIR)":/app -v /app/.dart_tool -v /app/buil
 #   make help
 # =============================================================================
 
-.PHONY: help setup run scan-secrets test-security pr-scan load-tokens index-advisor test test-db test-all full-check goldens build-test-env
+.PHONY: help setup run scan-secrets test-security pr-scan load-tokens index-advisor test test-db test-all full-check goldens build-test-env check-integrity
 
 help: ## Mostra este menu de ajuda
 	@echo "VeraProb — Comandos Disponíveis:"
@@ -34,6 +34,9 @@ run-staging: ## Inicia o ambiente simulando staging
 	powershell scripts/dev/run_staging.ps1
 
 # ── Segurança & Governança (INV-28) ──────────────────────────────────────────
+
+check-integrity: ## [Tier 1] Valida encoding UTF-8 e finais de linha LF em todo o projeto
+	$(DOCKER_RUN) $(IMAGE_NAME) python3 scripts/security/check_integrity.py
 
 scan-secrets: ## Executa o scanner de segredos nos arquivos staged
 	$(DOCKER_RUN) $(IMAGE_NAME) python3 scripts/security/scan_secrets.py
@@ -74,6 +77,6 @@ build-test-env: ## Constrói a imagem Docker de ambiente de testes
 
 # ── Atalhos ───────────────────────────────────────────────────────────────────
 
-check: scan-secrets pr-scan index-advisor ## Roda todas as verificações de segurança locais
+check: check-integrity scan-secrets pr-scan index-advisor ## Roda todas as verificações de segurança locais
 
 full-check: check test-all ## O "Veredito Supremo": Scanner forense + Execução de todos os testes
