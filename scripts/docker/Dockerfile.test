@@ -1,0 +1,23 @@
+# VeraProb - Hermetic Test Environment
+FROM ubuntu:22.04
+
+# Dependências básicas do Flutter
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    unzip \
+    xz-utils \
+    libglu1-mesa \
+    libgtk-3-0 \
+    libblkid1 \
+    liblzma5 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instala o Flutter 3.41.5 (versão do seu CI)
+RUN git clone https://github.com/flutter/flutter.git -b 3.41.5 /opt/flutter
+ENV PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:${PATH}"
+
+# Pré-download dos artefatos
+RUN flutter doctor
+
+WORKDIR /app

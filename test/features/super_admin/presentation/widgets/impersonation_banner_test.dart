@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -342,72 +343,63 @@ void main() {
   });
 
   group('ImpersonationBanner — Visual Regression & Semantics', () {
-    testWidgets('golden test — default state', (tester) async {
-      tester.view.physicalSize = const Size(800, 200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    goldenTest(
+      'golden test — default state',
+      fileName: 'impersonation_banner_default',
+      builder: () {
+        final session = createSession();
+        final container = ProviderContainer();
+        return SizedBox(
+          width: 800,
+          height: 200,
+          child: wrap(
+            ImpersonationBanner(session: session, onSessionEnded: () {}),
+            container,
+          ),
+        );
+      },
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+      },
+    );
 
-      final session = createSession();
-      final container = ProviderContainer();
+    goldenTest(
+      'golden test — revoking state',
+      fileName: 'impersonation_banner_revoking',
+      builder: () {
+        final session = createSession();
+        final completer = Completer<void>();
 
-      await tester.pumpWidget(
-        wrap(
-          ImpersonationBanner(session: session, onSessionEnded: () {}),
-          container,
-        ),
-      );
+        when(
+          () => mockHandler.handle(
+            impersonationSessionId: any(named: 'impersonationSessionId'),
+            targetOrgId: any(named: 'targetOrgId'),
+            callerSessionId: any(named: 'callerSessionId'),
+            reason: any(named: 'reason'),
+          ),
+        ).thenAnswer((_) => completer.future);
 
-      // Verify golden
-      await expectLater(
-        find.byType(ImpersonationBanner),
-        matchesGoldenFile('goldens/impersonation_banner_default.png'),
-      );
+        final container = ProviderContainer(
+          overrides: [
+            revokeImpersonationHandlerProvider.overrideWithValue(mockHandler),
+          ],
+        );
 
-      await tester.pumpWidget(const SizedBox());
-    });
-
-    testWidgets('golden test — revoking state', (tester) async {
-      tester.view.physicalSize = const Size(800, 200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      final session = createSession();
-      final completer = Completer<void>();
-
-      when(
-        () => mockHandler.handle(
-          impersonationSessionId: any(named: 'impersonationSessionId'),
-          targetOrgId: any(named: 'targetOrgId'),
-          callerSessionId: any(named: 'callerSessionId'),
-          reason: any(named: 'reason'),
-        ),
-      ).thenAnswer((_) => completer.future);
-
-      final container = ProviderContainer(
-        overrides: [
-          revokeImpersonationHandlerProvider.overrideWithValue(mockHandler),
-        ],
-      );
-
-      await tester.pumpWidget(
-        wrap(
-          ImpersonationBanner(session: session, onSessionEnded: () {}),
-          container,
-        ),
-      );
-
-      await tester.tap(find.text('Encerrar Sessão'));
-      await tester.pump(); // Show loading state
-
-      // Verify golden with spinner
-      await expectLater(
-        find.byType(ImpersonationBanner),
-        matchesGoldenFile('goldens/impersonation_banner_revoking.png'),
-      );
-
-      completer.complete();
-      await tester.pumpWidget(const SizedBox());
-    });
+        return SizedBox(
+          width: 800,
+          height: 200,
+          child: wrap(
+            ImpersonationBanner(session: session, onSessionEnded: () {}),
+            container,
+          ),
+        );
+      },
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Encerrar Sessão'));
+        await tester.pump();
+      },
+    );
 
     testWidgets('semantics — verify accessibility labels', (tester) async {
       final session = createSession();

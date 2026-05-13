@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,9 +69,16 @@ void main() {
     Object? error,
     String? selectedOrgId,
     Duration debounce = Duration.zero,
+    bool isLoading = false,
     required ValueChanged<TenantHealthView> onOrgSelected,
   }) {
-    if (error != null) {
+    if (isLoading) {
+      final completer = Completer<List<TenantHealthSnapshot>>();
+      when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) => completer.future);
+      addTearDown(() {
+        if (!completer.isCompleted) completer.complete([]);
+      });
+    } else if (error != null) {
       when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
         await Future.delayed(const Duration(milliseconds: 50));
         throw error;
@@ -581,74 +589,61 @@ void main() {
   });
 
   group('TenantListPanel - Visual Regression (Goldens)', () {
-    testWidgets('Golden Test: Default List State', (tester) async {
-      tester.view.physicalSize = const Size(320, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    goldenTest(
+      'Golden Test: Default List State',
+      fileName: 'tenant_list_panel_default',
+      builder: () => SizedBox(
+        width: 320,
+        height: 600,
+        child: createTestWidget(onOrgSelected: (_) {}),
+      ),
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+      },
+    );
 
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
-      await tester.pumpAndSettle();
+    goldenTest(
+      'Golden Test: Search Results State',
+      fileName: 'tenant_list_panel_searching',
+      builder: () => SizedBox(
+        width: 320,
+        height: 600,
+        child: createTestWidget(onOrgSelected: (_) {}),
+      ),
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'Alpha');
+        await tester.pumpAndSettle();
+      },
+    );
 
-      await expectLater(
-        find.byType(TenantListPanel),
-        matchesGoldenFile('goldens/tenant_list_panel_default.png'),
-      );
-    });
+    goldenTest(
+      'Golden Test: Empty State',
+      fileName: 'tenant_list_panel_empty',
+      builder: () => SizedBox(
+        width: 320,
+        height: 600,
+        child: createTestWidget(onOrgSelected: (_) {}, tenants: []),
+      ),
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+      },
+    );
 
-    testWidgets('Golden Test: Search Results State', (tester) async {
-      tester.view.physicalSize = const Size(320, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextField), 'Alpha');
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(TenantListPanel),
-        matchesGoldenFile('goldens/tenant_list_panel_searching.png'),
-      );
-    });
-
-    testWidgets('Golden Test: Empty State', (tester) async {
-      tester.view.physicalSize = const Size(320, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(
-        createTestWidget(onOrgSelected: (_) {}, tenants: []),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(TenantListPanel),
-        matchesGoldenFile('goldens/tenant_list_panel_empty.png'),
-      );
-    });
-
-    testWidgets('Golden Test: Skeleton Loading State', (tester) async {
-      tester.view.physicalSize = const Size(320, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      final completer = Completer<List<TenantHealthSnapshot>>();
-      when(
-        () => mockRepo.getAllTenantHealth(),
-      ).thenAnswer((_) => completer.future);
-
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
-      await tester.pump();
-
-      await expectLater(
-        find.byType(TenantListPanel),
-        matchesGoldenFile('goldens/tenant_list_panel_skeleton.png'),
-      );
-
-      completer.complete([]);
-      await tester.pumpAndSettle();
-    });
+    goldenTest(
+      'Golden Test: Skeleton Loading State',
+      fileName: 'tenant_list_panel_skeleton',
+      builder: () {
+        return SizedBox(
+          width: 320,
+          height: 600,
+          child: createTestWidget(isLoading: true, onOrgSelected: (_) {}),
+        );
+      },
+      pumpBeforeTest: (tester) async {
+        await tester.pump();
+      },
+    );
   });
 }
 

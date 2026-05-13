@@ -66,6 +66,7 @@ dev_dependencies:
   test: ^1.30.0
   supabase: ^2.10.6
   glados: ^1.1.7
+  alchemist: ^0.14.0
 flutter:
   uses-material-design: true
   # 8.4 Observabilidade

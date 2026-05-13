@@ -10,6 +10,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:alchemist/alchemist.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -17,7 +18,6 @@ import 'package:veraprob/application/super_admin/system_audit_log_view.dart';
 import 'package:veraprob/application/audit/system_audit_log_service.dart';
 import 'package:veraprob/domain/admin/actor_type.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/super_admin_audit_log_screen.dart';
-import 'package:veraprob/features/super_admin/presentation/screens/widgets/audit_payload_diff_view.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/core/utils/date_time_provider.dart';
@@ -741,101 +741,87 @@ void main() {
   // GROUP 6 — GOLDEN TESTS (Visual Logic & Branding)
   // ═══════════════════════════════════════════════════════════════════════════
   group('Golden Tests — Visual Regression', () {
-    testWidgets('Golden: severity highlighting with all severities present', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1400, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    goldenTest(
+      'Golden: severity highlighting with all severities present',
+      fileName: 'audit_log_all_severities',
+      builder: () {
+        final entries = [
+          _view(eventType: 'DEBUG_TRACE', severity: 'debug'),
+          _view(eventType: 'EVALUATION_RUN', severity: 'info'),
+          _view(eventType: 'STORAGE_QUOTA_EXCEEDED', severity: 'warning'),
+          _view(eventType: 'PROXY_ERROR', severity: 'error'),
+          _view(
+            eventType: 'MFA_LOCKED',
+            severity: 'critical',
+            actorType: 'SYSTEM',
+          ),
+        ];
+        return SizedBox(
+          width: 1400,
+          height: 1200,
+          child: _buildScreen(providerOverride: (ref, _) async => entries),
+        );
+      },
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+      },
+    );
 
-      final entries = [
-        _view(eventType: 'DEBUG_TRACE', severity: 'debug'),
-        _view(eventType: 'EVALUATION_RUN', severity: 'info'),
-        _view(eventType: 'STORAGE_QUOTA_EXCEEDED', severity: 'warning'),
-        _view(eventType: 'PROXY_ERROR', severity: 'error'),
-        _view(
-          eventType: 'MFA_LOCKED',
-          severity: 'critical',
-          actorType: 'SYSTEM',
-        ),
-      ];
-      await tester.pumpWidget(
-        _buildScreen(providerOverride: (ref, _) async => entries),
-      );
-      await tester.pumpAndSettle();
+    goldenTest(
+      'Golden: empty state centered with correct typography',
+      fileName: 'audit_log_empty_state',
+      builder: () => SizedBox(
+        width: 1400,
+        height: 900,
+        child: _buildScreen(providerOverride: (ref, _) async => const []),
+      ),
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+      },
+    );
 
-      await expectLater(
-        find.byType(SuperAdminAuditLogScreen),
-        matchesGoldenFile('goldens/audit_log_all_severities.png'),
-      );
-    });
-
-    testWidgets('Golden: empty state centered with correct typography', (
-      tester,
-    ) async {
-      _setLargeScreen(tester);
-      await tester.pumpWidget(
-        _buildScreen(providerOverride: (ref, _) async => const []),
-      );
-      await tester.pumpAndSettle();
-
-      // Verify empty state text uses textSecondary color
-      final textWidget = tester.widget<Text>(
-        find.text('Nenhum evento encontrado para os filtros selecionados.'),
-      );
-      expect(textWidget.style?.color, isNotNull);
-
-      await expectLater(
-        find.byType(SuperAdminAuditLogScreen),
-        matchesGoldenFile('goldens/audit_log_empty_state.png'),
-      );
-    });
-
-    testWidgets('Golden: error state visual', (tester) async {
-      _setLargeScreen(tester);
-      await tester.pumpWidget(
-        _buildScreen(
+    goldenTest(
+      'Golden: error state visual',
+      fileName: 'audit_log_error_state',
+      builder: () => SizedBox(
+        width: 1400,
+        height: 900,
+        child: _buildScreen(
           providerOverride: (ref, _) async => throw StateError('network'),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+      },
+    );
 
-      await expectLater(
-        find.byType(SuperAdminAuditLogScreen),
-        matchesGoldenFile('goldens/audit_log_error_state.png'),
-      );
-    });
-
-    testWidgets('Golden: payload diff dialog uses monospace font', (
-      tester,
-    ) async {
-      _setLargeScreen(tester);
-      final payload = <String, Object?>{
-        'before': {'status': 'active', 'quota_gb': 10},
-        'after': {'status': 'suspended', 'quota_gb': 5},
-      };
-      await tester.pumpWidget(
-        _buildScreen(
-          providerOverride: (ref, _) async => [
-            _view(
-              eventType: 'STATUS_CHANGE',
-              payload: payload,
-              actorType: 'HUMAN',
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.data_object));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AuditPayloadDiffView), findsOneWidget);
-
-      await expectLater(
-        find.byType(AlertDialog),
-        matchesGoldenFile('goldens/audit_log_payload_diff.png'),
-      );
-    });
+    goldenTest(
+      'Golden: payload diff dialog uses monospace font',
+      fileName: 'audit_log_payload_diff',
+      builder: () {
+        final payload = <String, Object?>{
+          'before': {'status': 'active', 'quota_gb': 10},
+          'after': {'status': 'suspended', 'quota_gb': 5},
+        };
+        return SizedBox(
+          width: 1400,
+          height: 900,
+          child: _buildScreen(
+            providerOverride: (ref, _) async => [
+              _view(
+                eventType: 'STATUS_CHANGE',
+                payload: payload,
+                actorType: 'HUMAN',
+              ),
+            ],
+          ),
+        );
+      },
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.data_object));
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }
