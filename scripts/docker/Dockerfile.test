@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Instala o Flutter 3.41.5 (versão do seu CI)
-RUN git clone https://github.com/flutter/flutter.git -b 3.41.5 /opt/flutter
+RUN git clone https://github.com/flutter/flutter.git -b 3.41.9 /opt/flutter
 ENV PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:${PATH}"
 
 # Pré-download dos artefatos

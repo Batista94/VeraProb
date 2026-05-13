@@ -38,7 +38,7 @@ The platform follows a strict Event-Sourced logic:
 ## Getting Started (Local Development)
 
 ### 1. Prerequisites
-- **Flutter SDK** (>= 3.41.5)
+- **Flutter SDK** (>= 3.41.9)
 - **Docker Desktop**
 - **Supabase CLI**
 - **Node.js** (>= 18)

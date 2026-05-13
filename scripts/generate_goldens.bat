@@ -28,6 +28,8 @@ echo Gerando Goldens em ambiente Linux (Exclusivamente imagens)...
 :: ignorando testes de acessibilidade ou logica que possam falhar no container.
 docker run --rm ^
   -v "%cd%":/app ^
+  -v /app/.dart_tool ^
+  -v /app/build ^
   -w /app ^
   %IMAGE_NAME% ^
   bash -c "flutter pub get && flutter test --update-goldens --name=[Gg]olden %TEST_FILES%"

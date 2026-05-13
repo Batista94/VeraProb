@@ -6,3 +6,6 @@ tags:
     skip: "Requires 'supabase start' — run explicitly with --tags integration"
   postgres:
     skip: "Requires a live Postgres instance — run explicitly with --tags postgres"
+  golden:
+    skip: "Requires Docker environment — run via make goldens or scripts/generate_goldens.bat"
+

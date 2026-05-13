@@ -94,6 +94,8 @@ void main() {
       overrides: [
         superAdminRepositoryProvider.overrideWithValue(mockRepo),
         tenantSearchDebounceDurationProvider.overrideWithValue(debounce),
+        if (isLoading)
+          tenantHealthSnapshotProvider.overrideWith((ref) => Completer<List<TenantHealthView>>().future),
       ],
       child: MaterialApp(
         theme: AppTheme.darkTheme,
