@@ -6,11 +6,18 @@
     "bash",
     "read_workspace",
     "mcp:playwright",
-    "mcp:sequential-thinking"
+    "mcp:sequential-thinking",
+    "mcp:memory"
+  ],
+  "resources": [
+    "skill://ui-ux-pro-max"
   ],
   "steering": [
     "file://../../CLAUDE.md",
-    "file://../steering/ux-standards.md"
+    "file://../steering/ux-standards.md",
+    "file://../steering/forensic-standards.md",
+    "file://../AGENTS.md",
+    "file://../rules.md"
   ],
   "env": {
     "UX_STANDARDS": "INDUSTRIAL_DARK",

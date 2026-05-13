@@ -60,7 +60,6 @@ final updateOrganizationQuotaHandlerProvider =
       return UpdateOrganizationQuotaHandler(
         tenantValidator: const SuperAdminBypassTenantValidator(),
         repository: ref.watch(superAdminRepositoryProvider),
-        auditLogService: ref.watch(systemAuditLogServiceProvider),
       );
     });
 

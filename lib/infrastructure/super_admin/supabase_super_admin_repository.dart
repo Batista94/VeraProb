@@ -99,7 +99,7 @@ class SupabaseSuperAdminRepository
             (row) => TenantHealthSnapshot.fromJson(row as Map<String, dynamic>),
           )
           .toList();
-    } on Exception catch (e) {
+    } on Object catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
@@ -143,7 +143,7 @@ class SupabaseSuperAdminRepository
             (row) => SystemAuditLogEntry.fromJson(row as Map<String, dynamic>),
           )
           .toList();
-    } on Exception catch (e) {
+    } on Object catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
@@ -252,8 +252,14 @@ class SupabaseSuperAdminRepository
   Future<void> resendInvitation({
     required String email,
     required String orgName,
+    required String orgId,
+    required String reason,
   }) async {
     try {
+      await _authenticatedClient.rpc(
+        'super_admin_audit_resend_invitation',
+        params: {'p_org_id': orgId, 'p_email': email, 'p_reason': reason},
+      );
       await _authenticatedClient.functions.invoke(
         'notify-invite',
         body: {
@@ -262,9 +268,10 @@ class SupabaseSuperAdminRepository
           'orgName': orgName,
         },
       );
-    } catch (e) {
-      // Se não for possível usar as exceptions do postgrest, mapeamos genérico ou deixamos subir
-      rethrow;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
+    } on Object catch (e) {
+      throw DomainException('Falha ao reenviar convite: $e');
     }
   }
 
@@ -276,6 +283,7 @@ class SupabaseSuperAdminRepository
     required String token,
     required DateTime expiresAtUtc,
     required String superAdminUserId,
+    required String reason,
   }) async {
     try {
       await _authenticatedClient.rpc(
@@ -287,6 +295,7 @@ class SupabaseSuperAdminRepository
           'p_token': token,
           'p_expires_at': expiresAtUtc.toIso8601String(),
           'p_invited_by': superAdminUserId,
+          'p_reason': reason,
         },
       );
     } on PostgrestException catch (e) {
@@ -309,6 +318,7 @@ class SupabaseSuperAdminRepository
     required String orgId,
     required String email,
     required String superAdminUserId,
+    required String reason,
   }) async {
     try {
       await _authenticatedClient.rpc(
@@ -317,6 +327,7 @@ class SupabaseSuperAdminRepository
           'p_org_id': orgId,
           'p_email': email,
           'p_super_admin_id': superAdminUserId,
+          'p_reason': reason,
         },
       );
     } on PostgrestException catch (e) {
@@ -347,7 +358,7 @@ class SupabaseSuperAdminRepository
       );
       return (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
-    } on Exception catch (e) {
+    } on Object catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
@@ -370,7 +381,7 @@ class SupabaseSuperAdminRepository
       );
       return (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
-    } on Exception catch (e) {
+    } on Object catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }
@@ -416,7 +427,7 @@ class SupabaseSuperAdminRepository
       );
       return (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
-    } on Exception catch (e) {
+    } on Object catch (e) {
       throw DomainException('Edge Function super-admin-proxy unavailable: $e');
     }
   }

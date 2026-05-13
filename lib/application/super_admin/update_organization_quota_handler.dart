@@ -1,8 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/application/audit/system_audit_log_service.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/domain/admin/actor_type.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -13,27 +11,25 @@ import 'package:veraprob/domain/super_admin/update_organization_quota_command.da
 
 /// Application handler for [UpdateOrganizationQuotaCommand].
 ///
-/// Orchestrates: INV-1 tenant check → RBAC → validation → repository update → audit log.
+/// Orchestrates: INV-1 tenant check → RBAC → validation → repository update.
 ///
 /// For SuperAdmin context, inject [SuperAdminBypassTenantValidator] which
 /// satisfies INV-1 structurally while being a no-op (SuperAdmin has sovereignty).
 ///
 /// INV-4: Pure orchestration — no direct DB access.
-/// INV-7: Billing event is appended server-side inside the RPC.
-/// Stage C: Mandatory reason for governance changes.
+/// INV-3/INV-21: Audit log is written atomically by the RPC (CT11). No
+/// second write here — the DB entry is authoritative and includes the full
+/// name diff (trade_name / legal_name before/after).
 class UpdateOrganizationQuotaHandler {
   final TenantValidationService _tenantValidator;
   final ISuperAdminRepository _repository;
-  final SystemAuditLogService? _auditLogService;
   final RbacService _rbac = RbacService();
 
   UpdateOrganizationQuotaHandler({
     required TenantValidationService tenantValidator,
     required ISuperAdminRepository repository,
-    SystemAuditLogService? auditLogService,
   }) : _tenantValidator = tenantValidator,
-       _repository = repository,
-       _auditLogService = auditLogService;
+       _repository = repository;
 
   Future<void> handle(UpdateOrganizationQuotaCommand cmd) async {
     // ── Step 0: INV-1 Identity Sovereignty (no-op for SuperAdmin via bypass validator)
@@ -88,6 +84,7 @@ class UpdateOrganizationQuotaHandler {
     }
 
     // ── Step 5: Delegate to repository
+    // RPC writes system_audit_log atomically with full name diff (CT11, INV-21).
     try {
       await _repository.updateOrganizationQuota(cmd);
     } on PostgrestException catch (e) {
@@ -95,28 +92,6 @@ class UpdateOrganizationQuotaHandler {
         throw DomainException(e.message);
       }
       rethrow;
-    }
-
-    // ── Step 6: Log governance change (Stage C)
-    if (_auditLogService != null) {
-      await _auditLogService.logGovernanceChange(
-        eventType: 'QUOTA_CHANGE',
-        reason: cmd.reason!,
-        actorType: ActorType.human,
-        organizationId: cmd.organizationId,
-        oldSnapshot: {'plan_type': 'previous'},
-        newSnapshot: {
-          'plan_type': cmd.newPlanType,
-          'max_vehicles': cmd.newMaxVehicles,
-          'max_active_contracts': cmd.newMaxActiveContracts,
-          'tool_cost_cents': cmd.toolCostCents,
-          'dwell_time_seconds': cmd.dwellTimeSeconds,
-          'billing_day': cmd.billingDay,
-          'contact_email': cmd.contactEmail,
-          'external_id': cmd.externalId,
-          'organization_type': cmd.organizationType,
-        },
-      );
     }
   }
 }

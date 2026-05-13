@@ -79,10 +79,12 @@ command -v python3 >/dev/null 2>&1 || PYTHON_CMD="python"
 SCRIPT_DIR_WIN="$SCRIPT_DIR"
 if [[ "$NODE_CMD" == *"node.exe"* ]]; then
   if command -v cygpath >/dev/null 2>&1; then
-    SCRIPT_DIR_WIN=$(cygpath -w "$SCRIPT_DIR")
+    SCRIPT_DIR_WIN=$(cygpath -m "$SCRIPT_DIR")
+  elif command -v wslpath >/dev/null 2>&1; then
+    SCRIPT_DIR_WIN=$(wslpath -m "$SCRIPT_DIR")
   else
-    # Fallback to manual sed conversion if cygpath is missing
-    SCRIPT_DIR_WIN=$(echo "$SCRIPT_DIR" | sed -e 's/^\/\([a-z]\)\//\1:\\/' -e 's/^\/mnt\/\([a-z]\)\//\1:\\/' -e 's/\//\\/g')
+    # Fallback using forward slashes to avoid shell escape issues
+    SCRIPT_DIR_WIN=$(echo "$SCRIPT_DIR" | sed -e 's/^\/\([a-z]\)\//\1:\//' -e 's/^\/mnt\/\([a-z]\)\//\1:\//')
   fi
 fi
 
@@ -179,9 +181,11 @@ BARREL_SCRIPT="$PROJECT_DIR/scripts/validate_barrel_files.py"
 BARREL_SCRIPT_WIN="$BARREL_SCRIPT"
 if [[ "$PYTHON_CMD" == *.exe ]]; then
   if command -v cygpath >/dev/null 2>&1; then
-    BARREL_SCRIPT_WIN=$(cygpath -w "$BARREL_SCRIPT")
+    BARREL_SCRIPT_WIN=$(cygpath -m "$BARREL_SCRIPT")
+  elif command -v wslpath >/dev/null 2>&1; then
+    BARREL_SCRIPT_WIN=$(wslpath -m "$BARREL_SCRIPT")
   else
-    BARREL_SCRIPT_WIN=$(echo "$BARREL_SCRIPT" | sed -e 's/^\/\([a-z]\)\//\1:\\/' -e 's/^\/mnt\/\([a-z]\)\//\1:\\/' -e 's/\//\\/g')
+    BARREL_SCRIPT_WIN=$(echo "$BARREL_SCRIPT" | sed -e 's/^\/\([a-z]\)\//\1:\//' -e 's/^\/mnt\/\([a-z]\)\//\1:\//')
   fi
 fi
 
@@ -505,7 +509,15 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
       if echo "$CHANGED_FILES" | grep -q "$TEST_FILE" || [[ -f "$TEST_FILE" ]]; then
         COVERED_COUNT=$((COVERED_COUNT + 1))
       else
-        MISSING_FILES+="\n    → $f"
+        # Fallback: import-based detection — search test/ for any _test.dart
+        # that imports this source file (covers cross-folder test organization).
+        PACKAGE_PATH=$(echo "$f" | sed 's|^lib/|package:veraprob/|')
+        IMPORT_HIT=$(grep -rl "import '$PACKAGE_PATH'" test/ 2>/dev/null | grep "_test\.dart$" | head -1 || true)
+        if [[ -n "$IMPORT_HIT" ]]; then
+          COVERED_COUNT=$((COVERED_COUNT + 1))
+        else
+          MISSING_FILES+="\n    → $f"
+        fi
       fi
     done <<< "$CRITICAL_FILES"
 

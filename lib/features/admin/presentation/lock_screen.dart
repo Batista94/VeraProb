@@ -27,6 +27,7 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isLoading = false;
+  bool _isRouting = false;
   String? _error;
 
   @override
@@ -50,71 +51,78 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
   ///
   /// Regular tenant users → AdminHome (unchanged).
   Future<void> _routeAfterAuth() async {
-    final session = ref.read(authStateProvider).value?.session;
-    if (session == null) return;
-
-    final claims = decodeJwtPayload(session.accessToken);
-    final appMeta = claims['app_metadata'] as Map<String, dynamic>?;
-    final raw = appMeta?['super_admin'];
-
-    if (kDebugMode) {
-      debugPrint('[AUTH] JWT app_metadata: $appMeta');
-      debugPrint('[AUTH] super_admin=$raw (${raw.runtimeType})');
-    }
-
-    final isSuperAdmin = raw == true || raw?.toString() == 'true';
-
-    if (!isSuperAdmin) {
-      if (!mounted) return;
-      await Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const AdminHome()));
-      return;
-    }
-
-    // SuperAdmin path: check MFA status to determine destination.
-    // INV-6: MFA bypass requires explicit opt-in via --dart-define=SKIP_MFA_DEV=true.
-    // Never active in staging or production — EnvironmentConfig.skipMfaForSuperAdmin
-    // enforces isDev as a hard guard regardless of the flag value.
-    if (EnvironmentConfig.skipMfaForSuperAdmin) {
-      LoggerService().security(
-        'MFA BYPASS active — SKIP_MFA_DEV=true (DEV only). '
-        'Never passes in staging/prod. INV-6.',
-      );
-      if (!mounted) return;
-      await Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const SuperAdminShell()),
-      );
-      return;
-    }
+    if (_isRouting) return;
+    setState(() => _isRouting = true);
 
     try {
-      final mfaRepo = ref.read(mfaRepositoryProvider);
-      final mfaStatus = await mfaRepo.getMfaStatus();
+      final session = ref.read(authStateProvider).value?.session;
+      if (session == null) return;
 
-      if (!mounted) return;
+      final claims = decodeJwtPayload(session.accessToken);
+      final appMeta = claims['app_metadata'] as Map<String, dynamic>?;
+      final raw = appMeta?['super_admin'];
 
-      final Widget destination;
-      if (mfaStatus.needsEnrollment) {
-        destination = const MfaEnrollmentScreen();
-      } else if (mfaStatus.needsChallenge) {
-        destination = const MfaChallengeScreen();
-      } else {
-        destination = const SuperAdminShell();
-      }
-
-      await Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => destination));
-    } catch (e) {
       if (kDebugMode) {
-        debugPrint('[AUTH] MFA status check failed: $e');
+        debugPrint('[AUTH] JWT app_metadata: $appMeta');
+        debugPrint('[AUTH] super_admin=$raw (${raw.runtimeType})');
       }
-      // Fallback: send to challenge screen (safe default).
-      if (!mounted) return;
-      await Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MfaChallengeScreen()),
-      );
+
+      final isSuperAdmin = raw == true || raw?.toString() == 'true';
+
+      if (!isSuperAdmin) {
+        if (!mounted) return;
+        await Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const AdminHome()));
+        return;
+      }
+
+      // SuperAdmin path: check MFA status to determine destination.
+      // INV-6: MFA bypass requires explicit opt-in via --dart-define=SKIP_MFA_DEV=true.
+      // Never active in staging or production — EnvironmentConfig.skipMfaForSuperAdmin
+      // enforces isDev as a hard guard regardless of the flag value.
+      if (EnvironmentConfig.skipMfaForSuperAdmin) {
+        LoggerService().security(
+          'MFA BYPASS active — SKIP_MFA_DEV=true (DEV only). '
+          'Never passes in staging/prod. INV-6.',
+        );
+        if (!mounted) return;
+        await Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const SuperAdminShell()),
+        );
+        return;
+      }
+
+      try {
+        final mfaRepo = ref.read(mfaRepositoryProvider);
+        final mfaStatus = await mfaRepo.getMfaStatus();
+
+        if (!mounted) return;
+
+        final Widget destination;
+        if (mfaStatus.needsEnrollment) {
+          destination = const MfaEnrollmentScreen();
+        } else if (mfaStatus.needsChallenge) {
+          destination = const MfaChallengeScreen();
+        } else {
+          destination = const SuperAdminShell();
+        }
+
+        await Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => destination));
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[AUTH] MFA status check failed: $e');
+        }
+        // Fallback: send to challenge screen (safe default).
+        if (!mounted) return;
+        await Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MfaChallengeScreen()),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isRouting = false);
     }
   }
 
@@ -159,26 +167,45 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VeraProbColors.background,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth >= 768;
+      body: Stack(
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth >= 768;
 
-          if (!isDesktop) {
-            // Mobile: only the login panel, 100% width — no ambient noise.
-            return _buildLoginPanel(fullScreen: true);
-          }
+              if (!isDesktop) {
+                return _buildLoginPanel(fullScreen: true);
+              }
 
-          // Desktop: 40 / 60 enterprise split.
-          return Row(
-            children: [
-              SizedBox(
-                width: constraints.maxWidth * 0.4,
-                child: _buildLoginPanel(fullScreen: false),
+              return Row(
+                children: [
+                  SizedBox(
+                    width: constraints.maxWidth * 0.4,
+                    child: _buildLoginPanel(fullScreen: false),
+                  ),
+                  const Expanded(child: _ForensicAmbientPanel()),
+                ],
+              );
+            },
+          ),
+          // Routing overlay — visible only when auth stream triggers routing
+          // (not during button-initiated login which uses _isLoading).
+          AnimatedOpacity(
+            opacity: _isRouting && !_isLoading ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: IgnorePointer(
+              ignoring: !_isRouting || _isLoading,
+              child: Container(
+                color: VeraProbColors.background.withValues(alpha: 0.85),
+                child: Center(
+                  child: (_isRouting && !_isLoading)
+                      ? const CircularProgressIndicator()
+                      : const SizedBox.shrink(),
+                ),
               ),
-              const Expanded(child: _ForensicAmbientPanel()),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }

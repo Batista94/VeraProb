@@ -23,58 +23,54 @@ void main() {
       expect(view.type, ZoneType.garagem);
       expect(view.address, 'Av. Paulista, 1000');
       expect(view.contractorId, isNull);
-      expect(view.contractorLabel, isNull);
       expect(view.geofence, isNull);
 
       expect(restored, equals(domain));
       expect(restored.address, domain.address);
     });
 
-    test('DEVE preservar geofence + contractor QUANDO round-trip completo', () {
-      final domain = OperationalZone.reconstitute(
-        id: 'zone-2',
-        organizationId: 'org-1',
-        name: 'Cliente Norte',
-        type: ZoneType.cliente,
-        contractorId: 'contractor-42',
-        contractorLabel: 'ACME Corp',
-        geofence: const GeofenceConfiguration(
-          latitude: -23.5505,
-          longitude: -46.6333,
-          radiusMeters: 250,
-        ),
-      );
+    test(
+      'DEVE preservar geofence + contractorId QUANDO round-trip completo',
+      () {
+        final domain = OperationalZone.reconstitute(
+          id: 'zone-2',
+          organizationId: 'org-1',
+          name: 'Cliente Norte',
+          type: ZoneType.cliente,
+          contractorId: 'contractor-42',
+          geofence: const GeofenceConfiguration(
+            latitude: -23.5505,
+            longitude: -46.6333,
+            radiusMeters: 250,
+          ),
+        );
 
-      final view = OperationalZoneView.fromDomain(domain);
-      final restored = view.toDomain();
+        final view = OperationalZoneView.fromDomain(domain);
+        final restored = view.toDomain();
 
-      expect(view.contractorId, 'contractor-42');
-      expect(view.contractorLabel, 'ACME Corp');
-      expect(view.geofence, isNotNull);
-      expect(view.geofence!.latitude, -23.5505);
-      expect(view.geofence!.longitude, -46.6333);
-      expect(view.geofence!.radiusMeters, 250);
+        expect(view.contractorId, 'contractor-42');
+        expect(view.geofence, isNotNull);
+        expect(view.geofence!.latitude, -23.5505);
+        expect(view.geofence!.longitude, -46.6333);
+        expect(view.geofence!.radiusMeters, 250);
 
-      expect(restored, equals(domain));
-      expect(restored.geofence, equals(domain.geofence));
-      expect(restored.contractorId, 'contractor-42');
-      expect(restored.contractorLabel, 'ACME Corp');
-    });
+        expect(restored, equals(domain));
+        expect(restored.geofence, equals(domain.geofence));
+        expect(restored.contractorId, 'contractor-42');
+      },
+    );
   });
 
   group('OperationalZoneView.scope', () {
-    test(
-      'DEVE retornar global QUANDO contractorId e contractorLabel ausentes',
-      () {
-        const view = OperationalZoneView(
-          id: 'zone-g',
-          organizationId: 'org-1',
-          name: 'Apoio',
-          type: ZoneType.apoio,
-        );
-        expect(view.scope, ZoneScope.global);
-      },
-    );
+    test('DEVE retornar global QUANDO contractorId ausente', () {
+      const view = OperationalZoneView(
+        id: 'zone-g',
+        organizationId: 'org-1',
+        name: 'Apoio',
+        type: ZoneType.apoio,
+      );
+      expect(view.scope, ZoneScope.global);
+    });
 
     test('DEVE retornar exclusive QUANDO contractorId presente', () {
       const view = OperationalZoneView(
@@ -83,29 +79,6 @@ void main() {
         name: 'Portaria Sul',
         type: ZoneType.cliente,
         contractorId: 'contractor-1',
-      );
-      expect(view.scope, ZoneScope.exclusive);
-    });
-
-    test('DEVE retornar exclusive QUANDO apenas contractorLabel presente', () {
-      const view = OperationalZoneView(
-        id: 'zone-e2',
-        organizationId: 'org-1',
-        name: 'Portaria Leste',
-        type: ZoneType.cliente,
-        contractorLabel: 'ACME Corp',
-      );
-      expect(view.scope, ZoneScope.exclusive);
-    });
-
-    test('DEVE retornar exclusive QUANDO contractorId e label presentes', () {
-      const view = OperationalZoneView(
-        id: 'zone-e3',
-        organizationId: 'org-1',
-        name: 'Portaria Oeste',
-        type: ZoneType.cliente,
-        contractorId: 'contractor-9',
-        contractorLabel: 'ACME Corp',
       );
       expect(view.scope, ZoneScope.exclusive);
     });

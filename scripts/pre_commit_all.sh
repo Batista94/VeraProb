@@ -32,4 +32,9 @@ bash scripts/security/pr_full_scanner.sh
 echo "--- [H-11] Index Advisor ---"
 python scripts/index_advisor.py
 
+# H-12: Code Quality (Lint & Auto-Fix)
+echo "--- [H-12] Code Quality ---"
+dart fix --apply
+flutter analyze --fatal-infos --fatal-warnings
+
 echo "✅ All pre-commit hooks passed."

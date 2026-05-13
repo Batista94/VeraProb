@@ -38,7 +38,7 @@ The platform follows a strict Event-Sourced logic:
 ## Getting Started (Local Development)
 
 ### 1. Prerequisites
-- **Flutter SDK** (>= 3.41.5)
+- **Flutter SDK** (>= 3.41.9)
 - **Docker Desktop**
 - **Supabase CLI**
 - **Node.js** (>= 18)
@@ -61,6 +61,15 @@ flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 
 ### 3. Testing & Quality
 - **Unit/Integration:** `flutter test`
+- **Visual Regression (Goldens):** `make goldens` (Runs in Linux Docker to ensure CI parity).
 - **Forensic Scanning:** `bash scripts/security/pr_full_scanner.sh` (Mandatory before PR).
+
+> [!IMPORTANT]
+> **Hermetic Goldens** Sempre use `make goldens` para atualizar imagens de referência. Isso garante que os pixels sejam gerados em ambiente Linux, evitando falhas de divergência de renderização entre Windows e o CI (GitHub Actions).
+>
+> **Quando executar:**
+> 1. **Nova UI:** Ao criar novos widgets com testes visuais.
+> 2. **Mudança Intencional:** Após alterar cores, fontes ou layout de componentes existentes.
+> 3. **Falha no CI:** Se o GitHub Actions reportar erro visual, mas você confirmou que a mudança está correta.
 
 For the complete list of **28 Forensic Invariants**, refer to [CLAUDE.md](CLAUDE.md).

@@ -196,11 +196,14 @@ class _EvidenceVolumeErrorCard extends StatelessWidget {
                   color: VeraProbColors.textSecondary,
                 ),
                 const SizedBox(width: VeraProbSpacing.sm),
-                Text(
-                  'Volumetria de Evidências',
-                  style: VeraProbTypography.bodySmall.copyWith(
-                    color: VeraProbColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+                Flexible(
+                  child: Text(
+                    'Volumetria de Evidências',
+                    overflow: TextOverflow.ellipsis,
+                    style: VeraProbTypography.bodySmall.copyWith(
+                      color: VeraProbColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -214,10 +217,13 @@ class _EvidenceVolumeErrorCard extends StatelessWidget {
                   color: VeraProbColors.error,
                 ),
                 const SizedBox(width: VeraProbSpacing.xs),
-                Text(
-                  'Erro ao carregar dados',
-                  style: VeraProbTypography.bodySmall.copyWith(
-                    color: VeraProbColors.error,
+                Flexible(
+                  child: Text(
+                    'Erro ao carregar dados',
+                    overflow: TextOverflow.ellipsis,
+                    style: VeraProbTypography.bodySmall.copyWith(
+                      color: VeraProbColors.error,
+                    ),
                   ),
                 ),
               ],

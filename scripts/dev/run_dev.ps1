@@ -27,7 +27,8 @@ try {
         $supabaseRunning = $true
         Write-Host "  → Supabase já está rodando. Pulando 'supabase start'." -ForegroundColor DarkGreen
     }
-} catch { }
+}
+catch { }
 
 if (-not $supabaseRunning) {
     Write-Host "  → Iniciando Supabase..." -ForegroundColor Green
@@ -73,12 +74,11 @@ if ($needsPubGet) {
     }
 }
 
-# 7. Servir portal — HTML renderer para boot rápido (validação de UI)
-Write-Host "RUN: Servindo portal em http://localhost:50185..." -ForegroundColor Cyan
-Write-Host "     (web-renderer html = boot rápido para validação)" -ForegroundColor DarkGray
+# 7. Servir portal — IMPORTANTE: --web-hostname é necessário para abrir em outras abas
+Write-Host "RUN: Iniciando servidor Flutter (Headless/Web-Server) em http://127.0.0.1:50185..." -ForegroundColor Cyan
 flutter run -d web-server `
     --web-port=50185 `
-    --web-renderer html `
+    --web-hostname=127.0.0.1 `
     --dart-define=SKIP_MFA_DEV=true
 
 # Cleanup ao encerrar

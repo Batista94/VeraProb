@@ -12,7 +12,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 /// For any `VeraProbTypography` style accessor (base, kpiValue, kpiLabel,
 /// sectionTitle, bodyMedium, bodySmall, caption, badge, dataValue, fieldLabel),
 /// the returned `TextStyle` SHALL have a non-null `fontFamily` that is either
-/// "Inter" (when runtime fetching is enabled) or "Roboto" (when disabled),
+/// "Inter" (when runtime fetching is enabled) or "Lato" (when disabled),
 /// and the `fontSize`, `fontWeight`, and `letterSpacing` values SHALL match
 /// the hardcoded specification for that accessor.
 
@@ -36,7 +36,7 @@ class TypographySpec {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   // Disable runtime fetching — standard for test/CI environments.
-  // This exercises the Roboto fallback path in VeraProbTypography.base.
+  // This exercises the Lato fallback path in VeraProbTypography.base.
   GoogleFonts.config.allowRuntimeFetching = false;
 
   /// Hardcoded spec per accessor — derived from app_theme.dart source.
@@ -118,14 +118,14 @@ void main() {
 
   group('Feature: dependency-upgrade-phase3, '
       'Property 1: Typography style preservation', () {
-    group('allowRuntimeFetching = false (Roboto fallback path)', () {
+    group('allowRuntimeFetching = false (Lato fallback path)', () {
       // When allowRuntimeFetching is false, VeraProbTypography.base returns
-      // TextStyle(fontFamily: 'Roboto') directly without calling
+      // TextStyle(fontFamily: 'Lato') directly without calling
       // GoogleFonts.inter(). This is the path used in test/CI environments
       // and validates Requirement 1.3 (fallback without exceptions).
 
       Glados(accessorIndexGen).test(
-        'PBT: all accessors return non-null Roboto fontFamily '
+        'PBT: all accessors return non-null Lato fontFamily '
         'and match hardcoded spec values',
         (index) {
           final spec = typographySpecs[index];
@@ -139,9 +139,9 @@ void main() {
           );
           expect(
             style.fontFamily,
-            equals('Roboto'),
+            equals('Lato'),
             reason:
-                '${spec.name}: fontFamily must be "Roboto" when '
+                '${spec.name}: fontFamily must be "Lato" when '
                 'allowRuntimeFetching is false',
           );
 
@@ -180,12 +180,12 @@ void main() {
       // Exhaustive deterministic check: iterate all 10 accessors
       for (final spec in typographySpecs) {
         test(
-          '${spec.name}: fontFamily is Roboto and style values match spec',
+          '${spec.name}: fontFamily is Lato and style values match spec',
           () {
             final style = spec.accessor();
 
             expect(style.fontFamily, isNotNull);
-            expect(style.fontFamily, equals('Roboto'));
+            expect(style.fontFamily, equals('Lato'));
 
             if (spec.expectedFontSize != null) {
               expect(style.fontSize, equals(spec.expectedFontSize));
@@ -210,7 +210,7 @@ void main() {
       // We verify this path by testing that:
       // 1. The base getter does NOT throw when allowRuntimeFetching is true
       //    (the try/catch ensures resilience)
-      // 2. The returned style has a valid fontFamily (Inter or Roboto)
+      // 2. The returned style has a valid fontFamily (Inter or Lato)
       // 3. Style values (fontSize, fontWeight, letterSpacing) are preserved
       //    through copyWith regardless of which base fontFamily is used
 
@@ -243,7 +243,7 @@ void main() {
           // Simulate the production path: create a base style with a
           // different fontFamily and verify copyWith preserves values.
           const interBase = TextStyle(fontFamily: 'Inter');
-          final robotoBase = spec.accessor(); // Uses Roboto in test env
+          final latoBase = spec.accessor(); // Uses Lato in test env
 
           // Both paths must produce the same fontSize/fontWeight/letterSpacing
           if (spec.expectedFontSize != null) {
@@ -254,21 +254,21 @@ void main() {
             );
             expect(
               interDerived.fontSize,
-              equals(robotoBase.fontSize),
+              equals(latoBase.fontSize),
               reason:
                   '${spec.name}: fontSize must be identical regardless of '
                   'base fontFamily',
             );
             expect(
               interDerived.fontWeight,
-              equals(robotoBase.fontWeight),
+              equals(latoBase.fontWeight),
               reason:
                   '${spec.name}: fontWeight must be identical regardless of '
                   'base fontFamily',
             );
             expect(
               interDerived.letterSpacing,
-              equals(robotoBase.letterSpacing),
+              equals(latoBase.letterSpacing),
               reason:
                   '${spec.name}: letterSpacing must be identical regardless '
                   'of base fontFamily',

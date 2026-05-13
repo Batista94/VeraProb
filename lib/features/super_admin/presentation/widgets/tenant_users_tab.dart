@@ -7,6 +7,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 
 class TenantUsersTab extends ConsumerStatefulWidget {
   final TenantHealthView tenant;
@@ -117,10 +118,60 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
     }
   }
 
+  Future<String?> _askReason(BuildContext ctx, String title) async {
+    final ctrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final result = await showDialog<String>(
+      context: ctx,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: 400,
+          child: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: ctrl,
+              decoration: const InputDecoration(
+                labelText: 'Justificativa',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Obrigatório.' : null,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(ctx).pop(ctrl.text.trim());
+              }
+            },
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+    return result;
+  }
+
   Future<void> _resendInvite(String email) async {
+    final reason = await _askReason(context, 'Reenviar Convite');
+    if (reason == null || !mounted) return;
+
     try {
       final repo = ref.read(superAdminRepositoryProvider);
-      await repo.resendInvitation(email: email, orgName: widget.tenant.name);
+      await repo.resendInvitation(
+        email: email,
+        orgName: widget.tenant.name,
+        orgId: widget.tenant.id,
+        reason: reason,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -142,27 +193,8 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
   }
 
   Future<void> _revokeInvite(String email) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Revogar Convite'),
-        content: Text('Revogar o convite pendente para $email?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: VeraProbColors.error,
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Revogar'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
+    final reason = await _askReason(context, 'Revogar Convite');
+    if (reason == null || !mounted) return;
 
     try {
       final repo = ref.read(superAdminRepositoryProvider);
@@ -171,6 +203,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
         orgId: widget.tenant.id,
         email: email,
         superAdminUserId: userId,
+        reason: reason,
       );
       if (mounted) {
         // INV-22: Invalida snapshot para sincronizar status do painel pai.
@@ -197,6 +230,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
 
   Future<void> _addAdmin() async {
     final emailCtrl = TextEditingController();
+    final reasonCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
     final confirmed = await showDialog<bool>(
@@ -207,20 +241,43 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
           width: 400,
           child: Form(
             key: formKey,
-            child: TextFormField(
-              controller: emailCtrl,
-              decoration: const InputDecoration(
-                labelText: 'E-mail do Administrador',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              autofocus: true,
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'E-mail obrigatório.';
-                final emailRegex = RegExp(r'^[\w.+\-]+@[\w\-]+\.[a-z]{2,}');
-                if (!emailRegex.hasMatch(v.trim())) return 'E-mail inválido.';
-                return null;
-              },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: emailCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'E-mail do Administrador',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  autofocus: true,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'E-mail obrigatório.';
+                    }
+                    final emailRegex = RegExp(r'^[\w.+\-]+@[\w\-]+\.[a-z]{2,}');
+                    if (!emailRegex.hasMatch(v.trim())) {
+                      return 'E-mail inválido.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: reasonCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Justificativa',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Justificativa obrigatória.';
+                    }
+                    return null;
+                  },
+                ),
+              ],
             ),
           ),
         ),
@@ -247,13 +304,15 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
       final repo = ref.read(superAdminRepositoryProvider);
       final userId = ref.read(authStateProvider).value?.session?.user.id ?? '';
       const uuid = Uuid();
+      final now = ref.read(dateTimeProviderProvider).nowUtc();
       await repo.addAdminToOrganization(
         orgId: widget.tenant.id,
         email: emailCtrl.text.trim(),
         invitationId: uuid.v4(),
         token: uuid.v4(),
-        expiresAtUtc: DateTime.now().toUtc().add(const Duration(days: 7)),
+        expiresAtUtc: now.add(const Duration(days: 7)),
         superAdminUserId: userId,
+        reason: reasonCtrl.text.trim(),
       );
       if (mounted) {
         // INV-22: Invalida snapshot para sincronizar status do painel pai.

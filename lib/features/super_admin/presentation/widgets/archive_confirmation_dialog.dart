@@ -1,8 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
+/// Modal dialog for archiving an organization.
+///
+/// Enforces CIA Availability (non-dismissible barrier),
+/// CIA Integrity (min 10-char reason), and A11y (autofocus + semantics).
 class ArchiveConfirmationDialog extends StatefulWidget {
   const ArchiveConfirmationDialog({super.key});
+
+  /// Canonical entry point. Enforces [barrierDismissible: false] to guarantee
+  /// CIA-Availability (user MUST make a conscious decision).
+  static Future<String?> show(BuildContext context) {
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const ArchiveConfirmationDialog(),
+    );
+  }
 
   @override
   State<ArchiveConfirmationDialog> createState() =>
@@ -24,7 +38,12 @@ class _ArchiveConfirmationDialogState extends State<ArchiveConfirmationDialog> {
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.archive_outlined, color: VeraProbColors.warning, size: 20),
+          Icon(
+            Icons.archive_outlined,
+            color: VeraProbColors.error,
+            size: 20,
+            semanticLabel: 'Ícone de arquivamento',
+          ),
           SizedBox(width: 8),
           Text('Arquivar Organização'),
         ],
@@ -49,6 +68,7 @@ class _ArchiveConfirmationDialogState extends State<ArchiveConfirmationDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _reasonCtrl,
+                autofocus: true,
                 decoration: const InputDecoration(
                   labelText: 'Motivo *',
                   hintText: 'Mínimo 10 caracteres',
@@ -72,9 +92,7 @@ class _ArchiveConfirmationDialogState extends State<ArchiveConfirmationDialog> {
           child: const Text('Cancelar'),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: VeraProbColors.warning,
-          ),
+          style: FilledButton.styleFrom(backgroundColor: VeraProbColors.error),
           onPressed: () {
             if (_formKey.currentState?.validate() ?? false) {
               Navigator.of(context).pop(_reasonCtrl.text.trim());

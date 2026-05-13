@@ -707,7 +707,6 @@ class _DeclareContractPlanFormState
                   Step(
                     title: const Text('Zonas Operacionais'),
                     content: DeclarePlanZonesStep(
-                      contractorName: widget.contractorName,
                       selectedOriginZone: _selectedOriginZone,
                       selectedOriginZoneId: _selectedOriginZoneId,
                       selectedDestinationZone: _selectedDestinationZone,

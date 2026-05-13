@@ -3681,7 +3681,9 @@ export type Database = {
           active_contract_count: number | null
           billing_day: number | null
           capabilities: Json | null
+          cnpj: string | null
           contact_email: string | null
+          created_at: string | null
           dwell_time_seconds: number | null
           external_id: string | null
           id: string | null
@@ -4866,19 +4868,36 @@ export type Database = {
             }
             Returns: undefined
           }
-      super_admin_add_org_admin: {
-        Args: {
-          p_email: string
-          p_expires_at: string
-          p_invitation_id: string
-          p_invited_by: string
-          p_org_id: string
-          p_token: string
-        }
-        Returns: undefined
-      }
+      super_admin_add_org_admin:
+        | {
+            Args: {
+              p_email: string
+              p_expires_at: string
+              p_invitation_id: string
+              p_invited_by: string
+              p_org_id: string
+              p_token: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_email: string
+              p_expires_at: string
+              p_invitation_id: string
+              p_invited_by: string
+              p_org_id: string
+              p_reason?: string
+              p_token: string
+            }
+            Returns: undefined
+          }
       super_admin_archive_organization: {
         Args: { p_org_id: string; p_reason: string; p_super_admin_id: string }
+        Returns: undefined
+      }
+      super_admin_audit_resend_invitation: {
+        Args: { p_email: string; p_org_id: string; p_reason: string }
         Returns: undefined
       }
       super_admin_check_cnpj_exists: {
@@ -4934,7 +4953,12 @@ export type Database = {
         Returns: undefined
       }
       super_admin_revoke_invitation: {
-        Args: { p_email: string; p_org_id: string; p_super_admin_id: string }
+        Args: {
+          p_email: string
+          p_org_id: string
+          p_reason?: string
+          p_super_admin_id: string
+        }
         Returns: undefined
       }
       super_admin_toggle_member_status: {
@@ -4977,6 +5001,10 @@ export type Database = {
       }
       test_cleanup_forensic_data: {
         Args: { p_org_id: string }
+        Returns: undefined
+      }
+      test_cleanup_system_audit_log: {
+        Args: { p_org_ids: string[] }
         Returns: undefined
       }
       try_acquire_idempotency_key: {

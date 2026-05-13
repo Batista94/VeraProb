@@ -1,4 +1,3 @@
-// ignore_for_file: deprecated_member_use_from_same_package
 /// Forensic Audit Signature: CX-05-v2.1
 /// Test Suite: Justification Defense-in-Depth — Adversarial Security Tests (v2.1)
 /// Security Guard: INV-24 Compliance Verified
@@ -52,7 +51,7 @@ class MockClock extends Mock implements IDateTimeProvider {}
 class MockEvidenceIntegrityVerifier extends Mock
     implements EvidenceIntegrityVerifier {}
 
-class MockXssInputSanitizer extends Mock implements XssInputSanitizer {}
+class MockXssInputSanitizer extends Mock implements InputSanitizer {}
 
 class MockContextualSignatureAnalyzer extends Mock
     implements ContextualSignatureAnalyzer {}
@@ -127,11 +126,11 @@ void main() {
     final rbac = RbacService();
 
     // Default safe stub for sanitizer: strips HTML tags using a real-ish impl.
-    when(() => mockSanitizer.sanitizeText(any())).thenAnswer((inv) {
+    when(() => mockSanitizer.sanitize(any())).thenAnswer((inv) {
       final input = inv.positionalArguments[0] as String;
       // Simulates what sanitize_html does: removes HTML tags and their content
       // for script tags, strips all other tags.
-      return input
+      final cleaned = input
           .replaceAll(
             RegExp(
               r'<script[^>]*>.*?</script>',
@@ -142,6 +141,15 @@ void main() {
           )
           .replaceAll(RegExp(r'<[^>]*>'), '')
           .trim();
+      return SanitizationResult(
+        text: cleaned,
+        wasModified: cleaned != input,
+        threatLevel: cleaned != input ? ThreatLevel.low : ThreatLevel.none,
+      );
+    });
+    when(() => mockSanitizer.sanitizeText(any())).thenAnswer((inv) {
+      final input = inv.positionalArguments[0] as String;
+      return mockSanitizer.sanitize(input).text;
     });
 
     // Default safe stub: all files pass binary inspection.
@@ -250,9 +258,7 @@ void main() {
 
         expect(result.status, JustificationStatus.approved);
 
-        // CRITICAL: No separate appendAuditLog was called \u2014 the RPC handles it.
-        verifyNever(() => mockRepo.appendAuditLog(any()));
-
+        // CRITICAL: No separate appendAuditLog was called \u2014 the RPC handles it atomically.
         // CRITICAL: The atomic RPC was called exactly once.
         verify(
           () => mockRepo.updateStatusWithAuditLog(
@@ -385,7 +391,12 @@ void main() {
       );
 
       // Binary inspection MUST fire before evidence is stored.
-      verifyNever(() => mockRepo.create(any()));
+      verifyNever(
+        () => mockRepo.createWithAuditLog(
+          justification: any(named: 'justification'),
+          initialAuditLog: any(named: 'initialAuditLog'),
+        ),
+      );
     });
 
     test(
@@ -416,7 +427,12 @@ void main() {
           throwsA(isA<DomainException>()),
         );
 
-        verifyNever(() => mockRepo.create(any()));
+        verifyNever(
+          () => mockRepo.createWithAuditLog(
+            justification: any(named: 'justification'),
+            initialAuditLog: any(named: 'initialAuditLog'),
+          ),
+        );
       },
     );
 
@@ -436,10 +452,15 @@ void main() {
             organizationId: any(named: 'organizationId'),
           ),
         ).thenAnswer((_) async => null);
-        when(() => mockRepo.create(any())).thenAnswer((inv) async {
-          return inv.positionalArguments[0] as SLAJustification;
+        when(
+          () => mockRepo.createWithAuditLog(
+            justification: any(named: 'justification'),
+            initialAuditLog: any(named: 'initialAuditLog'),
+          ),
+        ).thenAnswer((invocation) async {
+          return invocation.namedArguments[const Symbol('justification')]
+              as SLAJustification;
         });
-        when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
 
         final command = SubmitSLAJustificationCommand(
           organizationId: orgId,
@@ -455,7 +476,12 @@ void main() {
 
         final result = await manager.submitJustification(command);
         expect(result.status, JustificationStatus.pending);
-        verify(() => mockRepo.create(any())).called(1);
+        verify(
+          () => mockRepo.createWithAuditLog(
+            justification: any(named: 'justification'),
+            initialAuditLog: any(named: 'initialAuditLog'),
+          ),
+        ).called(1);
       },
     );
   });
@@ -486,10 +512,15 @@ void main() {
           organizationId: any(named: 'organizationId'),
         ),
       ).thenAnswer((_) async => null);
-      when(() => mockRepo.create(any())).thenAnswer((inv) async {
-        return inv.positionalArguments[0] as SLAJustification;
+      when(
+        () => mockRepo.createWithAuditLog(
+          justification: any(named: 'justification'),
+          initialAuditLog: any(named: 'initialAuditLog'),
+        ),
+      ).thenAnswer((invocation) async {
+        return invocation.namedArguments[const Symbol('justification')]
+            as SLAJustification;
       });
-      when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
 
       final command = SubmitSLAJustificationCommand(
         organizationId: orgId,
@@ -592,7 +623,7 @@ void main() {
   //
   // REMEDIATION: The `updateStatusWithAuditLog` RPC inserts evidence URLs into
   // `evidence_deletion_queue` atomically with the status change.
-  // The `EvidenceCleanupService` processes the queue after 7-day grace.
+  // The `EvidenceLifecycleManager` transitions evidence to Cold Storage (90-day retention);
   // ═══════════════════════════════════════════════════════════════════════════
 
   group('RED TEAM ID 6 \u2014 Storage Leak: Evidence Lifecycle Management', () {
@@ -775,7 +806,12 @@ void main() {
 
         // Layer 2 (binary inspection) must NOT have been called \u2014 we failed earlier.
         verifyNever(() => mockFileInspector.validateEvidence(any()));
-        verifyNever(() => mockRepo.create(any()));
+        verifyNever(
+          () => mockRepo.createWithAuditLog(
+            justification: any(named: 'justification'),
+            initialAuditLog: any(named: 'initialAuditLog'),
+          ),
+        );
       },
     );
 
@@ -815,7 +851,12 @@ void main() {
         );
 
         // Layer 4 (persistence) must NOT be called.
-        verifyNever(() => mockRepo.create(any()));
+        verifyNever(
+          () => mockRepo.createWithAuditLog(
+            justification: any(named: 'justification'),
+            initialAuditLog: any(named: 'initialAuditLog'),
+          ),
+        );
       },
     );
 
@@ -830,10 +871,15 @@ void main() {
             organizationId: any(named: 'organizationId'),
           ),
         ).thenAnswer((_) async => null);
-        when(() => mockRepo.create(any())).thenAnswer((inv) async {
-          return inv.positionalArguments[0] as SLAJustification;
+        when(
+          () => mockRepo.createWithAuditLog(
+            justification: any(named: 'justification'),
+            initialAuditLog: any(named: 'initialAuditLog'),
+          ),
+        ).thenAnswer((invocation) async {
+          return invocation.namedArguments[const Symbol('justification')]
+              as SLAJustification;
         });
-        when(() => mockRepo.appendAuditLog(any())).thenAnswer((_) async {});
 
         final command = SubmitSLAJustificationCommand(
           organizationId: orgId,
@@ -853,7 +899,7 @@ void main() {
 
         // Verify all layers executed.
         verify(
-          () => mockSanitizer.sanitizeText(any()),
+          () => mockSanitizer.sanitize(any()),
         ).called(greaterThanOrEqualTo(1)); // Layer 1: XSS sanitization
         verify(
           () => mockFileInspector.validateEvidence(any()),
@@ -864,7 +910,12 @@ void main() {
             declaredHashes: any(named: 'declaredHashes'),
           ),
         ).called(1); // Layer 3: SHA-256
-        verify(() => mockRepo.create(any())).called(1); // Layer 4: Persistence
+        verify(
+          () => mockRepo.createWithAuditLog(
+            justification: any(named: 'justification'),
+            initialAuditLog: any(named: 'initialAuditLog'),
+          ),
+        ).called(1); // Layer 4: Persistence
       },
     );
   });

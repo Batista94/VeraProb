@@ -169,10 +169,12 @@ class _CreateOrganizationWizardState
 
     // Structural validation (immediate check-digit check)
     if (!CnpjValidator.isValid(digits)) {
-      setState(() {
-        _cnpjApiError = 'CNPJ inválido';
-        _cnpjChecking = false;
-      });
+      if (_cnpjApiError != null || _cnpjChecking) {
+        setState(() {
+          _cnpjApiError = null;
+          _cnpjChecking = false;
+        });
+      }
       return;
     }
 
@@ -283,37 +285,47 @@ class _CreateOrganizationWizardState
       return;
     }
 
+    // ── Snapshot all controller values BEFORE any async gap (INV-7) ──────────
+    // Prevents race conditions where setState/rebuild could contaminate
+    // controller text between validation and submission.
+    final snapshotLegalName = _legalNameCtrl.text.trim();
+    final snapshotTradeName = _tradeNameCtrl.text.trim();
+    final snapshotCnpj = _cnpjCtrl.text.trim();
+    final snapshotMaxVehicles = _maxVehiclesCtrl.text.trim();
+    final snapshotMaxContracts = _maxContractsCtrl.text.trim();
+    final snapshotToolCost = _toolCostCtrl.text;
+    final snapshotReason = _reasonCtrl.text.trim();
+    final snapshotContactEmail = _contactEmailCtrl.text.trim();
+    final snapshotExternalId = _externalIdCtrl.text.trim();
+    final snapshotBillingDay = _billingDayCtrl.text.trim();
+
     setState(() => _isSubmitting = true);
 
     try {
       final handler = ref.read(createOrganizationHandlerProvider);
 
-      final billingDayText = _billingDayCtrl.text.trim();
       final cmd = CreateOrganizationFormData(
-        legalName: _legalNameCtrl.text.trim(),
-        tradeName: _tradeNameCtrl.text.trim(),
-        cnpj: _cnpjCtrl.text.trim(),
+        legalName: snapshotLegalName,
+        tradeName: snapshotTradeName,
+        cnpj: snapshotCnpj,
         timezone: _timezone,
         currencyCode: _currency,
         planType: _selectedPlan,
-        maxVehicles: int.parse(_maxVehiclesCtrl.text.trim()),
-        maxActiveContracts: int.parse(_maxContractsCtrl.text.trim()),
+        maxVehicles: int.parse(snapshotMaxVehicles),
+        maxActiveContracts: int.parse(snapshotMaxContracts),
         adminEmails: _adminEmails,
         superAdminUserId: superAdminId,
-        // _capabilities is OrgCapabilitiesViewModel — toCommand() converts to domain
         capabilities: _capabilities,
-        toolCostCents: BrlCurrencyInputFormatter.toCents(_toolCostCtrl.text),
+        toolCostCents: BrlCurrencyInputFormatter.toCents(snapshotToolCost),
         dwellTimeSeconds: _dwellTimeSeconds,
-        reason: _reasonCtrl.text.trim(),
-        contactEmail: _contactEmailCtrl.text.trim().isEmpty
+        reason: snapshotReason,
+        contactEmail: snapshotContactEmail.isEmpty
             ? null
-            : _contactEmailCtrl.text.trim(),
-        externalId: _externalIdCtrl.text.trim().isEmpty
+            : snapshotContactEmail,
+        externalId: snapshotExternalId.isEmpty ? null : snapshotExternalId,
+        billingDay: snapshotBillingDay.isEmpty
             ? null
-            : _externalIdCtrl.text.trim(),
-        billingDay: billingDayText.isEmpty
-            ? null
-            : int.tryParse(billingDayText),
+            : int.tryParse(snapshotBillingDay),
         allowedDomains: _allowedDomains,
       ).toCommand();
 
@@ -357,32 +369,58 @@ class _CreateOrganizationWizardState
       // Success dialog
       await showDialog<void>(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (_) =>
             _buildSuccessDialog(inviteUrls, messenger, result.orgApiSecret),
       );
 
-      // Invalidate health snapshot to refresh the tenant list
-      ref.invalidate(tenantHealthSnapshotProvider);
+      if (mounted) {
+        // Invalidate health snapshot to refresh the tenant list
+        ref.invalidate(tenantHealthSnapshotProvider);
+        widget.onSuccess();
+      }
     } on DomainException catch (e) {
       if (!mounted) return;
+      final message = _mapErrorMessage(e.message);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.message),
+          content: Text(message),
           backgroundColor: VeraProbColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro inesperado: $e'),
+        const SnackBar(
+          content: Text(
+            'Erro inesperado ao processar solicitação. Tente novamente.',
+          ),
           backgroundColor: VeraProbColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  String _mapErrorMessage(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('already_exists') || lower.contains('já existe')) {
+      if (lower.contains('invite') || lower.contains('convite')) {
+        return 'Um convite já foi enviado para um destes administradores.';
+      }
+      if (lower.contains('cnpj')) {
+        return 'Este CNPJ já está cadastrado no sistema.';
+      }
+      return 'Este registro já existe no sistema.';
+    }
+    if (lower.contains('permission') || lower.contains('unauthorized')) {
+      return 'Você não tem permissão para realizar esta operação.';
+    }
+    // Remove technical prefix if present (e.g. "DomainException: message")
+    return raw.replaceAll(RegExp(r'^.*Exception: '), '').trim();
   }
 
   Widget _buildSuccessDialog(
@@ -391,109 +429,161 @@ class _CreateOrganizationWizardState
     String? orgApiSecret,
   ) {
     return AlertDialog(
-      icon: const Icon(
-        Icons.check_circle,
-        color: VeraProbColors.success,
-        size: 48,
+      icon: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Icon(
+            Icons.check_circle,
+            color: VeraProbColors.success,
+            size: 56,
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            child: IconButton(
+              icon: const Icon(Icons.close, size: 20),
+              onPressed: () => Navigator.of(context).pop(),
+              tooltip: 'Fechar e voltar para Tenants',
+            ),
+          ),
+        ],
       ),
       title: const Text('Organização Criada!'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Organização: ${_tradeNameCtrl.text.trim()}'),
-          const SizedBox(height: 8),
-          Text('Admin(s) convidado(s): ${inviteUrls.keys.join(", ")}'),
-          const SizedBox(height: 16),
-          const Text(
-            'Links de convite (um por admin):',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          ...inviteUrls.entries.map(
-            (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(VeraProbSpacing.sm),
+              decoration: BoxDecoration(
+                color: VeraProbColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          entry.key,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SelectableText(
-                          entry.value,
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
+                  const Icon(
+                    Icons.business,
+                    size: 20,
+                    color: VeraProbColors.primary,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.copy_all, size: 16),
-                    tooltip: 'Copiar link de ${entry.key}',
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: entry.value));
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text('Link de ${entry.key} copiado!'),
-                        ),
-                      );
-                    },
+                  const SizedBox(width: VeraProbSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      _tradeNameCtrl.text.trim(),
+                      style: VeraProbTypography.sectionTitle,
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: VeraProbColors.warning.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: VeraProbColors.warning.withValues(alpha: 0.5),
+            const SizedBox(height: VeraProbSpacing.md),
+            Text(
+              'Links de convite por administrador:',
+              style: VeraProbTypography.sectionTitle.copyWith(fontSize: 13),
+            ),
+            const SizedBox(height: VeraProbSpacing.sm),
+            ...inviteUrls.entries.map(
+              (entry) => Container(
+                margin: const EdgeInsets.only(bottom: VeraProbSpacing.sm),
+                padding: const EdgeInsets.all(VeraProbSpacing.sm),
+                decoration: BoxDecoration(
+                  color: VeraProbColors.surfaceElevated.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: VeraProbColors.border),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entry.key,
+                            style: VeraProbTypography.sectionTitle.copyWith(
+                              fontSize: 12,
+                              color: VeraProbColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          SelectableText(
+                            entry.value,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 12,
+                              color: VeraProbColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: VeraProbSpacing.xs),
+                    IconButton(
+                      icon: const Icon(Icons.copy_all, size: 20),
+                      tooltip: 'Copiar link de ${entry.key}',
+                      onPressed: () async {
+                        await HapticFeedback.lightImpact();
+                        await Clipboard.setData(
+                          ClipboardData(text: entry.value),
+                        );
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Link de ${entry.key} copiado!'),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 16,
-                  color: VeraProbColors.warning,
+            const SizedBox(height: VeraProbSpacing.sm),
+            Container(
+              padding: const EdgeInsets.all(VeraProbSpacing.sm),
+              decoration: BoxDecoration(
+                color: VeraProbColors.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: VeraProbColors.warning.withValues(alpha: 0.3),
                 ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Envie este link ao administrador. Ele deve acessá-lo para definir sua senha.',
-                    style: TextStyle(fontSize: 12),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: VeraProbColors.warning,
+                    semanticLabel: 'Informação importante',
                   ),
-                ),
-              ],
+                  const SizedBox(width: VeraProbSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Envie cada link ao respectivo administrador para definição de senha.',
+                      style: VeraProbTypography.bodySmall.copyWith(
+                        color: VeraProbColors.warning,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          if (orgApiSecret != null) ...[
-            const SizedBox(height: 16),
-            _SecretRevealSection(secret: orgApiSecret, messenger: messenger),
+            if (orgApiSecret != null) ...[
+              const SizedBox(height: VeraProbSpacing.md),
+              _SecretRevealSection(secret: orgApiSecret, messenger: messenger),
+            ],
           ],
-        ],
+        ),
       ),
       actions: [
         ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            widget.onSuccess();
-          },
-          child: const Text('Ver Tenants'),
+          onPressed: () => Navigator.of(context).pop(),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: VeraProbColors.primary,
+            minimumSize: const Size(120, 44),
+          ),
+          child: const Text('Concluir'),
         ),
       ],
     );

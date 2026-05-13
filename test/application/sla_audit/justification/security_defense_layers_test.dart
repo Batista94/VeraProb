@@ -76,10 +76,10 @@ void main() {
 
     when(mockDateTime.nowUtc()).thenReturn(DateTime.utc(2026, 4, 16, 3, 0, 0));
 
-    when(mockSanitizer.sanitizeText(any)).thenAnswer((inv) {
+    when(mockSanitizer.sanitize(any)).thenAnswer((inv) {
       final input = inv.positionalArguments[0] as String;
       // Remove all HTML tags AND their content
-      return input
+      final cleaned = input
           .replaceAll(
             RegExp(
               r'<script[^>]*>.*?</script>',
@@ -90,6 +90,15 @@ void main() {
           )
           .replaceAll(RegExp(r'<[^>]*>'), '')
           .trim();
+      return SanitizationResult(
+        text: cleaned,
+        wasModified: cleaned != input,
+        threatLevel: cleaned != input ? ThreatLevel.low : ThreatLevel.none,
+      );
+    });
+    when(mockSanitizer.sanitizeText(any)).thenAnswer((inv) {
+      final input = inv.positionalArguments[0] as String;
+      return mockSanitizer.sanitize(input).text;
     });
 
     when(
@@ -112,9 +121,14 @@ void main() {
 
     when(mockRbac.can(any, any)).thenReturn(true);
 
-    when(repository.create(any)).thenAnswer((inv) async {
-      final justification = inv.positionalArguments[0] as SLAJustification;
-      return justification;
+    when(
+      repository.createWithAuditLog(
+        justification: anyNamed('justification'),
+        initialAuditLog: anyNamed('initialAuditLog'),
+      ),
+    ).thenAnswer((invocation) async {
+      return invocation.namedArguments[const Symbol('justification')]
+          as SLAJustification;
     });
 
     when(
@@ -310,7 +324,7 @@ void main() {
 
       final result = await manager.submitJustification(command);
 
-      verify(mockSanitizer.sanitizeText(any)).called(1);
+      verify(mockSanitizer.sanitize(any)).called(1);
       verify(mockFileInspector.validateEvidence(any)).called(1);
       verify(
         mockEvidenceVerifier.verifyAll(
@@ -318,7 +332,12 @@ void main() {
           declaredHashes: anyNamed('declaredHashes'),
         ),
       ).called(1);
-      verify(repository.create(any)).called(1);
+      verify(
+        repository.createWithAuditLog(
+          justification: anyNamed('justification'),
+          initialAuditLog: anyNamed('initialAuditLog'),
+        ),
+      ).called(1);
 
       expect(result.id, isNotEmpty);
       expect(result.status, JustificationStatus.pending);

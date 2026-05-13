@@ -50,4 +50,14 @@ Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
 | H-09 | **CACHE REFRESH**| `postSave` | `bash scripts/refresh_schema_cache.sh` (PostgREST sync). |
 | H-10 | **MISSION SYNC**| `onMissionComplete` | `mcp:memory/sync_project_state` (Memory persistence). |
 | H-11 | **INDEX ADVISOR**| `preCommit` | `python scripts/index_advisor.py` (INV-12). |
+| H-12 | **CODE QUALITY** | `preCommit` | `dart fix --apply && flutter analyze` (Clean Code). |
 
+---
+## QUALITY CODE PROTOCOLS (Mandatory for Agents)
+- **Zero-Waste**: Always run `dart fix --apply` after significant edits.
+- **Strict Linting**: Treat all analyzer warnings as blockers (Errors in `analysis_options.yaml`).
+- **Clean Imports**: No unused imports.
+- **Dart Wildcards**: Use only a single `_` for ALL unused parameters (to avoid `unnecessary_underscores` errors).
+- **Unused Locals**: Never leave unused local variables in tests or production code (enforced as error).
+- **Prefer Const**: Always use `const` for constructors and declarations whenever possible.
+- **Universal UTC (INV-6)**: `DateTime.now()` must ALWAYS be followed by `.toUtc()`. No exceptions.

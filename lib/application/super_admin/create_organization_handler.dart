@@ -93,6 +93,29 @@ class CreateOrganizationHandler {
       );
     }
 
+    // 4e. Field contamination guard (INV-10: no silent failures)
+    // Detects when form controller values leak across fields — a known
+    // Flutter Stepper widget reconciliation edge case.
+    if (cmd.legalName.contains(cmd.tradeName) &&
+        cmd.legalName != cmd.tradeName &&
+        cmd.legalName.length > cmd.tradeName.length) {
+      throw const DomainException(
+        'Dados corrompidos: legal_name contém trade_name. '
+        'Limpe o formulário e tente novamente.',
+      );
+    }
+    if (cmd.maxVehicles != null && cmd.maxVehicles! > 10000) {
+      throw DomainException(
+        'max_vehicles inválido (${cmd.maxVehicles}). Máximo permitido: 10.000.',
+      );
+    }
+    if (cmd.maxActiveContracts != null && cmd.maxActiveContracts! > 5000) {
+      throw DomainException(
+        'max_active_contracts inválido (${cmd.maxActiveContracts}). '
+        'Máximo permitido: 5.000.',
+      );
+    }
+
     // 5. Auto-fill quota limits from PlanLimits defaults when not explicitly provided
     final planType = cmd.planType;
     final effectiveCmd =
@@ -117,6 +140,7 @@ class CreateOrganizationHandler {
             contactEmail: cmd.contactEmail,
             externalId: cmd.externalId,
             organizationType: cmd.organizationType,
+            allowedDomains: cmd.allowedDomains,
           )
         : cmd;
 

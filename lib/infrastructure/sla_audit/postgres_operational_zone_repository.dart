@@ -22,7 +22,6 @@ class PostgresOperationalZoneRepository extends BasePostgresRepository
         'name': zone.name,
         'type': zone.type.name,
         'address': zone.address,
-        'contractor_label': zone.contractorLabel,
         'latitude': zone.geofence?.latitude,
         'longitude': zone.geofence?.longitude,
         'radius_meters': zone.geofence?.radiusMeters,
@@ -91,7 +90,6 @@ class PostgresOperationalZoneRepository extends BasePostgresRepository
       name: data['name'],
       type: type,
       address: data['address'] as String?,
-      contractorLabel: data['contractor_label'] as String?,
       geofence: geofence,
     );
   }

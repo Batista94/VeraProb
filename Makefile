@@ -8,7 +8,7 @@
 #   make help
 # =============================================================================
 
-.PHONY: help setup run scan-secrets test-security pr-scan load-tokens index-advisor test test-db test-all full-check
+.PHONY: help setup run scan-secrets test-security pr-scan load-tokens index-advisor test test-db test-all full-check goldens
 
 help: ## Mostra este menu de ajuda
 	@echo "VeraProb — Comandos Disponíveis:"
@@ -48,6 +48,9 @@ load-tokens: ## Gera tokens JWT para testes de estresse (K6)
 
 coverage: ## Gera relatório de cobertura de testes Dart/Flutter
 	dart scripts/qa/coverage_report.dart
+
+goldens: ## [Tier 1] Gera/Atualiza Goldens herméticos via Docker (Linux)
+	bash scripts/generate_goldens.sh
 
 chaos-test: ## Executa a suite de testes de caos (resiliência)
 	bash scripts/qa/chaos/run_chaos_suite.sh

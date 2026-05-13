@@ -9,6 +9,9 @@
     "mcp:memory",
     "mcp:sequential-thinking"
   ],
+  "resources": [
+    "skill://ingestion-streaming-architect"
+  ],
   "steering": [
     "file://../steering/forensic-standards.md",
     "file://../../CLAUDE.md",

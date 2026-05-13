@@ -7,7 +7,7 @@
         "npx -y @playwright/mcp@latest"
       ],
       "env": {},
-      "disabled": false,
+      "disabled": true,
       "autoApprove": [
         "browser_navigate",
         "browser_snapshot",
@@ -22,17 +22,6 @@
         "browser_file_upload",
         "browser_take_screenshot"
       ]
-    },
-    "github": {
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx -y @modelcontextprotocol/server-github"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      },
-      "disabled": true
     },
     "postgres": {
       "command": "cmd",
@@ -53,7 +42,7 @@
         "mcp-server-docker"
       ],
       "env": {},
-      "disabled": false,
+      "disabled": true,
       "autoApprove": [
         "list_containers",
         "fetch_container_logs",
@@ -90,7 +79,9 @@
         "create_entities",
         "add_observations",
         "search_nodes",
-        "search_nodes"
+        "search_nodes",
+        "read_graph",
+        "create_relations"
       ]
     },
     "sequential-thinking": {

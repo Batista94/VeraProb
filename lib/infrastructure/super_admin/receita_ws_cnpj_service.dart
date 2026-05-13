@@ -96,24 +96,38 @@ class ReceitaWsCnpjService implements ICnpjLookupService {
       );
     }
 
-    try {
-      return CnpjCompanyData(
-        cnpj: cnpjDigits,
-        legalName: _trim(data['legalName'] as String?),
-        tradeName: _trim(data['tradeName'] as String?),
-        situation: _trim(data['situation'] as String?),
-      );
-    } on TypeError catch (e) {
+    final legalName = data['legalName'];
+    final tradeName = data['tradeName'];
+    final situation = data['situation'];
+
+    if (legalName != null && legalName is! String) {
       throw DataParsingException(
-        'Contract drift in registry response',
-        field: e.toString().contains('legalName')
-            ? 'legalName'
-            : e.toString().contains('tradeName')
-            ? 'tradeName'
-            : null,
+        'Contract drift: legalName must be String',
+        field: 'legalName',
         cnpj: cnpjDigits,
       );
     }
+    if (tradeName != null && tradeName is! String) {
+      throw DataParsingException(
+        'Contract drift: tradeName must be String',
+        field: 'tradeName',
+        cnpj: cnpjDigits,
+      );
+    }
+    if (situation != null && situation is! String) {
+      throw DataParsingException(
+        'Contract drift: situation must be String',
+        field: 'situation',
+        cnpj: cnpjDigits,
+      );
+    }
+
+    return CnpjCompanyData(
+      cnpj: cnpjDigits,
+      legalName: _trim(legalName as String?),
+      tradeName: _trim(tradeName as String?),
+      situation: _trim(situation as String?),
+    );
   }
 
   String? _trim(String? v) {

@@ -180,6 +180,43 @@ void main() {
         final snapshot = TenantHealthSnapshot.fromJson(json);
         expect(snapshot.capabilities, equals(<String, dynamic>{}));
       });
+
+      group('cnpj field', () {
+        test('fromJson maps valid cnpj string', () {
+          final json = {
+            'id': 'x',
+            'name': 'x',
+            'is_active': true,
+            'cnpj': '12.345.678/0001-90',
+          };
+          final snapshot = TenantHealthSnapshot.fromJson(json);
+          expect(snapshot.cnpj, equals('12.345.678/0001-90'));
+        });
+
+        test('fromJson maps cnpj null', () {
+          final json = {
+            'id': 'x',
+            'name': 'x',
+            'is_active': true,
+            'cnpj': null,
+          };
+          final snapshot = TenantHealthSnapshot.fromJson(json);
+          expect(snapshot.cnpj, isNull);
+        });
+      });
+
+      group('createdAt field', () {
+        test('fromJson maps valid created_at (ISO 8601 string)', () {
+          final json = {
+            'id': 'x',
+            'name': 'x',
+            'is_active': true,
+            'created_at': '2025-03-15T14:30:00.000Z',
+          };
+          final snapshot = TenantHealthSnapshot.fromJson(json);
+          expect(snapshot.createdAt, equals(DateTime.utc(2025, 3, 15, 14, 30)));
+        });
+      });
     });
 
     group('hasCriticalAlerts', () {
@@ -213,6 +250,7 @@ void main() {
     group('Equatable', () {
       test('two snapshots with same fields are equal', () {
         final dt = DateTime.utc(2026, 3, 19);
+        const cnpj = '00.000.000/0001-00';
         final a = TenantHealthSnapshot(
           id: 'org-1',
           name: 'Org',
@@ -222,6 +260,8 @@ void main() {
           activeContractCount: 2,
           openCriticalAlertCount: 0,
           lastTelemetryAt: dt,
+          cnpj: cnpj,
+          createdAt: dt,
         );
         final b = TenantHealthSnapshot(
           id: 'org-1',
@@ -232,8 +272,34 @@ void main() {
           activeContractCount: 2,
           openCriticalAlertCount: 0,
           lastTelemetryAt: dt,
+          cnpj: cnpj,
+          createdAt: dt,
         );
         expect(a, equals(b));
+      });
+
+      test('snapshots with different cnpj are not equal', () {
+        const a = TenantHealthSnapshot(
+          id: 'org-1',
+          name: 'x',
+          isActive: true,
+          maxVehicles: 10,
+          maxActiveContracts: 5,
+          activeContractCount: 0,
+          openCriticalAlertCount: 0,
+          cnpj: '11.111.111/0001-11',
+        );
+        const b = TenantHealthSnapshot(
+          id: 'org-1',
+          name: 'x',
+          isActive: true,
+          maxVehicles: 10,
+          maxActiveContracts: 5,
+          activeContractCount: 0,
+          openCriticalAlertCount: 0,
+          cnpj: '22.222.222/0001-22',
+        );
+        expect(a, isNot(equals(b)));
       });
     });
   });

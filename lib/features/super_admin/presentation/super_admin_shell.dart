@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/application/super_admin/proxy_resilience_notifier.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'screens/tenant_health_panel.dart';
 import 'screens/create_organization_wizard.dart';
 import 'screens/super_admin_audit_log_screen.dart';
+import 'widgets/contingency_banner.dart';
 import 'widgets/super_admin_guard.dart';
 import 'widgets/super_admin_session_timeout.dart';
 
@@ -71,6 +73,8 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
                     icon: const Icon(Icons.logout, color: Colors.white54),
                     tooltip: 'Sair',
                     onPressed: () async {
+                      // INV-22: Reset resilience state before logout
+                      ref.read(proxyResilienceProvider.notifier).reset();
                       await ref.read(authRepositoryProvider).signOut();
                       if (context.mounted) {
                         await Navigator.of(context).pushAndRemoveUntil(
@@ -103,7 +107,14 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
               ),
               const VerticalDivider(width: 1),
               // ── Main content ───────────────────────────────────────
-              Expanded(child: _buildBody()),
+              Expanded(
+                child: Column(
+                  children: [
+                    const ContingencyBanner(),
+                    Expanded(child: _buildBody()),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

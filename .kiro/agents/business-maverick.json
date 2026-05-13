@@ -5,7 +5,12 @@
   "capabilities": [
     "bash",
     "read_workspace",
-    "mcp:fetch"
+    "mcp:fetch",
+    "mcp:sequential-thinking",
+    "mcp:memory"
+  ],
+  "resources": [
+    "skill://firecrawl"
   ],
   "steering": [
     "file://../steering/forensic-standards.md",
@@ -14,6 +19,6 @@
     "file://../rules.md"
   ],
   "env": {
-    "STRATEGY_MODE": "AGREESSIVE"
+    "STRATEGY_MODE": "AGGRESSIVE"
   }
 }

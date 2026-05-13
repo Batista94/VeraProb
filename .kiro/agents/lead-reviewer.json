@@ -1,5 +1,6 @@
 {
   "name": "Lead Reviewer",
+  "description": "Gatekeeper of the PR pipeline and clean code auditor.",
   "persona": "file://./lead-reviewer.md",
   "capabilities": [
     "bash",
@@ -7,6 +8,10 @@
     "mcp:postgres",
     "mcp:memory",
     "mcp:sequential-thinking"
+  ],
+  "resources": [
+    "skill://veraprob-pr-scanner",
+    "skill://caveman-review"
   ],
   "steering": [
     "file://../steering/forensic-standards.md",

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/super_admin/presentation/keys/tenant_tab_keys.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/archive_confirmation_dialog.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/reason_confirmation_dialog.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_config_tab.dart';
@@ -50,10 +51,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   }
 
   Future<void> _archiveOrg(TenantHealthView t) async {
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (_) => const ArchiveConfirmationDialog(),
-    );
+    final reason = await ArchiveConfirmationDialog.show(context);
     if (reason == null || !mounted) return;
 
     try {
@@ -141,16 +139,22 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-          child: Row(
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 240),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       t.name,
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     if (t.legalName != null)
                       Text(
@@ -159,15 +163,14 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                           color: VeraProbColors.textSecondary,
                           fontSize: 13,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                   ],
                 ),
               ),
               OrgStatusBadge(label: t.status?.label),
-              const SizedBox(width: 8),
               PlanBadge(planType: t.planType),
-              if (t.isOperational) ...[
-                const SizedBox(width: 8),
+              if (t.isOperational)
                 OutlinedButton.icon(
                   onPressed: () => _archiveOrg(t),
                   icon: const Icon(Icons.archive_outlined, size: 16),
@@ -179,9 +182,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                     textStyle: const TextStyle(fontSize: 12),
                   ),
                 ),
-              ],
-              if (t.isArchived) ...[
-                const SizedBox(width: 8),
+              if (t.isArchived)
                 FilledButton.icon(
                   onPressed: () => _unarchiveOrg(t),
                   icon: const Icon(Icons.unarchive_outlined, size: 16),
@@ -192,7 +193,6 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                     textStyle: const TextStyle(fontSize: 12),
                   ),
                 ),
-              ],
             ],
           ),
         ),
@@ -215,14 +215,20 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
           tabAlignment: TabAlignment.start,
           labelColor: VeraProbColors.secondary,
           unselectedLabelColor: VeraProbColors.textSecondary,
-          indicatorColor: VeraProbColors.secondary,
-          tabs: const [
-            Tab(text: 'Métricas'),
-            Tab(text: 'Saúde Técnica'),
-            Tab(text: 'Configuração'),
-            Tab(text: 'Segurança'),
-            Tab(text: 'Usuários'),
-            Tab(text: 'Auditoria'),
+          indicator: const _IndustrialTabIndicator(
+            color: VeraProbColors.secondary,
+          ),
+          splashFactory: NoSplash.splashFactory,
+          tabs: [
+            for (final type in TenantTabKeys.allTabs)
+              Semantics(
+                identifier: TenantTabKeys.identifier(t.id, type),
+                label: TenantTabKeys.label(type),
+                child: Tab(
+                  key: TenantTabKeys.tab(t.id, type),
+                  text: _tabLabel(type),
+                ),
+              ),
           ],
         ),
         const Divider(height: 1),
@@ -230,16 +236,87 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
           child: TabBarView(
             controller: _tabController,
             children: [
-              TenantMetricsTab(tenant: t),
-              TenantHealthTab(organizationId: t.id),
-              TenantConfigTab(tenant: t),
-              TenantSecurityTab(tenant: t),
-              TenantUsersTab(tenant: t),
-              TenantAuditTab(organizationId: t.id),
+              TenantMetricsTab(
+                key: TenantTabKeys.panel(t.id, TenantTabType.metrics),
+                tenant: t,
+              ),
+              TenantHealthTab(
+                key: TenantTabKeys.panel(t.id, TenantTabType.health),
+                organizationId: t.id,
+              ),
+              TenantConfigTab(
+                key: TenantTabKeys.panel(t.id, TenantTabType.config),
+                tenant: t,
+              ),
+              TenantSecurityTab(
+                key: TenantTabKeys.panel(t.id, TenantTabType.security),
+                tenant: t,
+              ),
+              TenantUsersTab(
+                key: TenantTabKeys.panel(t.id, TenantTabType.users),
+                tenant: t,
+              ),
+              TenantAuditTab(
+                key: TenantTabKeys.panel(t.id, TenantTabType.audit),
+                organizationId: t.id,
+              ),
             ],
           ),
         ),
       ],
     );
+  }
+
+  String _tabLabel(TenantTabType type) => switch (type) {
+    TenantTabType.metrics => 'Métricas',
+    TenantTabType.health => 'Saúde Técnica',
+    TenantTabType.config => 'Configuração',
+    TenantTabType.security => 'Segurança',
+    TenantTabType.users => 'Usuários',
+    TenantTabType.audit => 'Auditoria',
+  };
+}
+
+/// Animated underline indicator with rounded caps — Industrial Deep style.
+///
+/// Uses implicit animation via [TabBar]'s built-in lerp between tab rects,
+/// producing a smooth sliding effect (< 200ms per UX standards).
+class _IndustrialTabIndicator extends Decoration {
+  final Color color;
+
+  const _IndustrialTabIndicator({required this.color});
+
+  @override
+  BoxPainter createBoxPainter([VoidCallback? onChanged]) =>
+      _IndustrialPainter(color: color, onChanged: onChanged);
+}
+
+class _IndustrialPainter extends BoxPainter {
+  final Color color;
+
+  _IndustrialPainter({required this.color, VoidCallback? onChanged})
+    : super(onChanged);
+
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
+    final width = configuration.size?.width ?? 0;
+    final height = configuration.size?.height ?? 0;
+    const indicatorHeight = 3.0;
+    const radius = Radius.circular(1.5);
+
+    final rect = RRect.fromLTRBAndCorners(
+      offset.dx,
+      offset.dy + height - indicatorHeight,
+      offset.dx + width,
+      offset.dy + height,
+      topLeft: radius,
+      topRight: radius,
+    );
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    canvas.drawRRect(rect, paint);
   }
 }
