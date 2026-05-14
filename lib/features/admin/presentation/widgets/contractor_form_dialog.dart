@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/presentation/shared/formatters/cnpj_input_formatter.dart';
-import 'package:veraprob/domain/shared/cnpj_validator.dart';
+import 'package:veraprob/shared/utils/cnpj_validator.dart';
 import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
 import 'package:veraprob/application/sla_audit/save_contractor_command.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';

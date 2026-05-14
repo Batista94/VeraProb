@@ -38,7 +38,7 @@ The platform follows a strict Event-Sourced logic:
 ## Getting Started (Local Development)
 
 ### 1. Prerequisites
-- **Flutter SDK** (>= 3.41.9)
+- **Flutter SDK** (3.41.9 Pinned)
 - **Docker Desktop**
 - **Supabase CLI**
 - **Node.js** (>= 18)
@@ -59,39 +59,47 @@ cp .env.example .env
 flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 ```
 
-## Governança & Qualidade (Tier 1)
+---
 
-O VeraProb utiliza um padrão de **Governança Tier 1**, garantindo que o código seja idêntico em qualquer ambiente (Windows, Mac ou Linux).
+## 🏛️ Arquitetura & Governança (Tier 1)
 
-### 1. Requisitos de Ambiente
-Para garantir a integridade forense, certas verificações **exigem Docker** (ambiente Linux hermético):
-- **Integrity Guard:** Bloqueia arquivos com encoding inválido ou finais de linha Windows (CRLF).
-- **Secrets Scanner:** Detecção de credenciais em ambiente isolado.
-- **Index Advisor:** Validação de performance contra o Postgres.
+O VeraProb é construído sob o rigor de **Enterprise Tier 1**, garantindo que o sistema seja determinístico, auditável e resiliente a falhas de ambiente.
 
-### 2. Ciclo de Validação (Obrigatório)
-Antes de abrir qualquer Pull Request, você deve garantir que o projeto está em conformidade:
+### 1. Domain-Driven Design (DDD)
+- **Domain Layer:** 100% agnóstica. Contém as 28 Invariantes Forenses e a lógica de "Verdade Contratual".
+- **Application Layer:** Orquestra fluxos via *Command/Handlers* com suporte nativo a **Idempotência (INV-33)**.
+- **Infrastructure:** Implementações desacopladas via *Ports & Adapters* (Postgres/Supabase).
 
+### 2. Blindagem de Ambiente (Hermeticidade)
+- **Docker-First Audit:** Todos os scanners de segurança e testes de regressão visual são executados em containers Linux isolados para garantir paridade total com o CI/CD.
+- **Integrity Guard:** Vigilância binária que bloqueia commits com encoding inválido ou finais de linha Windows (CRLF).
+
+---
+
+## 🛠️ Guia de Sobrevivência (Como Rodar)
+
+### 1. Setup do Ambiente de Auditoria
+A "Fábrica" de testes precisa ser construída uma única vez (ou quando o `Dockerfile.test` mudar):
 ```bash
-# 1. Prepare o ambiente de auditoria (uma vez ou após mudar Dockerfile)
 make build-test-env
-
-# 2. Execute o Veredito Supremo (Integridade + Segurança + Testes)
-make full-check
 ```
 
-### 3. Comandos Úteis
-- `make check`: Executa apenas os scanners de segurança e integridade (rápido).
-- `make goldens`: Atualiza capturas de tela para testes de regressão visual em ambiente Linux.
-- `make test-all`: Executa todos os testes unitários (Flutter) e de banco de dados (pgTap).
+### 2. Comandos de Fluxo Diário
 
+| Ação | Comando | Descrição |
+| :--- | :--- | :--- |
+| **Ver o App** | `flutter run` | Desenvolvimento local com Hot Reload. |
+| **Check Rápido** | `make check` | Valida integridade, segredos e padrões forenses (~30s). |
+| **Veredito Final** | `make full-check` | Roda o `check` + todos os testes unitários e de banco. |
+| **Regressão Visual** | `make goldens` | Gera/Valida capturas de tela em ambiente Linux. |
+
+### 3. Padrões de Qualidade
 > [!IMPORTANT]
-> **Padrão de Encoding:** Todos os arquivos de texto devem ser salvos em **UTF-8** com finais de linha **LF** (Unix). O `make full-check` falhará imediatamente se detectar **CRLF** (Windows).
+> **Encoding & Line Endings:** Todos os arquivos DEVEM ser **UTF-8 (LF)**. O Integrity Guard impedirá o commit se detectar CRLF.
+> **Por que LF no Windows?** Para garantir paridade total com o servidor Linux do GitHub Actions e com os scanners forenses dentro do Docker.
 
 > [!IMPORTANT]
 > **Hermetic Goldens** Sempre use `make goldens` para atualizar imagens de referência. Isso garante que os pixels sejam gerados em ambiente Linux, evitando falhas de divergência de renderização entre Windows e o CI (GitHub Actions).
->
-> **Quando executar:**
 > 1. **Nova UI:** Ao criar novos widgets com testes visuais.
 > 2. **Mudança Intencional:** Após alterar cores, fontes ou layout de componentes existentes.
 > 3. **Falha no CI:** Se o GitHub Actions reportar erro visual, mas você confirmou que a mudança está correta.

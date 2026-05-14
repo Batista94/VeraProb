@@ -139,7 +139,7 @@ fi
 
 # Extract counts from JSON (robust fallback to 0)
 extract_json_field() {
-  echo "$SCAN_JSON" | tail -n 1 | $NODE_CMD -e "try { console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).$1 ?? '$2'); } catch(e) { console.log('$2'); }" || echo "$2"
+  echo "$SCAN_JSON" | tail -n 1 | $NODE_CMD -e "try { console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).$1 || '$2'); } catch(e) { console.log('$2'); }" || echo "$2"
 }
 
 S1_BLOCKS=$(extract_json_field "blocks" "0")
@@ -203,8 +203,8 @@ echo -e "\n${BOLD}${BLUE}Step 4: Type Parity Verification (INV-7)...${NC}"
 if [[ -z "$CHANGED_FILES" ]]; then
   echo "No changes detected."
 else
-  MIGRATIONS_COUNT=$(echo "$CHANGED_FILES" | grep "supabase/migrations/.*\.sql" | wc -l || echo "0")
-  if [[ $MIGRATIONS_COUNT -gt 0 ]]; then
+  MIGRATIONS_COUNT=$(echo "$CHANGED_FILES" | grep "supabase/migrations/.*\.sql" | wc -l | tr -d '[:space:]' || echo "0")
+  if [[ "$MIGRATIONS_COUNT" -gt 0 ]]; then
     echo -e "  Migrations detected ($MIGRATIONS_COUNT files). Checking for type sync..."
     TYPE_FILE="supabase/types.database.ts"
 
@@ -223,8 +223,8 @@ fi
 # ── Step 5: Schema Integrity Verification (INV-15) ──────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 5: Schema Integrity Verification (INV-15)...${NC}"
 if [[ -n "${CHANGED_FILES:-}" ]]; then
-  MIGRATIONS_COUNT=$(echo "$CHANGED_FILES" | grep "supabase/migrations/.*\.sql" | wc -l || echo "0")
-  if [[ $MIGRATIONS_COUNT -gt 0 ]]; then
+  MIGRATIONS_COUNT=$(echo "$CHANGED_FILES" | grep "supabase/migrations/.*\.sql" | wc -l | tr -d '[:space:]' || echo "0")
+  if [[ "$MIGRATIONS_COUNT" -gt 0 ]]; then
     echo -e "  Migrations detected. Validating PostgREST schema health..."
     # Check if Supabase is running to perform live health check
     if supabase status > /dev/null 2>&1; then
@@ -253,6 +253,14 @@ echo -e "\n${BOLD}${BLUE}Step 6: Static Analysis...${NC}"
 
 # 6.1: flutter analyze (B1) — BLOCK on core layer errors, WARN on presentation
 echo -e "  [6.1] flutter analyze --no-pub..."
+
+# -- Environment Readiness Check --
+if [[ ! -f ".dart_tool/package_config.json" ]]; then
+  echo -e "  ${RED}${BOLD}[CRITICAL]${NC} Docker dependency cache is missing or out of sync."
+  echo -e "             Run 'make build-test-env' on your host to initialize the environment."
+  exit 1
+fi
+
 if ! $FLUTTER_CMD --version >/dev/null 2>&1; then
   echo -e "  ${YELLOW}${BOLD}[WARN]${NC} flutter not found. Install Flutter SDK. Skipping."
   TOTAL_WARNS=$((TOTAL_WARNS + 1))

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/presentation/shared/formatters/brl_currency_input_formatter.dart';
 import 'package:veraprob/presentation/shared/formatters/cnpj_input_formatter.dart';
-import 'package:veraprob/domain/shared/cnpj_validator.dart';
+import 'package:veraprob/shared/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
 import 'package:veraprob/application/super_admin/org_preset_view_model.dart';

@@ -18,7 +18,7 @@ import 'package:veraprob/domain/super_admin/plan_type.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_super_admin_repository.dart';
 
 import 'package:veraprob/domain/shared/date_time_provider.dart';
-import 'package:veraprob/domain/shared/cnpj_validator.dart';
+import 'package:veraprob/shared/utils/cnpj_validator.dart';
 
 import '../infrastructure/postgres/postgres_test_config.dart';
 

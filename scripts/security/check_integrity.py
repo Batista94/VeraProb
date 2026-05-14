@@ -4,7 +4,11 @@ import sys
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 TARGET_EXTENSIONS = {".dart", ".py", ".sh", ".sql", ".yaml", ".yml", ".json", ".md", ".env"}
-IGNORE_DIRS = {".git", ".dart_tool", "build", ".veraprob", "ios", "android"}
+IGNORE_DIRS = {
+    ".git", ".dart_tool", "build", ".veraprob", "ios", "android", 
+    "linux", "windows", "macos", ".docker-mcp", "node_modules", 
+    "vendor", ".idea", ".vscode"
+}
 
 # ── Colors ───────────────────────────────────────────────────────────────────
 RED = '\033[0;31m'
