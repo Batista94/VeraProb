@@ -112,7 +112,7 @@
   "INV-DB": {
     "pattern": "\\bDELETE\\s+FROM\\b|\\bTRUNCATE\\b|\\bDROP\\s+TABLE\\b|\\bALTER\\s+COLUMN\\b.+\\bSET\\s+NOT\\s+NULL\\b",
     "path_filter": "supabase/migrations/",
-    "description": "Destructive migration operation. Use soft-delete, triggers, or non-blocking constraints (INV-DB: Zero-Downtime).",
+    "description": "Destructive migration operation. Use soft-delete or non-blocking constraints (INV-DB: Zero-Downtime). Safe bypass: follow ADD CONSTRAINT NOT VALID → VALIDATE CONSTRAINT → ALTER COLUMN SET NOT NULL and annotate the SET NOT NULL line with '-- INV-DB: zero-downtime-verified'.",
     "severity": "BLOCK"
   },
   "INV6-TIMESTAMP-TZ": {

@@ -134,7 +134,9 @@
       "Bash(Out-Null)",
       "Bash(Write-Output \"ok\")",
       "Bash(Find \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\supabase\\\\migrations\" -name \"*.sql\" -type f)",
-      "Bash(Sort-Object)"
+      "Bash(Sort-Object)",
+      "Bash(where supabase *)",
+      "Bash(git rm *)"
     ]
   },
   "enabledMcpjsonServers": [

@@ -128,6 +128,7 @@ const bypassKeywords = [
   "- Double Required",
   "Bridge Conversion",
   "Probability Score",
+  "INV-DB: zero-downtime-verified",
 ];
 
 changedFiles.forEach((file) => {

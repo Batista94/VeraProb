@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/shared/idempotent_handler_mixin.dart';
+import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_events.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
@@ -87,23 +88,35 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
   Future<PlanDeclaration> _execute(
     DeclareContractualPlanCommand command,
   ) async {
-    // 1. Tenant match (INV-1)
+    final contract = await _validatePreconditions(command);
+    final plan = _buildPlanFromCommand(command);
+    final saved = await _repository.save(plan);
+    await _handleContractLifecycle(command, contract);
+    await _auditToLedger(command, saved);
+    return saved;
+  }
+
+  /// Guard validation & enrichment (INV-1 tenant isolation, INV-18 state gates).
+  /// Returns the loaded [Contract] for reuse by the lifecycle step.
+  Future<Contract> _validatePreconditions(
+    DeclareContractualPlanCommand command,
+  ) async {
+    // Tenant match (INV-1)
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. Domain Validation & Enrichment
     final contract = await _contractRepository.findById(
       command.contractId,
       organizationId: command.organizationId,
     );
     if (contract == null) throw const DomainException('Contract not found.');
 
-    // 2.0.5 Contract state validation (INV-18)
+    // Contract state validation (INV-18)
     contract.assertCanReceivePlan();
 
-    // 2.1 Active vehicle gate (INV-18)
+    // Active vehicle gate (INV-18)
     final vehicleCount = await _vehicleRepository.countActiveByOrganization(
       command.organizationId,
     );
@@ -113,7 +126,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
       );
     }
 
-    // 2.2 Operational zone gate (INV-18)
+    // Operational zone gate (INV-18)
     final zones = await _zoneRepository.findByOrganization(
       command.organizationId,
     );
@@ -123,74 +136,83 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
       );
     }
 
-    final plan = command.shiftPatterns.isNotEmpty
-        ? PlanDeclaration.createWithShiftPatterns(
-            organizationId: command.organizationId,
-            contractId: command.contractId,
-            declaredByUserId: command.declaredByUserId,
-            planVersion: command.planVersion,
-            originalFileHash: command.originalFileHash,
-            declaredAtUtc: command.declaredAtUtc,
-            ruleSnapshot: const RuleSnapshot([]), // Simplified for MVP
-            shiftPatterns: command.shiftPatterns,
-            nowUtc: _clock.nowUtc(),
+    return contract;
+  }
+
+  /// Builds the [PlanDeclaration] aggregate, isolating the shift-patterns vs
+  /// services branch. Clock-driven (INV-6).
+  PlanDeclaration _buildPlanFromCommand(DeclareContractualPlanCommand command) {
+    if (command.shiftPatterns.isNotEmpty) {
+      return PlanDeclaration.createWithShiftPatterns(
+        organizationId: command.organizationId,
+        contractId: command.contractId,
+        declaredByUserId: command.declaredByUserId,
+        planVersion: command.planVersion,
+        originalFileHash: command.originalFileHash,
+        declaredAtUtc: command.declaredAtUtc,
+        ruleSnapshot: const RuleSnapshot([]), // Simplified for MVP
+        shiftPatterns: command.shiftPatterns,
+        nowUtc: _clock.nowUtc(),
+      );
+    }
+    return PlanDeclaration.create(
+      organizationId: command.organizationId,
+      contractId: command.contractId,
+      declaredByUserId: command.declaredByUserId,
+      planVersion: command.planVersion,
+      originalFileHash: command.originalFileHash,
+      declaredAtUtc: command.declaredAtUtc,
+      ruleSnapshot: const RuleSnapshot([]), // Simplified for MVP
+      services: command.services
+          .map(
+            (input) => ContractualServiceExecution.create(
+              contractId: command.contractId,
+              scheduledStartTimeUtc: input.scheduledStartTimeUtc,
+              scheduledEndTimeUtc: input.scheduledEndTimeUtc,
+              startLatitude: input.startLatitude,
+              startLongitude: input.startLongitude,
+              startRadiusMeters: input.startRadiusMeters,
+              endLatitude: input.endLatitude,
+              endLongitude: input.endLongitude,
+              endRadiusMeters: input.endRadiusMeters,
+              contractualValue: Money(input.contractualValueCents),
+              noShowPenaltyBps: input.noShowPenaltyBps,
+            ),
           )
-        : PlanDeclaration.create(
-            organizationId: command.organizationId,
-            contractId: command.contractId,
-            declaredByUserId: command.declaredByUserId,
-            planVersion: command.planVersion,
-            originalFileHash: command.originalFileHash,
-            declaredAtUtc: command.declaredAtUtc,
-            ruleSnapshot: const RuleSnapshot([]), // Simplified for MVP
-            services: command.services
-                .map(
-                  (input) => ContractualServiceExecution.create(
-                    contractId: command.contractId,
-                    scheduledStartTimeUtc: input.scheduledStartTimeUtc,
-                    scheduledEndTimeUtc: input.scheduledEndTimeUtc,
-                    startLatitude: input.startLatitude,
-                    startLongitude: input.startLongitude,
-                    startRadiusMeters: input.startRadiusMeters,
-                    endLatitude: input.endLatitude,
-                    endLongitude: input.endLongitude,
-                    endRadiusMeters: input.endRadiusMeters,
-                    contractualValue: Money(input.contractualValueCents),
-                    noShowPenaltyBps: input.noShowPenaltyBps,
-                  ),
-                )
-                .toList(),
-            nowUtc: _clock.nowUtc(),
-          );
+          .toList(),
+      nowUtc: _clock.nowUtc(),
+    );
+  }
 
-    // 3. Persist
-    final saved = await _repository.save(plan);
+  /// Activates the contract on first plan declaration (INV-18 happy path).
+  Future<void> _handleContractLifecycle(
+    DeclareContractualPlanCommand command,
+    Contract contract,
+  ) async {
+    if (command.planVersion != 1) return;
+    final activatedContract = contract.activate(nowUtc: _clock.nowUtc());
+    await _contractRepository.save(activatedContract);
+  }
 
-    // 4. Activate contract on first plan declaration (INV-18 happy path)
+  /// Maps domain events to the append-only ledger (INV-33).
+  Future<void> _auditToLedger(
+    DeclareContractualPlanCommand command,
+    PlanDeclaration saved,
+  ) async {
+    if (saved.domainEvents.isEmpty) return;
+
+    await _ledger.append(SlaLedgerMapper.mapToEntry(saved.domainEvents.first));
+
+    // On version 1, also emit CONTRACT_ACTIVATED to the ledger.
     if (command.planVersion == 1) {
       final now = _clock.nowUtc();
-      final activatedContract = contract.activate(nowUtc: now);
-      await _contractRepository.save(activatedContract);
+      final activationEvent = ContractActivatedEvent(
+        organizationId: command.organizationId,
+        contractId: command.contractId,
+        activatedAtUtc: now,
+        occurredAtUtc: now,
+      );
+      await _ledger.append(SlaLedgerMapper.mapToEntry(activationEvent));
     }
-
-    // 5. Ledger entry
-    if (saved.domainEvents.isNotEmpty) {
-      final entry = SlaLedgerMapper.mapToEntry(saved.domainEvents.first);
-      await _ledger.append(entry);
-
-      // If this is the version 1, also emit CONTRACT_ACTIVATED to the ledger
-      if (command.planVersion == 1) {
-        final now = _clock.nowUtc();
-        final activationEvent = ContractActivatedEvent(
-          organizationId: command.organizationId,
-          contractId: command.contractId,
-          activatedAtUtc: now,
-          occurredAtUtc: now,
-        );
-        await _ledger.append(SlaLedgerMapper.mapToEntry(activationEvent));
-      }
-    }
-
-    return saved;
   }
 }

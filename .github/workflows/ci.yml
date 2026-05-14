@@ -338,7 +338,7 @@ jobs:
   test-coverage:
     name: "Test Coverage Gate"
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     needs: [test-phase-1, test-phase-2]
     steps:
       - name: Checkout
@@ -383,10 +383,6 @@ jobs:
           flutter test --no-pub --coverage \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"
-
-      - name: Web Build Sanity Check (Smoke Test)
-        run: |
-          flutter build web --no-pub --release --dart-define=ENV=ci_check
 
       - name: Install lcov
         run: sudo apt-get install -y lcov

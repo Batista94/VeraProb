@@ -20,6 +20,7 @@ As Invariantes são as leis fundamentais do VeraProb. Nenhuma alteração de có
   - **INV-19 (Penny Precision)**: Valores financeiros como `BIGINT` (cents), nunca `double`.
   - **INV-26 (Error Parity)**: Erros idênticos (404) para evitar inferência de dados.
   - **INV-28 (Secret Guard)**: Bloqueio de segredos/tokens no código.
+  - **INV-DB (Zero-Downtime)**: Proibição de operações SQL bloqueantes em migrações.
 
 ## 3. ORCHESTRATION (Makefile)
 Utilize os comandos padronizados para gerenciar o ambiente:

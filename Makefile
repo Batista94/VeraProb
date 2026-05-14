@@ -28,6 +28,9 @@ help: ## Mostra este menu de ajuda
 setup: ## [A La Carte] Prepara o ambiente do zero (DB, Migrações, Seeds)
 	node scripts/dev/bootstrap_dev.mjs
 
+env: ## Cria o arquivo .env inicial a partir do template .env.example
+	@if [ ! -f .env ]; then cp .env.example .env && echo ".env criado."; else echo ".env já existe."; fi
+
 run: ## Inicia o ambiente de desenvolvimento local
 	powershell scripts/dev/run_dev.ps1
 

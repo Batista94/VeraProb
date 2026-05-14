@@ -24,10 +24,10 @@ class SuperAdminTestConfig {
   // ── Delegação ao PostgresTestConfig ───────────────────────────────────────
 
   /// URL do Supabase local (delegado ao [PostgresTestConfig]).
-  static const String supabaseUrl = PostgresTestConfig.supabaseUrl;
+  static final String supabaseUrl = PostgresTestConfig.supabaseUrl;
 
   /// Service-role key — bypassa RLS (delegado ao [PostgresTestConfig]).
-  static const String serviceRoleKey = PostgresTestConfig.serviceRoleKey;
+  static final String serviceRoleKey = PostgresTestConfig.serviceRoleKey;
 
   // ── Configuração do Test Runner ───────────────────────────────────────────
 

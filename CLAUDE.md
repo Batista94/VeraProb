@@ -65,6 +65,17 @@ Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
 - **Hermetic Goldens**: Always use `make goldens` to update reference images (ensures Linux rendering parity).
 
 ---
+## DATABASE GOVERNANCE (INV-DB)
+Mandatory Zero-Downtime patterns to prevent table locks:
+- **Avoid Blocking ALTER**: Never use `ALTER COLUMN ... SET NOT NULL` directly on large tables.
+- **Safe Pattern**: 
+  1. Add `CHECK CONSTRAINT (col IS NOT NULL) NOT VALID`.
+  2. `VALIDATE CONSTRAINT` (non-blocking).
+  3. `ALTER COLUMN ... SET NOT NULL` (safe after validation).
+  4. `DROP CONSTRAINT`.
+- **Soft-Delete**: Never use `DELETE`. Use `deleted_at` or archive status (INV-7).
+
+---
 ## COMPLEXITY GATE (Forensic Thresholds)
 Mandatory limits enforced by `scripts/security/analyze_dart_complexity.js`.
 

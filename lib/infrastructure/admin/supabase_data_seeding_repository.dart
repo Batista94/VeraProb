@@ -230,8 +230,8 @@ class SupabaseDataSeedingRepository
         'protected_revenue_cents': 20000,
         'revenue_at_risk_cents': 0,
         'lost_revenue_cents': 20000,
-        'risk_percentage': 0,
-        'loss_percentage': 50.0,
+        'risk_percentage_bps': 0,
+        'loss_percentage_bps': 5000,
         'total_obligations': 4,
         'executed_count': 4,
       });

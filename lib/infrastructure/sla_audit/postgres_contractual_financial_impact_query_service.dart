@@ -104,8 +104,8 @@ class ContractualFinancialImpactQueryServicePostgres
       protectedRevenue: (latest['protected_revenue_cents'] as num).toInt(),
       revenueAtRisk: (latest['revenue_at_risk_cents'] as num).toInt(),
       lostRevenue: lostRevenueCents,
-      riskPercentageBps: (latest['risk_percentage'] as num).toInt(),
-      lossPercentageBps: (latest['loss_percentage'] as num).toInt(),
+      riskPercentageBps: latest['risk_percentage_bps'] as int,
+      lossPercentageBps: latest['loss_percentage_bps'] as int,
       marginErosionBps: marginErosionBps,
     );
   }

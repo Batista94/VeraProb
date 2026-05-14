@@ -43,7 +43,7 @@ supabase db reset
 
 # Preparar ambiente e dados (Makefile)
 make setup
-cp .env.example .env
+make env
 
 # Construir ambiente de auditoria (Docker)
 make build-test-env
@@ -51,6 +51,12 @@ make build-test-env
 # Executar aplicação
 flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 ```
+
+#### 3. Variáveis de Ambiente (Segurança)
+Para cumprir a invariante de segurança **INV-2**, chaves e segredos nunca são mantidos no código-fonte:
+- O comando `make env` gera o arquivo `.env` local (ignorado pelo Git).
+- O arquivo `.env.example` contém os nomes das variáveis e chaves padrão para o stack local.
+- **Testes de Integração**: O `PostgresTestConfig` carrega automaticamente as credenciais do `.env` durante a execução dos testes.
 
 ### Guia de Fluxo
 
@@ -105,7 +111,7 @@ supabase db reset
 
 # Prepare environment and data (Makefile)
 make setup
-cp .env.example .env
+make env
 
 # Build audit environment (Docker)
 make build-test-env
@@ -113,6 +119,12 @@ make build-test-env
 # Run application
 flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 ```
+
+#### 3. Environment Variables (Security)
+To comply with the **INV-2** security invariant, keys and secrets are never kept in the source code:
+- The `make env` command generates the local `.env` file (ignored by Git).
+- The `.env.example` file contains the variable names and default keys for the local stack.
+- **Integration Tests**: `PostgresTestConfig` automatically loads credentials from `.env` during test execution.
 
 ### Workflow Guide
 

@@ -29,7 +29,7 @@ Future<bool> _stackOnline() async {
 /// The local stack ignores duplicate emails with 422 — the helper still parses
 /// the response and looks up the existing user via list-users.
 Future<String> _createOrGetAuthUser(String email, String password) async {
-  const base = PostgresTestConfig.supabaseUrl;
+  final base = PostgresTestConfig.supabaseUrl;
   final headers = {
     'apikey': PostgresTestConfig.serviceRoleKey,
     'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
