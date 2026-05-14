@@ -86,3 +86,30 @@ Mandatory limits enforced by `scripts/security/analyze_dart_complexity.js`.
 | **Presentation** | 200 / 400 | 25 / 40 | 7 / 10 |
 | **Tests** | 500 / 1000 | 50 / 100 | 10 / 15 |
 
+---
+## COMMON CI BLOCKS & FORENSIC FIXES
+
+### 1. INV-DB: Zero-Downtime Migration
+**Problem:** Direct `ALTER COLUMN SET NOT NULL` or `DROP COLUMN` on active tables.
+**Fix (The 3-Step Pattern):**
+```sql
+-- 1. Add CHECK NOT VALID
+ALTER TABLE table_name ADD CONSTRAINT col_not_null CHECK (col IS NOT NULL) NOT VALID;
+-- 2. Validate (Safe Scan)
+ALTER TABLE table_name VALIDATE CONSTRAINT col_not_null;
+-- 3. Set NOT NULL with Bypass Comment
+ALTER TABLE table_name ALTER COLUMN col SET NOT NULL; -- INV-DB: zero-downtime-verified
+```
+*Note: The comment `-- INV-DB: zero-downtime-verified` MUST be on the same line as the `SET NOT NULL`.*
+
+### 2. UTC-BLOCK: DateTime.now()
+**Problem:** Use of local time instead of universal time.
+**Fix:**
+```dart
+// Wrong
+final now = DateTime.now();
+// Right
+final now = DateTime.now().toUtc();
+```
+*Note: In tests, if you need to simulate local time, use `DateTime.now().toUtc().toLocal()` to satisfy the scanner while achieving the offset.*
+

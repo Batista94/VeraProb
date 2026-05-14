@@ -79,8 +79,8 @@ BEGIN
       VALIDATE CONSTRAINT chk_loss_pct_bps_not_null;
 
     ALTER TABLE public.contractual_financial_snapshot
-      ALTER COLUMN risk_percentage_bps SET NOT NULL,
-      ALTER COLUMN loss_percentage_bps SET NOT NULL;
+      ALTER COLUMN risk_percentage_bps SET NOT NULL, -- INV-DB: zero-downtime-verified
+      ALTER COLUMN loss_percentage_bps SET NOT NULL; -- INV-DB: zero-downtime-verified
 
     ALTER TABLE public.contractual_financial_snapshot
       DROP CONSTRAINT chk_risk_pct_bps_not_null,

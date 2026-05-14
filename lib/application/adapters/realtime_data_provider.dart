@@ -171,6 +171,8 @@ class RealtimeDataProvider implements IOperationalDataProvider {
 
   // ── Internal ──────────────────────────────────────────────────
 
+  /// Event router: parses, guards monotonicity, then enqueues.
+  /// Intelligence lives in the specialized helpers below.
   @visibleForTesting
   void onPayloadReceived(PostgresChangePayload payload) {
     if (_controller.isClosed) return;
@@ -178,61 +180,77 @@ class RealtimeDataProvider implements IOperationalDataProvider {
     final record = payload.newRecord;
     if (record.isEmpty) return;
 
+    final position = _parsePosition(record);
+    if (position == null) return;
+    if (_isOutOfOrder(position)) return;
+
+    _enqueue(position);
+  }
+
+  /// Parses a raw Realtime record into a [VehiclePosition].
+  /// Returns `null` on any malformed/missing field — telemetry is zero-trust
+  /// until normalized (INV-18). INV-6: timestamp sealed to UTC at ingest.
+  VehiclePosition? _parsePosition(Map<String, dynamic> record) {
     try {
-      final position = VehiclePosition(
+      return VehiclePosition(
         id: record['id']?.toString(),
         tripId: record['trip_id'] as String,
         latitude: (record['latitude'] as num).toDouble(),
         longitude: (record['longitude'] as num).toDouble(),
         speed: (record['speed'] as num?)?.toDouble(),
         heading: (record['heading'] as num?)?.toDouble(),
-        timestamp: DateTime.parse(record['timestamp'] as String),
+        timestamp: DateTime.parse(record['timestamp'] as String).toUtc(),
         source: (record['source'] as String?) ?? 'realtime',
         routeName: record['route_name'] as String?,
         vehiclePlate: record['vehicle_plate'] as String?,
       );
-
-      // MONOTONICIDADE: Descartar eventos com timestamp anterior ao que já está no buffer
-      final existingPending = _pendingPositions[position.tripId];
-      final existingBuffer = _positionBuffer[position.tripId];
-
-      // Verificar contra o mais recente dos dois buffers
-      final existing = (existingPending != null && existingBuffer != null)
-          ? (existingPending.timestamp.isAfter(existingBuffer.timestamp)
-                ? existingPending
-                : existingBuffer)
-          : (existingPending ?? existingBuffer);
-
-      if (existing != null && existing.timestamp.isAfter(position.timestamp)) {
-        if (kDebugMode) {
-          debugPrint(
-            '[TELEMETRY] Discarded out-of-order event | '
-            'trip=${position.tripId} | '
-            'existing=${existing.timestamp.toIso8601String()} | '
-            'received=${position.timestamp.toIso8601String()}',
-          );
-        }
-        return; // Descartar cronologicamente anterior
-      }
-
-      // Atualizar buffer pendente
-      _pendingPositions[position.tripId] = position;
-
-      // Cancelar timer existente e criar novo
-      _debounceTimer?.cancel();
-      _debounceTimer = Timer(_debounceWindow, _flushPendingPositions);
-
-      if (kDebugMode) {
-        debugPrint(
-          '[TELEMETRY] Payload received | '
-          'trip=${position.tripId} | '
-          'buffer=${_pendingPositions.length} vehicles',
-        );
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[TELEMETRY] Error parsing payload: $e');
       }
+      return null;
+    }
+  }
+
+  /// Most recent known position for [tripId] across pending + main buffers.
+  VehiclePosition? _latestKnown(String tripId) {
+    final pending = _pendingPositions[tripId];
+    final buffered = _positionBuffer[tripId];
+    if (pending == null) return buffered;
+    if (buffered == null) return pending;
+    return pending.timestamp.isAfter(buffered.timestamp) ? pending : buffered;
+  }
+
+  /// Monotonicity guard: discards chronologically stale events.
+  bool _isOutOfOrder(VehiclePosition position) {
+    final existing = _latestKnown(position.tripId);
+    if (existing == null || !existing.timestamp.isAfter(position.timestamp)) {
+      return false;
+    }
+    if (kDebugMode) {
+      debugPrint(
+        '[TELEMETRY] Discarded out-of-order event | '
+        'trip=${position.tripId} | '
+        'existing=${existing.timestamp.toIso8601String()} | '
+        'received=${position.timestamp.toIso8601String()}',
+      );
+    }
+    return true;
+  }
+
+  /// Buffers [position] as pending and resets the debounce window.
+  void _enqueue(VehiclePosition position) {
+    _pendingPositions[position.tripId] = position;
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceWindow, _flushPendingPositions);
+
+    if (kDebugMode) {
+      debugPrint(
+        '[TELEMETRY] Payload received | '
+        'trip=${position.tripId} | '
+        'buffer=${_pendingPositions.length} vehicles',
+      );
     }
   }
 
