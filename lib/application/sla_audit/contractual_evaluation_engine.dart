@@ -456,7 +456,7 @@ class ContractualEvaluationEngine {
     ContractualExecutionState state,
     DateTime now,
     List<EvaluationDecision> decisions,
-    double distance,
+    double distance, // Physical Metric - Double Required
     int requiredDwell,
     bool wasTracking,
   ) async {

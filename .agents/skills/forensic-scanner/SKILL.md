@@ -6,7 +6,7 @@ usage: /scan [file]
 
 # Instructions
 
-1.  **Execution**: Sempre que invocado, execute `node scripts/scanner_engine.js` passando a lista de arquivos alterados ou o arquivo específico fornecido no argumento.
+1.  **Execution**: Sempre que invocado, execute `node scripts/security/scanner_engine.js` passando a lista de arquivos alterados ou o arquivo específico fornecido no argumento.
 2.  **Mapping**: Mapeie os resultados do JSON retornado para a interface de Diagnostics do Kiro.
 3.  **Severity**:
     *   `BLOCK` -> Error (Bloqueia o commit).
