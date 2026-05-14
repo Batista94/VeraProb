@@ -175,11 +175,7 @@ class ContractualEvaluationEngine {
     }
 
     // Deterministic execution order
-    final sortedRules = rules.rules.toList()
-      ..sort((a, b) {
-        final cmp = a.evaluationOrder.compareTo(b.evaluationOrder);
-        return cmp != 0 ? cmp : a.ruleId.compareTo(b.ruleId);
-      });
+    final sortedRules = _sortRules(rules.rules);
 
     // Evaluate contractual rules
     final rulesResult = await _evaluateContractualRules(
@@ -526,16 +522,27 @@ class ContractualEvaluationEngine {
     _checkInterpolatedPassage(vehicleState, state, now, decisions);
   }
 
+  // ── Rule Ordering Helper ──────────────────────────────────
+
+  /// Deterministic rule ordering: by [evaluationOrder], tie-broken by [ruleId].
+  /// Shared by per-ping evaluation and the expiration sweep (INV-15).
+  List<RuleSnapshotItem> _sortRules(List<RuleSnapshotItem> rules) =>
+      rules.toList()..sort((a, b) {
+        final cmp = a.evaluationOrder.compareTo(b.evaluationOrder);
+        return cmp != 0 ? cmp : a.ruleId.compareTo(b.ruleId);
+      });
+
   // ── Method 2: Sweep Expired Obligations ─────────────────
 
+  /// Orchestrator: identify → assess penalties → finalize, per obligation.
   Future<void> sweepExpiredObligations({
     DateTime? nowUtc,
     required String organizationId,
   }) async {
     final now = nowUtc ?? _clock.nowUtc();
-    final expiredStates = await _executionRepo.findExpiredPlanned(
+    final expiredStates = await _identifyExpiredObligations(
       now,
-      organizationId: organizationId,
+      organizationId,
     );
 
     for (final state in expiredStates) {
@@ -544,114 +551,145 @@ class ContractualEvaluationEngine {
         state.planVersion,
         state.organizationId,
       );
+      final sortedRules = _sortRules(rules.rules);
+      final assessment = _applyContractualPenalties(state, sortedRules);
+      await _finalizeObligationState(state, now, sortedRules, assessment);
+    }
+  }
 
-      final sortedRules = rules.rules.toList()
-        ..sort((a, b) {
-          final cmp = a.evaluationOrder.compareTo(b.evaluationOrder);
-          return cmp != 0 ? cmp : a.ruleId.compareTo(b.ruleId);
-        });
+  // ── Sweep Stage 1: Identify (pure read, zero writes) ──────
 
-      final List<EvaluationDecision> decisions = [];
-      String outcome = 'NO_SHOW_PENALTY';
-      int? penaltyCents;
+  /// Date-filtered identification of expired, still-`planned` obligations.
+  /// Read-only: never mutates state nor touches the ledger.
+  Future<List<ContractualExecutionState>> _identifyExpiredObligations(
+    DateTime now,
+    String organizationId,
+  ) {
+    return _executionRepo.findExpiredPlanned(
+      now,
+      organizationId: organizationId,
+    );
+  }
 
-      for (final rule in sortedRules) {
-        if (rule.ruleType == SlaRuleType.noShowPenalty) {
-          penaltyCents = state.contractualValue
-              .multiplyByBps(state.noShowPenaltyBps)
-              .cents;
+  // ── Sweep Stage 2: Apply Penalties (sync, pure, no DB) ────
 
-          // INV: Sanction severity never exceeds 100 BPS (1%) of contractual value
-          final maxNoShowCents = state.contractualValue
-              .multiplyByBps(100)
-              .cents;
-          if (penaltyCents > maxNoShowCents) penaltyCents = maxNoShowCents;
+  /// Isolated no-show penalty calculation (INV-4: severity capped at 100 BPS
+  /// of contractual value). Pure — no repository or ledger access — so it is
+  /// independently unit-stress-testable.
+  ({int? penaltyCents, List<EvaluationDecision> decisions})
+  _applyContractualPenalties(
+    ContractualExecutionState state,
+    List<RuleSnapshotItem> sortedRules,
+  ) {
+    final List<EvaluationDecision> decisions = [];
+    int? penaltyCents;
 
-          decisions.add(
-            EvaluationDecision(
-              ruleId: rule.ruleId,
-              ruleType: rule.ruleType.value,
-              ruleVersion: rule.ruleVersion,
-              rulePriority: rule.evaluationOrder,
-              outcome: 'PENALTY_ASSESSED',
-              financialImpactCents: penaltyCents,
-              evidence: PenaltyAssessedEvidence(
-                penaltyAmountCents: penaltyCents,
-              ),
-            ),
-          );
-        }
-      }
+    for (final rule in sortedRules) {
+      if (rule.ruleType == SlaRuleType.noShowPenalty) {
+        penaltyCents = state.contractualValue
+            .multiplyByBps(state.noShowPenaltyBps)
+            .cents;
 
-      state.markFailed(now);
+        // INV-4: Sanction severity never exceeds 100 BPS (1%) of contract value
+        final maxNoShowCents = state.contractualValue.multiplyByBps(100).cents;
+        if (penaltyCents > maxNoShowCents) penaltyCents = maxNoShowCents;
 
-      decisions.add(
-        EvaluationDecision(
-          ruleId: 'engine-core',
-          ruleType: 'EXPIRATION_SWEEP',
-          ruleVersion: 1,
-          rulePriority: 999,
-          outcome: outcome,
-          evidence: ExpirationSweepEvidence(
-            scheduledWindowEndUtc: state.windowEndUtc.toIso8601String(),
-            evaluatedAtUtc: now.toIso8601String(),
-            expiredBySeconds: now.difference(state.windowEndUtc).inSeconds,
+        decisions.add(
+          EvaluationDecision(
+            ruleId: rule.ruleId,
+            ruleType: rule.ruleType.value,
+            ruleVersion: rule.ruleVersion,
+            rulePriority: rule.evaluationOrder,
+            outcome: 'PENALTY_ASSESSED',
+            financialImpactCents: penaltyCents,
+            evidence: PenaltyAssessedEvidence(penaltyAmountCents: penaltyCents),
           ),
+        );
+      }
+    }
+
+    return (penaltyCents: penaltyCents, decisions: decisions);
+  }
+
+  // ── Sweep Stage 3: Finalize (atomic state transition) ─────
+
+  /// Atomic finalization of an expired obligation: records the expiration
+  /// verdict, transitions the aggregate to `failed`, persists the triplet, and
+  /// emits the SANCTION_RECOMMENDED ledger entry when a penalty applies.
+  Future<void> _finalizeObligationState(
+    ContractualExecutionState state,
+    DateTime now,
+    List<RuleSnapshotItem> sortedRules,
+    ({int? penaltyCents, List<EvaluationDecision> decisions}) assessment,
+  ) async {
+    final penaltyCents = assessment.penaltyCents;
+    final decisions = [...assessment.decisions];
+
+    state.markFailed(now);
+
+    decisions.add(
+      EvaluationDecision(
+        ruleId: 'engine-core',
+        ruleType: 'EXPIRATION_SWEEP',
+        ruleVersion: 1,
+        rulePriority: 999,
+        outcome: 'NO_SHOW_PENALTY',
+        evidence: ExpirationSweepEvidence(
+          scheduledWindowEndUtc: state.windowEndUtc.toIso8601String(),
+          evaluatedAtUtc: now.toIso8601String(),
+          expiredBySeconds: now.difference(state.windowEndUtc).inSeconds,
         ),
-      );
+      ),
+    );
 
-      await _commitEvaluationResults(state, now, decisions);
+    await _commitEvaluationResults(state, now, decisions);
 
-      // INV-23: Emit SANCTION_RECOMMENDED when a penalty was assessed.
-      // The engine RECOMMENDS — it never emits VERDICT_SEALED directly.
-      // The DB trigger auto-populates sanction_review_queue on INSERT.
-      if (penaltyCents != null && penaltyCents > 0) {
-        // Build VerdictEvidence from the no-show context.
-        // windowEndUtc serves as the primary evidence timestamp (the moment
-        // the contractual obligation expired).
-        final windowEndUtc = state.windowEndUtc.isUtc
-            ? state.windowEndUtc
-            : state.windowEndUtc.toUtc();
+    // INV-23: Emit SANCTION_RECOMMENDED when a penalty was assessed.
+    // The engine RECOMMENDS — it never emits VERDICT_SEALED directly.
+    // The DB trigger auto-populates sanction_review_queue on INSERT.
+    if (penaltyCents != null && penaltyCents > 0) {
+      // windowEndUtc serves as the primary evidence timestamp (the moment
+      // the contractual obligation expired).
+      final windowEndUtc = state.windowEndUtc.isUtc
+          ? state.windowEndUtc
+          : state.windowEndUtc.toUtc();
 
-        final noShowRuleId = sortedRules
-            .where((r) => r.ruleType == SlaRuleType.noShowPenalty)
-            .map((r) => r.ruleId)
-            .firstOrNull;
-        final noShowRuleVersion = sortedRules
-            .where((r) => r.ruleType == SlaRuleType.noShowPenalty)
-            .map((r) => r.ruleVersion)
-            .firstOrNull;
+      final noShowRuleId = sortedRules
+          .where((r) => r.ruleType == SlaRuleType.noShowPenalty)
+          .map((r) => r.ruleId)
+          .firstOrNull;
+      final noShowRuleVersion = sortedRules
+          .where((r) => r.ruleType == SlaRuleType.noShowPenalty)
+          .map((r) => r.ruleVersion)
+          .firstOrNull;
 
-        if (noShowRuleId != null && noShowRuleVersion != null) {
-          final verdictEvidence = VerdictEvidence.create(
-            clauseRef: noShowRuleId,
-            ruleId: noShowRuleId,
-            ruleVersion: noShowRuleVersion,
-            primaryEvidenceLat: state.startLatitude,
-            primaryEvidenceLng: state.startLongitude,
-            primaryEvidenceTimestampUtc: windowEndUtc,
-            deltaValue: now.difference(state.windowEndUtc).inMinutes.toDouble(),
-            thresholdValue: 0.0,
-            fineCents: Money(penaltyCents),
-            confidenceScore: 100,
-            geofenceCenterLat: state.startLatitude,
-            geofenceCenterLng: state.startLongitude,
-            geofenceRadiusMeters: state.startRadiusMeters.toDouble(),
-          );
+      if (noShowRuleId != null && noShowRuleVersion != null) {
+        final verdictEvidence = VerdictEvidence.create(
+          clauseRef: noShowRuleId,
+          ruleId: noShowRuleId,
+          ruleVersion: noShowRuleVersion,
+          primaryEvidenceLat: state.startLatitude,
+          primaryEvidenceLng: state.startLongitude,
+          primaryEvidenceTimestampUtc: windowEndUtc,
+          deltaValue: now.difference(state.windowEndUtc).inMinutes.toDouble(),
+          thresholdValue: 0.0,
+          fineCents: Money(penaltyCents),
+          confidenceScore: 100,
+          geofenceCenterLat: state.startLatitude,
+          geofenceCenterLng: state.startLongitude,
+          geofenceRadiusMeters: state.startRadiusMeters.toDouble(),
+        );
 
-          final recommendedEvent = SanctionRecommendedEvent(
-            organizationId: state.organizationId,
-            occurredAtUtc: now,
-            setId: state.setId,
-            contractId: state.contractId,
-            planVersion: state.planVersion,
-            verdictEvidence: verdictEvidence,
-          );
+        final recommendedEvent = SanctionRecommendedEvent(
+          organizationId: state.organizationId,
+          occurredAtUtc: now,
+          setId: state.setId,
+          contractId: state.contractId,
+          planVersion: state.planVersion,
+          verdictEvidence: verdictEvidence,
+        );
 
-          await _ledgerRepo.append(
-            SlaLedgerMapper.mapToEntry(recommendedEvent),
-          );
-        }
+        await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(recommendedEvent));
       }
     }
   }

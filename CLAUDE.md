@@ -61,3 +61,15 @@ Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
 - **Unused Locals**: Never leave unused local variables in tests or production code (enforced as error).
 - **Prefer Const**: Always use `const` for constructors and declarations whenever possible.
 - **Universal UTC (INV-6)**: `DateTime.now()` must ALWAYS be followed by `.toUtc()`. No exceptions.
+
+---
+## COMPLEXITY GATE (Forensic Thresholds)
+Mandatory limits enforced by `scripts/security/analyze_dart_complexity.js`.
+
+| Layer | LOC (Warn/Block) | CC (Warn/Block) | Nesting (Warn/Block) |
+|---|---|---|---|
+| **Domain/App** | 60 / 100 | 10 / 20 | 4 / 6 |
+| **Infrastructure** | 100 / 200 | 15 / 25 | 5 / 7 |
+| **Presentation** | 200 / 400 | 25 / 40 | 7 / 10 |
+| **Tests** | 500 / 1000 | 50 / 100 | 10 / 15 |
+
