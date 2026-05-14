@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/application/intelligence/ping_classification.dart';
 import 'package:veraprob/application/intelligence/telemetry_normalizer.dart';
 import 'package:veraprob/domain/entities/raw_telemetry_ping.dart';
 
@@ -293,6 +294,93 @@ void main() {
 
       // 360km in 1 hour = 360 km/h (exceeds 120 km/h threshold)
       expect(result, isNull, reason: 'Exceeds max speed threshold');
+    });
+  });
+
+  group('TelemetryNormalizer.classifyPing — auditable rejection reasons', () {
+    late TelemetryNormalizer normalizer;
+
+    setUp(() {
+      normalizer = TelemetryNormalizer(
+        maxAccuracyMeters: 50.0,
+        maxImpliedSpeedKmh: 120.0,
+      );
+    });
+
+    RawTelemetryPing ping({
+      double latitude = -23.5505,
+      double longitude = -46.6333,
+      double accuracy = 15.0,
+      DateTime? timestamp,
+    }) {
+      return RawTelemetryPing(
+        vehicleId: 'v1',
+        tripId: 't1',
+        latitude: latitude,
+        longitude: longitude,
+        accuracy: accuracy,
+        heading: 90.0,
+        speed: 50.0,
+        timestamp: timestamp ?? DateTime(2026, 4, 14, 18, 0).toUtc(),
+      );
+    }
+
+    test('PingAccepted carrega a posição limpa para ping válido', () {
+      final result = normalizer.classifyPing(ping());
+
+      expect(result, isA<PingAccepted>());
+      expect((result as PingAccepted).position.latitude, -23.5505);
+    });
+
+    test('lowAccuracy quando accuracy excede o limite', () {
+      final result = normalizer.classifyPing(ping(accuracy: 100.0));
+
+      expect(result, isA<PingRejected>());
+      expect((result as PingRejected).reason, PingRejectionReason.lowAccuracy);
+    });
+
+    test(
+      'emulatorSignature quando accuracy abaixo do piso físico de ruído',
+      () {
+        final result = normalizer.classifyPing(ping(accuracy: 0.0005));
+
+        expect(result, isA<PingRejected>());
+        expect(
+          (result as PingRejected).reason,
+          PingRejectionReason.emulatorSignature,
+        );
+      },
+    );
+
+    test('impossibleSpeedJump em salto físico impossível entre pings', () {
+      normalizer.classifyPing(ping());
+
+      final result = normalizer.classifyPing(
+        ping(
+          latitude: -23.5000, // ~6 km north
+          timestamp: DateTime(2026, 4, 14, 18, 0, 10).toUtc(),
+        ),
+      );
+
+      expect(result, isA<PingRejected>());
+      expect(
+        (result as PingRejected).reason,
+        PingRejectionReason.impossibleSpeedJump,
+      );
+    });
+
+    test('sameTimestampMovement em deslocamento com timestamp idêntico', () {
+      normalizer.classifyPing(ping());
+
+      final result = normalizer.classifyPing(
+        ping(latitude: -23.5506), // ~10 m away, same timestamp
+      );
+
+      expect(result, isA<PingRejected>());
+      expect(
+        (result as PingRejected).reason,
+        PingRejectionReason.sameTimestampMovement,
+      );
     });
   });
 }
