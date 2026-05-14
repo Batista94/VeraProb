@@ -120,7 +120,11 @@ class ContractualEvaluationEngine {
 
     for (final state in eligible) {
       await _evaluateSingleExecution(
-        state, vehicleState, now, receivedAtUtc, organizationId,
+        state,
+        vehicleState,
+        now,
+        receivedAtUtc,
+        organizationId,
       );
     }
   }
@@ -179,12 +183,19 @@ class ContractualEvaluationEngine {
 
     // Evaluate contractual rules
     final rulesResult = await _evaluateContractualRules(
-      sortedRules, vehicleState, state, now,
+      sortedRules,
+      vehicleState,
+      state,
+      now,
     );
 
     // Evaluate geofence position
     await _evaluateGeofencePosition(
-      vehicleState, state, now, rulesResult.decisions, rulesResult.requiredDwell,
+      vehicleState,
+      state,
+      now,
+      rulesResult.decisions,
+      rulesResult.requiredDwell,
     );
 
     // Always update last known position (after all checks)
@@ -233,7 +244,7 @@ class ContractualEvaluationEngine {
   // ── Contractual Rules Evaluator ───────────────────────────
 
   Future<({List<EvaluationDecision> decisions, int requiredDwell})>
-      _evaluateContractualRules(
+  _evaluateContractualRules(
     List<RuleSnapshotItem> sortedRules,
     VehicleOperationalState vehicleState,
     ContractualExecutionState state,
@@ -244,7 +255,11 @@ class ContractualEvaluationEngine {
 
     for (final rule in sortedRules) {
       if (rule.ruleType == SlaRuleType.minGeofenceCoverage) {
-        requiredDwell = _evaluateDwellRule(rule, decisions, requiredDwell: requiredDwell);
+        requiredDwell = _evaluateDwellRule(
+          rule,
+          decisions,
+          requiredDwell: requiredDwell,
+        );
       } else if (rule.ruleType == SlaRuleType.excessiveSpeed) {
         await _evaluateSpeedRule(rule, vehicleState, state, now, decisions);
       } else if (rule.ruleType == SlaRuleType.maxToleranceDelay) {
@@ -333,9 +348,7 @@ class ContractualEvaluationEngine {
       verdictEvidence: verdictEvidence,
     );
 
-    await _ledgerRepo.append(
-      SlaLedgerMapper.mapToEntry(recommendedEvent),
-    );
+    await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(recommendedEvent));
 
     decisions.add(
       EvaluationDecision(
@@ -423,7 +436,13 @@ class ContractualEvaluationEngine {
 
     if (insideGeofence) {
       await _handleInsideGeofence(
-        vehicleState, state, now, decisions, distance, requiredDwell, tracking,
+        vehicleState,
+        state,
+        now,
+        decisions,
+        distance,
+        requiredDwell,
+        tracking,
       );
     } else {
       _handleOutsideGeofence(vehicleState, state, now, decisions);

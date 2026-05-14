@@ -174,22 +174,25 @@ class OperationalStateNormalizer {
       (lat, lng),
       knownStops,
       effectiveNow,
-      previousPosition:
-          cached != null ? (cached.latitude, cached.longitude) : null,
+      previousPosition: cached != null
+          ? (cached.latitude, cached.longitude)
+          : null,
       previousTimestamp: cached?.lastRawPingAt,
       isFirstPing: isFirstPing,
     );
 
     // ── Enrich Layer ──────────────────────────────────────────────
-    final (routeAdherence, accuracyGatekeeperActive) =
-        _resolveRouteAdherenceForPing(
-          motion,
-          cached,
-          lat,
-          lng,
-          knownStops,
-          ping.accuracyMeters,
-        );
+    final (
+      routeAdherence,
+      accuracyGatekeeperActive,
+    ) = _resolveRouteAdherenceForPing(
+      motion,
+      cached,
+      lat,
+      lng,
+      knownStops,
+      ping.accuracyMeters,
+    );
 
     // Connectivity analysis — pass previousLastRawPingAt for gap-recovery
     // detection. The resulting state stores ping.timestamp as lastRawPingAt,
@@ -260,8 +263,7 @@ class OperationalStateNormalizer {
     final lastEmit = _lastEmittedAt[vehicleId];
     if (lastEmit == null) return false;
 
-    final withinWindow =
-        effectiveNow.difference(lastEmit) < debounceDuration;
+    final withinWindow = effectiveNow.difference(lastEmit) < debounceDuration;
 
     if (withinWindow) {
       debugPrint(
@@ -285,7 +287,8 @@ class OperationalStateNormalizer {
     final cached = _cache[vehicleId];
     if (cached == null) return (false, 0.0);
 
-    final distance = GeoMath.haversineMeters( // Physical Metric - Double Required
+    final distance = GeoMath.haversineMeters(
+      // Physical Metric - Double Required
       cached.latitude,
       cached.longitude,
       ping.latitude,
@@ -340,7 +343,8 @@ class OperationalStateNormalizer {
     }
 
     for (final stop in knownStops) {
-      final d = GeoMath.haversineMeters( // Physical Metric - Double Required
+      final d = GeoMath.haversineMeters(
+        // Physical Metric - Double Required
         lat,
         lng,
         stop.latitude,
@@ -380,9 +384,7 @@ class OperationalStateNormalizer {
     required DateTime? prevStateChangedAt,
   }) {
     final hasMotionTransitioned = prevMotion == null || prevMotion != newMotion;
-    return hasMotionTransitioned
-        ? pingTimestamp
-        : prevStateChangedAt!;
+    return hasMotionTransitioned ? pingTimestamp : prevStateChangedAt!;
   }
 
   // ── State Construction ────────────────────────────────────────────
