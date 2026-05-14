@@ -161,6 +161,7 @@ void main() {
       snapshotRepo: snapshotRepo,
       ledgerRepo: ledgerRepo,
       clock: fakeClock,
+      engineVersion: 'veraprob-core_v4-test',
     );
 
     executionQueryService = SlaExecutionQueryServicePostgres(client, fakeClock);

@@ -165,6 +165,7 @@ void main() {
         snapshotRepo: snapshotRepo,
         ledgerRepo: ledgerRepo,
         clock: clock,
+        engineVersion: 'veraprob-core_v4-test',
       );
 
       await generator.generateDailySnapshot('org-1', kEpoch);
@@ -196,6 +197,7 @@ void main() {
         snapshotRepo: snapshotRepo,
         ledgerRepo: ledgerRepo,
         clock: clock,
+        engineVersion: 'veraprob-core_v4-test',
       );
 
       await generator.generateDailySnapshot('org-1', kEpoch);
@@ -227,6 +229,7 @@ void main() {
         snapshotRepo: snapshotRepo,
         ledgerRepo: ledgerRepo,
         clock: clock,
+        engineVersion: 'veraprob-core_v4-test',
       );
 
       await generator.generateDailySnapshot('org-1', kEpoch);
@@ -260,6 +263,7 @@ void main() {
         snapshotRepo: snapshotRepo,
         ledgerRepo: ledgerRepo,
         clock: clock,
+        engineVersion: 'veraprob-core_v4-test',
       );
 
       await generator.generateDailySnapshot('org-1', kEpoch);
@@ -288,6 +292,7 @@ void main() {
           snapshotRepo: snapshotRepo,
           ledgerRepo: ledgerRepo,
           clock: clock,
+          engineVersion: 'veraprob-core_v4-test',
         );
 
         await generator.generateDailySnapshot('org-1', kEpoch);
@@ -322,6 +327,7 @@ void main() {
           snapshotRepo: snapshotRepo,
           ledgerRepo: ledgerRepo,
           clock: clock,
+          engineVersion: 'veraprob-core_v4-test',
         );
 
         await generator.generateDailySnapshot(

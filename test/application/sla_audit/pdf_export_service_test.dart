@@ -81,6 +81,7 @@ void main() {
     noShowCount: 1,
     evidenceGapCount: 0,
     lastLedgerEntryId: lastLedgerEntryId,
+    engineVersion: 'veraprob-core_v4-test',
   );
 
   // ── Infrastructure ────────────────────────────────────────────────────────
@@ -538,6 +539,7 @@ void main() {
           noShowCount: 0,
           evidenceGapCount: 0,
           lastLedgerEntryId: '100',
+          engineVersion: 'veraprob-core_v4-test',
         );
         final (sealed, report) = await makeSealedFixture(snapshots: [zeroSnap]);
         final bytes = await pdfService.generatePdf(

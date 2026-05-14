@@ -28,4 +28,10 @@ abstract class ContractualFinancialSnapshotRepository {
     DateTime operationalDateUtc, {
     String? contractId,
   });
+
+  /// Returns true if ANY snapshot (active or superseded) in the full history
+  /// lists [snapshotId] as its predecessor. Used to enforce strictly linear
+  /// custody chains (INV-33): a snapshot that has already been superseded at
+  /// any depth must not be used as the base for a new reprocessing branch.
+  Future<bool> existsSuperseding(String organizationId, String snapshotId);
 }

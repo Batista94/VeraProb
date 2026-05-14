@@ -132,7 +132,9 @@
       "Bash(Select-Object -Last 10)",
       "Bash(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\test\\\\features\\\\admin\\\\presentation\\\\command_center\\\\widgets\")",
       "Bash(Out-Null)",
-      "Bash(Write-Output \"ok\")"
+      "Bash(Write-Output \"ok\")",
+      "Bash(Find \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\supabase\\\\migrations\" -name \"*.sql\" -type f)",
+      "Bash(Sort-Object)"
     ]
   },
   "enabledMcpjsonServers": [

@@ -61,6 +61,8 @@ Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
 - **Unused Locals**: Never leave unused local variables in tests or production code (enforced as error).
 - **Prefer Const**: Always use `const` for constructors and declarations whenever possible.
 - **Universal UTC (INV-6)**: `DateTime.now()` must ALWAYS be followed by `.toUtc()`. No exceptions.
+- **Encoding & Line Endings**: All files MUST be **UTF-8 (LF)**. Integrity Guard will prevent commits if CRLF is detected (Crucial for Linux/Docker parity).
+- **Hermetic Goldens**: Always use `make goldens` to update reference images (ensures Linux rendering parity).
 
 ---
 ## COMPLEXITY GATE (Forensic Thresholds)

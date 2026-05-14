@@ -40,6 +40,7 @@ void main() {
       noShowCount: 1,
       evidenceGapCount: 1,
       lastLedgerEntryId: '100',
+      engineVersion: 'veraprob-core_v4-test',
     );
   }
 

@@ -28,6 +28,7 @@ void main() {
       snapshotRepo: snapshotRepo,
       ledgerRepo: ledgerRepo,
       clock: clock,
+      engineVersion: 'veraprob-core_v4-test',
     );
     closingService = ContractualFinancialClosingService(generator: generator);
   });

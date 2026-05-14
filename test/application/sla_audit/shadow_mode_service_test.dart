@@ -42,6 +42,7 @@ void main() {
     noShowCount: noShowCount,
     evidenceGapCount: evidenceGapCount,
     lastLedgerEntryId: '100',
+    engineVersion: 'veraprob-core_v4-test',
   );
 
   CanonicalFact makeCanonicalFact({

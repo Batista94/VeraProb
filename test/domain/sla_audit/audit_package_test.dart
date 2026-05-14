@@ -35,6 +35,7 @@ void main() {
     noShowCount: noShow,
     evidenceGapCount: 0,
     lastLedgerEntryId: lastLedgerEntryId,
+    engineVersion: 'veraprob-core_v4-test',
   );
 
   BillingCycleReport makeReport({

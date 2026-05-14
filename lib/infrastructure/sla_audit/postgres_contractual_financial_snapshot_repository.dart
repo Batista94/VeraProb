@@ -41,6 +41,7 @@ class PostgresContractualFinancialSnapshotRepository
         'previous_snapshot_id': snapshot.previousSnapshotId,
         'reprocessing_reason': snapshot.reprocessingReason,
         'author_user_id': snapshot.authorUserId,
+        'engine_version': snapshot.engineVersion,
       });
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(
@@ -147,6 +148,27 @@ class PostgresContractualFinancialSnapshotRepository
     }
   }
 
+  @override
+  Future<bool> existsSuperseding(
+    String organizationId,
+    String snapshotId,
+  ) async {
+    try {
+      final response = await client
+          .from('contractual_financial_snapshot')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .eq('previous_snapshot_id', snapshotId)
+          .limit(1);
+      return (response as List).isNotEmpty;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'financial_snapshot',
+      );
+    }
+  }
+
   ContractualFinancialDailySnapshot _mapRow(Map<String, dynamic> row) {
     return ContractualFinancialDailySnapshot.reconstitute(
       id: row['id'] as String,
@@ -173,6 +195,12 @@ class PostgresContractualFinancialSnapshotRepository
       previousSnapshotId: row['previous_snapshot_id'] as String?,
       reprocessingReason: row['reprocessing_reason'] as String?,
       authorUserId: row['author_user_id'] as String?,
+      // Fallback guards rows inserted before the INV-21 migration
+      // (20260514000000_snapshot_engine_version.sql). In production these rows
+      // will have been backfilled to 'legacy-unversioned' by the migration;
+      // the fallback here is a defensive double-guard for test environments
+      // that may not have run migrations.
+      engineVersion: row['engine_version'] as String? ?? 'legacy-unversioned',
     );
   }
 

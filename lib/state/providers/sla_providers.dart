@@ -22,6 +22,7 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_evaluation_trace_repo
 import 'package:veraprob/infrastructure/sla_audit/postgres_operational_alert_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 import 'auth_providers.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'fleet_providers.dart';
@@ -95,6 +96,10 @@ final contractualFinancialClosingServiceProvider =
           ),
           ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
           clock: ref.watch(dateTimeProviderProvider),
+          // Composition root is the only layer allowed to read EnvironmentConfig
+          // (INV-13). The generator receives a plain String — it never knows
+          // where the version comes from.
+          engineVersion: EnvironmentConfig.engineVersion,
         ),
       );
     });
