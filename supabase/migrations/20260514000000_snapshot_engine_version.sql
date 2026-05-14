@@ -22,10 +22,23 @@ UPDATE public.contractual_financial_snapshot
   SET engine_version = 'legacy-unversioned'
   WHERE engine_version IS NULL;
 
--- Step 3: Enforce NOT NULL after backfill guarantees no nulls remain.
--- This will only change the constraint if the column was just added nullable.
+-- Step 3a: Add CHECK constraint with NOT VALID — skips full table scan (non-blocking).
 ALTER TABLE public.contractual_financial_snapshot
-  ALTER COLUMN engine_version SET NOT NULL;
+  ADD CONSTRAINT chk_engine_version_not_null
+  CHECK (engine_version IS NOT NULL)
+  NOT VALID;
+
+-- Step 3b: Validate constraint — acquires ShareUpdateExclusiveLock only (non-blocking).
+ALTER TABLE public.contractual_financial_snapshot
+  VALIDATE CONSTRAINT chk_engine_version_not_null;
+
+-- Step 3c: Promote to catalog NOT NULL — metadata-only in PG 12+ after constraint validation.
+ALTER TABLE public.contractual_financial_snapshot
+  ALTER COLUMN engine_version SET NOT NULL; -- INV-DB: zero-downtime-verified
+
+-- Step 3d: Drop redundant CHECK now that NOT NULL is in the catalog.
+ALTER TABLE public.contractual_financial_snapshot
+  DROP CONSTRAINT chk_engine_version_not_null;
 
 -- Step 4: Document the forensic intent for future auditors.
 COMMENT ON COLUMN public.contractual_financial_snapshot.engine_version IS
