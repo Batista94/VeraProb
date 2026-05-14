@@ -37,13 +37,16 @@ Este repositório é um laboratório de aprendizado pessoal dedicado a exercitar
 
 #### 2. Setup
 ```bash
-# Inicializar infraestrutura
+# Inicializar infraestrutura (Supabase)
 supabase start
 supabase db reset
 
-# Provisionar ambiente
-node scripts/dev/bootstrap_dev.mjs
+# Preparar ambiente e dados (Makefile)
+make setup
 cp .env.example .env
+
+# Construir ambiente de auditoria (Docker)
+make build-test-env
 
 # Executar aplicação
 flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
@@ -53,6 +56,7 @@ flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 
 | Ação | Comando | Descrição |
 | :--- | :--- | :--- |
+| **Ambiente** | `make build-test-env` | Constrói o container Linux de auditoria. |
 | **Execução** | `flutter run` | Desenvolvimento local com Hot Reload. |
 | **Check Forense** | `make check` | Valida integridade, segredos e padrões forenses. |
 | **Full Check** | `make full-check` | Executa o check completo + testes unitários e de banco. |
@@ -95,13 +99,16 @@ This repository is a personal learning laboratory dedicated to exercising Enterp
 
 #### 2. Setup
 ```bash
-# Initialize infrastructure
+# Initialize infrastructure (Supabase)
 supabase start
 supabase db reset
 
-# Provision environment
-node scripts/dev/bootstrap_dev.mjs
+# Prepare environment and data (Makefile)
+make setup
 cp .env.example .env
+
+# Build audit environment (Docker)
+make build-test-env
 
 # Run application
 flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
@@ -111,6 +118,7 @@ flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 
 | Action | Command | Description |
 | :--- | :--- | :--- |
+| **Environment** | `make build-test-env` | Builds the Linux audit container. |
 | **Run** | `flutter run` | Local development with Hot Reload. |
 | **Forensic Check** | `make check` | Validates integrity, secrets, and forensic patterns. |
 | **Full Check** | `make full-check` | Runs the full check + unit and database tests. |
