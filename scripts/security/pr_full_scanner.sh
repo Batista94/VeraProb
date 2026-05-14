@@ -458,9 +458,9 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
   MIG_FILES=$(echo "$CHANGED_FILES" | grep "supabase/migrations/.*\.sql" || true)
   if [[ -n "$MIG_FILES" ]]; then
     echo -e "  [9.1] Checking for Mandatory Test Plans..."
-    TEST_PLANS=$(echo "$CHANGED_FILES" | grep "tests/plans/.*\.md" || true)
+    TEST_PLANS=$(echo "$CHANGED_FILES" | grep -E "forensic_records/plans/.*\.md" || true)
     if [[ -z "$TEST_PLANS" ]]; then
-       echo -e "  ${RED}${BOLD}[BLOCK]${NC} DB Migrations detected but NO Test Plan (.md) found in tests/plans/."
+       echo -e "  ${RED}${BOLD}[BLOCK]${NC} DB Migrations detected but NO Test Plan (.md) found in forensic_records/plans/."
        TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
     else
        echo -e "  ${GREEN}Test Plan(s) detected for migrations.${NC}"

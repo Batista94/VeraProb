@@ -35,9 +35,9 @@ NC     = "\033[0m"
 TARGET_EXTENSIONS = {".dart", ".sql", ".ts", ".env", ".json", ".yaml", ".yml", ".py", ".sh"}
 
 WHITELIST_PATHS = [
-    "test/", "tests/", "mock/", "mocks/",
+    "test/", "forensic_records/", "mock/", "mocks/",
     "pubspec.lock", ".env.example", "package-lock.json",
-    "tests/security/dirty_secrets_test/",  # test fixtures are exempt
+    "forensic_records/security/dirty_secrets_test/",  # test fixtures are exempt
 ]
 
 # Audit log location (never committed)
