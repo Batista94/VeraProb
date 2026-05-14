@@ -93,3 +93,7 @@ devtools_options.yaml
 
 # Performance Guardian (INV-12 — query plan cache)
 .index_advisor_cache.json
+
+# Build & Sync Markers (Local environment stamps)
+.local_deps_synced
+.docker_deps_synced
