@@ -1,5 +1,7 @@
 # VeraProb - Forensic Contract Governance
 
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+
 [Português](#português) | [English](#english)
 
 ---
@@ -8,6 +10,9 @@
 ## Português
 
 VeraProb é um estudo de engenharia focado em **Forensic Contract Governance**. O projeto explora a construção de sistemas de alta performance capazes de converter Raw Telemetry em Verifiable Contractual Truth, eliminando o atrito entre contratos B2B e execução operacional.
+
+> [!CAUTION]
+> **Propriedade Intelectual Restrita**: Este código é um estudo de engenharia proprietário de Weslei Batista. A cópia, fork, redistribuição ou uso comercial não são autorizados. Este repositório não aceita Pull Requests ou Issues externas.
 
 ### Objetivos (Build to Learn)
 Este repositório é um laboratório de aprendizado pessoal dedicado a exercitar o rigor de sistemas Enterprise em um contexto de desenvolvimento solo. O foco está na aplicação de arquiteturas complexas em cenários de alta criticidade:
@@ -76,6 +81,9 @@ Para detalhes sobre as diretrizes de desenvolvimento e padrões de qualidade, co
 ## English
 
 VeraProb is an engineering study focused on **Forensic Contract Governance**. The project explores the construction of high-performance systems capable of converting Raw Telemetry into Verifiable Contractual Truth, eliminating friction between B2B contracts and operational execution.
+
+> [!CAUTION]
+> **Restricted Intellectual Property**: This code is a proprietary engineering study by Weslei Batista. Copying, forking, redistribution, or commercial use is not authorized. This repository does not accept external Pull Requests or Issues.
 
 ### Objectives (Build to Learn)
 This repository is a personal learning laboratory dedicated to exercising Enterprise rigor in a solo development context. The focus is on applying complex architectures in high-criticality scenarios:
