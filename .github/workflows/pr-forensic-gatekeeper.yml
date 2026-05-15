@@ -24,6 +24,11 @@ jobs:
       - name: Create dummy .env
         run: touch .env
 
+      - name: Install dart_code_metrics
+        run: |
+          dart pub global activate dart_code_metrics
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
       - name: Run Forensic Scanner
         run: |
           chmod +x scripts/security/*.sh

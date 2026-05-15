@@ -113,6 +113,11 @@ jobs:
       - name: Create stub .env for asset resolution
         run: echo "# CI stub — credentials injected via dart-define" > .env
 
+      - name: Install dart_code_metrics
+        run: |
+          dart pub global activate dart_code_metrics
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
       - name: Flutter Analyze (zero warnings policy)
         run: flutter analyze --no-pub
 

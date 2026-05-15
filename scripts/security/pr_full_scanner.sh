@@ -43,8 +43,9 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 BASE_BRANCH="${BASE_BRANCH:-main}"
-# Detect local main if origin/main is not available
-if ! git rev-parse --verify "$BASE_BRANCH" >/dev/null 2>&1; then
+if git rev-parse --verify "origin/$BASE_BRANCH" >/dev/null 2>&1; then
+  BASE_BRANCH="origin/$BASE_BRANCH"
+elif ! git rev-parse --verify "$BASE_BRANCH" >/dev/null 2>&1; then
   BASE_BRANCH="HEAD~1"
 fi
 
