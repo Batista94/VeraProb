@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'dart:io';
@@ -114,13 +113,11 @@ class PostgresTestConfig {
   }
 
   static Future<SupabaseClient> createClient() async {
-    // Integration tests run against the local Supabase stack with service_role
-    // so that RLS does not interfere with seeding and querying test data.
-    // The anon key is unsuitable here — it gets blocked by all RLS policies.
-    SharedPreferences.setMockInitialValues({});
-
-    await Supabase.initialize(url: supabaseUrl, anonKey: serviceRoleKey);
-    return Supabase.instance.client;
+    // Return a fresh SupabaseClient per test — not the Supabase singleton.
+    // The singleton's JSON isolate gets disposed when any test calls
+    // client.dispose(), breaking subsequent tests with "Already cancelled".
+    // service_role key bypasses RLS so tests can seed and query freely.
+    return SupabaseClient(supabaseUrl, serviceRoleKey);
   }
 
   /// Insere os pré-requisitos para criar um [ContractualExecutionState]:

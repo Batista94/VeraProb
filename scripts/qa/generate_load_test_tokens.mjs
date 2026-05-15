@@ -44,7 +44,9 @@ const TEST_USERS = [
     org_id:      '00000000-0000-0000-0000-000000000001',
     label:       'Org A',
     jwtEnv:      'ORG_A_JWT',
+    jwtEnvNum:   'ORG_1_JWT',
     orgEnv:      'ORG_A_ID',
+    orgEnvNum:   'ORG_1_ID',
     contractId:  '00000000-0000-0000-0000-ca0000000001',
     contractEnv: 'CONTRACT_A_ID',
   },
@@ -55,7 +57,9 @@ const TEST_USERS = [
     org_id:      '00000000-0000-0000-0000-000000000002',
     label:       'Org B',
     jwtEnv:      'ORG_B_JWT',
+    jwtEnvNum:   'ORG_2_JWT',
     orgEnv:      'ORG_B_ID',
+    orgEnvNum:   'ORG_2_ID',
     contractId:  '00000000-0000-0000-0000-cb0000000001',
     contractEnv: 'CONTRACT_B_ID',
   },
@@ -219,7 +223,7 @@ async function ensureUserRole(supabaseUrl, serviceKey, userId, orgId) {
     },
     { user_id: userId, organization_id: orgId, role: 'TENANT_ADMIN' }
   );
-  if (res.status === 200 || res.status === 201 || res.status === 204) return;
+  if (res.status === 200 || res.status === 201 || res.status === 204 || res.status === 409) return;
   throw new Error(
     `Falha ao inserir user_role (user=${userId}): HTTP ${res.status} — ${JSON.stringify(res.data)}`
   );
@@ -237,7 +241,7 @@ async function ensureSuperRole(supabaseUrl, serviceKey, userId, email) {
     },
     { user_id: userId, email: email }
   );
-  if (res.status === 200 || res.status === 201 || res.status === 204) return;
+  if (res.status === 200 || res.status === 201 || res.status === 204 || res.status === 409) return;
   throw new Error(
     `Falha ao inserir super_admin_role (user=${userId}): HTTP ${res.status} — ${JSON.stringify(res.data)}`
   );
@@ -350,10 +354,17 @@ async function main() {
     '# ── Copie e cole o bloco abaixo no terminal ────────────────────────────────',
     `export SUPABASE_URL="${url}"`,
     `export SUPABASE_ANON_KEY="${anonKey}"`,
+    `export SERVICE_ROLE_KEY="${serviceKey}"`,
   ];
-  for (const { user, token } of tokens)  lines.push(`export ${user.jwtEnv}="${token}"`);
-  for (const user of TEST_USERS)         if (user.orgEnv) lines.push(`export ${user.orgEnv}="${user.org_id}"`);
-  for (const user of TEST_USERS)         if (user.contractEnv) lines.push(`export ${user.contractEnv}="${user.contractId}"`);
+  for (const { user, token } of tokens) {
+    lines.push(`export ${user.jwtEnv}="${token}"`);
+    if (user.jwtEnvNum) lines.push(`export ${user.jwtEnvNum}="${token}"`);
+  }
+  for (const user of TEST_USERS) {
+    if (user.orgEnv) lines.push(`export ${user.orgEnv}="${user.org_id}"`);
+    if (user.orgEnvNum) lines.push(`export ${user.orgEnvNum}="${user.org_id}"`);
+    if (user.contractEnv) lines.push(`export ${user.contractEnv}="${user.contractId}"`);
+  }
   lines.push('');
   lines.push('# Depois de exportar, rode:');
   lines.push('k6 run scripts/load_test/k6_multi_tenant_isolation.js');

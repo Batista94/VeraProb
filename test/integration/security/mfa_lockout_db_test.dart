@@ -57,16 +57,20 @@ Future<String> _createOrGetAuthUser(String email, String password) async {
     headers: headers,
   );
   final lookupBody = jsonDecode(lookup.body);
-  final users = (lookupBody is Map && lookupBody['users'] is List)
+  final allUsers = (lookupBody is Map && lookupBody['users'] is List)
       ? lookupBody['users'] as List
       : (lookupBody is List ? lookupBody : const []);
+  final users = allUsers
+      .cast<Map<String, dynamic>>()
+      .where((u) => u['email'] == email)
+      .toList();
   if (users.isEmpty) {
     throw StateError(
       '_createOrGetAuthUser: no user found for $email after admin create '
       '(${create.statusCode}: ${create.body})',
     );
   }
-  return (users.first as Map<String, dynamic>)['id'] as String;
+  return users.first['id'] as String;
 }
 
 void main() {

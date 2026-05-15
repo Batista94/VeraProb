@@ -104,15 +104,28 @@ Future<Map<String, dynamic>> readAndVerifyTelemetry(
   return row;
 }
 
-/// Tamper: uses raw SQL to modify a field in raw_payload WITHOUT updating the hash.
-/// This simulates what a malicious DBA would do.
+/// Tamper: writes a modified payload directly via SECURITY DEFINER RPC,
+/// bypassing the immutability trigger to simulate DBA-level access.
+/// The hash column is LEFT UNTOUCHED — only raw_payload is overwritten.
+Future<void> _tamperRawPayload(
+  SupabaseClient client, {
+  required String recordId,
+  required Map<String, dynamic> newPayload,
+}) async {
+  await client.rpc(
+    'test_tamper_raw_telemetry_payload',
+    params: {'p_record_id': recordId, 'p_new_payload': newPayload},
+  );
+}
+
+/// Convenience wrapper: reads current payload, mutates [targetKey] → [newValue],
+/// then tampers via [_tamperRawPayload].
 Future<void> _tamperWithPayload(
   SupabaseClient client, {
   required String recordId,
   required String targetKey,
   required dynamic newValue,
 }) async {
-  // Read current payload
   final row = await client
       .from('raw_telemetry_payloads')
       .select('raw_payload')
@@ -120,15 +133,9 @@ Future<void> _tamperWithPayload(
       .single();
 
   final payload = Map<String, dynamic>.from(row['raw_payload'] as Map);
-
-  // Tamper: modify the target field
   payload[targetKey] = newValue;
 
-  // Write back the tampered payload — hash column is LEFT UNTOUCHED
-  await client
-      .from('raw_telemetry_payloads')
-      .update({'raw_payload': payload})
-      .eq('id', recordId);
+  await _tamperRawPayload(client, recordId: recordId, newPayload: payload);
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -355,7 +362,7 @@ void main() {
           payload: validPayload,
         );
 
-        // Tamper: remove a field
+        // Tamper: remove a field — DBA deletes evidence via direct DB access
         final row = await client
             .from('raw_telemetry_payloads')
             .select('raw_payload')
@@ -365,10 +372,11 @@ void main() {
         final payload = Map<String, dynamic>.from(row['raw_payload'] as Map);
         payload.remove('device_status');
 
-        await client
-            .from('raw_telemetry_payloads')
-            .update({'raw_payload': payload})
-            .eq('id', recordId);
+        await _tamperRawPayload(
+          client,
+          recordId: recordId,
+          newPayload: payload,
+        );
 
         expect(
           () => readAndVerifyTelemetry(
@@ -423,10 +431,7 @@ void main() {
       metadata['sensor_readings'] = sensors;
       payload['metadata'] = metadata;
 
-      await client
-          .from('raw_telemetry_payloads')
-          .update({'raw_payload': payload})
-          .eq('id', recordId);
+      await _tamperRawPayload(client, recordId: recordId, newPayload: payload);
 
       expect(
         () => readAndVerifyTelemetry(

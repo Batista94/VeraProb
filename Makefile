@@ -68,14 +68,17 @@ chaos-test: ## Executa a suite de testes de caos (resiliência)
 format: ## [Tier 1] Formata o código usando o padrão do ambiente hermético (Linux/Docker)
 	$(DOCKER_RUN) $(IMAGE_NAME) dart format .
 
+format-check: ## [Tier 1] Valida se o código segue o padrão de formatação (idêntico ao CI)
+	$(DOCKER_RUN) $(IMAGE_NAME) dart format --output=none --set-exit-if-changed .
+
 # Selo de sincronia para o Windows local
 .local_deps_synced: pubspec.yaml
 	@echo [Local-Sync] Detectada mudanca em pubspec.yaml. Atualizando Windows...
 	flutter pub get
 	@echo synced > .local_deps_synced
 
-test: .local_deps_synced ## Executa a suite completa de testes unitários (Dart/Flutter)
-	flutter test
+test: .local_deps_synced ## Executa a suite completa de testes (Sequencial -j 1 para evitar race conditions no DB)
+	flutter test -j 1
 
 test-db: ## [INV-28] Executa testes forenses de integridade no PostgreSQL (pgTap)
 	supabase test db
@@ -100,8 +103,10 @@ build-test-env: ## Constrói a imagem Docker de ambiente de testes e sincroniza 
 
 # pr-scan agora depende do selo de sincronia para evitar erros de análise
 pr-scan: .docker_deps_synced ## [Lead Reviewer] Executa o scanner determinístico completo de PR
-	$(DOCKER_RUN) $(IMAGE_NAME) bash scripts/security/pr_full_scanner.sh
+	$(DOCKER_RUN) -e FULL_SCAN=$(FULL_SCAN) $(IMAGE_NAME) bash scripts/security/pr_full_scanner.sh
 
-check: check-integrity scan-secrets pr-scan index-advisor ## Roda todas as verificações de segurança locais
+check: check-integrity scan-secrets pr-scan index-advisor format-check ## Roda todas as verificações de segurança e lint locais
 
-full-check: check test-all ## O "Veredito Supremo": Scanner forense + Execução de todos os testes
+full-check: ## O "Veredito Supremo": Scanner forense (Full Scan) + Testes + Caos + Coverage
+	@$(MAKE) check FULL_SCAN=1
+	@$(MAKE) test-all chaos-test coverage

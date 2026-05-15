@@ -137,7 +137,10 @@
       "Bash(Sort-Object)",
       "Bash(where supabase *)",
       "Bash(git rm *)",
-      "Bash(\"lib/features/admin/presentation/screens/org_settings_screen.dart\")"
+      "Bash(\"lib/features/admin/presentation/screens/org_settings_screen.dart\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(git log *)",
+      "Bash(make full-check *)"
     ]
   },
   "enabledMcpjsonServers": [

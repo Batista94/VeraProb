@@ -387,7 +387,7 @@ jobs:
       - name: Phase 4 — Integration Tests
         if: steps.should_run_integration.outputs.run-tests == 'true'
         run: |
-          flutter test --no-pub -d flutter-tester \
+          flutter test --no-pub -j 1 -d flutter-tester \
             test/integration/security/ \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
@@ -461,7 +461,7 @@ jobs:
 
       - name: Flutter Test with Coverage
         run: |
-          flutter test --no-pub --coverage \
+          flutter test --no-pub -j 1 --coverage \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
 

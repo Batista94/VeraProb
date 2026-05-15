@@ -193,7 +193,10 @@ if [[ "$PYTHON_CMD" == *.exe ]]; then
   fi
 fi
 
-BARREL_RESULTS=$(echo "$CHANGED_FILES" | $PYTHON_CMD "$BARREL_SCRIPT_WIN" --branch="$BASE_BRANCH" 2>&1)
+BARREL_ARGS="--branch=$BASE_BRANCH"
+[[ "${FULL_SCAN:-0}" == "1" ]] && BARREL_ARGS="$BARREL_ARGS --full"
+
+BARREL_RESULTS=$(echo "$CHANGED_FILES" | $PYTHON_CMD "$BARREL_SCRIPT_WIN" $BARREL_ARGS 2>&1)
 BARREL_EXIT=$?
 
 if [[ $BARREL_EXIT -eq 2 ]]; then
