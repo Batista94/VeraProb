@@ -10,6 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   migration-guard:
     name: Migration Append-Only Guard
@@ -19,9 +22,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Detect destructive DDL in new migrations
         run: |
@@ -70,10 +78,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v2.18.0
         with:
           flutter-version: "3.41.9"
           channel: stable
@@ -83,7 +98,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -168,10 +183,15 @@ jobs:
     needs: analyze
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v2.18.0
         with:
           flutter-version: "3.41.9"
           channel: stable
@@ -181,7 +201,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -207,10 +227,15 @@ jobs:
     needs: analyze
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v2.18.0
         with:
           flutter-version: "3.41.9"
           channel: stable
@@ -220,7 +245,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -246,10 +271,15 @@ jobs:
     needs: analyze
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v2.18.0
         with:
           flutter-version: "3.41.9"
           channel: stable
@@ -259,7 +289,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -283,10 +313,17 @@ jobs:
     needs: [test-phase-1, test-phase-2, test-phase-3]
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v2.18.0
         with:
           flutter-version: "3.41.9"
           channel: stable
@@ -296,7 +333,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -307,7 +344,7 @@ jobs:
         run: flutter pub get
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@v1
         with:
           version: latest
 
@@ -323,7 +360,16 @@ jobs:
       - name: Capture Supabase Keys
         run: |
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          
+          if [ -z "$SERVICE_ROLE_KEY" ] || [ -z "$ANON_KEY" ]; then
+            echo "::error::Critical failure: Could not capture Supabase keys. Aborting CI."
+            exit 1
+          fi
+
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=$ANON_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
 
       - name: Check if integration tests should run
         id: should_run_integration
@@ -341,8 +387,8 @@ jobs:
       - name: Phase 4 — Integration Tests
         if: steps.should_run_integration.outputs.run-tests == 'true'
         run: |
-          flutter test --no-pub \
-            integration_test/security/ \
+          flutter test --no-pub -d flutter-tester \
+            test/integration/security/ \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
 
@@ -357,10 +403,15 @@ jobs:
     needs: [test-phase-1, test-phase-2]
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v2.18.0
         with:
           flutter-version: "3.41.9"
           channel: stable
@@ -370,7 +421,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -381,12 +432,15 @@ jobs:
         run: flutter pub get
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@v1
         with:
           version: latest
 
       - name: Start Supabase Local
         run: supabase start
+
+      - name: Seed local database
+        run: supabase db seed
 
       - name: Create stub .env
         run: echo "# CI stub" > .env
@@ -394,7 +448,16 @@ jobs:
       - name: Capture Supabase Keys
         run: |
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          
+          if [ -z "$SERVICE_ROLE_KEY" ] || [ -z "$ANON_KEY" ]; then
+            echo "::error::Critical failure: Could not capture Supabase keys. Aborting CI."
+            exit 1
+          fi
+
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=$ANON_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
 
       - name: Flutter Test with Coverage
         run: |
@@ -416,7 +479,7 @@ jobs:
             --output-file coverage/lcov_filtered.info
 
       - name: Enforce Coverage Gate (≥70%)
-        uses: VeryGoodOpenSource/very_good_coverage@v3
+        uses: VeryGoodOpenSource/very_good_coverage@v3.0.0
         with:
           path: coverage/lcov_filtered.info
           min_coverage: 70
@@ -429,10 +492,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v2.18.0
         with:
           flutter-version: "3.41.9"
           channel: stable
@@ -442,7 +510,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -469,11 +537,11 @@ jobs:
           echo "WASM artifact confirmed: $(du -h build/web/main.dart.wasm | cut -f1)"
 
       - name: Upload WASM build artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: wasm-build-${{ github.sha }}
           path: build/web/
-          retention-days: 3
+          retention-days: 1
 
   chaos-audit:
     name: Forensic Chaos & Resilience Audit
@@ -485,7 +553,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js (for bootstrap)
         uses: actions/setup-node@v4
@@ -493,7 +561,7 @@ jobs:
           node-version: '24'
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@v1
         with:
           version: latest
 
@@ -519,6 +587,11 @@ jobs:
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
           ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
           
+          if [ -z "$SERVICE_ROLE_KEY" ] || [ -z "$ANON_KEY" ]; then
+            echo "::error::Critical failure: Could not capture Supabase keys. Aborting CI."
+            exit 1
+          fi
+
           export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           export SUPABASE_ANON_KEY="$ANON_KEY"
           export SUPABASE_URL="http://127.0.0.1:54321"
@@ -526,5 +599,5 @@ jobs:
           export CONTRACT_ID="00000000-0000-0000-0000-ca0000000001"
           export BOUND_CHAT_ID="908453789"
           export WEBHOOK_SECRET="VeraProb_Secret_Local_2026"
-          
+
           bash scripts/qa/chaos/run_chaos_suite.sh

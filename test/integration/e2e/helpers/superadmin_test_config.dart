@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../test/infrastructure/postgres/postgres_test_config.dart';
+import '../../../../test/infrastructure/postgres/postgres_test_config.dart';
 
 /// Configuração de ambiente para os testes E2E do painel SuperAdmin.
 ///

@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 
-import '../../test/infrastructure/postgres/postgres_test_config.dart';
+import '../../../test/infrastructure/postgres/postgres_test_config.dart';
 
 // Test Constants
 const String superAdminId = '00000000-0000-0000-0000-000000000001';
