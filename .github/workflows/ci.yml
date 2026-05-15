@@ -10,6 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   migration-guard:
     name: Migration Append-Only Guard
@@ -473,7 +476,7 @@ jobs:
         with:
           name: wasm-build-${{ github.sha }}
           path: build/web/
-          retention-days: 3
+          retention-days: 1
 
   chaos-audit:
     name: Forensic Chaos & Resilience Audit
@@ -488,7 +491,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Node.js (for bootstrap)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
@@ -518,7 +521,7 @@ jobs:
           # Capture keys dynamically from local stack
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
           ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
-          
+
           export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           export SUPABASE_ANON_KEY="$ANON_KEY"
           export SUPABASE_URL="http://127.0.0.1:54321"
@@ -526,5 +529,5 @@ jobs:
           export CONTRACT_ID="00000000-0000-0000-0000-ca0000000001"
           export BOUND_CHAT_ID="908453789"
           export WEBHOOK_SECRET="VeraProb_Secret_Local_2026"
-          
+
           bash scripts/qa/chaos/run_chaos_suite.sh

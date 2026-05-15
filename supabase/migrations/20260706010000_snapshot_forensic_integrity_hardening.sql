@@ -87,7 +87,9 @@ BEGIN
 
     ALTER TABLE public.contractual_financial_snapshot
       ALTER COLUMN risk_percentage_bps SET NOT NULL, -- INV-DB: zero-downtime-verified
-      ALTER COLUMN loss_percentage_bps SET NOT NULL; -- INV-DB: zero-downtime-verified
+      ALTER COLUMN loss_percentage_bps SET NOT NULL, -- INV-DB: zero-downtime-verified
+      ALTER COLUMN risk_percentage DROP NOT NULL,    -- INV-DB: demoting legacy column for code migration
+      ALTER COLUMN loss_percentage DROP NOT NULL;    -- INV-DB: demoting legacy column for code migration
 
     ALTER TABLE public.contractual_financial_snapshot
       DROP CONSTRAINT chk_risk_pct_bps_not_null,
