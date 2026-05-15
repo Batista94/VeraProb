@@ -61,6 +61,7 @@ flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 Para cumprir a invariante de segurança **INV-2**, chaves e segredos nunca são mantidos no código-fonte:
 - O comando `make env` gera o arquivo `.env` local (ignorado pelo Git).
 - O arquivo `.env.example` contém os nomes das variáveis e chaves padrão para o stack local.
+- **Credenciais de Teste**: O sistema utiliza credenciais determinísticas (`master@veraprob.dev`) exclusivamente para o bootstrap do ambiente local de desenvolvimento. Estas são credenciais públicas de teste e não possuem acesso a nenhum recurso real.
 - **Testes de Integração**: O `PostgresTestConfig` carrega automaticamente as credenciais do `.env` durante a execução dos testes.
 
 ### Guia de Fluxo
@@ -132,6 +133,7 @@ flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 To comply with the **INV-2** security invariant, keys and secrets are never kept in the source code:
 - The `make env` command generates the local `.env` file (ignored by Git).
 - The `.env.example` file contains the variable names and default keys for the local stack.
+- **Test Credentials**: The system uses deterministic credentials (`master@veraprob.dev`) exclusively for local development environment bootstrap. These are public test credentials and have no access to any real resources.
 - **Integration Tests**: `PostgresTestConfig` automatically loads credentials from `.env` during test execution.
 
 ### Workflow Guide

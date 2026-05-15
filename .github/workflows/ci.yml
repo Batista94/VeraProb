@@ -308,7 +308,7 @@ jobs:
       - name: Capture Supabase Keys
         run: |
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
-          echo "SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
 
       - name: Check if integration tests should run
         id: should_run_integration
@@ -329,7 +329,7 @@ jobs:
           flutter test --no-pub \
             integration_test/security/ \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
-            --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"
+            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
 
       - name: Integration Tests Skipped
         if: steps.should_run_integration.outputs.run-tests == 'false'
@@ -376,13 +376,13 @@ jobs:
       - name: Capture Supabase Keys
         run: |
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
-          echo "SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
 
       - name: Flutter Test with Coverage
         run: |
           flutter test --no-pub --coverage \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
-            --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"
+            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
 
       - name: Install lcov
         run: sudo apt-get install -y lcov
@@ -485,12 +485,12 @@ jobs:
       - name: Bootstrap Forensic Data
         run: |
           npm install @supabase/supabase-js
-          node scripts/bootstrap_dev.mjs
+          node scripts/dev/bootstrap_dev.mjs
         env:
           SUPABASE_URL: "http://127.0.0.1:54321"
 
       - name: Apply Stress Limits (INV-16)
-        run: bash scripts/chaos/apply_stress_limits.sh
+        run: bash scripts/qa/chaos/apply_stress_limits.sh
 
       - name: Run Chaos & Resilience Suite
         run: |
@@ -498,7 +498,7 @@ jobs:
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
           ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
           
-          export SERVICE_ROLE_KEY
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           export SUPABASE_ANON_KEY="$ANON_KEY"
           export SUPABASE_URL="http://127.0.0.1:54321"
           export ORG_ID="00000000-0000-0000-0000-000000000001"
@@ -506,4 +506,4 @@ jobs:
           export BOUND_CHAT_ID="908453789"
           export WEBHOOK_SECRET="VeraProb_Secret_Local_2026"
           
-          bash scripts/chaos/run_chaos_suite.sh
+          bash scripts/qa/chaos/run_chaos_suite.sh

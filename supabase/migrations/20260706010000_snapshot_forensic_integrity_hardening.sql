@@ -10,10 +10,12 @@
 --       storage permits non-deterministic fractional values that the Dart domain
 --       layer silently truncates via `.toInt()`, breaking byte-identical replay.
 --       The names were also misleading (a "percentage" column holding 500 means
---       5%, not 500%). Fix: migrate both columns to INTEGER and rename them to
+--       5%, not 500%). Fix: introduce INTEGER basis-point columns
 --       risk_percentage_bps / loss_percentage_bps — matching the domain fields
---       riskPercentageBps / lossPercentageBps — using the zero-downtime
---       add / backfill / drop pattern (INV-DB).
+--       riskPercentageBps / lossPercentageBps — via the zero-downtime
+--       add / backfill / promote pattern (INV-DB). EXPAND-AND-CONTRACT phase 1:
+--       the legacy float columns are kept and formally deprecated, not dropped;
+--       contraction is deferred to the Phase 3 cleanup migration.
 --
 --   BUG-2 (forensic ambiguity): last_ledger_entry_id (BIGINT, v1 ledger) and
 --       last_ledger_entry_uuid (TEXT, v2 ledger) could both be populated, leaving
@@ -26,13 +28,16 @@
 --       immutability at the Postgres level — unlike sla_audit_ledger /
 --       sla_audit_ledger_v2. The vestigial updated_at column further implied the
 --       row was mutable. Fix: BEFORE UPDATE/DELETE guard triggers (mirroring the
---       ledger pattern) and drop updated_at.
+--       ledger pattern). updated_at is formally deprecated in place (not
+--       dropped) under EXPAND-AND-CONTRACT phase 1; the trigger makes it inert.
 --
 -- Ordering: BUG-1 runs first because its backfill issues UPDATEs; the BUG-3
 -- immutability trigger is created last so it never blocks that backfill.
 --
 -- Idempotency: BUG-1 is gated on the legacy column still being `double
--- precision`; BUG-2/BUG-3 use IF [NOT] EXISTS guards. Safe to re-run.
+-- precision` and every step inside is re-run safe (IF NOT EXISTS / WHERE-guarded
+-- backfill / constraints dropped before re-add); BUG-2/BUG-3 use IF [NOT] EXISTS
+-- guards. Safe to re-run.
 -- =============================================================================
 
 SET client_min_messages TO 'WARNING';
@@ -40,8 +45,10 @@ SET client_min_messages TO 'WARNING';
 -- ─────────────────────────────────────────────────────────────────────────────
 -- BUG-1 — risk_percentage / loss_percentage : FLOAT8 columns replaced by
 --          INTEGER basis-point columns risk_percentage_bps / loss_percentage_bps.
--- The whole transformation is gated on the legacy float column still existing,
--- so a re-run (where it has already been dropped) is a clean no-op.
+-- The whole transformation is gated on the legacy float column still being
+-- `double precision`; every step inside is individually re-run safe, so a
+-- re-run converges to the same state (EXPAND-AND-CONTRACT phase 1 — the legacy
+-- columns are kept and deprecated, not dropped).
 -- ─────────────────────────────────────────────────────────────────────────────
 DO $$
 BEGIN
@@ -86,10 +93,15 @@ BEGIN
       DROP CONSTRAINT chk_risk_pct_bps_not_null,
       DROP CONSTRAINT chk_loss_pct_bps_not_null;
 
-    -- Step 4: drop the legacy mis-typed, mis-named float columns (metadata-only).
-    ALTER TABLE public.contractual_financial_snapshot
-      DROP COLUMN risk_percentage,
-      DROP COLUMN loss_percentage;
+    -- Step 4: EXPAND-AND-CONTRACT phase 1 (Expansion only). The legacy float
+    -- columns are NOT dropped here — they remain for rollback safety and
+    -- forensic parity during the transition. Contraction (DROP COLUMN) is
+    -- deferred to the Phase 3 cleanup migration. They are formally deprecated
+    -- in place so no application code adopts them.
+    COMMENT ON COLUMN public.contractual_financial_snapshot.risk_percentage IS
+      'DEPRECATED: Use risk_percentage_bps. Scheduled for removal in Phase 3 cleanup.';
+    COMMENT ON COLUMN public.contractual_financial_snapshot.loss_percentage IS
+      'DEPRECATED: Use loss_percentage_bps. Scheduled for removal in Phase 3 cleanup.';
 
     -- Step 5: document the integer basis-point contract for future auditors.
     COMMENT ON COLUMN public.contractual_financial_snapshot.risk_percentage_bps IS
@@ -140,11 +152,25 @@ COMMENT ON COLUMN public.contractual_financial_snapshot.last_ledger_entry_uuid I
 -- BUG-3 — Postgres-level immutability (INV-3)
 -- REVOKE UPDATE/DELETE does not stop service_role; a trigger fires before ALL
 -- operations regardless of role. Mirrors prevent_ledger_v2_mutation().
--- updated_at is dropped: on an append-only table it is always equal to
--- created_at and falsely implies the row can be mutated.
+-- updated_at is vestigial: on an append-only table it is always equal to
+-- created_at and falsely implies the row can be mutated. EXPAND-AND-CONTRACT
+-- phase 1 — it is NOT dropped here (rollback safety / forensic parity); it is
+-- formally deprecated in place and the immutability trigger below makes it
+-- inert. Contraction (DROP COLUMN) is deferred to the Phase 3 cleanup migration.
 -- ─────────────────────────────────────────────────────────────────────────────
-ALTER TABLE public.contractual_financial_snapshot
-  DROP COLUMN IF EXISTS updated_at;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name   = 'contractual_financial_snapshot'
+      AND column_name  = 'updated_at'
+  ) THEN
+    COMMENT ON COLUMN public.contractual_financial_snapshot.updated_at IS
+      'DEPRECATED: Vestigial on an append-only table (always equals created_at). '
+      'Scheduled for removal in Phase 3 cleanup.';
+  END IF;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.prevent_contractual_snapshot_mutation()
 RETURNS trigger
