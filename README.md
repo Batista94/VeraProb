@@ -9,16 +9,16 @@
 <a name="português"></a>
 ## Português
 
-VeraProb é um estudo de engenharia focado em **Forensic Contract Governance**. O projeto explora a construção de sistemas de alta performance capazes de converter Raw Telemetry em Verifiable Contractual Truth, eliminando o atrito entre contratos B2B e execução operacional.
+VeraProb é um estudo de engenharia focado em **Forensic Contract Governance**. O projeto explora a construção de sistemas de alta performance capazes de converter Telemetria bruta em verdade contratual, eliminando o atrito entre contratos B2B e execução operacional.
 
 > [!CAUTION]
 > **Propriedade Intelectual Restrita**: Este código é um estudo de engenharia proprietário de Weslei Batista. A cópia, fork, redistribuição ou uso comercial não são autorizados. Este repositório não aceita Pull Requests ou Issues externas.
 
 ### Objetivos (Build to Learn)
-Este repositório é um laboratório de aprendizado pessoal dedicado a exercitar o rigor de sistemas Enterprise em um contexto de desenvolvimento solo. O foco está na aplicação de arquiteturas complexas em cenários de alta criticidade:
+Este repositório é um laboratório de aprendizado pessoal dedicado a exercitar o rigor de sistemas Enterprise em um contexto de desenvolvimento solo. O foco está na aplicação de arquiteturas amplamente utilizadas em cenários de alta criticidade:
 - **Solo-Enterprise Rigor**: Aplicação de padrões de sistemas Tier 1 (DDD, Event Sourcing, WASM) em um fluxo individual.
 - **Forensic Accuracy**: Garantia de que cada transação e estado seja auditável e matematicamente preciso (INV-4/5).
-- **AI-Assisted Architecture**: Exploração de como a colaboração profunda com agentes de IA pode sustentar padrões de Clean Code e complexidade controlada.
+- **AI-Assisted Architecture**: Exploração de como a colaboração com agentes de IA pode sustentar padrões de Clean Code e complexidade controlada.
 
 ### Pilares de Engenharia
 - **Domain-Driven Design (DDD)**: Camada de domínio agnóstica e isolada contendo a lógica de "Verdade Contratual".
@@ -87,7 +87,7 @@ VeraProb is an engineering study focused on **Forensic Contract Governance**. Th
 > **Restricted Intellectual Property**: This code is a proprietary engineering study by Weslei Batista. Copying, forking, redistribution, or commercial use is not authorized. This repository does not accept external Pull Requests or Issues.
 
 ### Objectives (Build to Learn)
-This repository is a personal learning laboratory dedicated to exercising Enterprise rigor in a solo development context. The focus is on applying complex architectures in high-criticality scenarios:
+This repository is a personal learning lab for exercising production-level rigor in solo projects. It focuses on proven architectural patterns for critical systems:
 - **Solo-Enterprise Rigor**: Applying Tier 1 system patterns (DDD, Event Sourcing, WASM) in an individual workflow.
 - **Forensic Accuracy**: Ensuring every transaction and state is auditable and mathematically precise (INV-4/5).
 - **AI-Assisted Architecture**: Exploring how deep collaboration with AI agents can sustain Clean Code standards and controlled complexity.
