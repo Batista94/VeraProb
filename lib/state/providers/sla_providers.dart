@@ -22,12 +22,13 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_evaluation_trace_repo
 import 'package:veraprob/infrastructure/sla_audit/postgres_operational_alert_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 import 'auth_providers.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'fleet_providers.dart';
 import 'shared_providers.dart';
 
-// â”€â”€ Re-exports from sla_persistence_provider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Re-exports from sla_persistence_provider ────────────────────────────────
 // Kept here so all provider consumers import one canonical file.
 export 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart'
     show
@@ -40,7 +41,7 @@ export 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart'
         justificationRepositoryProvider,
         vehicleInfractionRecurrenceRepositoryProvider;
 
-// â”€â”€ Operational Alert Repository â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Operational Alert Repository ─────────────────────────────────────────────
 
 final operationalAlertRepositoryProvider = Provider<OperationalAlertRepository>(
   (ref) {
@@ -53,7 +54,7 @@ final operationalAlertRepositoryProvider = Provider<OperationalAlertRepository>(
   },
 );
 
-// â”€â”€ Evaluation Trace Repository â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Evaluation Trace Repository ──────────────────────────────────────────────
 
 final evaluationTraceRepositoryProvider = Provider<EvaluationTraceRepository>((
   ref,
@@ -66,7 +67,7 @@ final evaluationTraceRepositoryProvider = Provider<EvaluationTraceRepository>((
   };
 });
 
-// â”€â”€ SLA Execution Query Service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── SLA Execution Query Service ──────────────────────────────────────────────
 
 final slaExecutionQueryServiceProvider = Provider<SlaExecutionQueryService>((
   ref,
@@ -83,7 +84,7 @@ final slaExecutionQueryServiceProvider = Provider<SlaExecutionQueryService>((
   };
 });
 
-// â”€â”€ Contractual Financial Closing Service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Contractual Financial Closing Service ────────────────────────────────────
 
 final contractualFinancialClosingServiceProvider =
     Provider<ContractualFinancialClosingService>((ref) {
@@ -95,11 +96,15 @@ final contractualFinancialClosingServiceProvider =
           ),
           ledgerRepo: ref.watch(slaAuditLedgerRepositoryProvider),
           clock: ref.watch(dateTimeProviderProvider),
+          // Composition root is the only layer allowed to read EnvironmentConfig
+          // (INV-13). The generator receives a plain String — it never knows
+          // where the version comes from.
+          engineVersion: EnvironmentConfig.engineVersion,
         ),
       );
     });
 
-// â”€â”€ Sanction Simulation Service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Sanction Simulation Service ──────────────────────────────────────────────
 
 final sanctionSimulationServiceProvider = Provider<SanctionSimulationService>((
   ref,
@@ -111,7 +116,7 @@ final sanctionSimulationServiceProvider = Provider<SanctionSimulationService>((
   );
 });
 
-// â”€â”€ Contractual Evaluation Subscriber â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Contractual Evaluation Subscriber ───────────────────────────────────────
 
 /// Returns null when no organizationId is available (unauthenticated state).
 final contractualEvaluationSubscriberProvider =
@@ -143,7 +148,7 @@ final contractualEvaluationSubscriberProvider =
       );
     });
 
-// â”€â”€ UI Read Models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── UI Read Models ───────────────────────────────────────────────────────────
 
 /// Global SLA execution summary for the current session's organization.
 final slaSummaryProvider = FutureProvider<SlaExecutionSummary>((ref) async {

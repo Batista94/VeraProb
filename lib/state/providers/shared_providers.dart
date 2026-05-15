@@ -9,7 +9,7 @@ import 'package:veraprob/infrastructure/shared/gtfs_realtime_service.dart';
 import 'package:veraprob/infrastructure/shared/trip_repository_impl.dart';
 import 'package:veraprob/infrastructure/shared/vehicle_repository.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/infrastructure/shared/evidence_url_service.dart';
 
 final evidenceUrlServiceProvider = Provider<EvidenceUrlService>((ref) {

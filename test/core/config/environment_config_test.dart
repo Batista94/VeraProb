@@ -13,7 +13,7 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/core/config/environment.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 
 const _matrixEnv = String.fromEnvironment('ENV', defaultValue: 'dev');
 const _matrixSkipFlag = bool.fromEnvironment(

@@ -4,7 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
@@ -54,7 +54,7 @@ class ShiftProjectionService {
        _alertRepo = alertRepo,
        _dateTimeProvider = dateTimeProvider;
 
-  // â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Public API ────────────────────────────────────────────
 
   /// Projects SETs for [plan] from [from] for [days] days.
   ///
@@ -89,7 +89,7 @@ class ShiftProjectionService {
         if (pattern.weekCycle != WeekCycle.everyWeek) {
           final anchor = plan.cycleAnchorDateUtc;
           if (anchor == null) {
-            continue; // guard â€” should not happen after validation
+            continue; // guard — should not happen after validation
           }
           final daysDiff = dateOnly.difference(anchor).inDays;
           final weekIndex = ((daysDiff ~/ 7) % 4 + 4) % 4;
@@ -112,7 +112,7 @@ class ShiftProjectionService {
   /// Ensures all active shift-based plans for [organizationId] have SETs
   /// projected for the next [days] days.
   ///
-  /// Called on operator login (boot check â€” B1 decision).
+  /// Called on operator login (boot check — B1 decision).
   /// Silently skips dates that already have projected SETs (idempotent).
   /// For past dates with missing SETs, calls [detectAndAlertGaps].
   ///
@@ -147,7 +147,7 @@ class ShiftProjectionService {
   /// pattern schedule) but have none recorded, and raises PROJECTION_GAP
   /// CRITICAL alerts for each missing day.
   ///
-  /// **B4 decision:** gaps are permanent â€” no retroactive projection.
+  /// **B4 decision:** gaps are permanent — no retroactive projection.
   Future<void> detectAndAlertGaps(
     PlanDeclaration plan, {
     required DateTime asOf,
@@ -197,7 +197,7 @@ class ShiftProjectionService {
     }
   }
 
-  // â”€â”€ Private helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Private helpers ───────────────────────────────────────
 
   Future<ContractualServiceExecution?> _projectOneSet({
     required PlanDeclaration plan,
@@ -281,7 +281,7 @@ class ShiftProjectionService {
       endLatitude: destZone.geofence!.latitude,
       endLongitude: destZone.geofence!.longitude,
       endRadiusMeters: destZone.geofence!.radiusMeters,
-      // Financial â€” provided by caller from contract rule snapshot
+      // Financial — provided by caller from contract rule snapshot
       contractualValue: contractualValue,
       noShowPenaltyBps: pattern.penalties.noShowPenaltyBps,
       delayToleranceMinutes: pattern.penalties.delayToleranceMinutes,

@@ -644,12 +644,13 @@ export type Database = {
           closed_at_utc: string
           contract_id: string | null
           created_at: string
+          engine_version: string
           evidence_gap_count: number
           executed_count: number
           id: string
           last_ledger_entry_id: number | null
           last_ledger_entry_uuid: string | null
-          loss_percentage: number
+          loss_percentage_bps: number
           lost_revenue_cents: number
           no_show_count: number
           operational_date_utc: string
@@ -659,22 +660,22 @@ export type Database = {
           protected_revenue_cents: number
           reprocessing_reason: string | null
           revenue_at_risk_cents: number
-          risk_percentage: number
+          risk_percentage_bps: number
           total_contracted_revenue_cents: number
           total_obligations: number
-          updated_at: string
         }
         Insert: {
           author_user_id?: string | null
           closed_at_utc: string
           contract_id?: string | null
           created_at?: string
+          engine_version: string
           evidence_gap_count?: number
           executed_count?: number
           id: string
           last_ledger_entry_id?: number | null
           last_ledger_entry_uuid?: string | null
-          loss_percentage: number
+          loss_percentage_bps: number
           lost_revenue_cents: number
           no_show_count?: number
           operational_date_utc: string
@@ -684,22 +685,22 @@ export type Database = {
           protected_revenue_cents: number
           reprocessing_reason?: string | null
           revenue_at_risk_cents: number
-          risk_percentage: number
+          risk_percentage_bps: number
           total_contracted_revenue_cents: number
           total_obligations?: number
-          updated_at?: string
         }
         Update: {
           author_user_id?: string | null
           closed_at_utc?: string
           contract_id?: string | null
           created_at?: string
+          engine_version?: string
           evidence_gap_count?: number
           executed_count?: number
           id?: string
           last_ledger_entry_id?: number | null
           last_ledger_entry_uuid?: string | null
-          loss_percentage?: number
+          loss_percentage_bps?: number
           lost_revenue_cents?: number
           no_show_count?: number
           operational_date_utc?: string
@@ -709,10 +710,9 @@ export type Database = {
           protected_revenue_cents?: number
           reprocessing_reason?: string | null
           revenue_at_risk_cents?: number
-          risk_percentage?: number
+          risk_percentage_bps?: number
           total_contracted_revenue_cents?: number
           total_obligations?: number
-          updated_at?: string
         }
         Relationships: [
           {

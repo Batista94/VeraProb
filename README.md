@@ -1,75 +1,149 @@
 # VeraProb - Forensic Contract Governance
 
-VeraProb is a high-performance platform designed to eliminate friction between B2B contracts and operational execution. It acts as an automated "Digital Judge" that transforms raw telemetry into Verifiable Contractual Truth, ensuring financial protection and forensic auditability.
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+
+[Português](#português) | [English](#english)
 
 ---
 
-## The Problem We Solve
-1. **Revenue Leakage:** Capture of unplanned trips via **Shadow Executions**.
-2. **Legal Fragility:** Replacing driver-vs-client disputes with a **Forensic PDF with Chain of Custody**.
-3. **SLA Fraud:** Detection of **Clock Drift** and GPS spoofing.
-4. **Penny Precision Gap:** Eliminating rounding errors using **INV-4/5 (Fixed-Point Math)** with BigInt.
-5. **Evidence Poisoning:** Entropy scanning to detect malicious script injection in photos (Ratio > 0.60).
-6. **Low Adoption:** Invisible, friction-free interface designed for field operators and drivers.
+<a name="português"></a>
+## Português
 
-## Business Vision & ROI
-- **Zero-Glosa objective:** Automated Proof of Delivery (POD) with forensic sealing accelerates cash flow.
-- **90% Backoffice Reduction:** Automated reconciliation by exception eliminates manual photo checking.
-- **Claims Shielding:** Irrefutable dossier forcing insurance payouts without contestation.
-- **Civil Liability:** Systematic transfer of custody materialized at the moment of cryptographic sealing.
+VeraProb é um estudo de engenharia focado em **Forensic Contract Governance**. O projeto explora a construção de sistemas de alta performance capazes de converter Raw Telemetry em Verifiable Contractual Truth, eliminando o atrito entre contratos B2B e execução operacional.
 
----
+> [!CAUTION]
+> **Propriedade Intelectual Restrita**: Este código é um estudo de engenharia proprietário de Weslei Batista. A cópia, fork, redistribuição ou uso comercial não são autorizados. Este repositório não aceita Pull Requests ou Issues externas.
 
-## Architecture & Data Pipeline
-The platform follows a strict Event-Sourced logic:
-1. **Ingestion:** Raw telemetry and Evidence (Telegram Bot) received via secure Edge Functions.
-2. **Normalization:** Unification into Canonical Facts (Deterministic Snapshots).
-3. **Evaluation:** Facts replayed against SLA Rules by the Forensic Evaluation Engine.
-4. **Verdict:** Impacts sealed into an Immutable Ledger (INV-3).
+### Objetivos (Build to Learn)
+Este repositório é um laboratório de aprendizado pessoal dedicado a exercitar o rigor de sistemas Enterprise em um contexto de desenvolvimento solo. O foco está na aplicação de arquiteturas complexas em cenários de alta criticidade:
+- **Solo-Enterprise Rigor**: Aplicação de padrões de sistemas Tier 1 (DDD, Event Sourcing, WASM) em um fluxo individual.
+- **Forensic Accuracy**: Garantia de que cada transação e estado seja auditável e matematicamente preciso (INV-4/5).
+- **AI-Assisted Architecture**: Exploração de como a colaboração profunda com agentes de IA pode sustentar padrões de Clean Code e complexidade controlada.
 
-## Tech Stack
-- **Frontend:** Flutter (WASM), Riverpod, Industrial Deep Design.
-- **Backend:** Supabase, PostgreSQL (PostGIS), Edge Functions.
-- **Security:** SHA-256, HMAC per-org (INV-28), Magic Bytes Entropy.
-- **Governance:** Sequential Thinking (MCP), Lead Reviewer AI, Forensic Scanner.
+### Pilares de Engenharia
+- **Domain-Driven Design (DDD)**: Camada de domínio agnóstica e isolada contendo a lógica de "Verdade Contratual".
+- **Event-Sourced Logic**: Replay de fatos contra SLA Rules para gerar vereditos determinísticos.
+- **Deterministic Snapshots**: Unificação de telemetria bruta em Canonical Facts.
+- **Immutable Ledger**: Selagem de impactos financeiros em um registro imutável (INV-3).
 
----
+### Stack Tecnológica
+- **Frontend**: Flutter (WASM), Riverpod, Industrial Deep Design.
+- **Backend**: Supabase, PostgreSQL (PostGIS), Edge Functions.
+- **Segurança**: SHA-256, HMAC per-org (INV-28), Magic Bytes Entropy.
+- **Governança**: Sequential Thinking (MCP), Lead Reviewer AI, Forensic Scanner.
 
-## Getting Started (Local Development)
+### Execução Local
 
-### 1. Prerequisites
-- **Flutter SDK** (>= 3.41.9)
+#### 1. Pré-requisitos
+- **Flutter SDK** (3.41.9 Pinned)
 - **Docker Desktop**
 - **Supabase CLI**
 - **Node.js** (>= 18)
 
-### 2. Setup & Run
+#### 2. Setup
 ```bash
-# Start infrastructure
+# Inicializar infraestrutura (Supabase)
 supabase start
 supabase db reset
 
-# Provision test data
-node scripts/dev/bootstrap_dev.mjs
+# Preparar ambiente e dados (Makefile)
+make setup
+make env
 
-# Setup environment
-cp .env.example .env
+# Construir ambiente de auditoria (Docker)
+make build-test-env
 
-# Run app
+# Executar aplicação
 flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
 ```
 
-### 3. Testing & Quality
-- **Unit/Integration:** `flutter test`
-- **Visual Regression (Goldens):** `make goldens` (Runs in Linux Docker to ensure CI parity).
-- **Forensic Scanning:** `bash scripts/security/pr_full_scanner.sh` (Mandatory before PR).
+#### 3. Variáveis de Ambiente (Segurança)
+Para cumprir a invariante de segurança **INV-2**, chaves e segredos nunca são mantidos no código-fonte:
+- O comando `make env` gera o arquivo `.env` local (ignorado pelo Git).
+- O arquivo `.env.example` contém os nomes das variáveis e chaves padrão para o stack local.
+- **Credenciais de Teste**: O sistema utiliza credenciais determinísticas (`master@veraprob.dev`) exclusivamente para o bootstrap do ambiente local de desenvolvimento. Estas são credenciais públicas de teste e não possuem acesso a nenhum recurso real.
+- **Testes de Integração**: O `PostgresTestConfig` carrega automaticamente as credenciais do `.env` durante a execução dos testes.
 
-> [!IMPORTANT]
-> **Hermetic Goldens** Sempre use `make goldens` para atualizar imagens de referência. Isso garante que os pixels sejam gerados em ambiente Linux, evitando falhas de divergência de renderização entre Windows e o CI (GitHub Actions).
->
-> **Quando executar:**
-> 1. **Nova UI:** Ao criar novos widgets com testes visuais.
-> 2. **Mudança Intencional:** Após alterar cores, fontes ou layout de componentes existentes.
-> 3. **Falha no CI:** Se o GitHub Actions reportar erro visual, mas você confirmou que a mudança está correta.
+### Guia de Fluxo
 
-For the complete list of **28 Forensic Invariants**, refer to [CLAUDE.md](CLAUDE.md).
+| Ação | Comando | Descrição |
+| :--- | :--- | :--- |
+| **Ambiente** | `make build-test-env` | Constrói o container Linux de auditoria. |
+| **Execução** | `flutter run` | Desenvolvimento local com Hot Reload. |
+| **Check Forense** | `make check` | Valida integridade, segredos e padrões forenses. |
+| **Full Check** | `make full-check` | Executa o check completo + testes unitários e de banco. |
+| **Visual Regression** | `make goldens` | Gera/Valida capturas de tela em ambiente Linux. |
+
+Para detalhes sobre as diretrizes de desenvolvimento e padrões de qualidade, consulte [CLAUDE.md](CLAUDE.md).
+
+---
+
+<a name="english"></a>
+## English
+
+VeraProb is an engineering study focused on **Forensic Contract Governance**. The project explores the construction of high-performance systems capable of converting Raw Telemetry into Verifiable Contractual Truth, eliminating friction between B2B contracts and operational execution.
+
+> [!CAUTION]
+> **Restricted Intellectual Property**: This code is a proprietary engineering study by Weslei Batista. Copying, forking, redistribution, or commercial use is not authorized. This repository does not accept external Pull Requests or Issues.
+
+### Objectives (Build to Learn)
+This repository is a personal learning laboratory dedicated to exercising Enterprise rigor in a solo development context. The focus is on applying complex architectures in high-criticality scenarios:
+- **Solo-Enterprise Rigor**: Applying Tier 1 system patterns (DDD, Event Sourcing, WASM) in an individual workflow.
+- **Forensic Accuracy**: Ensuring every transaction and state is auditable and mathematically precise (INV-4/5).
+- **AI-Assisted Architecture**: Exploring how deep collaboration with AI agents can sustain Clean Code standards and controlled complexity.
+
+### Engineering Pillars
+- **Domain-Driven Design (DDD)**: Agnostic and isolated domain layer containing the "Contractual Truth" logic.
+- **Event-Sourced Logic**: Fact replay against SLA Rules to generate deterministic verdicts.
+- **Deterministic Snapshots**: Telemetry unification into Canonical Facts.
+- **Immutable Ledger**: Sealing financial impacts into an immutable record (INV-3).
+
+### Tech Stack
+- **Frontend**: Flutter (WASM), Riverpod, Industrial Deep Design.
+- **Backend**: Supabase, PostgreSQL (PostGIS), Edge Functions.
+- **Security**: SHA-256, HMAC per-org (INV-28), Magic Bytes Entropy.
+- **Governance**: Sequential Thinking (MCP), Lead Reviewer AI, Forensic Scanner.
+
+### Local Execution
+
+#### 1. Prerequisites
+- **Flutter SDK** (3.41.9 Pinned)
+- **Docker Desktop**
+- **Supabase CLI**
+- **Node.js** (>= 18)
+
+#### 2. Setup
+```bash
+# Initialize infrastructure (Supabase)
+supabase start
+supabase db reset
+
+# Prepare environment and data (Makefile)
+make setup
+make env
+
+# Build audit environment (Docker)
+make build-test-env
+
+# Run application
+flutter run -d chrome --web-port=8080 --dart-define=SKIP_MFA_DEV=true
+```
+
+#### 3. Environment Variables (Security)
+To comply with the **INV-2** security invariant, keys and secrets are never kept in the source code:
+- The `make env` command generates the local `.env` file (ignored by Git).
+- The `.env.example` file contains the variable names and default keys for the local stack.
+- **Test Credentials**: The system uses deterministic credentials (`master@veraprob.dev`) exclusively for local development environment bootstrap. These are public test credentials and have no access to any real resources.
+- **Integration Tests**: `PostgresTestConfig` automatically loads credentials from `.env` during test execution.
+
+### Workflow Guide
+
+| Action | Command | Description |
+| :--- | :--- | :--- |
+| **Environment** | `make build-test-env` | Builds the Linux audit container. |
+| **Run** | `flutter run` | Local development with Hot Reload. |
+| **Forensic Check** | `make check` | Validates integrity, secrets, and forensic patterns. |
+| **Full Check** | `make full-check` | Runs the full check + unit and database tests. |
+| **Visual Regression** | `make goldens` | Generates/Validates screenshots in Linux environment. |
+
+For development guidelines and quality standards, refer to [CLAUDE.md](CLAUDE.md).

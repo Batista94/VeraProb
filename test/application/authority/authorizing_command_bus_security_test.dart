@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/authority/authorizing_command_bus.dart';
 import 'package:veraprob/application/authority/operational_command_bus.dart';
@@ -8,11 +8,11 @@ import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'package:veraprob/domain/authority/policies/authority_policy_evaluator.dart';
 import 'package:veraprob/domain/authority/repositories/forensic_decision_repository.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
-// REQUISITO (AuditÃ¡vel): Mocks estritamente via Mocktail
+// REQUISITO (Auditável): Mocks estritamente via Mocktail
 class MockPolicyEvaluator extends Mock implements AuthorityPolicyEvaluator {}
 
 class MockForensicRepository extends Mock
@@ -52,13 +52,13 @@ void main() {
       final testTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
       when(() => mockDateTime.nowUtc()).thenReturn(testTime.toUtc());
 
-      // Default: Registrar decisÃ£o forense sempre funciona
+      // Default: Registrar decisão forense sempre funciona
       when(() => repository.saveDecision(any())).thenAnswer((_) async {});
     });
 
     // 1. PRIVILEGE ESCALATION (Bypass de Role)
     test(
-      'Security Rejection: UsuÃ¡rio com Role "Driver" tenta executar UpdateContractCommand (Admin)',
+      'Security Rejection: Usuário com Role "Driver" tenta executar UpdateContractCommand (Admin)',
       () async {
         // Arrange
         final driverContext = AuthorizationContext(
@@ -68,7 +68,7 @@ void main() {
           capturedAt: mockDateTime.nowUtc().toUtc(),
         );
 
-        // Stub: Usando matchers genÃ©ricos com nomes explÃ­citos conforme exigido pelo Mocktail para parÃ¢metros obrigatÃ³rios nomeados
+        // Stub: Usando matchers genéricos com nomes explícitos conforme exigido pelo Mocktail para parâmetros obrigatórios nomeados
         when(
           () => evaluator.evaluate(
             actionType: any(named: 'actionType'),
@@ -102,7 +102,7 @@ void main() {
         const command = UpdateContractCommand(
           contractId: 'c-secure',
           newValueCents: 100000,
-          targetOrganizationId: 'Org-A', // OrganizaÃ§Ã£o correta, role ERRADA
+          targetOrganizationId: 'Org-A', // Organização correta, role ERRADA
         );
 
         // Act & Assert
@@ -129,7 +129,7 @@ void main() {
     test(
       'Security Rejection: Admin da Org-B tenta atualizar contrato da Org-A (Cross-Tenant Matching)',
       () async {
-        // Arrange: UsuÃ¡rio autenticado na Org-B
+        // Arrange: Usuário autenticado na Org-B
         final orgBContext = AuthorizationContext(
           actorId: const ActorId('admin-org-b'),
           roleId: const RoleId('admin'),
@@ -152,7 +152,7 @@ void main() {
           targetOrganizationId: 'Organization-A', // ALVO DE OUTRO TENANT
         );
 
-        // Act & Assert: Veto Imediato deve ocorrer no bus antes da polÃ­tica
+        // Act & Assert: Veto Imediato deve ocorrer no bus antes da política
         await expectLater(
           () => bus.dispatch(command),
           throwsA(
@@ -164,7 +164,7 @@ void main() {
           ),
         );
 
-        // VETO IMEDIATO: O bus bloqueia antes mesmo de avaliar polÃ­tica
+        // VETO IMEDIATO: O bus bloqueia antes mesmo de avaliar política
         verifyNever(
           () => evaluator.evaluate(
             actionType: any(named: 'actionType'),
@@ -176,7 +176,7 @@ void main() {
 
         verifyNever(() => controlService.updateContract(any(), any()));
 
-        // AUDIT TRAIL: DecisÃ£o forense registrada no ledger
+        // AUDIT TRAIL: Decisão forense registrada no ledger
         final captured = verify(
           () => repository.saveDecision(captureAny()),
         ).captured;
@@ -198,7 +198,7 @@ void main() {
             actorId: const ActorId('bad-context'),
             roleId: const RoleId('none'),
             tenantId: null,
-            capturedAt: null as dynamic, // Provoca TypeError (nÃ£o-nulo)
+            capturedAt: null as dynamic, // Provoca TypeError (não-nulo)
           ),
           controlService,
           mockDateTime,
@@ -222,7 +222,7 @@ void main() {
 
     // GOLDEN PATH: Admin Update (Isolamento OK e Role OK)
     test(
-      'Golden Path: ExecuÃ§Ã£o autorizada quando Role e Tenant estÃ£o corretos',
+      'Golden Path: Execução autorizada quando Role e Tenant estão corretos',
       () async {
         // Arrange
         final adminContext = AuthorizationContext(

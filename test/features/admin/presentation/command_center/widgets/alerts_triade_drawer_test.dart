@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/sla_audit/quick_reconciliation_service.dart';
-import 'package:veraprob/core/services/alert_sound_service.dart';
+import 'package:veraprob/infrastructure/audio/alert_sound_service.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';

@@ -16,7 +16,7 @@ import 'package:flutter_riverpod/misc.dart' show ProviderException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:veraprob/core/config/environment.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
 import 'package:veraprob/infrastructure/super_admin/supabase_mfa_repository.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';

@@ -1,4 +1,5 @@
 import 'dart:math' show cos, sqrt, asin;
+import 'package:veraprob/application/intelligence/ping_classification.dart';
 import 'package:veraprob/domain/entities/raw_telemetry_ping.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/spoofing_detected_exception.dart';
@@ -19,62 +20,85 @@ class TelemetryNormalizer {
   });
 
   /// Processes a raw ping. Returns a clean VehiclePosition if valid, or null if rejected.
+  ///
+  /// Thin backward-compatible delegate over [classifyPing] — preserves the
+  /// `VehiclePosition?` contract for stream consumers that only care whether a
+  /// ping survived, not why it was dropped.
   VehiclePosition? processPing(RawTelemetryPing ping) {
-    // 1. Accuracy Filter
-    if (ping.accuracy > maxAccuracyMeters) {
-      return null;
-    }
+    final classification = classifyPing(ping);
+    return classification is PingAccepted ? classification.position : null;
+  }
 
-    // 2. INV-18: Spoofing Detection - Reject unrealistic precision (emulator signature)
-    // Real GPS devices have stdDev >= 0.001 due to atmospheric noise
-    if (ping.accuracy < 0.001) {
-      return null; // Emulator or spoofed data
-    }
+  /// Classifies a raw ping against all sensor-sanitization heuristics.
+  ///
+  /// Returns [PingAccepted] with the clean position, or [PingRejected] with the
+  /// concrete [PingRejectionReason] — the auditable form of [processPing].
+  PingClassification classifyPing(RawTelemetryPing ping) {
+    final accuracyFailure = _checkAccuracy(ping);
+    if (accuracyFailure != null) return PingRejected(accuracyFailure);
 
     final lastPing = _lastValidPings[ping.vehicleId];
-
-    // 3. Implied Speed Filter (Haversine Jump Check)
-    if (lastPing != null) {
-      final distanceMeters = _calculateDistance(
-        lastPing.latitude,
-        lastPing.longitude,
-        ping.latitude,
-        ping.longitude,
-      );
-
-      final timeDiffSeconds = ping.timestamp
-          .difference(lastPing.timestamp)
-          .inSeconds
-          .abs();
-
-      if (timeDiffSeconds > 0) {
-        final impliedSpeedMps = distanceMeters / timeDiffSeconds;
-        final impliedSpeedKmh = impliedSpeedMps * 3.6;
-
-        if (impliedSpeedKmh > maxImpliedSpeedKmh) {
-          // Impossible jump detected. Discard.
-          return null;
-        }
-      } else if (distanceMeters > 5.0) {
-        // Same timestamp but moved more than 5 meters -> impossible glitch
-        return null;
-      }
-    }
+    final kinematicFailure = _checkKinematics(ping, lastPing);
+    if (kinematicFailure != null) return PingRejected(kinematicFailure);
 
     // Ping is valid. Save as last known good ping.
     _lastValidPings[ping.vehicleId] = ping;
+    return PingAccepted(_toPosition(ping));
+  }
 
-    // Convert to the Domain Entity
+  /// Sensor sanitization — accuracy radius and emulator-signature checks.
+  PingRejectionReason? _checkAccuracy(RawTelemetryPing ping) {
+    if (ping.accuracy > maxAccuracyMeters) {
+      return PingRejectionReason.lowAccuracy;
+    }
+    // INV-18: real GPS devices have stdDev >= 0.001 due to atmospheric noise.
+    if (ping.accuracy < 0.001) {
+      return PingRejectionReason.emulatorSignature;
+    }
+    return null;
+  }
+
+  /// Sensor sanitization — Haversine implied-speed jump and same-timestamp
+  /// movement checks against the last valid ping for this vehicle.
+  PingRejectionReason? _checkKinematics(
+    RawTelemetryPing ping,
+    RawTelemetryPing? lastPing,
+  ) {
+    if (lastPing == null) return null;
+
+    final distanceMeters = _calculateDistance(
+      lastPing.latitude,
+      lastPing.longitude,
+      ping.latitude,
+      ping.longitude,
+    );
+    final timeDiffSeconds = ping.timestamp
+        .difference(lastPing.timestamp)
+        .inSeconds
+        .abs();
+
+    if (timeDiffSeconds > 0) {
+      final impliedSpeedKmh = (distanceMeters / timeDiffSeconds) * 3.6;
+      if (impliedSpeedKmh > maxImpliedSpeedKmh) {
+        return PingRejectionReason.impossibleSpeedJump;
+      }
+    } else if (distanceMeters > 5.0) {
+      return PingRejectionReason.sameTimestampMovement;
+    }
+    return null;
+  }
+
+  /// Converts a validated raw ping into the clean domain entity.
+  VehiclePosition _toPosition(RawTelemetryPing ping) {
     return VehiclePosition(
-      id: ping
-          .vehicleId, // Optionally mapping vehicleId to position Id if needed, or leave null
+      id: ping.vehicleId,
       tripId: ping.tripId,
       latitude: ping.latitude,
       longitude: ping.longitude,
       heading: ping.heading,
       speed: ping.speed,
       timestamp: ping.timestamp,
-      source: 'driver_app_gps', // As designed in the Domain
+      source: 'driver_app_gps',
     );
   }
 

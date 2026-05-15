@@ -5,7 +5,7 @@ import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// Postgres implementation for [SlaExecutionQueryService].
 /// Extracts flat DTOs directly from the `execution_states` table.
@@ -49,13 +49,13 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
       try {
         statusStr = row['status'] as String;
         cents = (row['contractual_value_cents'] as num).toInt();
-        // INV-18: no ?? default â€” null multiplier must throw, not silently
+        // INV-18: no ?? default — null multiplier must throw, not silently
         // produce a 1x penalty that masks missing contract data.
         penaltyBps = ((row['no_show_penalty_multiplier'] as num) * 10000)
             .round();
       } on TypeError catch (e) {
         throw IntegrityException(
-          'Corrupt execution_states row: malformed numeric or string field â€” '
+          'Corrupt execution_states row: malformed numeric or string field — '
           'expected status (String), contractual_value_cents (num), '
           'no_show_penalty_multiplier (num). Details: $e',
         );
@@ -200,7 +200,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
   /// Postgres `TIMESTAMP WITHOUT TIME ZONE` columns return naive strings
   /// (e.g., `'2026-04-09T20:00:00'`) without any timezone indicator.
   /// Dart's `DateTime.parse()` interprets those as **local** time, then
-  /// `.toUtc()` applies the local offset â€” causing silent drift in production
+  /// `.toUtc()` applies the local offset — causing silent drift in production
   /// when the server runs in a non-UTC locale (INV-9 violation).
   ///
   /// By appending `'Z'` before parsing, we treat all naive strings as UTC,
@@ -215,12 +215,12 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
   /// Maps a raw Postgres row to an [SlaExecutionItemView].
   ///
   /// **INV-9:** All timestamp strings are normalized via [_parseUtc] so that
-  /// naive strings (no timezone suffix) from Postgres are treated as UTC â€”
-  /// not as the local system time â€” preventing silent clock drift.
+  /// naive strings (no timezone suffix) from Postgres are treated as UTC —
+  /// not as the local system time — preventing silent clock drift.
   ///
   /// **INV-18:** Catches `TypeError` and `FormatException` from corrupt
   /// JSONB/numeric/date fields and re-throws as semantic [IntegrityException].
-  /// No `?? defaults` are used for critical financial fields â€” a missing
+  /// No `?? defaults` are used for critical financial fields — a missing
   /// multiplier must fail loudly, not silently produce wrong penalties.
   SlaExecutionItemView _mapRow(
     Map<String, dynamic> row,
@@ -244,20 +244,20 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
             .toDouble(), // Physical Metric - Double Required
         startRadiusMeters: (row['start_radius_meters'] as num).toInt(),
         contractualValue: (row['contractual_value_cents'] as num).toInt(),
-        // INV-18: no ?? default â€” null multiplier must throw, not silently
+        // INV-18: no ?? default — null multiplier must throw, not silently
         // produce a 1x (100%) penalty that masks missing contract data.
         noShowPenaltyBps: ((row['no_show_penalty_multiplier'] as num) * 10000)
             .round(),
       );
     } on TypeError catch (e) {
       throw IntegrityException(
-        'Corrupt execution_states row: malformed field in set_id=${row['set_id']} â€” '
+        'Corrupt execution_states row: malformed field in set_id=${row['set_id']} — '
         'expected valid types for all columns. Details: $e',
         field: 'row_mapping',
       );
     } on FormatException catch (e) {
       throw IntegrityException(
-        'Corrupt execution_states row: invalid date string in set_id=${row['set_id']} â€” '
+        'Corrupt execution_states row: invalid date string in set_id=${row['set_id']} — '
         'all timestamp columns must be ISO-8601. Details: $e',
         field: 'timestamp',
       );

@@ -38,10 +38,10 @@ def get_changed_files(branch="main"):
 
     try:
         # Fallback to manual git check if not piped
-        output = subprocess.check_output(["git", "diff", "--name-only", branch], text=True)
+        output = subprocess.check_output(["git", "diff", "--name-only", branch], text=True, encoding='utf-8')
         files = [f.replace("\\", "/").strip() for f in output.splitlines()]
         
-        untracked = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard"], text=True)
+        untracked = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard"], text=True, encoding='utf-8')
         files.extend([f.replace("\\", "/").strip() for f in untracked.splitlines()])
         
         files = [f for f in files if f.startswith(LIB_DIR) and f.endswith(".dart")]

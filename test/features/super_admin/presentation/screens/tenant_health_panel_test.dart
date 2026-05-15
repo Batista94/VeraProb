@@ -16,7 +16,7 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 import 'package:veraprob/domain/super_admin/update_organization_quota_command.dart';
 

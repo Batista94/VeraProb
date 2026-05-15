@@ -4,24 +4,52 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
+import 'dart:io';
 
 /// Configuração local para os testes de integração do Postgres.
 /// Utiliza as credenciais padrão do `supabase start` rodando na porta 54321.
 class PostgresTestConfig {
-  static const String supabaseUrl = 'http://127.0.0.1:54321';
+  static Map<String, String>? _envCache;
 
-  // Service role key — bypassa RLS para os testes de integração.
-  // NUNCA usar em produção ou expor ao cliente.
-  static const String supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+  static String _getEnv(String key) {
+    if (Platform.environment.containsKey(key)) {
+      return Platform.environment[key]!;
+    }
+    _envCache ??= _loadDotEnv();
+    return _envCache?[key] ?? '';
+  }
 
-  /// Service-role key — bypassa RLS e tem permissões de admin no Auth.
-  /// Gerado deterministicamente pelo `supabase start` local.
-  /// NUNCA usar em produção ou expor ao cliente.
-  ///
-  /// Obtido via: `supabase status` → "service_role key"
-  static const String serviceRoleKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+  static Map<String, String> _loadDotEnv() {
+    final env = <String, String>{};
+    try {
+      final file = File('.env');
+      if (file.existsSync()) {
+        for (var line in file.readAsLinesSync()) {
+          line = line.trim();
+          if (line.isEmpty || line.startsWith('#')) continue;
+          final parts = line.split('=');
+          if (parts.length >= 2) {
+            env[parts[0].trim()] = parts.sublist(1).join('=').trim();
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore errors reading .env in CI environments
+    }
+    return env;
+  }
+
+  static String get supabaseUrl => _getEnv('SUPABASE_URL').isNotEmpty
+      ? _getEnv('SUPABASE_URL')
+      : 'http://127.0.0.1:54321';
+
+  // Anon key — used for RLS testing.
+  static String get supabaseAnonKey => _getEnv('SUPABASE_ANON_KEY').isNotEmpty
+      ? _getEnv('SUPABASE_ANON_KEY')
+      : _getEnv('SUPABASE_KEY');
+
+  /// Service-role key — bypasses RLS.
+  static String get serviceRoleKey => _getEnv('SUPABASE_SERVICE_ROLE_KEY');
 
   /// UUID sentinela para testes de integração. Identificador estável para
   /// evitar colisões entre runs sem precisar de fixture de organização real.

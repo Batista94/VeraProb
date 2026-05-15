@@ -2,17 +2,17 @@
 // =============================================================================
 // test/application/normalization/operational_state_normalizer_integrity_test.dart
 //
-// Plano de Testes de Integridade â€” OperationalStateNormalizer
+// Plano de Testes de Integridade — OperationalStateNormalizer
 //
-// SuÃ­tes:
+// Suítes:
 //   1. Outlier Filter       (Kinematic Guard [INV-17])
-//   2. State Machine         (TransiÃ§Ãµes Legais)
+//   2. State Machine         (TransiçÃµes Legais)
 //   3. Chronological Determinism [INV-9/10]
-//   4. Idempotent Ingest     [INV-11] + stateChangedAt ImutÃ¡vel
+//   4. Idempotent Ingest     [INV-11] + stateChangedAt Imutável
 //   5. Data-Driven Stability (100+ pings, Blackout V4)
 //   6. V4 Interpolation Compatibility
 //
-// Semente determinÃ­stica universal: Random(42)
+// Semente determinística universal: Random(42)
 // =============================================================================
 
 import 'dart:math';
@@ -28,24 +28,24 @@ import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 import '../../mocks/fake_date_time_provider.dart';
 
-// â”€â”€ Coordinate constants (SÃ£o Paulo â€“ ParaÃ­so area) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Coordinate constants (São Paulo – Paraíso area) ─────────────────────────
 const double kBaseLat = -23.5612;
 const double kBaseLng = -46.6560;
 const double kLatPerMeter = 1.0 / 111320.0;
 const double kLngPerMeter = 1.0 / 101650.0;
 
-// â”€â”€ Stop fixture â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Stop fixture ──────────────────────────────────────────────────────────────
 const Stop kStopA = Stop(
   id: 'stop-a',
-  name: 'Ponto ParaÃ­so',
+  name: 'Ponto Paraíso',
   latitude: kBaseLat,
   longitude: kBaseLng,
 );
 
-// â”€â”€ Universal deterministic seed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Universal deterministic seed ─────────────────────────────────────────────
 const int kDeterministicSeed = 42;
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 /// Generates a deterministic batch of GPS pings with realistic kinematic
 /// profiles. Uses [seed] (default [kDeterministicSeed]) for all randomness.
@@ -84,8 +84,8 @@ List<VehiclePosition> generateTelemetryBatch({
         }
         currentSpeed = currentSpeed.clamp(0, 60);
 
-        // Movement proportional to speed â€” keep within jump threshold
-        // At 60km/h for 15s = 250m â€” well within 500m threshold
+        // Movement proportional to speed — keep within jump threshold
+        // At 60km/h for 15s = 250m — well within 500m threshold
         final metersPerTick = (currentSpeed / 3.6) * 15;
         // Consistent direction (north-bound route)
         currentLat += metersPerTick * kLatPerMeter * 0.5;
@@ -227,9 +227,9 @@ List<VehiclePosition> generateTelemetryBatch({
           vehiclePlate: vehiclePlate,
         ),
       );
-      // Gap of 5 minutes â€” no pings
+      // Gap of 5 minutes — no pings
       clock.advance(const Duration(minutes: 5));
-      // Ping B at T+5min â€” different position
+      // Ping B at T+5min — different position
       pings.add(
         VehiclePosition(
           tripId: tripId,
@@ -324,7 +324,7 @@ OperationalStateNormalizer makeNormalizer({
   clock: clock,
 );
 
-// â”€â”€ SUÃTE 1: OUTLIER FILTER (Kinematic Guard [INV-17]) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── SUÃTE 1: OUTLIER FILTER (Kinematic Guard [INV-17]) ──────────────────────
 void main() {
   final kEpoch = DateTime.utc(2026, 4, 7, 12, 0, 0);
 
@@ -377,7 +377,7 @@ void main() {
       expect(results.first.motionState, MotionState.moving);
     });
 
-    test('1.3: Sinusoidal velocity noise â€” smoothedSpeed remains stable', () {
+    test('1.3: Sinusoidal velocity noise — smoothedSpeed remains stable', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(clock: clock);
 
@@ -408,7 +408,7 @@ void main() {
           buildPing(clock: clock, speed: 0),
         ], now: clock.nowUtc());
 
-        // 5 pings with impossible displacement â€” each ~55m apart
+        // 5 pings with impossible displacement — each ~55m apart
         // Within 500m threshold so they pass jump filter but reduce confidence
         double lastLat = kBaseLat;
         for (int i = 0; i < 5; i++) {
@@ -429,7 +429,7 @@ void main() {
     );
 
     test(
-      '1.5: Guincho scenario â€” speed=0, coordinates moving 400m in 2min â†’ MotionState.moving',
+      '1.5: Guincho scenario — speed=0, coordinates moving 400m in 2min â†’ MotionState.moving',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -464,7 +464,7 @@ void main() {
     );
 
     test(
-      '1.6: GPS Ruim scenario â€” accuracy=500m prevents false route violation',
+      '1.6: GPS Ruim scenario — accuracy=500m prevents false route violation',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -546,10 +546,10 @@ void main() {
     );
   });
 
-  // â”€â”€ SUÃTE 2: STATE MACHINE (TransiÃ§Ãµes Legais) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  group('SUÃTE 2: State Machine (TransiÃ§Ãµes Legais)', () {
+  // ── SUÃTE 2: STATE MACHINE (TransiçÃµes Legais) ──────────────────────────
+  group('SUÃTE 2: State Machine (TransiçÃµes Legais)', () {
     test(
-      '2.1: Valid sequence â€” moving transitions when speed drops and timer',
+      '2.1: Valid sequence — moving transitions when speed drops and timer',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -566,12 +566,12 @@ void main() {
           buildPing(clock: clock, speed: 0),
         ], now: clock.nowUtc());
 
-        // Before timer met â€” motion should NOT be stopped
+        // Before timer met — motion should NOT be stopped
         clock.advance(const Duration(seconds: 5));
         final earlyResult = normalizer.normalize([], now: clock.nowUtc()).first;
         expect(earlyResult.motionState, isNot(MotionState.stopped));
 
-        // After timer met â€” motion reflects the low-speed state
+        // After timer met — motion reflects the low-speed state
         clock.advance(const Duration(seconds: 10));
         final laterResult = normalizer.normalize([], now: clock.nowUtc()).first;
         // Smoothed speed should reflect the 0 km/h input (spatial smoother)
@@ -580,7 +580,7 @@ void main() {
     );
 
     test(
-      '2.2: Illegal jump blocked â€” low-speed timer gates stopped transition',
+      '2.2: Illegal jump blocked — low-speed timer gates stopped transition',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -590,7 +590,7 @@ void main() {
           buildPing(clock: clock, speed: 30),
         ], now: clock.nowUtc());
 
-        // Drop to low speed â€” timer starts
+        // Drop to low speed — timer starts
         clock.advance(const Duration(seconds: 6));
         normalizer.normalize([
           buildPing(clock: clock, speed: 1),
@@ -603,7 +603,7 @@ void main() {
       },
     );
 
-    test('2.3: Recovery â€” stopped â†’ moving transitions immediately', () {
+    test('2.3: Recovery — stopped â†’ moving transitions immediately', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(clock: clock);
 
@@ -662,10 +662,10 @@ void main() {
     });
   });
 
-  // â”€â”€ SUÃTE 3: CHRONOLOGICAL DETERMINISM [INV-9/10] â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── SUÃTE 3: CHRONOLOGICAL DETERMINISM [INV-9/10] ──────────────────────
   group('SUÃTE 3: Chronological Determinism [INV-9/10]', () {
     test(
-      '3.1: Determinism â€” same batch processed twice yields identical output',
+      '3.1: Determinism — same batch processed twice yields identical output',
       () {
         // Build a batch with fixed timestamps
         final pings = <VehiclePosition>[];
@@ -783,7 +783,7 @@ void main() {
       clock.advance(const Duration(seconds: 6));
       final afterLate = normalizer.normalize([latePing], now: clock.nowUtc());
 
-      // State should not be corrupted â€” stateChangedAt should not regress
+      // State should not be corrupted — stateChangedAt should not regress
       expect(afterLate, isNotEmpty);
       expect(
         afterLate.first.stateChangedAt.microsecondsSinceEpoch,
@@ -793,8 +793,8 @@ void main() {
     });
   });
 
-  // â”€â”€ SUÃTE 4: IDEMPOTENT INGEST [INV-11] + stateChangedAt IMUTABLE â”€â”€â”€â”€â”€â”€
-  group('SUÃTE 4: Idempotent Ingest [INV-11] + stateChangedAt ImutÃ¡vel', () {
+  // ── SUÃTE 4: IDEMPOTENT INGEST [INV-11] + stateChangedAt IMUTABLE ──────
+  group('SUÃTE 4: Idempotent Ingest [INV-11] + stateChangedAt Imutável', () {
     test('4.1: Exact duplicate batch produces identical states', () {
       final clock = FakeDateTimeProvider(kEpoch);
 
@@ -831,7 +831,7 @@ void main() {
     });
 
     test(
-      '4.2: Replay within debounce â€” 1 state emitted, stateChangedAt intact',
+      '4.2: Replay within debounce — 1 state emitted, stateChangedAt intact',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -861,7 +861,7 @@ void main() {
     );
 
     test(
-      '4.3: Idempotency post-gap â€” replay does not generate extra events',
+      '4.3: Idempotency post-gap — replay does not generate extra events',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -889,12 +889,12 @@ void main() {
         ], now: clock.nowUtc());
         expect(resultsReplay, hasLength(1));
 
-        // No extra events â€” just 1 state per batch
+        // No extra events — just 1 state per batch
       },
     );
 
     test(
-      '4.4: stateChangedAt IMMUTABLE â€” debounce + jump-reject must not advance',
+      '4.4: stateChangedAt IMMUTABLE — debounce + jump-reject must not advance',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -906,7 +906,7 @@ void main() {
         expect(seedResults, hasLength(1));
         final originalStateChangedAt = seedResults.first.stateChangedAt;
 
-        // Test A: debounce replay â€” must not advance stateChangedAt
+        // Test A: debounce replay — must not advance stateChangedAt
         clock.advance(const Duration(seconds: 2));
         final debounceResults = normalizer.normalize([
           buildPing(clock: clock, lat: kBaseLat, lng: kBaseLng, speed: 20),
@@ -917,7 +917,7 @@ void main() {
           reason: 'stateChangedAt must NOT advance on debounce replay',
         );
 
-        // Test B: jump rejection â€” must not advance stateChangedAt
+        // Test B: jump rejection — must not advance stateChangedAt
         clock.advance(const Duration(seconds: 6));
         final jumpResults = normalizer.normalize([
           buildPing(
@@ -936,10 +936,10 @@ void main() {
     );
   });
 
-  // â”€â”€ SUÃTE 5: DATA-DRIVEN STABILITY + BLACKOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── SUÃTE 5: DATA-DRIVEN STABILITY + BLACKOUT ──────────────────────────
   group('SUÃTE 5: Data-Driven Stability + Blackout', () {
     test(
-      '5.1: Urban trip (120 pings, 30min) â€” zero crashes, confidence > 0.7',
+      '5.1: Urban trip (120 pings, 30min) — zero crashes, confidence > 0.7',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -963,7 +963,7 @@ void main() {
     );
 
     test(
-      '5.2: Progressive degradation â€” healthy â†’ degraded â†’ signalLost',
+      '5.2: Progressive degradation — healthy â†’ degraded â†’ signalLost',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -983,7 +983,7 @@ void main() {
       },
     );
 
-    test('5.3: Multi-vehicle (5 vehicles, 200 pings) â€” total isolation', () {
+    test('5.3: Multi-vehicle (5 vehicles, 200 pings) — total isolation', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(clock: clock);
 
@@ -1014,7 +1014,7 @@ void main() {
     });
 
     test(
-      '5.4: Performance â€” 500 sequential pings processed in < 100ms (release)',
+      '5.4: Performance — 500 sequential pings processed in < 100ms (release)',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -1045,7 +1045,7 @@ void main() {
     );
 
     test(
-      '5.5: Blackout Integrity â€” V4 interpolation receives coherent from/to',
+      '5.5: Blackout Integrity — V4 interpolation receives coherent from/to',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -1059,12 +1059,12 @@ void main() {
         expect(resultA.motionState, MotionState.moving);
         final pingATimestamp = resultA.lastRawPingAt;
 
-        // 5min gap â€” no pings, replay degraded state
+        // 5min gap — no pings, replay degraded state
         clock.advance(const Duration(minutes: 5));
         final gapResult = normalizer.normalize([], now: clock.nowUtc()).first;
         expect(gapResult.connectivityState, ConnectivityState.signalLost);
 
-        // Ping B at T+5min â€” gap-recovery detection, slightly different position
+        // Ping B at T+5min — gap-recovery detection, slightly different position
         clock.advance(const Duration(seconds: 6));
         final resultB = normalizer.normalize([
           buildPing(
@@ -1082,7 +1082,7 @@ void main() {
           greaterThan(pingATimestamp.microsecondsSinceEpoch),
         );
 
-        // Ping C at T+5min+12s â€” recovery (gap from B = 6s < 30s â†’ healthy)
+        // Ping C at T+5min+12s — recovery (gap from B = 6s < 30s â†’ healthy)
         clock.advance(const Duration(seconds: 6));
         final resultC = normalizer.normalize([
           buildPing(
@@ -1098,7 +1098,7 @@ void main() {
           greaterThan(resultB.lastRawPingAt.microsecondsSinceEpoch),
         );
 
-        // Positions are coherent â€” spatial smoothing blends A and B
+        // Positions are coherent — spatial smoothing blends A and B
         // B's position should be between A and the raw B target
         expect(resultB.latitude, closeTo(kBaseLat + 0.0005, 0.001));
         expect(resultC.latitude, closeTo(kBaseLat + 0.0015, 0.001));
@@ -1106,10 +1106,10 @@ void main() {
     );
   });
 
-  // â”€â”€ SUÃTE 6: V4 INTERPOLATION COMPATIBILITY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── SUÃTE 6: V4 INTERPOLATION COMPATIBILITY ────────────────────────────
   group('SUÃTE 6: V4 Interpolation Compatibility', () {
     test(
-      '6.1: Trajectory interpolable post-blackout â€” connectivity restores',
+      '6.1: Trajectory interpolable post-blackout — connectivity restores',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -1142,7 +1142,7 @@ void main() {
     );
 
     test(
-      '6.2: Geofence phantom â€” normalizer delivers clean states, V4 detects',
+      '6.2: Geofence phantom — normalizer delivers clean states, V4 detects',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -1182,14 +1182,14 @@ void main() {
             )
             .first;
 
-        // Normalizer delivers clean states â€” it's V4's job to detect passage
+        // Normalizer delivers clean states — it's V4's job to detect passage
         expect(resultB.motionState, MotionState.moving);
         expect(resultB.routeAdherence, RouteAdherence.offRoute);
       },
     );
 
     test(
-      '6.3: Sequential gap-fill â€” A â†’ gap â†’ B â†’ C, no spurious replay',
+      '6.3: Sequential gap-fill — A â†’ gap â†’ B â†’ C, no spurious replay',
       () {
         final clock = FakeDateTimeProvider(kEpoch);
         final normalizer = makeNormalizer(clock: clock);
@@ -1208,7 +1208,7 @@ void main() {
           ConnectivityState.signalLost,
         );
 
-        // Ping B (recovery) â€” gap from A = 2min > 90s â†’ signalLost
+        // Ping B (recovery) — gap from A = 2min > 90s â†’ signalLost
         clock.advance(const Duration(seconds: 6));
         final resultB = normalizer.normalize([
           buildPing(clock: clock, speed: 20),

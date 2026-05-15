@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
+import 'package:veraprob/presentation/shared/ui/info_tooltip.dart';
 
 Widget _buildSubject(InfoTooltip widget, {ThemeData? theme}) {
   return MaterialApp(

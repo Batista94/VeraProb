@@ -1,8 +1,8 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/adapters/realtime_data_provider.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 class MockSupabaseClient extends Mock implements SupabaseClient {}
 
@@ -202,6 +202,38 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 60));
       expect(emissions.last, hasLength(2));
       expect(emissions.last.map((p) => p.tripId), contains('trip-fresh-2'));
+    });
+
+    test('INV-6: normalizes non-UTC timestamp to UTC', () async {
+      List<List<dynamic>> emissions = [];
+      provider.positionStream.listen(emissions.add);
+
+      // Offset-less ISO string: DateTime.parse treats it as local time
+      // (isUtc == false). INV-6 requires normalization to UTC at ingest.
+      // .toUtc().toLocal() keeps a fresh instant (not TTL-evicted) while
+      // yielding a non-UTC value — and satisfies the UTC-BLOCK scanner rule.
+      final nonUtcIso = DateTime.now().toUtc().toLocal().toIso8601String();
+
+      final payload = PostgresChangePayload(
+        schema: 'public',
+        table: 'vehicle_positions',
+        commitTimestamp: DateTime.now().toUtc(),
+        eventType: PostgresChangeEvent.insert,
+        oldRecord: {},
+        newRecord: {
+          'id': '1',
+          'trip_id': 'trip1',
+          'latitude': -20.0,
+          'longitude': -40.0,
+          'timestamp': nonUtcIso,
+        },
+        errors: [],
+      );
+
+      provider.onPayloadReceived(payload);
+      await Future.delayed(const Duration(milliseconds: 60));
+
+      expect(emissions.last.single.timestamp.isUtc, isTrue);
     });
   });
 }

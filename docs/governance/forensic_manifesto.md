@@ -51,6 +51,9 @@
 26. **[INV-26] Error Parity**: Security-sensitive endpoints MUST return identical status codes (404 Not Found) and error messages for both 'Resource Not Found' and 'Resource Owned by Another Org' to prevent data inference (Oracle Attacks).
 27. **[INV-27] Origin Ownership**: Operations involving source-to-destination logic (e.g., Cloning, Transfers) MUST verify ownership of the source resource before execution, treating unauthorized source IDs as non-existent (404).
 
+## VII. Operational Availability
+28. **[INV-DB] Zero-Downtime (Availability)**: Database migrations MUST NOT use blocking operations (`SET NOT NULL` directly, `DROP TABLE`, `TRUNCATE`) on production tables. Use non-blocking `CHECK CONSTRAINTS` and concurrent validation to ensure 100% platform uptime during schema updates.
+
 ---
 
 > [!TIP]

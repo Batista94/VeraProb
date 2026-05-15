@@ -2,10 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:veraprob/core/config/environment.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:veraprob/core/services/logger_service.dart';
+import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';

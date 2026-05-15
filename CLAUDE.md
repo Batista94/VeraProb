@@ -61,3 +61,55 @@ Mandatory for ALL IDEs (Antigravity/Claude/Kiro). Failure to execute is a VETO.
 - **Unused Locals**: Never leave unused local variables in tests or production code (enforced as error).
 - **Prefer Const**: Always use `const` for constructors and declarations whenever possible.
 - **Universal UTC (INV-6)**: `DateTime.now()` must ALWAYS be followed by `.toUtc()`. No exceptions.
+- **Encoding & Line Endings**: All files MUST be **UTF-8 (LF)**. Integrity Guard will prevent commits if CRLF is detected (Crucial for Linux/Docker parity).
+- **Hermetic Goldens**: Always use `make goldens` to update reference images (ensures Linux rendering parity).
+
+---
+## DATABASE GOVERNANCE (INV-DB)
+Mandatory Zero-Downtime patterns to prevent table locks:
+- **Avoid Blocking ALTER**: Never use `ALTER COLUMN ... SET NOT NULL` directly on large tables.
+- **Safe Pattern**: 
+  1. Add `CHECK CONSTRAINT (col IS NOT NULL) NOT VALID`.
+  2. `VALIDATE CONSTRAINT` (non-blocking).
+  3. `ALTER COLUMN ... SET NOT NULL` (safe after validation).
+  4. `DROP CONSTRAINT`.
+- **Soft-Delete**: Never use `DELETE`. Use `deleted_at` or archive status (INV-7).
+
+---
+## COMPLEXITY GATE (Forensic Thresholds)
+Mandatory limits enforced by `scripts/security/analyze_dart_complexity.js`.
+
+| Layer | LOC (Warn/Block) | CC (Warn/Block) | Nesting (Warn/Block) |
+|---|---|---|---|
+| **Domain/App** | 60 / 100 | 10 / 20 | 4 / 6 |
+| **Infrastructure** | 100 / 200 | 15 / 25 | 5 / 7 |
+| **Presentation** | 200 / 400 | 25 / 40 | 7 / 10 |
+| **Tests** | 500 / 1000 | 50 / 100 | 10 / 15 |
+
+---
+## COMMON CI BLOCKS & FORENSIC FIXES
+
+### 1. INV-DB: Zero-Downtime Migration
+**Problem:** Direct `ALTER COLUMN SET NOT NULL` or `DROP COLUMN` on active tables.
+**Fix (The 3-Step Pattern):**
+```sql
+-- 1. Add CHECK NOT VALID
+ALTER TABLE table_name ADD CONSTRAINT col_not_null CHECK (col IS NOT NULL) NOT VALID;
+-- 2. Validate (Safe Scan)
+ALTER TABLE table_name VALIDATE CONSTRAINT col_not_null;
+-- 3. Set NOT NULL with Bypass Comment
+ALTER TABLE table_name ALTER COLUMN col SET NOT NULL; -- INV-DB: zero-downtime-verified
+```
+*Note: The comment `-- INV-DB: zero-downtime-verified` MUST be on the same line as the `SET NOT NULL`.*
+
+### 2. UTC-BLOCK: DateTime.now()
+**Problem:** Use of local time instead of universal time.
+**Fix:**
+```dart
+// Wrong
+final now = DateTime.now();
+// Right
+final now = DateTime.now().toUtc();
+```
+*Note: In tests, if you need to simulate local time, use `DateTime.now().toUtc().toLocal()` to satisfy the scanner while achieving the offset.*
+

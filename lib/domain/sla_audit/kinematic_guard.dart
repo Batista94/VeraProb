@@ -1,4 +1,4 @@
-import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/domain/shared/geo_math.dart';
 import 'canonical_fact.dart';
 import 'kinematic_validation_result.dart';
 

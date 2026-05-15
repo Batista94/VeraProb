@@ -17,7 +17,7 @@ import 'package:veraprob/application/sla_audit/justification/evidence_validation
     as _i4;
 import 'package:veraprob/application/sla_audit/justification/xss_input_sanitizer.dart'
     as _i2;
-import 'package:veraprob/core/utils/date_time_provider.dart' as _i10;
+import 'package:veraprob/domain/shared/date_time_provider.dart' as _i10;
 import 'package:veraprob/domain/enums/user_permissions.dart' as _i9;
 import 'package:veraprob/domain/enums/user_role.dart' as _i8;
 import 'package:veraprob/domain/services/rbac_service.dart' as _i7;

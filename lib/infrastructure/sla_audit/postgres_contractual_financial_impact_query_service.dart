@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// Postgres implementation for [ContractualFinancialImpactQueryService].
 /// Extracts financial impact projection directly from `contractual_financial_snapshot`.
@@ -32,7 +32,7 @@ class ContractualFinancialImpactQueryServicePostgres
       query = query.isFilter('contract_id', null);
     }
 
-    // Application layer provides the temporal window â€” infrastructure only maps it to Postgres.
+    // Application layer provides the temporal window — infrastructure only maps it to Postgres.
     if (startUtc != null) {
       query = query.gte(
         'operational_date_utc',
@@ -104,8 +104,8 @@ class ContractualFinancialImpactQueryServicePostgres
       protectedRevenue: (latest['protected_revenue_cents'] as num).toInt(),
       revenueAtRisk: (latest['revenue_at_risk_cents'] as num).toInt(),
       lostRevenue: lostRevenueCents,
-      riskPercentageBps: (latest['risk_percentage'] as num).toInt(),
-      lossPercentageBps: (latest['loss_percentage'] as num).toInt(),
+      riskPercentageBps: latest['risk_percentage_bps'] as int,
+      lossPercentageBps: latest['loss_percentage_bps'] as int,
       marginErosionBps: marginErosionBps,
     );
   }

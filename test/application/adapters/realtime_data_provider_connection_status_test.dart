@@ -1,8 +1,8 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/adapters/realtime_data_provider.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 class MockSupabaseClient extends Mock implements SupabaseClient {}
 
@@ -80,7 +80,7 @@ void main() {
       await subscription.cancel();
     });
 
-    test('getter status retorna Ãºltimo valor emitido', () async {
+    test('getter status retorna último valor emitido', () async {
       // Arrange & Act
       expect(provider.status, ConnectionStatus.disconnected);
 

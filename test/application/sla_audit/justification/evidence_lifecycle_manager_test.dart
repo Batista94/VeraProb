@@ -14,7 +14,7 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_lifecycle_manager.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────

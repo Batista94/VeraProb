@@ -29,8 +29,8 @@ const ROOT = join(__dirname, '..', '..');
 const USERS = [
   {
     id: '00000000-0000-0000-0000-ffffffffffff',
-    email: 'master@veraprob.dev',
-    password: 'veraprob123!',
+    email: 'master@veraprob.dev', // [PUBLIC-TEST-CREDENTIAL]
+    password: 'veraprob123!',    // [PUBLIC-TEST-CREDENTIAL]
     label: 'SuperAdmin',
     isSuper: true,
   },

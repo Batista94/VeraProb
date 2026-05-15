@@ -34,6 +34,7 @@ void main() {
       noShowCount: noShow,
       evidenceGapCount: gap,
       lastLedgerEntryId: 'ledger-entry-1',
+      engineVersion: 'veraprob-core_v4-test',
     );
   }
 

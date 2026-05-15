@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/adapters/realtime_data_provider.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 class MockSupabaseClient extends Mock implements SupabaseClient {}
 
@@ -38,8 +38,8 @@ void main() {
     when(() => mockChannel.unsubscribe()).thenAnswer((_) async => 'ok');
   });
 
-  group('ReconexÃ£o com Exponential Backoff + Jitter', () {
-    test('erro no subscribe agenda reconexÃ£o automÃ¡tica', () {
+  group('Reconexão com Exponential Backoff + Jitter', () {
+    test('erro no subscribe agenda reconexão automática', () {
       fakeAsync((async) {
         // Arrange
         final provider = RealtimeDataProvider(mockDateTime, mockClient);
@@ -55,14 +55,14 @@ void main() {
           return mockChannel; // Segunda tentativa sucede
         });
 
-        // Act - primeira tentativa falha, mas nÃ£o lanÃ§a exceÃ§Ã£o (capturada internamente)
+        // Act - primeira tentativa falha, mas não lança exceção (capturada internamente)
         provider.connect();
         async.flushMicrotasks();
 
         // Assert - deve ter emitido connecting
         expect(statuses, contains(ConnectionStatus.connecting));
 
-        // AvanÃ§ar tempo para trigger reconexÃ£o (1s base + jitter ~100ms)
+        // Avançar tempo para trigger reconexão (1s base + jitter ~100ms)
         async.elapse(const Duration(milliseconds: 1200));
 
         // Assert - deve ter tentado reconectar
@@ -117,7 +117,7 @@ void main() {
           // Assert - verificar que houve 7 tentativas (1 inicial + 6 reconexÃµes)
           expect(subscribeCallCount, equals(7));
 
-          // Verificar intervalos aproximados (com tolerÃ¢ncia para jitter Â±100ms)
+          // Verificar intervalos aproximados (com tolerância para jitter Â±100ms)
           final intervals = <int>[];
           for (int i = 1; i < reconnectTimestamps.length; i++) {
             intervals.add(reconnectTimestamps[i] - reconnectTimestamps[i - 1]);
@@ -137,7 +137,7 @@ void main() {
       },
     );
 
-    test('jitter adiciona variaÃ§Ã£o de Â±100ms no delay', () {
+    test('jitter adiciona variação de Â±100ms no delay', () {
       fakeAsync((async) {
         // Arrange
         final provider = RealtimeDataProvider(mockDateTime, mockClient);
@@ -148,7 +148,7 @@ void main() {
           subscribeCallCount++;
           reconnectTimestamps.add(async.elapsed.inMilliseconds);
 
-          // Sempre falhar para forÃ§ar reconexÃµes
+          // Sempre falhar para forçar reconexÃµes
           throw Exception('Connection failed');
         });
 
@@ -156,33 +156,33 @@ void main() {
         provider.connect();
         async.flushMicrotasks();
 
-        // Simular apenas 3 tentativas para observar jitter na primeira reconexÃ£o
+        // Simular apenas 3 tentativas para observar jitter na primeira reconexão
         for (int i = 0; i < 3; i++) {
           async.elapse(const Duration(milliseconds: 1200));
         }
 
-        // Assert - verificar que houve mÃºltiplas tentativas
+        // Assert - verificar que houve múltiplas tentativas
         expect(subscribeCallCount, greaterThanOrEqualTo(3));
 
-        // Calcular intervalo da PRIMEIRA reconexÃ£o (entre tentativa 0 e 1)
+        // Calcular intervalo da PRIMEIRA reconexão (entre tentativa 0 e 1)
         if (reconnectTimestamps.length >= 2) {
           final firstInterval = reconnectTimestamps[1] - reconnectTimestamps[0];
 
-          // Primeira reconexÃ£o deve ter delay de ~1000ms Â± 100ms (jitter)
+          // Primeira reconexão deve ter delay de ~1000ms Â± 100ms (jitter)
           expect(
             firstInterval,
             inInclusiveRange(900, 1300),
-            reason: 'Primeira reconexÃ£o deve ter delay de ~1s Â± jitter',
+            reason: 'Primeira reconexão deve ter delay de ~1s Â± jitter',
           );
         }
 
-        // Verificar que hÃ¡ variaÃ§Ã£o nos timestamps (jitter estÃ¡ funcionando)
+        // Verificar que há variação nos timestamps (jitter está funcionando)
         final uniqueTimestamps = reconnectTimestamps.toSet();
         expect(
           uniqueTimestamps.length,
           equals(reconnectTimestamps.length),
           reason:
-              'Cada tentativa deve ter timestamp Ãºnico (jitter funcionando)',
+              'Cada tentativa deve ter timestamp único (jitter funcionando)',
         );
       });
     });
@@ -202,7 +202,7 @@ void main() {
         provider.connect();
         async.flushMicrotasks();
 
-        // AvanÃ§ar tempo para trigger reconexÃ£o
+        // Avançar tempo para trigger reconexão
         async.elapse(const Duration(milliseconds: 1200));
 
         // Assert
@@ -211,7 +211,7 @@ void main() {
       });
     });
 
-    test('tentativas resetam apÃ³s conexÃ£o bem-sucedida', () {
+    test('tentativas resetam após conexão bem-sucedida', () {
       fakeAsync((async) {
         // Arrange
         final provider = RealtimeDataProvider(mockDateTime, mockClient);
@@ -231,13 +231,13 @@ void main() {
         // Act - primeira tentativa falha, segunda sucede
         provider.connect();
         async.flushMicrotasks();
-        async.elapse(const Duration(milliseconds: 1200)); // ReconexÃ£o sucede
+        async.elapse(const Duration(milliseconds: 1200)); // Reconexão sucede
 
         // Desconectar
         provider.disconnect();
         async.flushMicrotasks();
 
-        // Resetar contador para nova sessÃ£o
+        // Resetar contador para nova sessão
         subscribeCallCount = 0;
         reconnectTimestamps.clear();
 
@@ -251,7 +251,7 @@ void main() {
           return mockChannel;
         });
 
-        // Reconectar - deve comeÃ§ar do zero (delay de ~1s, nÃ£o ~2s)
+        // Reconectar - deve começar do zero (delay de ~1s, não ~2s)
         provider.connect();
         async.flushMicrotasks();
         async.elapse(const Duration(milliseconds: 1200));
@@ -262,12 +262,12 @@ void main() {
         expect(
           interval,
           inInclusiveRange(900, 1300),
-          reason: 'ApÃ³s reset, delay deve ser ~1s (nÃ£o ~2s)',
+          reason: 'Após reset, delay deve ser ~1s (não ~2s)',
         );
       });
     });
 
-    test('circuit breaker para apÃ³s 15 tentativas e emite status failed', () {
+    test('circuit breaker para após 15 tentativas e emite status failed', () {
       fakeAsync((async) {
         // Arrange
         final provider = RealtimeDataProvider(mockDateTime, mockClient);
@@ -286,12 +286,10 @@ void main() {
 
         // Simular 15 reconexÃµes (circuit breaker deve parar)
         for (int i = 0; i < 15; i++) {
-          async.elapse(
-            const Duration(seconds: 35),
-          ); // AvanÃ§ar tempo suficiente
+          async.elapse(const Duration(seconds: 35)); // Avançar tempo suficiente
         }
 
-        // Assert - deve ter parado apÃ³s 15 tentativas
+        // Assert - deve ter parado após 15 tentativas
         expect(
           subscribeCallCount,
           lessThanOrEqualTo(16),

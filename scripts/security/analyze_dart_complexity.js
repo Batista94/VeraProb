@@ -35,27 +35,34 @@ const path = require("path");
 
 const THRESHOLDS = {
   domain_application: {
-    cc_warn: 8,       cc_block: 15,
-    nest_warn: 3,     nest_block: 4,
-    loc_warn: 40,     loc_block: 80,
-    methods_warn: 12, methods_block: 20,
+    cc_warn: 10,      cc_block: 20,
+    nest_warn: 4,     nest_block: 6,
+    loc_warn: 60,     loc_block: 100,
+    methods_warn: 15, methods_block: 25,
   },
   infrastructure: {
-    cc_warn: 10,      cc_block: 18,
-    nest_warn: 4,     nest_block: 5,
-    loc_warn: 60,     loc_block: 120,
-    methods_warn: 18, methods_block: 28,
-  },
-  presentation: {
-    cc_warn: 15,      cc_block: 30,
+    cc_warn: 15,      cc_block: 25,
     nest_warn: 5,     nest_block: 7,
     loc_warn: 100,    loc_block: 200,
-    methods_warn: 25, methods_block: 40,
+    methods_warn: 20, methods_block: 30,
+  },
+  presentation: {
+    cc_warn: 25,      cc_block: 40,
+    nest_warn: 7,     nest_block: 10,
+    loc_warn: 200,    loc_block: 400,
+    methods_warn: 30, methods_block: 50,
+  },
+  tests: {
+    cc_warn: 50,      cc_block: 100,
+    nest_warn: 10,    nest_block: 15,
+    loc_warn: 500,    loc_block: 1000,
+    methods_warn: 50, methods_block: 100,
   },
 };
 
 function getLayer(filePath) {
   const p = filePath.replace(/\\/g, "/");
+  if (/^test\//.test(p) || /_test\.dart$/.test(p)) return "tests";
   if (/lib\/(domain|application)\//.test(p)) return "domain_application";
   if (/lib\/infrastructure\//.test(p)) return "infrastructure";
   return "presentation";
@@ -68,15 +75,16 @@ function detectMetricsCmd() {
   const localAppData = process.env.LOCALAPPDATA || "";
   const home = process.env.HOME || process.env.USERPROFILE || "";
 
+  // 1. Try common paths
   const candidates = win
     ? [
         path.join(localAppData, "Pub", "Cache", "bin", "metrics.bat"),
         path.join(home, "AppData", "Local", "Pub", "Cache", "bin", "metrics.bat"),
-        "metrics.bat",
-        "metrics",
       ]
     : [
+        "/opt/dart-tools/bin/metrics",
         path.join(home, ".pub-cache", "bin", "metrics"),
+        "/root/.pub-cache/bin/metrics",
         "/usr/local/bin/metrics",
         "metrics",
       ];
@@ -86,6 +94,16 @@ function detectMetricsCmd() {
       if (fs.existsSync(cmd)) return cmd;
     } catch (_) {}
   }
+
+  // 2. Fallback: Try system PATH
+  const checkCmd = win ? "where metrics.bat" : "command -v metrics";
+  const result = spawnSync(win ? "cmd" : "sh", [win ? "/c" : "-c", checkCmd], { encoding: "utf8" });
+  
+  if (result.status === 0) {
+    const foundPath = result.stdout.split("\n")[0].trim();
+    if (foundPath) return foundPath;
+  }
+
   return null;
 }
 

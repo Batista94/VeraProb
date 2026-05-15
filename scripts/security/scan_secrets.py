@@ -35,9 +35,9 @@ NC     = "\033[0m"
 TARGET_EXTENSIONS = {".dart", ".sql", ".ts", ".env", ".json", ".yaml", ".yml", ".py", ".sh"}
 
 WHITELIST_PATHS = [
-    "test/", "tests/", "mock/", "mocks/",
+    "test/", "forensic_records/", "mock/", "mocks/",
     "pubspec.lock", ".env.example", "package-lock.json",
-    "tests/security/dirty_secrets_test/",  # test fixtures are exempt
+    "forensic_records/security/dirty_secrets_test/",  # test fixtures are exempt
 ]
 
 # Audit log location (never committed)
@@ -114,7 +114,7 @@ def get_current_branch() -> str:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True, check=True
+            capture_output=True, text=True, check=True, encoding='utf-8'
         )
         return result.stdout.strip()
     except Exception:
@@ -130,7 +130,7 @@ def is_protected_context() -> bool:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
-            capture_output=True, text=True
+            capture_output=True, text=True, encoding='utf-8'
         )
         return result.returncode == 0  # tracking remote -> PR candidate
     except Exception:
@@ -142,7 +142,7 @@ def get_staged_files() -> list[str]:
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only"],
-            capture_output=True, text=True, check=True
+            capture_output=True, text=True, check=True, encoding='utf-8'
         )
         return [f.strip() for f in result.stdout.splitlines() if f.strip()]
     except Exception:
@@ -154,7 +154,7 @@ def get_staged_content(filepath: str) -> list[str]:
     try:
         result = subprocess.run(
             ["git", "show", f":{filepath}"],
-            capture_output=True, text=True, check=True
+            capture_output=True, text=True, check=True, encoding='utf-8'
         )
         return result.stdout.splitlines()
     except Exception:

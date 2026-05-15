@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
-import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/domain/shared/geo_math.dart';
 import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/domain/shared/money.dart';
@@ -91,7 +91,7 @@ class ContractualEvaluationEngine {
     return plan.ruleSnapshot;
   }
 
-  // â”€â”€ Method 1: Process Vehicle Telemetry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Method 1: Process Vehicle Telemetry ─────────────────
 
   Future<void> processVehicleState(
     VehicleOperationalState vehicleState, {
@@ -99,12 +99,11 @@ class ContractualEvaluationEngine {
     DateTime? receivedAtUtc,
     required String organizationId,
   }) async {
-    // INV-18: Input validation â€” reject corrupted telemetry before any processing.
+    // INV-18: Input validation — reject corrupted telemetry before any processing.
     if (vehicleState.vehicleId.isEmpty) {
       throw const SlaEvaluationException('vehicleId is required');
     }
     // INV-12: Strictly use Event Time (gps_timestamp) for evaluation.
-    // Falls back to processing time only if override [nowUtc] is provided.
     final now = nowUtc ?? vehicleState.lastRawPingAt;
 
     final activeStates = await _executionRepo.findActiveInWindow(
@@ -120,298 +119,430 @@ class ContractualEvaluationEngine {
     );
 
     for (final state in eligible) {
-      final rules = await _getRuleSnapshot(
-        state.contractId,
-        state.planVersion,
-        state.organizationId,
-      );
-
-      // Grace period: skip SETs whose buffer window has not yet elapsed.
-      // Grace period is read from the cached plan's shift patterns (Challenger approach â€”
-      // no schema migration required). When all patterns share the same value, that value
-      // is used. When patterns differ, we fall back to 0 (most conservative â€” engine
-      // starts checking immediately, no false passes).
-      final cacheKey = '${state.contractId}_${state.planVersion}';
-      final gracePeriodMinutes = _getGracePeriodMinutes(_planCache[cacheKey]);
-      if (gracePeriodMinutes > 0 &&
-          now.isBefore(
-            state.windowStartUtc.add(Duration(minutes: gracePeriodMinutes)),
-          )) {
-        continue;
-      }
-
-      // INV-12: 48h Late-Arrival Enforcement.
-      // When receivedAtUtc is provided (only for lateArrival facts), enforce the
-      // 48h reprocessing window. noShow and evidenceGap states past the cutoff
-      // are final â€” the verdict cannot be overturned by a late fact.
-      if (receivedAtUtc != null &&
-          (state.status == ExecutionStatus.failed ||
-              state.status == ExecutionStatus.completedWithGaps)) {
-        if (!LateArrivalWindowPolicy.isWithinReprocessingWindow(
-          windowEndUtc: state.windowEndUtc,
-          receivedAtUtc: receivedAtUtc,
-        )) {
-          continue;
-        }
-      }
-
-      // GPS Quality Filter: skip low-confidence / high-uncertainty pings.
-      if (_isLowQualityPing(vehicleState, state)) continue;
-
-      // INV-15: Inhibit evaluation if asset is in maintenance or offDuty.
-      // Defense-in-depth â€” pipeline already checks, engine confirms.
-      if (_assetStatusRepo != null) {
-        final assetStatus = await _assetStatusRepo.getCurrentStatus(
-          assetId: vehicleState.vehicleId,
-          organizationId: organizationId,
-        );
-        if (assetStatus == AssetStatus.maintenance ||
-            assetStatus == AssetStatus.offDuty) {
-          final inhibitionEntry = SlaLedgerEntry(
-            organizationId: state.organizationId,
-            type: 'MAINTENANCE_INHIBITED',
-            setId: state.setId,
-            contractId: state.contractId,
-            planVersion: state.planVersion,
-            occurredAtUtc: now,
-            payload: MaintenanceInhibitionEvidence(
-              vehicleStatusAtEvaluation: assetStatus.name,
-              inhibitionReason: 'MAINTENANCE_INHIBITION',
-            ).toJson(),
-          );
-          await _ledgerRepo.append(inhibitionEntry);
-          continue;
-        }
-      }
-
-      // Deterministic deterministic execution order
-      final sortedRules = rules.rules.toList()
-        ..sort((a, b) {
-          final cmp = a.evaluationOrder.compareTo(b.evaluationOrder);
-          return cmp != 0 ? cmp : a.ruleId.compareTo(b.ruleId);
-        });
-
-      int requiredDwell = 30; // Default fallback
-      final List<EvaluationDecision> decisions = [];
-
-      for (final rule in sortedRules) {
-        if (rule.ruleType == SlaRuleType.minGeofenceCoverage) {
-          final dwellParam = rule.config['min_dwell_seconds'];
-          if (dwellParam is int) requiredDwell = dwellParam;
-
-          decisions.add(
-            EvaluationDecision(
-              ruleId: rule.ruleId,
-              ruleType: rule.ruleType.value,
-              ruleVersion: rule.ruleVersion,
-              rulePriority: rule.evaluationOrder,
-              outcome: 'EVALUATED_DWELL_REQUIREMENT',
-              evidence: DwellRequirementEvidence(
-                requiredDwellSeconds: requiredDwell,
-                parameterSource: 'rule_config',
-              ),
-            ),
-          );
-        } else if (rule.ruleType == SlaRuleType.excessiveSpeed) {
-          final maxSpeed = rule.config['max_speed_kmh'] as num?;
-          final currentSpeed = vehicleState.smoothedSpeed;
-          if (maxSpeed != null && currentSpeed > maxSpeed) {
-            int fineCents = rule.config['fine_cents'] as int? ?? 150000;
-            // INV: Severidade nunca ultrapassa 100 BPS (1%) do valor do contrato
-            final maxCents = state.contractualValue.multiplyByBps(100).cents;
-            if (fineCents > maxCents) fineCents = maxCents;
-
-            final verdictEvidence = VerdictEvidence.create(
-              clauseRef: rule.ruleId,
-              ruleId: rule.ruleId,
-              ruleVersion: rule.ruleVersion,
-              primaryEvidenceLat: vehicleState.latitude,
-              primaryEvidenceLng: vehicleState.longitude,
-              primaryEvidenceTimestampUtc: now,
-              deltaValue: currentSpeed - maxSpeed.toDouble(),
-              thresholdValue: maxSpeed.toDouble(),
-              fineCents: Money(fineCents),
-              confidenceScore: 98,
-            );
-
-            // INV-11: Idempotency guard â€” skip if identical evidence_hash already in ledger.
-            final existingEntries = await _ledgerRepo.getEntriesBySetId(
-              state.setId,
-              organizationId: state.organizationId,
-            );
-            final alreadyRecorded = existingEntries.any((e) {
-              if (e.type != 'SANCTION_RECOMMENDED') return false;
-              final ev = e.payload['verdict_evidence'] as Map<String, dynamic>?;
-              return ev?['evidence_hash'] == verdictEvidence.evidenceHash;
-            });
-            if (alreadyRecorded) continue;
-
-            final recommendedEvent = SanctionRecommendedEvent(
-              organizationId: state.organizationId,
-              occurredAtUtc: now,
-              setId: state.setId,
-              contractId: state.contractId,
-              planVersion: state.planVersion,
-              verdictEvidence: verdictEvidence,
-            );
-
-            await _ledgerRepo.append(
-              SlaLedgerMapper.mapToEntry(recommendedEvent),
-            );
-
-            decisions.add(
-              EvaluationDecision(
-                ruleId: rule.ruleId,
-                ruleType: rule.ruleType.value,
-                ruleVersion: rule.ruleVersion,
-                rulePriority: rule.evaluationOrder,
-                outcome: 'SANCTION_RECOMMENDED',
-                evidence: SpeedViolationEvidence(
-                  actualSpeedKmh: currentSpeed,
-                  limitSpeedKmh: maxSpeed.toDouble(),
-                ),
-              ),
-            );
-          }
-        } else if (rule.ruleType == SlaRuleType.maxToleranceDelay) {
-          final toleranceMinutes =
-              rule.config['delay_tolerance_minutes'] as int? ?? 0;
-          final penaltyPerMinuteCents =
-              rule.config['penalty_per_minute_cents'] as int? ?? 0;
-          final maxCapCents = rule.config['max_penalty_cap_cents'] as int?;
-
-          final toleranceSeconds = toleranceMinutes * 60;
-          final delay = now.difference(state.windowStartUtc);
-          if (delay.inSeconds <= toleranceSeconds) continue;
-
-          final billableMinutes = ((delay.inSeconds - toleranceSeconds) / 60)
-              .ceil();
-          if (billableMinutes <= 0) continue;
-
-          final delayMinutes = delay.inMinutes;
-
-          final grossCents = billableMinutes * penaltyPerMinuteCents;
-          final finalCents = maxCapCents != null
-              ? grossCents.clamp(0, maxCapCents)
-              : grossCents;
-
-          decisions.add(
-            EvaluationDecision(
-              ruleId: rule.ruleId,
-              ruleType: rule.ruleType.value,
-              ruleVersion: rule.ruleVersion,
-              rulePriority: rule.evaluationOrder,
-              outcome: 'DELAY_PENALTY_ASSESSED',
-              evidence: DelayPenaltyEvidence(
-                delayMinutes: delayMinutes,
-                toleranceMinutes: toleranceMinutes,
-                billableMinutes: billableMinutes,
-                grossPenaltyCents: grossCents,
-                finalPenaltyCents: finalCents,
-                capApplied: maxCapCents != null && grossCents > maxCapCents,
-              ),
-            ),
-          );
-        }
-      }
-
-      final distance = GeoMath.haversineMeters(
-        vehicleState.latitude,
-        vehicleState.longitude,
-        state.startLatitude,
-        state.startLongitude,
-      );
-
-      final tracking = _firstEntryTimestamps.containsKey(state.setId);
-      final insideGeofence = _isInsideWithHysteresis(
-        distance,
-        state.startRadiusMeters,
-        tracking,
-      );
-
-      if (insideGeofence) {
-        final firstEntry = _firstEntryTimestamps.putIfAbsent(
-          state.setId,
-          () => now,
-        );
-
-        // FSM: transition planned → inTransit on first geofence entry (first-wins).
-        // startTransit is idempotent — no-op if already inTransit.
-        if (!tracking && state.status == ExecutionStatus.planned) {
-          state.startTransit(timestampUtc: firstEntry, source: 'geofence');
-          // Persist TRANSIT_STARTED to ledger immediately — the aggregate is
-          // reloaded from DB on the next tick, which would lose in-memory events.
-          for (final event in state.domainEvents) {
-            await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(event));
-          }
-          await _executionRepo.save(state);
-          state.clearDomainEvents();
-        }
-
-        if (now.isBefore(firstEntry)) continue;
-
-        final dwellDuration = now.difference(firstEntry);
-
-        if (dwellDuration.inSeconds >= requiredDwell) {
-          // If already executed (from a previous fact), nothing to do.
-          if (state.status == ExecutionStatus.completed) continue;
-
-          state.bindExecution(
-            vehicleId: vehicleState.vehicleId,
-            latitude: vehicleState.latitude,
-            longitude: vehicleState.longitude,
-            timestampUtc: now,
-          );
-
-          // Generate outcome decision
-          decisions.add(
-            EvaluationDecision(
-              ruleId: 'engine-core',
-              ruleType: 'BIND_EXECUTION',
-              ruleVersion: 1,
-              rulePriority: 999,
-              outcome: 'PASS',
-              evidence: GeofenceBindingEvidence(
-                distanceMeters: distance,
-                allowedRadiusMeters: state.startRadiusMeters,
-                actualDwellSeconds: dwellDuration.inSeconds,
-                requiredDwellSeconds: requiredDwell,
-              ),
-            ),
-          );
-
-          await _commitEvaluationResults(state, now, decisions);
-          _firstEntryTimestamps.remove(state.setId);
-        }
-      } else {
-        final firstEntry = _firstEntryTimestamps[state.setId];
-        if (firstEntry != null && now.isAfter(firstEntry)) {
-          _firstEntryTimestamps.remove(state.setId);
-        }
-
-        // Check for interpolated passage (vehicle passed through geofence
-        // between two outside pings)
-        _checkInterpolatedPassage(vehicleState, state, now, decisions);
-      }
-
-      // Always update last known position (after all checks)
-      _lastPositions[state.setId] = (
-        lat: vehicleState.latitude,
-        lng: vehicleState.longitude,
+      await _evaluateSingleExecution(
+        state,
+        vehicleState,
+        now,
+        receivedAtUtc,
+        organizationId,
       );
     }
   }
 
-  // â”€â”€ Method 2: Sweep Expired Obligations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Per-State Orchestrator ─────────────────────────────────
 
+  Future<void> _evaluateSingleExecution(
+    ContractualExecutionState state,
+    VehicleOperationalState vehicleState,
+    DateTime now,
+    DateTime? receivedAtUtc,
+    String organizationId,
+  ) async {
+    final rules = await _getRuleSnapshot(
+      state.contractId,
+      state.planVersion,
+      state.organizationId,
+    );
+
+    // Grace period guard clause
+    final cacheKey = '${state.contractId}_${state.planVersion}';
+    final gracePeriodMinutes = _getGracePeriodMinutes(_planCache[cacheKey]);
+    if (gracePeriodMinutes > 0 &&
+        now.isBefore(
+          state.windowStartUtc.add(Duration(minutes: gracePeriodMinutes)),
+        )) {
+      return;
+    }
+
+    // INV-12: 48h Late-Arrival guard clause
+    if (receivedAtUtc != null &&
+        (state.status == ExecutionStatus.failed ||
+            state.status == ExecutionStatus.completedWithGaps)) {
+      if (!LateArrivalWindowPolicy.isWithinReprocessingWindow(
+        windowEndUtc: state.windowEndUtc,
+        receivedAtUtc: receivedAtUtc,
+      )) {
+        return;
+      }
+    }
+
+    // GPS Quality guard clause
+    if (_isLowQualityPing(vehicleState, state)) return;
+
+    // INV-15: Asset inhibition guard clause
+    if (await _checkAssetInhibition(vehicleState, state, now, organizationId)) {
+      return;
+    }
+
+    // Deterministic execution order
+    final sortedRules = _sortRules(rules.rules);
+
+    // Evaluate contractual rules
+    final rulesResult = await _evaluateContractualRules(
+      sortedRules,
+      vehicleState,
+      state,
+      now,
+    );
+
+    // Evaluate geofence position
+    await _evaluateGeofencePosition(
+      vehicleState,
+      state,
+      now,
+      rulesResult.decisions,
+      rulesResult.requiredDwell,
+    );
+
+    // Always update last known position (after all checks)
+    _lastPositions[state.setId] = (
+      lat: vehicleState.latitude,
+      lng: vehicleState.longitude,
+    );
+  }
+
+  // ── Asset Inhibition Check (INV-15) ───────────────────────
+
+  /// Returns true if the asset is inhibited (maintenance/offDuty).
+  Future<bool> _checkAssetInhibition(
+    VehicleOperationalState vehicleState,
+    ContractualExecutionState state,
+    DateTime now,
+    String organizationId,
+  ) async {
+    if (_assetStatusRepo == null) return false;
+
+    final assetStatus = await _assetStatusRepo.getCurrentStatus(
+      assetId: vehicleState.vehicleId,
+      organizationId: organizationId,
+    );
+    if (assetStatus != AssetStatus.maintenance &&
+        assetStatus != AssetStatus.offDuty) {
+      return false;
+    }
+
+    final inhibitionEntry = SlaLedgerEntry(
+      organizationId: state.organizationId,
+      type: 'MAINTENANCE_INHIBITED',
+      setId: state.setId,
+      contractId: state.contractId,
+      planVersion: state.planVersion,
+      occurredAtUtc: now,
+      payload: MaintenanceInhibitionEvidence(
+        vehicleStatusAtEvaluation: assetStatus.name,
+        inhibitionReason: 'MAINTENANCE_INHIBITION',
+      ).toJson(),
+    );
+    await _ledgerRepo.append(inhibitionEntry);
+    return true;
+  }
+
+  // ── Contractual Rules Evaluator ───────────────────────────
+
+  Future<({List<EvaluationDecision> decisions, int requiredDwell})>
+  _evaluateContractualRules(
+    List<RuleSnapshotItem> sortedRules,
+    VehicleOperationalState vehicleState,
+    ContractualExecutionState state,
+    DateTime now,
+  ) async {
+    int requiredDwell = 30; // Default fallback
+    final List<EvaluationDecision> decisions = [];
+
+    for (final rule in sortedRules) {
+      if (rule.ruleType == SlaRuleType.minGeofenceCoverage) {
+        requiredDwell = _evaluateDwellRule(
+          rule,
+          decisions,
+          requiredDwell: requiredDwell,
+        );
+      } else if (rule.ruleType == SlaRuleType.excessiveSpeed) {
+        await _evaluateSpeedRule(rule, vehicleState, state, now, decisions);
+      } else if (rule.ruleType == SlaRuleType.maxToleranceDelay) {
+        _evaluateDelayRule(rule, state, now, decisions);
+      }
+    }
+
+    return (decisions: decisions, requiredDwell: requiredDwell);
+  }
+
+  // ── Dwell Rule Evaluator ──────────────────────────────────
+
+  int _evaluateDwellRule(
+    RuleSnapshotItem rule,
+    List<EvaluationDecision> decisions, {
+    required int requiredDwell,
+  }) {
+    final dwellParam = rule.config['min_dwell_seconds'];
+    if (dwellParam is int) requiredDwell = dwellParam;
+
+    decisions.add(
+      EvaluationDecision(
+        ruleId: rule.ruleId,
+        ruleType: rule.ruleType.value,
+        ruleVersion: rule.ruleVersion,
+        rulePriority: rule.evaluationOrder,
+        outcome: 'EVALUATED_DWELL_REQUIREMENT',
+        evidence: DwellRequirementEvidence(
+          requiredDwellSeconds: requiredDwell,
+          parameterSource: 'rule_config',
+        ),
+      ),
+    );
+    return requiredDwell;
+  }
+
+  // ── Speed Rule Evaluator (INV-4, INV-11) ──────────────────
+
+  Future<void> _evaluateSpeedRule(
+    RuleSnapshotItem rule,
+    VehicleOperationalState vehicleState,
+    ContractualExecutionState state,
+    DateTime now,
+    List<EvaluationDecision> decisions,
+  ) async {
+    final maxSpeed = rule.config['max_speed_kmh'] as num?;
+    final currentSpeed = vehicleState.smoothedSpeed;
+    if (maxSpeed == null || currentSpeed <= maxSpeed) return;
+
+    int fineCents = rule.config['fine_cents'] as int? ?? 150000;
+    // INV-4: Severidade nunca ultrapassa 100 BPS (1%) do valor do contrato
+    final maxCents = state.contractualValue.multiplyByBps(100).cents;
+    if (fineCents > maxCents) fineCents = maxCents;
+
+    final verdictEvidence = VerdictEvidence.create(
+      clauseRef: rule.ruleId,
+      ruleId: rule.ruleId,
+      ruleVersion: rule.ruleVersion,
+      primaryEvidenceLat: vehicleState.latitude,
+      primaryEvidenceLng: vehicleState.longitude,
+      primaryEvidenceTimestampUtc: now,
+      deltaValue: currentSpeed - maxSpeed.toDouble(),
+      thresholdValue: maxSpeed.toDouble(),
+      fineCents: Money(fineCents),
+      confidenceScore: 98,
+    );
+
+    // INV-11: Idempotency guard — skip if identical evidence_hash already in ledger.
+    final existingEntries = await _ledgerRepo.getEntriesBySetId(
+      state.setId,
+      organizationId: state.organizationId,
+    );
+    final alreadyRecorded = existingEntries.any((e) {
+      if (e.type != 'SANCTION_RECOMMENDED') return false;
+      final ev = e.payload['verdict_evidence'] as Map<String, dynamic>?;
+      return ev?['evidence_hash'] == verdictEvidence.evidenceHash;
+    });
+    if (alreadyRecorded) return;
+
+    final recommendedEvent = SanctionRecommendedEvent(
+      organizationId: state.organizationId,
+      occurredAtUtc: now,
+      setId: state.setId,
+      contractId: state.contractId,
+      planVersion: state.planVersion,
+      verdictEvidence: verdictEvidence,
+    );
+
+    await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(recommendedEvent));
+
+    decisions.add(
+      EvaluationDecision(
+        ruleId: rule.ruleId,
+        ruleType: rule.ruleType.value,
+        ruleVersion: rule.ruleVersion,
+        rulePriority: rule.evaluationOrder,
+        outcome: 'SANCTION_RECOMMENDED',
+        evidence: SpeedViolationEvidence(
+          actualSpeedKmh: currentSpeed,
+          limitSpeedKmh: maxSpeed.toDouble(),
+        ),
+      ),
+    );
+  }
+
+  // ── Delay Rule Evaluator ──────────────────────────────────
+
+  void _evaluateDelayRule(
+    RuleSnapshotItem rule,
+    ContractualExecutionState state,
+    DateTime now,
+    List<EvaluationDecision> decisions,
+  ) {
+    final toleranceMinutes =
+        rule.config['delay_tolerance_minutes'] as int? ?? 0;
+    final penaltyPerMinuteCents =
+        rule.config['penalty_per_minute_cents'] as int? ?? 0;
+    final maxCapCents = rule.config['max_penalty_cap_cents'] as int?;
+
+    final toleranceSeconds = toleranceMinutes * 60;
+    final delay = now.difference(state.windowStartUtc);
+    if (delay.inSeconds <= toleranceSeconds) return;
+
+    final billableMinutes = ((delay.inSeconds - toleranceSeconds) / 60).ceil();
+    if (billableMinutes <= 0) return;
+
+    final delayMinutes = delay.inMinutes;
+    final grossCents = billableMinutes * penaltyPerMinuteCents;
+    final finalCents = maxCapCents != null
+        ? grossCents.clamp(0, maxCapCents)
+        : grossCents;
+
+    decisions.add(
+      EvaluationDecision(
+        ruleId: rule.ruleId,
+        ruleType: rule.ruleType.value,
+        ruleVersion: rule.ruleVersion,
+        rulePriority: rule.evaluationOrder,
+        outcome: 'DELAY_PENALTY_ASSESSED',
+        evidence: DelayPenaltyEvidence(
+          delayMinutes: delayMinutes,
+          toleranceMinutes: toleranceMinutes,
+          billableMinutes: billableMinutes,
+          grossPenaltyCents: grossCents,
+          finalPenaltyCents: finalCents,
+          capApplied: maxCapCents != null && grossCents > maxCapCents,
+        ),
+      ),
+    );
+  }
+
+  // ── Geofence Position Evaluator ───────────────────────────
+
+  Future<void> _evaluateGeofencePosition(
+    VehicleOperationalState vehicleState,
+    ContractualExecutionState state,
+    DateTime now,
+    List<EvaluationDecision> decisions,
+    int requiredDwell,
+  ) async {
+    final distance = GeoMath.haversineMeters(
+      vehicleState.latitude,
+      vehicleState.longitude,
+      state.startLatitude,
+      state.startLongitude,
+    );
+
+    final tracking = _firstEntryTimestamps.containsKey(state.setId);
+    final insideGeofence = _isInsideWithHysteresis(
+      distance,
+      state.startRadiusMeters,
+      tracking,
+    );
+
+    if (insideGeofence) {
+      await _handleInsideGeofence(
+        vehicleState,
+        state,
+        now,
+        decisions,
+        distance,
+        requiredDwell,
+        tracking,
+      );
+    } else {
+      _handleOutsideGeofence(vehicleState, state, now, decisions);
+    }
+  }
+
+  // ── Inside Geofence Handler ───────────────────────────────
+
+  Future<void> _handleInsideGeofence(
+    VehicleOperationalState vehicleState,
+    ContractualExecutionState state,
+    DateTime now,
+    List<EvaluationDecision> decisions,
+    double distance, // Physical Metric - Double Required
+    int requiredDwell,
+    bool wasTracking,
+  ) async {
+    final firstEntry = _firstEntryTimestamps.putIfAbsent(
+      state.setId,
+      () => now,
+    );
+
+    // FSM: transition planned → inTransit on first geofence entry (first-wins).
+    if (!wasTracking && state.status == ExecutionStatus.planned) {
+      state.startTransit(timestampUtc: firstEntry, source: 'geofence');
+      for (final event in state.domainEvents) {
+        await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(event));
+      }
+      await _executionRepo.save(state);
+      state.clearDomainEvents();
+    }
+
+    if (now.isBefore(firstEntry)) return;
+
+    final dwellDuration = now.difference(firstEntry);
+    if (dwellDuration.inSeconds < requiredDwell) return;
+    if (state.status == ExecutionStatus.completed) return;
+
+    state.bindExecution(
+      vehicleId: vehicleState.vehicleId,
+      latitude: vehicleState.latitude,
+      longitude: vehicleState.longitude,
+      timestampUtc: now,
+    );
+
+    decisions.add(
+      EvaluationDecision(
+        ruleId: 'engine-core',
+        ruleType: 'BIND_EXECUTION',
+        ruleVersion: 1,
+        rulePriority: 999,
+        outcome: 'PASS',
+        evidence: GeofenceBindingEvidence(
+          distanceMeters: distance,
+          allowedRadiusMeters: state.startRadiusMeters,
+          actualDwellSeconds: dwellDuration.inSeconds,
+          requiredDwellSeconds: requiredDwell,
+        ),
+      ),
+    );
+
+    await _commitEvaluationResults(state, now, decisions);
+    _firstEntryTimestamps.remove(state.setId);
+  }
+
+  // ── Outside Geofence Handler ──────────────────────────────
+
+  void _handleOutsideGeofence(
+    VehicleOperationalState vehicleState,
+    ContractualExecutionState state,
+    DateTime now,
+    List<EvaluationDecision> decisions,
+  ) {
+    final firstEntry = _firstEntryTimestamps[state.setId];
+    if (firstEntry != null && now.isAfter(firstEntry)) {
+      _firstEntryTimestamps.remove(state.setId);
+    }
+
+    // Check for interpolated passage (vehicle passed through geofence
+    // between two outside pings)
+    _checkInterpolatedPassage(vehicleState, state, now, decisions);
+  }
+
+  // ── Rule Ordering Helper ──────────────────────────────────
+
+  /// Deterministic rule ordering: by [evaluationOrder], tie-broken by [ruleId].
+  /// Shared by per-ping evaluation and the expiration sweep (INV-15).
+  List<RuleSnapshotItem> _sortRules(List<RuleSnapshotItem> rules) =>
+      rules.toList()..sort((a, b) {
+        final cmp = a.evaluationOrder.compareTo(b.evaluationOrder);
+        return cmp != 0 ? cmp : a.ruleId.compareTo(b.ruleId);
+      });
+
+  // ── Method 2: Sweep Expired Obligations ─────────────────
+
+  /// Orchestrator: identify → assess penalties → finalize, per obligation.
   Future<void> sweepExpiredObligations({
     DateTime? nowUtc,
     required String organizationId,
   }) async {
     final now = nowUtc ?? _clock.nowUtc();
-    final expiredStates = await _executionRepo.findExpiredPlanned(
+    final expiredStates = await _identifyExpiredObligations(
       now,
-      organizationId: organizationId,
+      organizationId,
     );
 
     for (final state in expiredStates) {
@@ -420,119 +551,150 @@ class ContractualEvaluationEngine {
         state.planVersion,
         state.organizationId,
       );
+      final sortedRules = _sortRules(rules.rules);
+      final assessment = _applyContractualPenalties(state, sortedRules);
+      await _finalizeObligationState(state, now, sortedRules, assessment);
+    }
+  }
 
-      final sortedRules = rules.rules.toList()
-        ..sort((a, b) {
-          final cmp = a.evaluationOrder.compareTo(b.evaluationOrder);
-          return cmp != 0 ? cmp : a.ruleId.compareTo(b.ruleId);
-        });
+  // ── Sweep Stage 1: Identify (pure read, zero writes) ──────
 
-      final List<EvaluationDecision> decisions = [];
-      String outcome = 'NO_SHOW_PENALTY';
-      int? penaltyCents;
+  /// Date-filtered identification of expired, still-`planned` obligations.
+  /// Read-only: never mutates state nor touches the ledger.
+  Future<List<ContractualExecutionState>> _identifyExpiredObligations(
+    DateTime now,
+    String organizationId,
+  ) {
+    return _executionRepo.findExpiredPlanned(
+      now,
+      organizationId: organizationId,
+    );
+  }
 
-      for (final rule in sortedRules) {
-        if (rule.ruleType == SlaRuleType.noShowPenalty) {
-          penaltyCents = state.contractualValue
-              .multiplyByBps(state.noShowPenaltyBps)
-              .cents;
+  // ── Sweep Stage 2: Apply Penalties (sync, pure, no DB) ────
 
-          // INV: Sanction severity never exceeds 100 BPS (1%) of contractual value
-          final maxNoShowCents = state.contractualValue
-              .multiplyByBps(100)
-              .cents;
-          if (penaltyCents > maxNoShowCents) penaltyCents = maxNoShowCents;
+  /// Isolated no-show penalty calculation (INV-4: severity capped at 100 BPS
+  /// of contractual value). Pure — no repository or ledger access — so it is
+  /// independently unit-stress-testable.
+  ({int? penaltyCents, List<EvaluationDecision> decisions})
+  _applyContractualPenalties(
+    ContractualExecutionState state,
+    List<RuleSnapshotItem> sortedRules,
+  ) {
+    final List<EvaluationDecision> decisions = [];
+    int? penaltyCents;
 
-          decisions.add(
-            EvaluationDecision(
-              ruleId: rule.ruleId,
-              ruleType: rule.ruleType.value,
-              ruleVersion: rule.ruleVersion,
-              rulePriority: rule.evaluationOrder,
-              outcome: 'PENALTY_ASSESSED',
-              financialImpactCents: penaltyCents,
-              evidence: PenaltyAssessedEvidence(
-                penaltyAmountCents: penaltyCents,
-              ),
-            ),
-          );
-        }
-      }
+    for (final rule in sortedRules) {
+      if (rule.ruleType == SlaRuleType.noShowPenalty) {
+        penaltyCents = state.contractualValue
+            .multiplyByBps(state.noShowPenaltyBps)
+            .cents;
 
-      state.markFailed(now);
+        // INV-4: Sanction severity never exceeds 100 BPS (1%) of contract value
+        final maxNoShowCents = state.contractualValue.multiplyByBps(100).cents;
+        if (penaltyCents > maxNoShowCents) penaltyCents = maxNoShowCents;
 
-      decisions.add(
-        EvaluationDecision(
-          ruleId: 'engine-core',
-          ruleType: 'EXPIRATION_SWEEP',
-          ruleVersion: 1,
-          rulePriority: 999,
-          outcome: outcome,
-          evidence: ExpirationSweepEvidence(
-            scheduledWindowEndUtc: state.windowEndUtc.toIso8601String(),
-            evaluatedAtUtc: now.toIso8601String(),
-            expiredBySeconds: now.difference(state.windowEndUtc).inSeconds,
+        decisions.add(
+          EvaluationDecision(
+            ruleId: rule.ruleId,
+            ruleType: rule.ruleType.value,
+            ruleVersion: rule.ruleVersion,
+            rulePriority: rule.evaluationOrder,
+            outcome: 'PENALTY_ASSESSED',
+            financialImpactCents: penaltyCents,
+            evidence: PenaltyAssessedEvidence(penaltyAmountCents: penaltyCents),
           ),
+        );
+      }
+    }
+
+    return (penaltyCents: penaltyCents, decisions: decisions);
+  }
+
+  // ── Sweep Stage 3: Finalize (atomic state transition) ─────
+
+  /// Atomic finalization of an expired obligation: records the expiration
+  /// verdict, transitions the aggregate to `failed`, persists the triplet, and
+  /// emits the SANCTION_RECOMMENDED ledger entry when a penalty applies.
+  Future<void> _finalizeObligationState(
+    ContractualExecutionState state,
+    DateTime now,
+    List<RuleSnapshotItem> sortedRules,
+    ({int? penaltyCents, List<EvaluationDecision> decisions}) assessment,
+  ) async {
+    final penaltyCents = assessment.penaltyCents;
+    final decisions = [...assessment.decisions];
+
+    state.markFailed(now);
+
+    decisions.add(
+      EvaluationDecision(
+        ruleId: 'engine-core',
+        ruleType: 'EXPIRATION_SWEEP',
+        ruleVersion: 1,
+        rulePriority: 999,
+        outcome: 'NO_SHOW_PENALTY',
+        evidence: ExpirationSweepEvidence(
+          scheduledWindowEndUtc: state.windowEndUtc.toIso8601String(),
+          evaluatedAtUtc: now.toIso8601String(),
+          expiredBySeconds: now.difference(state.windowEndUtc).inSeconds,
         ),
-      );
+      ),
+    );
 
-      await _commitEvaluationResults(state, now, decisions);
+    await _commitEvaluationResults(state, now, decisions);
 
-      // INV-23: Emit SANCTION_RECOMMENDED when a penalty was assessed.
-      // The engine RECOMMENDS â€” it never emits VERDICT_SEALED directly.
-      // The DB trigger auto-populates sanction_review_queue on INSERT.
-      if (penaltyCents != null && penaltyCents > 0) {
-        // Build VerdictEvidence from the no-show context.
-        // windowEndUtc serves as the primary evidence timestamp (the moment
-        // the contractual obligation expired).
-        final windowEndUtc = state.windowEndUtc.isUtc
-            ? state.windowEndUtc
-            : state.windowEndUtc.toUtc();
+    // INV-23: Emit SANCTION_RECOMMENDED when a penalty was assessed.
+    // The engine RECOMMENDS — it never emits VERDICT_SEALED directly.
+    // The DB trigger auto-populates sanction_review_queue on INSERT.
+    if (penaltyCents != null && penaltyCents > 0) {
+      // windowEndUtc serves as the primary evidence timestamp (the moment
+      // the contractual obligation expired).
+      final windowEndUtc = state.windowEndUtc.isUtc
+          ? state.windowEndUtc
+          : state.windowEndUtc.toUtc();
 
-        final noShowRuleId = sortedRules
-            .where((r) => r.ruleType == SlaRuleType.noShowPenalty)
-            .map((r) => r.ruleId)
-            .firstOrNull;
-        final noShowRuleVersion = sortedRules
-            .where((r) => r.ruleType == SlaRuleType.noShowPenalty)
-            .map((r) => r.ruleVersion)
-            .firstOrNull;
+      final noShowRuleId = sortedRules
+          .where((r) => r.ruleType == SlaRuleType.noShowPenalty)
+          .map((r) => r.ruleId)
+          .firstOrNull;
+      final noShowRuleVersion = sortedRules
+          .where((r) => r.ruleType == SlaRuleType.noShowPenalty)
+          .map((r) => r.ruleVersion)
+          .firstOrNull;
 
-        if (noShowRuleId != null && noShowRuleVersion != null) {
-          final verdictEvidence = VerdictEvidence.create(
-            clauseRef: noShowRuleId,
-            ruleId: noShowRuleId,
-            ruleVersion: noShowRuleVersion,
-            primaryEvidenceLat: state.startLatitude,
-            primaryEvidenceLng: state.startLongitude,
-            primaryEvidenceTimestampUtc: windowEndUtc,
-            deltaValue: now.difference(state.windowEndUtc).inMinutes.toDouble(),
-            thresholdValue: 0.0,
-            fineCents: Money(penaltyCents),
-            confidenceScore: 100,
-            geofenceCenterLat: state.startLatitude,
-            geofenceCenterLng: state.startLongitude,
-            geofenceRadiusMeters: state.startRadiusMeters.toDouble(),
-          );
+      if (noShowRuleId != null && noShowRuleVersion != null) {
+        final verdictEvidence = VerdictEvidence.create(
+          clauseRef: noShowRuleId,
+          ruleId: noShowRuleId,
+          ruleVersion: noShowRuleVersion,
+          primaryEvidenceLat: state.startLatitude,
+          primaryEvidenceLng: state.startLongitude,
+          primaryEvidenceTimestampUtc: windowEndUtc,
+          deltaValue: now.difference(state.windowEndUtc).inMinutes.toDouble(),
+          thresholdValue: 0.0,
+          fineCents: Money(penaltyCents),
+          confidenceScore: 100,
+          geofenceCenterLat: state.startLatitude,
+          geofenceCenterLng: state.startLongitude,
+          geofenceRadiusMeters: state.startRadiusMeters.toDouble(),
+        );
 
-          final recommendedEvent = SanctionRecommendedEvent(
-            organizationId: state.organizationId,
-            occurredAtUtc: now,
-            setId: state.setId,
-            contractId: state.contractId,
-            planVersion: state.planVersion,
-            verdictEvidence: verdictEvidence,
-          );
+        final recommendedEvent = SanctionRecommendedEvent(
+          organizationId: state.organizationId,
+          occurredAtUtc: now,
+          setId: state.setId,
+          contractId: state.contractId,
+          planVersion: state.planVersion,
+          verdictEvidence: verdictEvidence,
+        );
 
-          await _ledgerRepo.append(
-            SlaLedgerMapper.mapToEntry(recommendedEvent),
-          );
-        }
+        await _ledgerRepo.append(SlaLedgerMapper.mapToEntry(recommendedEvent));
       }
     }
   }
 
-  // â”€â”€ Persistence Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Persistence Helper ────────────────────────────────────
 
   /// Formally constructs the Triplet and routes it to repositories.
   Future<void> _commitEvaluationResults(
@@ -542,7 +704,7 @@ class ContractualEvaluationEngine {
   ) async {
     await _executionRepo.save(state);
 
-    // â”€â”€ Pipeline: Ledger first â†’ event_id â†’ Trace â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Pipeline: Ledger first â†’ event_id â†’ Trace ──────────
     // Persist ledger entries and capture the last event UUID
     // for causal linkage with the evaluation trace.
     String? triggeringEventId;
@@ -568,7 +730,7 @@ class ContractualEvaluationEngine {
     // Persist trace
     await _traceRepo.save(result.trace);
 
-    // â”€â”€ Alert Derivation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Alert Derivation ──────────────────────────────────
     if (_alertRepo != null) {
       final alert = AlertDerivationService.deriveFrom(
         state: state,
@@ -583,7 +745,7 @@ class ContractualEvaluationEngine {
     }
   }
 
-  // â”€â”€ Grace Period Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Grace Period Helper ──────────────────────────────────
 
   /// Returns the grace period (minutes) to apply before the engine starts
   /// evaluating a SET. Reads from the cached [PlanDeclaration] shift patterns.
@@ -599,7 +761,7 @@ class ContractualEvaluationEngine {
     return values.length == 1 ? values.first : 0;
   }
 
-  // â”€â”€ GPS Quality Filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── GPS Quality Filter ──────────────────────────────────
 
   bool _isLowQualityPing(
     VehicleOperationalState v,
@@ -611,7 +773,7 @@ class ContractualEvaluationEngine {
     return false;
   }
 
-  // â”€â”€ Hysteresis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Hysteresis ──────────────────────────────────────────
 
   bool _isInsideWithHysteresis(
     double distance, // Physical Metric - Double Required
@@ -622,7 +784,7 @@ class ContractualEvaluationEngine {
     return distance <= radiusMeters * 1.2; // Exit: hysteresis band
   }
 
-  // â”€â”€ Interpolated Passage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Interpolated Passage ────────────────────────────────
 
   void _checkInterpolatedPassage(
     VehicleOperationalState v,
@@ -631,7 +793,7 @@ class ContractualEvaluationEngine {
     List<EvaluationDecision> decisions,
   ) {
     final last = _lastPositions[state.setId];
-    if (last == null) return; // No prior position â€” nothing to interpolate
+    if (last == null) return; // No prior position — nothing to interpolate
 
     final crosses = GeoMath.lineIntersectsCircle(
       last.lat,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/core/services/logger_service.dart';
+import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/application/admin/route_command_service_provider.dart';
 
 /// Form drawer for creating a new route.

@@ -15,7 +15,7 @@ import 'situation_detector.dart';
 /// - We still keep the fallback for interrupted trips from Phase 0.
 class StoppedVehicleDetector extends SituationDetector {
   StoppedVehicleDetector(super.dateTimeProvider)
-    : super(id: 'stopped_vehicle', name: 'Detector de VeÃ­culo Parado');
+    : super(id: 'stopped_vehicle', name: 'Detector de Veículo Parado');
 
   @override
   bool canDetect(OperationalTrip trip) {
@@ -38,7 +38,7 @@ class StoppedVehicleDetector extends SituationDetector {
         return OperationalWarning(
           id: 'warn_stopped_operational_${trip.id}',
           type: 'vehicle_stopped',
-          message: 'VeÃ­culo Parado na Via: $minutesStopped min',
+          message: 'Veículo Parado na Via: $minutesStopped min',
           severityScore: 40,
           detectedAt: state.lastRawPingAt,
         );
@@ -50,7 +50,7 @@ class StoppedVehicleDetector extends SituationDetector {
       return OperationalWarning(
         id: 'warn_stopped_interrupted_${trip.id}',
         type: 'vehicle_stopped',
-        message: 'VeÃ­culo Interrompido',
+        message: 'Veículo Interrompido',
         severityScore: 50,
         detectedAt: state?.lastRawPingAt ?? dateTimeProvider.nowUtc(),
       );

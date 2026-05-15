@@ -3,7 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/audit/audit_service.dart';
 import 'package:veraprob/application/ports/contractual_event_port.dart';
 import 'package:veraprob/application/simulation_control_service.dart';
-import 'package:veraprob/data/services/fleet_simulation_service.dart';
+import 'package:veraprob/infrastructure/simulation/fleet_simulation_service.dart';
 import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/domain/entities/trip_event.dart';
 import 'package:veraprob/domain/enums/event_type.dart';

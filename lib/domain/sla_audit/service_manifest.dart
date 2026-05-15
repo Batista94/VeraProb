@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'domain_exception.dart';
 import 'sla_penalties.dart';
 import 'transport_vertical.dart';
@@ -14,7 +14,7 @@ import 'transport_vertical.dart';
 /// independently of fleet assignment.
 ///
 /// **Immutability:** All fields are final. Equality is based on [id].
-/// **INV-18:** Pure Dart â€” no infrastructure dependencies.
+/// **INV-18:** Pure Dart — no infrastructure dependencies.
 class ServiceManifest extends Equatable {
   final String id;
   final String organizationId;

@@ -52,6 +52,11 @@ class ContractualFinancialDailySnapshot extends Equatable {
   /// Auditing: The user who triggered the manual reprocessing (null for auto).
   final String? authorUserId;
 
+  /// Engine version that produced this snapshot; resolved from
+  /// [EnvironmentConfig.engineVersion] and injected via constructor (INV-13).
+  /// Sealed at creation time for forensic replay auditability (INV-21).
+  final String engineVersion;
+
   const ContractualFinancialDailySnapshot._({
     required this.id,
     required this.organizationId,
@@ -73,6 +78,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
     this.previousSnapshotId,
     this.reprocessingReason,
     this.authorUserId,
+    required this.engineVersion,
   });
 
   /// Creates a new immutable daily financial snapshot.
@@ -94,10 +100,17 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required int noShowCount,
     required int evidenceGapCount,
     required String? lastLedgerEntryId,
+    required String engineVersion,
     String? previousSnapshotId,
     String? reprocessingReason,
     String? authorUserId,
   }) {
+    if (engineVersion.trim().isEmpty) {
+      throw const DomainException(
+        'engineVersion must not be empty. Supply the value from EnvironmentConfig.engineVersion (INV-21).',
+      );
+    }
+
     if (previousSnapshotId != null &&
         (reprocessingReason == null || reprocessingReason.trim().isEmpty)) {
       throw const DomainException(
@@ -140,6 +153,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
       previousSnapshotId: previousSnapshotId,
       reprocessingReason: reprocessingReason,
       authorUserId: authorUserId,
+      engineVersion: engineVersion,
     );
   }
 
@@ -163,6 +177,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
     required int noShowCount,
     required int evidenceGapCount,
     required String? lastLedgerEntryId,
+    required String engineVersion,
     String? previousSnapshotId,
     String? reprocessingReason,
     String? authorUserId,
@@ -188,6 +203,7 @@ class ContractualFinancialDailySnapshot extends Equatable {
       previousSnapshotId: previousSnapshotId,
       reprocessingReason: reprocessingReason,
       authorUserId: authorUserId,
+      engineVersion: engineVersion,
     );
   }
 
@@ -213,5 +229,6 @@ class ContractualFinancialDailySnapshot extends Equatable {
     previousSnapshotId,
     reprocessingReason,
     authorUserId,
+    engineVersion,
   ];
 }

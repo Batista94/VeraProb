@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Major**: Migrated State Management to **Riverpod v3** (Notifier API refactor).
 - **Major**: Upgraded Database Layer to **Drift 2.33.0** and **Postgres 3.5.9**.
 - **Security**: Hardened `ShiftPattern` logic to handle `timezone 0.11.0` breaking changes (Universal UTC).
-- Updated CI/CD to align with Flutter 3.41.5 (CVE-2026-27704 fix).
+- Updated CI/CD to align with Flutter 3.41.9 (Latest Stable Sync).
 
 ### Fixed
 - Potential revenue leakage in Shadow Executions via strict Notifier lifecycle guards.

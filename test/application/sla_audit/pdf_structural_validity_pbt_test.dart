@@ -129,6 +129,7 @@ void main() {
         noShowCount: 1,
         evidenceGapCount: 1,
         lastLedgerEntryId: '${100 + i}',
+        engineVersion: 'veraprob-core_v4-test',
       );
       await snapshotRepo.save(snapshot);
     }
@@ -297,6 +298,7 @@ void main() {
           noShowCount: 1,
           evidenceGapCount: 0,
           lastLedgerEntryId: '50',
+          engineVersion: 'veraprob-core_v4-test',
         );
         await snapshotRepo.save(snapshot);
 

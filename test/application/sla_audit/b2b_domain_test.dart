@@ -16,7 +16,7 @@ import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_zone_repository.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 void main() {

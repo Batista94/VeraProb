@@ -1,4 +1,4 @@
-﻿// ignore_for_file: lines_longer_than_80_chars, prefer_const_declarations
+// ignore_for_file: lines_longer_than_80_chars, prefer_const_declarations
 // =============================================================================
 // test/application/sla_audit/contractual_financial_closing_edge_cases_test.dart
 //
@@ -17,7 +17,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
@@ -165,6 +165,7 @@ void main() {
         snapshotRepo: snapshotRepo,
         ledgerRepo: ledgerRepo,
         clock: clock,
+        engineVersion: 'veraprob-core_v4-test',
       );
 
       await generator.generateDailySnapshot('org-1', kEpoch);
@@ -196,6 +197,7 @@ void main() {
         snapshotRepo: snapshotRepo,
         ledgerRepo: ledgerRepo,
         clock: clock,
+        engineVersion: 'veraprob-core_v4-test',
       );
 
       await generator.generateDailySnapshot('org-1', kEpoch);
@@ -227,6 +229,7 @@ void main() {
         snapshotRepo: snapshotRepo,
         ledgerRepo: ledgerRepo,
         clock: clock,
+        engineVersion: 'veraprob-core_v4-test',
       );
 
       await generator.generateDailySnapshot('org-1', kEpoch);
@@ -260,6 +263,7 @@ void main() {
         snapshotRepo: snapshotRepo,
         ledgerRepo: ledgerRepo,
         clock: clock,
+        engineVersion: 'veraprob-core_v4-test',
       );
 
       await generator.generateDailySnapshot('org-1', kEpoch);
@@ -288,6 +292,7 @@ void main() {
           snapshotRepo: snapshotRepo,
           ledgerRepo: ledgerRepo,
           clock: clock,
+          engineVersion: 'veraprob-core_v4-test',
         );
 
         await generator.generateDailySnapshot('org-1', kEpoch);
@@ -322,6 +327,7 @@ void main() {
           snapshotRepo: snapshotRepo,
           ledgerRepo: ledgerRepo,
           clock: clock,
+          engineVersion: 'veraprob-core_v4-test',
         );
 
         await generator.generateDailySnapshot(

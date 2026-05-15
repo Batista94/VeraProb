@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
@@ -56,13 +56,13 @@ class SubmitContractForApprovalHandler {
   /// - Contract not found for the given [organizationId]
   /// - Contract is not in [draft] status
   Future<String> handle(SubmitContractForApprovalCommand command) async {
-    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. RBAC â€” before any I/O
+    // 2. RBAC — before any I/O
     if (!_rbac.can(
       command.callerRole,
       UserPermission.canApproveContractAcceptance,
@@ -72,7 +72,7 @@ class SubmitContractForApprovalHandler {
       );
     }
 
-    // 2. Load aggregate â€” scoped to organizationId (tenant isolation)
+    // 2. Load aggregate — scoped to organizationId (tenant isolation)
     final existing = await _contractRepository.findById(
       command.contractId,
       organizationId: command.organizationId,
@@ -90,7 +90,7 @@ class SubmitContractForApprovalHandler {
     final token = uuid.v4();
     final expiresAtUtc = _clock.nowUtc().add(_tokenTtl);
 
-    // 4. Domain guard â€” [Contract.submitForApproval] validates status
+    // 4. Domain guard — [Contract.submitForApproval] validates status
     final submitted = existing.submitForApproval(
       reviewToken: token,
       nowUtc: _clock.nowUtc(),

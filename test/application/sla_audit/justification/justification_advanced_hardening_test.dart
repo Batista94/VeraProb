@@ -21,7 +21,7 @@ import 'package:veraprob/application/sla_audit/justification/evidence_integrity_
 import 'package:veraprob/application/sla_audit/justification/evidence_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/sla_justification_manager.dart';
 import 'package:veraprob/application/sla_audit/justification/xss_input_sanitizer.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';

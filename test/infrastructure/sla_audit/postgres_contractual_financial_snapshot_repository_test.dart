@@ -47,6 +47,7 @@ void main() async {
           noShowCount: 5,
           evidenceGapCount: 15,
           lastLedgerEntryId: null,
+          engineVersion: 'veraprob-core_v4-test',
         );
 
         await repository.save(snapshot);
@@ -90,6 +91,7 @@ void main() async {
             noShowCount: 0,
             evidenceGapCount: 50,
             lastLedgerEntryId: uuid.v4(),
+            engineVersion: 'veraprob-core_v4-test',
           );
 
           await repository.save(originalSnapshot);
@@ -112,6 +114,7 @@ void main() async {
             lastLedgerEntryId: uuid.v4(),
             previousSnapshotId: originalSnapshot.id,
             reprocessingReason: 'Late operator check-in',
+            engineVersion: 'veraprob-core_v4-test',
           );
 
           await repository.save(reprocessedSnapshot);

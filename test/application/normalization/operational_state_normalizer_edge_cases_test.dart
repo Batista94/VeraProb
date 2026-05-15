@@ -23,11 +23,11 @@ import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 import '../../mocks/fake_date_time_provider.dart';
 
-// â”€â”€ Coordinate constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Coordinate constants ──────────────────────────────────────────────────────
 const double kStopALat = -23.5612;
 const double kStopALng = -46.6560;
 
-// â”€â”€ FakeMotionClassifier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── FakeMotionClassifier ──────────────────────────────────────────────────────
 class FakeMotionClassifier extends MotionClassifier {
   MotionState fixedResult;
 
@@ -53,7 +53,7 @@ class FakeMotionClassifier extends MotionClassifier {
   }) => fixedResult;
 }
 
-// â”€â”€ Factories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Factories ─────────────────────────────────────────────────────────────────
 OperationalStateNormalizer makeNormalizer(MotionClassifier classifier) =>
     OperationalStateNormalizer(
       debounceDuration: const Duration(seconds: 5),
@@ -83,12 +83,12 @@ VehiclePosition makePing({
   source: 'test',
 );
 
-// â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Tests ─────────────────────────────────────────────────────────────────────
 void main() {
   final kEpoch = DateTime.utc(2026, 4, 14, 12, 0, 0);
 
   group('Jump Threshold Edge Cases', () {
-    // E1 â€” Jump exactly 500.0 m â†’ accepted (smoothing applies)
+    // E1 — Jump exactly 500.0 m â†’ accepted (smoothing applies)
     // 0.004491 deg Ã— 111 320 m/deg â‰ˆ 500.0 m
     test('E1: Jump exactly 500.0 m -> accepted', () {
       final clock = FakeDateTimeProvider(kEpoch);
@@ -105,7 +105,7 @@ void main() {
       expect(out.first.latitude, lessThan(kStopALat + 0.004491));
     });
 
-    // E2 â€” Jump 500.01 m â†’ rejected (cache replayed with degraded state)
+    // E2 — Jump 500.01 m â†’ rejected (cache replayed with degraded state)
     test('E2: Jump 500.01 m -> rejected', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(
@@ -120,7 +120,7 @@ void main() {
       expect(out.first.latitude, lessThan(kStopALat + 0.004492));
     });
 
-    // E3 â€” Triple spikes (>1000 m) â†’ all rejected
+    // E3 — Triple spikes (>1000 m) â†’ all rejected
     test('E3: Triple spikes (>1000 m) -> all rejected', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(
@@ -144,7 +144,7 @@ void main() {
   });
 
   group('State Persistence', () {
-    // E4 â€” Cold start (no cache) â†’ confidence == 1.0
+    // E4 — Cold start (no cache) â†’ confidence == 1.0
     test('E4: Cold start (no cache) -> confidence == 1.0', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(
@@ -156,7 +156,7 @@ void main() {
       expect(out.first.confidence, 1.0);
     });
 
-    // E5 â€” Moving->Dwelling transition â†’ stateChangedAt advances
+    // E5 — Moving->Dwelling transition â†’ stateChangedAt advances
     test('E5: Moving->Dwelling transition -> stateChangedAt advances', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final movingClassifier = FakeMotionClassifier(MotionState.moving);
@@ -171,7 +171,7 @@ void main() {
       expect(out.first.stateChangedAt.isAfter(t1), isTrue);
     });
 
-    // E6 â€” Replay without state change â†’ stateChangedAt preserved
+    // E6 — Replay without state change â†’ stateChangedAt preserved
     test('E6: Replay without state change -> stateChangedAt preserved', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(
@@ -185,7 +185,7 @@ void main() {
       expect(out.first.stateChangedAt, t1);
     });
 
-    // E7 â€” Debounce exact (5000 ms) â†’ maintains previous ping
+    // E7 — Debounce exact (5000 ms) â†’ maintains previous ping
     test('E7: Debounce exact (5000 ms) -> maintains previous ping', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(

@@ -1,7 +1,7 @@
-﻿import 'package:mocktail/mocktail.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/intelligence/detectors/off_route_detector.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/entities/operational_trip.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/application/normalization/models/connectivity_state.dart';

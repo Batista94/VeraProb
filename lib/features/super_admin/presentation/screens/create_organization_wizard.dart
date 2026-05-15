@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/core/utils/brl_currency_input_formatter.dart';
-import 'package:veraprob/core/utils/cnpj_validator.dart';
+import 'package:veraprob/presentation/shared/formatters/brl_currency_input_formatter.dart';
+import 'package:veraprob/shared/utils/cnpj_validator.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/create_organization_form_data.dart';
 import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
@@ -14,7 +14,7 @@ import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
-import 'package:veraprob/presentation/shared/widgets/domain_chip_input.dart';
+import 'package:veraprob/presentation/shared/ui/domain_chip_input.dart';
 
 /// 3-step wizard for creating a new tenant organization.
 ///

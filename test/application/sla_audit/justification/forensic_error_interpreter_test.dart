@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/justification/forensic_error_interpreter.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/forensic_violation_exception.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_exception.dart';
 
 void main() {
   const interpreter = ForensicErrorInterpreter();
@@ -83,6 +84,95 @@ void main() {
       );
       expect(result.userMessage, contains('inesperado'));
     });
+
+    test('JustificationException(temporal) → expiration-window message', () {
+      const error = JustificationException(
+        'Justification window expired: event occurred 30h ago, limit is 24h.',
+        phase: JustificationPhase.temporal,
+      );
+
+      final result = interpreter.interpret(error);
+
+      expect(result.severity, ForensicErrorSeverity.infrastructure);
+      expect(result.userMessage.toLowerCase(), contains('prazo'));
+      expect(result.userMessage, isNot(contains('CX05')));
+    });
+
+    test('JustificationException(evidence) → integrity guidance', () {
+      const error = JustificationException(
+        'Invalid SHA-256 hash: "abc". Must be 64 hex characters.',
+        phase: JustificationPhase.evidence,
+      );
+
+      final result = interpreter.interpret(error);
+
+      expect(result.severity, ForensicErrorSeverity.integrity);
+      expect(result.userMessage.toLowerCase(), contains('evidência'));
+    });
+
+    test('JustificationException(linkage) → linkage guidance', () {
+      const error = JustificationException(
+        'No matching event found for this vehicle and timestamp.',
+        phase: JustificationPhase.linkage,
+      );
+
+      final result = interpreter.interpret(error);
+
+      expect(result.severity, ForensicErrorSeverity.integrity);
+      expect(result.userMessage.toLowerCase(), contains('evento'));
+    });
+
+    test('JustificationException(input) → input guidance', () {
+      const error = JustificationException(
+        'Description must be at least 10 characters.',
+        phase: JustificationPhase.input,
+      );
+
+      final result = interpreter.interpret(error);
+
+      expect(result.severity, ForensicErrorSeverity.integrity);
+      expect(result.userMessage.toLowerCase(), contains('descrição'));
+    });
+
+    test('JustificationException(identity) → identity guidance', () {
+      const error = JustificationException(
+        'Invalid justification category: bogus',
+        phase: JustificationPhase.identity,
+      );
+
+      final result = interpreter.interpret(error);
+
+      expect(result.severity, ForensicErrorSeverity.integrity);
+      expect(result.userMessage, isNot(contains('bogus')));
+    });
+
+    test('JustificationException(persistence) → infra guidance', () {
+      const error = JustificationException(
+        'Evidence integrity check failed: hashes do not match.',
+        phase: JustificationPhase.persistence,
+      );
+
+      final result = interpreter.interpret(error);
+
+      expect(result.severity, ForensicErrorSeverity.infrastructure);
+      expect(result.userMessage.toLowerCase(), contains('servidor'));
+    });
+
+    test(
+      'JustificationException is matched before generic DomainException',
+      () {
+        const error = JustificationException(
+          'window expired',
+          phase: JustificationPhase.temporal,
+        );
+
+        final result = interpreter.interpret(error);
+
+        // Generic DomainException fallback would say "validar a evidência";
+        // the phase-aware branch must win.
+        expect(result.userMessage.toLowerCase(), contains('prazo'));
+      },
+    );
 
     test('interpretation is deterministic (same input → same output)', () {
       const error = ForensicViolationException(

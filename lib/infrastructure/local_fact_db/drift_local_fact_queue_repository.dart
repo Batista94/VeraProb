@@ -5,14 +5,14 @@ import 'package:veraprob/domain/sla_audit/local_fact_queue/pending_fact.dart'
     as domain;
 import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
 import 'package:veraprob/infrastructure/local_fact_db/local_fact_database.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// Drift-backed implementation of [LocalFactQueueRepository].
 ///
 /// Uses `edge_ledger_v1.db` (WasmDatabase on Flutter Web, native SQLite
 /// on other platforms).
 ///
-/// **INV-11:** `insertOnConflictUpdate` â€” idempotent by (factId, contentHash UNIQUE).
+/// **INV-11:** `insertOnConflictUpdate` — idempotent by (factId, contentHash UNIQUE).
 /// **INV-12:** `clearAcknowledged` deletes records older than 48 h.
 class DriftLocalFactQueueRepository implements LocalFactQueueRepository {
   final LocalFactDatabase _db;
@@ -95,7 +95,7 @@ class DriftLocalFactQueueRepository implements LocalFactQueueRepository {
         .go();
   }
 
-  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
   Future<int> _currentRetryCount(String factId) async {
     final row =

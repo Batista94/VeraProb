@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/admin/data_seeding_repository.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
@@ -47,25 +47,25 @@ class SupabaseDataSeedingRepository
       {
         'gtfs_route_id': '809U-10',
         'short_name': '809U',
-        'long_name': 'Cidade UniversitÃ¡ria / MetrÃ´ Barra Funda',
+        'long_name': 'Cidade Universitária / Metrô Barra Funda',
         'agency_id': 'SPTRANS',
       },
       {
         'gtfs_route_id': '875C-10',
         'short_name': '875C',
-        'long_name': 'Term. Lapa / MetrÃ´ Santa Cruz',
+        'long_name': 'Term. Lapa / Metrô Santa Cruz',
         'agency_id': 'SPTRANS',
       },
       {
         'gtfs_route_id': '917H-10',
         'short_name': '917H',
-        'long_name': 'Term. Pirituba / MetrÃ´ Vila Mariana',
+        'long_name': 'Term. Pirituba / Metrô Vila Mariana',
         'agency_id': 'SPTRANS',
       },
       {
         'gtfs_route_id': '701U-10',
         'short_name': '701U',
-        'long_name': 'Cidade UniversitÃ¡ria / MetrÃ´ Santana',
+        'long_name': 'Cidade Universitária / Metrô Santana',
         'agency_id': 'SPTRANS',
       },
     ];
@@ -122,7 +122,7 @@ class SupabaseDataSeedingRepository
             .from('contracts')
             .insert({
               'organization_id': organizationId,
-              'name': 'Contrato de Teste HistÃ³rico',
+              'name': 'Contrato de Teste Histórico',
               'contractor_name': contractor?['name'] ?? 'Empresa Beta',
               'valid_from_utc': _dateTimeProvider
                   .nowUtc()
@@ -230,8 +230,8 @@ class SupabaseDataSeedingRepository
         'protected_revenue_cents': 20000,
         'revenue_at_risk_cents': 0,
         'lost_revenue_cents': 20000,
-        'risk_percentage': 0,
-        'loss_percentage': 50.0,
+        'risk_percentage_bps': 0,
+        'loss_percentage_bps': 5000,
         'total_obligations': 4,
         'executed_count': 4,
       });
@@ -387,7 +387,7 @@ class SupabaseDataSeedingRepository
 
   Future<void> _seedSmartCnpjContractors(String organizationId) async {
     final contractors = [
-      {'name': 'LogÃ­stica Ãguia S/A', 'cnpj': '61219049000196'},
+      {'name': 'Logística Ãguia S/A', 'cnpj': '61219049000196'},
       {'name': 'Transportes Veloz', 'cnpj': '11444777000161'},
     ];
 

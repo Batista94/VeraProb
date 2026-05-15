@@ -1,7 +1,7 @@
 import 'dart:collection';
 
 import 'package:uuid/uuid.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 import 'package:veraprob/domain/shared/money.dart';
 import 'domain_event.dart';

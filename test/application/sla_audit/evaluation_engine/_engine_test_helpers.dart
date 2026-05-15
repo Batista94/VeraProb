@@ -6,7 +6,7 @@ import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dar
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/application/normalization/models/connectivity_state.dart';
-import 'package:veraprob/core/utils/geo_math.dart';
+import 'package:veraprob/domain/shared/geo_math.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';

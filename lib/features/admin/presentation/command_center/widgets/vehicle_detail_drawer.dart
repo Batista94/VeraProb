@@ -11,7 +11,7 @@ import 'package:veraprob/application/intelligence/suggestion_engine.dart'
 import 'package:veraprob/application/authority/operational_command_bus.dart'
     show UpdateTripStatusCommand;
 import 'package:veraprob/state/providers/fleet_providers.dart';
-import 'package:veraprob/presentation/shared/widgets/status_badge.dart';
+import 'package:veraprob/presentation/shared/ui/status_badge.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/geofence_evidence_map.dart';
 import 'occurrence_modal.dart';

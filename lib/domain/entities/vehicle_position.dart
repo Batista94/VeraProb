@@ -47,7 +47,7 @@ class VehiclePosition extends Equatable {
       speed: (json['speed'] as num?)?.toDouble(),
       heading: (json['heading'] as num?)?.toDouble(),
       accuracyMeters: (json['accuracy_meters'] as num?)?.toDouble(),
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      timestamp: DateTime.parse(json['timestamp'] as String).toUtc(),
       source: json['source'] as String,
       routeName: json['route_name'] as String?,
       vehiclePlate: json['vehicle_plate'] as String?,

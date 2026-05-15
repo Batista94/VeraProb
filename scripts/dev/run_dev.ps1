@@ -13,7 +13,7 @@ if (-not (Test-Path ".env")) {
 
 # 1. Kill lingering processes (focado em performance)
 Write-Host "[VeraProb] Liberando descritores de arquivo..." -ForegroundColor DarkGray
-Get-Process -Name "dart", "flutter", "analysis_server" -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process -Name "dart", "flutter", "analysis_server", "node" -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 
 Write-Host "[DEV] Iniciando ambiente VeraProb..." -ForegroundColor Cyan

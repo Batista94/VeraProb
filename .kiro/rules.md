@@ -20,6 +20,7 @@ As Invariantes são as leis fundamentais do VeraProb. Nenhuma alteração de có
   - **INV-19 (Penny Precision)**: Valores financeiros como `BIGINT` (cents), nunca `double`.
   - **INV-26 (Error Parity)**: Erros idênticos (404) para evitar inferência de dados.
   - **INV-28 (Secret Guard)**: Bloqueio de segredos/tokens no código.
+  - **INV-DB (Zero-Downtime)**: Proibição de operações SQL bloqueantes em migrações.
 
 ## 3. ORCHESTRATION (Makefile)
 Utilize os comandos padronizados para gerenciar o ambiente:
@@ -51,3 +52,15 @@ STRICT MEMORY PROTOCOL para todos os agentes:
 - **Automated Fix**: Execute `dart fix --apply` após edições estruturais.
 - **Prefer Const**: Utilize `const` em construtores e declarações sempre que possível.
 - **Universal UTC (INV-6)**: `DateTime.now()` deve SEMPRE ser seguido por `.toUtc()` para conformidade com a invariante forense global.
+
+---
+## 8. COMPLEXITY GATE (Hard Limits)
+Limites impostos pelo scanner forense para evitar débitos técnicos e garantir auditabilidade.
+
+| Camada | Linhas/Método (Aviso/Block) | Complexidade (Aviso/Block) | Aninhamento (Aviso/Block) |
+|---|---|---|---|
+| **Domain/App** | 60 / 100 | 10 / 20 | 4 / 6 |
+| **Infrastructure** | 100 / 200 | 15 / 25 | 5 / 7 |
+| **Presentation** | 200 / 400 | 25 / 40 | 7 / 10 |
+| **Tests** | 500 / 1000 | 50 / 100 | 10 / 15 |
+

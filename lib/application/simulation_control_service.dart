@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
-import 'package:veraprob/data/services/fleet_simulation_service.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/infrastructure/simulation/fleet_simulation_service.dart';
 import 'audit/audit_service.dart';
 import 'operational_control_service.dart';
 import 'ports/contractual_event_port.dart';
@@ -70,7 +70,7 @@ class SimulationControlService implements OperationalControlService {
       },
     );
 
-    // â”€â”€ Dispatch forensic evidence to the SLA ledger via the module port â”€â”€
+    // ── Dispatch forensic evidence to the SLA ledger via the module port ──
     final nowUtc = _dateTimeProvider.nowUtc();
     final trip = _simulation.getTripById(tripId);
 
@@ -138,7 +138,7 @@ class SimulationControlService implements OperationalControlService {
       },
     );
 
-    // â”€â”€ Dispatch forensic evidence to the SLA ledger via the module port â”€â”€
+    // ── Dispatch forensic evidence to the SLA ledger via the module port ──
     await _contractualEvents.dispatchOccurrenceRegistered(
       organizationId: _getOrganizationId(),
       tripId: tripId,

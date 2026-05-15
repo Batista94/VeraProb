@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// Single-use time-limited token that grants a driver unauthenticated access
 /// to the justification submission form for a specific SET / contract.
@@ -8,9 +8,9 @@ import 'package:veraprob/core/utils/date_time_provider.dart';
 /// Mirrors [ContractReviewToken] with the addition of [setId].
 ///
 /// **Invariants:**
-/// - [token] is a UUID v4 generated server-side (128-bit collision space â€” PO-1).
-/// - [expiresAtUtc] is operator-configured at 1â€“72 hours (PO-6).
-/// - Submission stamps [usedAtUtc] â€” token is never deleted (INV-7).
+/// - [token] is a UUID v4 generated server-side (128-bit collision space — PO-1).
+/// - [expiresAtUtc] is operator-configured at 1–72 hours (PO-6).
+/// - Submission stamps [usedAtUtc] — token is never deleted (INV-7).
 class JustificationSubmissionToken extends Equatable {
   final String id;
   final String organizationId;
@@ -27,7 +27,7 @@ class JustificationSubmissionToken extends Equatable {
   final String createdByUserId;
   final DateTime expiresAtUtc;
 
-  /// Stamped once when the driver submits â€” never reset (INV-11).
+  /// Stamped once when the driver submits — never reset (INV-11).
   final DateTime? usedAtUtc;
 
   final DateTime createdAtUtc;

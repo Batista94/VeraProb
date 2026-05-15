@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/audit/system_audit_log_service.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_users_tab.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';

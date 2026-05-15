@@ -2,10 +2,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/admin/invitation.dart';
 import 'package:veraprob/domain/admin/invitation_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// PostgreSQL read-side implementation of [InvitationRepository].
-/// Uses direct table queries â€” RLS scopes reads to the caller's org.
+/// Uses direct table queries — RLS scopes reads to the caller's org.
 class PostgresInvitationQueryService implements InvitationRepository {
   final SupabaseClient _client;
   final IDateTimeProvider _dateTimeProvider;

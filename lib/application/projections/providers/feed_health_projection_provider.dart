@@ -22,7 +22,7 @@ class FeedHealthProjection {
       case FeedHealthStatus.online:
         return 'Online ($currentDelayMs ms)';
       case FeedHealthStatus.degraded:
-        return 'LatÃªncia Alta ($currentDelayMs ms)';
+        return 'Latência Alta ($currentDelayMs ms)';
       case FeedHealthStatus.offline:
         return 'Offline';
     }

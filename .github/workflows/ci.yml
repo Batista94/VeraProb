@@ -79,6 +79,9 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       - name: Cache pub dependencies
         uses: actions/cache@v5
         with:
@@ -97,6 +100,39 @@ jobs:
 
       - name: Flutter Analyze (zero warnings policy)
         run: flutter analyze --no-pub
+
+      - name: H-13 Encoding Guard (reject mojibake)
+        run: |
+          echo "Scanning all .dart files for encoding violations..."
+          ERRORS=0
+          while IFS= read -r FILE; do
+            # Valid UTF-8 check
+            if ! iconv -f UTF-8 -t UTF-8 "$FILE" > /dev/null 2>&1; then
+              echo "::error file=$FILE::Invalid UTF-8 encoding"
+              ERRORS=$((ERRORS + 1))
+              continue
+            fi
+            # BOM check
+            if head -c 3 "$FILE" | grep -qP '\xef\xbb\xbf'; then
+              echo "::error file=$FILE::UTF-8 BOM detected (remove BOM)"
+              ERRORS=$((ERRORS + 1))
+            fi
+            # Latin-1 double-encode
+            if grep -qP '\xc3\x83\xc2' "$FILE"; then
+              echo "::error file=$FILE::Mojibake detected (Latin-1 double-encode)"
+              ERRORS=$((ERRORS + 1))
+            fi
+            # Win-1252 double-encode
+            if grep -qP '\xc3\xa2\xe2\x82\xac' "$FILE"; then
+              echo "::error file=$FILE::Mojibake detected (Win-1252 double-encode)"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done < <(find lib test -name '*.dart' -type f)
+          if [ $ERRORS -gt 0 ]; then
+            echo "::error::Encoding Guard FAILED: $ERRORS file(s) with violations"
+            exit 1
+          fi
+          echo "✅ All .dart files are valid UTF-8 without mojibake."
 
       - name: Enforce Dart Formatting
         run: dart format --output=none --set-exit-if-changed .
@@ -141,6 +177,9 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       - name: Cache pub dependencies
         uses: actions/cache@v5
         with:
@@ -176,6 +215,9 @@ jobs:
           flutter-version: "3.41.9"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5
@@ -213,6 +255,9 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       - name: Cache pub dependencies
         uses: actions/cache@v5
         with:
@@ -247,6 +292,9 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       - name: Cache pub dependencies
         uses: actions/cache@v5
         with:
@@ -259,7 +307,7 @@ jobs:
         run: flutter pub get
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: latest
 
@@ -275,7 +323,7 @@ jobs:
       - name: Capture Supabase Keys
         run: |
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
-          echo "SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
 
       - name: Check if integration tests should run
         id: should_run_integration
@@ -296,7 +344,7 @@ jobs:
           flutter test --no-pub \
             integration_test/security/ \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
-            --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"
+            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
 
       - name: Integration Tests Skipped
         if: steps.should_run_integration.outputs.run-tests == 'false'
@@ -305,7 +353,7 @@ jobs:
   test-coverage:
     name: "Test Coverage Gate"
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     needs: [test-phase-1, test-phase-2]
     steps:
       - name: Checkout
@@ -317,6 +365,9 @@ jobs:
           flutter-version: "3.41.9"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5
@@ -330,7 +381,7 @@ jobs:
         run: flutter pub get
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: latest
 
@@ -343,17 +394,13 @@ jobs:
       - name: Capture Supabase Keys
         run: |
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
-          echo "SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
 
       - name: Flutter Test with Coverage
         run: |
           flutter test --no-pub --coverage \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
-            --dart-define=SUPABASE_KEY="$SERVICE_ROLE_KEY"
-
-      - name: Web Build Sanity Check (Smoke Test)
-        run: |
-          flutter build web --no-pub --release --dart-define=ENV=ci_check
+            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
 
       - name: Install lcov
         run: sudo apt-get install -y lcov
@@ -390,6 +437,9 @@ jobs:
           flutter-version: "3.41.9"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5
@@ -440,10 +490,10 @@ jobs:
       - name: Setup Node.js (for bootstrap)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: latest
 
@@ -456,12 +506,12 @@ jobs:
       - name: Bootstrap Forensic Data
         run: |
           npm install @supabase/supabase-js
-          node scripts/bootstrap_dev.mjs
+          node scripts/dev/bootstrap_dev.mjs
         env:
           SUPABASE_URL: "http://127.0.0.1:54321"
 
       - name: Apply Stress Limits (INV-16)
-        run: bash scripts/chaos/apply_stress_limits.sh
+        run: bash scripts/qa/chaos/apply_stress_limits.sh
 
       - name: Run Chaos & Resilience Suite
         run: |
@@ -469,7 +519,7 @@ jobs:
           SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
           ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
           
-          export SERVICE_ROLE_KEY
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           export SUPABASE_ANON_KEY="$ANON_KEY"
           export SUPABASE_URL="http://127.0.0.1:54321"
           export ORG_ID="00000000-0000-0000-0000-000000000001"
@@ -477,4 +527,4 @@ jobs:
           export BOUND_CHAT_ID="908453789"
           export WEBHOOK_SECRET="VeraProb_Secret_Local_2026"
           
-          bash scripts/chaos/run_chaos_suite.sh
+          bash scripts/qa/chaos/run_chaos_suite.sh

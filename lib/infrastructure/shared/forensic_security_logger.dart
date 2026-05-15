@@ -36,7 +36,8 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:veraprob/application/shared/security_context.dart';
-import 'package:veraprob/core/config/environment.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_exception.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 
 /// Static forensic logger for security event auditing.
 ///
@@ -156,6 +157,54 @@ class ForensicSecurityLogger {
         'payload_org_id': payloadOrgId,
         'jwt_org_id': jwtOrgId,
         'session_id': sessionId,
+      });
+    });
+    Sentry.captureMessage(message);
+  }
+
+  // ── Event 3: Justification Phase Trace (Tier 1 Audit Trail) ───────────
+
+  /// Logs the outcome of a single phase of the SLA justification submission
+  /// pipeline (Validar -> Vincular -> Selar).
+  ///
+  /// **Triggered on:** entry/exit of every phase helper in
+  /// `SLAJustificationManager.submitJustification`, and on the failure path
+  /// with [passed] = `false` plus the failing [phase].
+  ///
+  /// **SOC Severity:** INFO on success, WARNING on failure — this is forensic
+  /// observability for the client defense dossier, not an attack signal.
+  ///
+  /// **Side-effect only:** returns void, never throws, never alters control flow.
+  static void logJustificationPhase({
+    required JustificationPhase phase,
+    required String organizationId,
+    required String vehicleId,
+    required bool passed,
+    String? detail,
+  }) {
+    final outcome = passed ? 'PASS' : 'FAIL';
+    final message =
+        'Justification Phase ${phase.name} [$outcome] '
+        'org=$organizationId vehicle=$vehicleId'
+        '${detail != null ? ' — $detail' : ''}';
+
+    if (kDebugMode) {
+      debugPrint('[FORENSIC AUDIT] $message');
+    }
+
+    if (!EnvironmentConfig.sentryEnabled) return;
+
+    Sentry.configureScope((scope) {
+      scope.level = passed ? SentryLevel.info : SentryLevel.warning;
+      scope.setTag('security_event', 'JUSTIFICATION_PHASE');
+      scope.setTag('justification_phase', phase.name);
+      scope.setTag('phase_outcome', outcome);
+      scope.setTag('requester_org', organizationId);
+      scope.setContexts('forensic_event', <String, String?>{
+        'resource_type': 'sla_justification',
+        'resource_id': vehicleId,
+        'phase': phase.name,
+        'detail': detail,
       });
     });
     Sentry.captureMessage(message);

@@ -4,18 +4,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/shared/idempotency_key.dart';
 
 // ---------------------------------------------------------------------------
-// FORENSIC AUDIT SUITE â€” INV-11 (IdempotÃªncia DeterminÃ­stica)
+// FORENSIC AUDIT SUITE — INV-11 (Idempotência Determinística)
 //
 // Zero-tolerance proofs for:
-//   Â· DET   â€” Determinismo Absoluto (100 calls â†’ identical id)
-//   Â· AVA   â€” Avalanche Effect (1 char change â†’ completely different id)
-//   Â· IMMUT â€” Imutabilidade (Value Object â€” no mutation after creation)
-//   Â· SER   â€” SerializaÃ§Ã£o (id is a stable 64-char lowercase hex SHA-256)
-//   Â· ZR    â€” Zero Randomness (no Date' 'Time' '.nowUtc() / Ran' 'dom in generation)
+//   · DET   — Determinismo Absoluto (100 calls â†’ identical id)
+//   · AVA   — Avalanche Effect (1 char change â†’ completely different id)
+//   · IMMUT — Imutabilidade (Value Object — no mutation after creation)
+//   · SER   — Serialização (id is a stable 64-char lowercase hex SHA-256)
+//   · ZR    — Zero Randomness (no Date' 'Time' '.nowUtc() / Ran' 'dom in generation)
 // ---------------------------------------------------------------------------
 
 void main() {
-  // Shared baseline fixture â€” reused across all groups.
+  // Shared baseline fixture — reused across all groups.
   const userId = 'user-abc';
   const commandPath = 'close_contract';
   const orgId = 'org-xyz';
@@ -30,9 +30,9 @@ void main() {
     nowUtc: nowUtc,
   );
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // DET â€” Determinismo Absoluto
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─────────────────────────────────────────────────────────────────────────
+  // DET — Determinismo Absoluto
+  // ─────────────────────────────────────────────────────────────────────────
   group('FORENSIC: Determinismo Absoluto (INV-11)', () {
     test('DET-01: 100 calls with identical inputs produce identical id', () {
       final ids = List.generate(100, (_) => base().id);
@@ -66,9 +66,9 @@ void main() {
     });
   });
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // AVA â€” Avalanche Effect
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─────────────────────────────────────────────────────────────────────────
+  // AVA — Avalanche Effect
+  // ─────────────────────────────────────────────────────────────────────────
   group('FORENSIC: Avalanche Effect (INV-11)', () {
     test('AVA-01: 1-char change in userId â†’ different id', () {
       final idA = base().id;
@@ -148,49 +148,46 @@ void main() {
         expect(
           idA,
           equals(idB),
-          reason: 'AVA-05: nowUtc is metadata â€” must NOT influence the hash',
+          reason: 'AVA-05: nowUtc is metadata — must NOT influence the hash',
         );
       },
     );
   });
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // IMMUT â€” Imutabilidade
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─────────────────────────────────────────────────────────────────────────
+  // IMMUT — Imutabilidade
+  // ─────────────────────────────────────────────────────────────────────────
   group('FORENSIC: Imutabilidade (INV-11)', () {
-    // All fields are declared `final` â€” enforced at compile time.
+    // All fields are declared `final` — enforced at compile time.
     // The tests below prove that state-transition methods return NEW instances
     // and leave the original untouched.
 
-    test(
-      'IMMUT-01: complete() returns new instance â€” original unchanged',
-      () {
-        final original = base();
-        final completed = original.complete(
-          responseCode: 200,
-          responseBody: {'id': 'c-001'},
-          nowUtc: nowUtc,
-        );
+    test('IMMUT-01: complete() returns new instance — original unchanged', () {
+      final original = base();
+      final completed = original.complete(
+        responseCode: 200,
+        responseBody: {'id': 'c-001'},
+        nowUtc: nowUtc,
+      );
 
-        expect(
-          identical(original, completed),
-          isFalse,
-          reason: 'IMMUT-01: complete() must return a NEW instance',
-        );
-        expect(
-          original.status,
-          equals('processing'),
-          reason: 'IMMUT-01: original.status must remain processing',
-        );
-        expect(
-          original.id,
-          equals(completed.id),
-          reason: 'IMMUT-01: id is preserved across state transition',
-        );
-      },
-    );
+      expect(
+        identical(original, completed),
+        isFalse,
+        reason: 'IMMUT-01: complete() must return a NEW instance',
+      );
+      expect(
+        original.status,
+        equals('processing'),
+        reason: 'IMMUT-01: original.status must remain processing',
+      );
+      expect(
+        original.id,
+        equals(completed.id),
+        reason: 'IMMUT-01: id is preserved across state transition',
+      );
+    });
 
-    test('IMMUT-02: fail() returns new instance â€” original unchanged', () {
+    test('IMMUT-02: fail() returns new instance — original unchanged', () {
       final original = base();
       final failed = original.fail(responseCode: 400, nowUtc: nowUtc);
 
@@ -225,10 +222,10 @@ void main() {
     });
   });
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // SER â€” SerializaÃ§Ã£o como Primary Key
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  group('FORENSIC: SerializaÃ§Ã£o â€” Primary Key (INV-11)', () {
+  // ─────────────────────────────────────────────────────────────────────────
+  // SER — Serialização como Primary Key
+  // ─────────────────────────────────────────────────────────────────────────
+  group('FORENSIC: Serialização — Primary Key (INV-11)', () {
     test('SER-01: id is exactly 64 characters', () {
       expect(
         base().id.length,
@@ -241,7 +238,7 @@ void main() {
       expect(
         RegExp(r'^[0-9a-f]{64}$').hasMatch(base().id),
         isTrue,
-        reason: 'SER-02: id must be lowercase hex â€” no uppercase, no hyphens',
+        reason: 'SER-02: id must be lowercase hex — no uppercase, no hyphens',
       );
     });
 
@@ -265,9 +262,9 @@ void main() {
     });
   });
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // ZR â€” Zero Randomness
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─────────────────────────────────────────────────────────────────────────
+  // ZR — Zero Randomness
+  // ─────────────────────────────────────────────────────────────────────────
   group('FORENSIC: Zero Randomness (INV-11)', () {
     test('ZR-01 (Static Analysis): source contains no Date'
         'Time'

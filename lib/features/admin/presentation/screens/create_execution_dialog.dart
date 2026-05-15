@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/admin/create_execution_command.dart';
-import 'package:veraprob/presentation/widgets/skeleton_list_loader.dart';
+import 'package:veraprob/presentation/shared/ui/skeleton_list_loader.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/assets_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';

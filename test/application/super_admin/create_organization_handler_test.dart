@@ -9,7 +9,7 @@ import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/domain/super_admin/plan_limits.dart';
 import 'package:veraprob/domain/super_admin/plan_type.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 

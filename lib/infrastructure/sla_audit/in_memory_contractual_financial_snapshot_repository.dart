@@ -73,4 +73,16 @@ class InMemoryContractualFinancialSnapshotRepository
     );
     return active.any((s) => s.operationalDateUtc == normalizedDate);
   }
+
+  @override
+  Future<bool> existsSuperseding(
+    String organizationId,
+    String snapshotId,
+  ) async {
+    return _store.values.any(
+      (s) =>
+          s.organizationId == organizationId &&
+          s.previousSnapshotId == snapshotId,
+    );
+  }
 }

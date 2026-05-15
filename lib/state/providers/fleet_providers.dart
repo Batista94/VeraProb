@@ -4,7 +4,7 @@ import 'package:veraprob/application/intelligence/situation_engine.dart';
 import 'package:veraprob/application/operational_control_service.dart';
 import 'package:veraprob/application/simulation_control_service.dart';
 import 'package:veraprob/application/sla_audit/sla_contractual_event_port.dart';
-import 'package:veraprob/data/services/fleet_simulation_service.dart';
+import 'package:veraprob/infrastructure/simulation/fleet_simulation_service.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';

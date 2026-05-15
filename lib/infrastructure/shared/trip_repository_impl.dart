@@ -3,7 +3,7 @@ import 'package:veraprob/domain/shared/i_trip_repository.dart';
 import 'package:veraprob/domain/entities/trip.dart';
 import 'package:veraprob/infrastructure/shared/mappers/trip_mapper.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// Supabase implementation of [ITripRepository].
 ///

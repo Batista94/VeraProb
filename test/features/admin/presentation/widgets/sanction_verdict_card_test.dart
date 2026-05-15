@@ -19,7 +19,7 @@ import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 

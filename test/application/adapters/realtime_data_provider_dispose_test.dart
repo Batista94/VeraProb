@@ -1,8 +1,8 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/adapters/realtime_data_provider.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 
 class MockSupabaseClient extends Mock implements SupabaseClient {}
@@ -42,10 +42,10 @@ void main() {
   });
 
   group('Limpeza de Recursos', () {
-    test('dispose cancela timer de reconexÃ£o', () async {
+    test('dispose cancela timer de reconexão', () async {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
 
-      // ForÃ§ar erro para agendar reconexÃ£o
+      // Forçar erro para agendar reconexão
       when(
         () => mockChannel.subscribe(),
       ).thenThrow(Exception('connection failed'));
@@ -57,10 +57,10 @@ void main() {
       // Dispose deve cancelar timer
       provider.dispose();
 
-      // Aguardar tempo que seria de reconexÃ£o
+      // Aguardar tempo que seria de reconexão
       await Future.delayed(const Duration(seconds: 2));
 
-      // NÃ£o deve ter tentado reconectar
+      // Não deve ter tentado reconectar
       verify(
         () => mockChannel.subscribe(),
       ).called(1); // Apenas tentativa inicial
@@ -97,11 +97,11 @@ void main() {
       // Aguardar tempo de debounce
       await Future.delayed(const Duration(milliseconds: 100));
 
-      // NÃ£o deve ter emitido (timer cancelado)
+      // Não deve ter emitido (timer cancelado)
       expect(emissions, isEmpty);
     });
 
-    test('dispose fecha stream de posiÃ§Ãµes', () async {
+    test('dispose fecha stream de posiçÃµes', () async {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       await provider.connect();
 
@@ -137,7 +137,7 @@ void main() {
       final emissions = <List<VehiclePosition>>[];
       provider.positionStream.listen(emissions.add);
 
-      // Adicionar posiÃ§Ãµes ao buffer
+      // Adicionar posiçÃµes ao buffer
       final payload = PostgresChangePayload(
         schema: 'public',
         table: 'vehicle_positions',
@@ -160,7 +160,7 @@ void main() {
 
       provider.dispose();
 
-      // Tentar adicionar apÃ³s dispose nÃ£o deve causar erro
+      // Tentar adicionar após dispose não deve causar erro
       expect(() => provider.onPayloadReceived(payload), returnsNormally);
     });
 
@@ -173,7 +173,7 @@ void main() {
       verify(() => mockChannel.unsubscribe()).called(1);
     });
 
-    test('dispose pode ser chamado mÃºltiplas vezes sem erro', () async {
+    test('dispose pode ser chamado múltiplas vezes sem erro', () async {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       await provider.connect();
 

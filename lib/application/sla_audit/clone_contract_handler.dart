@@ -3,7 +3,7 @@ import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'clone_contract_command.dart';
 import 'sla_ledger_mapper.dart';
 
@@ -14,7 +14,7 @@ import 'sla_ledger_mapper.dart';
 /// them separately via the UI).
 ///
 /// **Invariants enforced:**
-/// - Source contract must exist within [organizationId] â€” cross-tenant
+/// - Source contract must exist within [organizationId] — cross-tenant
 ///   cloning is rejected with [DomainException].
 /// - [organizationId] comes from the JWT, never from the source record.
 /// - The clone receives a new UUID and a new [ContractCreatedEvent].
@@ -44,7 +44,7 @@ class CloneContractHandler {
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
   }) async {
-    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,

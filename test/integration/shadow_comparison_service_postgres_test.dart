@@ -6,7 +6,7 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_shadow_verdict_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 import '../infrastructure/postgres/postgres_test_config.dart';
 

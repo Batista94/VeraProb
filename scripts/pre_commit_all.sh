@@ -18,11 +18,15 @@ echo "--- [H-06] Prompt Audit ---"
 
 # H-04: Secret Scan
 echo "--- [H-04] Secret Scan ---"
-python scripts/security/scan_secrets.py
+python3 scripts/security/scan_secrets.py
 
 # H-05: Barrel Scan
 echo "--- [H-05] Barrel Scan ---"
-python scripts/validate_barrel_files.py
+python3 scripts/validate_barrel_files.py
+
+# H-13: Integrity Guard (encoding & line endings)
+echo "--- [H-13] Integrity Guard ---"
+python3 scripts/security/check_integrity.py
 
 # H-03: Forensic Scan (The Veto)
 echo "--- [H-03] Forensic Scan ---"
@@ -30,7 +34,7 @@ bash scripts/security/pr_full_scanner.sh
 
 # H-11: Index Advisor
 echo "--- [H-11] Index Advisor ---"
-python scripts/index_advisor.py
+python3 scripts/index_advisor.py
 
 # H-12: Code Quality (Lint & Auto-Fix)
 echo "--- [H-12] Code Quality ---"

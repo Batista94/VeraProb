@@ -2,8 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/application/admin/invite_user_command.dart';
 import 'package:veraprob/application/shared/super_admin_bypass_tenant_validator.dart';
-import 'package:veraprob/core/utils/cnpj_validator.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/shared/utils/cnpj_validator.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/super_admin/plan_limits.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
@@ -13,10 +13,17 @@ import 'package:veraprob/application/super_admin/super_admin_invitation_command_
 
 /// Application handler for [CreateOrganizationCommand].
 ///
-/// Orchestrates: RBAC → validation → org creation → billing event → admin invite.
+/// Orchestrates provisioning steps:
+///   1. RBAC gate
+///   2. Organization data validation
+///   3. Plan quota defaults resolution
+///   4. Atomic DB provisioning
+///   5. Admin invitation
+///   6. API secret generation (INV-28)
 ///
-/// INV-4: Pure orchestration — no direct DB access.
-/// INV-7: IDs generated in Dart (via InviteUserHandler), not in SQL.
+/// INV-4:  Pure orchestration — no direct DB access.
+/// INV-7:  IDs generated in Dart (via InviteUserHandler), not in SQL.
+/// INV-22: Each provisioning step reinforces tenant isolation barriers.
 class CreateOrganizationHandler {
   final ISuperAdminRepository _repository;
   final SupabaseClient _authenticatedClient;
@@ -29,46 +36,85 @@ class CreateOrganizationHandler {
     this._dateTimeProvider,
   );
 
+  // ── Orchestrator ─────────────────────────────────────────────────────────────
+
   Future<CreateOrganizationResult> handle(CreateOrganizationCommand cmd) async {
-    // 1. RBAC — before any I/O
+    _assertSuperAdminRbac(); // Step 1 (INV-22)
+    _validateOrganizationData(cmd); // Step 2 (INV-10, INV-18)
+    final effectiveCmd = _applyPlanDefaults(cmd); // Step 3 (INV-19)
+    final orgId = await _provisionOrganization(effectiveCmd); // Step 4 (INV-4)
+    final tokens = await _inviteAdministrators(orgId, cmd); // Step 5 (INV-7)
+    final orgApiSecret = await _setupOrganizationSecret(
+      orgId,
+    ); // Step 6 (INV-28)
+    return CreateOrganizationResult(
+      orgId: orgId,
+      invitationTokens: tokens,
+      orgApiSecret: orgApiSecret,
+    );
+  }
+
+  // ── Step 1: RBAC ─────────────────────────────────────────────────────────────
+
+  /// Guards the entire provisioning flow. Fails before any I/O.
+  /// INV-22: Only superAdmin with canManageTenants may create tenants.
+  void _assertSuperAdminRbac() {
     if (!_rbac.can(UserRole.superAdmin, UserPermission.canManageTenants)) {
       throw const DomainException('Unauthorized: canManageTenants required.');
     }
+  }
 
-    // 2. CNPJ validation — modulo-11 check-digit (INV-18: CnpjValidator is pure Dart)
-    if (!CnpjValidator.isValid(cmd.cnpj)) {
+  // ── Step 2: Validation ───────────────────────────────────────────────────────
+
+  /// Validates all organization data. Pure Dart — zero I/O.
+  /// Delegates to focused sub-validators for readability and testability.
+  /// INV-10: No silent failures. INV-18: CnpjValidator is pure Dart.
+  void _validateOrganizationData(CreateOrganizationCommand cmd) {
+    _validateCnpj(cmd.cnpj);
+    _validateRequiredFields(cmd);
+    _validateAdminEmails(cmd.adminEmails);
+    _validateAuditRequirements(cmd);
+    _validateOptionalBounds(cmd);
+    _validateQuotaBounds(cmd);
+  }
+
+  void _validateCnpj(String cnpj) {
+    if (!CnpjValidator.isValid(cnpj)) {
       throw const DomainException('CNPJ inválido.');
     }
+  }
 
-    // 3. Required fields validation
+  void _validateRequiredFields(CreateOrganizationCommand cmd) {
     if (cmd.legalName.trim().isEmpty) {
       throw const DomainException('Razão social é obrigatória.');
     }
     if (cmd.tradeName.trim().isEmpty) {
       throw const DomainException('Nome fantasia é obrigatório.');
     }
+  }
 
-    // 4. Email validation
-    if (cmd.adminEmails.isEmpty) {
+  void _validateAdminEmails(List<String> adminEmails) {
+    if (adminEmails.isEmpty) {
       throw const DomainException(
         'Pelo menos um e-mail de admin e obrigatorio.',
       );
     }
-    for (final email in cmd.adminEmails) {
+    for (final email in adminEmails) {
       final trimmed = email.trim().toLowerCase();
       if (trimmed.isEmpty || !trimmed.contains('@')) {
         throw DomainException('E-mail invalido: $email');
       }
     }
+  }
 
-    // 4a. tool_cost_cents required — ROI Guardian cannot function without it (INV-10)
+  /// Validates ROI guardian cost and mandatory audit justification.
+  /// INV-10: toolCostCents required for ROI Guardian calculation.
+  void _validateAuditRequirements(CreateOrganizationCommand cmd) {
     if (cmd.toolCostCents == null) {
       throw const DomainException(
         'Custo mensal da ferramenta é obrigatório para calcular o ROI.',
       );
     }
-
-    // 4b. reason required — every ORG_CREATED must have a justification in the audit log.
     if (cmd.reason == null || cmd.reason!.trim().isEmpty) {
       throw const DomainException(
         'Justificativa de criação é obrigatória para o log de auditoria.',
@@ -79,23 +125,24 @@ class CreateOrganizationHandler {
         'Justificativa deve ter pelo menos 10 caracteres.',
       );
     }
+  }
 
-    // 4c. billingDay must be 1–28 if provided (defense-in-depth; form data validates first)
+  /// Validates optional fields that have defined bounds (defense-in-depth).
+  void _validateOptionalBounds(CreateOrganizationCommand cmd) {
     if (cmd.billingDay != null &&
         (cmd.billingDay! < 1 || cmd.billingDay! > 28)) {
       throw const DomainException('Dia de faturamento deve ser entre 1 e 28.');
     }
-
-    // 4d. externalId length cap (defense-in-depth)
     if (cmd.externalId != null && cmd.externalId!.length > 100) {
       throw const DomainException(
         'ID externo não pode exceder 100 caracteres.',
       );
     }
+  }
 
-    // 4e. Field contamination guard (INV-10: no silent failures)
-    // Detects when form controller values leak across fields — a known
-    // Flutter Stepper widget reconciliation edge case.
+  /// Validates quota caps and detects Flutter Stepper field contamination.
+  /// INV-10: Detects form controller value leakage across wizard steps.
+  void _validateQuotaBounds(CreateOrganizationCommand cmd) {
     if (cmd.legalName.contains(cmd.tradeName) &&
         cmd.legalName != cmd.tradeName &&
         cmd.legalName.length > cmd.tradeName.length) {
@@ -115,39 +162,47 @@ class CreateOrganizationHandler {
         'Máximo permitido: 5.000.',
       );
     }
+  }
 
-    // 5. Auto-fill quota limits from PlanLimits defaults when not explicitly provided
+  // ── Step 3: Plan Defaults ────────────────────────────────────────────────────
+
+  /// Returns [cmd] unchanged when both quotas are explicit.
+  /// Otherwise builds a new command with [PlanLimits] defaults. (INV-19)
+  CreateOrganizationCommand _applyPlanDefaults(CreateOrganizationCommand cmd) {
+    if (cmd.maxVehicles != null && cmd.maxActiveContracts != null) return cmd;
     final planType = cmd.planType;
-    final effectiveCmd =
-        (cmd.maxVehicles == null || cmd.maxActiveContracts == null)
-        ? CreateOrganizationCommand(
-            legalName: cmd.legalName,
-            tradeName: cmd.tradeName,
-            cnpj: cmd.cnpj,
-            timezone: cmd.timezone,
-            currencyCode: cmd.currencyCode,
-            planType: cmd.planType,
-            maxVehicles: cmd.maxVehicles ?? PlanLimits.maxVehicles(planType),
-            maxActiveContracts:
-                cmd.maxActiveContracts ?? PlanLimits.maxContracts(planType),
-            adminEmails: cmd.adminEmails,
-            superAdminUserId: cmd.superAdminUserId,
-            capabilities: cmd.capabilities,
-            toolCostCents: cmd.toolCostCents,
-            dwellTimeSeconds: cmd.dwellTimeSeconds,
-            reason: cmd.reason,
-            billingDay: cmd.billingDay,
-            contactEmail: cmd.contactEmail,
-            externalId: cmd.externalId,
-            organizationType: cmd.organizationType,
-            allowedDomains: cmd.allowedDomains,
-          )
-        : cmd;
+    return CreateOrganizationCommand(
+      legalName: cmd.legalName,
+      tradeName: cmd.tradeName,
+      cnpj: cmd.cnpj,
+      timezone: cmd.timezone,
+      currencyCode: cmd.currencyCode,
+      planType: cmd.planType,
+      maxVehicles: cmd.maxVehicles ?? PlanLimits.maxVehicles(planType),
+      maxActiveContracts:
+          cmd.maxActiveContracts ?? PlanLimits.maxContracts(planType),
+      adminEmails: cmd.adminEmails,
+      superAdminUserId: cmd.superAdminUserId,
+      capabilities: cmd.capabilities,
+      toolCostCents: cmd.toolCostCents,
+      dwellTimeSeconds: cmd.dwellTimeSeconds,
+      reason: cmd.reason,
+      billingDay: cmd.billingDay,
+      contactEmail: cmd.contactEmail,
+      externalId: cmd.externalId,
+      organizationType: cmd.organizationType,
+      allowedDomains: cmd.allowedDomains,
+    );
+  }
 
-    // 6. Create org + billing event (atomic RPC via service_role)
-    late final String orgId;
+  // ── Step 4: Provision ────────────────────────────────────────────────────────
+
+  /// Creates org + billing event atomically via service_role RPC.
+  /// Translates PostgrestException 23505 (CNPJ duplicate) to DomainException.
+  /// INV-22: Org provisioned with isolated UUID — no cross-tenant leakage.
+  Future<String> _provisionOrganization(CreateOrganizationCommand cmd) async {
     try {
-      orgId = await _repository.createOrganization(effectiveCmd);
+      return await _repository.createOrganization(cmd);
     } on PostgrestException catch (e) {
       if (e.code == '23505' &&
           (e.message.contains('cnpj') ||
@@ -158,20 +213,26 @@ class CreateOrganizationHandler {
       }
       rethrow;
     }
+  }
 
-    // 7. Invite admins via SuperAdminInvitationCommandService (D4: bypasses TENANT_ADMIN check)
-    //    IDs generated in Dart by InviteUserHandler — satisfies INV-7.
-    final invitationService = SuperAdminInvitationCommandService(
-      _authenticatedClient,
-      orgId: orgId,
-      superAdminUserId: cmd.superAdminUserId,
-    );
+  // ── Step 5: Admin Invites ────────────────────────────────────────────────────
+
+  /// Invites all admin emails via [InviteUserHandler].
+  /// Uses [SuperAdminBypassTenantValidator] explicitly — INV-22 compliance.
+  /// IDs generated in Dart by [InviteUserHandler] — satisfies INV-7.
+  Future<List<String>> _inviteAdministrators(
+    String orgId,
+    CreateOrganizationCommand cmd,
+  ) async {
     final inviteHandler = InviteUserHandler(
       tenantValidator: const SuperAdminBypassTenantValidator(),
-      commandService: invitationService,
+      commandService: SuperAdminInvitationCommandService(
+        _authenticatedClient,
+        orgId: orgId,
+        superAdminUserId: cmd.superAdminUserId,
+      ),
       dateTimeProvider: _dateTimeProvider,
     );
-
     final tokens = <String>[];
     for (final adminEmail in cmd.adminEmails) {
       final token = await inviteHandler.handle(
@@ -186,26 +247,27 @@ class CreateOrganizationHandler {
       );
       tokens.add(token);
     }
+    return tokens;
+  }
 
-    // 8. Generate org API secret (INV-28) — one-time plain-text, silent on failure
-    String? orgApiSecret;
+  // ── Step 6: API Secret ───────────────────────────────────────────────────────
+
+  /// Generates org API secret via Edge Function (INV-28).
+  /// Returns null on failure — silent degradation by design.
+  /// Wizard UI shows a warning when orgApiSecret is null.
+  Future<String?> _setupOrganizationSecret(String orgId) async {
     try {
       final secretResponse = await _authenticatedClient.functions.invoke(
         'generate-org-secret',
         body: {'organization_id': orgId},
       );
-      orgApiSecret = secretResponse.data?['secret'] as String?;
+      return secretResponse.data?['secret'] as String?;
     } catch (_) {
-      // Silent degradation — wizard shows a warning if secret is null.
+      return null;
     }
-
-    // 9. Return immutable result
-    return CreateOrganizationResult(
-      orgId: orgId,
-      invitationTokens: tokens,
-      orgApiSecret: orgApiSecret,
-    );
   }
+
+  // ── Notification (unchanged) ─────────────────────────────────────────────────
 
   /// Fires the invite notification Edge Function — silent failure by design.
   ///

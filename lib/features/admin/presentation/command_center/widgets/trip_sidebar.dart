@@ -6,7 +6,7 @@ import 'package:veraprob/application/operational_control_service.dart'
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
 import 'package:veraprob/application/projections/providers/command_center_filter_provider.dart';
-import 'package:veraprob/presentation/shared/widgets/status_badge.dart';
+import 'package:veraprob/presentation/shared/ui/status_badge.dart';
 import 'package:veraprob/dev/performance_metrics.dart';
 
 /// Local sidebar state for search and sort (not global — UI-only).

@@ -3,7 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/telemetry_normalizer.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/telemetry/telemetry_normalization_handler.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/canonical_fact.dart' as domain_fact;
 import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/raw_telemetry_batch.dart';

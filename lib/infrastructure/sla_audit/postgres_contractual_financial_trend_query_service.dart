@@ -69,8 +69,8 @@ class ContractualFinancialTrendQueryServicePostgres
         protectedRevenue: (snapshot['protected_revenue_cents'] as num).toInt(),
         revenueAtRisk: (snapshot['revenue_at_risk_cents'] as num).toInt(),
         lostRevenue: (snapshot['lost_revenue_cents'] as num).toInt(),
-        riskPercentageBps: (snapshot['risk_percentage'] as num).toInt(),
-        lossPercentageBps: (snapshot['loss_percentage'] as num).toInt(),
+        riskPercentageBps: snapshot['risk_percentage_bps'] as int,
+        lossPercentageBps: snapshot['loss_percentage_bps'] as int,
       );
     }).toList();
   }

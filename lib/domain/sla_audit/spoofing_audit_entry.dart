@@ -3,7 +3,7 @@ import 'package:crypto/crypto.dart' show sha256;
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'spoofing_risk_score.dart';
 
 /// Append-only audit entry documenting an algorithmic detection of

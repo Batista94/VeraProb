@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/justification/contextual_signature_analyzer.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -27,9 +27,11 @@ import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 /// Application handler for [SubmitJustificationCommand].
 ///
 /// Two authorisation paths:
-/// - **Operator/Admin path**: [callerRole] must have [UserPermission.canSubmitJustification].
-/// - **Token path**: [callerRole] is null and [submittedByTokenId] is non-null
-///   (driver self-service via tokenised link â€” PO-1).
+/// - **Operator/Admin path**: [SubmitJustificationCommand.callerRole] must have
+///   [UserPermission.canSubmitJustification].
+/// - **Token path**: [SubmitJustificationCommand.callerRole] is null and
+///   [SubmitJustificationCommand.submittedByTokenId] is non-null (driver
+///   self-service via tokenised link — PO-1).
 ///
 /// Idempotency (INV-11): deterministic [PendingFact.factId] derived from
 /// contractId + setId + actorUserId prevents duplicate enqueue on retry.
@@ -61,57 +63,92 @@ class SubmitJustificationHandler {
        _analyzer = analyzer,
        _throttle = throttle;
 
+  /// Orchestrates justification submission. Each step is an atomic private
+  /// method; ordering of side-effecting awaits is forensically significant
+  /// (INV-7, INV-15, INV-18) and must not be reordered.
   Future<ContractorJustification> handle(
     SubmitJustificationCommand command,
   ) async {
-    // â”€â”€ Step 1: INV-1 Fail-Fast Identity Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // INV-1: Fail-Fast identity sync — must remain the first call.
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. RBAC â€” token path (null role) bypasses permission check (PO-1)
+    _authorize(command);
+    final category = _parseCategory(command);
+    _assertCommandValid(command);
+    await _scanEvidence(command);
+
+    // Deterministic snapshot — computed once, threaded through every step
+    // so replay is byte-identical (INV-15).
+    final now = _clock.nowUtc();
+    final id = const Uuid().v4();
+    final actorUserId = command.callerUserId ?? 'TOKEN';
+
+    final justification = await _persistJustification(
+      command,
+      category,
+      id,
+      now,
+    );
+    await _persistEvidence(command, id, now);
+    await _appendLedger(command, id, now, actorUserId);
+    await _enqueueFact(command, id, now, actorUserId);
+
+    return justification;
+  }
+
+  /// RBAC gate. The token path (null role + non-null token) is a deliberate
+  /// permission bypass for driver self-service (PO-1); every other caller
+  /// must hold [UserPermission.canSubmitJustification].
+  void _authorize(SubmitJustificationCommand command) {
     final isTokenPath =
         command.callerRole == null && command.submittedByTokenId != null;
+    if (isTokenPath) return;
+
     final role = command.callerRole;
-    if (!isTokenPath &&
-        (role == null ||
-            !_rbac.can(role, UserPermission.canSubmitJustification))) {
+    if (role == null ||
+        !_rbac.can(role, UserPermission.canSubmitJustification)) {
       throw const DomainException('Unauthorized.');
     }
+  }
 
-    // 2. Validate category â€” throws ArgumentError converted to DomainException
-    final JustificationCategory category;
+  /// Parses the raw category string, translating the infrastructure-level
+  /// [ArgumentError] into a domain [DomainException] so the presentation
+  /// layer sees one consistent error type.
+  JustificationCategory _parseCategory(SubmitJustificationCommand command) {
     try {
-      category = JustificationCategory.fromDb(command.category);
+      return JustificationCategory.fromDb(command.category);
     } on ArgumentError {
       throw DomainException(
         'Invalid justification category: ${command.category}',
       );
     }
+  }
 
-    // 3. Validate description length (PO-3)
+  /// Input invariants: minimum description length (PO-3) and mandatory
+  /// cryptographic evidence (INV-9 — forensic defensibility).
+  void _assertCommandValid(SubmitJustificationCommand command) {
     if (command.description.trim().length < 20) {
       throw const DomainException(
         'Description must be at least 20 characters.',
       );
     }
-
-    // 4. INV-9: Evidence is mandatory for forensic defensibility
     if (command.evidenceHashes.isEmpty) {
       throw const DomainException(
         'Evidence required: At least one cryptographic hash must be provided.',
       );
     }
+  }
 
-    // 4.1 Server-authoritative forensic throttle (INV-16, INV-18).
-    // A modified client cannot bypass the backoff horizon — the RPC enforces
-    // JWT-claim tenancy and persists state under RLS.
+  /// Server-authoritative evidence gate (INV-16, INV-18). Order is critical:
+  /// throttle horizon is asserted first, then the two-pass contextual scan;
+  /// a [ForensicViolationException] increments the server-side throttle
+  /// before rethrowing so the UI renders the precise verdict. A clean scan
+  /// records success.
+  Future<void> _scanEvidence(SubmitJustificationCommand command) async {
     await _throttle.assertAllowed(organizationId: command.organizationId);
-
-    // 4.2 Two-pass contextual scan of uploaded evidence (INV-9, INV-13).
-    // Failure surface: increment server-side throttle, then rethrow so the UI
-    // can render the precise ForensicViolationException verdict.
     try {
       await _analyzer.validateEvidence(command.evidenceUrls);
     } on ForensicViolationException {
@@ -119,12 +156,15 @@ class SubmitJustificationHandler {
       rethrow;
     }
     await _throttle.recordSuccess(organizationId: command.organizationId);
+  }
 
-    final now = _clock.nowUtc();
-    final id = const Uuid().v4();
-    final actorUserId = command.callerUserId ?? 'TOKEN';
-
-    // 4. Persist justification
+  /// Persists the justification aggregate root (INV-8: org-scoped write).
+  Future<ContractorJustification> _persistJustification(
+    SubmitJustificationCommand command,
+    JustificationCategory category,
+    String id,
+    DateTime now,
+  ) async {
     final justification = ContractorJustification(
       id: id,
       organizationId: command.organizationId,
@@ -139,38 +179,60 @@ class SubmitJustificationHandler {
       createdAtUtc: now,
     );
     await _justificationRepo.create(justification);
+    return justification;
+  }
 
-    // 5. Persist evidence uploads (INV-8)
+  /// Persists each uploaded evidence record, sealed by its content hash
+  /// (INV-8). The hash doubles as the identity key; filename is resolved
+  /// UI-side.
+  Future<void> _persistEvidence(
+    SubmitJustificationCommand command,
+    String justificationId,
+    DateTime now,
+  ) async {
     for (final hash in command.evidenceHashes) {
       await _justificationRepo.addEvidence(
         JustificationEvidence(
           id: const Uuid().v4(),
-          justificationId: id,
+          justificationId: justificationId,
           organizationId: command.organizationId,
-          fileName: hash, // filename resolved UI-side; hash is the identity key
+          fileName: hash,
           contentHash: hash,
           storagePath: '',
           uploadedAtUtc: now,
         ),
       );
     }
+  }
 
-    // 6. Build domain event
+  /// Appends `JUSTIFICATION_SUBMITTED` to the immutable ledger (INV-7).
+  Future<void> _appendLedger(
+    SubmitJustificationCommand command,
+    String justificationId,
+    DateTime now,
+    String actorUserId,
+  ) async {
     final event = JustificationSubmittedEvent(
       organizationId: command.organizationId,
       occurredAtUtc: now,
-      justificationId: id,
+      justificationId: justificationId,
       setId: command.setId,
       contractId: command.contractId,
       planVersion: command.planVersion,
       actorUserId: actorUserId,
       evidenceHashes: command.evidenceHashes,
     );
-
-    // 7. Append JUSTIFICATION_SUBMITTED to immutable ledger (INV-7)
     await _ledger.append(SlaLedgerMapper.mapToEntry(event));
+  }
 
-    // 8. Enqueue PendingFact for offline resilience (INV-11 idempotency)
+  /// Enqueues a [PendingFact] for offline resilience. The deterministic
+  /// [factId] guarantees a retry does not duplicate the queue entry (INV-11).
+  Future<void> _enqueueFact(
+    SubmitJustificationCommand command,
+    String justificationId,
+    DateTime now,
+    String actorUserId,
+  ) async {
     final factId = _deterministicFactId(
       command.contractId,
       command.setId,
@@ -178,7 +240,7 @@ class SubmitJustificationHandler {
     );
     final payloadJson = jsonEncode({
       'type': 'JUSTIFICATION_SUBMITTED',
-      'justificationId': id,
+      'justificationId': justificationId,
       'contractId': command.contractId,
       'setId': command.setId,
       'organizationId': command.organizationId,
@@ -197,8 +259,6 @@ class SubmitJustificationHandler {
         retryCount: 0,
       ),
     );
-
-    return justification;
   }
 
   /// Deterministic UUID derived from contractId + setId + actorUserId.

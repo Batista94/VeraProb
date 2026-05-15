@@ -1,8 +1,8 @@
 import 'package:veraprob/application/audit/audit_service.dart';
-import 'package:veraprob/core/services/logger_service.dart';
+import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/domain/entities/audit_log.dart';
 import 'package:uuid/uuid.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 /// In-memory implementation of the AuditService for Sprint 6.
 /// This logs accurately to the ephemeral store and the Debug console,

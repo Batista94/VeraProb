@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/core/utils/date_time_provider.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
@@ -9,6 +9,7 @@ import 'package:veraprob/domain/shared/authorization_exception.dart';
 import 'package:veraprob/domain/sla_audit/concurrency_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_audit_log.dart';
+import 'package:veraprob/domain/sla_audit/justification/justification_exception.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_category.dart';
@@ -121,27 +122,58 @@ class SLAJustificationManager {
   Future<SLAJustification> submitJustification(
     SubmitSLAJustificationCommand command,
   ) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+    try {
+      // ── Phase: VALIDAR ──────────────────────────────────────────────────
+      final input = await _validateIdentityAndInput(command);
+      await _validateEvidenceIntegrity(command);
+
+      final now = _clock.nowUtc();
+      _validateSubmissionWindow(command, now);
+
+      // ── Phase: VINCULAR ─────────────────────────────────────────────────
+      await _assertEventLinkage(command);
+
+      // ── Phase: SELAR ────────────────────────────────────────────────────
+      return await _persistAndSeal(
+        command: command,
+        category: input.category,
+        description: input.description,
+        now: now,
+      );
+    } on JustificationException catch (e) {
+      ForensicSecurityLogger.logJustificationPhase(
+        phase: e.phase,
+        organizationId: command.organizationId,
+        vehicleId: command.vehicleId,
+        passed: false,
+        detail: e.message,
+      );
+      rethrow;
+    }
+  }
+
+  // ── Phase: VALIDAR ───────────────────────────────────────────────────────
+
+  /// Phase 1 (Validar): INV-1 tenant sync, category parsing, XSS sanitization
+  /// and description length. Returns the sanitized values for the Selar phase.
+  Future<({SLAJustificationCategory category, String description})>
+  _validateIdentityAndInput(SubmitSLAJustificationCommand command) async {
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // ── Step 2: Validate category ────────────────────────────────────────
     final SLAJustificationCategory category;
     try {
       category = SLAJustificationCategory.fromDb(command.category);
     } on ArgumentError {
-      throw DomainException(
+      throw JustificationException(
         'Invalid justification category: ${command.category}',
+        phase: JustificationPhase.input,
       );
     }
 
-    // ── Step 3: XSS Protection (Red Team ID 4) ───────────────────────────
     final descriptionResult = _sanitizer.sanitize(command.description);
-    final sanitizedDescription = descriptionResult.text;
-
-    // ── Step 3b: Forensic Logging (INV-21) — log high-threat attempts ────
     if (descriptionResult.threatLevel == ThreatLevel.high) {
       _logXssAttempt(
         field: 'description',
@@ -150,77 +182,116 @@ class SLAJustificationManager {
       );
     }
 
-    // ── Step 4: Description validation (min 10 chars) ────────────────────
+    final sanitizedDescription = descriptionResult.text;
     if (sanitizedDescription.trim().length < 10) {
-      throw const DomainException(
+      throw const JustificationException(
         'Description must be at least 10 characters.',
+        phase: JustificationPhase.input,
       );
     }
 
-    // ── Step 5: CX05-INV-23 (Evidence Sealing — format validation) ───────
+    _logPhasePass(command, JustificationPhase.identity);
+    return (category: category, description: sanitizedDescription);
+  }
+
+  /// Phase 1 (Validar): CX05-INV-23 evidence sealing — hash count/format and
+  /// magic-byte binary signature inspection. Guarantees every attachment is
+  /// bound to a valid SHA-256 digest before it can be linked.
+  Future<void> _validateEvidenceIntegrity(
+    SubmitSLAJustificationCommand command,
+  ) async {
     if (command.evidenceHashes.isEmpty) {
-      throw const DomainException(
+      throw const JustificationException(
         'Evidence required: at least one SHA-256 hash must be provided.',
+        phase: JustificationPhase.evidence,
       );
     }
     if (command.evidenceUrls.length != command.evidenceHashes.length) {
-      throw const DomainException(
+      throw const JustificationException(
         'Evidence sealing error: URL count must match hash count (CX05-INV-23).',
+        phase: JustificationPhase.evidence,
       );
     }
     for (final hash in command.evidenceHashes) {
       if (hash.length != 64 || !_isHexString(hash)) {
-        throw DomainException(
+        throw JustificationException(
           'Invalid SHA-256 hash: "$hash". Must be 64 hex characters.',
+          phase: JustificationPhase.evidence,
         );
       }
     }
 
-    // ── Step 6: Binary Sampling & Magic Bytes (Fix 4/5 — Jump Sampling N=7) ─
     // File size is fetched internally via authenticated HEAD (Zero-Trust INV-18).
     await _fileInspector.validateEvidence(command.evidenceUrls);
+    _logPhasePass(command, JustificationPhase.evidence);
+  }
 
-    final now = _clock.nowUtc();
-
-    // ── Step 7: CX05-INV-22 (Expiration Window) ─────────────────────────
+  /// Phase 1 (Validar): CX05-INV-22 expiration window — rejects submissions
+  /// outside the configurable temporal window measured from the event.
+  void _validateSubmissionWindow(
+    SubmitSLAJustificationCommand command,
+    DateTime now,
+  ) {
     final elapsed = now.difference(command.occurrenceTimestamp);
     if (elapsed > expirationWindow) {
-      throw DomainException(
+      throw JustificationException(
         'Justification window expired: event occurred '
         '${elapsed.inHours}h ago, limit is '
         '${expirationWindow.inHours}h (CX05-INV-22).',
+        phase: JustificationPhase.temporal,
       );
     }
+    _logPhasePass(command, JustificationPhase.temporal);
+  }
 
-    // ── Step 8: CX05-INV-20 (Linkage Integrity) ─────────────────────────
+  // ── Phase: VINCULAR ──────────────────────────────────────────────────────
+
+  /// Phase 2 (Vincular): CX05-INV-20 linkage integrity and anti-double-dipping
+  /// — the event must exist in vehicle history and must not already be claimed.
+  Future<void> _assertEventLinkage(
+    SubmitSLAJustificationCommand command,
+  ) async {
     final eventExists = await eventExistsChecker(
       vehicleId: command.vehicleId,
       occurrenceTimestamp: command.occurrenceTimestamp,
       organizationId: command.organizationId,
     );
     if (!eventExists) {
-      throw const DomainException(
+      throw const JustificationException(
         'No matching event found for this vehicle and timestamp '
         '(CX05-INV-20).',
+        phase: JustificationPhase.linkage,
       );
     }
 
-    // ── Step 9: Anti-Double Dipping ──────────────────────────────────────
     final existing = await _repository.findByVehicleAndEvent(
       vehicleId: command.vehicleId,
       occurrenceTimestamp: command.occurrenceTimestamp,
       organizationId: command.organizationId,
     );
     if (existing != null) {
-      throw DomainException(
+      throw JustificationException(
         'A justification for vehicle "${command.vehicleId}" at this '
         'timestamp already exists (id: ${existing.id}).',
+        phase: JustificationPhase.linkage,
       );
     }
+    _logPhasePass(command, JustificationPhase.linkage);
+  }
 
-    // ── Step 10: Create justification + initial audit log (atomic) ───────
-    // Red Team ID 2: createWithAuditLog persists both records in a single
-    // transaction — no partial-write window between entity and audit trail.
+  // ── Phase: SELAR ─────────────────────────────────────────────────────────
+
+  /// Phase 3 (Selar): atomic persistence of the justification + initial audit
+  /// log, followed by server-side hash re-verification.
+  ///
+  /// **Red Team ID 2 (Atomicity):** entity and PENDING audit log are persisted
+  /// in a single transaction via [createWithAuditLog].
+  Future<SLAJustification> _persistAndSeal({
+    required SubmitSLAJustificationCommand command,
+    required SLAJustificationCategory category,
+    required String description,
+    required DateTime now,
+  }) async {
     final id = const Uuid().v4();
     final justification = SLAJustification(
       id: id,
@@ -228,7 +299,7 @@ class SLAJustificationManager {
       vehicleId: command.vehicleId,
       occurrenceTimestamp: command.occurrenceTimestamp,
       category: category,
-      description: sanitizedDescription,
+      description: description,
       evidenceUrls: List.unmodifiable(command.evidenceUrls),
       evidenceHashes: List.unmodifiable(command.evidenceHashes),
       status: JustificationStatus.pending,
@@ -252,37 +323,59 @@ class SLAJustificationManager {
       initialAuditLog: initialAuditLog,
     );
 
-    // ── Step 11: CX05-INV-23 (Server-side hash re-verification) ──────────
-    // Re-compute SHA-256 from raw bytes after persistence to detect any
-    // tampering between client upload and DB record creation.
+    await _assertNoPostPersistTamper(id: id, command: command, now: now);
+
+    _logPhasePass(command, JustificationPhase.persistence);
+    return justification;
+  }
+
+  /// Phase 3 (Selar): CX05-INV-23 server-side hash re-verification.
+  ///
+  /// Re-computes SHA-256 from raw bytes after persistence to detect tampering
+  /// between client upload and DB record creation. On mismatch, atomically
+  /// auto-rejects (status + system audit log + evidence deletion) and throws.
+  Future<void> _assertNoPostPersistTamper({
+    required String id,
+    required SubmitSLAJustificationCommand command,
+    required DateTime now,
+  }) async {
     final mismatches = await _evidenceVerifier.verifyAll(
       evidenceUrls: command.evidenceUrls,
       declaredHashes: command.evidenceHashes,
     );
-    if (mismatches.isNotEmpty) {
-      // Auto-reject: evidence tampered post-submission.
-      // Uses updateStatusWithAuditLog (atomic RPC) to atomically update status,
-      // append the system audit log, and schedule evidence deletion.
-      await _repository.updateStatusWithAuditLog(
-        id: id,
-        organizationId: command.organizationId,
-        expectedCurrentStatus: JustificationStatus.pending,
-        newStatus: JustificationStatus.rejected,
-        reviewerId: null,
-        resolutionNotes:
-            'Auto-rejected: server-side hash re-verification failed for '
-            'evidence index(es) $mismatches (CX05-INV-23).',
-        reviewedAtUtc: now,
-        callerRole: 'SYSTEM',
-        evidenceUrls: command.evidenceUrls,
-      );
-      throw DomainException(
-        'Evidence integrity check failed: hashes do not match for '
-        'index(es) $mismatches (CX05-INV-23).',
-      );
-    }
+    if (mismatches.isEmpty) return;
 
-    return justification;
+    await _repository.updateStatusWithAuditLog(
+      id: id,
+      organizationId: command.organizationId,
+      expectedCurrentStatus: JustificationStatus.pending,
+      newStatus: JustificationStatus.rejected,
+      reviewerId: null,
+      resolutionNotes:
+          'Auto-rejected: server-side hash re-verification failed for '
+          'evidence index(es) $mismatches (CX05-INV-23).',
+      reviewedAtUtc: now,
+      callerRole: 'SYSTEM',
+      evidenceUrls: command.evidenceUrls,
+    );
+    throw JustificationException(
+      'Evidence integrity check failed: hashes do not match for '
+      'index(es) $mismatches (CX05-INV-23).',
+      phase: JustificationPhase.persistence,
+    );
+  }
+
+  /// Emits a Tier-1 audit-trail trace for a successfully cleared submission phase.
+  void _logPhasePass(
+    SubmitSLAJustificationCommand command,
+    JustificationPhase phase,
+  ) {
+    ForensicSecurityLogger.logJustificationPhase(
+      phase: phase,
+      organizationId: command.organizationId,
+      vehicleId: command.vehicleId,
+      passed: true,
+    );
   }
 
   /// Approves a pending justification. Gestor exclusive (Dashboard).

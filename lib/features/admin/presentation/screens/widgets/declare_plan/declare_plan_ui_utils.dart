@@ -4,7 +4,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_template_view.dart';
 import 'package:veraprob/application/sla_audit/projections/penalties_form_data.dart';
 import 'package:veraprob/application/sla_audit/sla_template_presets.dart';
-import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
+import 'package:veraprob/presentation/shared/ui/info_tooltip.dart';
 import 'package:veraprob/features/admin/presentation/widgets/transport_vertical_chip.dart';
 
 const kBrTimezones = [
