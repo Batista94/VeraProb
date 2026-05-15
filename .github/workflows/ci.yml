@@ -75,9 +75,12 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.41.9"
+          flutter-version: "3.27.3"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5
@@ -170,9 +173,12 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.41.9"
+          flutter-version: "3.27.3"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5
@@ -206,9 +212,12 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.41.9"
+          flutter-version: "3.27.3"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5
@@ -242,9 +251,12 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.41.9"
+          flutter-version: "3.27.3"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5
@@ -276,9 +288,12 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.41.9"
+          flutter-version: "3.27.3"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5
@@ -347,9 +362,12 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.41.9"
+          flutter-version: "3.27.3"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5
@@ -416,9 +434,12 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.41.9"
+          flutter-version: "3.27.3"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5
