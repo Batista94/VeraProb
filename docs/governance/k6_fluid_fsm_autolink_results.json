@@ -1,6 +1,5 @@
 {
   "root_group": {
-    "name": "",
     "path": "",
     "id": "d41d8cd98f00b204e9800998ecf8427e",
     "groups": [
@@ -8,86 +7,20 @@
         "name": "step_1_create_orphan_evidence",
         "path": "::step_1_create_orphan_evidence",
         "id": "649279067a4d873e6decf247675d779c",
-        "groups": [
-          {
-            "name": "step_2_create_retroactive_execution",
-            "path": "::step_1_create_orphan_evidence::step_2_create_retroactive_execution",
-            "id": "808c3f3c0a49cb484ff8aaa34f7cf95b",
-            "groups": [
-              {
-                "groups": [],
-                "checks": [
-                    {
-                      "path": "::step_1_create_orphan_evidence::step_2_create_retroactive_execution::step_3_verify_autolink::shadow status = RECONCILED",
-                      "id": "640e09134dd824c7c5c1933a0ade1d84",
-                      "passes": 29,
-                      "fails": 0,
-                      "name": "shadow status = RECONCILED"
-                    },
-                    {
-                      "name": "reconciled_execution_id = trip set_id",
-                      "path": "::step_1_create_orphan_evidence::step_2_create_retroactive_execution::step_3_verify_autolink::reconciled_execution_id = trip set_id",
-                      "id": "49bf2f4ac82c548578d985ba62a7566c",
-                      "passes": 2,
-                      "fails": 27
-                    },
-                    {
-                      "passes": 29,
-                      "fails": 0,
-                      "name": "forensic_hash unchanged after auto-link",
-                      "path": "::step_1_create_orphan_evidence::step_2_create_retroactive_execution::step_3_verify_autolink::forensic_hash unchanged after auto-link",
-                      "id": "492caff392b885fde64816c964f4eff0"
-                    },
-                    {
-                      "passes": 29,
-                      "fails": 0,
-                      "name": "exactly 1 shadow transition row",
-                      "path": "::step_1_create_orphan_evidence::step_2_create_retroactive_execution::step_3_verify_autolink::exactly 1 shadow transition row",
-                      "id": "5664e03c0274a4057cf79b8ee75e3eb9"
-                    }
-                  ],
-                "name": "step_3_verify_autolink",
-                "path": "::step_1_create_orphan_evidence::step_2_create_retroactive_execution::step_3_verify_autolink",
-                "id": "5ae94683bfbbba1d1f196c0a6fa42df4"
-              }
-            ],
-            "checks": [
-              {
-                "passes": 29,
-                "fails": 0,
-                "name": "retroactive execution created",
-                "path": "::step_1_create_orphan_evidence::step_2_create_retroactive_execution::retroactive execution created",
-                "id": "902fd5e184b463f89055a6a65b2a75ca"
-              }
-            ]
-          }
-        ],
+        "groups": [],
         "checks": [
-          {
-            "fails": 1,
-            "name": "evidence created",
-            "path": "::step_1_create_orphan_evidence::evidence created",
-            "id": "742650ee0ff22333e1521ec88b48d8a1",
-            "passes": 29
-          },
-          {
-            "passes": 29,
-            "fails": 0,
-            "name": "shadow created",
-            "path": "::step_1_create_orphan_evidence::shadow created",
-            "id": "41575e5ef6b238d9a3b2e1fc73cd8f94"
-          },
-          {
-            "name": "initial status is UNLINKED_SHADOW",
-            "path": "::step_1_create_orphan_evidence::initial status is UNLINKED_SHADOW",
-            "id": "3ec239605354274b4a86055570d725d5",
-            "passes": 28,
-            "fails": 1
-          }
-        ]
+            {
+              "id": "742650ee0ff22333e1521ec88b48d8a1",
+              "passes": 0,
+              "fails": 30,
+              "name": "evidence created",
+              "path": "::step_1_create_orphan_evidence::evidence created"
+            }
+          ]
       }
     ],
-    "checks": []
+    "checks": [],
+    "name": ""
   },
   "options": {
     "summaryTrendStats": [
@@ -102,30 +35,75 @@
     "noColor": false
   },
   "state": {
-    "isStdOutTTY": false,
-    "isStdErrTTY": false,
-    "testRunDurationMs": 1988.9321
+    "isStdOutTTY": true,
+    "isStdErrTTY": true,
+    "testRunDurationMs": 95.7171
   },
   "metrics": {
-    "http_req_sending": {
-      "type": "trend",
-      "contains": "time",
+    "http_reqs": {
       "values": {
-        "avg": 0.18076030534351153,
-        "min": 0,
-        "med": 0,
-        "max": 4.3352,
-        "p(90)": 0,
-        "p(95)": 2.0069849999999896
-      }
+        "rate": 313.42362023086787,
+        "count": 30
+      },
+      "type": "counter",
+      "contains": "default"
     },
     "http_req_failed": {
       "type": "rate",
       "contains": "default",
       "values": {
-        "passes": 1,
-        "fails": 261,
-        "rate": 0.003816793893129771
+        "rate": 1,
+        "passes": 30,
+        "fails": 0
+      }
+    },
+    "group_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "med": 48.1712,
+        "max": 68.3444,
+        "p(90)": 63.16204,
+        "p(95)": 65.411335,
+        "avg": 50.593106666666664,
+        "min": 35.7416
+      }
+    },
+    "fluid_fsm_duplicate_shadow_count": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count==0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_tls_handshaking": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 0,
+        "min": 0,
+        "med": 0,
+        "max": 0,
+        "p(90)": 0,
+        "p(95)": 0
+      }
+    },
+    "http_req_sending": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "med": 0.51675,
+        "max": 2.4448,
+        "p(90)": 1.3144,
+        "p(95)": 1.348445,
+        "avg": 0.5695966666666668,
+        "min": 0
       }
     },
     "fluid_fsm_hash_collision_count": {
@@ -141,46 +119,35 @@
         }
       }
     },
-    "data_received": {
-      "type": "counter",
-      "contains": "data",
-      "values": {
-        "count": 188540,
-        "rate": 94794.58851310208
-      }
-    },
-    "vus": {
-      "values": {
-        "value": 0,
-        "min": 0,
-        "max": 29
-      },
-      "type": "gauge",
-      "contains": "default"
-    },
-    "http_reqs": {
-      "type": "counter",
+    "checks": {
+      "type": "rate",
       "contains": "default",
       "values": {
-        "count": 262,
-        "rate": 131.72898159771268
-      }
-    },
-    "vus_max": {
-      "type": "gauge",
-      "contains": "default",
-      "values": {
-        "value": 30,
-        "min": 30,
-        "max": 30
+        "rate": 0,
+        "passes": 0,
+        "fails": 30
       }
     },
     "data_sent": {
-      "type": "counter",
-      "contains": "data",
       "values": {
-        "count": 147752,
-        "rate": 74287.10110314978
+        "count": 26610,
+        "rate": 278006.7511447798
+      },
+      "type": "counter",
+      "contains": "data"
+    },
+    "fluid_fsm_autolink_success_rate": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "rate": 0,
+        "passes": 0,
+        "fails": 0
+      },
+      "thresholds": {
+        "rate==1": {
+          "ok": true
+        }
       }
     },
     "iterations": {
@@ -188,81 +155,19 @@
       "contains": "default",
       "values": {
         "count": 30,
-        "rate": 15.08347117531061
-      }
-    },
-    "http_req_blocked": {
-      "type": "trend",
-      "contains": "time",
-      "values": {
-        "p(90)": 0,
-        "p(95)": 2.1903,
-        "avg": 0.32891908396946556,
-        "min": 0,
-        "med": 0,
-        "max": 10.7672
-      }
-    },
-    "iteration_duration": {
-      "type": "trend",
-      "contains": "time",
-      "values": {
-        "p(90)": 1545.1039,
-        "p(95)": 1545.56788,
-        "avg": 1479.3810533333335,
-        "min": 424.0539,
-        "med": 1518.7798,
-        "max": 1548.3515
+        "rate": 313.42362023086787
       }
     },
     "http_req_connecting": {
       "type": "trend",
       "contains": "time",
       "values": {
-        "p(95)": 1.1308,
-        "avg": 0.17846335877862593,
+        "avg": 2.8479900000000002,
         "min": 0,
-        "med": 0,
-        "max": 4.7542,
-        "p(90)": 0
-      }
-    },
-    "fluid_fsm_autolink_success_rate": {
-      "contains": "default",
-      "values": {
-        "rate": 0.06896551724137931,
-        "passes": 2,
-        "fails": 27
-      },
-      "thresholds": {
-        "rate==1": {
-          "ok": false
-        }
-      },
-      "type": "rate"
-    },
-    "http_req_duration{expected_response:true}": {
-      "type": "trend",
-      "contains": "time",
-      "values": {
-        "avg": 55.06412567049808,
-        "min": 2.0164,
-        "med": 29.7138,
-        "max": 372.253,
-        "p(90)": 170.1006,
-        "p(95)": 199.1894
-      }
-    },
-    "http_req_duration": {
-      "type": "trend",
-      "contains": "time",
-      "values": {
-        "avg": 56.33142175572519,
-        "min": 2.0164,
-        "med": 29.72045,
-        "max": 387.0957,
-        "p(90)": 170.89602,
-        "p(95)": 200.79081499999998
+        "med": 2.08235,
+        "max": 9.3659,
+        "p(90)": 6.4136500000000005,
+        "p(95)": 6.768499999999999
       }
     },
     "http_req_receiving": {
@@ -270,84 +175,82 @@
       "contains": "time",
       "values": {
         "med": 0,
-        "max": 1.9015,
-        "p(90)": 0,
-        "p(95)": 0.6392,
-        "avg": 0.06645038167938931,
+        "max": 0.557,
+        "p(90)": 0.52947,
+        "p(95)": 0.53313,
+        "avg": 0.10627333333333334,
         "min": 0
       }
     },
-    "http_req_tls_handshaking": {
+    "http_req_blocked": {
+      "contains": "time",
+      "values": {
+        "min": 0.5107,
+        "med": 3.182,
+        "max": 9.3659,
+        "p(90)": 6.44736,
+        "p(95)": 6.788569999999998,
+        "avg": 3.345946666666667
+      },
+      "type": "trend"
+    },
+    "iteration_duration": {
       "type": "trend",
       "contains": "time",
       "values": {
-        "min": 0,
-        "med": 0,
-        "max": 0,
-        "p(90)": 0,
-        "p(95)": 0,
-        "avg": 0
+        "avg": 51.42419333333334,
+        "min": 36.0878,
+        "med": 48.6819,
+        "max": 68.3444,
+        "p(90)": 64.51637,
+        "p(95)": 66.32195499999999
+      }
+    },
+    "http_req_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(95)": 59.51764,
+        "avg": 45.827773333333326,
+        "min": 29.635,
+        "med": 45.072,
+        "max": 63.0969,
+        "p(90)": 59.2246
       }
     },
     "http_req_waiting": {
       "type": "trend",
       "contains": "time",
       "values": {
-        "avg": 56.08421106870229,
-        "min": 2.0164,
-        "med": 29.72045,
-        "max": 387.0957,
-        "p(90)": 166.56082,
-        "p(95)": 200.79081499999998
+        "avg": 45.15190333333335,
+        "min": 28.4854,
+        "med": 45.072,
+        "max": 61.3286,
+        "p(90)": 58.6862,
+        "p(95)": 58.69885
       }
     },
-    "checks": {
-      "type": "rate",
-      "contains": "default",
+    "data_received": {
+      "type": "counter",
+      "contains": "data",
       "values": {
-        "passes": 204,
-        "fails": 29,
-        "rate": 0.8755364806866953
-      }
-    },
-    "group_duration": {
-      "type": "trend",
-      "contains": "time",
-      "values": {
-        "avg": 895.0456863636362,
-        "min": 11.862,
-        "med": 1171.90465,
-        "max": 1544.4574,
-        "p(90)": 1522.09053,
-        "p(95)": 1530.4169049999998
+        "count": 17910,
+        "rate": 187113.9012778281
       }
     },
     "fluid_fsm_autolink_latency_ms": {
       "type": "trend",
       "contains": "time",
       "values": {
-        "avg": 135.06896551724137,
-        "min": 18,
-        "med": 144,
-        "max": 230,
-        "p(90)": 206.6,
-        "p(95)": 212
+        "avg": 0,
+        "min": 0,
+        "med": 0,
+        "max": 0,
+        "p(90)": 0,
+        "p(95)": 0
       },
       "thresholds": {
         "p(95)<1000": {
-          "ok": true
-        }
-      }
-    },
-    "fluid_fsm_duplicate_shadow_count": {
-      "type": "counter",
-      "contains": "default",
-      "values": {
-        "count": 0,
-        "rate": 0
-      },
-      "thresholds": {
-        "count==0": {
           "ok": true
         }
       }
