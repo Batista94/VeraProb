@@ -40,6 +40,9 @@ def check_file(filepath):
     return issues
 
 def main():
+    if sys.platform == "win32":
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     print(f"\n{BOLD}🛡️  VeraProb Integrity Guard (Tier 1 Enforcement){NC}")
     print(f"{'─' * 55}")
     

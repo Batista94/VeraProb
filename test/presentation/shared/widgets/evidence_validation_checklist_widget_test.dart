@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/sla_audit/forensic_violation_exception.dart';
-import 'package:veraprob/presentation/shared/widgets/evidence_validation_checklist_widget.dart';
+import 'package:veraprob/presentation/shared/ui/evidence_validation_checklist_widget.dart';
 
 void main() {
   group('EvidenceValidationChecklistWidget — 3 Visible Forensic Steps', () {

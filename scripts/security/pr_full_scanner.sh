@@ -43,6 +43,10 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 BASE_BRANCH="${BASE_BRANCH:-main}"
+# Detect local main if origin/main is not available
+if ! git rev-parse --verify "$BASE_BRANCH" >/dev/null 2>&1; then
+  BASE_BRANCH="HEAD~1"
+fi
 
 # ── Test Gate Severity: BLOCK on main, WARN on feature branches ─────────────
 # BLOCK when: current branch IS main, OR CI PR targets main (GITHUB_BASE_REF),

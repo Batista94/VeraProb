@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/presentation/shared/widgets/domain_chip_input.dart';
+import 'package:veraprob/presentation/shared/ui/domain_chip_input.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 

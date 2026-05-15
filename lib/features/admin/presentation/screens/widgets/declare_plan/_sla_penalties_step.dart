@@ -7,7 +7,7 @@ import 'package:veraprob/application/sla_audit/projections/penalties_form_data.d
 import 'package:veraprob/application/sla_audit/smart_defaults_service.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/sla_template_providers.dart';
-import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
+import 'package:veraprob/presentation/shared/ui/info_tooltip.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/declare_plan/declare_plan_ui_utils.dart';
 
 /// Step 3 of the Declare Contract Plan wizard — SLA & Penalties.

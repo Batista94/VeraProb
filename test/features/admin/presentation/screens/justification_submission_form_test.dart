@@ -27,7 +27,7 @@ import 'package:veraprob/domain/sla_audit/justification/justification_status.dar
 import 'package:veraprob/domain/sla_audit/justification/justification_submission_token.dart';
 import 'package:veraprob/infrastructure/sla_audit/justification/file_service/justification_file_service.dart';
 import 'package:veraprob/features/admin/presentation/screens/justification_submission_form.dart';
-import 'package:veraprob/presentation/shared/widgets/evidence_validation_checklist_widget.dart';
+import 'package:veraprob/presentation/shared/ui/evidence_validation_checklist_widget.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/justification_providers.dart';
 

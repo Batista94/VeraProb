@@ -136,7 +136,8 @@
       "Bash(Find \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\supabase\\\\migrations\" -name \"*.sql\" -type f)",
       "Bash(Sort-Object)",
       "Bash(where supabase *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(\"lib/features/admin/presentation/screens/org_settings_screen.dart\")"
     ]
   },
   "enabledMcpjsonServers": [

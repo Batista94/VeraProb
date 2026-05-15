@@ -10,8 +10,8 @@ import 'package:veraprob/application/sla_audit/projections/contract_status_view.
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
-import 'package:veraprob/presentation/shared/widgets/veraprob_header.dart';
-import 'package:veraprob/presentation/shared/widgets/veraprob_chip.dart';
+import 'package:veraprob/presentation/shared/ui/veraprob_header.dart';
+import 'package:veraprob/presentation/shared/ui/veraprob_chip.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
 import 'declare_contract_plan_form.dart';

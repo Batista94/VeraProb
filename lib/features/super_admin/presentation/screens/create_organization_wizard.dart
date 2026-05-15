@@ -14,7 +14,7 @@ import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/widgets/organization_wizard_steps.dart';
-import 'package:veraprob/presentation/shared/widgets/domain_chip_input.dart';
+import 'package:veraprob/presentation/shared/ui/domain_chip_input.dart';
 
 /// 3-step wizard for creating a new tenant organization.
 ///

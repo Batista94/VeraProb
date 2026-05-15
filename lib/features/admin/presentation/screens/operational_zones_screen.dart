@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/admin/operational_zone_view.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
-import 'package:veraprob/presentation/shared/widgets/info_tooltip.dart';
-import 'package:veraprob/presentation/shared/widgets/veraprob_header.dart';
-import 'package:veraprob/presentation/shared/widgets/veraprob_chip.dart';
+import 'package:veraprob/presentation/shared/ui/info_tooltip.dart';
+import 'package:veraprob/presentation/shared/ui/veraprob_header.dart';
+import 'package:veraprob/presentation/shared/ui/veraprob_chip.dart';
 
 import 'package:veraprob/features/admin/presentation/screens/widgets/_zone_form_dialog.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/zone_ui_utils.dart';
