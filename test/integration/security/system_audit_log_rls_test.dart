@@ -12,7 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../test/infrastructure/postgres/postgres_test_config.dart';
+import '../../../test/infrastructure/postgres/postgres_test_config.dart';
 
 const _orgAId = '11111111-1111-1111-1111-111111111111';
 const _orgBId = '22222222-2222-2222-2222-222222222222';
@@ -104,19 +104,30 @@ void main() {
       }
       expect(seededId, isNotNull);
 
-      // service_role bypasses RLS but the INSTEAD NOTHING rule short-circuits
-      // the UPDATE — the row's severity must remain unchanged.
-      await seedClient
-          .from('system_audit_log')
-          .update({'severity': 'debug'})
-          .eq('id', seededId!);
+      // INV-3: service_role bypasses RLS but the INSTEAD NOTHING rule
+      // short-circuits the UPDATE. PostgREST appends RETURNING * which
+      // causes a 0A000 error — we catch this as proof of blocking.
+      try {
+        await seedClient
+            .from('system_audit_log')
+            .update({'severity': 'debug'})
+            .eq('id', seededId!);
+      } on PostgrestException catch (e) {
+        // 0A000 is the expected protocol error when an INSTEAD NOTHING
+        // rule meets a RETURNING clause.
+        if (e.code != '0A000') rethrow;
+      }
 
       final after = await seedClient
           .from('system_audit_log')
           .select('severity')
           .eq('id', seededId!)
           .single();
-      expect(after['severity'], equals('critical'));
+      expect(
+        after['severity'],
+        equals('critical'),
+        reason: 'Immutability check: severity must remain unchanged',
+      );
     });
 
     test('11 DELETE rejected (INSTEAD NOTHING rule)', () async {
@@ -126,7 +137,11 @@ void main() {
       }
       expect(seededId, isNotNull);
 
-      await seedClient.from('system_audit_log').delete().eq('id', seededId!);
+      try {
+        await seedClient.from('system_audit_log').delete().eq('id', seededId!);
+      } on PostgrestException catch (e) {
+        if (e.code != '0A000') rethrow;
+      }
 
       final after = await seedClient
           .from('system_audit_log')
@@ -135,7 +150,7 @@ void main() {
       expect(
         after,
         hasLength(1),
-        reason: 'INV-3: append-only — DELETE must be a no-op',
+        reason: 'INV-3: append-only — DELETE must be a no-op or blocked',
       );
     });
   });

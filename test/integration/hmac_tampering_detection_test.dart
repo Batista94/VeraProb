@@ -31,7 +31,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
-import '../test/infrastructure/postgres/postgres_test_config.dart';
+import '../../test/infrastructure/postgres/postgres_test_config.dart';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
