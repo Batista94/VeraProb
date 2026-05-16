@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/tenant_detail_panel.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/tenant_list_panel.dart';
+import 'package:veraprob/main.dart' as app;
 
 import 'superadmin_test_config.dart';
 
@@ -32,10 +33,13 @@ abstract class SuperAdminAuthHelper {
   ///
   /// Lança [TestFailure] se o login não completar dentro do timeout.
   static Future<void> loginAsSuperAdmin(WidgetTester tester) async {
+    app.main();
+    await tester.pumpAndSettle();
+
     // Localizar campos de email e senha.
-    // O padrão da UI usa TextFormField com InputDecoration contendo hintText
+    // O padrão da UI usa TextField com InputDecoration contendo hintText
     // ou labelText. Buscamos por tipo e posição (primeiro = email, segundo = senha).
-    final textFields = find.byType(TextFormField);
+    final textFields = find.byType(TextField);
 
     // Aguardar que a tela de login esteja renderizada.
     await tester.pumpAndSettle(
@@ -50,14 +54,14 @@ abstract class SuperAdminAuthHelper {
       reason: 'Tela de login deve conter pelo menos 2 campos (email + senha)',
     );
 
-    // Campo de email (primeiro TextFormField).
+    // Campo de email (primeiro TextField).
     await tester.enterText(
       textFields.first,
       SuperAdminTestConfig.superAdminEmail,
     );
     await tester.pump();
 
-    // Campo de senha (segundo TextFormField).
+    // Campo de senha (segundo TextField).
     await tester.enterText(
       textFields.at(1),
       SuperAdminTestConfig.superAdminPassword,
@@ -75,9 +79,15 @@ abstract class SuperAdminAuthHelper {
     // Fallback: buscar por texto comum de botão de login.
     final loginByText = find.widgetWithText(ElevatedButton, 'Entrar');
     final loginByTextFilled = find.widgetWithText(FilledButton, 'Entrar');
+    final loginByTextSystem = find.widgetWithText(
+      ElevatedButton,
+      'ACESSAR SISTEMA',
+    );
 
     Finder buttonFinder;
-    if (loginByText.evaluate().isNotEmpty) {
+    if (loginByTextSystem.evaluate().isNotEmpty) {
+      buttonFinder = loginByTextSystem;
+    } else if (loginByText.evaluate().isNotEmpty) {
       buttonFinder = loginByText;
     } else if (loginByTextFilled.evaluate().isNotEmpty) {
       buttonFinder = loginByTextFilled;

@@ -7,17 +7,10 @@
 /// In dev: events are logged to console but NOT sent to PostHog.
 library;
 
-import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:veraprob/infrastructure/config/environment.dart';
-
-@JS('initPosthog')
-external void _jsInitPosthog(
-  JSString apiKey,
-  JSString apiHost,
-  JSBoolean enableSessionReplay,
-);
+import 'posthog_web_init.dart';
 
 /// Product analytics events tracked by VeraProb.
 abstract final class VeraProbEvent {
@@ -65,10 +58,10 @@ class AnalyticsService {
 
     if (kIsWeb) {
       // Modern JS Interop (8.4 Hardening)
-      _jsInitPosthog(
-        EnvironmentConfig.posthogKey.toJS,
-        EnvironmentConfig.posthogHost.toJS,
-        EnvironmentConfig.isProd.toJS, // Session Replay only in PROD
+      initPosthogWeb(
+        EnvironmentConfig.posthogKey,
+        EnvironmentConfig.posthogHost,
+        EnvironmentConfig.isProd, // Session Replay only in PROD
       );
     }
 

@@ -600,7 +600,9 @@ void main() {
         // Marcar o convite como aceito
         await client
             .from('invitations')
-            .update({'status': 'ACCEPTED'})
+            .update({
+              'accepted_at_utc': DateTime.now().toUtc().toIso8601String(),
+            })
             .eq('organization_id', testOrgRevokeRace.orgId)
             .eq('email', pendingAdmin.email);
 

@@ -140,7 +140,9 @@
       "Bash(\"lib/features/admin/presentation/screens/org_settings_screen.dart\")",
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(git log *)",
-      "Bash(make full-check *)"
+      "Bash(make full-check *)",
+      "Bash(where flutter *)",
+      "Bash(flutter doctor *)"
     ]
   },
   "enabledMcpjsonServers": [
