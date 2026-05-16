@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/tenant_detail_panel.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/tenant_list_panel.dart';
@@ -33,6 +35,14 @@ abstract class SuperAdminAuthHelper {
   ///
   /// Lança [TestFailure] se o login não completar dentro do timeout.
   static Future<void> loginAsSuperAdmin(WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    // Mock app_links EventChannel — native plugin unavailable in flutter test VM.
+    tester.binding.defaultBinaryMessenger.setMockStreamHandler(
+      const EventChannel('com.llfbandit.app_links/events'),
+      MockStreamHandler.inline(onListen: (_, _) {}, onCancel: (_) {}),
+    );
+
     app.main();
     await tester.pumpAndSettle();
 

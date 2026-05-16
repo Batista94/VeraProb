@@ -142,7 +142,10 @@
       "Bash(git log *)",
       "Bash(make full-check *)",
       "Bash(where flutter *)",
-      "Bash(flutter doctor *)"
+      "Bash(flutter doctor *)",
+      "Bash(xargs -I{} sh -c 'echo \"$\\(grep -c \"test\\(\" {}\\) tests in {}\"')",
+      "Bash(xargs -I{} sh -c 'echo \"$\\(grep -c \"testWidgets\\\\|^\\\\s*test\\(\" {} 2>/dev/null\\) {}\"')",
+      "Bash(curl *)"
     ]
   },
   "enabledMcpjsonServers": [
